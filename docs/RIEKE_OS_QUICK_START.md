@@ -51,7 +51,7 @@ The **First recording? Start here** panel repeats the basic workflow in the app.
 
 ### Find or open an existing project folder
 
-Inside a project, choose **Project folder** directly below the project name in
+Inside a project, choose **Project folder** under **Project record** in
 the sidebar. If the sidebar is hidden, use **Show sidebar** first. The dialog
 shows the current project's full root path and offers **View project files**.
 

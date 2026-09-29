@@ -1,4 +1,3 @@
-import ProjectFolder from './ProjectFolder.jsx';
 import {useEffect,useId,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Check,ChevronDown,FolderOpen,LoaderCircle,RefreshCw,Plus} from 'lucide-react';
@@ -16,8 +15,7 @@ export function ProjectRail({projects=[],currentProjectUuid,onSelect,onAddProjec
     return <button key={project.uuid} className={`project-rail-item ${active?'current':''}`} title={`${project.name}${project.available?'':' · unavailable'}`} aria-label={`${project.name}${active?', current project':''}${project.available?'':', unavailable'}`} aria-current={active?'page':undefined} disabled={disabled||!project.available} onClick={()=>{if(!active)onSelect?.(project);}}><span style={projectColor(project.uuid)}>{initials(project.name)}</span></button>;
   })}{onAddProject&&<button className="project-rail-add" disabled={disabled} onClick={onAddProject} title="Add project" aria-label="Add project"><Plus size={21}/></button>}{loading&&!projects.length&&<span className="project-rail-loading" role="status" aria-label="Loading projects"><LoaderCircle size={17} className="spin"/></span>}</nav>;
 }
-export default function ProjectNavigator({projects=[],currentProjectUuid,onSelect,onAddProject,loading=false,disabled=false,error=null,onRetry,onFiles}){
-  const [folderOpen,setFolderOpen]=useState(false);
+export default function ProjectNavigator({projects=[],currentProjectUuid,onSelect,onAddProject,loading=false,disabled=false,error=null,onRetry}){
   const current=currentProject(projects,currentProjectUuid);
   const [open,setOpen]=useState(false),[active,setActive]=useState(0),[position,setPosition]=useState(null);
   const button=useRef(null),menu=useRef(null),listId=useId();
@@ -41,8 +39,6 @@ export default function ProjectNavigator({projects=[],currentProjectUuid,onSelec
   useEffect(()=>{if(open&&position)menu.current?.querySelector('[role="listbox"]')?.focus();},[open,!!position]);
   useEffect(()=>{if(open)menu.current?.querySelector(`[data-project-index="${active}"]`)?.scrollIntoView({block:'nearest'});},[active,open]);
   return <div className="project-navigator"><button ref={button} className="project-navigator-trigger" aria-haspopup="listbox" aria-expanded={open} aria-controls={open?listId:undefined} disabled={disabled} onKeyDown={event=>{if(event.key==='ArrowDown'){event.preventDefault();setOpen(true);}}} onClick={()=>setOpen(value=>!value)}><span className="project-nav-monogram" style={projectColor(current?.uuid)}>{current?initials(current.name):<FolderOpen size={18}/>}</span><span className="project-nav-label"><small>PROJECT</small><strong>{current?.name || (loading?'Loading projects…':'Choose project')}</strong></span>{loading?<LoaderCircle size={15} className="spin"/>:<ChevronDown size={15}/>}</button>
-    <button className="project-folder-trigger" disabled={disabled||!current} onClick={()=>{setOpen(false);setFolderOpen(true);}}><FolderOpen size={14}/> Project folder</button>
-    {folderOpen&&<ProjectFolder project={current} onClose={()=>setFolderOpen(false)} onFiles={onFiles}/>}
     {open&&position&&createPortal(<div ref={menu} className="project-navigator-menu" style={position} tabIndex={-1} onKeyDown={event=>{
       if(event.key==='Escape'){event.preventDefault();close();}
       else if(event.target.getAttribute('role')!=='listbox'){return;}
