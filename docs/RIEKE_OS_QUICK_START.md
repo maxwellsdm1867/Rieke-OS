@@ -49,6 +49,22 @@ are experimental; Windows is unsupported. See [system requirements](../README.md
 **Check:** Project overview shows your project name and zero imported epochs.
 The **First recording? Start here** panel repeats the basic workflow in the app.
 
+### Find or open an existing project folder
+
+Inside a project, choose **Project folder** directly below the project name in
+the sidebar. If the sidebar is hidden, use **Show sidebar** first. The dialog
+shows the current project's full root path and offers **View project files**.
+
+To switch to an existing project elsewhere, paste its absolute folder path into
+**Existing project folder**, then choose **Open project folder**. Select the
+folder containing `project.json` and `catalog.json`, not the parent workspace.
+The app validates those manifests and opens that project's own service; an
+invalid or missing folder is rejected without creating a project there.
+
+This selects an existing project in its original location. It does not move the
+current project, relocate databases, or import an arbitrary data folder. To
+create a new project, use **Add project** instead.
+
 ## 3. Import your recording
 
 Use an **original Symphony recording H5**. A legacy `.auisql.h5` file is a

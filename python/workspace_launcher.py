@@ -28,6 +28,30 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         return jsonify(project=project, database_status='not_started',
             message='Empty project created. Opening it prepares its own database; no recording is required.'), 201
 
+    @app.post('/api/projects/open-folder')
+    def project_open_folder():
+        body = request.get_json(silent=True)
+        if request.args or not isinstance(body, dict) or set(body) != {'directory'} or not isinstance(body['directory'], str) or not body['directory'].strip():
+            raise ValueError('Choose an existing project folder by its absolute path')
+        directory = Path(body['directory'].strip()).expanduser()
+        if not directory.is_absolute() or directory.is_symlink():
+            raise ValueError('Choose an absolute project folder path, not a symbolic link')
+        if not directory.is_dir():
+            raise ValueError('Project folder does not exist; choose an existing project')
+        directory = directory.resolve()
+        if not (directory / 'project.json').is_file() or not (directory / 'catalog.json').is_file():
+            raise ValueError('Choose the project folder containing project.json and catalog.json, not its parent workspace')
+        project = next(row for row in list_projects(directory)['projects'] if row['current'])
+        if not project['available']:
+            raise ValueError('Project manifests are invalid: ' + project['unavailable_reason'])
+        if current:
+            current_record = next(row for row in list_projects(current)['projects'] if row['current'])
+            if directory == current:
+                return jsonify(url=request.host_url, project_uuid=project['uuid'])
+            if project['uuid'] == current_record['uuid']:
+                raise ValueError('This folder duplicates the current project identity; use its original folder')
+        return jsonify(open_project(directory, project['uuid'], retinanalysis_dir))
+
     @app.post('/api/projects/<project_uuid>/open')
     def project_open(project_uuid):
         body = request.get_json(silent=True)
