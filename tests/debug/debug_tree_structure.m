@@ -1,13 +1,20 @@
 %% Debug Tree Structure
 % Check what cell types are actually in the data
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 clear; clc;
 addpath('src');
 addpath('src/tree');
 
 fprintf('=== Debugging Tree Structure ===\n\n');
 
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 % Load data
 [data, ~] = loadEpicTreeData(data_file);

@@ -1,13 +1,20 @@
 %% Test Real Cell Type Names from Python Export
 % Simulates what would come from Python export with full cell type names
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Testing Real Cell Type Names from Python Export ===\n\n');
 
 %% Load existing data and modify cell types to show what export would produce
 fprintf('Loading existing data...\n');
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s', data_file);

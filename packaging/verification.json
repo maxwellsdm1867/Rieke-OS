@@ -1,33 +1,57 @@
 {
+  "version": "0.1.1",
+  "status": "passed",
   "platform": "Apple Silicon macOS",
-  "checks": [
+  "python_tests": 522,
+  "frontend_tests": 193,
+  "installation": "Fresh source installation in a path containing spaces; application-local Python 3.11.13, native MySQL 8.4.2; no Docker",
+  "workflow_checks": [
     "clean-runtime launcher health",
     "built browser app served",
     "create and open native project without Docker",
     "real H5 parsed and committed to native SQL",
+    "predicate queries, immutable revisions, pinned versioned presets and stale edit rejection",
+    "create working protocol from saved query and persist tree layout with stale conflict",
+    "complete JSON inclusion mask roundtrip and stale mask rejection",
+    "protocol curation approval and tags with stale-save conflict",
+    "author profiles, cell and epoch tags, additive exchange, conflicts, and tag predicates",
+    "three HTTP traces exactly match independent original H5 samples",
+    "QC block-onset arithmetic (15 anchors) and condition/trial response arithmetic (11 trials) match independent H5 samples",
+    "named/date-stamped HTTP downloads and frozen naming; JSON, SQLite integrity/relations/tags, MATLAB MAT and UGM membership",
+    "UGM subset import preserves nonexported decisions; wrong export rejected; exports immutable",
+    "duplicate import is idempotent",
+    "query-to-protocol compare/apply removes exact members, restores original query, rejects stale binding",
+    "source eligibility exclude/include propagation changes working membership and rejects stale preview",
     "HTTP trace samples match independent raw H5 read",
     "Wheeler SQLite export published from native SQL",
-    "database stop/restart preserves imported epoch count",
+    "database stop/restart preserves imports, masks, tags, presets and exports",
     "source bytes unchanged; zero Docker invocations"
   ],
-  "counts": {
-    "approved": 0,
-    "cells": 3,
-    "duration_seconds": 1212.99999999999,
-    "epochs": 1915,
-    "exported": 0,
-    "included": 1915,
-    "protocols": 4,
-    "reviewed": 0,
-    "shared_tagged_cells": 0,
-    "shared_tagged_epochs": 0,
-    "sources": 1,
-    "unreviewed": 1915
+  "real_data": {
+    "sources": 8,
+    "bytes": 1703089764,
+    "epochs": 14908,
+    "cells": 27,
+    "empty_cells": 2,
+    "groups": 43,
+    "blocks": 454,
+    "responses": 16273,
+    "stimuli": 14908,
+    "independent_checks": 867468,
+    "discrepancies": 0,
+    "trace_windows": 78,
+    "source_hashes_unchanged": true
   },
-  "status": "passed",
-  "version": "0.1.0",
-  "python_tests": 496,
-  "frontend_tests": 188,
-  "installation": "Fresh source installation; final runtime uses application-local Python 3.11.13 and native MySQL 8.4.2",
-  "recording": "Local H5 validation input; recording and private paths are not distributed"
+  "concurrency": {
+    "requests": 48,
+    "workers": 8,
+    "unexpected_errors": 0
+  },
+  "browser_coverage": "docs/dev/CLIENT_VALIDATION_MATRIX.md",
+  "limitations": [
+    "Apple Silicon macOS verified; other installer targets experimental",
+    "MATLAB artifacts independently read in Python; MATLAB GUI not executed",
+    "Original H5 data remains external; no companion-cache inputs used",
+    "Browser edge variants and unsupported configurations are explicitly classified in the coverage ledger"
+  ]
 }

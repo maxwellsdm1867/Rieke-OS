@@ -14,6 +14,13 @@
 % });
 % gui = epochTreeGUI(tree);
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Exact Legacy Pattern Example ===\n\n');
@@ -31,7 +38,7 @@ addpath('src/utilities');
 addpath('src');
 
 %% Load Data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s', data_file);

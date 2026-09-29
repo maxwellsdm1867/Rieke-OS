@@ -11,6 +11,13 @@
 %   });
 %   gui = epochTreeGUI(tree);
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== EpicTreeGUI - Legacy Pattern Demo ===\n\n');
@@ -32,7 +39,7 @@ addpath('src');
 addpath('src/config');        % For epicTreeConfig
 
 % Set H5 directory for lazy loading
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+h5Dir = getenv('RIEKE_H5_DIR');
 if exist(h5Dir, 'dir')
     epicTreeConfig('h5_dir', h5Dir);
 end
@@ -47,7 +54,7 @@ end
 fprintf('✓ Paths verified\n\n');
 
 %% 1. Load Data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s', data_file);

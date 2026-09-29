@@ -182,7 +182,7 @@ end
 ```
 
 #### Files Involved
-- Test data: `/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat`
+- Test data: `/path/to/local-fixtures/recordings.mat`
 - All test classes that call `getSelectedData(node, 'Amp1')`
 
 ---

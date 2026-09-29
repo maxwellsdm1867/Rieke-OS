@@ -19,8 +19,15 @@
 %    12. Full workflow: display -> select -> retrieve
 %
 % Run from epicTreeGUI directory:
-%   cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+%   cd /path/to/Rieke-OS
 %   run tests/test_gui_display_data.m
+
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
 
 clear; clc;
 fprintf('\n========================================================\n');
@@ -30,7 +37,7 @@ fprintf('========================================================\n\n');
 %% Setup
 baseDir = fileparts(fileparts(mfilename('fullpath')));
 if isempty(baseDir)
-    baseDir = '/Users/maxwellsdm/Documents/GitHub/epicTreeGUI';
+    baseDir = fileparts(fileparts(mfilename('fullpath')));
 end
 addpath(genpath(fullfile(baseDir, 'src')));
 fprintf('Base dir: %s\n', baseDir);
@@ -46,8 +53,8 @@ testData = createSyntheticData();
 fprintf('Created synthetic data: %d cells, %d epochs\n', 3, 108);
 
 % Configure H5 for real data tests
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
-dataPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+h5Dir = getenv('RIEKE_H5_DIR');
+dataPath = getenv('RIEKE_TEST_MAT');
 hasRealData = exist(dataPath, 'file') && exist(h5Dir, 'dir');
 if hasRealData
     epicTreeConfig('h5_dir', h5Dir);

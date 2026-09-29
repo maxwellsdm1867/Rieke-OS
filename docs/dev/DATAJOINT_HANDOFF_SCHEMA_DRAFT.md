@@ -28,13 +28,13 @@ flowchart LR
 
 | Need | Existing evidence | Integration work |
 |---|---|---|
-| Acquisition schema | [RetinAnalysis schema](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/config/schema.py:41): Protocol, Experiment, Animal, Preparation, Cell, EpochGroup, EpochBlock, Epoch, Response, Stimulus, Tags; MEA sorting tables | Establish this as the schema authority and reconcile useful additions from the separate web app. |
-| Offline-safe package imports | [Lazy schema accessor](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/_database.py:1) defers schema import until database access | Preserve this separation; it is connection laziness, not a waveform cache or lazy tree. |
+| Acquisition schema | [RetinAnalysis schema](/path/to/repos/retinanalysis/src/retinanalysis/config/schema.py:41): Protocol, Experiment, Animal, Preparation, Cell, EpochGroup, EpochBlock, Epoch, Response, Stimulus, Tags; MEA sorting tables | Establish this as the schema authority and reconcile useful additions from the separate web app. |
+| Offline-safe package imports | [Lazy schema accessor](/path/to/repos/retinanalysis/src/retinanalysis/_database.py:1) defers schema import until database access | Preserve this separation; it is connection laziness, not a waveform cache or lazy tree. |
 | H5 parsing | `Symphony2Reader` / `h5_to_datajoint_json` in `utils/parse_data.py` | Wrap parse and populate in an observable job; replace the population placeholder rather than add another parser. |
-| Population entry point | [populate_database](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/database_utils.py:6) and `database_pop.py` | Explicit source/version/status and retry policy; missing JSON is currently skipped. |
-| Experiment/protocol overview | [get_exp_summary](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:170) joins groups, cells, preparation, blocks and protocols | Extend into bounded project/protocol coverage queries with distinct-cell counts. |
-| Protocol discovery | [search_protocol](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:354), [get_datasets_from_protocol_names](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:378) | Reuse predicates, but inspect single-cell versus MEA assumptions before exposing generic UI queries. |
-| Epoch metadata and split dimensions | [get_epoch_data_from_exp](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:936), [find_varying_epoch_parameters](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:899) | Stable source/cell IDs, paged reads and a field registry; current helper materializes a block dataframe. |
+| Population entry point | [populate_database](/path/to/repos/retinanalysis/src/retinanalysis/utils/database_utils.py:6) and `database_pop.py` | Explicit source/version/status and retry policy; missing JSON is currently skipped. |
+| Experiment/protocol overview | [get_exp_summary](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:170) joins groups, cells, preparation, blocks and protocols | Extend into bounded project/protocol coverage queries with distinct-cell counts. |
+| Protocol discovery | [search_protocol](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:354), [get_datasets_from_protocol_names](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:378) | Reuse predicates, but inspect single-cell versus MEA assumptions before exposing generic UI queries. |
+| Epoch metadata and split dimensions | [get_epoch_data_from_exp](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:936), [find_varying_epoch_parameters](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:899) | Stable source/cell IDs, paged reads and a field registry; current helper materializes a block dataframe. |
 | Block/response access | `get_epochblock_query`, `get_epochblock_response_query`, `get_epochblock_amp_data` | Add a per-epoch/per-stream window contract and bounded caches without duplicating H5 decoding. |
 | Stimulus/analysis operations | `StimBlock`, `SCResponseBlock`, protocol-specific pipeline classes | Run as optional adapters/jobs with declared inputs and outputs. |
 | Tree grouping and visual inclusion | EpicTree's splitters, `epicTreeTools`, `epicTreeGUI` | Adapt query output to epochs, preserve UUIDs, and make inclusion updates independent of graphical copies. |
@@ -53,17 +53,17 @@ Direct static comparison of both schema declarations found the same 15 table cla
 | MEA and some integer fields | `bool`, `int32` | `tinyint unsigned`, `int` | Reconcile schema definitions rather than copy declarations blindly. |
 | Stimulus | UUID, epoch parent, device, H5 path | Also generator ID, sample rate/units, duration and units | Preserve useful metadata for reconstruction; neither inspected declaration contains a complete generator-parameter/version contract. |
 
-Sources: [RetinAnalysis dependency](/Users/maxwellsdm/Documents/GitHub/retinanalysis/pyproject.toml:40), [RetinAnalysis stimulus](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/config/schema.py:280), [web schema](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/schema.py:13), [web dependencies](/Users/maxwellsdm/Documents/GitHub/datajoint/pyproject.toml:10).
+Sources: [RetinAnalysis dependency](/path/to/repos/retinanalysis/pyproject.toml:40), [RetinAnalysis stimulus](/path/to/repos/retinanalysis/src/retinanalysis/config/schema.py:280), [web schema](/path/to/repos/datajoint/next-app/api/schema.py:13), [web dependencies](/path/to/repos/datajoint/pyproject.toml:10).
 
-RetinAnalysis's [June 2026 migration note](/Users/maxwellsdm/Documents/GitHub/retinanalysis/README.md:186) tells existing users to use a fresh database and repopulate after updating, rather than update a 0.14 database in place. This audit is not performing that migration. Live database version/state was not checked. Current [DataJoint version documentation](https://docs.datajoint.com/about/versioning/) also distinguishes 2.x from the legacy API family.
+RetinAnalysis's [June 2026 migration note](/path/to/repos/retinanalysis/README.md:186) tells existing users to use a fresh database and repopulate after updating, rather than update a 0.14 database in place. This audit is not performing that migration. Live database version/state was not checked. Current [DataJoint version documentation](https://docs.datajoint.com/about/versioning/) also distinguishes 2.x from the legacy API family.
 
 ## Protocol and cell relationships are already represented
 
 For single-cell data, the existing path is Cell ← EpochGroup ← EpochBlock → Protocol. Reuse that path to obtain all protocols recorded from the same cell. Preserve Experiment/Preparation context and full source IDs.
 
-RetinAnalysis explicitly warns to use **EpochBlock.protocol_id** for protocol queries because EpochGroup can carry `no_group_protocol`. See [the existing query note](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:418). Protocol coverage must follow that rule, while keeping group labels as metadata.
+RetinAnalysis explicitly warns to use **EpochBlock.protocol_id** for protocol queries because EpochGroup can carry `no_group_protocol`. See [the existing query note](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:418). Protocol coverage must follow that rule, while keeping group labels as metadata.
 
-The existing protocol-search helper also joins `SortingChunk` unconditionally at [line 448](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:448). That is a static indication of MEA-specific assumptions: it should not be used unchanged as the generic single-cell coverage query, where `chunk_id` can be null. The experiment-summary helper already branches on `is_mea`, offering a better pattern to reuse.
+The existing protocol-search helper also joins `SortingChunk` unconditionally at [line 448](/path/to/repos/retinanalysis/src/retinanalysis/utils/datajoint_utils.py:448). That is a static indication of MEA-specific assumptions: it should not be used unchanged as the generic single-cell coverage query, where `chunk_id` can be null. The experiment-summary helper already branches on `is_mea`, offering a better pattern to reuse.
 
 Project counts count distinct source-identified recorded cells once; per-protocol cell counts can overlap. Linking the same biological cell across separate sessions requires additional evidence. Never infer that link from `Cell2` alone. MEA `SortedCell` identity has different sorting/chunk semantics and needs its own mapping; do not equate it directly with the single-cell `Cell` table.
 
@@ -137,7 +137,7 @@ Use the same query/membership rules for the app, Python/Wheeler and MATLAB. Data
 
 Project/protocol overviews query metadata, not raw samples. Tree expansion returns one page of groups; arbitrary splitter functions become cached versioned derived fields. Trace reads request a particular epoch/device/window. Raw caches are keyed by source/epoch/device/window; aggregate caches also include dataset revision and alignment policy. A changed tree layout never forces re-parsing raw files.
 
-See [integration contracts](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/docs/dev/INTEGRATION_CONTRACTS_DRAFT.md) for boundary fields, validation scenarios and publication behavior.
+See [integration contracts](/path/to/Rieke-OS/docs/dev/INTEGRATION_CONTRACTS_DRAFT.md) for boundary fields, validation scenarios and publication behavior.
 
 ## Next design-validation slice
 

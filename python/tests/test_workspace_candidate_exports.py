@@ -56,6 +56,20 @@ class CandidateExportTests(unittest.TestCase):
         return self.client.post('/api/explore/revisions/'+candidate['revision_uuid']+'/exports',json={
             'format':format,'expected_recipe_sha256':candidate['recipe']['full_recipe_sha256'],**options},headers=self.headers)
 
+    def test_query_export_download_uses_custom_name_and_recorded_local_date(self):
+        candidate=self.save()
+        response=self.export(candidate,'wheeler-sqlite',name='Client trial',export_date='2026-09-28')
+        self.assertEqual(response.status_code,201,response.get_json())
+        result=response.get_json()
+        self.assertEqual(result['name'],'Client trial')
+        download=self.client.get(result['download_url'])
+        self.assertEqual(download.headers['Content-Disposition'],
+                         'attachment; filename=Client_trial_2026-09-28.sqlite')
+        record=self.store.get_dataset_revision(result['dataset_uuid'])
+        self.assertEqual(record['recipe']['options']['download_naming'],{'version':1,'date':'2026-09-28'})
+        self.assertEqual(download.data[:16],b'SQLite format 3\x00')
+        download.close()
+
     def test_sqlite_exact_candidate_ignores_unrelated_protocol_masks_and_keeps_history(self):
         key=self.service.ids[0]
         self.store.update(self.service.protocol_id,[key],{'included':False,'tags_add':['protocol-only']},

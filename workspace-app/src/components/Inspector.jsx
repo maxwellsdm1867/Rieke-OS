@@ -204,18 +204,6 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
       setTag('');onChange();
     }catch(e){setError(e.message);}finally{setBusy(false);}
   }
-  async function saveMask() {
-    if(busy)return;
-    setBusy(true);setError('');setMaskMessage('');setOperationMessage('Saving protocol selection mask…');
-    try {
-      const mask=await api(`/protocols/${id}/masks/export`);
-      const blob=new Blob([JSON.stringify(mask,null,2)+'\n'],{type:'application/json'});
-      const url=URL.createObjectURL(blob);
-      const link=document.createElement('a');link.href=url;link.download=`recording-mask-${id.slice(0,8)}.json`;
-      document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-      setMaskMessage('Selection mask saved for this protocol query. The JSON contains epoch identities and inclusion decisions.');
-    }catch(e){setError(e.message);}finally{setBusy(false);}
-  }
   async function importMask(event) {
     const file=event.target.files?.[0];event.target.value='';
     if(!file||busy)return;
@@ -288,7 +276,7 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
     <EpochSelectionBar targets={targets} onTags={openTagsForSelection} onClear={()=>setTargets([])} disabled={busy}/>
     {masksOpen&&<div className="inspection-mask-tools">
       <span><FileJson size={15}/> Protocol selection mask <small>All epochs in the full protocol query · includes other cells and filtered-out epochs · JSON v1 · whole protocol scope</small></span>
-      <button disabled={busy} onClick={saveMask} title="Download all inclusion decisions for this protocol query as JSON"><Download size={14}/> Save JSON mask</button>
+      <a className="button" href={busy?undefined:`/api/protocols/${id}/masks/export`} download={`recording-mask-${id.slice(0,8)}.json`} aria-disabled={busy} onClick={()=>{setError('');setMaskMessage('');}} title="Download all inclusion decisions for this protocol query as JSON"><Download size={14}/> Save JSON mask</a>
       <input ref={maskInput} type="file" accept=".json,application/json" hidden onChange={importMask}/>
       <button disabled={busy} onClick={()=>maskInput.current?.click()} title="Restore inclusion for the entire protocol query, regardless of the visible cell, filters or checkboxes"><Upload size={14}/> Import JSON mask</button>
       <details className="matlab-mask-import"><summary><Upload size={14}/> Import MATLAB UGM</summary><p>Use a UUID-based EpicTree UGM v1.1 mask from a completed MATLAB export. Only that export’s epochs are updated; tags, review and other epochs are preserved.</p>
@@ -321,6 +309,7 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
         <EpochNavigation position={focusedPageIndex<0?-1:offset+focusedPageIndex} total={rows.data?.total||0} loading={!!pendingNavigation||rows.loading} disabled={busy} onMove={moveEpoch}/>
 
         <Trace epoch={focusedEpoch} revision={revision}/>
+        <p className="curation-help">Include / Exclude saves immediately for this protocol. With checkboxes selected, the action applies to those epochs; otherwise it applies to the focused epoch. Export uses included epochs in the protocol’s query and filters.</p>
         <div className="curation-bar">
           <button disabled={busy} onClick={()=>curate({included:true})}><Check size={14}/> Include {actionScope}</button>
           <button disabled={busy} onClick={()=>curate({included:false})}><X size={14}/> Exclude {actionScope}</button>

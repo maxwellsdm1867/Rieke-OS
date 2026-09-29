@@ -4,7 +4,7 @@
 %
 % Prerequisites: Run install.m from repository root
 %
-% This example uses bundled sample data (20 epochs, 2 cell types, 2 protocols)
+% This example uses your local MAT export, selected with RIEKE_TEST_MAT.
 
 %% Setup and Path Check
 
@@ -25,11 +25,16 @@ end
 
 %% Load Sample Data
 
-% Construct path to bundled sample data
-dataFile = fullfile(scriptDir, 'data', 'sample_epochs.mat');
+% Scientific data is local-only; configure your own recording export.
+dataFile = getenv('RIEKE_TEST_MAT');
+if ~isfile(dataFile)
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
 
 if ~exist(dataFile, 'file')
-    error('Sample data not found: %s\nPlease check examples/data/ directory.', dataFile);
+    error('Local recording export not found: %s', dataFile);
 end
 
 fprintf('Loading data from: %s\n', dataFile);

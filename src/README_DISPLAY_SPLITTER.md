@@ -34,7 +34,7 @@ Each splitter:
 
 ### Launch GUI
 ```matlab
-cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+cd /path/to/Rieke-OS
 test_launch
 ```
 

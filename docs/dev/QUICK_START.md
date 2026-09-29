@@ -10,7 +10,7 @@ Error in graphicalTree/fireNodesSelectedFcn (line 381)
 
 ### The Fix:
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run fix_now.m
 ```
 
@@ -24,7 +24,7 @@ If this is your first time using the new epicTreeGUI:
 
 ```matlab
 % 1. Navigate to project
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 
 % 2. Run launcher (this sets up paths correctly)
 launch_epic_tree
@@ -156,7 +156,7 @@ RGC (1915)
 
 ```matlab
 % 1. Start session
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 launch_epic_tree
 
 % 2. Load data

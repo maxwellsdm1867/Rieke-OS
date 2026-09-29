@@ -2,7 +2,7 @@
 
 Status: proposed contracts, not implemented endpoints or a schema migration.
 Date: 2026-09-27.
-Companion: [workflow evidence and design](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/docs/dev/UNIFIED_WORKSPACE_DESIGN.md).
+Companion: [workflow evidence and design](/path/to/Rieke-OS/docs/dev/UNIFIED_WORKSPACE_DESIGN.md).
 
 ## User journey and ownership
 
@@ -12,7 +12,7 @@ The split tree is a primary inspection interface. It can be reconstructed from a
 
 Confirmed navigation: project overview with distinct cells and protocol coverage → protocol overview with its cells → recording inspection. The project's underlying catalog need not be exposed as database administration. Protocol-specific exports may be separate databases, while shared identities support navigation from one cell's noise recording to its receptive-field data.
 
-Confirmed integration direction: reuse RetinAnalysis's current DataJoint 2.2.2 schema/query/parser infrastructure. The app manages routine import/parse/inspection operations so users need not open scripts. Preserve independent handoffs through the database and documented exports. See [schema reuse design](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md).
+Confirmed integration direction: reuse RetinAnalysis's current DataJoint 2.2.2 schema/query/parser infrastructure. The app manages routine import/parse/inspection operations so users need not open scripts. Preserve independent handoffs through the database and documented exports. See [schema reuse design](/path/to/Rieke-OS/docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md).
 
 Protocol navigation means user-defined workspaces (initially VMN and current injection across frequency cutoffs), each linking presets, datasets and figures. Preserve the acquisition protocol name separately as source metadata. A workspace can match multiple acquisition protocol versions using an explicit saved rule. Linked receptive-field information is a measurement/figure, not necessarily another workspace. Shared recorded-cell identities support navigation between both workspaces and linked measurements.
 
@@ -61,7 +61,7 @@ Import jobs expose per-source states: registered, parsing, parsed-with-warnings,
 
 ### Reusable presets and incremental discovery
 
-The web app already implements saving/loading named query objects: [QueryContainer](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/QueryContainer.js:148) calls helpers that persist them to [query.json](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:83). Reuse that query logic and import existing presets. The missing integrated behavior is project-scoped persistence, version/history, automatic discovery of new matching data and a durable review queue.
+The web app already implements saving/loading named query objects: [QueryContainer](/path/to/repos/datajoint/next-app/src/app/components/setup/QueryContainer.js:148) calls helpers that persist them to [query.json](/path/to/repos/datajoint/next-app/api/helpers/query.py:83). Reuse that query logic and import existing presets. The missing integrated behavior is project-scoped persistence, version/history, automatic discovery of new matching data and a durable review queue.
 
 A preset is a reusable predicate over the current catalog. Store its project scope, owner/shared status, query version, field semantics and relevant display options. Current code saves `query_obj`; options such as `hideExclude` and hidden display levels are held separately and need deliberate persistence. The current UI's `exclude` tag filter and UGM import's `excluded` tag also need a compatibility mapping rather than two silently different meanings.
 

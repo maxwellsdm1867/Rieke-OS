@@ -4,8 +4,8 @@ Implemented for the first real recording on 2026-09-27. This is the data/persist
 
 ## Imported recording
 
-Source: `/Users/maxwellsdm/Downloads/2026-09-24_F.h5`.
-Project files: `/Users/maxwellsdm/Documents/RecordingWorkspace/RetinaSRM`.
+Source: `/path/to/local-fixtures/2026-09-24_F.h5`.
+Project files: `/path/to/local-user/Documents/RecordingWorkspace/RetinaSRM`.
 
 The importer reuses RetinAnalysis's installed Symphony parser, acquisition schema and population functions. MySQL 8 runs in the existing `new_retinanalysis-db-1` container. Inspection before import found no user tables in that service; the older MySQL 5.7 container and the SRM/VMN SQLite research databases were not changed.
 
@@ -72,16 +72,16 @@ The `last_import_check` field records the most recent check's source, count, tim
 The installed RetinAnalysis environment supplies the dependencies. From the epicTreeGUI repository:
 
 ```sh
-/Users/maxwellsdm/Documents/GitHub/retinanalysis/.venv/bin/python \
-  python/recording_workspace.py /Users/maxwellsdm/Downloads/2026-09-24_F.h5 \
-  --project-dir /Users/maxwellsdm/Documents/RecordingWorkspace/RetinaSRM \
-  --retinanalysis /Users/maxwellsdm/Documents/GitHub/retinanalysis
+/path/to/repos/retinanalysis/.venv/bin/python \
+  python/recording_workspace.py /path/to/local-fixtures/2026-09-24_F.h5 \
+  --project-dir /path/to/local-user/Documents/RecordingWorkspace/RetinaSRM \
+  --retinanalysis /path/to/repos/retinanalysis
 ```
 
 Use `--parse-only` for source validation without database writes. A repeated successful import verifies the existing catalog and records `already_imported`; it does not duplicate acquisition rows. A changed source with an existing experiment UUID/name is stopped for explicit version reconciliation, not deleted and repopulated.
 
 ```sh
-/Users/maxwellsdm/Documents/GitHub/retinanalysis/.venv/bin/python \
+/path/to/repos/retinanalysis/.venv/bin/python \
   python/query_protocol_workspace.py /absolute/path/to/workspace.protocol.json --identities
 ```
 
@@ -129,7 +129,7 @@ detection is available.
 Save a baseline, without exporting scientific data:
 
 ```sh
-/Users/maxwellsdm/Documents/GitHub/retinanalysis/.venv/bin/python \
+/path/to/repos/retinanalysis/.venv/bin/python \
   python/snapshot_protocol_workspace.py /absolute/path/to/workspace.protocol.json \
   /absolute/path/to/new-query-snapshot.json
 ```

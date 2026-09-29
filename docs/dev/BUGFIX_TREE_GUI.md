@@ -188,6 +188,6 @@ After running the fixed code, verify:
 4. **Manual path fix:**
    ```matlab
    restoredefaultpath
-   cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+   cd('/path/to/Rieke-OS')
    run test_legacy_pattern.m
    ```

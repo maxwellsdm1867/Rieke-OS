@@ -2,12 +2,19 @@
 % This script tests epicTreeTools navigation using real experimental data
 %
 % Prerequisites:
-%   - Real data at: /Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat
-%   - H5 files at: /Users/maxwellsdm/Documents/epicTreeTest/h5/
+%   - Real data at: /path/to/local-fixtures/recordings.mat
+%   - H5 files at: /path/to/local-fixtures/h5/
 %
 % Run from epicTreeGUI directory:
-%   cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+%   cd /path/to/Rieke-OS
 %   run tests/test_tree_navigation_realdata.m
+
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
 
 clear; clc;
 fprintf('\n========================================\n');
@@ -17,14 +24,14 @@ fprintf('========================================\n\n');
 %% Add paths
 baseDir = fileparts(fileparts(mfilename('fullpath')));
 if isempty(baseDir)
-    baseDir = '/Users/maxwellsdm/Documents/GitHub/epicTreeGUI';
+    baseDir = fileparts(fileparts(mfilename('fullpath')));
 end
 addpath(genpath(fullfile(baseDir, 'src')));
 fprintf('Base dir: %s\n', baseDir);
 
 %% Configure paths
-dataPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+dataPath = getenv('RIEKE_TEST_MAT');
+h5Dir = getenv('RIEKE_H5_DIR');
 
 % Check if files exist
 if ~exist(dataPath, 'file')

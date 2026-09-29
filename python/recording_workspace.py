@@ -115,6 +115,65 @@ def assert_new_catalog_identities(experiment, catalog, batch_size=200):
                                  'explicit source/version reconciliation is required before importing this different file')
 
 
+def restore_empty_blocks(h5, experiment, parser):
+    """Preserve empty acquisition blocks omitted by the pinned upstream parser.
+
+    Only source-backed empty blocks are restored. Missing populated blocks or
+    unknown parent groups fail closed instead of fabricating hierarchy members.
+    """
+    import h5py
+    groups = {group['uuid']: group for animal in experiment['animals']
+              for preparation in animal['preparations'] for cell in preparation['cells']
+              for group in cell['epoch_groups']}
+    warnings = []
+    seen_groups = set()
+    def visit_groups(container):
+        for group_source in container.values():
+            if not isinstance(group_source, h5py.Group):
+                raise ValueError('Source epoch group is not an H5 group')
+            parent = parser.parse_value(group_source.attrs['uuid'])
+            if parent in seen_groups:
+                raise ValueError('Source has duplicate canonical epoch group identities')
+            seen_groups.add(parent)
+            group = groups.get(parent)
+            if group is None:
+                raise ValueError('Parsed hierarchy is missing a source epoch group')
+            for obj in group_source.get('epochBlocks', {}).values():
+                identity = parser.parse_value(obj.attrs['uuid'])
+                if identity in {block['uuid'] for block in group['epoch_blocks']}:
+                    continue
+                if 'epochs' in obj and len(obj['epochs']):
+                    raise ValueError('Parsed hierarchy is missing a populated source epoch block')
+                block = parser.EpochBlockObj(d=obj).__dict__
+                if block['uuid'] != identity or block.get('epochs') != []:
+                    raise ValueError('Empty block reconstruction disagrees with the source')
+                group['epoch_blocks'].append(block)
+                warnings.append({'code':'empty_epoch_block_preserved', 'uuid':identity})
+            if 'epochGroups' in group_source:
+                visit_groups(group_source['epochGroups'])
+    # Follow canonical acquisition links, not generic HDF5 object traversal:
+    # visititems can encounter a block through a backreference first and skip
+    # its canonical path because it deduplicates hard-linked objects.
+    for name, root in h5.items():
+        if name.startswith('experiment-') and 'epochGroups' in root:
+            visit_groups(root['epochGroups'])
+    if seen_groups != set(groups):
+        raise ValueError('Parsed epoch group membership differs from the H5 source')
+    return warnings
+
+
+def verify_catalog_groups_and_blocks(experiment, catalog, experiment_id):
+    groups = [group for animal in experiment['animals']
+              for preparation in animal['preparations'] for cell in preparation['cells']
+              for group in cell['epoch_groups']]
+    for table, members in ((catalog.EpochGroup, groups),
+                           (catalog.EpochBlock, [block for group in groups for block in group['epoch_blocks']])):
+        expected = {member['uuid'] for member in members}
+        actual = [str(row['h5_uuid']) for row in (table & {'experiment_id':experiment_id}).to_dicts()]
+        if set(actual) != expected or len(actual) != len(expected):
+            raise ValueError('Catalog group/block membership differs from parsed source')
+
+
 def prepare(source, project, repository, progress=None, expected_sha256=None):
     import h5py
 
@@ -166,6 +225,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
         ).__dict__
         experiment["label"] = experiment.get("label") or source.stem
         experiment["animals"] = raw["animals"]
+        warnings.extend(restore_empty_blocks(h5, experiment, parser))
         if raw["uuid"] != experiment["uuid"]:
             warnings.append({"code": "experiment_identity_restored",
                              "parser_uuid": raw["uuid"],
@@ -430,6 +490,20 @@ def evaluate_protocol_file(file):
             "source_revisions": [s["source_sha256"] for s in sources]}
 
 
+def verify_catalog_cells(experiment, rows):
+    """Check every parsed cell, including cells with no recorded epochs.
+
+    Manifest counts describe cells participating in epochs. The SQL catalog also
+    retains empty cells from the source hierarchy, so that count is not an
+    insertion-integrity oracle. Compare the full source UUID membership instead.
+    """
+    expected = {cell['uuid'] for animal in experiment['animals']
+                for preparation in animal['preparations'] for cell in preparation['cells']}
+    actual = [str(row['h5_uuid']) for row in rows]
+    if set(actual) != expected or len(actual) != len(expected):
+        raise ValueError('Catalog cell membership differs from parsed source')
+
+
 def import_catalog(project_dir, experiment, manifest, folder, container, progress=None):
     emit = progress or (lambda stage, **fields: None)
     dj = connect(container)
@@ -490,8 +564,9 @@ def import_catalog(project_dir, experiment, manifest, folder, container, progres
             expected_ids = {e["uuid"] for *_, e in epochs(experiment)}
             if actual_ids != expected_ids:
                 raise ValueError("Catalog epoch membership differs from parsed source")
-            if len(catalog.Cell & {"experiment_id": experiment_id}) != manifest["counts"]["cells"]:
-                raise ValueError("Catalog cell count differs from source")
+            verify_catalog_cells(experiment,
+                (catalog.Cell & {"experiment_id": experiment_id}).to_dicts())
+            verify_catalog_groups_and_blocks(experiment, catalog, experiment_id)
             db_epochs = (catalog.Epoch & {"experiment_id": experiment_id}).to_dicts()
             expected = {e["uuid"]: e for *_, e in epochs(experiment)}
             response_count = stimulus_count = 0

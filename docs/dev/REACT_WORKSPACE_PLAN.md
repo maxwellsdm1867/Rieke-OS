@@ -53,7 +53,7 @@ The sketch demonstrates a named example comparison (3 cells/18 epochs → 5 cell
 
 Read-only queries of `kosmos_export/vmn_diff_mean.db` on 2026-09-27 found `conditions.epoch_group = Control` for all 168 conditions, but `epochs.external_solution_additions = [;NBQX (10uM);]` on 1,784 epochs across seven stored cell IDs. The remaining 1,520 epochs across six stored cell IDs have `[]`. The base cell-type categories are ON/OFF parasol and ON/OFF midget (stored with an `RGC\\` prefix). No inference of confirmed control or wash follows from `[]`.
 
-This matches [VMN_DB_BRIEFER.md](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/VMN_DB_BRIEFER.md:59). Prefer source-level pharmacology metadata to the inherited group label; retain both values and surface their disagreement. Drug name, concentration/unit, phase and annotation provenance need distinct fields/projections. Keep original strings and explicit missingness alongside normalized query values. Concentration normalization and actual trial-phase annotation require validation before scientific filtering.
+This matches [VMN_DB_BRIEFER.md](/path/to/repos/matlabPyrTools/retinaSRM/VMN_DB_BRIEFER.md:59). Prefer source-level pharmacology metadata to the inherited group label; retain both values and surface their disagreement. Drug name, concentration/unit, phase and annotation provenance need distinct fields/projections. Keep original strings and explicit missingness alongside normalized query values. Concentration normalization and actual trial-phase annotation require validation before scientific filtering.
 
 ## Reuse map
 
@@ -74,7 +74,7 @@ Export Control shows the active query/scope, inclusion decisions, review policy,
 | EpicTree splitters/UGM | Grouping and epoch inclusion compatibility | Optional reader/tree adapter with stable identities; explicit selection scope. |
 | RetinaSRM export profiles | Existing downstream datasets | Validate compatibility readers/exports and preserve corrections/source limitations. |
 
-These names refer to inspected local source in `/Users/maxwellsdm/Documents/GitHub/datajoint/next-app` and the sibling repositories. The plan does not claim all existing components are immediately compatible with DataJoint 2.2.2.
+These names refer to inspected local source in `/path/to/repos/datajoint/next-app` and the sibling repositories. The plan does not claim all existing components are immediately compatible with DataJoint 2.2.2.
 
 ## Proposed React component responsibilities
 

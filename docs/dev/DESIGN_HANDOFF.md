@@ -18,7 +18,7 @@ The project database is the shared catalog. User-defined protocol workspaces org
 | [React workspace plan](REACT_WORKSPACE_PLAN.md) | Existing components to reuse, navigation, visible metadata, state ownership, presets/review and one-launch local operation |
 | [Domain vocabulary](../../CONTEXT.md) | Acquisition hierarchy, user-defined protocol workspace, cell identity, split tree, inclusion, review and figures |
 
-The conversation's interactive sketch is stored at `/Users/maxwellsdm/.codex/visualizations/2026/09/27/01a0e3c1-f067-7783-b12b-8ad71ea4dc0f/recording-workspace.html`. It is disposable design material, not a second frontend. All records, timestamps, traces and figures are illustrative. The app implementation should be React, reusing the inspected frontend where appropriate.
+The conversation's interactive sketch is stored at `/path/to/local-user/.codex/visualizations/2026/09/27/01a0e3c1-f067-7783-b12b-8ad71ea4dc0f/recording-workspace.html`. It is disposable design material, not a second frontend. All records, timestamps, traces and figures are illustrative. The app implementation should be React, reusing the inspected frontend where appropriate.
 
 ## Decisions incorporated from the walkthrough
 

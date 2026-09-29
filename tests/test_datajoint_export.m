@@ -6,6 +6,13 @@
 % This test uses ONLY the exported .mat file — no original analysis files.
 % The H5 directory is derived from the h5_file field inside the export.
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Test DataJoint Export .mat File ===\n\n');
@@ -17,7 +24,7 @@ addpath(fullfile(projectDir, 'src'));
 addpath(fullfile(projectDir, 'src', 'tree'));
 
 % --- ONLY INPUT: the exported .mat file ---
-exportFile = '/Users/maxwellsdm/Downloads/epictree_export_20260216_100041.mat';
+exportFile = getenv('RIEKE_TEST_MAT');
 fprintf('Export file: %s\n', exportFile);
 
 % Load data

@@ -22,6 +22,10 @@ from workspace_tree import catalog as tree_catalog, value_label, humanize as fie
 from workspace_tree_code import matlab_tree_command
 from workspace_predicates import validate as validate_predicate, matches as predicate_matches, predicate_catalog
 
+class WorkspaceNeedsRefresh(RuntimeError):
+    """A failed source validation must be repaired before serving scientific data."""
+
+
 TREE_CACHE_VALUE_BUDGET = 2_000_000
 TREE_CACHE_MAX_SCOPES = 8
 
@@ -511,7 +515,7 @@ class WorkspaceService:
 
     def _ready(self):
         if not self._loaded:
-            raise RuntimeError('Workspace validation did not complete; refresh required')
+            raise WorkspaceNeedsRefresh('Workspace validation did not complete. Refresh metadata to validate source files, then retry.')
 
     def _curation(self, protocol_uuid=None):
         if self.curation_provider and protocol_uuid:
@@ -886,8 +890,12 @@ class WorkspaceService:
         self._ready()
         if not isinstance(limit, int) or not 1 <= limit <= 1000:
             raise ValueError('Event limit must be 1–1000')
-        rows = (self.Event & {'project_uuid': self.project['project_uuid']}).fetch(
-            as_dict=True, order_by='occurred_at DESC', limit=limit)
+        # Overview needs event headers only. Audit payloads can contain large
+        # exact-membership snapshots; sorting those blobs exhausts native MySQL's
+        # sort buffer and returning them bloats every overview response.
+        rows = (self.Event & {'project_uuid': self.project['project_uuid']}).proj(
+            'project_uuid', 'occurred_at', 'actor', 'action').fetch(
+            as_dict=True, order_by='occurred_at DESC, event_uuid DESC', limit=limit)
         return [{**row, 'occurred_at': row['occurred_at'].replace(tzinfo=dt.timezone.utc).isoformat()} for row in rows]
 
     def event_page(self, limit=50, offset=0, action=None):
@@ -899,11 +907,18 @@ class WorkspaceService:
             if not isinstance(action, str) or not action or len(action) > 63:
                 raise ValueError('Invalid action filter')
             restriction['action'] = action
-        rows = (self.Event & restriction).fetch(as_dict=True,
+        relation = self.Event & restriction
+        headers = relation.proj('occurred_at').fetch(as_dict=True,
             order_by='occurred_at DESC, event_uuid DESC', limit=limit + 1, offset=offset)
+        identities = [row['event_uuid'] for row in headers[:limit]]
+        # Fetch the bounded page's full audit evidence by primary key, without
+        # asking SQL to sort the JSON payload. Preserve header ordering in Python.
+        indexed = {row['event_uuid']: row for row in
+                   (relation & [{'event_uuid': identity} for identity in identities]).to_dicts()} if identities else {}
+        rows = [indexed[identity] for identity in identities]
         return {'events': [{**row, 'occurred_at': row['occurred_at'].replace(
-            tzinfo=dt.timezone.utc).isoformat()} for row in rows[:limit]],
-            'offset': offset, 'limit': limit, 'has_more': len(rows) > limit}
+            tzinfo=dt.timezone.utc).isoformat()} for row in rows],
+            'offset': offset, 'limit': limit, 'has_more': len(headers) > limit}
 
     def event_detail(self, event_uuid):
         self._ready()

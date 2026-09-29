@@ -47,7 +47,7 @@ pip install datajoint h5py scipy numpy
 Easiest method for quick exports:
 
 ```bash
-cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python_export
+cd /path/to/Rieke-OS/python_export
 python export_to_epictree.py
 ```
 
@@ -74,7 +74,7 @@ For scripted workflows:
 ```python
 #!/usr/bin/env python3
 import sys
-sys.path.append('/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api')
+sys.path.append('/path/to/repos/datajoint/next-app/api')
 
 import datajoint as dj
 from export_to_epictree import EpicTreeExporter
@@ -118,7 +118,7 @@ experiments: [
 
 ```matlab
 % In MATLAB
-cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+cd /path/to/Rieke-OS
 epicTreeGUI()
 ```
 

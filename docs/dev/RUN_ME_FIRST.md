@@ -9,7 +9,7 @@ All classes have been renamed to avoid conflicts. No more "brace indexing" error
 Run this to verify the rename worked:
 
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run test_quick.m
 ```
 
@@ -138,7 +138,7 @@ This will check:
 ## Next: Test It!
 
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run test_quick.m      % Verify classes work (30 sec)
 run test_renamed.m    % Full GUI test (launches GUI)
 ```

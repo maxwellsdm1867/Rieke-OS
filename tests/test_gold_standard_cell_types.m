@@ -2,6 +2,13 @@
 % This test follows the real-world use case from test_selection_navigation.m
 % Tests: Cell Type → Protocol → Data extraction workflow
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('==========================================================\n');
@@ -17,7 +24,7 @@ addpath('src/config');
 addpath('src');
 
 % Configure H5 directory
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+h5Dir = getenv('RIEKE_H5_DIR');
 if exist(h5Dir, 'dir')
     epicTreeConfig('h5_dir', h5Dir);
     fprintf('✓ H5 directory configured: %s\n', h5Dir);
@@ -26,7 +33,7 @@ else
 end
 
 %% Load data
-dataFile = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+dataFile = getenv('RIEKE_TEST_MAT');
 fprintf('\nLoading data: %s\n', dataFile);
 [data, ~] = loadEpicTreeData(dataFile);
 fprintf('✓ Loaded %d epochs\n', length(data));

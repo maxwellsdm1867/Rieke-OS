@@ -7,7 +7,11 @@ export async function api(path, options = {}) {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || data.message || `Request failed (${response.status})`);
+  if (!response.ok) {
+    const error = new Error(data.error || data.message || `Request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {

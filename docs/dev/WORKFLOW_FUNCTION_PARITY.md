@@ -17,8 +17,8 @@ existing query results rather than changing that query.
 
 The requested [SamarjitK/datajoint repository](https://github.com/SamarjitK/datajoint) was opened and its published README read. It describes the database setup, data/metadata/tag directories, nested queries, results tree, device visualizations and tag synchronization. The detailed function inventory below follows the local implementation rather than relying on the README alone.
 
-- DataJoint web checkout: `/Users/maxwellsdm/Documents/GitHub/datajoint`, clean at `4f961f416c1b1482880f34c20f2ba1b5b2875239` when inspected.
-- EpicTreeGUI checkout: `/Users/maxwellsdm/Documents/GitHub/epicTreeGUI`, base `25bcf10f0f60f5bf6b2e1bf5357cbe9204ba25b7`, plus current uncommitted workspace implementation.
+- DataJoint web checkout: `/path/to/repos/datajoint`, clean at `4f961f416c1b1482880f34c20f2ba1b5b2875239` when inspected.
+- EpicTreeGUI checkout: `/path/to/Rieke-OS`, base `25bcf10f0f60f5bf6b2e1bf5357cbe9204ba25b7`, plus current uncommitted workspace implementation.
 - Current UI: `workspace-app/src`; current adapters: `python/workspace_*.py` and `python/recording_workspace.py`.
 - No recording, curation, mask, database or export was changed during this audit. Current code is being developed concurrently; references describe the inspected functions and may move as files are edited.
 
@@ -111,60 +111,60 @@ The requested [SamarjitK/datajoint repository](https://github.com/SamarjitK/data
 
 ## Source references
 
-[dj-init]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/app.py:62
-[dj-user]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/SetUser.js:1
-[dj-add]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/AddData.js:1
-[dj-pop]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/app.py:221
-[dj-fields]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:60
-[dj-cond]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/CondBlock.js:29
-[dj-query]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:105
-[dj-presets]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/QueryContainer.js:165
-[dj-query-files]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:83
-[dj-hide]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/QueryContainer.js:56
-[dj-tree]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:160
-[dj-focus]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/results/ResultsTree.js:89
-[dj-select]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/results/ResultsTree.js:34
-[dj-tags]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:357
-[dj-sync]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:405
-[dj-metadata]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:257
-[dj-vis-ui]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/results/Information.js:20
-[dj-vis-options]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:260
-[dj-vis-trace]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:314
-[dj-mea]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:330
-[dj-download-ui]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/ResultsViewer.js:190
-[dj-mat]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/app.py:393
-[dj-ugm]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/app.py:436
-[dj-ugm-write]: /Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:473
-[et-build]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:226
-[et-splitters]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:252
-[et-domain-splits]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:2307
-[et-focus]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:463
-[et-select]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:545
-[et-example]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:533
-[et-custom]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:739
-[et-selection-api]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:1260
-[et-single-flags]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/singleEpoch.m:379
-[et-info]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:688
-[et-step]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/singleEpoch.m:332
-[et-keyboard]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/epicGraphicalTree.m:240
-[et-single-plot]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/singleEpoch.m:168
-[et-lazy]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:4094
-[et-overlay]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:750
-[et-mean]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:642
-[et-stimulus]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:2181
-[et-analysis]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:2996
-[et-map-streams]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/field_mapper.py:279
-[et-export-mat]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/export_mat.py:50
-[et-export-selected]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:563
-[et-ugm-save]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:1392
-[et-ugm-load]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:1451
-[et-ugm-read]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/import_ugm.py:15
-[et-response-matrix]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:3927
-[rw-import]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/recording_workspace.py:68
-[rw-query]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/recording_workspace.py:286
-[rw-tree]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_recipes.py:162
-[rw-curation]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_curation.py:172
-[rw-trace]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:364
-[rw-masks]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_api.py:237
-[rw-recipes]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_recipes.py:99
-[rw-export]: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_api.py:326
+[dj-init]: /path/to/repos/datajoint/next-app/api/app.py:62
+[dj-user]: /path/to/repos/datajoint/next-app/src/app/components/setup/SetUser.js:1
+[dj-add]: /path/to/repos/datajoint/next-app/src/app/components/setup/AddData.js:1
+[dj-pop]: /path/to/repos/datajoint/next-app/api/app.py:221
+[dj-fields]: /path/to/repos/datajoint/next-app/api/helpers/query.py:60
+[dj-cond]: /path/to/repos/datajoint/next-app/src/app/components/setup/CondBlock.js:29
+[dj-query]: /path/to/repos/datajoint/next-app/api/helpers/query.py:105
+[dj-presets]: /path/to/repos/datajoint/next-app/src/app/components/setup/QueryContainer.js:165
+[dj-query-files]: /path/to/repos/datajoint/next-app/api/helpers/query.py:83
+[dj-hide]: /path/to/repos/datajoint/next-app/src/app/components/setup/QueryContainer.js:56
+[dj-tree]: /path/to/repos/datajoint/next-app/api/helpers/query.py:160
+[dj-focus]: /path/to/repos/datajoint/next-app/src/app/components/results/ResultsTree.js:89
+[dj-select]: /path/to/repos/datajoint/next-app/src/app/components/results/ResultsTree.js:34
+[dj-tags]: /path/to/repos/datajoint/next-app/api/helpers/query.py:357
+[dj-sync]: /path/to/repos/datajoint/next-app/api/helpers/query.py:405
+[dj-metadata]: /path/to/repos/datajoint/next-app/api/helpers/query.py:257
+[dj-vis-ui]: /path/to/repos/datajoint/next-app/src/app/components/results/Information.js:20
+[dj-vis-options]: /path/to/repos/datajoint/next-app/api/helpers/query.py:260
+[dj-vis-trace]: /path/to/repos/datajoint/next-app/api/helpers/query.py:314
+[dj-mea]: /path/to/repos/datajoint/next-app/api/helpers/query.py:330
+[dj-download-ui]: /path/to/repos/datajoint/next-app/src/app/components/ResultsViewer.js:190
+[dj-mat]: /path/to/repos/datajoint/next-app/api/app.py:393
+[dj-ugm]: /path/to/repos/datajoint/next-app/api/app.py:436
+[dj-ugm-write]: /path/to/repos/datajoint/next-app/api/helpers/query.py:473
+[et-build]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:226
+[et-splitters]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:252
+[et-domain-splits]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:2307
+[et-focus]: /path/to/Rieke-OS/epicTreeGUI.m:463
+[et-select]: /path/to/Rieke-OS/epicTreeGUI.m:545
+[et-example]: /path/to/Rieke-OS/epicTreeGUI.m:533
+[et-custom]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:739
+[et-selection-api]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:1260
+[et-single-flags]: /path/to/Rieke-OS/src/gui/singleEpoch.m:379
+[et-info]: /path/to/Rieke-OS/epicTreeGUI.m:688
+[et-step]: /path/to/Rieke-OS/src/gui/singleEpoch.m:332
+[et-keyboard]: /path/to/Rieke-OS/src/gui/epicGraphicalTree.m:240
+[et-single-plot]: /path/to/Rieke-OS/src/gui/singleEpoch.m:168
+[et-lazy]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:4094
+[et-overlay]: /path/to/Rieke-OS/epicTreeGUI.m:750
+[et-mean]: /path/to/Rieke-OS/epicTreeGUI.m:642
+[et-stimulus]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:2181
+[et-analysis]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:2996
+[et-map-streams]: /path/to/Rieke-OS/python/field_mapper.py:279
+[et-export-mat]: /path/to/Rieke-OS/python/export_mat.py:50
+[et-export-selected]: /path/to/Rieke-OS/epicTreeGUI.m:563
+[et-ugm-save]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:1392
+[et-ugm-load]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:1451
+[et-ugm-read]: /path/to/Rieke-OS/python/import_ugm.py:15
+[et-response-matrix]: /path/to/Rieke-OS/src/tree/epicTreeTools.m:3927
+[rw-import]: /path/to/Rieke-OS/python/recording_workspace.py:68
+[rw-query]: /path/to/Rieke-OS/python/recording_workspace.py:286
+[rw-tree]: /path/to/Rieke-OS/python/workspace_recipes.py:162
+[rw-curation]: /path/to/Rieke-OS/python/workspace_curation.py:172
+[rw-trace]: /path/to/Rieke-OS/python/workspace_service.py:364
+[rw-masks]: /path/to/Rieke-OS/python/workspace_api.py:237
+[rw-recipes]: /path/to/Rieke-OS/python/workspace_recipes.py:99
+[rw-export]: /path/to/Rieke-OS/python/workspace_api.py:326

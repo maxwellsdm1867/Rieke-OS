@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {ArrowUpRight,Check,ChevronDown,FileWarning,LoaderCircle,RefreshCw,Upload,X} from 'lucide-react';
 import {actualProgress,byteLabel,elapsedLabel,jobProgressView,selectImportJob,sourceName,sourceCountsLabel} from '../importProgress.js';
 import './ImportStatusBar.css';
+import {transferElapsedSeconds} from '../importTransfer.js';
 
 export function ImportProgressMeter({count,pending,label}){
   if(count)return <div className="import-progress-meter"><progress value={count.completed} max={count.total} aria-label={label || 'Current stage progress'}/><span>{count.label} · {Math.floor(count.percent)}%</span></div>;
@@ -16,7 +17,7 @@ export default function ImportStatusBar({monitor,transfer,onOpen,onDismissTransf
   const selected=selectImportJob(rows,dismissed,now);
   const job=queued?{job_uuid:transfer.job_uuid,status:'queued',source:transfer.filename,created_at:transfer.started_at}:selected;
   const view=job?jobProgressView(job,now,monitor.observedAt || now):null;
-  const ticking=transferVisible||queued||view?.pending||!!monitor.connectionError;
+  const ticking=(transferVisible&&!transfer.finished_at)||queued||view?.pending||!!monitor.connectionError;
   useEffect(()=>{if(!ticking)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[ticking]);
   useEffect(()=>setDetails(false),[job?.job_uuid,transfer?.started_at]);
   if(!transferVisible&&!job&&!monitor.connectionError)return null;
@@ -27,7 +28,7 @@ export default function ImportStatusBar({monitor,transfer,onOpen,onDismissTransf
   const title=transferVisible?(error?(transfer.requestRejected?'Import request rejected':'Import request status unconfirmed'):transfer.phase==='uploading'?'Uploading recording':transfer.phase==='starting'?'Starting import request':'Upload sent · waiting for server'):uncertain?'Import status unavailable':view?.label || 'Import monitor';
   const filename=transferVisible?transfer.filename:job?sourceName(job):'Checking connection';
   const count=transferVisible?actualProgress({completed:transfer.loaded,total:transfer.total,unit:'bytes'}):view?.count;
-  const elapsed=transferVisible?Math.max(0,(now-Date.parse(transfer.started_at))/1000):view?.elapsed;
+  const elapsed=transferVisible?transferElapsedSeconds(transfer,now):view?.elapsed;
   function dismiss(){if(transferVisible){onDismissTransfer?.();return;}if(job)setDismissed(previous=>new Set([...previous,`${job.job_uuid}:${job.status}`]));}
   return <section className={`import-status-bar ${error||uncertain||view?.failed||view?.interrupted?'is-attention':''}`} aria-label="Import progress">
     <div className="import-status-main"><Icon size={18} className={pending&&!uncertain?'spin':''}/><div className="import-status-description"><div role="status" aria-live="polite" aria-atomic="true"><strong>{title}</strong>{view?.pending&&!transferVisible&&!uncertain&&<span className="import-stage-announcement">{view.stage}</span>}<span title={filename}>{filename}</span></div><p>{transferVisible?(error?transfer.error:transfer.phase==='uploading'?'Bytes transferred to the local server. Parsing starts after the request is accepted.':transfer.phase==='starting'?'Waiting for the server to create an import job.':'Transfer finished. The server has not yet returned an import job.'):

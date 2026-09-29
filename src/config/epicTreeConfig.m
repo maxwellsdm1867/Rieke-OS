@@ -20,7 +20,7 @@ function value = epicTreeConfig(key, newValue)
 %
 % Example:
 %   % Set H5 directory
-%   epicTreeConfig('h5_dir', '/Users/maxwellsdm/Documents/epicTreeTest/h5');
+%   epicTreeConfig('h5_dir', getenv('RIEKE_H5_DIR'));
 %
 %   % Get H5 file path for an experiment
 %   h5_dir = epicTreeConfig('h5_dir');
@@ -119,7 +119,7 @@ end
 
 % Try to find common H5 directories
 commonPaths = {
-    '/Users/maxwellsdm/Documents/epicTreeTest/h5',
+    getenv('RIEKE_H5_DIR'),
     '/Volumes/rieke-nas/data/h5',
     '/Volumes/rieke/data/h5',
     '~/Documents/H5'

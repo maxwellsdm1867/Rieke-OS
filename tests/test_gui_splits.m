@@ -1,6 +1,13 @@
 %% Test EpicTreeGUI with Different Split Configurations
 % This script launches the GUI and demonstrates tree reorganization
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 clear all;
 close all;
 clc;
@@ -14,7 +21,7 @@ addpath('src/tree');
 addpath('src/tree/graphicalTree');
 
 % Path to the data file
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s\nPlease update the path to your test data.', data_file);

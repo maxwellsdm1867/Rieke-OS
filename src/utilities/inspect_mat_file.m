@@ -1,9 +1,16 @@
 %% Inspect MAT File Structure
 % Quick inspection of the test data file
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 clear all; clc;
 
-file_path = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+file_path = getenv('RIEKE_TEST_MAT');
 
 fprintf('=== Inspecting MAT File ===\n');
 fprintf('File: %s\n\n', file_path);

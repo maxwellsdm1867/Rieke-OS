@@ -17,7 +17,7 @@ This means the **OLD** `graphicalTree.m` is loaded instead of the **NEW** one.
 
 In MATLAB command window:
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run fix_now.m
 ```
 
@@ -43,7 +43,7 @@ If you see `✅ SUCCESS!`, you're good to go!
 3. **In the command window, run:**
    ```matlab
    restoredefaultpath
-   cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+   cd('/path/to/Rieke-OS')
    run fix_now.m
    ```
 
@@ -54,12 +54,12 @@ If you see `✅ SUCCESS!`, you're good to go!
 
    **Expected output:**
    ```
-   /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/graphicalTree.m
+   /path/to/Rieke-OS/src/gui/graphicalTree.m
    ```
 
    **BAD output (if you see this, try again):**
    ```
-   /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/old_epochtree/.../graphicalTree.m
+   /path/to/Rieke-OS/old_epochtree/.../graphicalTree.m
    ```
 
 ---
@@ -121,7 +121,7 @@ The old version gets loaded when:
 
 Always start your MATLAB session with:
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run fix_now.m
 ```
 

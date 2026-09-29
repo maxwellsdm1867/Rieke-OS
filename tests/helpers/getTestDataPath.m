@@ -6,22 +6,23 @@ function [matPath, h5Dir] = getTestDataPath()
 %   h5Dir   - Path to directory containing .h5 files
 %
 % This function provides centralized test data path resolution for all test
-% scripts. It uses hardcoded paths relative to the test data location.
+% scripts. Set RIEKE_TEST_MAT and RIEKE_H5_DIR to your local fixtures.
+% Scientific recording exports are not distributed with the source package.
 %
 % Example:
 %   [matPath, h5Dir] = getTestDataPath();
 %   [data, h5File] = loadEpicTreeData(matPath);
 
     % Get path to test data file
-    % Use absolute path to standard test data location
-    matPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
-    h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+    % Read explicit local fixture configuration; never guess a personal path.
+    matPath = getenv('RIEKE_TEST_MAT');
+    h5Dir = getenv('RIEKE_H5_DIR');
 
     % Verify file exists
     if ~isfile(matPath)
         error('epicTreeGUI:TestDataNotFound', ...
             ['Test data file not found: %s\n\n' ...
-             'Please ensure test data is available at this location.\n' ...
+             'Set RIEKE_TEST_MAT to your local scientific fixture MAT file.\n' ...
              'See TESTING.md for data preparation instructions.'], matPath);
     end
 

@@ -24,6 +24,7 @@ import uuid
 import zipfile
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
+from workspace_export_names import naming_options, export_download_name
 from flask.json.provider import DefaultJSONProvider
 from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
@@ -71,7 +72,7 @@ class ExactMetadataJSON(DefaultJSONProvider):
 
 
 def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, explorer_history=None, data_stores=None, protocol_suggestions=None, shared_annotations=None):
-    from workspace_service import WorkspaceService
+    from workspace_service import WorkspaceService, WorkspaceNeedsRefresh
     from workspace_curation import CurationStore, RevisionConflict
     from workspace_explorer import ExplorerHistory
     from workspace_datastores import DataStores
@@ -223,6 +224,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             return jsonify(error=error.description), error.code
         if isinstance(error, (RevisionConflict, StaleWorkspace)):
             return jsonify(error=str(error), code="stale_workspace"), 409
+        if isinstance(error, WorkspaceNeedsRefresh):
+            return jsonify(error=str(error), code='workspace_needs_refresh'), 500
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
             return jsonify(error=str(error)), 400
         incident = str(uuid.uuid4())
@@ -710,9 +713,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             result = explorer_history.get(revision_uuid)
             return jsonify(compact_revision(result) if request.args.get('summary') == '1' else result)
 
-    def candidate_annotation_guard(revision_uuid, protocol_uuid):
+    def candidate_annotation_guard(revision_uuid, protocol_uuid=None):
+        # Called only after db_lock and registration_locks have been entered.
+        # Fetching this recipe also uses the shared, non-thread-safe SQL connection.
         recipe = explorer_history.get(revision_uuid)['recipe']
-        return annotation_locks(service, recipe['predicate'], extra_protocols=(protocol_uuid,))
+        return annotation_locks(service, recipe['predicate'],
+                                extra_protocols=(protocol_uuid,) if protocol_uuid is not None else ())
 
     def validated_candidate(revision_uuid):
         record = explorer_history.get(revision_uuid)
@@ -751,8 +757,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def protocol_options(revision_uuid):
         if request.args:
             raise ValueError('Protocol choices do not accept query options')
-        recipe = explorer_history.get(revision_uuid)['recipe']
-        with db_lock, data_stores.registration_locks(), annotation_locks(service, recipe['predicate']):
+        with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid):
             record, candidate = validated_candidate(revision_uuid)
             return jsonify(**selection_protocols(service, candidate),
                 expected_recipe_sha256=record['recipe']['content_sha256'])
@@ -762,8 +767,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_protocol_identity import create_pinned_protocol
         body = explorer_request({'name', 'protocol_id', 'expected_recipe_sha256'},
                                 {'name', 'protocol_id', 'expected_recipe_sha256'})
-        recipe = explorer_history.get(revision_uuid)['recipe']
-        with db_lock, data_stores.registration_locks(), annotation_locks(service, recipe['predicate']):
+        with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid):
             service.refresh()
             record, candidate = validated_candidate(revision_uuid)
             if body['expected_recipe_sha256'] != record['recipe']['content_sha256']:
@@ -874,11 +878,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         with db_lock:
             service.refresh()
             result, curation, _ = state(protocol_uuid)
-            return jsonify(format="recording-selection-mask", version=1,
-                           protocol_uuid=protocol_uuid,
-                           source_revisions=sorted(set(result["source_revisions"])),
-                           epochs=[{"epoch_uuid": key, "included": curation[key]["included"]}
-                                   for key in sorted(curation)])
+            response = jsonify(format="recording-selection-mask", version=1,
+                               protocol_uuid=protocol_uuid,
+                               source_revisions=sorted(set(result["source_revisions"])),
+                               epochs=[{"epoch_uuid": key, "included": curation[key]["included"]}
+                                       for key in sorted(curation)])
+            response.headers['Content-Disposition'] = f'attachment; filename="recording-mask-{protocol_uuid[:8]}.json"'
+            response.headers['Cache-Control'] = 'no-store'
+            return response
 
     @app.post("/api/protocols/<protocol_uuid>/masks/import")
     def import_mask(protocol_uuid):
@@ -1020,11 +1027,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             rows = service.filtered_rows(protocol_uuid, query_filters)
             included = [r["epoch_uuid"] for r in rows if curation[r["epoch_uuid"]]["included"]]
             approved = [key for key, value in curation.items() if value["review_state"] == "approved"]
-            name = str(body.get("name") or definition["name"]).strip()[:120]
+            naming = naming_options(body.get("name"), definition["name"], body.get("export_date"))
             recipe = prepare_export(snapshot, included, destination=export_format,
                        review_policy=body.get("review_policy", "include_unreviewed"), approved_ids=approved,
                        actor=os.environ.get("USER", "local-user"),
-                       options={"name": name, "filters": query_filters,
+                       options={**naming, "filters": query_filters,
                                 "split_order": split_order,
                                 "tree_view": {"format": "recording-tree-view", "version": 1,
                                     "fields": [{key: field_catalog[field][key] for key in ("id", "label", "path", "category", "components") if key in field_catalog[field]}
@@ -1108,7 +1115,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         path = Path(record["artifact_path"]).resolve()
         if not path.is_relative_to(project_dir / "exports") or digest(path) != record["artifact_sha256"]:
             raise ValueError("Export artifact changed or is outside this project's exports")
-        return send_file(path, as_attachment=True, download_name="recordings-" + dataset_uuid[:8] + path.suffix)
+        return send_file(path, as_attachment=True, download_name=export_download_name(record, path.suffix))
 
     @app.get("/api/exports/<dataset_uuid>/reuse")
     def reuse_export(dataset_uuid):

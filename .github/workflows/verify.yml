@@ -11,11 +11,19 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare a fresh client folder with spaces
+        run: |
+          mkdir -p "$RUNNER_TEMP/Rieke Client"
+          cp -R "$GITHUB_WORKSPACE/." "$RUNNER_TEMP/Rieke Client/"
       - name: Install into an empty runtime
+        working-directory: ${{ runner.temp }}/Rieke Client
         run: ./install.sh
       - name: Check runtime
+        working-directory: ${{ runner.temp }}/Rieke Client
         run: .rieke-runtime/venv/bin/python rieke.py doctor
       - name: Python tests
+        working-directory: ${{ runner.temp }}/Rieke Client
         run: PYTHONPATH=python .rieke-runtime/venv/bin/python -m unittest discover -s python/tests
       - name: Browser logic tests
+        working-directory: ${{ runner.temp }}/Rieke Client
         run: PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app test

@@ -124,7 +124,7 @@ class RefreshCacheTests(unittest.TestCase):
             self.service.refresh()
         self.assertIs(self.service._source_metadata_cache, cached)
         self.assertEqual(self.service.last_refresh['status'], 'failed')
-        with self.assertRaisesRegex(RuntimeError, 'refresh required'):
+        with self.assertRaisesRegex(RuntimeError, 'Refresh metadata.*then retry'):
             self.service.query_result(self.protocol)
 
     def test_source_tampering_fails_checksum_without_publishing_cache(self):

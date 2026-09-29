@@ -29,6 +29,19 @@ else
   "$runtime/tools/bin/micromamba" "$operation" --yes --prefix "$runtime/native" \
     --channel conda-forge --override-channels mysql-server=8.4.2 nodejs=22 uv git cxx-compiler
 fi
+# Bootstrap Python outside the compiler environment. conda-forge's
+# install_name_tool can invalidate the relocated Python dylib signature on macOS.
+# Apple's system tool preserves/replaces the signature correctly.
+python_tools_path="/usr/bin:/bin:/usr/sbin:/sbin"
+PATH="$python_tools_path" "$runtime/native/bin/uv" python install --no-bin 3.11.13
+if [ "$(uname -s)" = Darwin ]; then
+  for library in "$runtime"/python/cpython-3.11.13-*/lib/libpython3.11.dylib; do
+    if [ -f "$library" ] && ! /usr/bin/codesign --verify "$library" 2>/dev/null; then
+      PATH="$python_tools_path" "$runtime/native/bin/uv" python install --no-bin --reinstall 3.11.13
+      /usr/bin/codesign --verify "$library"
+    fi
+  done
+fi
 export PATH="$runtime/native/bin:$PATH"
 # Execute inside the tool environment to activate its compiler and SDK settings.
 "$runtime/tools/bin/micromamba" run --prefix "$runtime/native" \

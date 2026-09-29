@@ -4,7 +4,7 @@ Verified on 2026-09-27 in the local Rieke OS / Spike Response Model project.
 
 ## User-visible path
 
-1. Used **Data stores → Add H5 → Choose H5 file** to upload `/Users/maxwellsdm/Downloads/2026-09-23_F.h5` into managed storage.
+1. Used **Data stores → Add H5 → Choose H5 file** to upload `/path/to/local-fixtures/2026-09-23_F.h5` into managed storage.
 2. Import completed with **5 cells / 690 epochs**, source validation and SHA256 registration. Main catalog now contains **8 cells / 1,776 epochs / 2 sources**.
 3. Saved protocol queries ran automatically. History Noise offered **+2 cells / +72 epochs**. Mean Noise correctly offered no update. Supporting protocols have three pending proposals.
 4. Clicked **Add matched data** once. History working dataset advanced from version 1 (101 epochs) to version 2 (**173 epochs / 4 cells**). The old immutable baseline remains available. Manual inspection is optional.

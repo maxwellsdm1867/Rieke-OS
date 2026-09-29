@@ -33,7 +33,7 @@ We've renamed the new classes to completely avoid conflicts:
 ## Testing the Rename
 
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run test_renamed.m
 ```
 
@@ -198,7 +198,7 @@ addpath('src');
 
 ### Quick Test
 ```matlab
-cd('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI')
+cd('/path/to/Rieke-OS')
 run test_renamed.m
 ```
 

@@ -25,8 +25,13 @@ if isempty(which('epicTreeTools'))
     end
 end
 
-% Data file path - use bundled sample data by default
-dataPath = fullfile(scriptDir, 'data', 'sample_epochs.mat');
+% Scientific data is local-only; configure your own recording export.
+dataPath = getenv('RIEKE_TEST_MAT');
+if ~isfile(dataPath)
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
 
 % To use your own dataset, set dataPath to your .mat file:
 %   dataPath = '/path/to/your/data.mat';
@@ -117,7 +122,7 @@ try
     fprintf('  Data range: [%.4f, %.4f]\n', min(dataMatrix(:)), max(dataMatrix(:)));
 catch ME
     fprintf('Data retrieval skipped: %s\n', ME.message);
-    fprintf('(H5 files not available for bundled sample data)\n');
+    fprintf('(H5 files not available for this local recording export)\n');
     dataMatrix = [];
     sampleRate = 10000;  % Default for next examples
 end

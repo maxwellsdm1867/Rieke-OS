@@ -22,7 +22,7 @@ This does everything for you:
 
 ```matlab
 % Set where your H5 files are located
-epicTreeConfig('h5_dir', '/Users/maxwellsdm/Documents/epicTreeTest/h5');
+epicTreeConfig('h5_dir', '/path/to/local-fixtures/h5');
 ```
 
 **This tells the GUI where to find your actual response data!**
@@ -82,7 +82,7 @@ You forgot to run `epicTreeConfig` before launching the GUI.
 **Fix:**
 ```matlab
 close all
-epicTreeConfig('h5_dir', '/Users/maxwellsdm/Documents/epicTreeTest/h5');
+epicTreeConfig('h5_dir', '/path/to/local-fixtures/h5');
 run START_HERE.m
 ```
 
@@ -97,7 +97,7 @@ gui.h5File
 
 **Make sure the file exists:**
 ```matlab
-ls /Users/maxwellsdm/Documents/epicTreeTest/h5/
+ls /path/to/local-fixtures/h5/
 % Should show: 2025-12-02_F.h5
 ```
 
@@ -106,7 +106,7 @@ ls /Users/maxwellsdm/Documents/epicTreeTest/h5/
 ## 📂 Expected Directory Structure
 
 ```
-/Users/maxwellsdm/Documents/epicTreeTest/
+/path/to/local-fixtures/
 ├── analysis/
 │   └── 2025-12-02_F.mat     ← Metadata (loads fast)
 └── h5/

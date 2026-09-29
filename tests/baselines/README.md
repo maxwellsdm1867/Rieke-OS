@@ -1,6 +1,12 @@
 # Analysis Function Golden Baselines
 
-This directory contains golden output baselines for regression testing of the 5 core analysis functions in epicTreeGUI.
+This directory can hold local golden output baselines for regression testing of the 5 core analysis functions in epicTreeGUI.
+
+The `.mat` fixtures are **not distributed** and are ignored by Git. Historical
+0.1.0 Git history still contains the former fixtures; this cleanup does not rewrite
+that history. Set `RIEKE_TEST_MAT` to the matching local recording export and
+`RIEKE_H5_DIR` to its H5 directory. Tests requiring these files skip clearly when
+fixtures are absent. Keep generated baselines in your local scientific storage.
 
 ## Purpose
 
@@ -10,7 +16,7 @@ Golden baselines capture the expected output of analysis functions when run agai
 
 Each baseline is a MAT file containing the complete output struct from running an analysis function with standard parameters on the test dataset located at:
 ```
-/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat
+/path/to/local-fixtures/recordings.mat
 ```
 
 ## Baseline Files
@@ -105,17 +111,9 @@ Only update baselines when you've intentionally changed analysis function behavi
    cd tests/helpers
    generateBaselines()
    ```
-3. Review the changes using git diff:
-   ```bash
-   git diff tests/baselines/*.mat
-   ```
-   (MAT files are binary, so you'll see metadata changes only)
-4. Commit the updated baselines with a clear message:
-   ```bash
-   git add tests/baselines/*.mat
-   git commit -m "test: update baselines after fixing peak detection algorithm"
-   ```
-5. Document the change in the commit message and in relevant PR/issue
+3. Compare the regenerated numeric outputs with your previous local baseline.
+4. Keep the binary baseline in local scientific storage; do not add it to Git.
+5. Document the scientific reason for updating the baseline in a text change log.
 
 ## Tolerance Levels
 

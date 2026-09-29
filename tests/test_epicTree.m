@@ -6,18 +6,25 @@
 % 2. Load .mat file containing metadata and h5_paths
 % 3. Data is lazy-loaded from H5 files when needed
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 clear; clc;
 
 %% Add paths
-addpath(genpath('/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src'));
+addpath(genpath(fullfile(fileparts(fileparts(mfilename('fullpath'))), 'src')));
 
 %% Configure H5 directory (like retinanalysis H5_DIR)
 % This only needs to be set once per session
-epicTreeConfig('h5_dir', '/Users/maxwellsdm/Documents/epicTreeTest/h5');
+epicTreeConfig('h5_dir', getenv('RIEKE_H5_DIR'));
 fprintf('H5 directory: %s\n', epicTreeConfig('h5_dir'));
 
 %% Load data
-dataPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+dataPath = getenv('RIEKE_TEST_MAT');
 fprintf('Loading data from: %s\n', dataPath);
 
 data = load(dataPath);

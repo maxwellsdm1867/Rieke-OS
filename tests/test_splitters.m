@@ -1,13 +1,20 @@
 %% Test Different Splitters
 % Shows tree organization with various split combinations
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 clear; clc;
 addpath('src');
 addpath('src/tree');
 
 fprintf('=== Testing Splitters ===\n\n');
 
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 [data, ~] = loadEpicTreeData(data_file);
 tree = epicTreeTools(data);
 

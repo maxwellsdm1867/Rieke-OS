@@ -1,5 +1,12 @@
 % Verify selection filtering works correctly
-[data, ~] = loadEpicTreeData('/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat');
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
+[data, ~] = loadEpicTreeData(getenv('RIEKE_TEST_MAT'));
 tree = epicTreeTools(data);
 tree.buildTree({'cellInfo.type'});
 

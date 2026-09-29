@@ -19,9 +19,9 @@ registration prose is not used as a substitute for inspecting the current files.
 
 Primary local sources:
 
-- `/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/kosmos_export/build_kosmos_db_compact.py`
-- `/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/load_vmn_epoch.m`
-- `/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/vmn_stimulus_python/vmn_stimulus.py`
+- `/path/to/repos/matlabPyrTools/retinaSRM/kosmos_export/build_kosmos_db_compact.py`
+- `/path/to/repos/matlabPyrTools/retinaSRM/load_vmn_epoch.m`
+- `/path/to/repos/matlabPyrTools/retinaSRM/vmn_stimulus_python/vmn_stimulus.py`
 - Both databases' `sqlite_master` definitions, read with `mode=ro`.
 
 These are all queryable through SQLite. They do not share a drop-in analysis

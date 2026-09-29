@@ -22,8 +22,10 @@ classdef WorkflowTest < matlab.unittest.TestCase
 
     methods (TestClassSetup)
         function setupPaths(testCase)
+            testCase.assumeTrue(isfile(getenv('RIEKE_TEST_MAT')), ...
+                'Local scientific fixture not distributed; set RIEKE_TEST_MAT to run this test.');
             % Add specific paths (avoid genpath which scans recursively)
-            repoRoot = '/Users/maxwellsdm/Documents/GitHub/epicTreeGUI';
+            repoRoot = fileparts(fileparts(fileparts(mfilename('fullpath'))));
             addpath(fullfile(repoRoot, 'src'));
             addpath(fullfile(repoRoot, 'src', 'tree'));
             addpath(fullfile(repoRoot, 'src', 'analysis'));
@@ -34,7 +36,7 @@ classdef WorkflowTest < matlab.unittest.TestCase
             addpath(fullfile(repoRoot, 'tests', 'utilities'));
 
             % Set test data path directly
-            testCase.DataPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+            testCase.DataPath = getenv('RIEKE_TEST_MAT');
         end
     end
 

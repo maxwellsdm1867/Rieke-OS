@@ -1,5 +1,20 @@
 # Rieke Lab OS changelog
 
+## 0.1.1 — 2026-09-28
+
+- Preserve source cells and acquisition blocks that contain no epochs; verify
+  complete source hierarchy membership after database import.
+- Fix fresh macOS Python installation when compiler tools are on PATH.
+- Serialize concurrent query/protocol database access and avoid sorting large
+  audit payloads in MySQL.
+- Retain project browser ports when available, preserving local author settings.
+- Make epoch tag indicators compact and keep secondary controls under Tag tools.
+- Use server-backed selection-mask downloads and informative protocol/date export
+  names with underscores.
+- Clarify rejected imports and source-refresh recovery; improve first-use guidance.
+- Add real-data stress, independent H5/database audit and complete HTTP workflow
+  verification harnesses, including export reads and restart persistence.
+
 ## 0.1.0 — 2026-09-28
 
 - Initial standalone source distribution of the recording workspace and EpicTreeGUI.

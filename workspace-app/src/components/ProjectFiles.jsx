@@ -82,7 +82,7 @@ export default function ProjectFiles({onStores}) {
         <dl className="pf-database-facts">
           <div><dt>Recording schema</dt><dd>{database.database || 'Not configured'}</dd></div>
           <div><dt>Bookkeeping schema</dt><dd>{database.workspace_database || 'Not configured'}</dd></div>
-          <div><dt>Database runtime</dt><dd>{database.container || 'Not reported'}</dd></div>
+          <div><dt>Database runtime</dt><dd>{database.runtime === 'native-mysql' ? 'Native MySQL · local' : database.container || 'Not reported'}</dd></div>
         </dl>
         <p className="pf-database-note"><ShieldCheck size={14}/><span><code>catalog.json</code> describes the connection and project references. The scientific records live in the SQL database.</span></p>
         <details className="pf-database-storage"><summary>Physical database storage</summary>

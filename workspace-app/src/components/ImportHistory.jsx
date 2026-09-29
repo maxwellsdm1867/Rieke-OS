@@ -12,7 +12,7 @@ export default function ImportHistory({jobs=[],onStores,observedAt}) {
   const records=Array.isArray(jobs)?jobs:[];
   const pending=records.some(isImportPending);
   useEffect(()=>{if(!pending)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[pending]);
-  if(!records.length)return <Empty title="No import attempts yet">Each attempt records its duplicate check, validation result and completion time.</Empty>;
+  if(!records.length)return <Empty title="No import attempts yet">Choose an original Symphony H5 recording above. Legacy .auisql.h5 stream caches are not supported recording inputs. Each attempt records validation and completion here.</Empty>;
   return <div className="import-history">{records.map((raw,index)=><ImportHistoryRow key={raw?.job_uuid||index} raw={raw} now={now} observedAt={observedAt} onStores={onStores}/>)}</div>;
 }
 
@@ -28,7 +28,7 @@ function ImportHistoryRow({raw,now,observedAt,onStores}){
       <summary className="import-history-summary"><ChevronRight className="import-history-chevron" size={14}/><Icon size={16} className={view.pending?'spin':''} aria-hidden="true"/><strong className="import-history-filename" title={sourceName(job)}>{sourceName(job)}</strong><span className="import-history-result">{duplicate?'Already imported · skipped':view.label}</span><time>{time(job.finished_at || job.started_at || job.created_at)}</time></summary>
       <div className="import-history-expanded">
         <div className="import-history-progress">{view.pending&&<p>{view.stage}{job.progress?.message?` · ${job.progress.message}`:''}</p>}<ImportProgressMeter count={view.count} pending={view.pending} label={`${view.stage} progress`}/>{view.elapsed!=null&&<p>{elapsedLabel(view.elapsed)} elapsed{view.stageElapsed!=null&&view.pending?` · ${elapsedLabel(view.stageElapsed)} in this stage`:''}{view.pending&&view.progressAge!=null?` · last stage/count update ${elapsedLabel(view.progressAge)} ago`:''}</p>}</div>
-        {view.committed&&sourceCountsLabel(job)&&<p>Source totals: {sourceCountsLabel(job)}</p>}{duplicate&&<p>Existing catalog records and query participation were kept. No parsing or duplicate records were added.</p>}
+        {view.committed&&sourceCountsLabel(job)&&<p>Source totals: {sourceCountsLabel(job)}</p>}{view.committed&&!view.pending&&!view.requiresReconciliation&&<p>Next: open Project overview, choose a protocol, then Inspect epochs. Import existing tags or selection masks separately after the recording is available.</p>}{duplicate&&<p>Existing catalog records and query participation were kept. No parsing or duplicate records were added.</p>}
         {(view.failed||view.interrupted)&&<p role="status">{typeof job.error==='string'?job.error:job.diagnostics?.message}</p>}
         {view.requiresReconciliation&&<p className="import-name-warning">{view.committed?'Catalog commit is confirmed; finalization needs reconciliation. Inspect diagnostics before retrying follow-up work.':'Catalog commit state is unconfirmed. Inspect the data stores and diagnostic record before submitting this source again.'}</p>}
         {view.committed&&!view.requiresReconciliation&&(view.interrupted||view.warning)&&<p>The catalog import committed. Follow-up work needs attention; do not assume the data was rolled back.</p>}

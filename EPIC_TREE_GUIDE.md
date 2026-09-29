@@ -62,8 +62,9 @@ EpicTreeGUI provides hierarchical organization and analysis of neurophysiology e
 % Get script directory for relative path resolution
 scriptDir = fileparts(mfilename('fullpath'));
 
-% Load sample data
-dataFile = fullfile(scriptDir, 'examples', 'data', 'sample_epochs.mat');
+% Select your own local recording export (scientific fixtures are not bundled)
+dataFile = getenv('RIEKE_TEST_MAT');
+assert(isfile(dataFile), 'Set RIEKE_TEST_MAT to your local MAT export');
 [epochs, metadata] = loadEpicTreeData(dataFile);
 
 % Build tree structure
@@ -95,7 +96,7 @@ ylabel('Response Amplitude');
 title(sprintf('Mean Response (n=%d epochs)', size(dataMatrix, 1)));
 ```
 
-See `examples/quickstart.m` for a complete working example using bundled sample data.
+See `examples/quickstart.m` for a complete working example using your own local recording export selected by `RIEKE_TEST_MAT`.
 
 ## Data Framework
 

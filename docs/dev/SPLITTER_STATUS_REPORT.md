@@ -10,7 +10,7 @@
 
 ### Test 1: Your Current Data File
 
-**File:** `/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat`
+**File:** `/path/to/local-fixtures/recordings.mat`
 
 **Result:**
 ```

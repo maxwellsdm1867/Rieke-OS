@@ -9,7 +9,7 @@
 %   5. Full workflow: navigate + analyze + store + query
 %
 % Run this from epicTreeGUI directory:
-%   cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+%   cd /path/to/Rieke-OS
 %   run tests/test_tree_navigation.m
 
 clear; clc;
@@ -20,7 +20,7 @@ fprintf('========================================\n\n');
 %% Add paths
 baseDir = fileparts(fileparts(mfilename('fullpath')));
 if isempty(baseDir)
-    baseDir = '/Users/maxwellsdm/Documents/GitHub/epicTreeGUI';
+    baseDir = fileparts(fileparts(mfilename('fullpath')));
 end
 addpath(genpath(fullfile(baseDir, 'src')));
 fprintf('Base dir: %s\n', baseDir);

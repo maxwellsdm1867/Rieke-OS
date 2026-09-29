@@ -10,7 +10,7 @@ For the complete architecture including the standard format interface, see [DATA
 
 ### System Components
 
-1. **DataJoint Tool** (`/Users/maxwellsdm/Documents/GitHub/datajoint`) - Queries metadata and points to specific epochs
+1. **DataJoint Tool** (`/path/to/repos/datajoint`) - Queries metadata and points to specific epochs
 2. **RetinAnalysis Tool** - Parses h5 files and extracts epoch data
 3. **Standard Format Export** - Packages data for EpicTreeGUI (see DATA_FORMAT_SPECIFICATION.md)
 4. **EpicTreeGUI Backend** - Visualization and analysis (independent of data source)
@@ -36,7 +36,7 @@ For the complete architecture including the standard format interface, see [DATA
 ## Tool 1: DataJoint - Query and Metadata Extraction
 
 ### Location
-`/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/`
+`/path/to/repos/datajoint/next-app/api/`
 
 ### Key Components
 

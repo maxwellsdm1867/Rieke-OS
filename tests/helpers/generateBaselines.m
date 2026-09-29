@@ -164,7 +164,7 @@ function generateBaselines()
     fprintf('Next steps:\n');
     fprintf('  1. Review baseline files to ensure they look correct\n');
     fprintf('  2. Run tests: runtests(''tests/unit/AnalysisFunctionsTest'')\n');
-    fprintf('  3. Commit baselines: git add tests/baselines/*.mat\n');
+    fprintf('  3. Keep baselines local; scientific MAT fixtures are git-ignored\n');
     fprintf('\n');
     fprintf('See tests/baselines/README.md for more information.\n');
 

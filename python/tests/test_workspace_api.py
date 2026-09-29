@@ -121,6 +121,16 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(response.get_json()['attributes']['startTimeDotNetDateTimeOffsetTicks'], str(ticks))
         self.assertEqual(self.service.details[epoch]['attributes']['startTimeDotNetDateTimeOffsetTicks'], ticks)
 
+    def test_incomplete_source_validation_explains_refresh_recovery(self):
+        self.service._loaded = False
+        response = self.client.get('/api/epochs/' + self.service.ids[0])
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.json['code'], 'workspace_needs_refresh')
+        self.assertIn('Refresh metadata to validate source files, then retry', response.json['error'])
+        # The read remains closed until successful validation publishes a ready model.
+        self.service._loaded = True
+        self.assertEqual(self.client.get('/api/epochs/' + self.service.ids[0]).status_code, 200)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
@@ -300,6 +310,38 @@ class WorkspaceAPITests(unittest.TestCase):
     def import_mask(self, mask, revision=None):
         return self.client.post(self.base + '/masks/import', json={
             'mask': mask, 'query_revision': revision or self.revision()}, headers=self.headers)
+
+    def test_protocol_export_name_and_download_are_frozen_with_local_date(self):
+        self.service.protocols[self.service.protocol_id]['definition']['name'] = 'VariableMeanNoiseCurInject'
+        response = self.client.post(self.base + '/exports', json={
+            'format': 'reference-json', 'query_revision': self.revision(),
+            'export_date': '2026-09-28'}, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        result = response.get_json()
+        record = self.store.get_dataset_revision(result['dataset_uuid'])
+        self.assertEqual(record['recipe']['options']['name'],
+                         'Variable_Mean_Noise_current_injection_2026-09-28')
+        first = self.client.get(result['download_url'])
+        self.assertEqual(first.headers['Content-Disposition'],
+                         'attachment; filename=Variable_Mean_Noise_current_injection_2026-09-28.json')
+        self.service.protocols[self.service.protocol_id]['definition']['name'] = 'Renamed later'
+        second = self.client.get(result['download_url'])
+        self.assertEqual(second.headers['Content-Disposition'], first.headers['Content-Disposition'])
+        self.assertEqual(second.data, first.data)
+        first.close()
+        second.close()
+
+    def test_mask_export_is_a_fresh_browser_attachment(self):
+        response = self.client.get(self.base + '/masks/export')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.mimetype, 'application/json')
+        self.assertEqual(response.headers['Content-Disposition'],
+                         f'attachment; filename="recording-mask-{self.service.protocol_id[:8]}.json"')
+        self.assertEqual(response.headers['Cache-Control'], 'no-store')
+        mask = json.loads(response.data)
+        self.assertEqual(mask['format'], 'recording-selection-mask')
+        self.assertEqual(mask['protocol_uuid'], self.service.protocol_id)
+        self.assertEqual({row['epoch_uuid'] for row in mask['epochs']}, set(self.service.ids))
 
     def test_mask_roundtrip_is_exact_and_preserves_tags_and_approvals(self):
         approved = self.client.post(self.base + '/curation', json=self.curation_body({

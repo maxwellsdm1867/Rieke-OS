@@ -151,7 +151,9 @@ class ImportIdentityTests(unittest.TestCase):
             connection.query.return_value.fetchone.return_value = (1,)
             catalog = SimpleNamespace(schema=SimpleNamespace(connection=connection),
                 Epoch=Records([{'h5_uuid': epoch['uuid'], 'id': 1, 'parameters': {}, 'attributes': {}}]),
-                Cell=Records([{'h5_uuid': 'new-cell'}]), Response=Records([]), Stimulus=Records([]))
+                Cell=Records([{'h5_uuid': 'new-cell'}]),
+                EpochGroup=Records([{'h5_uuid':'new-group'}]), EpochBlock=Records([{'h5_uuid':'new-block'}]),
+                Response=Records([]), Stimulus=Records([]))
             population = SimpleNamespace(configure_tables=Mock(), append_experiment=Mock())
             package = ModuleType('retinanalysis')
             package.__path__ = []

@@ -5,6 +5,13 @@
 % 3. Finding a specific protocol (SingleSpot)
 % 4. Extracting data from that node
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Test Selection and Navigation ===\n\n');
@@ -18,12 +25,12 @@ addpath('src/config');
 addpath('src');
 
 % Configure H5 directory
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+h5Dir = getenv('RIEKE_H5_DIR');
 epicTreeConfig('h5_dir', h5Dir);
 fprintf('✓ H5 directory configured: %s\n', h5Dir);
 
 % Load data and build tree
-dataFile = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+dataFile = getenv('RIEKE_TEST_MAT');
 [data, ~] = loadEpicTreeData(dataFile);
 fprintf('✓ Loaded %d epochs\n', length(data));
 

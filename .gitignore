@@ -77,3 +77,7 @@ docs/legacy/old_epochtree/
 .env.*
 **/database/native.json
 **/database/mysql/
+
+# Local scientific MATLAB fixtures are never part of source releases.
+/examples/data/*.mat
+/tests/baselines/*.mat

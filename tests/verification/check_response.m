@@ -1,5 +1,12 @@
 % Check response fields in exported mat file
-data = load('/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat');
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
+data = load(getenv('RIEKE_TEST_MAT'));
 exp = data.experiments{1};
 cell1 = exp.cells{1};
 eg = cell1.epoch_groups{1};

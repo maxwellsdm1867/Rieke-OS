@@ -19,7 +19,7 @@ RetinAnalysis already defines the acquisition hierarchy; do not create a competi
 
 | Existing entity | Confirmed implementation | Reuse |
 | --- | --- | --- |
-| Experiment | `/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/config/schema.py:55` | Original `h5_uuid`, metadata/attributes, `meta_file`, raw `data_file`, `tags_file`, project/rig facts |
+| Experiment | `/path/to/repos/retinanalysis/src/retinanalysis/config/schema.py:55` | Original `h5_uuid`, metadata/attributes, `meta_file`, raw `data_file`, `tags_file`, project/rig facts |
 | Animal, Preparation, Cell | same file:81,104,124 | Existing parent links, experiment links, source UUIDs and typed/source JSON metadata |
 | EpochGroup | same file:141 | Original group label/properties/timing; its protocol can be `no_group_protocol` when blocks differ |
 | EpochBlock | same file:222 | Acquisition protocol FK, parameters, original UUID and timing |
@@ -126,7 +126,7 @@ Two related export generations exist locally; they should not be conflated.
 
 ### Earlier compact Kosmos package
 
-- `/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/export_to_kosmos.m:46` traverses a legacy MATLAB tree by cell type/date/cell/seed/group/frequency/SD.
+- `/path/to/repos/matlabPyrTools/retinaSRM/export_to_kosmos.m:46` traverses a legacy MATLAB tree by cell type/date/cell/seed/group/frequency/SD.
 - The same file:92 and :514 chooses the SD child with the largest epoch-list count; this is an analysis selection policy, not neutral ingestion.
 - The same file:532 now includes date in CSV filenames. The `kosmos_export/README.md` collision description refers to an older filename convention; do not treat it as a verified description of the current exporter.
 - The same file:536 reads selected voltage and reconstructed current, adds a 90 Hz low-pass voltage, and writes trial samples.
@@ -161,7 +161,7 @@ The tree **can and should remain an inspection interface**. “Optional tree” 
 
 ### Confirmed existing interaction and functions
 
-Paths below are relative to `/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/`.
+Paths below are relative to `/path/to/repos/datajoint/next-app/`.
 
 | Step | Existing code | Actual behavior |
 | --- | --- | --- |
@@ -205,7 +205,7 @@ No source database, UI, or scientific code was modified for this appendix. The n
 
 ## Predicate-first explorer: Samarjit semantics and compatibility boundaries
 
-Confirmed source UI references under `/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/setup/`:
+Confirmed source UI references under `/path/to/repos/datajoint/next-app/src/app/components/setup/`:
 
 - `QueryContainer.js:93` `handleAfterEffects` composes table-specific query groups and an optional exclusion-tag predicate; `handleAddQuery(:174)` saves the editor's query object.
 - `LogicBlock.js:87` `sendUp` maps visual All/Any/None controls to `AND`/`OR`/`NOT` arrays. Nested logical blocks and condition rows are created separately.

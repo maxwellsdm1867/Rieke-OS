@@ -19,7 +19,7 @@ classdef test_ugm_persistence < matlab.unittest.TestCase
     % 6. Command window warnings (save/load print epoch counts)
 
     properties
-        TestDataPath = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+        TestDataPath = getenv('RIEKE_TEST_MAT');
         TreeData
         TempDir
         TempMatPath  % Simulated .mat path in temp dir for .ugm file discovery
@@ -27,6 +27,8 @@ classdef test_ugm_persistence < matlab.unittest.TestCase
 
     methods (TestClassSetup)
         function loadData(testCase)
+            testCase.assumeTrue(isfile(getenv('RIEKE_TEST_MAT')), ...
+                'Local scientific fixture not distributed; set RIEKE_TEST_MAT to run this test.');
             % Load real test data once for all tests
             testCase.assumeTrue(exist(testCase.TestDataPath, 'file') == 2, ...
                 sprintf('Test data file not found: %s', testCase.TestDataPath));

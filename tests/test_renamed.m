@@ -5,6 +5,13 @@
 %
 % The old_epochtree directory can remain on the path without issues.
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Testing with Renamed Classes (No Conflicts!) ===\n\n');
@@ -18,7 +25,7 @@ addpath('src');
 addpath('src/config');  % For epicTreeConfig
 
 % CRITICAL: Set H5 directory for lazy loading
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+h5Dir = getenv('RIEKE_H5_DIR');
 if exist(h5Dir, 'dir')
     epicTreeConfig('h5_dir', h5Dir);
     fprintf('✓ H5 directory configured: %s\n', h5Dir);
@@ -38,7 +45,7 @@ fprintf('✓ Using: epicGraphicalTree (no conflicts possible)\n');
 fprintf('  Location: %s\n\n', which_result);
 
 %% Load Data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s', data_file);

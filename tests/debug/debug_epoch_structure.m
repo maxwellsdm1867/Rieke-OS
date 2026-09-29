@@ -1,6 +1,13 @@
 %% Debug Epoch Structure
 % This script loads data and shows what fields are actually in an epoch
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Debugging Epoch Structure ===\n\n');
@@ -13,7 +20,7 @@ addpath('src/utilities');
 addpath('src');
 
 % Load data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 [data, ~] = loadEpicTreeData(data_file);
 
 fprintf('Loaded %d epochs\n\n', length(data));

@@ -75,7 +75,7 @@ else
     fprintf('1. Close MATLAB completely\n');
     fprintf('2. Restart MATLAB\n');
     fprintf('3. Run this command FIRST:\n');
-    fprintf('   restoredefaultpath; cd(''/Users/maxwellsdm/Documents/GitHub/epicTreeGUI'');\n');
+    fprintf('   restoredefaultpath; cd(''/path/to/Rieke-OS'');\n');
     fprintf('4. Then run: check_paths\n');
 end
 

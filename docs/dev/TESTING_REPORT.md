@@ -351,7 +351,7 @@ From Claude Code with MCP MATLAB server tools:
 
 ```
 Use tool: mcp__matlab__run_matlab_test_file
-  script_path: /Users/maxwellsdm/Documents/GitHub/epicTreeGUI/tests/unit/TreeNavigationTest.m
+  script_path: /path/to/Rieke-OS/tests/unit/TreeNavigationTest.m
 ```
 
 **Note:** MCP MATLAB server provides better output formatting and connects to existing MATLAB session with GUI visible.
@@ -362,7 +362,7 @@ Use tool: mcp__matlab__run_matlab_test_file
 
 ### Test Data Requirements
 
-- Tests require real experiment data at: `/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat`
+- Tests require real experiment data at: `/path/to/local-fixtures/recordings.mat`
 - Some tests gracefully skip if H5 file unavailable (lazy loading tests)
 - Periodic stimulus and stimulus stream tests skip if data types not present
 - Baselines must be generated before baseline regression tests run
@@ -446,7 +446,7 @@ The test suite is ready for execution. To run all tests:
 
 ```matlab
 % Navigate to project root
-cd /Users/maxwellsdm/Documents/GitHub/epicTreeGUI
+cd /path/to/Rieke-OS
 
 % Run full test suite
 results = runtests({'tests/unit', 'tests/gui', 'tests/integration'});

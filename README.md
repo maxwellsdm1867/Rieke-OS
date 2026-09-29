@@ -100,12 +100,14 @@ PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app test
 PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app run build
 ```
 
-The real integration check creates an isolated project, launches the HTTP app,
-imports a supplied recording, reads an epoch and trace, restarts native MySQL,
-and verifies persistence. It traps and rejects Docker invocations:
+The full integration check creates an isolated project and tests real H5 import,
+queries, saved selections, tags, JSON and MATLAB masks, all three export formats,
+source changes, and database restart persistence. It independently reads exported
+files and compares trace and QC values with the original H5. It rejects Docker
+invocations:
 
 ```sh
-.rieke-runtime/venv/bin/python packaging/verify_e2e.py --source /path/to/recording.h5
+.rieke-runtime/venv/bin/python packaging/verify_workflows.py --source /path/to/recording.h5
 ```
 
 The recording stays unchanged and is never included in a release. See

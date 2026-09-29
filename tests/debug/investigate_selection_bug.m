@@ -2,11 +2,18 @@
 %
 % This script reproduces the bug and shows exactly where it manifests
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 function investigate_selection_bug()
     fprintf('\n=== BUG-001 Investigation: Selection State Not Filtering ===\n\n');
 
     % Load real data
-    dataFile = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+    dataFile = getenv('RIEKE_TEST_MAT');
     if ~exist(dataFile, 'file')
         fprintf('Test data not found. Using synthetic data instead.\n\n');
         data = createSyntheticData();

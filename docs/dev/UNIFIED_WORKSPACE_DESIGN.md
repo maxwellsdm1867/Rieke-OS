@@ -12,7 +12,7 @@ The scientist subsequently clarified the intended sequence: import → map/parse
 
 Further clarification: the project owns an underlying catalog/database and presents distinct cell counts plus protocol coverage. Protocol is the primary navigation split within a project. The same recorded cell can participate in multiple protocols: while inspecting its noise recording, the user may need to inspect its receptive-field measurement. These records must remain linked. Protocol-specific curated exports can become separate downstream databases without losing the shared cell/source identities. The split tree stays available for verifying and changing grouping; its necessity and default placement should be tested in the UI walkthrough.
 
-The scientist has selected the newer DataJoint direction and identified RetinAnalysis's existing infrastructure as the starting point. Its current checkout pins DataJoint 2.2.2; the separate web app pins 0.14.x. Reconcile the existing schemas and adapters rather than create another independent schema copy. See [DataJoint reuse and handoff design](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md).
+The scientist has selected the newer DataJoint direction and identified RetinAnalysis's existing infrastructure as the starting point. Its current checkout pins DataJoint 2.2.2; the separate web app pins 0.14.x. Reconcile the existing schemas and adapters rather than create another independent schema copy. See [DataJoint reuse and handoff design](/path/to/Rieke-OS/docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md).
 
 Primary experience: open the local app → drop a recording or point to its location → automatic parse/map with progress → inspect individual epochs → tag/select/mask → export a protocol dataset or update an existing dataset. Import, parsing, mask changes, database updates and exports need a persistent activity history with relevant metadata. The UI must eliminate the need to open scripts manually for routine ingestion and inspection. The scientist clarified that “cropping” meant tagging and the existing web-app tools; time trimming is not a requested requirement.
 
@@ -38,7 +38,7 @@ Thus the proposed five-stage user workflow is appropriate, but today's code incl
 
 The compact SRM export also chooses the SD group with the most epochs within each frequency. This is a scripted membership rule in addition to visual subtree selection. The new export preview should expose such policies and show resulting counts; it must not imply that every visible trial was exported.
 
-Direct evidence: [legacy SRM GUI caller](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/curreinjt_ai_population.m:60), [VMN GUI caller](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/curreinjt_diff_mean_population.m:59), [SRM export selection policy](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/export_to_kosmos.m:81), [web checkbox/tag handling](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/results/ResultsTree.js:91), [web trace inspector](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/results/Information.js:20), [EpicTree constructor](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:53).
+Direct evidence: [legacy SRM GUI caller](/path/to/repos/matlabPyrTools/retinaSRM/curreinjt_ai_population.m:60), [VMN GUI caller](/path/to/repos/matlabPyrTools/retinaSRM/curreinjt_diff_mean_population.m:59), [SRM export selection policy](/path/to/repos/matlabPyrTools/retinaSRM/export_to_kosmos.m:81), [web checkbox/tag handling](/path/to/repos/datajoint/next-app/src/app/components/results/ResultsTree.js:91), [web trace inspector](/path/to/repos/datajoint/next-app/src/app/components/results/Information.js:20), [EpicTree constructor](/path/to/Rieke-OS/epicTreeGUI.m:53).
 
 ## Evidence and limits
 
@@ -231,28 +231,28 @@ When implementation is requested, start with one Symphony H5 → existing RetinA
 
 ## Code evidence index
 
-- [DataJoint schema](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/schema.py:13)
-- [DataJoint missing-parser branch](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/pop.py:407)
-- [Query construction and recursive tree](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:128)
-- [MAT export endpoint](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/app.py:393)
-- [UGM tag import](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/api/helpers/query.py:473)
-- [Existing setup UI](/Users/maxwellsdm/Documents/GitHub/datajoint/next-app/src/app/components/SetUpStepper.js:27)
-- [Symphony parser](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/parse_data.py:1077)
-- [Parser JSON entry point](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/parse_data.py:1943)
-- [RetinAnalysis population placeholder](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/utils/database_pop.py:698)
-- [Protocol stimulus registry](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/classes/stim.py:18)
-- [Python response block](/Users/maxwellsdm/Documents/GitHub/retinanalysis/src/retinanalysis/classes/response.py:180)
-- [EpicTree MAT exporter](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/export_mat.py:50)
-- [MAT loader contract](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/loadEpicTreeData.m:43)
-- [Epoch flattening](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:2031)
-- [GUI checkbox callback](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:510)
-- [GUI selection export](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/epicTreeGUI.m:563)
-- [Whole-group extraction](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:3927)
-- [Lazy response read](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/tree/epicTreeTools.m:4008)
-- [Tree widget pooling](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/src/gui/epicGraphicalTree.m:113)
-- [Original SRM export workflow](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/kosmos_export/README.md:42)
-- [Existing export contract](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/EXPORT_CONTRACT.md:1)
-- [Compact SQLite builder](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/kosmos_export/build_kosmos_db_compact.py:1)
-- [VMN epoch export and condition identity](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/curreinjt_diff_mean_population.m:180)
-- [VMN database builder](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/build_vmn_diff_mean_db.sh:1)
-- [VMN reader/schema notes](/Users/maxwellsdm/Documents/GitHub/matlabPyrTools/retinaSRM/VMN_DB_BRIEFER.md:1)
+- [DataJoint schema](/path/to/repos/datajoint/next-app/api/schema.py:13)
+- [DataJoint missing-parser branch](/path/to/repos/datajoint/next-app/api/helpers/pop.py:407)
+- [Query construction and recursive tree](/path/to/repos/datajoint/next-app/api/helpers/query.py:128)
+- [MAT export endpoint](/path/to/repos/datajoint/next-app/api/app.py:393)
+- [UGM tag import](/path/to/repos/datajoint/next-app/api/helpers/query.py:473)
+- [Existing setup UI](/path/to/repos/datajoint/next-app/src/app/components/SetUpStepper.js:27)
+- [Symphony parser](/path/to/repos/retinanalysis/src/retinanalysis/utils/parse_data.py:1077)
+- [Parser JSON entry point](/path/to/repos/retinanalysis/src/retinanalysis/utils/parse_data.py:1943)
+- [RetinAnalysis population placeholder](/path/to/repos/retinanalysis/src/retinanalysis/utils/database_pop.py:698)
+- [Protocol stimulus registry](/path/to/repos/retinanalysis/src/retinanalysis/classes/stim.py:18)
+- [Python response block](/path/to/repos/retinanalysis/src/retinanalysis/classes/response.py:180)
+- [EpicTree MAT exporter](/path/to/Rieke-OS/python/export_mat.py:50)
+- [MAT loader contract](/path/to/Rieke-OS/src/loadEpicTreeData.m:43)
+- [Epoch flattening](/path/to/Rieke-OS/src/tree/epicTreeTools.m:2031)
+- [GUI checkbox callback](/path/to/Rieke-OS/epicTreeGUI.m:510)
+- [GUI selection export](/path/to/Rieke-OS/epicTreeGUI.m:563)
+- [Whole-group extraction](/path/to/Rieke-OS/src/tree/epicTreeTools.m:3927)
+- [Lazy response read](/path/to/Rieke-OS/src/tree/epicTreeTools.m:4008)
+- [Tree widget pooling](/path/to/Rieke-OS/src/gui/epicGraphicalTree.m:113)
+- [Original SRM export workflow](/path/to/repos/matlabPyrTools/retinaSRM/kosmos_export/README.md:42)
+- [Existing export contract](/path/to/repos/matlabPyrTools/retinaSRM/EXPORT_CONTRACT.md:1)
+- [Compact SQLite builder](/path/to/repos/matlabPyrTools/retinaSRM/kosmos_export/build_kosmos_db_compact.py:1)
+- [VMN epoch export and condition identity](/path/to/repos/matlabPyrTools/retinaSRM/curreinjt_diff_mean_population.m:180)
+- [VMN database builder](/path/to/repos/matlabPyrTools/retinaSRM/build_vmn_diff_mean_db.sh:1)
+- [VMN reader/schema notes](/path/to/repos/matlabPyrTools/retinaSRM/VMN_DB_BRIEFER.md:1)

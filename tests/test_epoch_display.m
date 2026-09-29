@@ -9,6 +9,13 @@
 % 4. Clicking an epoch shows just that single epoch
 % 5. Clicking a parent node shows aggregated data from all children
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Testing Individual Epoch Display ===\n\n');
@@ -38,14 +45,14 @@ if ~contains(which_result, 'src/gui')
            'Expected: .../src/gui/graphicalTree.m\n\n' ...
            'FIX: Close MATLAB, restart, and run:\n' ...
            '  restoredefaultpath;\n' ...
-           '  cd(''/Users/maxwellsdm/Documents/GitHub/epicTreeGUI'');\n' ...
+           '  cd(''/path/to/Rieke-OS'');\n' ...
            '  run test_epoch_display.m'], which_result);
 end
 
 fprintf('✓ Paths verified (using NEW graphicalTree)\n\n');
 
 %% Load Data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 
 if ~exist(data_file, 'file')
     error('File not found: %s', data_file);

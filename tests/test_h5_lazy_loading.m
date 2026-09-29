@@ -1,6 +1,13 @@
 %% Test H5 Lazy Loading in GUI
 % This verifies that data is ONLY loaded when you click, not at startup
 
+% Scientific recordings are local-only and never bundled.
+if ~isfile(getenv('RIEKE_TEST_MAT'))
+    warning('epicTreeGUI:SkippedLocalFixture', ...
+        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
+    return;
+end
+
 close all; clear; clc;
 
 fprintf('=== Testing H5 Lazy Loading ===\n\n');
@@ -13,7 +20,7 @@ addpath('src/utilities');
 addpath('src');
 
 % Configure H5 directory
-h5Dir = '/Users/maxwellsdm/Documents/epicTreeTest/h5';
+h5Dir = getenv('RIEKE_H5_DIR');
 if ~exist(h5Dir, 'dir')
     error('H5 directory not found: %s', h5Dir);
 end
@@ -21,7 +28,7 @@ epicTreeConfig('h5_dir', h5Dir);
 fprintf('H5 directory: %s\n', h5Dir);
 
 % Load data
-data_file = '/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat';
+data_file = getenv('RIEKE_TEST_MAT');
 fprintf('Loading: %s\n', data_file);
 [data, ~] = loadEpicTreeData(data_file);
 fprintf('Loaded %d epochs\n\n', length(data));
