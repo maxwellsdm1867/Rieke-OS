@@ -1,0 +1,5 @@
+.inspection-layout{position:relative}
+.navigation-loading-slot{position:absolute;right:12px;top:8px;z-index:45;pointer-events:none;font-size:12px;color:var(--accent,#67447d)}
+.navigation-loading-slot>span{display:flex;align-items:center;gap:7px;border:1px solid var(--border,#ded7e4);background:var(--surface,#fff);padding:6px 10px;border-radius:6px;box-shadow:0 2px 8px #32203b0a}
+.navigation-loading-slot svg{animation:tv-spin 1.2s linear infinite}
+@media(prefers-reduced-motion:reduce){.navigation-loading-slot svg{animation:none}}

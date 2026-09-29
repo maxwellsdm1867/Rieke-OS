@@ -1,0 +1,21 @@
+name: Verify source installation
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install into an empty runtime
+        run: ./install.sh
+      - name: Check runtime
+        run: .rieke-runtime/venv/bin/python rieke.py doctor
+      - name: Python tests
+        run: PYTHONPATH=python .rieke-runtime/venv/bin/python -m unittest discover -s python/tests
+      - name: Browser logic tests
+        run: PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app test

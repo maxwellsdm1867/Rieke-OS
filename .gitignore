@@ -1,0 +1,79 @@
+# MATLAB autosave files
+*.asv
+
+# MATLAB temporary files
+*.m~
+
+# Simulink autosave
+*.autosave
+
+# Compiled MEX files
+*.mex*
+
+# P-files
+*.p
+
+# Folder view configuration
+.DS_Store
+
+# Mac system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# MATLAB generated files
+slprj/
+sccprj/
+*.slxc
+
+# Code generation folders
+codegen/
+matlab-mcp-core-server/
+
+# Test data files (too large for git)
+test_data/
+
+# Python files
+__pycache__/
+*.pyc
+*.pyo
+
+# Legacy reference code (preserved locally, not tracked)
+docs/legacy/old_epochtree/
+
+# Local DataJoint/MySQL runtime files (never commit database storage)
+/new_retinanalysis/data/
+
+# Local React workspace build/dependencies
+/workspace-app/node_modules/
+/workspace-app/dist/
+
+# Clone-local Rieke OS dependencies/config (never scientific project data)
+/.rieke-runtime/
+
+# Release outputs and local project/runtime secrets
+/dist/
+/.pytest_cache/
+.env
+.env.*
+**/database/native.json
+**/database/mysql/

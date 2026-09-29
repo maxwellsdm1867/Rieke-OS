@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "repository": "https://github.com/DRezeanu/retinanalysis.git",
+  "commit": "5dc9018ff754e1a01f60d929ceaf4e7f40815e70",
+  "python": "3.11.13",
+  "datajoint": "2.2.2",
+  "submodule": "lib/artificial-retina-software-pipeline",
+  "submodule_commit": "57c613e7ee76f26abe8bc73cafb5795b5b1cc461",
+  "utilities": "lib/artificial-retina-software-pipeline/utilities",
+  "compatible_local_commits": [
+    "cea6a9628fc8a5b3338d6ea5960f7c2587bb8a41"
+  ]
+}

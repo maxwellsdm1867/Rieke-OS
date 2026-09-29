@@ -1,0 +1,33 @@
+{
+  "platform": "Apple Silicon macOS",
+  "checks": [
+    "clean-runtime launcher health",
+    "built browser app served",
+    "create and open native project without Docker",
+    "real H5 parsed and committed to native SQL",
+    "HTTP trace samples match independent raw H5 read",
+    "Wheeler SQLite export published from native SQL",
+    "database stop/restart preserves imported epoch count",
+    "source bytes unchanged; zero Docker invocations"
+  ],
+  "counts": {
+    "approved": 0,
+    "cells": 3,
+    "duration_seconds": 1212.99999999999,
+    "epochs": 1915,
+    "exported": 0,
+    "included": 1915,
+    "protocols": 4,
+    "reviewed": 0,
+    "shared_tagged_cells": 0,
+    "shared_tagged_epochs": 0,
+    "sources": 1,
+    "unreviewed": 1915
+  },
+  "status": "passed",
+  "version": "0.1.0",
+  "python_tests": 496,
+  "frontend_tests": 188,
+  "installation": "Fresh source installation; final runtime uses application-local Python 3.11.13 and native MySQL 8.4.2",
+  "recording": "Local H5 validation input; recording and private paths are not distributed"
+}

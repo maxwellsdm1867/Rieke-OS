@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "Rieke Lab OS: Local Neurophysiology Recording Workspace"
+version: 0.1.0
+date-released: 2026-09-28
+authors:
+  - name: "The epicTreeGUI Authors"
+repository-code: "https://github.com/maxwellsdm1867/Rieke-OS"
+keywords:
+  - neuroscience
+  - electrophysiology
+  - data analysis
+  - MATLAB
+  - neurophysiology
+  - epoch tree
+license: MIT
+abstract: >
+  Rieke Lab OS provides local recording catalogs, metadata search, hierarchical
+  epoch browsing, authored annotations, reproducible selections, and exports
+  for MATLAB and SQLite analysis. Includes the EpicTreeGUI MATLAB integration.
