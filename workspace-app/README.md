@@ -46,8 +46,9 @@ Exports support a queryable Wheeler SQLite snapshot and an EpicTree MATLAB
 bundle, with reference JSON retained under Advanced. These exports use lazy H5
 pointers, so original recordings must remain accessible. Nested All/Any/None
 predicates, project creation and switching, direct matching-epoch inspection,
-and one-off saved-selection exports are implemented. User-created protocol
-workspaces, figure analysis and desktop packaging remain future work. The recording-workspace SQLite schema does not fabricate or replace fitted
+and one-off saved-selection exports are implemented. Named pinned protocol workspaces can be created from a search whose epochs share
+one exact recorded acquisition protocol. Figure linking remains planned; the
+current desktop distribution uses a local browser and an automated source installer. The recording-workspace SQLite schema does not fabricate or replace fitted
 SRM/VMN analysis results.
 
 ## Reuse and boundaries
@@ -113,28 +114,27 @@ membership. Export Control previews eligible/held counts and blocks empty output
 Source context retains raw group/solution values and exposes full ancestry.
 Browser metadata preserves integers beyond JavaScript's exact numeric range as
 strings, so acquisition ticks are never silently rounded in the inspector.
-Run `npm test` here for the two curation-target scope regressions. See
+Run `npm test` here for the frontend logic regressions, including curation-target scope. See
 [`SCIENTIFIC_UX_REVIEW.md`](../docs/dev/SCIENTIFIC_UX_REVIEW.md) for findings.
 
 
 ## Managed project files and action history
 
-The active MySQL files now live under
-`~/Documents/RecordingWorkspace/RetinaSRM/database/mysql`, separate from the
-application source. `storage.json` records the directory layout; `catalog.json`
+Each project stores its MySQL files under
+`<workspace>/<project>/database/mysql`, separate from the application source. `storage.json` records the directory layout; `catalog.json`
 records database references rather than holding the scientific records itself.
 Use **Files & database** to inspect protocol definitions, parsed metadata,
 query snapshots, exports, logs, uploaded recordings and external H5 references.
 The inventory is paged and does not read waveform data. MySQL's live files are
 not exposed through the file browser.
 
-The migration was checked against all 156 cold files and every row of 23 SQL
-tables. `database/runtime.json` and `logs/storage/` record the validation and
-rollback container. The old stopped container and original cold directory were
-retained for rollback. `backups/` is only a reserved folder; it does not yet
-contain a verified backup. Parser jobs live in `logs/imports`, app jobs and the
-rotating server log in `logs/app-jobs`, and incidents in `logs/errors`. Historical
-`jobs/` references remain valid through a compatibility symlink.
+Native database credentials are private to `database/native.json`. Existing
+Docker-backed projects retain their own runtime configuration. `backups/` is a
+reserved folder, not an automatic backup system; copying a live MySQL directory
+is unsupported. Parser jobs live in `logs/imports`, app jobs and the rotating
+server log in `logs/app-jobs`, and incidents in `logs/errors`. Historical `jobs/`
+references can remain readable through the explicit legacy-log migration's
+compatibility symlink. See the quick start for current root and relocation rules.
 
 **Activity & logs** reads the project-scoped SQL `Event` table with 50-row pages,
 action filters, search within the displayed page, and lazy event details. New
@@ -394,14 +394,14 @@ interruption. New registrations start query-included and visible.
 
 ### Rieke OS projects and MATLAB handoff
 
-Rieke OS is the application. The current project is displayed as **Spike Response
-Model** through `project.json.display_name`; its internal name, UUID, directory and
-SQL catalog identity remain stable. Display-name edits append a project audit
+Rieke OS is the application. Each project has its own display name in
+`project.json.display_name`, alongside its stable UUID and catalog identity. Display-name edits append a project audit
 event. The project rail and selector discover validated recording projects in
 immediate sibling directories only. A different project opens in a separate
 loopback Python process so DataJoint's process-global connection/schema state is
 never swapped under an active tab. Server records live in
-`logs/workspace-server.json`; verified project UUID health checks permit reuse.
+`logs/workspace-server.json`; health checks verify both project UUID and physical
+project directory before reusing a running server.
 A missing or unreachable project database produces a startup error and local log.
 
 Protocol **Export control** supports:

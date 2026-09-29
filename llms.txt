@@ -1,11 +1,13 @@
 # Rieke Lab OS
 
-> A local browser workspace for Symphony recordings, metadata queries, annotations,
-> and MATLAB/SQLite exports. Repository: https://github.com/maxwellsdm1867/Rieke-OS
+> A local research workspace for Symphony electrophysiology: organize recordings,
+> inspect cells and response traces, curate reproducible epoch selections, and
+> export to MATLAB, SQLite or JSON. Repository: https://github.com/maxwellsdm1867/Rieke-OS
 
 ## Start here
 
 - [Overview, full download, and requirements](README.md)
+- [Product and data-model overview](docs/RIEKE_OS_OVERVIEW.md)
 - [Quick start: install through first export](docs/RIEKE_OS_QUICK_START.md)
 - [LLM installation instructions](docs/LLM_SETUP.md)
 - [Workspace reference](workspace-app/README.md)

@@ -1,14 +1,54 @@
 # Rieke Lab OS
 
-A local workspace for organizing, exploring, annotating, and exporting Rieke Lab
-neurophysiology recordings. Browse Symphony H5 recordings, inspect epochs and
-traces, save reproducible protocol selections, and hand data off to MATLAB or
-SQLite-based analysis.
+**Rieke OS is a local research workspace for Symphony electrophysiology recordings.**
+It turns a folder of H5 files into an organized project where you can find cells
+and trials, inspect recorded responses, decide which epochs belong in an analysis,
+and export that exact selection with its metadata and history.
 
-**Runs locally without Docker.** The installer downloads an application-local
-Python environment, Node, compiler tools, the recording parser, and native MySQL.
-Each project has its own database and files. MATLAB is optional and is needed
-only for MATLAB analysis and the included EpicTreeGUI.
+The app is designed around retinal physiology workflows: a cell can have
+characterization recordings, several acquisition protocols, and many repeated
+trials. Rieke OS keeps those relationships visible while you move between a
+project overview, a cell's recordings, a metadata search, and individual traces.
+An **epoch** is one recorded trial; a **protocol** is the acquisition procedure
+recorded in the source file.
+
+Your project saves the work around the recordings: searches, named working
+datasets, cell and epoch tags, inclusion decisions, and exports. Original H5
+files retain the waveform samples. The app catalogs their metadata and reads
+response windows on demand, keeping each displayed trace and exported epoch
+linked to its source identity.
+
+**It runs on your computer in a browser, with a separate local database for each
+project.** The installer manages the required tools; new projects need no Docker,
+LLM account, or API key. The included MATLAB/EpicTreeGUI companion is optional.
+
+## From recordings to an analysis dataset
+
+| Your task | What Rieke OS provides |
+| --- | --- |
+| Organize recordings | Import original Symphony H5 files by path or upload; browse dates, cells, acquisition protocols, blocks and epochs in a project catalog. |
+| Find the relevant trials | Search recorded metadata and authored tags with nested conditions; save reusable searches and inspect the matching epochs. |
+| Inspect a cell | Open full-rate response windows, choose a recorded device, zoom to samples, and review trial metadata. The cell workbench brings its characterization recordings together across protocols. |
+| Arrange an experiment | Group epochs into trees using recorded fields such as date, cell, block or stimulus parameters. Save a named protocol working dataset from a compatible selection. |
+| Record scientific decisions | Tag a whole cell or individual epochs with an author name; include or exclude epochs for a working dataset. Review markers are optional. |
+| Keep a selection reproducible | Review additions and removals before updating a working dataset. Save exports with the query, exact epoch identities, inclusion decisions, annotations and source checksums. |
+| Continue analysis | Download a queryable SQLite database, an EpicTree MATLAB bundle, or reference JSON. Bring supported tags and MATLAB selection masks back into the workspace. |
+
+For example, you can import recordings from several days, find one recorded
+protocol in cells of interest, split its trials by a stimulus parameter, inspect
+responses, exclude unsuitable epochs, and export the retained dataset. Later,
+you can rerun the search or compare new recordings with the saved working set;
+earlier exports keep their original membership.
+
+The browser's cell workbench includes recorded temperature/resistance metadata,
+condition-response summaries, and block-onset voltage estimates for supported
+protocol families. These displays retain their source and method information;
+missing measurements remain unavailable, and voltage estimates are labeled as
+estimates. Cell typing and scientific interpretation remain the researcher's
+responsibility.
+
+Read the [product and data-model overview](docs/RIEKE_OS_OVERVIEW.md) for how
+projects, searches, working datasets, annotations and exports fit together.
 
 ## Download the whole app
 
@@ -100,20 +140,13 @@ the install error and rerun `sh install.sh`. See
 [troubleshooting](docs/RIEKE_OS_QUICK_START.md#if-a-step-fails) for import and
 workspace issues. Keep the exact error when asking for help.
 
-## What you can do
+## Workflow guides
 
-- Keep multiple recording projects with independent catalogs.
-- Import and browse Symphony recordings, cells, protocols, epochs, and metadata.
-- Build metadata predicates and rearrange hierarchical epoch trees.
-- Inspect raw response traces lazily from original H5 files.
-- Save protocol selections, revisions, inclusion decisions, and authored tags.
-- Export reference JSON, queryable Wheeler SQLite snapshots, and MATLAB bundles.
-- Use the bundled EpicTreeGUI for MATLAB analysis and UUID-based tag exchange.
-
-See the [quick start](docs/RIEKE_OS_QUICK_START.md),
-[workspace guide](workspace-app/README.md), [tagging guide](docs/TAGGING.md),
-[search presets](docs/SEARCH_PRESETS.md), and
-[MATLAB/EpicTreeGUI guide](EPIC_TREE_GUIDE.md).
+- [First recording through first export](docs/RIEKE_OS_QUICK_START.md)
+- [Tags, authors and scope](docs/TAGGING.md)
+- [Reusable searches](docs/SEARCH_PRESETS.md)
+- [Browser workspace reference](workspace-app/README.md)
+- [MATLAB/EpicTreeGUI companion](EPIC_TREE_GUIDE.md)
 
 ## Your files
 
