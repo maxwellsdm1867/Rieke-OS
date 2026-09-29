@@ -20,7 +20,7 @@ def server_record(project_dir):
 
 
 def write_server_record(project_dir, identity, port):
-    write_json(server_record(project_dir), {'project_uuid': identity, 'port': port, 'pid': os.getpid()})
+    write_json(server_record(project_dir), {'project_uuid': identity, 'project_path': str(Path(project_dir).resolve()), 'port': port, 'pid': os.getpid()})
 
 
 def ready_url(project_dir, identity):
@@ -28,16 +28,24 @@ def ready_url(project_dir, identity):
         record = json.loads(server_record(project_dir).read_text())
         if not isinstance(record, dict):
             return None
+        physical_root = str(Path(project_dir).resolve())
+        if record.get('project_path', physical_root) != physical_root:
+            return None
         port = record.get('port')
         if record.get('project_uuid') != identity or type(port) is not int or not 1024 <= port <= 65535:
             return None
         url = f'http://127.0.0.1:{port}'
         with urlopen(url + '/api/health', timeout=0.4) as response:
             value = json.load(response)
-        if isinstance(value, dict) and value.get('status') == 'ready' and value.get('project_uuid') == identity:
-            return url + '/'
     except (OSError, ValueError):
-        pass
+        return None
+    if isinstance(value, dict) and value.get('status') == 'ready' and value.get('project_uuid') == identity:
+        if 'project_path' not in value:
+            raise ValueError('An older server for this project is still running, but its project folder cannot be verified. '
+                             'Stop the existing project server and reopen the project with the updated application. '
+                             'No second server was started.')
+        if value.get('project_path') == physical_root:
+            return url + '/'
     return None
 
 

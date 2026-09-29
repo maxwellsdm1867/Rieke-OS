@@ -53,15 +53,51 @@ def sql_connection(state):
         password=state['password'], connect_timeout=2, read_timeout=5, autocommit=True)
 
 
-def running(state):
+def running(state, expected_data_dir=None):
     import pymysql
     try:
         with sql_connection(state) as connection:
             with connection.cursor() as cursor:
-                cursor.execute('SELECT @@server_uuid')
-                return cursor.fetchone()[0] == state.get('server_uuid')
+                cursor.execute('SELECT @@server_uuid, @@datadir')
+                identity, data_dir = cursor.fetchone()
+                if identity != state.get('server_uuid'):
+                    return False
+                if expected_data_dir is not None and Path(data_dir).resolve() != Path(expected_data_dir).resolve():
+                    raise ValueError('This project points to a running database in a different project folder. '
+                                     'Do not open a copied or moved project while the original database is running. '
+                                     'Stop the original project and use an explicitly validated migration; no database was attached.')
+                return True
     except (OSError, pymysql.Error):
         return False
+
+
+
+def validate_catalog_location(root, state):
+    """Reject stale managed paths without rebasing scientific provenance or exports.
+
+    Empty, newly initialized databases have no Source table yet. Imported
+    metadata is always project-owned even when the raw recording is external.
+    """
+    import pymysql
+    try:
+        with sql_connection(state) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute('SELECT manifest FROM recording_workspace.source WHERE project_uuid=%s',
+                               (state['project_uuid'],))
+                rows = cursor.fetchall()
+    except pymysql.Error as error:
+        if error.args and error.args[0] in (1049, 1146):
+            return  # No catalog has been created or populated yet.
+        raise
+    imports = (root / 'imports').resolve()
+    for (serialized,) in rows:
+        manifest = json.loads(serialized) if isinstance(serialized, (str, bytes)) else serialized
+        metadata = manifest.get('metadata_path') if isinstance(manifest, dict) else None
+        if not isinstance(metadata, str) or not Path(metadata).is_absolute() or not Path(metadata).resolve().is_relative_to(imports):
+            raise ValueError('This project was moved or copied, or its managed metadata paths no longer match its folder. '
+                             'Restore the original project location or use an explicitly validated migration. '
+                             'Choosing another workspace does not relocate recordings, metadata or saved exports; '
+                             'no scientific paths were rewritten.')
 
 
 def save_state(root, state):
@@ -84,7 +120,8 @@ def ensure_native_database(project_dir, *, timeout=120):
         data = root / 'database/mysql'
         state_path = root / 'database/native.json'
         state = read_state(root, expected) if state_path.exists() else None
-        if state and running(state):
+        if state and running(state, data):
+            validate_catalog_location(root, state)
             return
         binary = server_binary()
         log_path = root / 'logs/native-mysql.log'
@@ -133,12 +170,15 @@ def ensure_native_database(project_dir, *, timeout=120):
                 try:
                     with sql_connection(state) as connection:
                         with connection.cursor() as cursor:
-                            cursor.execute('SELECT @@server_uuid')
-                            identity = cursor.fetchone()[0]
+                            cursor.execute('SELECT @@server_uuid, @@datadir')
+                            identity, actual_data_dir = cursor.fetchone()
+                    if Path(actual_data_dir).resolve() != data.resolve():
+                        raise ValueError('Native MySQL data directory differs from this project; refusing to attach')
                     if state.get('server_uuid') and state['server_uuid'] != identity:
                         raise ValueError('Native MySQL server identity changed; refusing to attach')
                     state.update(server_uuid=identity, pid=process.pid)
                     save_state(root, state)
+                    validate_catalog_location(root, state)
                     return
                 except (OSError, pymysql.Error):
                     time.sleep(.2)
@@ -157,8 +197,9 @@ def connect_native(project_dir):
     import datajoint as dj
     root, expected = descriptor(project_dir)
     state = read_state(root, expected)
-    if not running(state):
+    if not running(state, root / 'database/mysql'):
         raise ValueError('Native project database is not running. Open the project from Rieke OS.')
+    validate_catalog_location(root, state)
     for key, value in {'host':'127.0.0.1', 'port':state['port'], 'user':'root', 'password':state['password']}.items():
         dj.config['database.' + key] = value
     return dj
@@ -171,12 +212,12 @@ def stop_native_database(project_dir):
     with (root / 'database/native.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         state = read_state(root, expected)
-        if running(state):
+        if running(state, root / 'database/mysql'):
             with sql_connection(state) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute('SHUTDOWN')
             deadline = time.monotonic() + 30
-            while running(state) and time.monotonic() < deadline:
+            while running(state, root / 'database/mysql') and time.monotonic() < deadline:
                 time.sleep(.2)
-            if running(state):
+            if running(state, root / 'database/mysql'):
                 raise ValueError('Database has not stopped yet; do not copy its files')

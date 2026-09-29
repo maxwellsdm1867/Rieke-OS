@@ -31,7 +31,7 @@ from werkzeug.utils import secure_filename
 
 from recording_workspace import digest, now, write_json
 from workspace_recipes import capture_query, checksum, compare_query, parse_splits, prepare_export, save_snapshot
-from workspace_storage import ManagedStorage, log_dir
+from workspace_storage import ManagedStorage, log_dir, managed_directory
 from workspace_diff import summarize_diff
 from workspace_protocol_identity import selection_protocols, protocol_compatibility, require_protocol_compatibility
 from workspace_import_check import classify_source
@@ -237,7 +237,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/health")
     def health():
-        return jsonify(status="ready", project_uuid=service.project["project_uuid"])
+        return jsonify(status="ready", project_uuid=service.project["project_uuid"],
+                       project_path=str(project_dir))
 
     @app.get('/api/metadata/status')
     def metadata_status():
@@ -1036,7 +1037,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                                 "tree_view": {"format": "recording-tree-view", "version": 1,
                                     "fields": [{key: field_catalog[field][key] for key in ("id", "label", "path", "category", "components") if key in field_catalog[field]}
                                                for field in grouping]}})
-            output = project_dir / "exports" / recipe["export_uuid"]
+            output = managed_directory(project_dir, 'exports') / recipe["export_uuid"]
             output.mkdir(parents=True, exist_ok=False)
             save_snapshot(output / "recipe.json", recipe)
             eligible = {r["uuid"] for r in recipe["epochs"]}
@@ -1333,15 +1334,18 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if Path(name).suffix.lower() not in {".h5", ".hdf5"}:
                     raise ValueError("Select a Symphony .h5 recording")
                 managed_upload, upload_directory_uuid = True, str(uuid.uuid4())
-                folder = project_dir / "raw-uploads" / upload_directory_uuid
-                folder.mkdir(parents=True)
+                from workspace_storage import managed_directory
+                folder = managed_directory(project_dir, 'raw-uploads/' + upload_directory_uuid)
                 source = folder / name
                 upload.save(source)
             else:
                 body = request.get_json(silent=True)
                 if not isinstance(body, dict) or set(body) != {'source_path'} or not isinstance(body['source_path'], str) or not body['source_path'].strip():
                     raise ValueError('Provide exactly one nonempty source_path string or upload one recording')
-                source = Path(body["source_path"]).expanduser().resolve()
+                source = Path(body["source_path"]).expanduser()
+                if not source.is_absolute():
+                    raise ValueError('Choose an absolute recording file path, or upload the H5 file')
+                source = source.resolve()
             if not source.is_file() or source.suffix.lower() not in {".h5", ".hdf5"}:
                 raise ValueError("Choose an existing .h5 recording file")
             identity = str(uuid.uuid4())

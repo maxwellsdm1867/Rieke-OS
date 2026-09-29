@@ -527,3 +527,33 @@ ledger update and final commit, then record the asset checksum externally.
 No repository tree/archive hash is embedded here, avoiding a circular hash claim.
 There are no remaining required release blockers in this ledger. Untested
 variants and unsupported environments remain explicitly disclosed above.
+
+
+## 0.1.2 root and path follow-up
+
+The complete root workflow passed through the browser: select a separate
+workspace with spaces and Unicode, create a named project folder, open its native
+database, and import one original H5. All three services (chooser, API and native
+MySQL) were then stopped and restarted. The project UUID, canonical folder,
+browser origin, one-epoch catalog and original source checksum were unchanged.
+Launching the installed application again **without** an explicit workspace flag
+also selected the remembered root and original project.
+
+Invalid nested roots return a visible error before creating files or changing
+preferences. Root switching leaves each workspace's projects in place. HTTP
+regressions cover relative import paths and upload-directory symlinks. Native
+reproductions cover copied credentials, copied API records, moved populated
+projects, and protocol/candidate export symlinks; all now fail closed. The full
+20-checkpoint workflow passes with these guards, as do all 539 Python tests.
+Frontend behavior is unchanged from the 193-test validated build.
+
+Reproduce the root guards with `test_workspace_root_boundaries.py`,
+`test_workspace_path_api.py`, `test_workspace_native_database.py`,
+`test_workspace_project_servers.py`, and `test_workspace_export_paths.py`.
+Local receipts: `rieke-path-browser-restart-receipt.json`,
+`rieke-remembered-root-receipt.json`, `rieke-path-fixed-receipt.json`,
+`rieke-export-path-fixed-receipt.json`, and `rieke-paths-final-workflows-receipt.json`.
+The earlier eight-source audit remains applicable: the importer's hash is
+unchanged. Automatic relocation of imported projects remains unsupported;
+restore their original location rather than manually rebasing database/source
+references. No user project or original recording was moved by these tests.

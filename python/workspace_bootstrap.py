@@ -91,10 +91,15 @@ def runtime_paths(root=ROOT, environ=None):
     python = path(env.get('RECORDING_PYTHON') or config.get('python') or '.rieke-runtime/venv/bin/python')
     selected_path = root / '.rieke-runtime/workspace-selection.json'
     selected = {}
-    if selected_path.exists():
+    if not env.get('RECORDING_WORKSPACE_ROOT') and selected_path.is_symlink():
+        raise ValueError('Saved workspace selection must be a regular local file')
+    if not env.get('RECORDING_WORKSPACE_ROOT') and selected_path.exists():
         selected = json.loads(selected_path.read_text())
         if not isinstance(selected,dict) or type(selected.get('version')) is not int or selected['version'] != 1 or not isinstance(selected.get('managed_root'),str) or not selected['managed_root'].strip():
             raise ValueError('Invalid saved workspace selection')
+        selected_root = Path(selected['managed_root']).expanduser()
+        if not selected_root.is_absolute() or not selected_root.is_dir():
+            raise ValueError('Saved workspace is unavailable. Restore its original location or launch with --workspace pointing to an existing initialized workspace; no replacement folder was created.')
     managed = env.get('RECORDING_WORKSPACE_ROOT') or selected.get('managed_root') or config.get('managed_root')
     if not managed:
         managed = str(Path(env['RECORDING_PROJECT_DIR']).expanduser().resolve().parent) if env.get('RECORDING_PROJECT_DIR') else str(Path.home() / 'Documents/RecordingWorkspace')

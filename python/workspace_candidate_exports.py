@@ -16,6 +16,7 @@ import zipfile
 from recording_workspace import digest, now, write_json
 from workspace_recipes import checksum, member_map, prepare_export, save_snapshot, seal
 from workspace_export_names import naming_options
+from workspace_storage import managed_directory
 
 FORMATS = {'reference-json','wheeler-sqlite','epictree-mat'}
 
@@ -106,7 +107,7 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
             'tree_view':{'format':'recording-tree-view','version':1,
                 'fields':[{key:fields[field][key] for key in ('id','label','path','category','components') if key in fields[field]}
                           for field in grouping]}})
-    output=service.project_dir/'exports'/recipe['export_uuid']
+    output=managed_directory(service.project_dir, 'exports')/recipe['export_uuid']
     output.mkdir(parents=True,exist_ok=False)
     artifact=output/'recordings.json'
     try:

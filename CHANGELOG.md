@@ -1,5 +1,14 @@
 # Rieke Lab OS changelog
 
+## 0.1.2 — 2026-09-28
+
+- Reject workspace roots inside an existing project or workspace before writing files.
+- Preserve root selection across launch; report unavailable saved roots without silently recreating them.
+- Verify both project identity and physical storage directory before reusing native databases or project servers.
+- Reject moved imported projects with explicit recovery guidance; do not rewrite scientific references automatically.
+- Require absolute path imports and keep upload/export writes inside their managed directories, including when symbolic links are present.
+- Verify root selection, project creation, original-H5 import and complete chooser/API/database restart using paths with spaces and Unicode.
+
 ## 0.1.1 — 2026-09-28
 
 - Preserve source cells and acquisition blocks that contain no epochs; verify

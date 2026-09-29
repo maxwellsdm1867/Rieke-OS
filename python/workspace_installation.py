@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from workspace_paths import workspace_root
 
 MANIFEST = '.rieke-workspace.json'
 LAUNCHER = 'rieke-workspace.py'
 
 
 def read_workspace(folder):
-    folder = Path(folder).expanduser().resolve()
+    folder = workspace_root(folder)
     path = folder / MANIFEST
     if path.is_symlink() or not path.is_file() or path.stat().st_size > 65536:
         raise ValueError('Workspace manifest must be a small regular local file')
@@ -29,14 +30,9 @@ def discover_workspace(directory):
 
 
 def initialize_workspace(folder, application):
-    candidate = Path(folder).expanduser()
-    if candidate.is_symlink():
-        raise ValueError('Workspace root cannot be a symbolic link')
-    folder, application = candidate.resolve(), Path(application).resolve()
+    folder, application = workspace_root(folder), Path(application).resolve()
     if folder.is_relative_to(application) or application.is_relative_to(folder):
         raise ValueError('Workspace storage must be separate from application code')
-    if (folder / 'project.json').exists():
-        raise ValueError('Choose the parent workspace directory, not an individual project')
     # Claim neither an existing entry point nor an existing configuration.
     for name in (MANIFEST, LAUNCHER):
         if (folder / name).exists() or (folder / name).is_symlink():
@@ -76,15 +72,9 @@ def select_workspace(folder, application):
     candidate = Path(folder).expanduser()
     if not candidate.is_absolute():
         raise ValueError('Choose an absolute workspace folder path')
-    if candidate.is_symlink():
-        raise ValueError('Workspace root cannot be a symbolic link')
-    root, application = candidate.resolve(), Path(application).resolve()
+    root, application = workspace_root(candidate), Path(application).resolve()
     if root.is_relative_to(application) or application.is_relative_to(root):
         raise ValueError('Workspace storage must be separate from application code')
-    if root.exists() and not root.is_dir():
-        raise ValueError('Workspace root must be a directory')
-    if (root / 'project.json').exists():
-        raise ValueError('This is a project folder. Choose its parent as the workspace root, then open the project.')
     existing = (root / MANIFEST).exists() or (root / MANIFEST).is_symlink()
     if existing:
         read_workspace(root)

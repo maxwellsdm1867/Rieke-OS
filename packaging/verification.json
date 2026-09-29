@@ -1,8 +1,8 @@
 {
-  "version": "0.1.1",
+  "version": "0.1.2",
   "status": "passed",
   "platform": "Apple Silicon macOS",
-  "python_tests": 522,
+  "python_tests": 539,
   "frontend_tests": 193,
   "installation": "Fresh source installation in a path containing spaces; application-local Python 3.11.13, native MySQL 8.4.2; no Docker",
   "workflow_checks": [
@@ -53,5 +53,16 @@
     "MATLAB artifacts independently read in Python; MATLAB GUI not executed",
     "Original H5 data remains external; no companion-cache inputs used",
     "Browser edge variants and unsupported configurations are explicitly classified in the coverage ledger"
-  ]
+  ],
+  "path_validation": {
+    "status": "passed",
+    "root_switching_and_persistence": true,
+    "spaces_and_unicode": true,
+    "browser_create_import_complete_restart": true,
+    "copied_database_and_server_rejected": true,
+    "moved_project_rejected_without_rewriting": true,
+    "upload_and_export_symlink_escape_rejected": true,
+    "fresh_workflow_checkpoints": 20,
+    "automatic_project_relocation_supported": false
+  }
 }

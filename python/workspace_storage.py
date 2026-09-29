@@ -158,7 +158,7 @@ class ManagedStorage:
         if provider.get('kind') == 'native-mysql':
             from workspace_native_database import descriptor, read_state, running
             root, expected = descriptor(self.root)
-            active = (root / 'database/native.json').exists() and running(read_state(root, expected))
+            active = (root / 'database/native.json').exists() and running(read_state(root, expected), root / 'database/mysql')
             database.update(storage_path=str(root / 'database/mysql'), managed=True,
                 status='running' if active else 'stopped', runtime='native-mysql')
         refs = []

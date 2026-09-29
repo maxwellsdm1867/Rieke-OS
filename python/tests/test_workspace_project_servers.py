@@ -26,7 +26,7 @@ class ProjectServerTests(unittest.TestCase):
 
     def test_health_requires_exact_identity_and_local_port(self):
         write_server_record(self.path, self.identity, 8877)
-        with patch('workspace_project_servers.urlopen', return_value=io.StringIO(json.dumps({'status': 'ready', 'project_uuid': self.identity}))) as get:
+        with patch('workspace_project_servers.urlopen', return_value=io.StringIO(json.dumps({'status': 'ready', 'project_uuid': self.identity, 'project_path': str(self.path.resolve())}))) as get:
             self.assertEqual(ready_url(self.path, self.identity), 'http://127.0.0.1:8877/')
             self.assertEqual(get.call_args.args[0], 'http://127.0.0.1:8877/api/health')
         with patch('workspace_project_servers.urlopen', return_value=io.StringIO(json.dumps({'status': 'ready', 'project_uuid': str(uuid.uuid4())}))):
@@ -64,3 +64,30 @@ class ProjectServerTests(unittest.TestCase):
         with patch('workspace_project_servers.ready_url', return_value=None), patch('workspace_project_servers.subprocess.Popen', return_value=process):
             with self.assertRaisesRegex(ValueError, 'could not start'):
                 open_project(self.path, self.identity, self.path)
+
+    def test_same_uuid_at_another_physical_root_is_not_reused(self):
+        write_server_record(self.path, self.identity, 8877)
+        for reported in (None, str(self.path.parent / 'copied-project')):
+            with self.subTest(reported=reported), patch('workspace_project_servers.urlopen',
+                    return_value=io.StringIO(json.dumps({'status':'ready', 'project_uuid':self.identity,
+                                                        'project_path':reported}))):
+                self.assertIsNone(ready_url(self.path, self.identity))
+
+    def test_copied_server_record_never_contacts_original_process(self):
+        write_server_record(self.path, self.identity, 8877)
+        path = self.path / 'logs/workspace-server.json'
+        record = json.loads(path.read_text())
+        record['project_path'] = str(self.path.parent / 'original-project')
+        path.write_text(json.dumps(record))
+        with patch('workspace_project_servers.urlopen') as get:
+            self.assertIsNone(ready_url(self.path, self.identity))
+            get.assert_not_called()
+
+    def test_legacy_live_server_requires_restart_instead_of_spawning_duplicate(self):
+        write_server_record(self.path, self.identity, 8877)
+        response = {'status':'ready', 'project_uuid':self.identity}
+        with patch('workspace_project_servers.urlopen', return_value=io.StringIO(json.dumps(response))), \
+             patch('workspace_project_servers.subprocess.Popen') as spawn:
+            with self.assertRaisesRegex(ValueError, 'older server.*Stop the existing'):
+                open_project(self.path, self.identity, self.path)
+            spawn.assert_not_called()

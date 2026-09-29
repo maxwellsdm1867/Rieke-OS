@@ -96,10 +96,8 @@ def list_projects(project_dir):
 
 def managed_root(path):
     """Validate a managed root without following a caller supplied symlink."""
-    candidate = Path(path).expanduser()
-    if candidate.is_symlink():
-        raise ValueError('Managed project root cannot be a symbolic link')
-    return candidate.resolve()
+    from workspace_paths import workspace_root
+    return workspace_root(path)
 
 
 def list_managed_projects(root, current_project=None):

@@ -226,7 +226,9 @@ See [storage and migration details](../README.md#your-files).
 If the application checkout moves, reinstall it, then update `application` in `rieke-workspace.py`.
 Do not move project folders to repair an application path. For dependency errors,
 run `/path/to/Rieke-OS/.rieke-runtime/venv/bin/python /path/to/Rieke-OS/rieke.py doctor`; rerun `sh install.sh` to repair the
-managed runtime. If the chooser port is occupied, choose another with `--port`.
+managed runtime. When upgrading while an older project server is running, restart
+your computer before reopening projects with the updated app. Closing a browser
+tab alone does not stop its background server or database. If the chooser port is occupied, choose another with `--port`.
 
 ## Workspace and author selection in the app
 
@@ -236,6 +238,32 @@ workspace marker and launch script. A valid existing root is reused and its
 immediate project folders are discovered without replacing their manifests or
 files. Select the parent workspace, not the folder containing an individual
 `project.json`. New project folders remain separate children of that root.
+The chooser rejects folders inside an existing project or workspace; select the
+existing workspace root instead. Spaces and Unicode characters are supported.
+A rejected choice leaves the current root and its files unchanged.
+
+Keep these three locations distinct:
+
+| Location | Example | Purpose |
+| --- | --- | --- |
+| Application | `~/Applications/Rieke-OS` | Code and installed tools; reinstall if moved |
+| Workspace root | `~/Documents/RiekeLabWorkspace` | Parent of project folders and their databases |
+| Original recordings | Any accessible recording folder | Referenced by absolute path; browser uploads instead copy into the project's `raw-uploads` folder |
+
+Path imports require an absolute file path (or a `~/...` path); they never resolve
+relative to the server's working directory. The project file browser cannot
+traverse outside the project or browse native MySQL data. Upload and export
+folders cannot be redirected through symbolic links.
+
+Do not rename, move or copy imported project folders as a migration method.
+Internal metadata, source and saved-export references include absolute paths.
+A copied project must not attach to the original project's database, even if its
+IDs match. Restore the original location if a project was moved; use a separate
+new project and explicit imports/exports for a separate catalog. There is no
+automatic project relocation tool. If a saved workspace disappears, reconnect
+its drive or restore its location; startup will not silently recreate it. You can
+explicitly select another initialized workspace with `sh start.sh --workspace /absolute/path/to/workspace`.
+
 
 The last root chosen in the UI is recorded locally in
 `.rieke-runtime/workspace-selection.json`; it is used on subsequent launches
