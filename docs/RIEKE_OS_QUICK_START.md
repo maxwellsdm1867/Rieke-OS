@@ -1,6 +1,7 @@
 # Rieke Lab OS quick start
 
-Follow this once with one Symphony `.h5` or `.hdf5` recording. You will create a
+Install and open an empty project without any recording. For the import and
+export steps, have one original Symphony `.h5` or `.hdf5` recording ready. You will create a
 project, inspect a cell, save inclusion decisions, download an export, and reopen
 your work. If someone gives you existing selections, ask for the recording **and**
 the matching selection/tag files; the H5 alone does not contain another Rieke OS
@@ -8,23 +9,29 @@ project's curation history.
 
 ## 1. Download, install, and start
 
-Download the [latest release](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest)
-and extract the application archive, or use **Code → Download ZIP** on the
-[repository](https://github.com/maxwellsdm1867/Rieke-OS). In Terminal, change to the
-extracted folder (typing `cd ` and dragging the folder into Terminal supplies its
+Download [the whole app from main](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip),
+or choose **Source code (zip)** on the
+[latest release](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest).
+Extract the entire archive into a permanent application folder. This includes the
+browser app and optional MATLAB companion; no separate repository is required.
+In Terminal, change to the extracted folder (typing `cd ` and dragging the folder into Terminal supplies its
 path), then run:
 
 ```sh
-./install.sh
-./start.sh
+sh install.sh
+sh start.sh
 ```
+
+Wait for installation to finish successfully before running `sh start.sh`.
+Using `sh` works even if the ZIP extractor did not preserve executable permissions.
+For AI-assisted setup, copy the [LLM setup prompt](LLM_SETUP.md).
 
 Keep the terminal open and visit **http://127.0.0.1:8766** in your browser.
 Installation requires internet, several GB of disk space, and on macOS Apple's
 Command Line Tools (`xcode-select --install` if missing). The installer manages
 Python, Node, the parser, and native MySQL; Docker is not needed for new projects.
 Apple Silicon macOS is the tested platform. Other supported installer targets
-are experimental; Windows is unsupported. See [system requirements](../README.md#install-and-launch).
+are experimental; Windows is unsupported. See [system requirements](../README.md#system-requirements).
 
 ## 2. Choose a workspace and create a project
 
@@ -130,7 +137,7 @@ recordings. Sharing the application repository does not share project data.
 
 ## 7. Close and reopen
 
-After saving, close the browser tab. On your next visit run `./start.sh` from the
+After saving, close the browser tab. On your next visit run `sh start.sh` (no reinstall needed) from the
 application folder, open **http://127.0.0.1:8766**, and select the same workspace
 and project. Confirm your tags, inclusion decisions, project saved searches, and
 Export log remain available. Recent unsaved searches and navigation shortcuts
@@ -144,10 +151,13 @@ migration or backup method.
 
 ## If a step fails
 
+- **`install.sh` or `start.sh` is missing:** change into the extracted Rieke-OS
+  folder. Download the whole archive, not individual files or the older
+  `epicTreeGUI` repository.
 - **Installation fails:** resolve the reported requirement, then rerun
-  `./install.sh`. Run `.rieke-runtime/venv/bin/python rieke.py doctor` from the
+  `sh install.sh`. Run `.rieke-runtime/venv/bin/python rieke.py doctor` from the
   application folder to check the installed environment.
-- **Launcher address is busy:** use `./start.sh --port 8870`, then open
+- **Launcher address is busy:** use `sh start.sh --port 8870`, then open
   `http://127.0.0.1:8870`.
 - **Import fails or reports a warning:** expand its **Import history** entry and
   **Import evidence & diagnostic details**. Check whether catalog commit is
@@ -173,7 +183,7 @@ or starting services. It preserves existing files and refuses to overwrite its
 marker or launcher. Then launch explicitly:
 
 ```sh
-/path/to/Rieke-OS/start.sh --workspace "$HOME/Documents/RiekeLabWorkspace"
+sh "/path/to/Rieke-OS/start.sh" --workspace "$HOME/Documents/RiekeLabWorkspace"
 ```
 
 An explicit `--workspace` requires an initialized folder. With no flag, the app
@@ -215,7 +225,7 @@ See [storage and migration details](../README.md#your-files).
 
 If the application checkout moves, reinstall it, then update `application` in `rieke-workspace.py`.
 Do not move project folders to repair an application path. For dependency errors,
-run `/path/to/Rieke-OS/.rieke-runtime/venv/bin/python /path/to/Rieke-OS/rieke.py doctor`; rerun `./install.sh` to repair the
+run `/path/to/Rieke-OS/.rieke-runtime/venv/bin/python /path/to/Rieke-OS/rieke.py doctor`; rerun `sh install.sh` to repair the
 managed runtime. If the chooser port is occupied, choose another with `--port`.
 
 ## Workspace and author selection in the app

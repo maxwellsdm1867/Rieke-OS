@@ -1,8 +1,9 @@
 # Rieke OS — local React app
 
-This is the first working React application, backed by the imported RetinAnalysis
-DataJoint catalog. It uses real recordings; the earlier conversation sketch is
-separate and contains example data.
+This is the technical reference for the Rieke OS browser application and its
+RetinAnalysis/DataJoint catalog. New users should start with the
+[whole-app download and installation](../README.md#download-the-whole-app) or the
+[LLM setup instructions](../docs/LLM_SETUP.md).
 
 For workspace initialization, launching from your research folder, and the file
 layout, see the [Rieke Lab OS quick start](../docs/RIEKE_OS_QUICK_START.md).

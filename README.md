@@ -10,35 +10,95 @@ Python environment, Node, compiler tools, the recording parser, and native MySQL
 Each project has its own database and files. MATLAB is optional and is needed
 only for MATLAB analysis and the included EpicTreeGUI.
 
-## Install and launch
+## Download the whole app
 
-Download this repository as a ZIP and extract it, or clone it:
+**[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
+for the current application and documentation, or choose a version from
+[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download
+its **Source code (zip)**. Extract the entire archive before installing. GitHub's
+**Code → Download ZIP** also downloads the current `main` branch.
+
+This is the complete **Rieke OS browser application**, including its installer,
+backend, browser interface, and optional MATLAB/EpicTreeGUI companion. You do not
+need a separate EpicTreeGUI checkout. It is not a Matplotlib desktop application.
+The package includes the code needed to install the app; the installer downloads
+its dependencies. Your recordings and research projects are separate.
+
+Prefer Git? Clone the same app:
 
 ```sh
 git clone https://github.com/maxwellsdm1867/Rieke-OS.git
 cd Rieke-OS
-./install.sh
-./start.sh
 ```
 
-Open **http://127.0.0.1:8766**, choose a workspace folder, and select **Add project**.
-Open the project, then use **Add data store** to import a Symphony H5 recording.
-An empty project works without any sample data.
+## Install and launch
+
+1. Put the extracted application folder somewhere permanent, such as
+   `~/Applications/Rieke-OS-main`. Keep research projects outside it.
+2. Open Terminal and change into that folder. On macOS, type `cd `, drag the
+   extracted folder into Terminal, and press Return. The folder must contain
+   `install.sh` and `start.sh`.
+3. Run installation, wait until it finishes successfully, then start the app:
+
+   ```sh
+   sh install.sh
+   sh start.sh
+   ```
+
+4. Keep Terminal open and visit [Rieke OS locally](http://127.0.0.1:8766).
+   Choose a workspace folder, select **Add project**, and open the project.
+   Use **Add data store** when you are ready to import a Symphony H5 recording.
+   You can create and open an empty project without a recording.
+
+Using `sh` also works if your ZIP extractor did not preserve executable file
+permissions. Git users can use `./install.sh` and `./start.sh` instead.
+
+**Next time:** return to the same application folder and run `sh start.sh`.
+Select the same workspace and project. You do not need to reinstall each time.
+
+For the full first-recording walkthrough, follow the
+[quick start](docs/RIEKE_OS_QUICK_START.md). For help from an AI coding assistant,
+copy the [LLM installation prompt](docs/LLM_SETUP.md).
+
+### System requirements
 
 The first installation requires internet access, several GB of free disk, and
-`curl` and `tar`. macOS needs Apple's Command Line Tools (`xcode-select --install`)
-for the SDK used by the parser's native extension. You do not need to install
-Python, Node, MySQL, uv, or Docker separately. Everything managed by the installer
-lives under `.rieke-runtime/`; no administrator privileges or system database
-service are used. Keep the installation in its original location; reinstall from
-a fresh copy if you move it. Keep scientific projects outside the application.
+`curl` and `tar`. Allow additional disk space for recordings and project databases.
+macOS needs Apple's Command Line Tools (`xcode-select --install`) for the SDK
+used by the parser's native extension. Complete that installation before running
+`install.sh`. You do not need to install Python, Node, MySQL, uv, or Docker
+separately. Everything managed by the installer lives under `.rieke-runtime/`;
+the app installer does not require administrator privileges or a system database
+service. Apple's separate developer-tools installer may require authorization.
 
 **Platform status:** tested end to end on Apple Silicon macOS. Installer targets
 also exist for Intel macOS and x86_64/ARM64 Linux, but those platforms are
 experimental until independently tested. Windows is not currently supported.
+MATLAB is optional and needed only for MATLAB analysis. No LLM or API key is
+required to run the app.
+
 This is a source distribution with an automated installer, not a signed desktop
-app or an offline installer. Installation downloads upstream dependencies;
-subsequent launches use the installed runtime and built browser app.
+app or an offline installer. Subsequent launches use the installed runtime and
+built browser app. Keep the installation in its original location; reinstall
+from a fresh copy if you move it.
+
+### If setup or launch fails
+
+Run these commands from the application folder:
+
+```sh
+# Check an installed runtime without importing recordings or starting a database.
+.rieke-runtime/venv/bin/python rieke.py doctor --json
+
+# If the default launcher port is already in use:
+sh start.sh --port 8870
+```
+
+For the second command, open [port 8870](http://127.0.0.1:8870).
+If the managed Python does not yet exist, installation has not completed: address
+the install error and rerun `sh install.sh`. See
+[troubleshooting](docs/RIEKE_OS_QUICK_START.md#if-a-step-fails) for import and
+workspace issues. Keep the exact error when asking for help.
 
 ## What you can do
 

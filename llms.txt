@@ -1,0 +1,27 @@
+# Rieke Lab OS
+
+> A local browser workspace for Symphony recordings, metadata queries, annotations,
+> and MATLAB/SQLite exports. Repository: https://github.com/maxwellsdm1867/Rieke-OS
+
+## Start here
+
+- [Overview, full download, and requirements](README.md)
+- [Quick start: install through first export](docs/RIEKE_OS_QUICK_START.md)
+- [LLM installation instructions](docs/LLM_SETUP.md)
+- [Workspace reference](workspace-app/README.md)
+- [Optional MATLAB/EpicTreeGUI companion](EPIC_TREE_GUIDE.md)
+- [Packaging and validation scope](packaging/README.md)
+
+## Setup contract
+
+Download the whole repository. From its root, run sh install.sh, then sh start.sh.
+The default browser URL is http://127.0.0.1:8766. Next time use sh start.sh again.
+Installation downloads application-local dependencies; this is not an offline
+or signed desktop installer. New projects use native MySQL without Docker.
+Existing Docker-backed projects retain their backend. MATLAB is optional.
+Apple Silicon macOS is verified; other macOS/Linux targets are experimental.
+Windows is unsupported. No LLM account or API key is required by the app.
+
+Keep scientific workspaces separate from the application. Preserve dependency
+pins, project identities, original H5 files, and private credentials. Exports
+reference original recordings. Report actual verification, not assumed success.
