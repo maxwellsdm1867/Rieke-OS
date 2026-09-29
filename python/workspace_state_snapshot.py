@@ -1,0 +1,343 @@
+"""Recoverable current app state; no query results, waveforms, or action replay.
+
+The live JSON is replaced atomically after successful saves. A standalone SQLite
+snapshot is sealed once per active UTC day. Restore is an explicit offline tool;
+source imports and H5 files remain separate and must match the snapshot.
+"""
+from __future__ import annotations
+import argparse
+import fcntl
+import datetime as dt
+import hashlib
+import json
+import os
+from pathlib import Path
+import sqlite3
+import tempfile
+
+TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protocol_workspace',
+          'data_store_state', 'protocol_tree_layout', 'search_preset', 'search_preset_version',
+          'protocol_binding', 'explorer_revision', 'dataset_revision', 'search_query_last_run')
+FORMAT = 'rieke-app-state'
+
+
+def encode(value):
+    if isinstance(value, (dt.datetime, dt.date)):
+        return value.isoformat()
+    raise TypeError(type(value).__name__)
+
+
+def serialized(value):
+    return json.dumps(value, default=encode, sort_keys=True, separators=(',', ':'), allow_nan=False)
+
+
+def capture(project_dir, connection):
+    root = Path(project_dir).resolve()
+    project = json.loads((root/'project.json').read_text())
+    identity = project['project_uuid']
+    protocols = {}
+    for path in sorted((root/'protocols').glob('*.json')):
+        if path.is_symlink():
+            raise ValueError('Protocol snapshot cannot follow symbolic links')
+        protocols[path.name] = json.loads(path.read_text())
+    existing = {row[0] for row in connection.query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
+    tables = {table: [] for table in TABLES}
+    for table in TABLES:
+        if table not in existing:
+            continue
+        rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s',
+                                args=(identity,), as_dict=True).fetchall()
+        json_fields = {row[0] for row in connection.query(
+            f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall() if row[1] == 'json'}
+        tables[table] = [{key:json.loads(value) if key in json_fields and isinstance(value, (str,bytes)) else value
+                          for key,value in dict(row).items()} for row in rows]
+    # Only saved current query versions and active membership snapshots belong
+    # in recovery state. Historical recipes/exports stay immutable in live SQL.
+    versions = {row['preset_uuid']:row['version'] for row in tables.get('search_preset', [])}
+    if 'search_preset_version' in tables:
+        tables['search_preset_version'] = [row for row in tables['search_preset_version']
+            if versions.get(row['preset_uuid']) == row['version']]
+    revisions = {row['revision_uuid'] for row in tables.get('protocol_binding', [])}
+    revisions.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
+    if 'explorer_revision' in tables:
+        tables['explorer_revision'] = [row for row in tables['explorer_revision'] if row['revision_uuid'] in revisions]
+    for table, rows in tables.items():
+        tables[table] = sorted(rows, key=serialized)
+    sources = []
+    source_references = []
+    if 'source' in existing:
+        registered = connection.query('SELECT source_sha256,manifest FROM recording_workspace.source WHERE project_uuid=%s', args=(identity,)).fetchall()
+        sources = sorted(row[0] for row in registered)
+        for sha, manifest in registered:
+            manifest=json.loads(manifest) if isinstance(manifest,(str,bytes)) else manifest
+            source_references.append({'source_sha256':sha, **{key:manifest[key] for key in
+                ('source_path','metadata_path','metadata_sha256','parser_sha256','adapter_version') if key in manifest}})
+        source_references.sort(key=lambda row:row['source_sha256'])
+    state = dict(format=FORMAT, version=1, project=project, source_sha256s=sources,
+                 source_references=source_references, protocols=protocols, tables=tables)
+    # Normalize datetime values before hashing and SQL restore.
+    return json.loads(serialized(state))
+
+
+
+def query_members(service, recipe):
+    eligible = [key for key,row in service.rows.items() if row['source_sha256'] in recipe['source_revisions']]
+    _, identities, _ = service.match_predicate(recipe['predicate'], eligible)
+    return [{'uuid':key, 'metadata_hash':service._fingerprints[key]} for key in sorted(identities)]
+
+
+def query_service(root):
+    from workspace_service import WorkspaceService
+    from workspace_annotations import SharedAnnotations
+    service = WorkspaceService(root)
+    service.shared_annotations = SharedAnnotations(service)
+    service._ready()
+    return service
+
+
+def compact_queries(state, service):
+    """Use a reproducible query and digest instead of enumerating every epoch.
+
+    Existing non-reproducible/frozen selections retain their explicit members;
+    silently changing a pin during recovery would lose scientific intent.
+    """
+    for row in state['tables'].get('explorer_revision', []):
+        recipe = row['recipe']
+        try:
+            members = query_members(service, recipe)
+        except (KeyError, ValueError):
+            continue
+        if any(set(member)-{'uuid','metadata_hash','row_id'} for member in recipe['epochs']):
+            continue
+        expected = sorted(({'uuid':member['uuid'],'metadata_hash':member['metadata_hash']} for member in recipe['epochs']), key=lambda member:member['uuid'])
+        if members != expected:
+            continue
+        recipe['requery'] = {'membership_sha256':hashlib.sha256(serialized(members).encode()).hexdigest(),
+            'original_content_sha256':recipe['content_sha256']}
+        for key in ('epochs', 'diff', 'content_sha256'):
+            recipe.pop(key, None)
+        # The configuration needs an app/contract version, not every source-file
+        # fingerprint again. Frozen exports retain their full provenance.
+        recipe['provenance'] = {key:value for key,value in recipe.get('provenance',{}).items() if key != 'code'}
+
+
+def expand_queries(state, service):
+    import uuid
+    from workspace_recipes import checksum
+    remap = {}
+    for row in state['tables'].get('explorer_revision', []):
+        recipe = row['recipe']; reference=recipe.pop('requery',None)
+        if reference is None:continue
+        members = query_members(service, recipe)
+        if hashlib.sha256(serialized(members).encode()).hexdigest() != reference['membership_sha256']:
+            raise ValueError('Saved query no longer reproduces the pinned selection; restore matching source metadata/app version')
+        old=row['revision_uuid']
+        identity=str(uuid.uuid5(uuid.UUID(row['project_uuid']), 'recovered-query:'+reference['original_content_sha256']))
+        remap[old]=identity
+        row.update(revision_uuid=identity,parent_revision_uuid=None)
+        row['summary'].update(revision_uuid=identity,parent_revision_uuid=None)
+        recipe.update(revision_uuid=identity,parent_revision_uuid=None,epochs=members,
+                      diff={'added':[], 'removed':[], 'changed':[]}, recovered_from=reference)
+        recipe['content_sha256']=checksum(recipe)
+    for binding in state['tables'].get('protocol_binding',[]):
+        binding['revision_uuid']=remap.get(binding['revision_uuid'],binding['revision_uuid'])
+    for definition in state['protocols'].values():
+        key=definition.get('initial_revision_uuid')
+        if key in remap:definition['initial_revision_uuid']=remap[key]
+
+
+def atomic_write(path, data):
+    if path.is_symlink() or path.parent.is_symlink():
+        raise ValueError('App state must use regular project files')
+    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.app-state-')
+    try:
+        with os.fdopen(fd, 'wb') as handle:
+            handle.write(data); handle.flush(); os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:os.fsync(directory_fd)
+        finally:os.close(directory_fd)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
+
+
+def save(project_dir, connection, *, day=None, service=None):
+    root=Path(project_dir).resolve()
+    path=root/'.app-state-save.lock'
+    if path.is_symlink():raise ValueError('Snapshot lock cannot be a symbolic link')
+    with path.open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        return _save(root,connection,day=day,service=service)
+
+
+def _save(project_dir, connection, *, day=None, service=None):
+    root = Path(project_dir).resolve()
+    if connection.in_transaction:
+        raise ValueError('Snapshot must follow the completed app transaction')
+    with connection.transaction:
+        state = capture(root, connection)
+        if service is not None:
+            compact_queries(state, service)
+    if service is None and state['tables'].get('explorer_revision'):
+        service = query_service(root)
+        # Re-read after lazy service initialization: predicate/tag evaluation
+        # and the captured current state must share the same SQL snapshot.
+        with connection.transaction:
+            state = capture(root, connection)
+            compact_queries(state, service)
+    data = serialized(state).encode()
+    target = root/'app-state.json'
+    changed = not target.exists() or target.read_bytes() != data
+    if changed:
+        atomic_write(target, data)
+    folder = root/'backups/app-state'
+    if (root/'backups').is_symlink() or folder.is_symlink():
+        raise ValueError('App state backups cannot be symbolic links')
+    folder.mkdir(parents=True, exist_ok=True)
+    date = day or dt.datetime.now(dt.timezone.utc).date().isoformat()
+    dt.date.fromisoformat(date)
+    daily = folder/(date+'.sqlite')
+    if not daily.exists():
+        fd, temporary = tempfile.mkstemp(dir=folder, prefix='.snapshot-')
+        os.close(fd)
+        try:
+            with sqlite3.connect(temporary) as database:
+                database.execute('CREATE TABLE snapshot (format TEXT, version INTEGER, sha256 TEXT, document TEXT)')
+                database.execute('INSERT INTO snapshot VALUES (?,?,?,?)',
+                    (FORMAT,1,hashlib.sha256(data).hexdigest(),data.decode()))
+            with open(temporary,'rb') as handle:
+                os.fsync(handle.fileno())
+            os.chmod(temporary, 0o400)
+            try:
+                os.link(temporary, daily)  # Never replace an existing daily snapshot.
+            except FileExistsError:
+                pass
+        finally:
+            Path(temporary).unlink(missing_ok=True)
+    return {'path':str(target), 'bytes':len(data), 'changed':changed, 'daily_backup':str(daily)}
+
+
+def load(path):
+    path = Path(path)
+    if path.suffix == '.sqlite':
+        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True) as database:
+            rows = database.execute('SELECT format,version,sha256,document FROM snapshot').fetchall()
+        if len(rows) != 1:
+            raise ValueError('Expected one app state snapshot')
+        form,version,digest,document = rows[0]
+        if form != FORMAT or version != 1 or hashlib.sha256(document.encode()).hexdigest() != digest:
+            raise ValueError('App state snapshot checksum or format differs')
+        state = json.loads(document)
+    else:
+        state = json.loads(path.read_text())
+    if state.get('format') != FORMAT or state.get('version') != 1 or set(state.get('tables', {}))-set(TABLES):
+        raise ValueError('Unsupported app state snapshot')
+    return state
+
+
+def restore(project_dir, connection, snapshot):
+    root=Path(project_dir).resolve()
+    path=root/'.app-state-session.lock'
+    if path.is_symlink():raise ValueError('Recovery lock cannot be a symbolic link')
+    with path.open('a') as lock:
+        try:fcntl.flock(lock,fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError('Stop the project app before restoring its saved state') from None
+        return _restore(root,connection,snapshot)
+
+
+def _restore(project_dir, connection, snapshot):
+    """Explicit offline restore against the same imported sources and schema.
+
+    Historical export/membership recipes are retained; current authored tables
+    are replaced within one transaction. Source recordings are never modified.
+    """
+    root=Path(project_dir).resolve(); state=load(snapshot)
+    current=capture(root,connection)
+    if (state['project']['project_uuid'] != current['project']['project_uuid'] or
+            state['source_sha256s'] != current['source_sha256s']):
+        raise ValueError('Restore requires the same project and registered source recordings')
+    if [(row['source_sha256'],row.get('metadata_sha256')) for row in state.get('source_references',[])] != [(row['source_sha256'],row.get('metadata_sha256')) for row in current.get('source_references',[])]:
+        raise ValueError('Restore requires matching parsed source metadata versions')
+    if set(state['tables']) != set(current['tables']):
+        raise ValueError('Restore requires the same initialized app state tables')
+    identity=current['project']['project_uuid']
+    if any(row.get('project_uuid') != identity for rows in state['tables'].values() for row in rows):
+        raise ValueError('Snapshot contains foreign project rows')
+    for name in state['protocols']:
+        if Path(name).name != name or not name.endswith('.json'):
+            raise ValueError('Invalid protocol filename')
+    # Validate all identifiers against live SQL before interpolating any columns.
+    json_columns={}; columns={}
+    existing = {row[0] for row in connection.query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
+    for table, rows in state['tables'].items():
+        if table not in existing:
+            if rows:raise ValueError('Open the app to initialize its state tables before restore')
+            continue
+        heading=connection.query(f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall()
+        columns[table]=[row[0] for row in heading]
+        json_columns[table]={row[0] for row in heading if row[1]=='json'}
+        if any(set(row)!=set(columns[table]) for row in rows):
+            raise ValueError('Snapshot columns differ from the app schema')
+    save(root,connection)
+    # Preserve the immediate pre-restore state even within the same UTC day.
+    before=root/'backups/app-state'/('before-restore-'+dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%f')+'.json')
+    atomic_write(before,serialized(current).encode());before.chmod(0o400)
+    recovery_service = query_service(root) if any('requery' in row['recipe'] for row in state['tables'].get('explorer_revision',[])) else None
+    files={root/'project.json':serialized(state['project']).encode()}
+    files.update({root/'protocols'/name:serialized(value).encode() for name,value in state['protocols'].items()})
+    for path in (root/'protocols').glob('*.json'):
+        files.setdefault(path,None)
+    if any(path.is_symlink() for path in files):
+        raise ValueError('Restore cannot replace symbolic links')
+    originals={path:path.read_bytes() if path.exists() else None for path in files}
+    pending=root/'.app-state-restore.pending'
+    interrupted=pending.exists()
+    if not interrupted:
+        atomic_write(pending,serialized({'before_restore':str(before),'requested_snapshot':str(snapshot)}).encode())
+    try:
+        with connection.transaction:
+            order = [table for table in state['tables'] if table not in {'explorer_revision','protocol_binding'}] + ['explorer_revision','protocol_binding']
+            for table in order:
+                rows = state['tables'].get(table,[])
+                if table not in columns:continue
+                if table == 'explorer_revision' and recovery_service is not None:
+                    expand_queries(state,recovery_service)
+                    files.update({root/'protocols'/name:serialized(value).encode() for name,value in state['protocols'].items()})
+                # Keep immutable export recipes and their historical dependencies.
+                if table not in {'explorer_revision','dataset_revision','search_preset_version'}:
+                    connection.query(f'DELETE FROM recording_workspace.`{table}` WHERE project_uuid=%s',args=(identity,))
+                names=columns[table]
+                quoted=','.join('`'+name+'`' for name in names)
+                placeholders=','.join(['%s']*len(names))
+                for row in rows:
+                    values=tuple(serialized(row[name]) if name in json_columns[table] else row[name] for name in names)
+                    connection.query(f'INSERT INTO recording_workspace.`{table}` ({quoted}) VALUES ({placeholders}) '
+                        'ON DUPLICATE KEY UPDATE '+','.join('`'+name+'`=VALUES(`'+name+'`)' for name in names), args=values)
+            for path,data in files.items():
+                if data is None:path.unlink(missing_ok=True)
+                else:atomic_write(path,data)
+    except BaseException:
+        for path,data in originals.items():
+            if data is None:path.unlink(missing_ok=True)
+            else:atomic_write(path,data)
+        if not interrupted:pending.unlink(missing_ok=True)
+        raise
+    pending.unlink(missing_ok=True)
+    return save(root,connection)
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--project-dir',type=Path,required=True)
+    parser.add_argument('--restore',type=Path,help='Offline only: restore saved current state; stop the app first')
+    args=parser.parse_args()
+    from recording_workspace import connect, configured_container
+    dj=connect(configured_container(args.project_dir))
+    result=restore(args.project_dir,dj.conn(),args.restore) if args.restore else save(args.project_dir,dj.conn())
+    print(json.dumps(result))
+
+
+if __name__=='__main__':main()

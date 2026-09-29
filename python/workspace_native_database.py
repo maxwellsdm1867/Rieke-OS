@@ -9,6 +9,8 @@ import socket
 import subprocess
 import time
 
+from workspace_mysql_profile import local_mysql_options
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -141,7 +143,8 @@ def ensure_native_database(project_dir, *, timeout=120):
             data.mkdir(exist_ok=True)
             with log_path.open('ab') as log:
                 result = subprocess.run([str(binary), '--no-defaults', '--initialize-insecure',
-                    '--basedir=' + str(binary.parent.parent), '--datadir=' + str(data)],
+                    '--basedir=' + str(binary.parent.parent), '--datadir=' + str(data),
+                    *local_mysql_options()],
                     stdout=log, stderr=log, timeout=timeout)
             if result.returncode:
                 raise ValueError(f'Native MySQL initialization failed. See {log_path}')
@@ -157,7 +160,7 @@ def ensure_native_database(project_dir, *, timeout=120):
         args = [str(binary), '--no-defaults', '--basedir=' + str(binary.parent.parent),
                 '--datadir=' + str(data), '--bind-address=127.0.0.1', '--port=' + str(state['port']),
                 '--socket=' + str(socket_path), '--pid-file=' + str(root / 'database/mysql.pid'),
-                '--mysqlx=OFF', '--innodb-buffer-pool-size=128M']
+                '--mysqlx=OFF', *local_mysql_options()]
         if fresh:
             args.append('--init-file=' + str(init_file))
         with log_path.open('ab') as log:
@@ -217,7 +220,21 @@ def stop_native_database(project_dir):
                 with connection.cursor() as cursor:
                     cursor.execute('SHUTDOWN')
             deadline = time.monotonic() + 30
-            while running(state, root / 'database/mysql') and time.monotonic() < deadline:
+            def process_alive():
+                pid = state.get('pid')
+                if not isinstance(pid, int) or pid <= 0:
+                    return False
+                try:
+                    if os.waitpid(pid, os.WNOHANG)[0] == pid:
+                        return False
+                except ChildProcessError:
+                    pass
+                try:
+                    os.kill(pid, 0)
+                    return True
+                except ProcessLookupError:
+                    return False
+            while (running(state, root / 'database/mysql') or process_alive()) and time.monotonic() < deadline:
                 time.sleep(.2)
-            if running(state, root / 'database/mysql'):
+            if running(state, root / 'database/mysql') or process_alive():
                 raise ValueError('Database has not stopped yet; do not copy its files')

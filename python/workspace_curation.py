@@ -207,6 +207,9 @@ class CurationStore:
                 connection.query(f"SELECT RELEASE_LOCK('{lock}')")
 
     def _event(self, actor, action, payload):
+        if action in {'curation_updated', 'protocol_tree_layout_saved', 'search_query_run',
+                      'search_preset_created', 'search_preset_updated'}:
+            return None  # Recover current state from app-state.json; no action replay.
         identity = str(uuid.uuid4())
         self.Event.insert1({"event_uuid": identity, "project_uuid": self.project_uuid,
                             "occurred_at": dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),

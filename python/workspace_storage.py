@@ -22,7 +22,7 @@ DIRECTORIES = {
     'exports': ('Exports', 'Versioned reference packages and their recipes.'),
     'logs': ('Logs', 'Import jobs, app jobs, failures and storage operations.'),
     'cache': ('Derived indexes', 'Disposable metadata indexes and source projections; original recordings remain authoritative.'),
-    'backups': ('Backups', 'Reserved for verified database backups; not a live database copy.'),
+    'backups': ('Backups', 'Automatic app-state snapshots and explicitly verified database backups.'),
 }
 LOG_FOLDERS = ('imports', 'app-jobs', 'errors', 'storage')
 

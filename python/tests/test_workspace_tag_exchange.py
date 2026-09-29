@@ -160,11 +160,11 @@ class TagExchangeTransactionTests(unittest.TestCase):
             json={'document':doc,'preview_token':preview['preview_token']})
         self.assertEqual(result.status_code,400,result.json)
         self.assertEqual((self.case.profiles.rows,self.case.records.rows),before)
-    def test_audit_failure_rolls_back_new_profile_and_tags(self):
+    def test_state_failure_rolls_back_new_profile_and_tags(self):
         from unittest.mock import patch
         doc=self.document();preview=self.preview(doc)
         before=copy.deepcopy((self.case.profiles.rows,self.case.records.rows))
-        with patch.object(self.case.case.events,'insert1',side_effect=RuntimeError('Audit unavailable')):
+        with patch.object(self.case.records,'insert1',side_effect=RuntimeError('State unavailable')):
             response=self.client.post('/api/annotations/import/apply',headers=self.headers,
                 json={'document':doc,'preview_token':preview['preview_token'],'profile_uuid':self.case.author})
         self.assertEqual(response.status_code,500,response.json)

@@ -115,20 +115,20 @@ class CurationTests(unittest.TestCase):
         self.assertEqual(self.curation.rows, [])
         self.assertEqual(self.events.rows, [])
 
-    def test_update_audits_before_after_and_rejects_stale_batch(self):
+    def test_update_saves_current_state_and_rejects_stale_batch(self):
         result = self.update({"included": False, "tags_add": ["noisy"]})
         self.assertTrue(all(v["revision"] == 1 and v["tags"] == ["noisy"] for v in result["curation"].values()))
-        self.assertEqual(self.events.rows[0]["payload"]["before"][self.ids[0]]["included"], True)
-        self.assertEqual(self.events.rows[0]["payload"]["after"][self.ids[0]]["included"], False)
+        self.assertEqual(self.events.rows, [])
+        self.assertFalse(result["curation"][self.ids[0]]["included"])
         with self.assertRaises(curation.RevisionConflict) as error:
             self.update({"included": True}, {self.ids[0]: 1, self.ids[1]: 0})
         self.assertEqual(error.exception.current[self.ids[1]]["revision"], 1)
-        self.assertEqual(len(self.events.rows), 1)
+        self.assertEqual(len(self.events.rows), 0)
         self.assertTrue(all(not row["included"] for row in self.curation.rows))
         self.assertIn("RELEASE_LOCK", self.connection.queries[-1])
 
-    def test_event_failure_rolls_back_curation(self):
-        with patch.object(self.events, "insert1", side_effect=RuntimeError("audit unavailable")):
+    def test_state_failure_rolls_back_curation(self):
+        with patch.object(self.curation, "insert1", side_effect=RuntimeError("state unavailable")):
             with self.assertRaises(RuntimeError):
                 self.update({"included": False})
         self.assertEqual(self.curation.rows, [])
@@ -233,14 +233,14 @@ class CurationTests(unittest.TestCase):
         self.assertEqual({key: value['included'] for key, value in result['curation'].items()}, mask)
         self.assertTrue(all(value['review_state'] == 'approved' and value['tags'] == ['reviewed']
                             for value in result['curation'].values()))
-        self.assertEqual(self.events.rows[-1]['payload']['changes']['inclusion_by_epoch'], mask)
-        with patch.object(self.events, 'insert1', side_effect=RuntimeError('audit unavailable')):
+        self.assertEqual(self.events.rows, [])
+        with patch.object(self.curation, 'update1', side_effect=RuntimeError('state unavailable')):
             with self.assertRaises(RuntimeError):
                 self.store.update(self.protocol, self.ids, {}, {key: 2 for key in self.ids},
                     self.fingerprints, 'researcher', inclusion_by_epoch={key: True for key in self.ids})
         current = self.store.read(self.protocol, self.ids, self.fingerprints)
         self.assertEqual({key: value['included'] for key, value in current.items()}, mask)
-        self.assertEqual(len(self.events.rows), 2)
+        self.assertEqual(len(self.events.rows), 0)
 
     def test_mixed_mask_rejects_missing_extra_and_nonboolean_values(self):
         cases = [{self.ids[0]: True}, {**dict.fromkeys(self.ids, True), str(uuid.uuid4()): True},

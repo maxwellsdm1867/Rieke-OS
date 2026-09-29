@@ -95,6 +95,8 @@ class SharedAnnotations:
             with contextlib.suppress(Exception):connection.query(f"SELECT RELEASE_LOCK('{name}')")
 
     def _event(self,action,actor,payload):
+        if action in {'shared_annotations_updated', 'annotation_profile_created'}:
+            return None  # Current annotations/profiles are saved state, not an action log.
         event=str(uuid.uuid4())
         self.Event.insert1({'event_uuid':event,'project_uuid':self.project_uuid,
             'occurred_at':dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),'actor':text(actor),

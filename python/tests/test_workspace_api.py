@@ -203,19 +203,16 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(len(page['epochs']), 1)
         self.assertEqual(page['epochs'][0]['curation']['review_state'], 'unreviewed')
 
-    def test_tag_and_exclude_is_audited_without_approval(self):
+    def test_tag_and_exclude_saves_state_without_approval(self):
         body = self.curation_body({'tags_add': ['noisy'], 'included': False})
         response = self.client.post(self.base + '/curation', json=body, headers=self.headers)
         self.assertEqual(response.status_code, 200, response.get_json())
-        self.assertEqual(len(self.events.rows), 1)
-        event = self.events.rows[0]
+        self.assertEqual(len(self.events.rows), 0)
         for key, state in response.get_json()['curation'].items():
             self.assertEqual(state['review_state'], 'unreviewed')
             self.assertEqual(state['tags'], ['noisy'])
             self.assertFalse(state['included'])
             self.assertEqual(state['revision'], 1)
-            self.assertTrue(event['payload']['before'][key]['included'])
-            self.assertFalse(event['payload']['after'][key]['included'])
         counts = self.client.get(self.base).get_json()['counts']
         self.assertEqual((counts['approved'], counts['excluded'], counts['exportable']), (0, 2, 0))
 
@@ -357,15 +354,12 @@ class WorkspaceAPITests(unittest.TestCase):
         result = response.get_json()
         self.assertEqual((result['imported_count'], result['included_count']), (2, 1))
         self.assertEqual(result['query_revision'], self.revision())
-        self.assertEqual(len(self.events.rows), 2)
+        self.assertEqual(len(self.events.rows), 0)
         for key, state in result['curation'].items():
             self.assertEqual(state['tags'], ['inspected'])
             self.assertEqual(state['review_state'], 'approved')
             self.assertEqual(state['revision'], 2)
-        payload = self.events.rows[-1]['payload']
-        self.assertIn('inclusion_by_epoch', payload['changes'])
-        self.assertTrue(all(row['included'] for row in payload['before'].values()))
-        self.assertEqual(sum(row['included'] for row in payload['after'].values()), 1)
+        self.assertEqual(sum(row['included'] for row in result['curation'].values()), 1)
         self.assertEqual(self.mask(), mask)
 
     def test_mask_rejects_malformed_duplicate_unknown_or_partial_membership(self):
@@ -403,7 +397,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(update.status_code, 200)
         stale_curation = self.import_mask(mask, old_revision)
         self.assertEqual(stale_curation.status_code, 409)
-        self.assertEqual(len(self.events.rows), 1)
+        self.assertEqual(len(self.events.rows), 0)
         self.assertTrue(all(row['included'] for row in self.curation.rows))
 
     def test_mask_write_failure_rolls_back_entire_mixed_selection(self):

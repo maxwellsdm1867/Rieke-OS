@@ -129,9 +129,8 @@ The inventory is paged and does not read waveform data. MySQL's live files are
 not exposed through the file browser.
 
 Native database credentials are private to `database/native.json`. Existing
-Docker-backed projects retain their own runtime configuration. `backups/` is a
-reserved folder, not an automatic backup system; copying a live MySQL directory
-is unsupported. Parser jobs live in `logs/imports`, app jobs and the rotating
+Docker-backed projects retain their own runtime configuration. `backups/app-state/` contains automatic daily state snapshots; these exclude raw recordings.
+Copying a live MySQL directory is unsupported. Parser jobs live in `logs/imports`, app jobs and the rotating
 server log in `logs/app-jobs`, and incidents in `logs/errors`. Historical `jobs/`
 references can remain readable through the explicit legacy-log migration's
 compatibility symlink. See the quick start for current root and relocation rules.
@@ -534,3 +533,10 @@ Generated-stimulus metadata is preserved, including generator version and units,
 but reconstruction requires an explicitly validated adapter. `read_trace` reads
 recorded response streams only. See `docs/dev/SQLITE_HANDOFF_AUDIT.md` for the
 comparison with the existing Compact and VMN databases.
+
+### Current-state recovery
+
+Current settings and query definitions are saved to `app-state.json`, with daily
+SQLite state snapshots under `backups/app-state/`. Ordinary edits no longer append
+a full action trail. See [storage and recovery](../docs/STORAGE_RECOVERY.md) for
+what is saved, how query-based pins are reconstructed, and the offline restore command.

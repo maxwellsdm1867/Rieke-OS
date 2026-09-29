@@ -7,6 +7,8 @@ import secrets
 import subprocess
 import time
 
+from workspace_mysql_profile import local_mysql_options
+
 
 def _run(arguments, **options):
     try:
@@ -61,7 +63,8 @@ def ensure_project_database(project_dir, *, timeout=120):
             '--label',f'rieke-os.project_uuid={identity}',
             '--label',f'rieke-os.project_path={project_dir}',
             '--publish','127.0.0.1::3306','--mount',f'type=bind,src={data},dst=/var/lib/mysql',
-            '--env','MYSQL_ROOT_PASSWORD',owned['image']], env=environment, timeout=180)
+            '--env','MYSQL_ROOT_PASSWORD',owned['image'], 'mysqld',
+            *local_mysql_options(legacy_redo=True)], env=environment, timeout=180)
         if created.returncode:
             raise ValueError('Could not prepare the project database. Check Docker Desktop; no existing database was replaced.')
         result = _run(['inspect',container])

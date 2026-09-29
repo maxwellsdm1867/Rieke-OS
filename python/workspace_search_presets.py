@@ -140,6 +140,9 @@ class SearchPresets:
     def record_run(self, preview, rows, actor):
         key = query_key(preview['predicate'])
         result = dict(ran_at=dt.datetime.now(dt.timezone.utc).isoformat(),
+                      predicate=copy.deepcopy(preview['predicate']), splits=preview.get('splits',''),
+                      source_revisions=sorted(preview.get('source_revisions',preview['source_scope'].get('active_source_revisions',[]))),
+                      predicate_version=1, metadata_fingerprint_version=preview.get('metadata_fingerprint_version',2),
                       epoch_count=preview['matched_count'],
                       cell_count=len({rows[item['uuid']]['cell_uuid'] for item in preview['membership']}),
                       tree_revision=preview['tree_revision'],

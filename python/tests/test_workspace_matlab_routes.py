@@ -79,7 +79,7 @@ class MatlabMaskRouteTests(unittest.TestCase):
         self.assertFalse(states[exported[1]]['included'])
         self.assertEqual(states[third], before_third)
         self.assertEqual(artifact.read_bytes(), original_artifact)
-        self.assertEqual(self.case.events.rows[-1]['payload']['query_context']['dataset_uuid'], recipe['export_uuid'])
+        self.assertEqual(self.case.events.rows[-1]['action'], 'dataset_revision_exported')
 
     def test_ambiguous_same_membership_requires_explicit_dataset(self):
         first, _ = self.export()
@@ -122,10 +122,10 @@ class MatlabMaskRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400, response.get_json())
         self.assertFalse(self.case.curation.rows)
 
-    def test_event_failure_rolls_back_mask_decisions(self):
+    def test_state_failure_rolls_back_mask_decisions(self):
         recipe, _ = self.export()
         write_ugm(self.path, self.service.ids, [True, False])
-        with patch.object(self.case.events, 'insert1', side_effect=RuntimeError('fixture audit failure')):
+        with patch.object(self.case.curation, 'insert1', side_effect=RuntimeError('fixture state failure')):
             response = self.post(dataset_uuid=recipe['export_uuid'])
         self.assertEqual(response.status_code, 500)
         self.assertFalse(self.case.curation.rows)

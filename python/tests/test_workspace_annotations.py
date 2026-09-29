@@ -73,14 +73,14 @@ class SharedAnnotationTests(unittest.TestCase):
         self.assertEqual((self.service.rows,self.service.details),self.raw)
         self.assertFalse(self.case.curation.rows)
 
-    def test_noop_is_idempotent_stale_revision_fails_and_audit_failure_rolls_back(self):
+    def test_noop_is_idempotent_stale_revision_fails_and_state_failure_rolls_back(self):
         first=self.edit('epoch',self.first,['A']);self.assertEqual(first['changed'],1)
         before=copy.deepcopy((self.records.rows,self.case.events.rows))
         no_op=self.edit('epoch',self.first,['A'],revision=1)
         self.assertEqual(no_op['changed'],0);self.assertIsNone(no_op['event_uuid'])
         self.assertEqual((self.records.rows,self.case.events.rows),before)
         with self.assertRaises(RevisionConflict):self.edit('epoch',self.first,['B'],revision=0)
-        with patch.object(self.case.events,'insert1',side_effect=RuntimeError('Audit failed')):
+        with patch.object(self.records,'update1',side_effect=RuntimeError('State write failed')):
             with self.assertRaises(RuntimeError):self.edit('epoch',self.first,['B'],revision=1)
         self.assertEqual((self.records.rows,self.case.events.rows),before)
         self.assertTrue(any('GET_LOCK' in q for q in self.case.connection.queries))
@@ -164,7 +164,7 @@ class SharedAnnotationTests(unittest.TestCase):
         read=self.client.post('/api/annotations/read',json={'target_kind':'epoch','target_uuids':[self.first]},headers=self.headers).get_json()
         self.assertIn('annotations',read);self.assertEqual(read['targets'][self.first]['revisions'][self.author],1)
 
-    def test_http_save_refreshes_suggestions_and_records_retrievable_audit_event(self):
+    def test_http_save_refreshes_suggestions_and_persists_current_state(self):
         self.service.Event=self.case.events
         self.assertEqual(self.client.get('/api/annotation-tags?q=check').get_json()['tags'], [])
         body={'target_kind':'epoch','target_uuids':[self.first],'profile_uuid':self.author,
@@ -178,12 +178,9 @@ class SharedAnnotationTests(unittest.TestCase):
         read=self.client.get(f'/api/epochs/{self.first}/annotations').get_json()
         self.assertIn('Check response',str(read))
         events=self.client.get('/api/events?action=shared_annotations_updated&limit=50').get_json()['events']
-        self.assertIn(receipt['event_uuid'],[event['event_uuid'] for event in events])
-        event=self.client.get('/api/events/'+receipt['event_uuid']).get_json()['event']
-        self.assertEqual(event['action'],'shared_annotations_updated')
-        self.assertIn(self.author,str(event['payload']['after']))
-        self.assertIn(self.first,str(event['payload']['after']))
-        self.assertIn('Check response',str(event['payload']['after']))
+        self.assertIsNone(receipt['event_uuid'])
+        self.assertEqual(events,[])
+        self.assertEqual(self.records.rows[0]['tags'],['Check response'])
 
     def test_bulk_tag_save_targets_selected_epochs_across_cells_only(self):
         ids=[self.first,self.second]
@@ -197,7 +194,7 @@ class SharedAnnotationTests(unittest.TestCase):
             self.assertEqual([tag['tag'] for tag in self.epoch(key)['epoch_tags']],['Batch review'])
             self.assertEqual(self.epoch(key)['cell_tags'],[])
         self.assertEqual({row['target_uuid'] for row in self.records.rows},set(ids))
-        self.assertEqual(self.case.events.rows[-1]['action'],'shared_annotations_updated')
+        self.assertEqual(self.case.events.rows,[])
 
     def test_unchanged_blank_operation_writes_no_profile_or_event(self):
         result=self.edit('epoch',self.first)

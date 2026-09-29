@@ -176,8 +176,9 @@ or database credentials. Export the intended scientific selection separately.
 The app binds only to `127.0.0.1` and is intended for a single user's computer.
 It is not an authenticated internet service. Ctrl-C stops the project chooser;
 opened project servers and databases remain available until stopped or rebooted.
-Do not copy a running MySQL data directory as a backup. The `backups/` directory
-is only reserved storage, not an automatic backup service.
+Do not copy a running MySQL data directory as a backup. Current app state is saved to `app-state.json` with daily SQLite state snapshots
+in `backups/app-state/`. These do not copy recordings or the live database. See
+[storage and recovery](docs/STORAGE_RECOVERY.md).
 
 Existing Docker-backed projects retain their original backend and still require
 Docker. They are not automatically migrated or replaced. New projects use native

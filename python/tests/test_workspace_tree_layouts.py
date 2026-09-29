@@ -33,7 +33,7 @@ class TreeLayoutTests(unittest.TestCase):
         self.assertEqual(saved['split_order'], ['cell', 'date', 'parameters/example'])
         self.assertEqual(saved['version'], 1)
         self.assertEqual((self.fixture.service.protocols, self.fixture.curation.rows), before)
-        self.assertEqual(self.fixture.events.rows[-1]['action'], 'protocol_tree_layout_saved')
+        self.assertEqual(self.fixture.events.rows, [])
 
     def test_stale_versions_invalid_fields_and_foreign_protocols_do_not_write(self):
         self.assertEqual(self.put(['cell']).status_code, 200)
@@ -42,12 +42,12 @@ class TreeLayoutTests(unittest.TestCase):
         self.assertEqual(self.put(['cell', 'cell'], 1).status_code, 400)
         self.assertEqual(self.put(['date'], True).status_code, 400)
         self.assertEqual(len(self.table.rows), 1)
-        self.assertEqual(len(self.fixture.events.rows), 1)
+        self.assertEqual(len(self.fixture.events.rows), 0)
 
     def test_flat_layout_idempotency_and_project_isolation(self):
         self.assertEqual(self.put([]).status_code, 200)
         self.assertEqual(self.put([], 1).get_json()['version'], 1)
-        self.assertEqual(len(self.fixture.events.rows), 1)
+        self.assertEqual(len(self.fixture.events.rows), 0)
         other = copy.copy(self.fixture.store)
         other.project_uuid = '00000000-0000-0000-0000-000000000001'
         self.assertIsNone(TreeLayouts(other, table=self.table).read(self.fixture.service.protocol_id))

@@ -80,9 +80,23 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     from workspace_tag_predicates import annotation_locks
 
     project_dir, retinanalysis_dir = Path(project_dir).resolve(), Path(retinanalysis_dir).resolve()
+    if (project_dir / '.app-state-restore.pending').exists():
+        raise ValueError('An app-state restore was interrupted. Complete offline recovery before opening this project.')
     app = Flask(__name__, static_folder=None)
     app.json = ExactMetadataJSON(app)
     app.config.update(MAX_CONTENT_LENGTH=16 * 1024**3, MAX_FORM_MEMORY_SIZE=1024**2)
+    if service is None or hasattr(service.dj, 'Schema'):
+        import fcntl
+        state_lock_path = project_dir / '.app-state-session.lock'
+        if state_lock_path.is_symlink():
+            raise ValueError('App state lock cannot be a symbolic link')
+        session_lock = state_lock_path.open('a')
+        try:
+            fcntl.flock(session_lock, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        except BlockingIOError:
+            session_lock.close()
+            raise ValueError('App state recovery is running; open the project after it finishes') from None
+        app.extensions['app_state_session_lock'] = session_lock
     db_lock = threading.RLock()
     importing = threading.Lock()
     from workspace_import_progress import ProgressReporter, read_jobs, recover_jobs, progress_for, load_json
@@ -1390,6 +1404,27 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_matching_epoch_routes(app, service, db_lock, data_stores.registration_locks, explorer_request)
     from workspace_candidate_exports import register_candidate_export_routes
     register_candidate_export_routes(app, service, store, explorer_history, db_lock, data_stores.registration_locks)
+    # Current-state recovery is independent of the action log. Fake services in
+    # route tests have no SQL schema; real servers always enable these backups.
+    if hasattr(service.dj, 'Schema'):
+        from workspace_state_snapshot import save as save_app_state
+        with db_lock:
+            save_app_state(project_dir, service.dj.conn(), service=service)
+
+        @app.after_request
+        def backup_saved_state(response):
+            if request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
+                try:
+                    with db_lock:
+                        save_app_state(project_dir, service.dj.conn(), service=service)
+                except Exception:
+                    app.logger.exception('App state was saved to SQL but its recovery snapshot failed')
+                    failure = jsonify(error='Saved to the database, but the app-state backup failed. '
+                        'Check project disk space and permissions before closing the app.', saved=True)
+                    failure.status_code = 507
+                    return failure
+            return response
+
     return app
 
 

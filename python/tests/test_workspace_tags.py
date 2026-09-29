@@ -80,11 +80,11 @@ class TagSuggestionTests(unittest.TestCase):
         self.assertEqual(self.client.get('/api/tags').get_json()['tags'],[{'tag':'checked','count':1}])
         self.store.update(self.protocol,[self.first],{'tags_remove':['checked']},
             {self.first:1},{self.first:'b'*64},'fixture')
-        self.assertEqual(len(self.fixture.events.rows),2)
+        self.assertEqual(len(self.fixture.events.rows),0)
         response=self.client.get('/api/tags').get_json()
         self.assertEqual(response['tags'],[])
         self.assertFalse(response['history_included'])
-        self.assertEqual(len(self.fixture.events.rows),2)
+        self.assertEqual(len(self.fixture.events.rows),0)
 
     def test_prefixes_share_cached_vocabulary_and_external_edits_expire_after_two_seconds(self):
         self.add(['Alpha','Beta'],self.first)

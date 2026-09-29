@@ -55,7 +55,7 @@ class SearchPresetTests(unittest.TestCase):
         self.assertEqual(self.client.get(url+'/versions/2').get_json()['preset_version'], 2)
         self.assertEqual(original['membership_mode'], 'live-query')
         self.assertEqual(self.fixture.curation.rows, before)
-        self.assertEqual(self.fixture.events.rows[-1]['action'], 'search_preset_updated')
+        self.assertEqual(self.fixture.events.rows, [])
 
     def test_stale_update_rejected_and_project_isolated(self):
         saved = self.create().get_json()
