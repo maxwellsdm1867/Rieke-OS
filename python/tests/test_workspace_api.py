@@ -555,6 +555,17 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertFalse(self.datasets.rows)
         self.assertFalse(self.events.rows)
 
+    def test_empty_temporary_tag_selection_keeps_retained_totals_visible(self):
+        result = self.client.get(self.base, query_string={'tagged': 'true'})
+        self.assertEqual(result.status_code, 200, result.get_json())
+        payload = result.get_json()
+        self.assertEqual(payload['counts']['epochs'], 0)
+        self.assertEqual(payload['total_counts']['epochs'], len(self.service.ids))
+        self.assertGreater(payload['total_counts']['cells'], 0)
+        self.assertEqual(payload['filters']['tagged'], 'true')
+        self.assertFalse(self.curation.rows)
+        self.assertFalse(self.datasets.rows)
+
     def test_two_named_exports_share_main_catalog_but_keep_filter_tree_and_tagged_membership(self):
         """Exercise saved export recipes; this does not imply a named-analysis editor."""
         import copy

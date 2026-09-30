@@ -17,7 +17,7 @@ import {clearTagFilters,tagFilterLabel} from '../protocolViewFilter.js';
 import {Empty} from './Common.jsx';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
-export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
+export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
   const detail=<StableContent {...resource} data={epoch}>{targets.length?<SelectionOverview count={targets.length}/>:epoch?<>
     <EpochDetailHeading epoch={epoch} disabled={detailDisabled} onQC={onQC}/>
     {navigation&&<EpochNavigation {...navigation}/>}
@@ -26,7 +26,7 @@ export default function EpochViewer({className='epoch-inspector-mode',ariaLabel=
     {detailExtras}
   </>:<Empty title="Choose an epoch">Select an epoch from the tree to inspect its response and metadata.</Empty>}</StableContent>;
   return <div className={`inspector ${className}`} tabIndex={0} aria-label={ariaLabel} onKeyDown={onKeyDown}>
-    {toolbar&&<EpochBrowserToolbar {...toolbar} filterControl={onViewFilters?<ProtocolViewFilter filters={viewFilters} onChange={onViewFilters} revision={filterRevision} disabled={filterDisabled}/>:toolbar.filterControl} treeControlsInPane>{toolbarChildren}{!designMode&&onViewFilters&&tagFilterLabel(viewFilters)&&<span className="inspection-filter-summary">{tagFilterLabel(viewFilters)}<button disabled={filterDisabled} onClick={()=>onViewFilters(clearTagFilters(viewFilters))}>Clear filter</button></span>}</EpochBrowserToolbar>}
+    {toolbar&&<EpochBrowserToolbar {...toolbar} filterControl={hideFilterControl?null:onViewFilters?<ProtocolViewFilter filters={viewFilters} onChange={onViewFilters} revision={filterRevision} disabled={filterDisabled}/>:toolbar.filterControl} treeControlsInPane>{toolbarChildren}{!designMode&&onViewFilters&&tagFilterLabel(viewFilters)&&<span className="inspection-filter-summary">{tagFilterLabel(viewFilters)}<button disabled={filterDisabled} onClick={()=>onViewFilters(clearTagFilters(viewFilters))}>Clear filter</button></span>}</EpochBrowserToolbar>}
     {before}
     <EpochBrowserLayout {...layout} editing={designMode}
       tree={designMode?<><nav className="tree-design-controls" aria-label="Tree editing"><button onClick={toolbar?.onBrowse}><ArrowLeft size={15}/> Back to epochs</button></nav><TreeBuilder {...builder}/></>:<EpochTreePane {...treePane} childrenInTree={false}>{!layout.metadataOpen&&<StableContent {...resource} className="stable-tag-dock" data={epoch}>{tags}</StableContent>}</EpochTreePane>}
