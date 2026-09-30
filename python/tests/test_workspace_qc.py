@@ -86,6 +86,42 @@ class CellQCTests(unittest.TestCase):
         self.assertEqual(result['missing_count'], 1)
         self.assertEqual(next(f for f in self.qc.overview(self.cell)['families'] if f['id']=='current_step')['epoch_count'], 0)
 
+    def test_temperature_observations_include_missing_units_and_later_pages(self):
+        self.same_cell()
+        self.service.details[self.ids[0]]['properties']['bathTemperature'] = {'quantity': 29.5, 'units': 'degC'}
+        self.service.details[self.ids[1]]['properties']['bathTemperature'] = None
+        template = self.service.rows[self.ids[0]]
+        for index in range(501):
+            identity = str(uuid.uuid4())
+            self.service.rows[identity] = {**copy.deepcopy(template), 'epoch_uuid': identity,
+                'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:000000'}
+            self.service.details[identity] = {'properties': {'bathTemperature': 30.}}
+        first = self.case.client.get(self.base + '/temperature?limit=2').get_json()
+        self.assertEqual(first['total'], 503)
+        self.assertTrue(first['has_more'])
+        self.assertEqual(first['observations'][0]['epoch_uuid'], self.ids[0])
+        self.assertEqual(first['observations'][0]['units'], 'degC')
+        self.assertEqual(first['observations'][1]['status'], 'missing')
+        self.assertIsNone(first['observations'][1]['units'])
+        last = self.case.client.get(self.base + '/temperature?offset=500&limit=100').get_json()
+        self.assertEqual(len(last['observations']), 3)
+        self.assertEqual(last['observations'][-1]['recording_order'], 503)
+        self.assertFalse(last['has_more'])
+        self.service.trace.assert_not_called()
+        for suffix in ('?limit=101', '?offset=-1', '?limit=2&limit=3'):
+            self.assertEqual(self.case.client.get(self.base + '/temperature' + suffix).status_code, 400)
+
+    def test_temperature_units_are_never_assumed_or_pooled_across_units(self):
+        properties = self.service.details[self.ids[0]]['properties']
+        properties.update(bathTemperature=30., bathTemperatureUnits='degC')
+        self.assertEqual(self.qc.overview(self.cell)['temperature']['units'], 'degC')
+        self.same_cell()
+        self.service.details[self.ids[1]]['properties'].update(bathTemperature=86., bathTemperatureUnits='degF')
+        temperature = self.qc.overview(self.cell)['temperature']
+        self.assertIsNone(temperature['units'])
+        self.assertIsNone(temperature['range'])
+        self.assertEqual({point['units'] for point in temperature['points']}, {'degC', 'degF'})
+
     def test_response_windows_match_recorded_timing_and_summary_omits_samples(self):
         result = self.qc.response(self.cell, self.ids[0])
         self.assertEqual(result['statistics']['pre'], {'mean': -60., 'std': 0., 'n': 100})

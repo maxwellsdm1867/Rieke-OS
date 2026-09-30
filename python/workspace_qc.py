@@ -92,12 +92,10 @@ class CellQC:
     def overview(self, cell_uuid):
         rows = self.rows(cell_uuid)
         cell = self.service.cells[str(uuid.UUID(cell_uuid))]
-        points = []
-        for row in rows:
-            value = self.service.details[row['epoch_uuid']].get('properties', {}).get('bathTemperature')
-            if number(value):
-                points.append({'epoch_uuid': row['epoch_uuid'], 'start_time': row['start_time'],
-                    'value': value, 'group_label': row.get('group_label'), 'source_sha256': row['source_sha256']})
+        observations = [self._temperature(row, index + 1) for index, row in enumerate(rows)]
+        points = [item for item in observations if item['status'] == 'recorded']
+        recorded_units = {item['units'] for item in points}
+        same_units = len(recorded_units) == 1
         measured = self._metadata_values(rows, RESISTANCE_FIELDS)
         compensation = self._metadata_values(rows, {'seriesResistanceCompensation'})
         has_resistance = any(item['numeric'] for item in measured)
@@ -113,8 +111,10 @@ class CellQC:
             'counts': {'epochs': len(rows), 'blocks': len({r['block_uuid'] for r in rows}),
                 'groups': len({r['group_uuid'] for r in rows}), 'protocols': len({r['protocol_name'] for r in rows})},
             'temperature': {'status': 'recorded' if points else 'unavailable',
-                'field': 'epoch.properties.bathTemperature', 'units': None, 'unit_basis': 'not_recorded',
-                'range': {'min': min(p['value'] for p in points), 'max': max(p['value'] for p in points)} if points else None,
+                'field': 'epoch.properties.bathTemperature',
+                'units': next(iter(recorded_units)) if same_units else None,
+                'unit_basis': 'recorded' if same_units and None not in recorded_units else 'mixed_or_not_recorded',
+                'range': {'min': min(p['value'] for p in points), 'max': max(p['value'] for p in points)} if points and same_units else None,
                 'recorded_count': len(points), 'missing_count': len(rows) - len(points),
                 'points': points[:500], 'truncated': len(points) > 500},
             'resistance': {'status': 'recorded' if has_resistance else 'unavailable', 'measurements': measured,
@@ -131,6 +131,30 @@ class CellQC:
                 {'id': 'condition_response_summary', 'label': 'Recorded response summary', 'status': 'available', 'reason': 'Raw signal window means in the recorded stream units, grouped within acquisition block and exact parameters; no event classification, firing-rate or receptive-field interpretation.'},
                 {'id': 'spike_rate_receptive_field', 'status': 'unvalidated_adapter', 'reason': 'RetinAnalysis ExpandingSpotsPipeline.get_stim_nspikes/plot_rf exists, but spike detector and acquisition/clamp configuration need validation before automatic QC use.'},
                 {'id': 'baseline_drift_interpolant', 'status': 'unavailable', 'reason': RESTING_REASON}]}
+
+    def _temperature(self, row, order):
+        properties = self.service.details[row['epoch_uuid']].get('properties', {})
+        raw = properties.get('bathTemperature')
+        value = raw.get('quantity') if isinstance(raw, dict) else raw
+        units = raw.get('units') if isinstance(raw, dict) else properties.get('bathTemperatureUnits')
+        units = units if isinstance(units, str) and units.strip() else None
+        return {'epoch_uuid': row['epoch_uuid'], 'cell_uuid': row['cell_uuid'],
+            'epoch_number': row.get('epoch_number'), 'recording_order': order,
+            'start_time': row['start_time'], 'block_uuid': row['block_uuid'],
+            'group_label': row.get('group_label'), 'source_sha256': row['source_sha256'],
+            'value': value if number(value) else None, 'units': units,
+            'status': 'recorded' if number(value) else 'missing',
+            'reason': None if number(value) else 'Temperature value is missing or nonnumeric.'}
+
+    def temperature_observations(self, cell_uuid, offset=0, limit=50):
+        if type(offset) is not int or offset < 0 or type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError('Temperature page requires nonnegative offset and limit 1–100')
+        rows = self.rows(cell_uuid)
+        return {'cell_uuid': str(uuid.UUID(cell_uuid)),
+            'observations': [self._temperature(row, index + 1)
+                for index, row in enumerate(rows[offset:offset + limit], offset)],
+            'total': len(rows), 'offset': offset, 'limit': limit,
+            'has_more': offset + limit < len(rows)}
 
     def epochs(self, cell_uuid, family_id=None, offset=0, limit=50):
         if family_id is not None and family_id not in FAMILIES:
@@ -308,6 +332,13 @@ def register_qc_routes(app, service, db_lock):
         options({'family', 'offset', 'limit'})
         with db_lock:
             return jsonify(qc.epochs(cell_uuid, request.args.get('family'),
+                int(request.args.get('offset', 0)), int(request.args.get('limit', 50))))
+
+    @app.get('/api/cells/<cell_uuid>/qc/temperature')
+    def cell_qc_temperature(cell_uuid):
+        options({'offset', 'limit'})
+        with db_lock:
+            return jsonify(qc.temperature_observations(cell_uuid,
                 int(request.args.get('offset', 0)), int(request.args.get('limit', 50))))
 
     @app.get('/api/cells/<cell_uuid>/qc/response')
