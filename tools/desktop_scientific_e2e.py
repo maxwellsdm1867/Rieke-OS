@@ -200,9 +200,9 @@ class Harness:
             print('FAIL', name, type(error).__name__, flush=True)
             return None
 
-    def cleanup_database(self, project, *, source=False):
+    def cleanup_database(self, project):
         self.python_code("from workspace_native_mysql import stop_native_database; import json; "
-                         "stop_native_database(sys.argv[2]); print('E2E='+json.dumps({'stopped':True}))", project, source=source)
+                         "stop_native_database(sys.argv[2]); print('E2E='+json.dumps({'stopped':True}))", project)
 
     def stop(self):
         if not self.process or self.process.poll() is not None:

@@ -8,7 +8,7 @@ const {_electron}=require('playwright');
 const asar=require('@electron/asar');
 const {createFixture,launch,gracefulQuit,run}=require('./helpers.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
-const {bundleDigest}=require('../bootstrap.cjs');
+const {bundleDigest,quarantinePreserved}=require('../bootstrap.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/bootstrap-receipt.json');
 const receipt={format:'rieke-packaged-bootstrap-e2e',version:1,signed_qualification:false,checks:[],failures:[],method:'Real downloaded packaged clone with native install checks; only /usr/bin/open dispatch stubbed; isolated installed profile launched with Playwright'};
 let fixture,application,page;
@@ -61,7 +61,8 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   const dispatch=JSON.parse(await fs.readFile(handoff,'utf8'));
   assert.deepEqual(dispatch.args,['-n','-a',target,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);assert.equal(dispatch.file,'/usr/bin/open');assert.equal(dispatch.home,fixture.home);
   assert.equal(await bundleDigest(target),before);assert.equal(await bundleDigest(downloaded),before);
-  assert.equal((await run('/usr/bin/xattr',['-p','com.apple.quarantine',target])).stdout.trim(),quarantine);
+  const copiedQuarantine=(await run('/usr/bin/xattr',['-px','com.apple.quarantine',target])).stdout.replace(/\s/g,'').toLowerCase();
+  assert.equal(quarantinePreserved(Buffer.from(quarantine,'utf8').toString('hex'),copiedQuarantine),true);
   await verifyResources(path.join(target,'Contents/Resources/runtime'),manifest.resources);await run('/usr/bin/codesign',['--verify','--deep','--strict',target]);
   return {real_complete_copy:true,copy_hash_identical:true,source_unchanged:true,quarantine_preserved:true,exact_isolated_launch_profile:true,os_dispatch_only_stubbed:true};
  });
