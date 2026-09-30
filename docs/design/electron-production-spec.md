@@ -146,8 +146,10 @@ integration must preserve the existing project path validation.
 The preload bridge exposes typed operations and serialized status, not raw
 ipcRenderer, arbitrary URLs, shell commands or filesystem paths for execution.
 Validate sender window/frame and payload on every privileged operation.
-Draft persistence is acknowledged before orderly closure. A renderer crash must
-not imply permission to kill its backend or discard a job.
+Draft persistence is attempted before explicit app Quit, which has a finite
+cleanup deadline and retains the last valid draft if its renderer is unavailable.
+Update/replacement still requires positive service/database exit receipts. A
+renderer crash must not imply permission to kill its backend or discard a job.
 
 ## Update state machine
 
@@ -162,7 +164,7 @@ stateDiagram-v2
   Downloading --> Deferred: interrupted or failed
   Validating --> Ready: signature and compatibility pass
   Validating --> Deferred: invalid or incompatible
-  Ready --> Draining: orderly quit requested
+  Ready --> Draining: explicit Restart to update
   Draining --> Ready: busy or unacknowledged service
   Draining --> Installing: all writers and services closed
   Installing --> HealthCheck: native updater relaunch

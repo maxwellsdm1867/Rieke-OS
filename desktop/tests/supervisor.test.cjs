@@ -90,3 +90,74 @@ test('project authorization uses root validated process proof and never sends co
   assert.equal(await supervisor.authorizeProjectURL('http://127.0.0.1:12345/'), false);
   assert.equal(supervisor.origins.has('http://127.0.0.1:12345'), false);
 });
+test('explicit quit waits for clean receipts and process exit, then removes ownership evidence',async t=>{
+ const routes=[];
+ const {supervisor,child}=await fixture(t,(sup,worker,url)=>{routes.push(url);if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});});
+ await supervisor.start();const result=await supervisor.quit({timeout:100,drafts:{ready:true}});
+ assert.equal(result.ready,true);assert.equal(supervisor.exited,true);assert.ok(routes.some(url=>url.endsWith('/quit')));assert.ok(!routes.some(url=>url.endsWith('/resume')));
+ await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+ child.kill=()=>assert.fail('Quit never kills accepted writers');
+});
+test('failed explicit cleanup retains interrupted evidence with no capability or false clean receipt',async t=>{
+ const routes=[];
+ const {supervisor,child}=await fixture(t,(sup,_worker,url)=>{routes.push(url);return url.endsWith('/quit')?response({error:'Accepted job still active'},false,409):response({...sup.expectedHealth(),ready:true,services:[]});});
+ child.kill=()=>assert.fail('Accepted job must remain alive');
+ await supervisor.start();const result=await supervisor.quit({timeout:50,drafts:{ready:false,reason:'Latest view unavailable'}});
+ assert.equal(result.ready,false);assert.equal(supervisor.exited,false);assert.ok(!routes.some(url=>url.endsWith('/resume')));
+ const saved=await fs.readFile(supervisor.registryPath,'utf8'),record=JSON.parse(saved);
+ assert.equal(record.quit.state,'interrupted');assert.equal(record.quit.drafts_saved,false);assert.equal(record.bound,true);assert.ok(!saved.includes(supervisor.capability));assert.equal(record.clean_shutdown,undefined);
+});
+test('relaunch reconciles only positively owned interrupted service and never replays scientific edits',async t=>{
+ let live=true;const routes=[];
+ const {supervisor}=await fixture(t,(sup,_worker,url)=>{routes.push(url);if(url.endsWith('/stop'))live=false;return url.endsWith('/quit')?response({error:'busy'},false,409):response({...sup.expectedHealth(),ready:true,services:[]});});
+ await supervisor.start();await supervisor.quit({timeout:50,drafts:{ready:false}});
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));
+ supervisor.inspectProcess=async()=>live?previous.executable:null;
+ supervisor.recoverProcess=async record=>{assert.equal(record.session_id,previous.session_id);return supervisor.capability;};
+ routes.length=0;supervisor.request=async url=>{routes.push(url);if(url.endsWith('/stop'))live=false;return response(url.endsWith('/health')?{...supervisor.expectedHealth(),ready:false}:{ready:true});};
+ await supervisor.reconcilePrevious();assert.deepEqual(routes.map(url=>url.split('/').at(-1)),['health','quit','stop']);
+ assert.equal(supervisor.recoveredQuit.drafts_saved,false);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+});
+test('inspection denial or missing owned bind evidence never transmits a prior capability',async t=>{
+ const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true}));await supervisor.start();
+ await supervisor.quit({timeout:5,drafts:{ready:false}});
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));supervisor.inspectProcess=async()=>previous.executable;
+ let requests=0;supervisor.request=async()=>{requests++;assert.fail('No token may be sent');};supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/ownership could not be inspected/);assert.equal(requests,0);
+ previous.bound=false;await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/ownership could not be inspected/);assert.equal(requests,0);
+});
+
+test('failed previous-service reconciliation cannot authorize replacement or erase its evidence when no new child started',async t=>{
+ const {supervisor}=await fixture(t,()=>assert.fail('No request without ownership proof'));
+ await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});
+ const previous={pid:99999999,executable:'/owned/python',entry:'/owned/workspace_desktop.py',port:9876,session_id:'prior-session',quit:{requested:true,state:'interrupted'}};
+ await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
+ supervisor.inspectProcess=async()=>previous.executable;supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/could not be inspected/);
+ assert.equal((await supervisor.drain()).ready,false);
+ assert.equal((await supervisor.quit({timeout:10})).ready,false);
+ assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);
+});
+
+test('a failed interrupted-quit receipt or old unmarked registry still permits exact-owned safe cleanup without a renderer',async t=>{
+ const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true,services:[]}));await supervisor.start();
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));delete previous.quit;
+ await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));let live=true;const operations=[];
+ supervisor.inspectProcess=async()=>live?previous.executable:null;
+ supervisor.recoverProcess=async record=>{assert.equal(record.entry,supervisor.entry);return supervisor.capability;};
+ supervisor.request=async url=>{const operation=url.split('/').at(-1);operations.push(operation);if(operation==='stop')live=false;return response(operation==='health'?{...supervisor.expectedHealth(),ready:true}:{ready:true});};
+ await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','stop']);
+ await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+});
+
+test('verified surviving legacy backend uses strict drain only when its new quit route is absent',async t=>{
+ for(const legacyStatus of [404,409,500]){
+  const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true,services:[]}));await supervisor.start();
+  let live=true;const operations=[];const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));
+  supervisor.inspectProcess=async()=>live?previous.executable:null;supervisor.recoverProcess=async()=>supervisor.capability;
+  supervisor.request=async url=>{const operation=url.split('/').at(-1);operations.push(operation);if(operation==='quit')return response({error:legacyStatus===404?'Unknown API endpoint':'Accepted work or cleanup failed'},false,legacyStatus);if(operation==='stop')live=false;return response(operation==='health'?{...supervisor.expectedHealth(),ready:true}:{ready:true});};
+  if(legacyStatus===404){await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','drain','stop']);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});}
+  else{await assert.rejects(supervisor.reconcilePrevious(),/Accepted work/);assert.deepEqual(operations,['health','quit']);assert.equal(live,true);assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);}
+ }
+});

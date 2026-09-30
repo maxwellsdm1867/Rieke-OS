@@ -105,21 +105,25 @@ integration and uses narrow validated top-frame IPC. Main injects per-session
 headers only into verified owned origins; Python source update APIs are disabled
 for desktop services.
 
-Renderer drafts and outstanding preference writes must acknowledge persistence
-before backend drain. Imports, inbox work, transfers, streaming responses and
-other active writes defer closure. Every owned project/database service and the
-root backend must acknowledge actual exit. Timeouts and crashes do not authorize
-process termination or app replacement.
+Explicit app Quit attempts the existing draft/accepted-write flush and safe
+service cleanup within a 35 second deadline, then exits even if the renderer or
+cleanup fails. Recovery keeps the last valid view; it does not request a draft
+from the scientific page that was replaced. Unconfirmed changes and incomplete
+backup coverage are reported separately from committed database records.
 
-An older failed launcher can retain its idle root after rejecting a legacy
-project. If recovery refuses Quit, preserve the installed bundle and service
-registry for an ownership review. A controlled shutdown must first verify the
-exact owned processes and confirm that no project service, database, import or
-other writer is active; app replacement continues to refuse a live prior root.
-Deleting registry files cannot establish that shutdown. The new launcher offers
-legacy migration into a separate verified copy while preserving the source
-project and its existing source application. This work's isolated tests leave
-the user's older running installation unchanged.
+The authenticated quit path pauses new service requests and inbox producers.
+Accepted work can finish; a failed cleanup retains the existing ownership and
+operation records for reconciliation on relaunch. The new main must own the same
+profile's single-instance lock and verify process/session/entry/profile/listener
+identity before retrying safe service cleanup. It never kills uncertain writers,
+replays scientific edits, or fabricates a clean database exit receipt. Inspection
+or database-recovery failures remain retryable without the old renderer.
+
+Project close, app replacement, and update restart still require every owned
+project/database service and root backend to acknowledge clean shutdown and actual
+exit. Deleting registry files cannot establish those receipts. Legacy migration
+creates a separate verified copy while preserving the source project and source
+application. Isolated shutdown tests do not close the user's running installation.
 
 ## Signed releases
 
@@ -155,8 +159,9 @@ The legacy source-release workflow is manual and does not promote itself latest.
 Updates download quietly, are checked about hourly with jitter and require exact
 signature, version, platform, resource and data-format validation. A signed prior
 app is retained before installation. Ready means those candidate checks passed;
-native staging and startup health are separate. Only the coordinator invokes the
-native installer after draft/drain acknowledgements. Recovery verifies the
+native staging and startup health are separate. Choose **Restart to update** to
+invoke the native installer after draft/drain acknowledgements. Ordinary Quit
+retains the current app, including when a signed update is ready. Recovery verifies the
 retained signer and data contract and uses the same controlled installation code.
 
 The production specification remains the acceptance authority:

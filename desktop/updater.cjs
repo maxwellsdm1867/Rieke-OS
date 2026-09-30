@@ -44,7 +44,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
       await retainPrevious({app, manifest});
       if (!active || stopped) return;
       pending = candidate;
-      set('Ready', {available: candidate.version, native_staging_verified: false, startup_health_verified: false, message: 'Update verified and prepared for an orderly quit. Native installation and startup health are checked separately.'});
+      set('Ready', {available: candidate.version, native_staging_verified: false, startup_health_verified: false, message: 'Update verified. Choose Restart to update; ordinary Quit retains the current app. Native installation and startup health are checked separately.'});
     } catch {
       defer('The downloaded update was rejected. The installed app remains usable.');
     }
