@@ -32,7 +32,7 @@ SOURCE_FILES = (
     "python/workspace_search_presets.py",
     "python/workspace_audit.py", "python/recording_workspace.py",
     "python/workspace_api.py", "python/workspace_service.py",
-    "python/workspace_curation.py", "python/workspace_recipes.py",
+    "python/workspace_curation.py", "python/workspace_undo.py", "python/workspace_recipes.py",
     "python/workspace_candidate_exports.py", "workspace-app/src/components/CandidateExportPanel.jsx",
     "workspace-app/src/exportReuse.js",
     "python/workspace_disk_index.py", "python/workspace_projection_cache.py",

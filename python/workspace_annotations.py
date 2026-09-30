@@ -350,17 +350,17 @@ class SharedAnnotations:
         rows=(self.Annotation&{'project_uuid':self.project_uuid}).proj('revision').to_dicts()
         return checksum(sorted((r['target_kind'],r['target_uuid'],r['profile_uuid'],r['revision']) for r in rows))
 
-    def update(self,kind,ids,profile_uuid,changes,expected_revisions,actor):
+    def update(self,kind,ids,profile_uuid,changes,expected_revisions,actor,*,include_undo=False):
         ids=self._scope(kind,ids)
         if not isinstance(changes,dict) or set(changes)-{'tags_add','tags_remove'}:raise ValueError('Use tags_add and tags_remove only')
         if not isinstance(expected_revisions,dict) or set(expected_revisions)!=set(ids):raise ValueError('Expected revisions must cover exactly the selected targets')
         operations=[dict(target_kind=kind,target_uuid=key,profile_uuid=profile_uuid,
                          expected_revision=expected_revisions[key],**changes) for key in ids]
-        result=self.apply_batch(operations,actor)
+        result=self.apply_batch(operations,actor,include_undo=include_undo)
         result['targets']=self.read_targets(kind,ids)
         return result
 
-    def apply_batch(self,operations,actor,profiles=None,audit_context=None,external_receipt=None):
+    def apply_batch(self,operations,actor,profiles=None,audit_context=None,external_receipt=None,include_undo=False):
         actor=text(actor)
         if not isinstance(operations,list) or not (0 if external_receipt else 1)<=len(operations)<=MAX_OPERATIONS:raise ValueError('Use 1–2000 annotation operations')
         if profiles is not None and not isinstance(profiles,list):raise ValueError('Profiles must be an array')
@@ -426,7 +426,9 @@ class SharedAnnotations:
             self._vocabulary=None
             on_commit=getattr(self,'on_commit',None)
             if on_commit is not None:on_commit()
-        return {'changed':changed,'event_uuid':event,'annotations':after}
+        from workspace_undo import annotation_inverse
+        return {'changed':changed,'event_uuid':event,'annotations':after,
+            **({'undo':annotation_inverse(before,after)} if include_undo else {})}
 
     def suggestions(self,query='',limit=30):
         if not isinstance(query,str) or len(query)>255 or type(limit) is not int or not 1<=limit<=100:raise ValueError('Use a tag prefix up to 255 characters and limit 1–100')
@@ -502,7 +504,14 @@ def register_annotation_routes(app,service,store,db_lock):
     def annotation_update():
         value=body({'target_kind','target_uuids','profile_uuid','tags_add','tags_remove','expected_revisions'})
         with db_lock:return jsonify(store.update(value.get('target_kind'),value.get('target_uuids'),value.get('profile_uuid'),
-            {key:value[key] for key in ('tags_add','tags_remove') if key in value},value.get('expected_revisions'),actor()))
+            {key:value[key] for key in ('tags_add','tags_remove') if key in value},value.get('expected_revisions'),actor(),include_undo=request.headers.get('X-Rieke-Undo-Receipt')=='1'))
+    @app.post('/api/annotations/undo')
+    def annotation_undo():
+        value=body({'operations'})
+        operations=value.get('operations')
+        if not isinstance(operations,list) or not 1<=len(operations)<=1000:
+            raise ValueError('Undo requires 1–1000 original annotation targets')
+        with db_lock:return jsonify(store.apply_batch(operations,actor()))
     @app.get('/api/cells/<cell_uuid>/annotations')
     def annotation_cell(cell_uuid):
         if request.args:raise ValueError('Cell annotations use the complete registered cell')

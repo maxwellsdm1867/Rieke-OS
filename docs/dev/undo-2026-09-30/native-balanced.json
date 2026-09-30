@@ -1,0 +1,218 @@
+[
+  {
+    "family": "annotations",
+    "targets": 1,
+    "enabled": false,
+    "repeats": 200,
+    "median_ms": 4.7689,
+    "p95_ms": 5.589,
+    "median_serialization_ms": 0.0101,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      10
+    ],
+    "median_response_bytes": 790.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 401,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 1,
+    "enabled": true,
+    "repeats": 200,
+    "median_ms": 4.7853,
+    "p95_ms": 5.865,
+    "median_serialization_ms": 0.0125,
+    "median_inverse_bytes": 227.0,
+    "sql_per_edit": [
+      10
+    ],
+    "median_response_bytes": 1025.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 401,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "annotations",
+    "targets": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 191.9964,
+    "p95_ms": 205.3088,
+    "median_serialization_ms": 1.6469,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      1010
+    ],
+    "median_response_bytes": 345350.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 61,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 193.5042,
+    "p95_ms": 216.3302,
+    "median_serialization_ms": 1.8098,
+    "median_inverse_bytes": 26672.0,
+    "sql_per_edit": [
+      1010
+    ],
+    "median_response_bytes": 371532.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 61,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "annotations",
+    "targets": 1000,
+    "enabled": false,
+    "repeats": 20,
+    "median_ms": 366.183,
+    "p95_ms": 415.392,
+    "median_serialization_ms": 3.4311,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      2014
+    ],
+    "median_response_bytes": 690601.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 41,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 1000,
+    "enabled": true,
+    "repeats": 20,
+    "median_ms": 365.828,
+    "p95_ms": 417.9608,
+    "median_serialization_ms": 3.7762,
+    "median_inverse_bytes": 53172.0,
+    "sql_per_edit": [
+      2014
+    ],
+    "median_response_bytes": 742783.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 41,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 1,
+    "enabled": false,
+    "repeats": 200,
+    "median_ms": 0.628,
+    "p95_ms": 0.946,
+    "median_serialization_ms": 0.005,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      7
+    ],
+    "median_response_bytes": 281.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 1,
+    "enabled": true,
+    "repeats": 200,
+    "median_ms": 0.6361,
+    "p95_ms": 0.9443,
+    "median_serialization_ms": 0.0065,
+    "median_inverse_bytes": 200.0,
+    "sql_per_edit": [
+      7
+    ],
+    "median_response_bytes": 489.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 143.9332,
+    "p95_ms": 582.459,
+    "median_serialization_ms": 0.5434,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      1006
+    ],
+    "median_response_bytes": 123284.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 142.9318,
+    "p95_ms": 1557.8819,
+    "median_serialization_ms": 0.697,
+    "median_inverse_bytes": 26645.0,
+    "sql_per_edit": [
+      1006
+    ],
+    "median_response_bytes": 149431.5,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 1000,
+    "enabled": false,
+    "repeats": 20,
+    "median_ms": 243.7394,
+    "p95_ms": 287.2395,
+    "median_serialization_ms": 1.0501,
+    "median_inverse_bytes": 0.0,
+    "sql_per_edit": [
+      2008
+    ],
+    "median_response_bytes": 246534.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 1000,
+    "enabled": true,
+    "repeats": 20,
+    "median_ms": 246.366,
+    "p95_ms": 268.4365,
+    "median_serialization_ms": 1.3247,
+    "median_inverse_bytes": 53145.0,
+    "sql_per_edit": [
+      2008
+    ],
+    "median_response_bytes": 298691.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  }
+]
