@@ -1,5 +1,6 @@
 """Workspace launch contracts, without Docker or installing dependencies."""
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,6 +35,25 @@ class WorkspaceInstallationTests(unittest.TestCase):
         result = subprocess.run([sys.executable, str(self.workspace / LAUNCHER), '--port', '8900'],
                                 cwd=self.base, check=True, capture_output=True, text=True)
         self.assertEqual(json.loads(result.stdout), ['launch', '--workspace', str(self.workspace), '--port', '8900'])
+
+    def test_managed_workspace_launcher_uses_stable_manager_across_release_changes(self):
+        import os
+        import workspace_updates as updates
+        installation = self.base / 'installation'
+        release = installation / 'releases/0.1.0'
+        release.mkdir(parents=True)
+        (installation / 'installation.json').write_text(json.dumps({'format': 'rieke-installation', 'version': 1, 'repository': updates.REPOSITORY}))
+        (release / 'rieke-release.json').write_text(json.dumps({'format': 'rieke-application-release', 'version': '0.1.0', 'repository': updates.REPOSITORY, 'updater_protocol': 1}))
+        (release / '.release-ready.json').write_text('{"version":"0.1.0"}')
+        (installation / 'manager.py').write_text('import sys, json; print(json.dumps(sys.argv[1:]))')
+        with patch.dict(os.environ, RIEKE_INSTALLATION_ROOT=str(installation)):
+            initialize_workspace(self.workspace, release)
+        import shutil
+        shutil.rmtree(release)  # Workspace entry point has no dependency on this old version's path.
+        result = subprocess.run([sys.executable, str(self.workspace / LAUNCHER), '--port', '8900'],
+                                cwd=self.base, check=True, capture_output=True, text=True)
+        self.assertEqual(json.loads(result.stdout), ['--installation', str(installation), 'launch', '--',
+                                                  '--workspace', str(self.workspace), '--port', '8900'])
 
     def test_reject_overwrite_code_overlap_project_and_symlink(self):
         initialize_workspace(self.workspace, self.app)
@@ -73,6 +93,8 @@ class WorkspaceSelectionTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.base=Path(self.temp.name);self.app=self.base/'application';self.app.mkdir()
+        isolated_index=patch.dict(os.environ,{'RIEKE_PROJECT_INDEX':str(self.base/'user-state/project-index.json')})
+        isolated_index.start();self.addCleanup(isolated_index.stop)
         self.root=self.base/'Research data'
 
     def test_select_initializes_preserves_files_and_reuses_existing_workspace(self):
@@ -86,6 +108,17 @@ class WorkspaceSelectionTests(unittest.TestCase):
         self.assertEqual(boot.runtime_paths(self.app,environ={})['managed_root'],str(selected))
         explicit=self.base/'explicit'
         self.assertEqual(boot.runtime_paths(self.app,environ={'RECORDING_WORKSPACE_ROOT':str(explicit)})['managed_root'],str(explicit))
+
+    def test_managed_workspace_preference_survives_application_release_change(self):
+        import os
+        from workspace_installation import select_workspace
+        installation=self.base/'managed-app';installation.mkdir()
+        with patch.dict(os.environ,{'RIEKE_INSTALLATION_ROOT':str(installation)}):
+            selected=select_workspace(self.root,self.app)
+        saved=json.loads((installation/'preferences/workspace-selection.json').read_text())
+        self.assertEqual(saved['managed_root'],str(selected))
+        next_release=self.base/'new-release';next_release.mkdir()
+        self.assertEqual(boot.runtime_paths(next_release,environ={'RIEKE_INSTALLATION_ROOT':str(installation)})['managed_root'],str(selected))
 
     def test_project_path_invalid_manifest_and_symlink_fail_without_preference(self):
         from workspace_installation import select_workspace

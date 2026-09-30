@@ -23,3 +23,7 @@
 .mx-advanced-actions small{display:block;margin-top:7px;font-size:11px;color:var(--ink-secondary);line-height:1.5}
 
 .metadata-explorer>.mx-heading.mx-heading-compact{padding:6px 12px;min-height:46px;align-items:center;gap:12px;position:relative;z-index:45}.mx-heading-compact>strong{font-size:13px;white-space:nowrap}.mx-heading-compact .mx-header-actions{margin-left:auto;gap:7px;flex-wrap:nowrap}.mx-heading-compact .mx-header-actions>button,.mx-heading-compact .inspector-more>button{font-size:12px;padding:6px 9px}.matching-compact-toolbar>strong{font-size:12px}.matching-compact-toolbar .matching-context{font-size:11px;color:var(--ink-secondary)}
+
+.metadata-explorer>.mx-heading.mx-heading-compact{flex-wrap:wrap;row-gap:6px}.mx-heading-compact .mx-header-actions:empty{display:none}
+
+.explorer-design-viewer{flex:1;min-height:0}

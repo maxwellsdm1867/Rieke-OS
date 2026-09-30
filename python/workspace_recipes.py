@@ -183,11 +183,18 @@ SPLIT_FIELDS = {"date": "date", "cell": "cell_uuid", "cell type": "cell_type",
                 "group label": "group_label", "block time": "block_start_time"}
 
 
+# These exact names were emitted by recording_workspace for starter protocol
+# views before the tree catalog used opaque field IDs. Preserve their meaning;
+# arbitrary dotted paths are still unsupported and every target is validated.
+LEGACY_SPLIT_FIELDS = {'cell.type': 'cell type', 'cell.start_time': 'metadata/cell/start_time'}
+
+
 def parse_splits(text, allowed_fields=None):
     import re
     if not isinstance(text, str):
         raise ValueError("Tree split order must be text")
     fields = [part.strip() for part in text.replace("→", ",").split(",") if part.strip()]
+    fields = [LEGACY_SPLIT_FIELDS.get(field, field) for field in fields]
     fields = [field.lower() if field.lower() in SPLIT_FIELDS else field for field in fields]
     def valid(field):
         if field.startswith('joint/'):

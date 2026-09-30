@@ -1,26 +1,18 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowUp, ArrowDown, ChevronRight, GripVertical, Pin, PinOff, Settings2, Archive, Undo2 } from 'lucide-react';
 import { humanize } from '../api.js';
-import { moveShortcut } from '../ordering.js';
+import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShortcutSection } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
 import './ProtocolSidebar.css';
 import {suggestionBadge} from '../protocolSuggestions.js';
+import {useProjectPreference} from '../useProjectPreference.js';
 
-const supportProtocol = name => /^(SingleSpot|ExpandingSpots|SplitFieldCentering)$/i.test((name || '').split('.').pop().replace(/\s+/g, ''));
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };
-function loadPreferences(key) {
-  try {
-    const value = JSON.parse(localStorage.getItem(key));
-    return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
-  } catch { return {}; }
-}
-
 export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],suggestionsError,onRetrySuggestions }) {
-  const storageKey = `rieke-os.sidebar.protocols.v1.${projectId}`;
-  const [preferences, setPreferences] = useState(() => loadPreferences(storageKey));
+  const projectPreferences=useProjectPreference(projectId,'protocol_shortcuts');
+  const preferences=projectPreferences.value;
   const [organizing, setOrganizing] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
-  const [storageError, setStorageError] = useState(false);
   const [dragging, setDragging] = useState(null);
   const [dropSpot, setDropSpot] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -31,36 +23,20 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
     if(focusAfterMove.current){handles.current.get(focusAfterMove.current)?.focus();focusAfterMove.current=null;}
   },[preferences]);
   useEffect(() => {
-    setPreferences(loadPreferences(storageKey));setStorageError(false);setDragging(null);setDropSpot(null);cancelDrag.current?.();cancelDrag.current=null;focusAfterMove.current=null;
-  }, [storageKey]);
-  useEffect(()=>{
-    const reload=()=>setPreferences(loadPreferences(storageKey));
-    window.addEventListener('rieke-protocol-shortcuts-changed',reload);
-    window.addEventListener('storage',reload);
-    return()=>{window.removeEventListener('rieke-protocol-shortcuts-changed',reload);window.removeEventListener('storage',reload);};
-  },[storageKey]);
-  const section = p => ['pinned', 'main', 'support'].includes(preferences[p.protocol_uuid]?.section)
-    ? preferences[p.protocol_uuid].section : supportProtocol(p.name) ? 'support' : 'main';
-  const ordered = useMemo(() => {
-    const ranks = new Map(protocols.map((p,index)=>[p.protocol_uuid,index]));
-    return [...protocols].sort((a,b)=>(Number.isFinite(preferences[a.protocol_uuid]?.rank)?preferences[a.protocol_uuid].rank:ranks.get(a.protocol_uuid))-
-      (Number.isFinite(preferences[b.protocol_uuid]?.rank)?preferences[b.protocol_uuid].rank:ranks.get(b.protocol_uuid)));
-  }, [protocols, preferences]);
-  const grouped = { pinned: ordered.filter(p=>section(p)==='pinned'), main: ordered.filter(p=>section(p)==='main'), support: ordered.filter(p=>section(p)==='support') };
-  const groups = Object.fromEntries(Object.entries(grouped).map(([key,items])=>[key,items.map(p=>p.protocol_uuid)]));
+    setDragging(null);setDropSpot(null);cancelDrag.current?.();cancelDrag.current=null;focusAfterMove.current=null;
+  }, [projectId]);
+  const section = p => protocolShortcutSection(p,preferences);
+  const groups=useMemo(()=>protocolShortcutGroups(protocols,preferences),[protocols,preferences]);
+  const byId=new Map(protocols.map(protocol=>[protocol.protocol_uuid,protocol]));
+  const grouped=Object.fromEntries(Object.entries(groups).map(([section,ids])=>[section,ids.map(id=>byId.get(id))]));
   currentGroups.current=groups;
-  function save(next) {
-    setPreferences(next);
-    try { localStorage.setItem(storageKey, JSON.stringify(next)); setStorageError(false); window.dispatchEvent(new Event('rieke-protocol-shortcuts-changed')); }
-    catch { setStorageError(true); }
-  }
   function commitMove(sourceId, target, targetId=null, placement='before') {
+    if(projectPreferences.loading)return;
     const before=currentGroups.current;
     const nextGroups=moveShortcut(before,sourceId,target,targetId,placement);
     if(nextGroups===before)return;
-    const next={...preferences};
-    Object.entries(nextGroups).forEach(([group,ids])=>ids.forEach((id,rank)=>{next[id]={section:group,rank};}));
-    focusAfterMove.current=sourceId;save(next);
+    focusAfterMove.current=sourceId;
+    projectPreferences.update(previous=>moveProtocolPreference(previous,protocols,sourceId,target,targetId,placement)).catch(()=>{});
     const name=humanize(protocols.find(p=>p.protocol_uuid===sourceId)?.name || 'Protocol');
     setAnnouncement(`${name} moved to ${sectionNames[target]}, position ${nextGroups[target].indexOf(sourceId)+1}.`);
   }
@@ -131,11 +107,12 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
   return <section className={`protocol-shortcuts ${organizing?'is-organizing':''}`} aria-label="Protocol shortcuts"
     onKeyDown={event=>{if(event.key==='Escape'&&dragging){event.preventDefault();clearDrag();setAnnouncement('Reordering cancelled.');}}}>
     <div className="nav-label protocol-shortcuts-heading"><span>PROTOCOLS</span><button onClick={()=>{setOrganizing(value=>!value);clearDrag();}} aria-label={organizing?'Done organizing protocols':'Organize protocols'} aria-pressed={organizing} title="Pin, reorder or tuck away protocols">{organizing?'Done':<Settings2 size={14}/>}</button></div>
-    {organizing&&<p className="shortcut-hint">Drag handles to reorder or move between sections. Saved on this device.</p>}
+    {organizing&&<p className="shortcut-hint">Drag handles to reorder or move between sections. Saved with this project.</p>}
     <p id={helpId} className="shortcut-visually-hidden">Drag a handle to move a protocol. Use Alt and up or down arrow to reorder, or use the pin, section, and move buttons.</p>
     <div className="shortcut-visually-hidden" role="status" aria-live="polite">{announcement}</div>
     {['pinned','main','support'].map(sectionRows)}
     {suggestionsError&&<p className="shortcut-hint" role="alert">Update suggestions unavailable. <button onClick={onRetrySuggestions}>Retry</button></p>}
-    {storageError&&<p className="shortcut-hint" role="status">Changes work for this session. Browser storage is unavailable.</p>}
+    {projectPreferences.loading&&!projectPreferences.error&&<p className="shortcut-hint" role="status">Loading project shortcuts…</p>}
+    {projectPreferences.error&&<p className="shortcut-hint" role="status">{projectPreferences.error} <button onClick={()=>projectPreferences.update(previous=>previous).catch(()=>{})}>Retry</button></p>}
   </section>;
 }

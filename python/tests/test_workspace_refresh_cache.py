@@ -1,5 +1,6 @@
 """Incremental source metadata cache with actual tiny H5 files and fake SQL."""
 import copy
+import gc
 import hashlib
 import json
 import os
@@ -48,11 +49,25 @@ class RefreshCacheTests(unittest.TestCase):
     def add_source(self, name):
         identity, cell_id, group_id, block_id, epoch_id, stream_id = [str(uuid.uuid4()) for _ in range(6)]
         source_path = self.folder / (name + '.h5')
-        stream_path = f'/block-{block_id}/epochs/epoch-{epoch_id}/responses/stream-{stream_id}'
+        animal_id, prep_id = str(uuid.uuid4()), str(uuid.uuid4())
+        block_path = f'/experiment-{identity}/epochGroups/group-{group_id}/epochBlocks/block-{block_id}'
+        stream_path = f'{block_path}/epochs/epoch-{epoch_id}/responses/Amp1-{stream_id}'
         with h5py.File(source_path, 'w') as h5:
-            block = h5.create_group('/block-' + block_id)
-            block.attrs['uuid'] = block_id
-            ep = h5.create_group(f'/block-{block_id}/epochs/epoch-{epoch_id}')
+            experiment = h5.create_group('/experiment-' + identity)
+            experiment.attrs['uuid'] = identity
+            animal = experiment.create_group('sources/animal-' + animal_id)
+            animal.attrs['uuid'] = animal_id
+            animal['experiment'] = experiment
+            prep = animal.create_group('sources/preparation-' + prep_id)
+            prep.attrs['uuid'] = prep_id
+            cell = prep.create_group('sources/cell-' + cell_id)
+            cell.attrs['uuid'] = cell_id
+            group = experiment.create_group('epochGroups/group-' + group_id)
+            group.attrs['uuid'] = group_id
+            group['source'] = cell
+            block = h5.create_group(block_path)
+            block.attrs.update(uuid=block_id, protocolID='example')
+            ep = h5.create_group(f'{block_path}/epochs/epoch-{epoch_id}')
             ep.attrs['uuid'] = epoch_id
             stream = h5.create_group(stream_path)
             stream.attrs['uuid'], stream.attrs['sampleRate'] = stream_id, 10000.
@@ -65,7 +80,7 @@ class RefreshCacheTests(unittest.TestCase):
         block = {'uuid': block_id, 'protocolID': 'example', 'epochs': [epoch], 'parameters': {}}
         group = {'uuid': group_id, 'label': 'Control', 'epoch_blocks': [block]}
         cell = {'uuid': cell_id, 'label': name, 'type': 'fixture', 'start_time': '09/24/2026 12:00:00:000000', 'epoch_groups': [group]}
-        document = {'uuid': identity, 'animals': [{'preparations': [{'cells': [cell]}]}]}
+        document = {'uuid': identity, 'animals': [{'uuid': animal_id, 'preparations': [{'uuid': prep_id, 'cells': [cell]}]}]}
         metadata_path = self.folder/'imports'/(name + '.json')
         metadata_path.write_text(json.dumps(document))
         sha = hashlib.sha256(source_path.read_bytes()).hexdigest()
@@ -124,7 +139,7 @@ class RefreshCacheTests(unittest.TestCase):
             self.service.refresh()
         self.assertIs(self.service._source_metadata_cache, cached)
         self.assertEqual(self.service.last_refresh['status'], 'failed')
-        with self.assertRaisesRegex(RuntimeError, 'Refresh metadata.*then retry'):
+        with self.assertRaisesRegex(RuntimeError, 'refresh required'):
             self.service.query_result(self.protocol)
 
     def test_source_tampering_fails_checksum_without_publishing_cache(self):
@@ -233,6 +248,37 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertTrue(all(cell['date']=='2026-09-24' for cell in restarted.cells.values()))
         self.assertEqual({cell['start_time'] for cell in restarted.cells.values()}, {'09/24/2026 12:00:00:000000'})
 
+    def test_successful_generation_publication_reclaims_retired_indexes_and_projections(self):
+        source=Path(self.records[0]['manifest']['source_path'])
+        for _ in range(5):
+            previous=self.service.disk_index.path
+            stamp=source.stat();os.utime(source,ns=(stamp.st_atime_ns,stamp.st_mtime_ns+1000000))
+            self.service.refresh()
+            self.assertFalse(previous.exists())
+            self.assertEqual(list((self.folder/'cache/metadata').glob('*.sqlite')),[self.service.disk_index.path])
+            self.assertLessEqual(len(list((self.folder/'cache/source-projections').glob('*.json.zlib'))),2)
+        current=self.service.disk_index.path
+        reopened=WorkspaceService(self.folder)
+        self.assertEqual(reopened.disk_index.path,current)
+        self.assertEqual(reopened.last_refresh['metadata_index'],'reopened')
+
+    def test_failure_after_index_build_does_not_publish_or_reclaim_last_valid_generation(self):
+        from workspace_disk_index import DiskMetadataIndex
+        previous=self.service.disk_index
+        manifest=previous.path.parent/'.current-generations.json'
+        before=manifest.read_bytes();old_bytes=previous.path.read_bytes()
+        source=Path(self.records[0]['manifest']['source_path']);source.touch()
+        original=DiskMetadataIndex.build
+        def raced_build(*args,**kwargs):
+            index=original(*args,**kwargs);source.touch();return index
+        with patch.object(DiskMetadataIndex,'build',side_effect=raced_build):
+            with self.assertRaisesRegex(ValueError,'while building metadata index'):
+                self.service.refresh()
+        gc.collect()
+        self.assertEqual(manifest.read_bytes(),before)
+        self.assertEqual(previous.path.read_bytes(),old_bytes)
+        self.assertEqual(len(previous.rows()),2)
+
     def test_all_inputs_are_preflighted_before_any_lazy_projection_is_read(self):
         second = Path(self.records[1]['manifest']['metadata_path'])
         second.write_text(second.read_text()+' ')
@@ -244,7 +290,7 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertFalse(self.service._loaded)
 
     def test_new_source_reuses_unchanged_lazy_projections_without_eager_merge(self):
-        from collections import ChainMap
+        from workspace_service import _SourceDetails
         from workspace_disk_index import DiskMetadataIndex
         old_index = self.service.disk_index
         old_ids = set(self.service.rows)
@@ -260,8 +306,8 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertEqual(parses.call_count,1)
         self.assertEqual(builds.call_count,1)
         merged=builds.call_args.args[2]
-        self.assertIsInstance(merged,ChainMap)
-        self.assertEqual(sum(not isinstance(mapping,dict) for mapping in merged.maps),2)
+        self.assertIsInstance(merged,_SourceDetails)
+        self.assertEqual(sum(not isinstance(mapping,dict) for mapping in merged.sources.values()),2)
         self.assertEqual((receipt['reused_sources'],receipt['rebuilt_sources']),(2,1))
         self.assertTrue(old_ids < set(self.service.rows))
         self.assertEqual(len(self.service.rows),3)

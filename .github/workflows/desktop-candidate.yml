@@ -1,0 +1,119 @@
+name: Rieke OS desktop candidate
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Exact reviewed version tag in Rieke-OS
+        required: true
+      signed:
+        description: Require Developer ID signing and notarization
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: rieke-desktop-candidate-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    runs-on: macos-15
+    environment: ${{ (github.event_name == 'push' || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - uses: astral-sh/setup-uv@v6
+      - name: Verify clean canonical source and coordinated versions
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          test "$(uname -m)" = arm64
+          python3 tools/desktop_release.py baseline --tag "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY" --output "$RUNNER_TEMP/desktop-baseline.json"
+      - run: npm ci && npm test && npm run build
+        working-directory: workspace-app
+      - run: npm ci && npm test
+        working-directory: desktop
+      - name: Assemble the complete portable runtime
+        run: python3 tools/desktop_build_runtime.py --skip-frontend
+      - name: Verify backend and runtime contracts
+        run: |
+          desktop/build/runtime/python/bin/python3.11 -m unittest discover -s python/tests -p 'test_*desktop*.py' -v
+          desktop/build/runtime/python/bin/python3.11 -m unittest discover -s python/tests -p test_workspace_bootstrap.py -v
+          python3 tools/desktop_runtime_manifest.py
+        env:
+          PYTHONPATH: python
+          PYTHONDONTWRITEBYTECODE: '1'
+      - name: Build unsigned local qualification candidate
+        if: github.event_name != 'push' && !inputs.signed
+        working-directory: desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: npm run dist
+      - name: Build signed and notarized candidate
+        if: github.event_name == 'push' || inputs.signed
+        working-directory: desktop
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          node -e "if(require('./distribution.json').channel!=='signed')throw new Error('Commit the reviewed signed distribution policy before building a signed release')"
+          test -n "$CSC_LINK"
+          test -n "$CSC_KEY_PASSWORD"
+          test -n "$APPLE_API_KEY"
+          test -n "$APPLE_API_KEY_ID"
+          test -n "$APPLE_API_ISSUER"
+          npm run dist
+          codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'
+          spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'
+          xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'
+      - name: Exercise updater transport failures without installing
+        run: npm run test:e2e:updater --prefix desktop
+      - name: Exercise the actual packaged desktop UI and orderly lifecycle
+        run: npm run test:e2e --prefix desktop
+      - name: Exercise explicit unsigned Install and Open
+        if: github.event_name != 'push' && !inputs.signed
+        run: npm run test:e2e:bootstrap --prefix desktop
+      - name: Verify recovery before opening projects when backend startup fails
+        run: npm run test:e2e:startup-failure --prefix desktop
+      - name: Audit extracted installers and native database workflows
+        run: python3 tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
+      - name: Inventory exact candidate bytes
+        run: |
+          python3 tools/desktop_release.py inventory --output desktop/dist/artifacts.json
+          cp "$RUNNER_TEMP/desktop-baseline.json" desktop/dist/desktop-baseline.json
+          cp desktop/build/runtime/runtime-audit.json desktop/dist/runtime-audit.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-e2e-evidence
+          path: |
+            docs/dev/desktop-updater-client-e2e.json
+            docs/dev/desktop-ui-e2e/
+            docs/dev/desktop-artifact-e2e.json
+          if-no-files-found: warn
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rieke-desktop-macos-arm64
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+            desktop/dist/*.blockmap
+            desktop/dist/latest-mac.yml
+            desktop/dist/artifacts.json
+            desktop/dist/desktop-baseline.json
+            desktop/dist/runtime-audit.json
+          if-no-files-found: error
+          retention-days: 30

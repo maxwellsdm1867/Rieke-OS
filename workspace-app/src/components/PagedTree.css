@@ -2,3 +2,5 @@
 .pt-distribution{display:block;height:4px;background:var(--surface-subtle);border-radius:3px;overflow:hidden;margin-top:8px}.pt-distribution>span{display:block;height:100%;background:#aa8ebd;border-radius:3px}.paged-tree:focus{outline:none}.paged-tree:focus-visible>.pt-page-heading{box-shadow:inset 3px 0 var(--accent)}
 
 .tree-view-workspace{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;overflow:hidden}.tree-view-switch{display:flex;gap:4px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface)}.tree-view-switch button{font-size:11px;padding:6px 10px;border-color:transparent}.tree-view-switch button.active{background:var(--accent-soft,#eee7f3);color:var(--accent);border-color:#d8cce2}
+
+.tree-analysis-excluded{font-size:10px;color:#945541;white-space:nowrap}

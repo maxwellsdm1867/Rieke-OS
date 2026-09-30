@@ -6,8 +6,9 @@ import './TreeBuilder.css';
 import { reorderIds } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
 import {COMMON_TREE_FIELDS,treeFieldLabel,treeFieldHint,treeFieldExamples,treeFieldMatches,groupingFieldRank} from '../treeFieldPresentation.js';
-import {jointDefinition,shortFieldLabel} from '../jointGrouping.js';
+import {jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.js';
 import JointGroupingEditor from './JointGroupingEditor.jsx';
+import {useDelayedLoading} from './NavigationLoading.jsx';
 
 const categories = ['Common', 'Parameters', 'Combinations', 'Conditions', 'Suggested', 'All'];
 const categoryLabel = category => category === 'Suggested' ? 'Recommended' : category === 'Parameters' ? 'Protocol settings' : category === 'All' ? 'All metadata' : category;
@@ -50,15 +51,14 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   const [dragging,setDragging] = useState(null);
   const [dropSpot,setDropSpot] = useState(null);
   const [announcement,setAnnouncement] = useState('');
-  const [copyMessage,setCopyMessage]=useState(null);
+  const [copyMessage,setCopyMessage]=useState(null),[layoutError,setLayoutError]=useState('');
   const orderKey = JSON.stringify(order), valueKey = JSON.stringify(value);
   useEffect(()=>setCopyMessage(null),[orderKey]);
   useEffect(()=>setOrder(JSON.parse(valueKey)),[valueKey]);
-  useEffect(()=>{
-    if(orderKey===valueKey)return;
-    const timer=setTimeout(()=>onChange(JSON.parse(orderKey)),250);
-    return()=>clearTimeout(timer);
-  },[orderKey,valueKey,onChange]);
+  function changeOrder(next){
+    const updated=typeof next==='function'?next(currentOrder.current):next;
+    currentOrder.current=updated;setOrder(updated);onChange(updated);
+  }
   const matches = useMemo(()=>{
     return fields.filter(field=>treeFieldMatches(field,{order,category,suggestions,search}))
       .sort((a,b)=>category==='Common'?COMMON_TREE_FIELDS.indexOf(a.id)-COMMON_TREE_FIELDS.indexOf(b.id):category==='Suggested'?suggestions.indexOf(a.id)-suggestions.indexOf(b.id):groupingFieldRank(a)-groupingFieldRank(b) || (a.grouping_priority ?? 100)-(b.grouping_priority ?? 100) || a.label.localeCompare(b.label));
@@ -90,11 +90,11 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   },[active,open,listId]);
   function add(field) {
     if(order.length>=8||order.includes(field.id))return;
-    setOrder(previous=>[...previous,field.id]);setSearch('');setOpen(false);trigger.current?.focus();
+    changeOrder(previous=>[...previous,field.id]);setSearch('');setOpen(false);trigger.current?.focus();
   }
   function commitOrder(next, sourceId) {
     if(next===order || sameOrder(next,order))return;
-    setOrder(next);
+    changeOrder(next);
     setAnnouncement(`${fieldMap.get(sourceId)?.label || sourceId} moved to level ${next.indexOf(sourceId)+1} of ${next.length}.`);
   }
   function move(index,offset) {
@@ -125,7 +125,7 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
       onTarget:target=>setDropSpot(previous=>previous?.id===target?.id&&previous?.placement===target?.placement?previous:target),
       onDrop:target=>{
         const previous=currentOrder.current,next=reorderIds(previous,id,target.id,target.placement);
-        if(next!==previous){setOrder(next);setAnnouncement(`${fieldMap.get(id)?.label || id} moved to level ${next.indexOf(id)+1} of ${next.length}.`);}
+        if(next!==previous){changeOrder(next);setAnnouncement(`${fieldMap.get(id)?.label || id} moved to level ${next.indexOf(id)+1} of ${next.length}.`);}
       },
       onCancel:()=>setAnnouncement('Reordering cancelled. Your grouping is unchanged.'),
       onFinish:()=>{cancelDrag.current=null;setDragging(null);setDropSpot(null);},
@@ -133,7 +133,7 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   }
   function usePreset(preset) {
     if(preset.fields.length>8||new Set(preset.fields).size!==preset.fields.length||preset.fields.some(id=>!fieldMap.has(id)))return;
-    setOrder([...preset.fields]);setOpen(false);setSearch('');
+    changeOrder([...preset.fields]);setOpen(false);setSearch('');
   }
   function keys(event) {
     if(event.key==='Escape'){setOpen(false);event.stopPropagation();return;}
@@ -146,6 +146,7 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   }
   const isCurrent = !loading && sameOrder((preview?.levels || []).map(level=>level.field),order);
   const pending = loading || orderKey!==valueKey;
+  const showPending=useDelayedLoading(pending&&!error);
   async function copyMatlab(){
     if(!isCurrent||pending||error||!preview?.matlab_command)return;
     try{await navigator.clipboard.writeText(preview.matlab_command);setCopyMessage({text:'Copied EpicTreeGUI command',error:false});}
@@ -182,15 +183,17 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
             {field?.components&&<div className="tb-joint-level">{field.components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{shortFieldLabel(fieldMap.get(key))}</span>)}</div>}
             <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:categoryLabel(field?.category) || 'Saved field'}{field?.components?' · all values match':''}</small>
           </div><div className="tb-step-actions">
+            {field?.components&&<button aria-label={`Separate ${field.label} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
             <button disabled={index===order.length-1} aria-label={`Move ${field?.label || id} later`} title="Move down one level" onClick={()=>move(index,1)}><ArrowDown size={13}/></button></>}
-            <button aria-label={`Remove ${field?.label || id} grouping`} title="Remove level" onClick={()=>setOrder(previous=>previous.filter(key=>key!==id))}><X size={13}/></button>
+            <button aria-label={`Remove ${field?.label || id} grouping`} title="Remove level" onClick={()=>changeOrder(previous=>previous.filter(key=>key!==id))}><X size={13}/></button>
           </div></li>;
         })}
       </ol>
+      {layoutError&&<p className="tb-error" role="alert">{layoutError}<button onClick={()=>setLayoutError('')}>Dismiss</button></p>}
       {order.length>1&&<button className="tb-move-controls-toggle" aria-pressed={showMoveControls} onClick={()=>setShowMoveControls(value=>!value)}><Keyboard size={13}/>{showMoveControls?'Hide move controls':'Show move controls'}</button>}
       {!order.length&&<div className="tb-flat"><span className="tb-flat-dot"/> All matching epochs in one list</div>}
-      <JointGroupingEditor fields={fields} order={order} onChange={next=>{setOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
+      <JointGroupingEditor fields={fields} order={order} onChange={next=>{changeOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
       <button ref={trigger} className="tb-add-split" aria-haspopup="dialog" aria-expanded={open} disabled={order.length>=8 || catalog.loading&&!catalog.data} onClick={()=>{setSearch('');setCategory(suggestions.length?'Suggested':'Common');setOpen(value=>!value);}}><Plus size={16}/>{order.length>=8?'Eight-level limit reached':'Add a split'}<ChevronDown size={14}/></button>
       <button className="tb-acquisition-preset" disabled={['date','cell','group','block'].some(id=>!fieldMap.has(id))} onClick={()=>usePreset({fields:['date','cell','group','block']})}><GitBranch size={14}/><span>Date → Cell → Epoch group → Block</span></button>
       <div className="tb-presets" aria-label="Tree presets">
@@ -202,15 +205,15 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
               disabled={preset.fields.length>8||preset.fields.some(id=>!fieldMap.has(id))}>{preset.label}</option>)}
           </select>
         </label>
-        <button className={!order.length?'active':''} onClick={()=>setOrder([])}>Flat list</button>
+        <button className={!order.length?'active':''} onClick={()=>changeOrder([])}>Flat list</button>
       </div>
       {catalog.error&&<div className="tb-error" role="alert">{catalog.error}<button onClick={catalog.reload}>Retry fields</button></div>}
       {catalog.loading&&!catalog.data&&<p className="tb-note"><LoaderCircle size={12} className="spin"/> Reading available fields…</p>}
       <p className="tb-note">Source values only. Missing values remain in the tree.</p>
     </>}</div>
     <div className={`tb-preview-status ${error?'tb-error-status':''}`} role="status">
-      {pending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
-      <span>{pending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
+      {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
+      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
     <details className="tb-matlab-code"><summary><Code2 size={14}/> EpicTreeGUI code</summary>
       <p>Export this layout to EpicTreeGUI, then run this line from the extracted bundle with EpicTreeGUI on your MATLAB path.</p>

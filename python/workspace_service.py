@@ -10,10 +10,11 @@ import copy
 import datetime as dt
 import hashlib
 import json
+import sys
 import time
 from pathlib import Path
 import uuid
-from collections import ChainMap
+from collections.abc import Mapping
 
 from recording_workspace import (connect, digest, epochs, evaluate_protocol_file,
                                  validate_protocol_definition, workspace_tables)
@@ -22,12 +23,29 @@ from workspace_tree import catalog as tree_catalog, value_label, humanize as fie
 from workspace_tree_code import matlab_tree_command
 from workspace_predicates import validate as validate_predicate, matches as predicate_matches, predicate_catalog
 
-class WorkspaceNeedsRefresh(RuntimeError):
-    """A failed source validation must be repaired before serving scientific data."""
-
-
 TREE_CACHE_VALUE_BUDGET = 2_000_000
 TREE_CACHE_MAX_SCOPES = 8
+EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
+
+
+class _SourceDetails(Mapping):
+    """Dispatch lazy details through the already validated owning source.
+
+    Membership iteration never opens a source or decompresses details. Looking
+    up an epoch touches exactly its own source mapping, independent of the
+    number of recordings in a project.
+    """
+    def __init__(self, rows, sources):
+        self.rows, self.sources = rows, sources
+
+    def __len__(self):
+        return len(self.rows)
+
+    def __iter__(self):
+        return iter(self.rows)
+
+    def __getitem__(self, identity):
+        return self.sources[self.rows[identity]['source_sha256']][identity]
 
 
 def _date(value):
@@ -56,14 +74,40 @@ def _fingerprint(epoch):
 
 def validate_filters(filters):
     filters = {} if filters is None else filters
-    if not isinstance(filters, dict) or set(filters) - {'cell_uuid', 'cell_type', 'group_label'}:
-        raise ValueError('Unsupported filter; use cell_uuid, cell_type, or group_label')
+    if not isinstance(filters, dict) or set(filters) - {'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label', 'tag', 'tagged', 'tag_predicate'}:
+        raise ValueError('Unsupported filter; use epoch_uuid, cell_uuid, cell_type, group_label, tag, tagged, or tag_predicate')
     if any(not isinstance(value, str) for value in filters.values()):
         raise ValueError('Filter values must be text')
+    if 'tag' in filters:
+        from workspace_annotations import text
+        text(filters['tag'])
+    if 'tagged' in filters and filters['tagged'] != 'true':
+        raise ValueError('The tagged filter must be the text true')
+    if 'tag_predicate' in filters:
+        predicate = validate_tag_filter_predicate(filters['tag_predicate'])
+        filters = {**filters, 'tag_predicate': json.dumps(predicate, sort_keys=True, separators=(',', ':'), allow_nan=False)}
     cleaned = {k: v for k, v in filters.items() if v}
+    if 'epoch_uuid' in cleaned:
+        cleaned['epoch_uuid'] = _uuid(cleaned['epoch_uuid'])
     if 'cell_uuid' in cleaned:
         cleaned['cell_uuid'] = _uuid(cleaned['cell_uuid'])
     return cleaned
+
+
+TAG_FILTER_FIELDS = ('annotations/cell/tags', 'annotations/epoch/tags', 'annotations/effective/tags')
+
+
+def validate_tag_filter_predicate(value):
+    """Use the regular bounded predicate grammar, limited to shared tag arrays."""
+    if not isinstance(value, str) or len(value) > 65536:
+        raise ValueError('Tag predicate must be JSON text up to 65536 characters')
+    try:
+        predicate = json.loads(value)
+    except (ValueError, RecursionError) as error:
+        raise ValueError('Malformed tag predicate JSON') from error
+    from workspace_predicates import validate
+    return validate(predicate, {'fields': [{'id': key} for key in TAG_FILTER_FIELDS]},
+                    {'tag_schema': {key: ['example tag'] for key in TAG_FILTER_FIELDS}})
 
 
 def bounded_window(start, count, total, maximum=100000):
@@ -98,14 +142,17 @@ def read_response_window(path, signature, row, stream, start=0, count=20000):
     """
     import h5py
     import numpy as np
+    from recording_workspace import resolve_sealed_h5_path
     path = Path(path)
     with h5py.File(path, 'r') as h5:
-        obj = h5[stream['h5_path']]
+        obj = resolve_sealed_h5_path(h5, stream['h5_path'])
         if _uuid(obj.attrs['uuid']) != stream['uuid'] or _uuid(obj.parent.parent.attrs['uuid']) != row['epoch_uuid']:
             raise ValueError('Trace source identity changed')
         if float(obj.attrs['sampleRate']) != stream['sample_rate']:
             raise ValueError('Trace source sample rate changed')
-        data = obj['data']
+        data = resolve_sealed_h5_path(h5, stream['h5_path'].rstrip('/') + '/data')
+        if not isinstance(data, h5py.Dataset) or not data.dtype.names or not {'quantity', 'units'} <= set(data.dtype.names):
+            raise ValueError('Unsupported response representation')
         if len(data) != stream['sample_count']:
             raise ValueError('Trace sample count changed')
         begin, end = bounded_window(start, count, len(data))
@@ -132,12 +179,22 @@ from workspace_tree import materialize_combinations, predicate_scope, component_
 class WorkspaceService:
     def __init__(self, project_dir, curation_provider=None):
         self.project_dir = Path(project_dir).resolve()
+        if (self.project_dir / '.portable-restore.pending').exists():
+            raise ValueError('Project transfer restore is incomplete; finish recovery before opening it')
+        config = json.loads((self.project_dir / 'catalog.json').read_text())
+        if config.get('connection', {}).get('credential_provider', {}).get('kind') == 'native-project':
+            from workspace_portability import rebase_project_paths, register_empty_project
+            register_empty_project(self.project_dir)
+            rebase_project_paths(self.project_dir)
         self.curation_provider = curation_provider
         self._loaded = False
         self._source_signatures = {}
         from workspace_projection_cache import ProjectionCache
+        import workspace_projection_cache, workspace_metadata_objects
         self._projection_store = ProjectionCache(self.project_dir / 'cache' / 'source-projections')
-        self._projection_contract = digest(Path(__file__))
+        import recording_workspace
+        self._projection_contract = checksum([digest(Path(module.__file__)) for module in
+            (recording_workspace, workspace_projection_cache, workspace_metadata_objects)] + [digest(Path(__file__))])
         self.refresh()
 
     def set_curation_provider(self, provider):
@@ -235,7 +292,14 @@ class WorkspaceService:
         rows, details, cells = {}, {}, {}
         source_epoch_count = 0
         source_cells = set()
+        from recording_workspace import validate_source_identity, validate_manifest_cell_count
         with h5py.File(path, 'r') as h5:
+            validate_source_identity(h5, document)
+            for animal in document['animals']:
+                for preparation in animal['preparations']:
+                    for cell in preparation['cells']:
+                        cells[cell['uuid']] = {'cell_uuid': cell['uuid'], 'label': cell['label'],
+                            'cell_type': cell.get('type'), 'date': _date(cell['start_time']), 'start_time': cell['start_time']}
             for cell, group, block, epoch in epochs(document):
                 identity = _uuid(epoch['uuid'])
                 if identity in rows:
@@ -281,7 +345,8 @@ class WorkspaceService:
                         'block': _metadata(block, {'epochs'}), 'epoch': epoch}}
                 cells[cell['uuid']] = {'cell_uuid': cell['uuid'], 'label': cell['label'],
                     'cell_type': cell.get('type'), 'date': _date(cell['start_time']), 'start_time': cell['start_time']}
-        if source_epoch_count != manifest['counts']['epochs'] or len(source_cells) != manifest['counts']['cells']:
+        validate_manifest_cell_count(manifest, cells, source_cells)
+        if source_epoch_count != manifest['counts']['epochs']:
             raise ValueError('Source count differs from validated manifest')
         after = path.stat()
         if signature != (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
@@ -338,12 +403,14 @@ class WorkspaceService:
         if hasattr(self, 'project') and self.project['project_uuid'] != project['project_uuid']:
             raise ValueError('Project identity changed; open that project in a separate workspace session')
         provider = config['connection']['credential_provider']
-        from recording_workspace import configured_container
-        dj = connect(configured_container(self.project_dir))
+        if provider['kind'] not in {'docker-container-env', 'native-project'}:
+            raise ValueError('Unsupported credential provider')
+        dj = (connect(provider, project_dir=self.project_dir) if provider['kind'] == 'native-project'
+              else connect(provider['container']))
         _, Source, Event, _ = workspace_tables(dj)
         source_records = (Source & {'project_uuid': project['project_uuid']}).to_dicts()
         rows, cells, sources, manifests, fingerprints = {}, {}, [], {}, {}
-        detail_maps = []
+        detail_maps = {}
         old_cache = getattr(self, '_source_metadata_cache', {})
         projection_store = getattr(self, '_projection_store', None)
         pending_projections = []
@@ -376,15 +443,18 @@ class WorkspaceService:
             prepared.append((source, metadata_path, key))
             final_checks.extend([(metadata_path, metadata_signature), (source_path, source_signature)])
             metrics['timing_ms']['metadata_check'] += (time.perf_counter() - check_started) * 1000
+        # Prepared source projections remain leased until this refresh either
+        # publishes its complete generation or releases them after failure.
+        projection_leases=projection_store.hold(entry['key'] for entry in next_cache.values()) if projection_store else None
         disk_index, previous_index, location, generation = None, getattr(self, 'disk_index', None), None, None
         if projection_store:
             from workspace_disk_index import DiskMetadataIndex
-            import workspace_disk_index, workspace_tree, workspace_predicates
+            import workspace_disk_index, workspace_tree, workspace_predicates, workspace_metadata_objects
             import sqlite3
             generation = checksum({'project_uuid':project['project_uuid'],
                 'sources':{identity:entry['key'] for identity,entry in next_cache.items()},
                 'index_contract':[digest(Path(module.__file__)) for module in
-                                  (workspace_disk_index,workspace_tree,workspace_predicates)]})
+                                  (workspace_disk_index,workspace_tree,workspace_predicates,workspace_metadata_objects)]})
             index_started = time.perf_counter()
             location = self.project_dir / 'cache' / 'metadata' / (generation + '.sqlite')
             if previous_index is not None and previous_index.generation == generation:
@@ -433,15 +503,15 @@ class WorkspaceService:
                 raise ValueError('Duplicate epoch UUID across source recordings')
             snapshot = projection if projection_store else copy.deepcopy(projection)
             rows.update(snapshot['rows'])
-            # ChainMap iteration reads identities only. Do not details.update()
-            # a lazy mapping: that would decompress every epoch eagerly.
-            detail_maps.append(snapshot['details'])
+            # Retain lazy details and dispatch by the independently validated
+            # source owner, without probing every preceding source mapping.
+            detail_maps[identity] = snapshot['details']
             cells.update(snapshot['cells'])
             fingerprints.update(snapshot['fingerprints'])
             sources.append(snapshot['source'])
             manifests[identity] = copy.deepcopy(manifest)
             next_cache[identity] = {'key':key,'disk':True} if projection_store else {'key':key,'projection':projection}
-        details = ChainMap(*detail_maps)
+        details = _SourceDetails(rows, detail_maps)
         number_block_epochs(rows)
         query_started = time.perf_counter()
         protocols = {}
@@ -511,11 +581,18 @@ class WorkspaceService:
         elif registered_cache is not None:
             self._registered_tree_cache = ((id(rows), len(rows), id(self.details), len(self.details)), registered_cache[1])
         self._loaded = True
+        if projection_store and disk_index is not None:
+            try:
+                metrics['cache_cleanup']={'metadata':disk_index.publish(),
+                    'projections':projection_store.publish(entry['key'] for entry in next_cache.values())}
+            except (OSError,ValueError) as error:
+                metrics.setdefault('cache_warnings',[]).append('Derived cache cleanup was deferred: '+str(error))
+        if projection_leases is not None:projection_leases.close()
         return {'sources': len(sources), 'epochs': len(rows), 'protocols': len(protocols)}
 
     def _ready(self):
         if not self._loaded:
-            raise WorkspaceNeedsRefresh('Workspace validation did not complete. Refresh metadata to validate source files, then retry.')
+            raise RuntimeError('Workspace validation did not complete; refresh required')
 
     def _curation(self, protocol_uuid=None):
         if self.curation_provider and protocol_uuid:
@@ -537,8 +614,10 @@ class WorkspaceService:
         self._ready()
         return self.protocols[_uuid(protocol_uuid)]['file']
 
-    def set_binding_provider(self, provider):
+    def set_binding_provider(self, provider, *, header_provider=None):
         self.binding_provider = provider
+        self.binding_header_provider = header_provider
+        self._epoch_page_cache = None
 
     def binding(self, protocol_uuid):
         provider = getattr(self, 'binding_provider', None)
@@ -577,8 +656,37 @@ class WorkspaceService:
         result = self.query_result(protocol_uuid)
         curation = self._curation(protocol_uuid)
         rows = [self._decorate(self.rows[member['uuid']], curation) for member in result['epochs']]
-        return sorted((row for row in rows if all(row.get(k) == v for k, v in filters.items())),
-                      key=lambda row: (row['date'], row['start_time'], row['epoch_uuid']))
+        return self._filter_rows(rows, filters)
+
+    def _filter_rows(self, rows, filters):
+        """Narrow the current dataset without changing membership or annotations.
+
+        Shared cell tags inherit to epochs. Protocol curation tags are a distinct
+        scope and do not satisfy these shared annotation filters.
+        """
+        ordinary = {key: value for key, value in filters.items() if key not in {'tag', 'tagged', 'tag_predicate'}}
+        rows = [row for row in rows if all(row.get(key) == value for key, value in ordinary.items())]
+        if any(key in filters for key in ('tag', 'tagged', 'tag_predicate')):
+            shared = getattr(self, 'shared_annotations', None)
+            indexed=shared.filter_epoch_ids(rows,filters) if hasattr(shared,'filter_epoch_ids') else None
+            if indexed is not None:
+                selected=set(indexed[0])
+                return sorted((row for row in rows if row['epoch_uuid'] in selected),
+                    key=lambda row:(row['date'],row['start_time'],row['epoch_uuid']))
+            annotations = shared.for_epochs(rows) if shared else {}
+            from workspace_predicates import matches
+            predicate = validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
+            selected = []
+            for row in rows:
+                tags = {chip['tag'] for chip in annotations.get(row['epoch_uuid'], {}).get('effective_tags', [])}
+                if ('tag' not in filters or filters['tag'] in tags) and ('tagged' not in filters or tags):
+                    annotation = annotations.get(row['epoch_uuid'], {})
+                    current = {field: sorted({chip['tag'] for chip in annotation.get(scope, [])})
+                               for field, scope in zip(TAG_FILTER_FIELDS, ('cell_tags', 'epoch_tags', 'effective_tags'))}
+                    if predicate is None or matches(predicate, current):
+                        selected.append(row)
+            rows = selected
+        return sorted(rows, key=lambda row: (row['date'], row['start_time'], row['epoch_uuid']))
 
     @staticmethod
     def _counts(rows):
@@ -637,19 +745,111 @@ class WorkspaceService:
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
 
-    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None):
+    def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
         if isinstance(offset, bool) or isinstance(limit, bool) or not isinstance(offset, int) or not isinstance(limit, int) or offset < 0 or not 1 <= limit <= 250:
             raise ValueError('Epoch page requires nonnegative offset and limit 1–250')
-        rows = self.filtered_rows(protocol_uuid, filters)
+        if type(include_curation) is not bool or type(include_cells) is not bool:
+            raise ValueError('Epoch page projection options must be boolean')
+        identities,shared_generation = self._epoch_page_identities(protocol_uuid, filters)
         anchor_index = None
         if anchor_uuid is not None:
             identity = _uuid(anchor_uuid)
-            anchor_index = next((index for index, row in enumerate(rows) if row['epoch_uuid'] == identity), None)
-            if anchor_index is None:
+            try:
+                anchor_index = identities.index(identity)
+            except ValueError:
                 raise ValueError('Focused epoch is outside this protocol and filter scope')
             offset = anchor_index // limit * limit
-        return {'total': len(rows), 'offset': offset, 'limit': limit, 'epochs': rows[offset:offset + limit],
+        shown = identities[offset:offset + limit]
+        provider = self.curation_provider
+        curation = provider(_uuid(protocol_uuid), {key:self._fingerprints[key] for key in shown}) if include_curation and provider and shown else {}
+        rows = [self._decorate(self.rows[key], curation) for key in shown]
+        result={'total': len(identities), 'offset': offset, 'limit': limit, 'epochs': rows,
+                **({'_shared_annotation_generation':shared_generation} if shared_generation is not None else {}),
                 **({'anchor_index': anchor_index, 'anchor_uuid': identity} if anchor_index is not None else {})}
+        if include_cells:
+            counts={}
+            for identity in identities:
+                cell=self.rows[identity]['cell_uuid']
+                counts[cell]=counts.get(cell,0)+1
+            result['cells']=sorted(({**self.cells[cell],'epochs':count} for cell,count in counts.items()),
+                key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
+        return result
+
+    def _epoch_page_identities(self, protocol_uuid, filters=None):
+        """Order raw membership once; read current curation only after slicing.
+
+        Frozen binding headers are safe cache keys because saved recipes are
+        immutable. Unbound/provider-only memberships are compared explicitly to
+        detect in-place changes. Shared-tag membership is always read live.
+        """
+        self._ready()
+        protocol_uuid = _uuid(protocol_uuid)
+        protocol = self.protocols[protocol_uuid]
+        filters = validate_filters(filters)
+        tag_filters = {key:value for key,value in filters.items() if key in {'tag','tagged','tag_predicate'}}
+        ordinary = {key:value for key,value in filters.items() if key not in tag_filters}
+        header_provider = getattr(self, 'binding_header_provider', None)
+        binding = None if header_provider else self.binding(protocol_uuid)
+        header = header_provider(protocol_uuid) if header_provider else binding
+        if header is None and protocol['definition'].get('initial_revision_uuid'):
+            raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
+        members = (binding['recipe']['epochs'] if binding else protocol['result']['epochs'])
+        signature = None if header_provider and header is not None else tuple(member['uuid'] for member in members)
+        key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
+        from workspace_disk_index import DiskMetadataIndex
+        index = getattr(self, 'disk_index', None)
+        cache = None
+        overhead = sys.getsizeof(self._fingerprints) + 16 * 1024
+        if isinstance(index, DiskMetadataIndex):
+            index._check()
+            generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
+            previous = getattr(self, '_epoch_page_cache', None)
+            if overhead < EPOCH_PAGE_CACHE_BYTES:
+                if previous is None or previous[0] != generation or previous[2] != self._fingerprints:
+                    previous = self._epoch_page_cache = (generation,{},dict(self._fingerprints))
+                cache = previous[1]
+            else:
+                self._epoch_page_cache = None
+        entry = cache.get(key) if cache is not None else None
+        if entry is not None and (signature is None or signature == entry[0]):
+            cache.pop(key)
+            cache[key] = entry
+            identities = entry[1]
+        else:
+            if cache is not None:
+                cache.pop(key,None)
+            if header_provider and header is not None:
+                # Re-read the binding together with its recipe on a cold scope.
+                # A concurrent bind may have changed since the header lookup.
+                binding = self.binding(protocol_uuid)
+                if binding is None and protocol['definition'].get('initial_revision_uuid'):
+                    raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
+                members = binding['recipe']['epochs'] if binding else protocol['result']['epochs']
+                key = (protocol_uuid, binding and binding['version'], binding and binding.get('revision_uuid'), tuple(sorted(ordinary.items())))
+            signature = tuple(member['uuid'] for member in members)
+            if binding is not None and set(signature) - self.rows.keys():
+                raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
+            rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
+            identities = tuple(row['epoch_uuid'] for row in rows)
+            if cache is not None:
+                # Only UUID tuples are retained. Conservatively count their
+                # strings twice even if borrowed/shared, keeping admission cheap.
+                size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)
+                           for values in (signature,identities))
+                if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
+                    cache.pop(key,None)
+                    cache[key] = (signature,identities,size)
+                    while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
+                        cache.pop(next(iter(cache)))
+        if tag_filters:
+            rows = [self.rows[identity] for identity in identities]
+            shared = getattr(self, 'shared_annotations', None)
+            indexed = shared.filter_epoch_ids(rows,tag_filters) if hasattr(shared,'filter_epoch_ids') else None
+            if indexed is not None:
+                return indexed
+            rows = self._filter_rows(rows, tag_filters)
+            identities = tuple(row['epoch_uuid'] for row in rows)
+        return identities,None
 
     def _remember_tree_catalog(self, key, result):
         cache = self._tree_catalog_cache
@@ -677,7 +877,11 @@ class WorkspaceService:
         binding = self.binding(protocol_uuid) if protocol_uuid else None
         scope = self.source_scope() if protocol_uuid is None else None
         scope_revision = scope['revision'] if scope else None
-        key = (protocol_uuid, binding['version'] if binding else 0, scope_revision, tuple(sorted(filters.items())))
+        shared = getattr(self, 'shared_annotations', None)
+        uses_tags=shared and any(key in filters for key in ('tag', 'tagged', 'tag_predicate'))
+        tag_generation=shared.generation_token() if uses_tags and hasattr(shared,'generation_token') else None
+        tag_revision=tag_generation if tag_generation is not None else shared.snapshot()['revision'] if uses_tags else None
+        key = (protocol_uuid, binding['version'] if binding else 0, scope_revision, tuple(sorted(filters.items())), tag_revision)
         if key in cache:
             result = cache.pop(key)
             cache[key] = result  # Most recently used, without recomputation.
@@ -694,6 +898,9 @@ class WorkspaceService:
                 result = index.catalog(ids=ids, known_fields=known), index.values(ids=ids)
             else:
                 result = tree_catalog(rows, self.details, known, sources=self.sources)
+        if tag_generation is not None and shared.generation_token()!=tag_generation:
+            from workspace_shared_tag_index import SharedTagsChanged
+            raise SharedTagsChanged('Shared tags changed while loading this tree. Refresh and try again.')
         return self._remember_tree_catalog(key, result)
 
     def tree_fields(self, protocol_uuid, filters=None, *, splits=None):
@@ -703,14 +910,30 @@ class WorkspaceService:
             catalog, _ = materialize_combinations(catalog, values, order)
         return catalog
 
+    def metadata_fields(self):
+        """Registered field definitions for inspecting one epoch's metadata.
+
+        The sealed index stores its complete catalog at publication, so this
+        projection never materializes filtered epoch values or saved decisions.
+        """
+        self._ready()
+        index=getattr(self,'disk_index',None)
+        if index is not None:
+            index._check()
+            catalog=index.catalog()
+        else:
+            catalog=self._registered_tree_fields()[0]
+        names=('id','label','category','path','components','grouping_role','grouping_priority','grouping_hint')
+        return {'fields':[{key:copy.deepcopy(field[key]) for key in names if key in field}
+            for field in catalog['fields']]}
+
     def _tree_rows(self, protocol_uuid, filters=None):
         if protocol_uuid is not None:
             return self.filtered_rows(protocol_uuid, filters)
         self._ready()
         filters = validate_filters(filters)
         active = set(self.source_scope()['active_source_revisions'])
-        return sorted((row for row in self.rows.values() if row['source_sha256'] in active and all(row.get(key) == value for key, value in filters.items())),
-                      key=lambda row: (row['date'], row['start_time'], row['epoch_uuid']))
+        return self._filter_rows([row for row in self.rows.values() if row['source_sha256'] in active], filters)
 
     def validate_tree_splits(self, protocol_uuid, splits):
         fields = self.tree_fields(protocol_uuid)['fields']
@@ -756,12 +979,29 @@ class WorkspaceService:
             cached = self._predicate_catalog_cache = (scope['revision'], data)
         return self._with_annotation_fields({**cached[1], 'source_scope': scope, 'total_catalog': len(self.rows)})
 
-    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True):
+    def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True):
+        if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):
+            raise ValueError('A rendered tree requires catalog summaries; include_catalog_summary must be boolean')
         scope = self.source_scope()
         eligible = [row['epoch_uuid'] for row in self._tree_rows(None)]
         validated, identities, annotation_scope = self.match_predicate(predicate, eligible)
         index = getattr(self, 'disk_index', None)
-        if index:
+        if not include_catalog_summary:
+            # Search-result navigation needs field identities, exact frozen
+            # membership and a revision, not every field's scoped statistics.
+            # Never label global counts or suggestions as matched-scope data.
+            registered = index.catalog() if index else self._registered_tree_fields()[0]
+            fields = [{key: field[key] for key in ('id', 'label', 'category', 'path', 'components') if key in field}
+                      for field in registered['fields']]
+            definitions = {field['id']: field for field in fields}
+            order = parse_splits(splits, definitions)
+            from workspace_tree import joint_definition
+            fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
+            rows = [self.rows[key] for key in identities]
+            scoped_catalog = {'fields': fields, 'total': len(rows), 'summary_available': False}
+            scoped_values = None
+            total_source = len(eligible)
+        elif index:
             rows = [self.rows[key] for key in identities]
             scoped_catalog = index.catalog(ids=identities, known_fields=index.catalog()['fields'])
             scoped_values = index.values(ids=identities)
@@ -772,11 +1012,13 @@ class WorkspaceService:
             scoped_catalog, scoped_values = tree_catalog(rows, self.details, catalog['fields'], sources=self.sources)
             total_source = len(values)
         order = parse_splits(splits, {field['id'] for field in scoped_catalog['fields']})
-        scoped_catalog, scoped_values = materialize_combinations(scoped_catalog, scoped_values, order)
+        if include_catalog_summary:
+            scoped_catalog, scoped_values = materialize_combinations(scoped_catalog, scoped_values, order)
         tree = self._render_tree(rows, scoped_catalog, scoped_values, splits) if include_tree else {
             'count': len(rows), 'split_order': order, 'matlab_command': matlab_tree_command(order)}
         from workspace_tree_pages import selection_revision
         return {'predicate': validated, 'splits': splits, 'tree': tree, 'catalog': scoped_catalog,
+                **({'catalog_summary': False} if not include_catalog_summary else {}),
                 'tree_revision': selection_revision(self, None, validated, {}, order, rows, annotation_scope=annotation_scope),
                 'total_source': total_source, 'total_catalog': len(self.rows), 'matched_count': len(rows),
                 'source_scope': scope, 'source_revisions': scope['active_source_revisions'],
@@ -890,9 +1132,6 @@ class WorkspaceService:
         self._ready()
         if not isinstance(limit, int) or not 1 <= limit <= 1000:
             raise ValueError('Event limit must be 1–1000')
-        # Overview needs event headers only. Audit payloads can contain large
-        # exact-membership snapshots; sorting those blobs exhausts native MySQL's
-        # sort buffer and returning them bloats every overview response.
         rows = (self.Event & {'project_uuid': self.project['project_uuid']}).proj(
             'project_uuid', 'occurred_at', 'actor', 'action').fetch(
             as_dict=True, order_by='occurred_at DESC, event_uuid DESC', limit=limit)
@@ -908,17 +1147,16 @@ class WorkspaceService:
                 raise ValueError('Invalid action filter')
             restriction['action'] = action
         relation = self.Event & restriction
-        headers = relation.proj('occurred_at').fetch(as_dict=True,
+        summaries = relation.proj('project_uuid', 'occurred_at', 'actor', 'action').fetch(as_dict=True,
             order_by='occurred_at DESC, event_uuid DESC', limit=limit + 1, offset=offset)
-        identities = [row['event_uuid'] for row in headers[:limit]]
-        # Fetch the bounded page's full audit evidence by primary key, without
-        # asking SQL to sort the JSON payload. Preserve header ordering in Python.
-        indexed = {row['event_uuid']: row for row in
-                   (relation & [{'event_uuid': identity} for identity in identities]).to_dicts()} if identities else {}
-        rows = [indexed[identity] for identity in identities]
+        page = summaries[:limit]
+        details = ((relation & [{'event_uuid': row['event_uuid']} for row in page]).fetch(as_dict=True)
+                   if page else [])
+        by_identity = {row['event_uuid']: row for row in details}
+        rows = [by_identity[row['event_uuid']] for row in page]
         return {'events': [{**row, 'occurred_at': row['occurred_at'].replace(
             tzinfo=dt.timezone.utc).isoformat()} for row in rows],
-            'offset': offset, 'limit': limit, 'has_more': len(headers) > limit}
+            'offset': offset, 'limit': limit, 'has_more': len(summaries) > limit}
 
     def event_detail(self, event_uuid):
         self._ready()

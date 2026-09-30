@@ -41,6 +41,7 @@ class StreamingValueView(Mapping):
         return (self._row(value) for value in self.base.values())
 
 BASE_FIELDS = {
+    'epoch': ('Epoch UUID', 'Recording', 'epoch_uuid'),
     'date': ('Recording date', 'Recording', 'date'),
     'cell': ('Cell', 'Recording', 'cell_uuid'),
     'block': ('Epoch block', 'Recording', 'block_uuid'),
@@ -357,7 +358,7 @@ def suggest_fields(fields, values, family=None):
         # searchable but do not crowd the beginner's starting suggestions.
         high_cardinality = count > 24 or count > max(5, len(values) * .25)
         field['high_cardinality'] = high_cardinality
-        if not field['varying'] or high_cardinality or field.get('grouping_role') == 'technical' or field['id'] in {'block', 'block time', 'group'}:
+        if not field['varying'] or high_cardinality or field.get('grouping_role') == 'technical' or field['id'] in {'epoch', 'block', 'block time', 'group'}:
             continue
         if field['id'].rsplit('/', 1)[-1].lower() in {'seed', 'uuid', 'id'}:
             continue

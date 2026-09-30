@@ -54,7 +54,7 @@ def _mat_record(store, identity, project_uuid, protocol_uuid):
 
 
 def register_matlab_mask_routes(app, service, store, state, db_lock):
-    """Register one manual import; no mask discovery, auto-load or tag rewrites.
+    """Register manual import and metadata-refresh discovery; no silent application.
 
     ``state(protocol_uuid)`` returns current result, curation mapping and revision.
     The existing CurationStore applies only exported UUID pairs transactionally,
@@ -88,6 +88,10 @@ def register_matlab_mask_routes(app, service, store, state, db_lock):
                     input_digest.update(chunk)
                     handle.write(chunk)
             parsed = read_ugm(path)
+        return apply_mask(parsed, input_digest.hexdigest(), filename, protocol_uuid, query_revision, requested)
+
+    def apply_mask(parsed, input_sha256, filename, protocol_uuid, query_revision, requested,
+                   *, preview_only=False, refresh_service=True):
         identities = set(parsed['epoch_uuids'])
         metadata = parsed['metadata']
         embedded = {metadata[key] for key in ('dataset_uuid', 'export_uuid') if key in metadata}
@@ -98,7 +102,7 @@ def register_matlab_mask_routes(app, service, store, state, db_lock):
         source_manager = app.extensions.get('data_stores')
         guard = source_manager.registration_locks() if source_manager else contextlib.nullcontext()
         with db_lock, guard:
-            service.refresh()
+            if refresh_service: service.refresh()
             result, current, revision = state(protocol_uuid)
             if query_revision != revision:
                 raise MatlabMaskConflict('Query, source metadata or curation changed. Refresh before importing the MATLAB mask.')
@@ -144,13 +148,16 @@ def register_matlab_mask_routes(app, service, store, state, db_lock):
             if not artifact.is_relative_to((service.project_dir / 'exports').resolve()) or digest(artifact) != record['artifact_sha256']:
                 raise ValueError('Completed MATLAB export artifact is missing, changed, or outside this project')
             inclusion = dict(zip(parsed['epoch_uuids'], parsed['mask']))
+            if preview_only:
+                return dict(query_revision=revision, epoch_count=len(identities), included_count=sum(inclusion.values()),
+                    changed_count=sum(current[key]['included'] != value for key,value in inclusion.items()))
             changed = store.update(protocol_uuid, sorted(identities), {},
                 {key: current[key]['revision'] for key in identities},
                 {key: fingerprints[key] for key in identities}, os.environ.get('USER', 'local-user'),
                 inclusion_by_epoch=inclusion,
                 audit_context={'query_revision': revision, 'source_revisions': recipe['source_revisions'],
                     'input_format': 'epictree-ugm', 'input_version': metadata['version'],
-                    'input_sha256': input_digest.hexdigest(), 'input_filename': filename,
+                    'input_sha256': input_sha256, 'input_filename': filename,
                     'dataset_uuid': selected, 'recipe_sha256': recipe['content_sha256'],
                     'artifact_sha256': record['artifact_sha256'], 'matched_by': 'exact_export_epoch_uuid_set',
                     'nonexported_epochs_preserved': True},
@@ -159,3 +166,17 @@ def register_matlab_mask_routes(app, service, store, state, db_lock):
             return jsonify(**changed, imported_count=len(identities), included_count=sum(inclusion.values()),
                 query_revision=after_revision, dataset_uuid=selected,
                 message=f'Imported {len(identities)} exported epoch decisions by UUID; other working-epoch decisions are unchanged.')
+
+    from workspace_mask_refresh import MaskRefresh
+    scanner = MaskRefresh(service, store, state, apply_mask)
+    app.extensions['mask_refresh'] = scanner
+
+    @app.post('/api/metadata/masks/apply')
+    def apply_discovered_mask():
+        body = request.get_json(silent=True)
+        if not isinstance(body,dict) or set(body) != {'dataset_uuid','location','input_sha256','query_revision'}:
+            raise ValueError('Choose a discovered mask and its current preview')
+        with db_lock:
+            response = scanner.apply(body)
+            # The scan is read-only; the existing importer owns the transaction.
+            return response

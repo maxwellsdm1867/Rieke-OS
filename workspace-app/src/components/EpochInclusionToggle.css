@@ -1,0 +1,4 @@
+.inspector button.epoch-inclusion-toggle{display:inline-flex;flex:0 0 23px;width:23px;min-height:23px;align-items:center;justify-content:center;gap:0;padding:3px;border:1px solid transparent;border-radius:4px;background:transparent;color:#397267}
+.inspector button.epoch-inclusion-toggle[aria-pressed=false]{color:#945541;background:#f8eee9}
+.inspector button.epoch-inclusion-toggle:hover{border-color:var(--border);background:var(--surface-subtle)}
+.inspector button.epoch-inclusion-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
+import {installDesktopLifecycle} from './desktopLifecycle.js';
+installDesktopLifecycle();
 class RenderBoundary extends React.Component {
   state = {error:null};
   static getDerivedStateFromError(error) {return {error};}

@@ -68,16 +68,15 @@ class BootstrapTests(unittest.TestCase):
         for value in ('v18.20.0','v20.18.9','v21.9.0','v22.11.9'):
             self.assertFalse(boot.supported_node(value))
 
-    def test_doctor_requires_native_mysql_without_invoking_docker(self):
+    def test_doctor_missing_native_mysql_is_read_only_and_separate_from_import_readiness(self):
         def capture(args,**kwargs):
-            if args[0]=='docker':raise AssertionError('Docker must not be invoked')
-            if str(args[0]).endswith('mysqld'):raise FileNotFoundError('Native MySQL missing')
+            if args[0]=='docker':raise FileNotFoundError('Docker not installed')
             return 'v24.1.0' if args[0]=='node' else '10.0.0'
         with patch.object(boot,'captured',side_effect=capture), \
              patch.object(boot,'verify_checkout',return_value=self.root/'parser'), \
              patch.object(boot,'probe_runtime',return_value={'parser_import':'ok'}):
             result=boot.doctor(self.root,{})
-        self.assertFalse(result['ready']);self.assertFalse(result['project_open_ready'])
+        self.assertTrue(result['ready']);self.assertFalse(result['project_open_ready'])
         self.assertFalse((self.root/'.rieke-runtime').exists())
 
     def test_probe_rejects_wrong_installed_origin_and_does_not_hide_errors(self):
@@ -95,6 +94,7 @@ class BootstrapTests(unittest.TestCase):
              patch.object(boot,'captured',side_effect=lambda args,**kw:'v24.0.0' if args[0]=='node' else 'a'*40), \
              patch.object(boot,'verify_checkout',return_value=checkout), \
              patch.object(boot,'run',side_effect=commands) as invoked, \
+             patch.object(boot,'install_mysql_runtime',return_value={'root':str(self.root/'.rieke-runtime/mysql')}), \
              patch.object(boot,'probe_runtime',return_value={'parser_import':'ok'}):
             result=boot.setup(self.root)
         commands=[list(map(str,call.args[0])) for call in invoked.call_args_list]
@@ -105,6 +105,21 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(result['retinanalysis_commit'],'a'*40)
         self.assertTrue((self.root/'.rieke-runtime/runtime.json').is_file())
         self.assertFalse((self.root/'project.json').exists())
+
+    def test_managed_doctor_uses_private_mysql_without_node_git_or_docker(self):
+        runtime = self.root / '.rieke-runtime'
+        runtime.mkdir()
+        (runtime/'runtime.json').write_text(json.dumps({'version':1,'retinanalysis_commit':'a'*40}))
+        (self.root/'workspace-app/dist').mkdir()
+        (self.root/'workspace-app/dist/index.html').write_text('<html></html>')
+        with patch.object(boot,'captured',side_effect=AssertionError('No external development commands at runtime')), \
+                patch.object(boot,'source_spec',return_value={**self.spec,'commit':'a'*40}), \
+                patch.object(boot,'mysql_runtime',return_value={'version':'8.4.2'}), \
+                patch.object(boot,'probe_runtime',return_value={'parser_import':'ok'}):
+            result=boot.doctor(self.root,{'RIEKE_INSTALLATION_ROOT':str(self.root.parent/'installed')})
+        self.assertTrue(result['ready'])
+        self.assertTrue(result['project_open_ready'])
+        self.assertNotIn('docker',[row['check'] for row in result['checks']])
 
     def test_failed_install_does_not_publish_ready_runtime(self):
         checkout=self.root/'parser';checkout.mkdir()

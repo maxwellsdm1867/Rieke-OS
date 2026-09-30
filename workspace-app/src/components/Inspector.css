@@ -14,4 +14,18 @@
 
 .inspector>.compact-inspector-toolbar{flex-wrap:wrap}.compact-inspector-toolbar>.primary{flex-shrink:0}
 
-.curation-help{font-size:12px;line-height:1.6;color:var(--ink-secondary,#62566d);margin:12px 0 8px}
+.analysis-inclusion-toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:550;cursor:pointer}
+.analysis-inclusion-toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.analysis-inclusion-help{font-size:12px;color:var(--ink-secondary);line-height:1.5}
+.inspector .curation-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* One shared, single-row header adapts to the actual tree pane width. */
+.epoch-inspector-mode .inspection-tree{container:epoch-tree-pane / inline-size}
+.epoch-inspector-mode .tree-heading{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:4px;padding:10px 6px;border-bottom:1px solid var(--border);flex-shrink:0}
+.epoch-inspector-mode .tree-heading .segmented{display:flex;flex:0 1 auto;margin:0;width:auto;min-width:0}
+.epoch-inspector-mode .tree-heading .segmented button{font-size:11px;padding:6px 7px;flex:0 1 auto;white-space:nowrap}
+.epoch-inspector-mode .tree-heading .tree-collapse-action,.epoch-inspector-mode .tree-heading .tree-edit-action{margin:0;white-space:nowrap;font-size:11px;padding:6px;flex-shrink:0}
+.epoch-inspector-mode .tree-heading .tree-collapse-action>svg{display:none}
+.epoch-inspector-mode .compact-inspector-toolbar{padding:8px 14px;gap:10px}
+@container epoch-tree-pane (max-width:340px){.tree-heading .tree-edit-action span{display:none}.tree-heading .tree-edit-action{width:28px;justify-content:center}}
+@container epoch-tree-pane (max-width:220px){.epoch-inspector-mode .tree-heading .segmented button{font-size:10px;padding:6px 3px}.tree-heading .tree-collapse-action{width:28px;justify-content:center}.tree-heading .tree-collapse-action>span{display:none}.epoch-inspector-mode .tree-heading .tree-collapse-action>svg{display:block}}

@@ -30,7 +30,7 @@ class DiskIndexTests(unittest.TestCase):
     def tearDown(self): self.temp.cleanup()
     def build(self,history=False,count=31):
         self.rows,self.details,self.sources=fixture(count,history)
-        return DiskMetadataIndex.build(self.path,self.rows,self.details,self.sources,'generation','project')
+        return DiskMetadataIndex.build(self.path,self.rows,self.details,self.sources,'history-generation' if history else 'generation','project')
     def test_catalog_values_exact_parity(self):
         for history in (False,True):
             index=self.build(history)
@@ -47,6 +47,8 @@ class DiskIndexTests(unittest.TestCase):
         catalog,values=tree.catalog(self.rows,self.details,sources=self.sources)
         self.assertEqual(index.predicate_catalog(),predicates.predicate_catalog(catalog,values))
         tests=[{'field':'parameters/a~1b~0','operator':op,**({'value':value} if op not in predicates.UNARY else {})} for op,value in [('eq',1),('eq',True),('eq',[0,675]),('ne',1),('contains',1),('exists',None),('missing',None),('is_null',None)]]
+        tests += [{'field':'epoch','operator':'eq','value':'epoch-1'}]
+        self.assertEqual(index.match({'field':'epoch','operator':'eq','value':'epoch-1'})[1], ['epoch-1'])
         tests += [{'not':{'field':'parameters/sometimes','operator':'eq','value':2}}, {'all':[]},{'any':[]},{'all':[{'field':'parameters/frequencyCutoff','operator':'gte','value':100},{'any':[{'field':'parameters/sometimes','operator':'missing'},{'field':'parameters/sometimes','operator':'is_null'}]}]}]
         for predicate in tests:
             expected=predicates.evaluate(predicate,catalog,values)
@@ -96,7 +98,46 @@ class DiskIndexTests(unittest.TestCase):
         self.assertIsNotNone(opened._catalog_cache)
         self.assertIsNotNone(opened._predicate_cache)
         mutated=opened.catalog();mutated['fields'].clear()
-        self.assertEqual(len(opened.catalog()['fields']),8)
+        self.assertEqual(len(opened.catalog()['fields']),len(tree.BASE_FIELDS))
+
+    def test_uuid_equality_uses_unique_index_without_decoding_distinct_values(self):
+        index=self.build(count=5000)
+        with patch.object(disk.json,'loads',wraps=disk.json.loads) as decode:
+            with patch.object(index,'_connect',wraps=index._connect) as connect:
+                self.assertEqual(index.match({'field':'epoch','operator':'eq','value':'epoch-4900'})[1],['epoch-4900'])
+                connect.assert_called_once_with([])
+            self.assertEqual(decode.call_count,0)
+        predicate={'field':'epoch','operator':'eq','value':'epoch-4'}
+        self.assertEqual(index.match(predicate,['epoch-3','epoch-4','epoch-4'])[1],['epoch-4'])
+        self.assertEqual(index.match(predicate,['epoch-3'])[1],[])
+        self.assertEqual(index.match(predicate,iter(['epoch-4']))[1],['epoch-4'])
+        self.assertEqual(index.match({**predicate,'value':None})[1],[])
+        self.assertEqual(index.match({**predicate,'value':'foreign'})[1],[])
+        with self.assertRaisesRegex(ValueError,'type'):
+            index.match({**predicate,'value':4})
+        with self.assertRaisesRegex(ValueError,'4096'):
+            index.match({**predicate,'value':'x'*4097})
+        # Nested expressions still use the general typed/scoped predicate path.
+        self.assertEqual(index.match({'not':predicate},['epoch-3','epoch-4'])[1],['epoch-3'])
+
+    def test_uuid_fast_path_preserves_empty_index_and_corruption_refusal(self):
+        index=DiskMetadataIndex.build(self.path,[],{},[],'generation','project')
+        self.assertEqual(index.match({'field':'epoch','operator':'eq','value':4})[1],[])
+        with sqlite3.connect(self.path) as connection:
+            connection.execute("UPDATE meta SET value='false' WHERE key='complete'")
+        with self.assertRaisesRegex(ValueError,'changed'):
+            index.match({'field':'epoch','operator':'eq','value':'foreign'})
+
+    def test_nonstring_epoch_catalog_uses_general_typed_equality(self):
+        rows,details,sources=fixture(3)
+        converted={}
+        for number,row in enumerate(rows):
+            converted[number]=details[row['epoch_uuid']]
+            row['epoch_uuid']=number
+        index=DiskMetadataIndex.build(self.path,rows,converted,sources,'generation','project')
+        self.assertEqual(index.match({'field':'epoch','operator':'eq','value':1})[1],['1'])
+        with self.assertRaisesRegex(ValueError,'type'):
+            index.match({'field':'epoch','operator':'eq','value':'1'})
     def test_truncated_choices_and_numeric_identity_exact(self):
         rows,details,sources=fixture(160)
         sequence=[1,1.0,True,-0.0,0.0,0,None,2**60,2**60+1,float(2**60)]+list(range(100))+[1.0,49,99]*16

@@ -4,7 +4,8 @@ export function importReadiness({suggestions=[],protocols=[],preferences={}}){
   const pinned=ordered.filter(p=>preferences[p.protocol_uuid]?.section==='pinned').map(p=>({protocol:p,suggestion:byProtocol.get(p.protocol_uuid)}));
   const pinnedIds=new Set(pinned.map(row=>row.protocol.protocol_uuid));
   const other=[...byProtocol.values()].filter(s=>!pinnedIds.has(s.protocol_uuid)).sort((a,b)=>({pending:0,stale:1,applied:2}[a.status])-({pending:0,stale:1,applied:2}[b.status]));
-  return {pinned,other,ready:suggestions.filter(s=>s.status==='pending').length,added:suggestions.filter(s=>s.status==='applied').length,stale:suggestions.filter(s=>s.status==='stale').length};
+  const pinnedPending=pinned.map(row=>row.suggestion).filter(item=>item?.status==='pending'&&typeof item.candidate_revision_uuid==='string'&&item.candidate_revision_uuid.length>0);
+  return {pinned,other,pinnedPending,pinnedReady:pinnedPending.length,ready:suggestions.filter(s=>s.status==='pending').length,added:suggestions.filter(s=>s.status==='applied').length,stale:suggestions.filter(s=>s.status==='stale').length};
 }
 
 export function suggestionDates(suggestion){

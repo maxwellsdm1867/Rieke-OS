@@ -49,6 +49,12 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
             selected=rows[offset:offset+limit]
             shared=getattr(service,'shared_annotations',None)
             annotations=shared.for_epochs(selected) if shared else {}
+            if shared and include_cells:
+                cell_ids=list(cells)
+                for start in range(0,len(cell_ids),1000):
+                    records=shared.read_targets('cell',cell_ids[start:start+1000])
+                    for key,record in records.items():
+                        cells[key]['annotations']={'cell_tags':record['tags'],'revisions':record['revisions']}
             return jsonify(epochs=[{**{key:row.get(key) for key in keys},**({'annotations':annotations[row['epoch_uuid']]} if shared else {})} for row in selected],
                            offset=offset,limit=limit,total=len(rows),has_more=offset+limit<len(rows),
                            revision=revision,anchor_index=anchor_index,anchor_uuid=anchor,

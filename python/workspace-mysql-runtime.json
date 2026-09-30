@@ -1,0 +1,115 @@
+{
+  "format": "rieke-native-mysql-runtime",
+  "version": 1,
+  "mysql_version": "8.4.2",
+  "platforms": {
+    "darwin-arm64": {
+      "installer": {
+        "name": "micromamba",
+        "version": "2.3.2",
+        "url": "https://conda.anaconda.org/conda-forge/osx-arm64/micromamba-2.3.2-0.tar.bz2",
+        "sha256": "ae0b50b441fef93abd20711f18b074359a7f8f1f523a8046a4d6ab44aa68ff1b"
+      },
+      "packages": [
+        {
+          "name": "ca-certificates",
+          "version": "2026.7.22",
+          "url": "https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda",
+          "sha256": "0a0544cf95f64394fe4959286f5c71f5444ad58feb0602e53becb27448d24da6",
+          "license": "ISC"
+        },
+        {
+          "name": "icu",
+          "version": "75.1",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/icu-75.1-hfee45f7_0.conda",
+          "sha256": "9ba12c93406f3df5ab0a43db8a4b4ef67a5871dfd401010fbe29b218b2cbe620",
+          "license": "MIT"
+        },
+        {
+          "name": "libabseil",
+          "version": "20240116.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libabseil-20240116.2-cxx17_h00cdb27_1.conda",
+          "sha256": "a9517c8683924f4b3b9380cdaa50fdd2009cd8d5f3918c92f64394238189d3cb",
+          "license": "Apache-2.0"
+        },
+        {
+          "name": "libcxx",
+          "version": "23.1.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libcxx-23.1.2-h55c6f16_0.conda",
+          "sha256": "087a610bacee7901d259ef72c6f060d795ab26831bd7541ba75ced786a5a63f9",
+          "license": "Apache-2.0 WITH LLVM-exception"
+        },
+        {
+          "name": "libedit",
+          "version": "3.1.20250104",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libedit-3.1.20250104-pl5321h26f1114_1.conda",
+          "sha256": "257c926f19e32bdb981fc674c76966049b6fc73f706bae58e9fed8757ad1da70",
+          "license": "BSD-2-Clause"
+        },
+        {
+          "name": "libprotobuf",
+          "version": "4.25.3",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libprotobuf-4.25.3-hc39d83c_1.conda",
+          "sha256": "f51bde2dfe73968ab3090c1098f520b65a8d8f11e945cb13bf74d19e30966b61",
+          "license": "BSD-3-Clause"
+        },
+        {
+          "name": "libzlib",
+          "version": "1.3.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.2-h8088a28_3.conda",
+          "sha256": "a18fa5d5bac452401459f966cf0d872224e8080c4ff93c77e168d43ab42ef9d7",
+          "license": "Zlib"
+        },
+        {
+          "name": "lz4-c",
+          "version": "1.9.4",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/lz4-c-1.9.4-hb7217d7_0.conda",
+          "sha256": "fc343b8c82efe40819b986e29ba748366514e5ab94a1e1138df195af5f45fa24",
+          "license": "BSD-2-Clause"
+        },
+        {
+          "name": "mysql-client",
+          "version": "8.4.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/mysql-client-8.4.2-h0e80b4a_0.conda",
+          "sha256": "2fdabd04ab763d4e97d881f60983450a07cd6bd044cfad15e9a6354c3734a394",
+          "license": "GPL-2.0-or-later"
+        },
+        {
+          "name": "mysql-common",
+          "version": "8.4.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/mysql-common-8.4.2-h1687695_0.conda",
+          "sha256": "c4062bf41acd4741efe7060e3872ac11571508b38e57f3bd7a49cbdd75e67b99",
+          "license": "GPL-2.0-or-later"
+        },
+        {
+          "name": "mysql-server",
+          "version": "8.4.2",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/mysql-server-8.4.2-h2ac2235_0.conda",
+          "sha256": "d497373d08fa8bd34d35202a454e0fc7ebc032db0827b8c23b074dfb98d24961",
+          "license": "GPL-2.0-or-later"
+        },
+        {
+          "name": "ncurses",
+          "version": "6.6",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/ncurses-6.6-he64c551_1.conda",
+          "sha256": "7024a48c8c0d0114ed4ab53c76bf9275d50e91ba7cea367a9aead638d3c29c68",
+          "license": "X11 AND BSD-3-Clause"
+        },
+        {
+          "name": "openssl",
+          "version": "3.6.4",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/openssl-3.6.4-h55eecbc_0.conda",
+          "sha256": "f23239eacd75c4c50705e68fae1aa3292da473e6a3a4abe2330f1e6afa680704",
+          "license": "Apache-2.0"
+        },
+        {
+          "name": "zstd",
+          "version": "1.5.7",
+          "url": "https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda",
+          "sha256": "da867f5092eb0cb746d353694f0098031fd9817a4ce7d5743121209ae0f406ca",
+          "license": "BSD-3-Clause"
+        }
+      ]
+    }
+  }
+}

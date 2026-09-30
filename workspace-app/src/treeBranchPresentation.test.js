@@ -22,8 +22,8 @@ test('missing and explicit null stay distinct and typed fallbacks preserve strin
   assert.equal(branchLabel({missing:true,value:null}),'Not recorded');
 });
 test('epoch and field fallback labels remain readable without changing identities',()=>{
-  assert.equal(epochLeafLabel({epoch_uuid:uuid,label:uuid.slice(0,8)}),'Epoch');
-  assert.equal(epochLeafLabel({epoch_uuid:uuid,epoch_number:12,start_time:'2026-09-24 12:34:56'}),'Epoch 12 · 12:34:56');
+  assert.equal(epochLeafLabel({epoch_uuid:uuid,label:uuid.slice(0,8)}),'—');
+  assert.equal(epochLeafLabel({epoch_uuid:uuid,epoch_number:12,start_time:'2026-09-24 12:34:56'}),'12 · 12:34:56');
   assert.equal(readableField(null,'joint/parameters%2Fa+parameters%2Fb'),'Combined fields');
   assert.equal(readableField(null,'parameters/frequencyCutoff'),'frequency Cutoff');
   assert.equal(branchTooltip({value:uuid},'cell'),`Field: cell\nSource value: "${uuid}"`);
@@ -33,6 +33,6 @@ test('subsecond timestamp precision remains in metadata tooltip, not dense tree 
   const node={value:uuid,label:'Block · 09/23/2026 16:45:07:922947'};
   assert.equal(branchLabel(node,'block'),'Block · 09/23/2026 16:45:07');
   assert.match(branchTooltip(node,'block'),/16:45:07:922947/);
-  assert.equal(epochLeafLabel({label:'Epoch 1 · 16:45:10:056084'}),'Epoch 1 · 16:45:10');
+  assert.equal(epochLeafLabel({label:'Epoch 1 · 16:45:10:056084'}),'1 · 16:45:10');
   assert.equal(node.value,uuid);
 });

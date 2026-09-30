@@ -6,7 +6,9 @@ missing marker. They are navigation keys, never queries or scientific IDs.
 from __future__ import annotations
 
 import re
+import sys
 import uuid
+from itertools import chain
 
 from workspace_recipes import checksum, parse_splits
 from workspace_tree import (field_value_order, joint_definition, joint_value,
@@ -14,6 +16,50 @@ from workspace_tree import (field_value_order, joint_definition, joint_value,
 from workspace_predicates import validate as validate_predicate, matches
 from workspace_tree_code import matlab_tree_command
 from workspace_service import validate_filters
+
+
+TREE_SCOPE_BYTE_BUDGET = 64 * 1024 * 1024
+TREE_SCOPE_CACHE_OVERHEAD = 16 * 1024  # Reserve for eight keys/entries and generation bookkeeping.
+
+
+def _retained_scope_bytes(result, base_rows, limit):
+    """Conservative incremental Python-object estimate, not an RSS ceiling.
+
+    Base rows remain owned by the service independently of this cache. Exclude
+    only those exact objects (and exact shared values in decorated row copies),
+    while counting the copies, curation state, projections and containers.
+    Equal-but-separately-decoded values are distinct allocations and count.
+    Walk lazily by identity and stop as soon as the admission budget is exceeded.
+    """
+    seen = set()
+    for row in result[0]:
+        original = base_rows.get(row['epoch_uuid'])
+        if row is original:
+            seen.add(id(row))
+        elif original is not None:
+            for key, value in row.items():
+                if key in original and value is original[key]:
+                    seen.add(id(value))
+    total = 0
+    pending = [iter((result,))]
+    while pending:
+        try:
+            value = next(pending[-1])
+        except StopIteration:
+            pending.pop()
+            continue
+        identity = id(value)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        total += sys.getsizeof(value)
+        if total > limit:
+            return total
+        if isinstance(value, dict):
+            pending.append(chain(value.keys(), value.values()))
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            pending.append(iter(value))
+    return total
 
 
 class StaleTreePage(ValueError):
@@ -65,6 +111,70 @@ class TreePages:
         self.service = service
 
     def _scope(self, body):
+        """Reuse navigation projections only for a checked immutable index.
+
+        Annotation membership is live and intentionally bypasses this cache.
+        Source eligibility and frozen protocol binding are part of every key.
+        Keeping this on the service also shares it with matching-epoch reads.
+        """
+        service = self.service
+        service._ready()
+        from workspace_disk_index import DiskMetadataIndex
+        from workspace_tag_predicates import referenced_fields
+        index = getattr(service, 'disk_index', None)
+        filters = validate_filters(body.get('filters'))
+        if (not isinstance(index, DiskMetadataIndex)
+                or any(field in filters for field in ('tag', 'tagged', 'tag_predicate'))
+                or referenced_fields(body.get('predicate', {'all': []}))):
+            return self._build_scope(body)
+        index._check()  # A cache hit must still refuse changed/corrupt index bytes.
+        protocol = body.get('protocol_uuid')
+        if protocol is not None:
+            protocol = _uuid(protocol)
+            if 'predicate' in body:
+                raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
+        binding = service.binding(protocol) if protocol else None
+        generation = (id(index), index.generation, id(service.rows),
+                      id(service._fingerprints), id(service.protocols))
+        base_bytes = sys.getsizeof(service._fingerprints) + TREE_SCOPE_CACHE_OVERHEAD
+        if base_bytes >= TREE_SCOPE_BYTE_BUDGET:
+            service._tree_page_scope_cache = None
+            return self._build_scope(body)
+        cached = getattr(service, '_tree_page_scope_cache', None)
+        if cached is None or cached[0] != generation or cached[2] != service._fingerprints:
+            # The published fingerprint dictionary is also used by reconciliation
+            # and test adapters. Detect in-place edits, not only refresh swaps.
+            # Equality is a linear lightweight check; it avoids sorting/encoding
+            # the full membership for every navigation request.
+            cached = service._tree_page_scope_cache = (generation, {}, dict(service._fingerprints))
+        cache = cached[1]
+        key = checksum({'protocol': protocol, 'binding': binding and {
+            'version': binding['version'], 'revision_uuid': binding.get('revision_uuid')},
+            'source_scope': service.source_scope()['revision'] if protocol is None else None,
+            'predicate': body.get('predicate'), 'filters': filters,
+            'splits': body.get('splits', 'date,cell,block'),
+            'depth': len(body.get('path', [])), 'anchor': bool(body.get('anchor_uuid'))})
+        if key in cache:
+            entry = cache.pop(key)
+            cache[key] = entry
+            return entry[0]
+        result = self._build_scope(body)
+        rows, _, values, _, _, _ = result
+        # Bound retained row references plus projected values across all scopes.
+        # An oversize projection may serve this request but is never retained.
+        weight = len(rows) + sum(len(value) for value in values.values())
+        if weight <= 2_000_000:
+            byte_limit = TREE_SCOPE_BYTE_BUDGET - base_bytes
+            retained_bytes = _retained_scope_bytes(result, service.rows, byte_limit)
+            if retained_bytes > byte_limit:
+                return result
+            cache[key] = (result, weight, retained_bytes)
+            while (len(cache) > 8 or sum(entry[1] for entry in cache.values()) > 2_000_000
+                    or sum(entry[2] for entry in cache.values()) > byte_limit):
+                cache.pop(next(iter(cache)))
+        return result
+
+    def _build_scope(self, body):
         service = self.service
         service._ready()
         protocol = body.get('protocol_uuid')

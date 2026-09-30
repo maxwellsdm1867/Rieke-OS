@@ -1,0 +1,67 @@
+name: Rieke OS regression checks
+on:
+  pull_request:
+  push:
+    branches: [master, codex/rieke-native-e2e]
+permissions:
+  contents: read
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      - run: npm ci && npm test && npm run build
+        working-directory: workspace-app
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.13'
+      - uses: astral-sh/setup-uv@v6
+      - run: uv pip install --system --require-hashes -r python/workspace-runtime.lock
+      - run: python tools/build_release.py --validate-only
+      - run: python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
+        env:
+          PYTHONPATH: python
+  native-mysql:
+    name: Apple Silicon native project lifecycle and transfer
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Require the advertised native architecture
+        run: test "$(uname -m)" = arm64
+      - name: Prepare private Python, frontend and native MySQL
+        # actions/setup-python has no macOS ARM64 build for this patch release.
+        # uv supplies the same pinned standalone interpreter used by app setup.
+        run: uv run --no-project --python 3.11.13 python rieke.py setup
+      - name: Verify app and native project readiness without Docker
+        run: |
+          .rieke-runtime/venv/bin/python - <<'PY'
+          import json, sys
+          sys.path.insert(0, 'python')
+          from workspace_bootstrap import doctor
+          status = doctor()
+          print(json.dumps(status, indent=2))
+          assert status['ready'] and status['project_open_ready'], 'App or bundled MySQL is not ready'
+          assert not any(row['check'] == 'docker' for row in status['checks'])
+          PY
+      - name: Real database lifecycle, independent copies and logical transfer
+        run: .rieke-runtime/venv/bin/python -m unittest python.tests.test_workspace_native_mysql python.tests.test_workspace_portability -v
+        env:
+          PYTHONPATH: python
+          RIEKE_TEST_NATIVE_MYSQL: '1'
+          RIEKE_TEST_NATIVE_TRANSFER: '1'

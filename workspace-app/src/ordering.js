@@ -19,3 +19,26 @@ export function moveShortcut(groups, sourceId, section, targetId = null, placeme
   next[section].splice(at, 0, sourceId);
   return sections.every(key => next[key].length === groups[key].length && next[key].every((id, i) => id === groups[key][i])) ? groups : next;
 }
+
+export function protocolShortcutSection(protocol, preferences={}) {
+  const section=preferences[protocol.protocol_uuid]?.section;
+  if(['pinned','main','support'].includes(section))return section;
+  return /^(SingleSpot|ExpandingSpots|SplitFieldCentering)$/i.test((protocol.name||'').split('.').pop().replace(/\s+/g,''))?'support':'main';
+}
+
+export function protocolShortcutGroups(protocols, preferences={}) {
+  const defaults=new Map(protocols.map((protocol,index)=>[protocol.protocol_uuid,index]));
+  const rank=protocol=>Number.isFinite(preferences[protocol.protocol_uuid]?.rank)?preferences[protocol.protocol_uuid].rank:defaults.get(protocol.protocol_uuid);
+  const ordered=[...protocols].sort((first,second)=>rank(first)-rank(second));
+  return Object.fromEntries(['pinned','main','support'].map(section=>[section,
+    ordered.filter(protocol=>protocolShortcutSection(protocol,preferences)===section).map(protocol=>protocol.protocol_uuid)]));
+}
+
+export function moveProtocolPreference(preferences, protocols, sourceId, section, targetId=null, placement='before') {
+  const groups=protocolShortcutGroups(protocols,preferences);
+  const moved=moveShortcut(groups,sourceId,section,targetId,placement);
+  if(moved===groups)return preferences;
+  const next={...preferences};
+  for(const [group,ids] of Object.entries(moved))ids.forEach((id,rank)=>{next[id]={section:group,rank};});
+  return next;
+}

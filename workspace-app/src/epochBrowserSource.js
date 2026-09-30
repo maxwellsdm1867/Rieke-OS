@@ -4,6 +4,7 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
     const query=new URLSearchParams(source.query);
     if(cellUuid)query.set('cell_uuid',cellUuid);
     query.set('limit',60);
+    if(includeCells)query.set('include_cells','true');
     if(anchorUuid)query.set('anchor_uuid',anchorUuid);else query.set('offset',offset);
     return {path:`/protocols/${source.protocolId}/epochs?${query}`,options:{}};
   }
@@ -11,4 +12,15 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
   return {path:'/explore/epochs',options:{method:'POST',body:{predicate:source.predicate,splits:source.splits,
     revision:source.treeRevision,limit:60,...(anchorUuid?{anchor_uuid:anchorUuid}:{offset}),
     ...(cellUuid?{cell_uuid:cellUuid}:{}),...(includeCells?{include_cells:true}:{})}}};
+}
+
+// Protocol pages carry the authoritative query/curation receipt; predicate
+// pages carry the frozen explorer membership receipt. These are distinct APIs.
+export function epochPageRevision(source,page){
+  const protocol=source.kind==='protocol';
+  if(!protocol&&source.kind!=='predicate')throw new Error('Unknown epoch browser source');
+  const actual=protocol?page?.query_revision:page?.revision;
+  const expected=protocol?source.queryRevision:source.treeRevision;
+  if(typeof actual!=='string'||!actual||((expected!==undefined&&expected!==null)&&actual!==expected))throw new Error('Epoch query changed. Refresh and select again.');
+  return actual;
 }

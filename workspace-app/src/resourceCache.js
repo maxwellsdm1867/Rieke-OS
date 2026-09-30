@@ -24,7 +24,16 @@ export function createResourceCache({entries=64,bytes=12*1024*1024,ttlMs=30000,n
     const base=path?.split('?')[0];
     for(const [id,value] of values)if(!path||value.path===path||related&&(value.path.split('?')[0]===base||value.path.startsWith(`${base}/`)))remove(id);
   }
-  return {get,peek,put,invalidate,token:()=>generation,stats:()=>({entries:values.size,bytes:used})};
+  function invalidateAnnotations(receipt){
+    generation++;
+    const all=receipt.targets.some(target=>target.target_kind==='cell');
+    const ids=new Set(receipt.targets.filter(target=>target.target_kind==='epoch').map(target=>target.target_uuid));
+    for(const [id,value] of values){
+      const match=/^\/epochs\/([^/?]+)(?:\?|$)/.exec(value.path);
+      if(match&&(all||ids.has(decodeURIComponent(match[1]))))remove(id);
+    }
+  }
+  return {get,peek,put,invalidate,invalidateAnnotations,token:()=>generation,stats:()=>({entries:values.size,bytes:used})};
 }
 export const epochResourceCache=createResourceCache(EPOCH_CACHE_LIMITS);
 export async function cachedResourceRequest(path,{request,revision=0,signal,cache=epochResourceCache}={}){

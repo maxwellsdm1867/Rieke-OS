@@ -34,6 +34,8 @@ classdef epicGraphicalTree < handle
         initialWidgets = 100    % Initial widget pool size
         drawCount = 0           % Number of visible nodes in current draw
         isBusy = false          % Busy flag for async operations
+        firstVisibleRow = 1     % Scroll position independent of expanded row count
+        rowHeightPixels = 22    % Keep text readable when hundreds of epochs expand
     end
 
     methods
@@ -63,6 +65,8 @@ classdef epicGraphicalTree < handle
             % Set up keyboard callback
             if ~isempty(self.figure) && ishandle(self.figure)
                 set(self.figure, 'KeyPressFcn', @(src,evt) self.onKeyPress(evt));
+                set(self.figure, 'WindowScrollWheelFcn', @(src,evt) self.onScroll(evt));
+                set(self.figure, 'SizeChangedFcn', @(src,evt) self.updateViewport());
             end
 
             % Create root node
@@ -128,11 +132,37 @@ classdef epicGraphicalTree < handle
                 self.widgetList{ii}.unbindNode();
             end
 
-            % Update axes limits
-            yMax = max(self.drawCount * 1.5 + 2, 10);
-            set(self.axes, 'YLim', [0 yMax]);
+            self.updateViewport();
 
             drawnow;
+        end
+
+        function updateViewport(self)
+            if ~isgraphics(self.axes), return; end
+            pixels = getpixelposition(self.axes);
+            rows = max(1, floor(pixels(4) / self.rowHeightPixels));
+            self.firstVisibleRow = max(1, min(self.firstVisibleRow, max(1,self.drawCount-rows+1)));
+            bottom = self.firstVisibleRow + rows - 1;
+            set(self.axes,'YLim',1.5 * [self.firstVisibleRow-1 bottom]);
+            % Text graphics otherwise draw outside their axes. Hide offscreen
+            % widgets while retaining their identities for keyboard navigation.
+            for i=1:self.drawCount
+                visible = 'off';
+                if i>=self.firstVisibleRow && i<=bottom, visible='on'; end
+                set(self.widgetList{i}.group,'Visible',visible);
+            end
+        end
+
+        function scrollByRows(self, amount)
+            self.firstVisibleRow = self.firstVisibleRow + amount;
+            self.updateViewport();
+        end
+
+        function onScroll(self, event)
+            target = hittest(self.figure);
+            if isequal(target,self.axes) || isequal(ancestor(target,'axes'),self.axes)
+                self.scrollByRows(3 * event.VerticalScrollCount);
+            end
         end
 
         function includeInDraw(self, node)
@@ -192,6 +222,14 @@ classdef epicGraphicalTree < handle
 
             % Select new widget
             if widgetKey > 0 && widgetKey <= length(self.widgetList)
+                pixels=getpixelposition(self.axes);
+                rows=max(1,floor(pixels(4)/self.rowHeightPixels));
+                if widgetKey<self.firstVisibleRow
+                    self.firstVisibleRow=widgetKey;
+                elseif widgetKey>=self.firstVisibleRow+rows
+                    self.firstVisibleRow=widgetKey-rows+1;
+                end
+                self.updateViewport();
                 self.widgetList{widgetKey}.showHighlight(true);
                 self.selectedWidgetKeys(end+1) = widgetKey;
             end

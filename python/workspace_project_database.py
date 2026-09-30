@@ -6,6 +6,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import time
+import uuid
 
 from workspace_mysql_profile import local_mysql_options
 
@@ -18,17 +19,20 @@ def _run(arguments, **options):
         raise ValueError('Docker is unavailable or did not respond. Start Docker Desktop and try opening the project again.') from error
 
 
-def ensure_project_database(project_dir, *, timeout=120):
+def ensure_project_database(project_dir, *, timeout=120, _restoring=False):
     project_dir = Path(project_dir).resolve()
+    if (project_dir / '.portable-restore.pending').exists() and not _restoring:
+        raise ValueError('Project transfer restore is incomplete; finish recovery before opening it')
     project = json.loads((project_dir / 'project.json').read_text())
     catalog = json.loads((project_dir / 'catalog.json').read_text())
     identity = project['project_uuid']
     if catalog['project_uuid'] != identity:
         raise ValueError('Project and database identities disagree')
-    if catalog['connection']['credential_provider'].get('kind') == 'native-mysql':
-        from workspace_native_database import ensure_native_database
+    provider = catalog['connection']['credential_provider']
+    if provider.get('kind') == 'native-project':
+        from workspace_native_mysql import ensure_native_database
         return ensure_native_database(project_dir, timeout=timeout)
-    container = catalog['connection']['credential_provider']['container']
+    container = provider['container']
     from workspace_projects import _read_manifest
     descriptor = project_dir / 'database/service.json'
     owned = _read_manifest(descriptor) if descriptor.exists() or descriptor.is_symlink() else catalog.get('managed_database')
@@ -38,6 +42,9 @@ def ensure_project_database(project_dir, *, timeout=120):
         raise ValueError('Managed database ownership record is missing; refusing to attach it')
     if owned:
         expected = 'rieke-os-' + identity.replace('-', '')
+        if isinstance(owned, dict) and 'instance_uuid' in owned:
+            instance = str(uuid.UUID(owned['instance_uuid']))
+            expected += '-' + instance.replace('-', '')
         if not isinstance(owned, dict) or type(owned.get('version')) is not int or owned['version'] != 1 or owned.get('project_uuid') != identity or owned.get('container') != expected or container != expected or owned.get('storage_ref') != 'database/mysql' or owned.get('image') != 'datajoint/mysql:8.0':
             raise ValueError('Managed database configuration does not match this project')
         if (project_dir / 'database').is_symlink():

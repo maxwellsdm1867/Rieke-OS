@@ -57,12 +57,16 @@ class ExplorerHistory:
         self.Binding = protocol_binding_table(dj) if binding_table is None else binding_table
         self._recipe_cache = {}
 
-    def protocol_binding(self, protocol_uuid):
+    def protocol_binding_header(self, protocol_uuid):
+        """Read the current binding version without hydrating its frozen recipe."""
         protocol_uuid = str(uuid.UUID(protocol_uuid))
         rows = (self.Binding & {'project_uuid': self.project_uuid, 'protocol_uuid': protocol_uuid}).to_dicts()
-        if not rows:
+        return rows[0] if rows else None
+
+    def protocol_binding(self, protocol_uuid):
+        row = self.protocol_binding_header(protocol_uuid)
+        if row is None:
             return None
-        row = rows[0]
         identity = row['revision_uuid']
         if identity not in self._recipe_cache:
             self._recipe_cache[identity] = self.get(identity)['recipe']

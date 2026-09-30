@@ -35,6 +35,31 @@ class TreeLayoutTests(unittest.TestCase):
         self.assertEqual((self.fixture.service.protocols, self.fixture.curation.rows), before)
         self.assertEqual(self.fixture.events.rows, [])
 
+    def test_imported_legacy_default_layout_can_export_without_losing_membership(self):
+        service = self.fixture.service
+        definition = service.protocols[service.protocol_id]['definition']
+        definition['view']['group_by'] = ['cell.type', 'cell.start_time']
+        for identity, detail in service.details.items():
+            detail['metadata']['cell'] = {'start_time': service.rows[identity]['start_time']}
+        service._tree_catalog_cache = {}
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        fields = response.get_json()['split_order']
+        self.assertEqual(fields, ['cell type', 'metadata/cell/start_time'])
+        self.assertEqual(response.get_json()['version'], 0)
+        exported = self.client.post(self.fixture.base + '/exports', json={
+            'format': 'reference-json', 'query_revision': self.fixture.revision(),
+            'review_policy': 'include_unreviewed', 'split_order': 'cell.type, cell.start_time'},
+            headers=self.fixture.headers)
+        self.assertEqual(exported.status_code, 201, exported.get_json())
+        receipt = exported.get_json()
+        self.assertEqual(receipt['epoch_count'], len(service.ids))
+        recipe = self.fixture.store.get_dataset_revision(receipt['dataset_uuid'])['recipe']
+        self.assertEqual(recipe['options']['split_order'], ', '.join(fields))
+        self.assertEqual([field['id'] for field in recipe['options']['tree_view']['fields']], fields)
+        self.assertEqual({row['uuid'] for row in recipe['epochs']}, set(service.ids))
+        self.assertFalse(self.table.rows)  # No layout rewrite or membership migration.
+
     def test_stale_versions_invalid_fields_and_foreign_protocols_do_not_write(self):
         self.assertEqual(self.put(['cell']).status_code, 200)
         self.assertEqual(self.put(['date']).status_code, 409)

@@ -1,20 +1,13 @@
 %% Show Available Splits in Your Data
 % This will tell you what organizational axes are available
 
-% Scientific recordings are local-only and never bundled.
-if ~isfile(getenv('RIEKE_TEST_MAT'))
-    warning('epicTreeGUI:SkippedLocalFixture', ...
-        'Skipped: set RIEKE_TEST_MAT to a local recording export.');
-    return;
-end
-
 clear; clc;
 addpath('src');
 addpath('src/tree');
 
 fprintf('=== Analyzing Available Splits ===\n\n');
 
-[data, ~] = loadEpicTreeData(getenv('RIEKE_TEST_MAT'));
+[data, ~] = loadEpicTreeData('/Users/maxwellsdm/Documents/epicTreeTest/analysis/2025-12-02_F.mat');
 tree = epicTreeTools(data);
 
 fprintf('Total epochs: %d\n\n', length(tree.allEpochs));

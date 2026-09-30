@@ -35,3 +35,13 @@ export function combineLevels(order, components) {
   if (next.length > 8) throw new Error('Remove a level first; the tree supports eight levels.');
   return next;
 }
+
+export function uncombineLevel(order,id){
+  const components=jointComponents(id),index=order.indexOf(id);
+  if(index<0||!components.length)throw new Error('Choose a combined level to separate.');
+  const before=order.slice(0,index).filter(key=>!components.includes(key));
+  const after=order.slice(index+1).filter(key=>!components.includes(key));
+  const next=[...before,...components,...after];
+  if(next.length>8)throw new Error('Remove a level first; separating these fields would exceed eight levels.');
+  return next;
+}

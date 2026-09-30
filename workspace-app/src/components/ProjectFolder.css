@@ -1,13 +1,49 @@
-.project-folder-dialog{width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:auto;padding:24px;border:1px solid #ded7e4;border-radius:12px;color:#302e36;background:#fff;box-shadow:0 16px 64px #30253633}
+.project-folder-dialog{width:min(600px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;padding:24px;border:1px solid var(--border,#ded7e4);border-radius:15px;color:var(--ink,#392f41);background:var(--surface,#fff);box-shadow:0 20px 80px #30253633}
 .project-folder-dialog::backdrop{background:#30253666}
-.project-folder-dialog>header,.project-folder-dialog h2,.project-folder-dialog footer{display:flex;align-items:center;gap:10px}
-.project-folder-dialog>header{justify-content:space-between;margin-bottom:20px}
-.project-folder-current{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:16px;background:#f6f3f8;border:1px solid #e6dfeb;border-radius:8px;margin-bottom:24px;min-width:0}
-.project-folder-current small{font-size:10px;letter-spacing:1px;color:#776786}
-.project-folder-current code{font-size:12px;line-height:1.6;overflow-wrap:anywhere;max-width:100%;user-select:all}
-.project-folder-dialog p{font-size:12px;line-height:1.6;color:#756a7d}
-.project-folder-dialog form{display:flex;flex-direction:column;gap:12px}
-.project-folder-dialog label{font-size:12px;font-weight:550}
-.project-folder-dialog input{width:100%}
-.project-folder-dialog footer{justify-content:flex-end;margin-top:8px}
-.project-folder-dialog .project-folder-error{color:#963f3f;background:#fff1eb;padding:10px;border-radius:6px}
+.project-folder-dialog>header,.project-folder-heading,.project-folder-current,.project-folder-current-actions,.project-folder-input-row,.project-folder-dialog footer,.project-folder-bottom{display:flex;align-items:center;gap:10px}
+.project-folder-dialog>header{justify-content:space-between;margin-bottom:18px}
+.project-folder-symbol{display:grid;place-items:center;width:43px;height:43px;border-radius:11px;background:#eee6f4;color:#77538b}
+.project-folder-heading small{font-size:9px;font-weight:600;letter-spacing:1.3px;color:#947fa3}
+.project-folder-heading h2{font-size:19px;margin:4px 0 0;color:#634a72}
+.project-folder-dialog h3{font-size:15px;margin:0;color:#695075}
+.project-folder-dialog p{font-size:12px;line-height:1.5;color:#87738f;margin:0}
+.project-folder-current{padding:12px;background:#f9f6fb;border:1px solid #e8dfee;border-radius:10px;margin-bottom:18px;gap:10px}
+.project-folder-current-icon{display:grid;place-items:center;width:34px;height:34px;flex-shrink:0;border-radius:9px;background:#eee5f4;color:#9276a3}
+.project-folder-current-info{min-width:0;flex:1}.project-folder-current-info>strong{font-size:12px;color:#715581;margin-right:8px;overflow-wrap:anywhere}
+.project-folder-state{display:inline-flex;align-items:center;gap:5px;font-size:10px;color:#648170;white-space:nowrap}.project-folder-state>i{width:5px;height:5px;background:#7ba58c;border-radius:50%}
+.project-folder-current-info>code{display:block;margin-top:5px;max-height:48px;overflow:auto;font:10px/1.5 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;user-select:all;color:#947da3}
+.project-folder-current-actions{gap:5px;flex-shrink:0}.project-folder-current-actions>button{font-size:10px;padding:6px 8px}.project-folder-current-actions>.icon-button{padding:5px}
+.project-folder-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:5px;background:#f5f0f8;border:1px solid #e8deee;border-radius:11px}
+.project-folder-tabs>button{justify-content:center;gap:9px;padding:11px 8px;border:1px solid transparent;color:#a08aad;background:transparent;font-size:12px;border-radius:7px}
+.project-folder-tabs>button:hover:not(:disabled){color:#725285;background:#ede4f3}
+.project-folder-tabs>button[aria-selected=true]{color:#705081;background:#fff;border-color:#d4c3e0;box-shadow:0 2px 5px #48315406}
+.project-folder-task{padding:21px 0 0}.project-folder-task-title{margin-bottom:18px}.project-folder-task-title p{margin-top:5px;font-size:11px}
+.project-folder-contents{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:13px 2px;background:#fcfafd;border:1px solid #ede5f3;border-radius:10px;margin-bottom:20px}
+.project-folder-contents>span{display:flex;flex-direction:column;align-items:center;gap:7px;color:#a087b1;border-right:1px solid #ede5f3}.project-folder-contents>span:last-child{border-right:0}
+.project-folder-contents small{font-size:10px;color:#887096;text-align:center;line-height:1.3}
+.project-folder-dialog form{display:flex;flex-direction:column;gap:9px}.project-folder-dialog label{font-size:11px;font-weight:550;color:#796187}
+.project-folder-dialog input{width:100%;min-width:0;font-size:12px;padding:11px 12px;border-color:#e0d6e8;background:#fff}
+.project-folder-input-row{align-items:stretch;gap:7px}.project-folder-input-row button{font-size:11px;white-space:nowrap;padding:8px 11px;flex-shrink:0}
+.project-folder-input-hint{font-size:10px;line-height:1.4;color:#a08aaa}
+.project-folder-dialog footer{justify-content:space-between;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid #ede5f3}
+.project-folder-dialog footer>span{display:flex;align-items:center;gap:6px;font-size:10px;color:#9e87aa}.project-folder-dialog footer>button{font-size:12px}
+.project-folder-organize{font-size:11px;margin-top:2px;color:#947a9f}.project-folder-organize>summary{display:flex;align-items:center;gap:5px;width:fit-content;cursor:pointer;list-style:none;padding:6px 0}.project-folder-organize[open]>summary svg{transform:rotate(90deg)}
+.project-folder-organize .project-folder-checkbox{display:flex;align-items:center;gap:7px;font-weight:400;margin:8px 0 12px}.project-folder-organize input[type=checkbox]{width:auto;margin:0}
+.project-folder-organize>input{margin-top:7px}.project-folder-organize>small{display:block;margin-top:7px;font-size:10px;line-height:1.5}
+.project-folder-close-note{display:flex;align-items:center;gap:8px;border:1px solid #e1d6e9;background:#f9f5fc;border-radius:8px;padding:10px;color:#816391;font-size:11px;margin:2px 0 6px}
+.project-folder-close-note>svg{flex-shrink:0}.project-folder-close-note>span{flex:1}.project-folder-close-note>button{font-size:10px;padding:6px 8px;flex-shrink:0}
+.project-folder-inspection{display:flex;align-items:center;gap:10px;border:1px solid #d6e1d8;background:#f6faf7;border-radius:9px;padding:12px;margin:3px 0 6px}
+.project-folder-inspection-icon{display:grid;place-items:center;width:34px;height:34px;background:#e8f1eb;color:#6b937c;border-radius:9px;flex-shrink:0}.project-folder-inspection>div{min-width:0}.project-folder-inspection strong{font-size:12px;color:#5f7a69;overflow-wrap:anywhere}.project-folder-inspection>div>span{display:flex;align-items:center;gap:5px;margin-top:5px;color:#8aa193;font-size:10px}
+.project-folder-dialog .project-folder-warning{padding:9px 11px;background:#fbf5eb;border-radius:6px;color:#94794d;font-size:11px}
+.project-folder-success{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:20px 16px;background:#f6faf7;border:1px solid #d3e1d7;border-radius:11px;min-width:0}
+.project-folder-result-icon{display:grid;place-items:center;width:50px;height:50px;background:#e8f1eb;color:#6c957b;border-radius:14px}.project-folder-success>strong{font-size:15px;color:#577962}
+.project-folder-success code{font:11px/1.6 ui-monospace,SFMono-Regular,monospace;overflow-wrap:anywhere;user-select:all;color:#7b9685}.project-folder-success>p{font-size:11px;color:#8aa192}.project-folder-success>button{font-size:12px}
+.project-folder-progress{display:flex;align-items:flex-start;gap:8px;padding:11px;background:#f5eef9;border-radius:8px;margin-top:15px;color:#876895;font-size:11px}.project-folder-progress svg{flex-shrink:0;margin-top:2px}.project-folder-progress small{display:block;font-size:10px;margin-top:4px;color:#a18aad}
+.project-folder-dialog .project-folder-error{color:#963f3f;background:#fff1eb;padding:11px;border-radius:8px;margin-top:15px;font-size:11px;overflow-wrap:anywhere}
+.project-folder-bottom{justify-content:space-between;margin-top:18px;padding-top:13px;border-top:1px solid #eee7f2}.project-folder-bottom>span{font-size:10px;color:#a28cac}.project-folder-bottom button{font-size:11px;padding:7px 12px}
+@media(max-width:560px){.project-folder-dialog{padding:19px;width:calc(100vw - 20px);max-height:calc(100dvh - 20px)}.project-folder-current{flex-wrap:wrap}.project-folder-current-info{min-width:70%}.project-folder-current-actions{margin-left:auto}.project-folder-current-actions>button{font-size:11px}.project-folder-tabs>button{padding:10px 5px;gap:7px}.project-folder-contents small{font-size:9px}.project-folder-dialog footer>span{max-width:42%;line-height:1.5}.project-folder-close-note{flex-wrap:wrap}.project-folder-close-note>button{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.project-folder-dialog .spin{animation:none}}
+
+.project-folder-root-suggestions{display:grid;gap:8px;margin-top:17px;padding-top:14px;border-top:1px solid #ede5f3}.project-folder-root-suggestions>p{font-size:11px;margin-bottom:3px;color:#8a7198}.project-folder-root-suggestions>button{display:flex;align-items:center;gap:10px;padding:12px;text-align:left;white-space:normal;border:1px solid #dfd2e8;background:#fcfafd;border-radius:9px}.project-folder-root-suggestions>button>svg{color:#9779a7;flex-shrink:0}.project-folder-root-suggestions>button>span:nth-child(2){flex:1;min-width:0}.project-folder-root-suggestions strong{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12px;color:#735582}.project-folder-root-suggestions strong>small{font-size:9px;font-weight:400;padding:2px 5px;border-radius:4px;background:#eee5f5;color:#997caf}.project-folder-root-suggestions code{display:block;overflow-wrap:anywhere;font:10px/1.5 ui-monospace,SFMono-Regular,monospace;color:#9983a5;margin-top:4px}.project-folder-root-suggestions .project-folder-use-root{display:flex;align-items:center;gap:5px;flex-shrink:0;font-size:10px;color:#8b6c9f}.project-folder-root-suggestions>button:hover:not(:disabled){background:#f5eef9;border-color:#c4acd4}@media(max-width:400px){.project-folder-root-suggestions>button{flex-wrap:wrap}.project-folder-root-suggestions .project-folder-use-root{margin-left:auto}}
+
+.project-folder-dialog .folder-path-control>input{width:0}.project-folder-organize>.folder-path-field{margin-top:7px}.project-folder-input-row>.folder-path-field{flex:1;min-width:0}@media(max-width:560px){.project-folder-input-row{flex-wrap:wrap}.project-folder-input-row>.folder-path-field{flex-basis:100%}.project-folder-input-row>button{margin-left:auto}}

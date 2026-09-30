@@ -23,3 +23,7 @@ fieldset.predicate-builder{margin:0;padding:0;border:0;min-width:0}.predicate-bu
 
 .pb-tag-hint{display:block;margin:6px 0 0;font-size:11px;color:var(--ink-secondary)}
 .pb-group-header-actions{flex-wrap:wrap}
+
+/* The wrapper owns the focus indicator so the icon and input have one frame. */
+.pb-field-search>input:focus,.pb-field-search>input:focus-visible{outline:none;box-shadow:none;border:0}
+.pb-field-search:focus-within{border-color:var(--accent,#79568d);outline:2px solid var(--accent,#79568d);outline-offset:0}

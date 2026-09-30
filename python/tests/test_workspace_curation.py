@@ -127,6 +127,23 @@ class CurationTests(unittest.TestCase):
         self.assertTrue(all(not row["included"] for row in self.curation.rows))
         self.assertIn("RELEASE_LOCK", self.connection.queries[-1])
 
+    def test_analysis_inclusion_roundtrip_retains_epochs_tags_and_review(self):
+        first, second = self.ids
+        self.update({"tags_add": ["inspect-later"], "review_state": "approved"}, ids=[first])
+        self.update({"included": False}, revisions={first: 1}, ids=[first])
+        state = self.store.read(self.protocol, self.ids, self.fingerprints)
+        self.assertEqual(set(state), set(self.ids))
+        self.assertFalse(state[first]["included"])
+        self.assertTrue(state[second]["included"])
+        self.assertEqual(state[first]["tags"], ["inspect-later"])
+        self.assertEqual(state[first]["review_state"], "approved")
+        self.update({"included": True}, revisions={first: 2}, ids=[first])
+        restored = self.store.read(self.protocol, self.ids, self.fingerprints)
+        self.assertTrue(restored[first]["included"])
+        self.assertEqual(restored[first]["tags"], state[first]["tags"])
+        self.assertEqual(restored[first]["review_state"], state[first]["review_state"])
+        self.assertEqual(restored[second], state[second])
+
     def test_state_failure_rolls_back_curation(self):
         with patch.object(self.curation, "insert1", side_effect=RuntimeError("state unavailable")):
             with self.assertRaises(RuntimeError):

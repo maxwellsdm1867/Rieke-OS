@@ -1,0 +1,2 @@
+.tree-design-controls{display:flex;align-items:center;flex-shrink:0;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
+.tree-design-controls button{display:inline-flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap}

@@ -70,14 +70,8 @@ docs/legacy/old_epochtree/
 # Clone-local Rieke OS dependencies/config (never scientific project data)
 /.rieke-runtime/
 
-# Release outputs and local project/runtime secrets
-/dist/
-/.pytest_cache/
-.env
-.env.*
-**/database/native.json
-**/database/mysql/
-
-# Local scientific MATLAB fixtures are never part of source releases.
-/examples/data/*.mat
-/tests/baselines/*.mat
+# Desktop build closure and local packages (source/locks remain tracked)
+/desktop/node_modules/
+/desktop/build/
+/desktop/dist/
+/desktop/resources/

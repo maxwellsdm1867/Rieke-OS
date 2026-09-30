@@ -16,7 +16,14 @@ LABELS = {'queued': 'Queued', 'checking_duplicates': 'Checking file identity',
     'verifying_catalog': 'Checking inserted catalog records', 'catalog_committed': 'Catalog transaction committed',
     'finalizing_files': 'Saving protocol query files', 'refreshing_workspace': 'Refreshing the project',
     'rerunning_protocols': 'Checking saved protocol queries', 'complete': 'Complete', 'failed': 'Stopped',
-    'duplicate': 'Already imported'}
+    'duplicate': 'Already imported',
+    'indexing_shared_annotations': 'Indexing epoch and cell tags',
+    'preparing_native_tag_lookup': 'Preparing persistent tag lookup',
+    'preparing_tag_filters': 'Preparing tag filters',
+    'preparing_tag_summary': 'Preparing tag summaries',
+    'preparing_tag_suggestions': 'Preparing tag suggestions',
+    'indexing_dataset_tags': 'Indexing dataset tags',
+    'preparing_protocol_reads': 'Preparing protocol views'}
 
 
 def utcnow():

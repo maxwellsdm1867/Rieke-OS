@@ -1,0 +1,22 @@
+'use strict';
+const {test} = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const {resealRuntimeManifest} = require('../sign-runtime.cjs');
+const {verifyResources} = require('../updater-validation.cjs');
+test('manifest reseal tracks signed native bytes and internal symlinks while excluding metadata', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rieke-seal-')); t.after(() => fs.rm(root, {recursive: true, force: true}));
+  await fs.writeFile(path.join(root, 'runtime-manifest.json'), JSON.stringify({format: 'rieke-desktop-runtime'}));
+  await fs.writeFile(path.join(root, 'runtime-audit.json'), '{}');
+  await fs.writeFile(path.join(root, 'binary'), 'final signed bytes', {mode: 0o755});
+  await fs.symlink('binary', path.join(root, 'entry'));
+  const manifest = await resealRuntimeManifest(root);
+  assert.deepEqual(Object.keys(manifest.resources), ['binary', 'entry']);
+  assert.equal(manifest.resources.binary.executable, true);
+  assert.equal(manifest.resources.entry.symlink, 'binary');
+  await verifyResources(root, manifest.resources);
+  await fs.writeFile(path.join(root, 'binary'), 'mutated after outer signing');
+  await assert.rejects(verifyResources(root, manifest.resources));
+});

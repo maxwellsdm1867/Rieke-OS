@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {jointId,jointComponents,jointDefinition,combineLevels} from './jointGrouping.js';
+import {jointId,jointComponents,jointDefinition,combineLevels,uncombineLevel} from './jointGrouping.js';
 
 test('composite IDs survive legacy comma-separated recipes and round-trip exact field IDs',()=>{
   const fields=['parameters/history1','metadata/cell/properties/a+b,c%2F'];
@@ -23,4 +23,12 @@ test('saved composites show recorded labels and refuse unknown component identit
   const fields=[{id:'a',label:'History 1 · mean / SD'},{id:'b',label:'Target · mean / SD'}];
   assert.equal(jointDefinition('joint/a+b',fields).label,'History 1 + Target');
   assert.equal(jointDefinition('joint/a+c',fields),null);
+});
+
+test('combined levels separate in place with complete unique fields and enforce the level limit',()=>{
+ const original=['date','cell','h1','h2','target','block'];
+ const combined=combineLevels(original,['h1','h2','target']);
+ assert.deepEqual(uncombineLevel(combined,jointId(['h1','h2','target'])),original);
+ assert.deepEqual(uncombineLevel(['h1','date',jointId(['h1','h2']),'h2','block'],jointId(['h1','h2'])),['date','h1','h2','block']);
+ assert.throws(()=>uncombineLevel(['a','b','c','d','e','f','g',jointId(['h1','h2'])],jointId(['h1','h2'])),/eight levels/);
 });

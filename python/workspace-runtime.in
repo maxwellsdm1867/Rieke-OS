@@ -33,6 +33,7 @@ hatchling
 wheel
 
 editables
+psutil==7.2.2
 
 # Legacy export tests import pytest, even under unittest discovery.
 pytest>=7

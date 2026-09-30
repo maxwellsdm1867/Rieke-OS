@@ -320,6 +320,16 @@ def build_sqlite_export(package, output_path):
             connection.execute('INSERT INTO example_queries VALUES (?,?,?)', ('shared_tags',
                 'Direct and cell-inherited authored tags for each exported epoch',
                 "SELECT e.epoch_uuid,a.* FROM epoch_overview e JOIN shared_annotations a ON (a.target_kind='epoch' AND a.target_uuid=e.epoch_uuid) OR (a.target_kind='cell' AND a.target_uuid=e.cell_uuid)"))
+            connection.execute('INSERT INTO documentation VALUES (?,?)', ('external_tag_return',
+                'Rieke app exports include annotation-return.json beside recordings.sqlite, with exact targets and a message example. '
+                'To add live project tags, write a complete JSON file to annotations/incoming/<message_uuid>.json beside this database. '
+                'Envelope: {format:"rieke-external-tags",version:1,message_uuid:<fresh UUID>,export_uuid:<this export UUID>,document:{'
+                'format:"rieke-tag-exchange",version:1,project_uuid:<this project UUID>,entries:[{target_kind:"epoch" or "cell",'
+                'target_uuid:<exact acquisition UUID>,source_sha256:<source hash>,tags:[{tag:<text>,profile_uuid:<stable author UUID>,author_name:<name>}]}]}}. '
+                'Publish via a temporary file and atomic rename. Keep this database unchanged. '
+                'The project page automatically scans the original export folder on open and while visible; receipts appear in annotations/receipts. '
+                'Tags are additive; cell tags inherit to all epochs of that cell. Copied databases need their completed messages delivered to the original export folder. '
+                'Current tags are available through the project annotation API; this database preserves the export-time snapshot.'))
             # This is an immutable handoff snapshot, not the lab's mutable master.
             # Owners can deliberately remove these guards; this is not tamper-proof storage.
             for table in TABLES:

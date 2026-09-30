@@ -179,6 +179,24 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
               'expected_recipe_sha256':candidate['recipe']['content_sha256'],**overrides}
         return self.client.post('/api/explore/revisions/'+candidate['revision_uuid']+'/create-protocol',json=body,headers=self.headers)
 
+    def test_search_local_exclusion_is_identical_for_updated_and_new_protocols(self):
+        base = {'field':'protocol','operator':'eq','value':'example'}
+        original = self.save_candidate(base)
+        candidate = self.save_candidate({'all':[base,{'field':'epoch','operator':'not_in','value':self.service.ids[:1]}]})
+        included = self.service.ids[1:]
+        self.assertEqual(candidate['recipe']['epoch_count'],1)
+        result = self.apply_candidate(candidate)
+        self.assertEqual(result.status_code,200,result.get_json())
+        updated = self.client.get(self.base+'/epochs').get_json()['epochs']
+        self.assertEqual([row['epoch_uuid'] for row in updated],included)
+        created = self.create_protocol(candidate)
+        self.assertEqual(created.status_code,201,created.get_json())
+        new_rows = self.client.get('/api/protocols/'+created.get_json()['protocol_uuid']+'/epochs').get_json()['epochs']
+        self.assertEqual([row['epoch_uuid'] for row in new_rows],included)
+        self.assertEqual(self.explorer_history.get(original['revision_uuid'])['recipe']['epoch_count'],2)
+        self.assertEqual(self.explorer_history.get(original['revision_uuid'])['recipe']['predicate'],base)
+        self.assertFalse(self.curation.rows)
+
     def test_create_pinned_protocol_is_persistent_exact_and_retry_safe(self):
         candidate=self.narrow(); old=copy.deepcopy(self.service.protocols[self.service.protocol_id])
         result=self.create_protocol(candidate)
