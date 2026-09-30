@@ -554,7 +554,7 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
     write_json(folder / "tags.json", {})
     manifest = {"format": "recording-import", "version": 1, "status": "validated",
                 "review_status": "unreviewed", "scientific_approval": False,
-                "source_path": str(source), "source_sha256": source_hash,
+                "source_path": str(source), "source_filename": source.name, "source_sha256": source_hash,
                 "source_size": stat.st_size, "experiment_uuid": experiment["uuid"],
                 "parser_path": str(parser_path), "parser_sha256": digest(parser_path),
                 "adapter_version": 1, "adapter_sha256": digest(__file__),

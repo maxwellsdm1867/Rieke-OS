@@ -7,12 +7,13 @@ const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cj
 const {bundleDigest}=require('../bootstrap.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {waitForHelperResult,captureHelperDiagnostics}=require('./helper-result.cjs');
+const {releaseVersions}=require('./release-versions.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-testing-upgrade-e2e.json');
 const diagnosticOutput=path.resolve(__dirname,'../build/native-qualification-diagnostics');
 const receipt={format:'rieke-packaged-testing-native-upgrade-e2e',version:1,production_ready:false,checks:[],failures:[],
   seams:['Official GitHub HTTPS transport mapped to owned loopback server serving exact final ZIP/descriptor.',
          'Native helper macOS open boundary recorded instead of OS launch; installed app then starts with real Electron/WSGI in isolated HOME/profile.'],
-  limits:['Synthetic version-only prior app, not an authentic previously published 0.1.2 desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true,phases:[]};
+  limits:['Synthetic version-only prior app, not an authentic previously published desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true,phases:[]};
 let fixture,server,application;const requests={api:0,descriptor:0,archive:0};
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify({...receipt,requests},null,2)+'\n');}
@@ -85,19 +86,19 @@ const spawnHelper=(exe,args,options)=>{
  }
 })().catch(error=>{coordinator?.stop();fs.writeFileSync(config.driverResult,JSON.stringify({error:error.message,statuses}),{mode:0o600});process.exitCode=1;});
 `;
-async function versionPrior(){
+async function versionPrior(priorVersion){
  const runtime=path.join(fixture.bundle,'Contents/Resources/runtime'),file=path.join(runtime,'runtime-manifest.json');
- const manifest=JSON.parse(await fs.readFile(file));manifest.application_version='0.1.2';
+ const manifest=JSON.parse(await fs.readFile(file));manifest.application_version=priorVersion;
  for(const name of Object.keys(manifest.resources).filter(name=>name.endsWith('/rieke-release.json'))){
-  const target=path.join(runtime,name),release=JSON.parse(await fs.readFile(target));release.version='0.1.2';const data=Buffer.from(JSON.stringify(release,null,2)+'\n');await fs.writeFile(target,data);
+  const target=path.join(runtime,name),release=JSON.parse(await fs.readFile(target));release.version=priorVersion;const data=Buffer.from(JSON.stringify(release,null,2)+'\n');await fs.writeFile(target,data);
   manifest.resources[name]={...manifest.resources[name],sha256:createHash('sha256').update(data).digest('hex'),size:data.length};
  }
  await fs.writeFile(file,JSON.stringify(manifest,null,2)+'\n');
  const archive=path.join(fixture.bundle,'Contents/Resources/app.asar'),directory=path.join(fixture.root,'prior-asar');asar.extractAll(archive,directory);
- const packageFile=path.join(directory,'package.json'),pack=JSON.parse(await fs.readFile(packageFile));pack.version='0.1.2';await fs.writeFile(packageFile,JSON.stringify(pack,null,2)+'\n');
+ const packageFile=path.join(directory,'package.json'),pack=JSON.parse(await fs.readFile(packageFile));pack.version=priorVersion;await fs.writeFile(packageFile,JSON.stringify(pack,null,2)+'\n');
  await asar.createPackage(directory,archive);asar.uncacheAll();
  const plist=path.join(fixture.bundle,'Contents/Info.plist');
- for(const field of ['CFBundleShortVersionString','CFBundleVersion'])await run('/usr/libexec/PlistBuddy',['-c',`Set :${field} 0.1.2`,plist]);
+ for(const field of ['CFBundleShortVersionString','CFBundleVersion'])await run('/usr/libexec/PlistBuddy',['-c',`Set :${field} ${priorVersion}`,plist]);
  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(archive).headerString).digest('hex')}`,plist]);
  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),fixture.bundle]);
  await run('/usr/bin/codesign',['--verify','--deep','--strict',fixture.bundle]);await verifyResources(runtime,manifest.resources);
@@ -148,15 +149,20 @@ async function main(){
  receipt.qualification_harness_sha256=createHash('sha256').update(await fs.readFile(__filename)).digest('hex');
  receipt.qualification_helper_sha256=createHash('sha256').update(await fs.readFile(path.join(__dirname,'helper-result.cjs'))).digest('hex');
  await write();
- fixture=await createFixture({reuse:false});
- receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
- const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),zip=path.resolve(__dirname,'../dist/Rieke-OS-0.1.3-arm64.zip');
+ const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');
  const sourceManifest=await fs.readFile(path.join(published,'Contents/Resources/runtime/runtime-manifest.json'));
- assert.equal(JSON.parse(sourceManifest).application_version,'0.1.3');receipt.runtime_manifest_sha256=createHash('sha256').update(sourceManifest).digest('hex');
+ const {candidateVersion,priorVersion}=releaseVersions(JSON.parse(sourceManifest).application_version,process.env.RIEKE_E2E_PRIOR_VERSION);
+ assert.equal(JSON.parse(asar.extractFile(path.join(published,'Contents/Resources/app.asar'),'package.json')).version,candidateVersion,'Packaged version must match candidate manifest');
+ const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`);
+ receipt.candidate_version=candidateVersion;receipt.synthetic_prior={version:priorVersion,authentic_published_release:false,construction:'Candidate clone with version metadata overlaid; documented launch and driver seams remain test-only'};
+ receipt.runtime_manifest_sha256=createHash('sha256').update(sourceManifest).digest('hex');
  receipt.asar_sha256=createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex');
  const descriptorBytes=await fs.readFile(path.resolve(__dirname,'../dist/desktop-release.json')),descriptor=JSON.parse(descriptorBytes);receipt.archive_sha256=descriptor.archive.sha256;
- await versionPrior();const priorDigest=await bundleDigest(fixture.bundle);receipt.prior_fixture_bundle_sha256=priorDigest;
- const tag='desktop-test-v0.1.3',baseURL=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;
+ assert.equal(descriptor.application_version,candidateVersion);assert.equal(descriptor.archive.filename,path.basename(zip));
+ fixture=await createFixture({reuse:false});
+ receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
+ await versionPrior(priorVersion);const priorDigest=await bundleDigest(fixture.bundle);receipt.prior_fixture_bundle_sha256=priorDigest;
+ const tag=`desktop-test-v${candidateVersion}`,baseURL=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;
  const releases=Buffer.from(JSON.stringify([{draft:false,prerelease:true,tag_name:tag,assets:[{name:'desktop-release.json',size:descriptorBytes.length,browser_download_url:baseURL+'desktop-release.json'},{name:descriptor.archive.filename,size:descriptor.archive.size,browser_download_url:baseURL+descriptor.archive.filename}]}]));
  server=http.createServer((request,response)=>{
   const resource=request.url==='/api'?releases:request.url==='/descriptor'?descriptorBytes:null;
@@ -166,21 +172,21 @@ async function main(){
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const driver=path.join(fixture.root,'driver.cjs'),wrapper=path.join(fixture.root,'owned-open-wrapper.cjs'),openLog=path.join(fixture.root,'open.jsonl');await fs.writeFile(driver,DRIVER);await fs.writeFile(wrapper,WRAPPER);
  const config={bundle:fixture.bundle,userData:fixture.userData,driver,wrapper,openLog,base:`http://127.0.0.1:${server.address().port}`,descriptorURL:baseURL+'desktop-release.json',archiveURL:baseURL+descriptor.archive.filename};
- await check('real ZIP updater validates and native helper waits current PID exit before complete 0.1.3 installation',async()=>{
-  const {driver,outcome}=await phase('update',config);assert.equal(outcome.state,'Installed');assert.equal(outcome.version,'0.1.3');
+ await check(`real ZIP updater validates and native helper waits current PID exit before complete ${candidateVersion} installation`,async()=>{
+  const {driver,outcome}=await phase('update',config);assert.equal(outcome.state,'Installed');assert.equal(outcome.version,candidateVersion);
   assert.equal(await bundleDigest(fixture.bundle),await bundleDigest(published));assert.equal(await bundleDigest(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')),priorDigest);
   return{current_process_ready_handshake:true,authorized_only_after_helper_ready:true,exact_current_process_exited:true,complete_target_matches_final_bundle:true,previous_complete_bundle_retained:true,statuses:driver.statuses};
  });
- await check('actual updated Electron and WSGI start in preserved isolated profile and stop cleanly',()=>startup('0.1.3'));
+ await check('actual updated Electron and WSGI start in preserved isolated profile and stop cleanly',()=>startup(candidateVersion));
  await check('controlled Restore installs only verified retained prior bundle without archive download',async()=>{
-  const before=requests.archive,{outcome}=await phase('restore',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,'0.1.2');assert.equal(await bundleDigest(fixture.bundle),priorDigest);assert.equal(requests.archive,before);
+  const before=requests.archive,{outcome}=await phase('restore',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);assert.equal(requests.archive,before);
   return{verified_previous_restored:true,archive_download_not_required:true,profile_preserved:true};
  });
  await check('macOS launch refusal triggers complete previous-app rollback with profile unchanged',async()=>{
-  const {outcome}=await phase('rollback',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,'0.1.2');assert.equal(await bundleDigest(fixture.bundle),priorDigest);
+  const {outcome}=await phase('rollback',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);
   return{candidate_launch_refusal_simulated_at_only_open_boundary:true,exact_previous_restored:true,failed_candidate_retained:true};
  });
- await check('restored Electron and WSGI still start and stop without dependency installation',()=>startup('0.1.2'));
+ await check('restored Electron and WSGI still start and stop without dependency installation',()=>startup(priorVersion));
  const opens=(await fs.readFile(openLog,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
  assert.ok(opens.every(entry=>entry.args.includes(fixture.bundle)&&entry.args.includes(`--user-data-dir=${fixture.userData}`)));receipt.open_boundary_calls=opens.length;receipt.profile_continuity_verified=true;
  assert.equal(createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/runtime/runtime-manifest.json'))).digest('hex'),receipt.runtime_manifest_sha256);

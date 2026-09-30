@@ -13,7 +13,7 @@ Implemented 2026-09-27 in the local React workspace. QC is a read-only character
 
 ## Measurements now available
 
-Recorded temperature range and chronological entries; measured resistance fields if present, kept distinct from amplifier compensation settings; detected characterization-protocol availability; lazy bounded raw traces; per-epoch recorded pre/stimulus-window mean and population SD; and bounded within-block condition comparisons with exact parameter grouping and sampled-trial coverage. Units come from the selected acquisition response stream. In the Sep23 Cell3 spot recordings, Amp1 is **pA**, not membrane voltage.
+Recorded temperature range and paged per-epoch observations, with recorded units and exact source epoch inspection; detected characterization-protocol availability; lazy bounded raw traces; per-epoch recorded pre/stimulus-window mean and population SD; and bounded within-block condition comparisons with exact parameter grouping and sampled-trial coverage. Units come from the selected acquisition response stream. In the Sep23 Cell3 spot recordings, Amp1 is **pA**, not membrane voltage.
 
 Condition summaries use up to three chronological trials per exact parameter dictionary and acquisition block, at most50 conditions and500,000 samples. These are descriptive recorded-response previews, not firing rates or fitted receptive fields. Complete stimulus timing must fit the bounded read; otherwise the statistic is marked unavailable instead of calculating a partial-window mean. Raw trace inspection uses the existing source-verified viewer with zoom/pan and bounded full-rate windows.
 
@@ -21,7 +21,9 @@ Condition summaries use up to three chronological trials per exact parameter dic
 
 Read-only Wheeler lookup found the canonical decision **F-447a4b02**: per-block baseline anchors and within-session pchip interpolation, not a single full-trace average. Code **S-464cfc16** is `retinaSRM/vbaseline_interp.m`; extraction **S-489e6b8b** is `compute_vrest_baseline_drift.m`. Historical interpolants **D-d5eba7fd** cover five older recordings; they are not valid for the September2026 cells. Unknown cells and out-of-range queries remain unavailable.
 
-The bench provides separately labeled **block-onset voltage estimates** from the first chronological epoch of each eligible current-noise block (at least2epochs, recordedmV). It reports the1ms mean,0.5/2ms sensitivity, source hash, exact epoch/block/group identities and reference contamination flags. It does not fit or silently extrapolate a new validated resting-voltage curve. These estimates can be affected by stimulus onset, holding current and spikes; reference flags are not a cell-quality pass/fail judgment.
+The resting-voltage detail provides separately labeled **prepared block-onset voltage estimates** from the first chronological epoch of each eligible current-noise block (at least2epochs, recordedmV). It reports the1ms mean,0.5/2ms sensitivity, source hash, exact epoch/block/group identities and reference contamination flags. Startup backfill, source import, and metadata refresh prepare and persist the supporting data in `cache/block-onset-voltage`. Displaying the headline or opening the detail loads these prepared records without waveform reads. A method/metadata/stream/membership/source-file signature change invalidates the prepared version; failed or interrupted preparation is visible and retryable. Each source recording retains its own epoch membership, acquisition timestamps, elapsed time from its first epoch, and raw anchor range.
+
+It does not fit or silently extrapolate a new validated resting-voltage curve. No interpolated value is reported: without scientific review a recording-specific validated resting-voltage value remains unavailable. These estimates can be affected by stimulus onset, holding current and spikes; reference flags are not a cell-quality pass/fail judgment.
 
 ## Reconstruction gaps
 

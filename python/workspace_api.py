@@ -134,6 +134,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     store.binding_provider = explorer_history.protocol_binding
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
+    if hasattr(service.dj, 'Schema'):
+        from workspace_datastore_deletion import DataStoreDeletion
+        with db_lock:
+            deletion = DataStoreDeletion(data_stores)
+            with deletion._locks():
+                deletion.recover_pending()
+            if not service._loaded:
+                try:
+                    service.refresh()
+                except (OSError, ValueError) as error:
+                    service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
     if hasattr(service, 'set_annotation_provider'):
         service.set_annotation_provider(lambda protocol_uuid, fingerprints:
@@ -209,6 +220,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         result, curation, revision = state(protocol_uuid)
         rows = service.filtered_rows(protocol_uuid, query_filters)
         ids = [r["epoch_uuid"] for r in rows]
+        retained=[member['uuid'] for member in result['epochs']]
+        payload['total_counts']={'cells':len({service.rows[key]['cell_uuid'] for key in retained}),
+            'epochs':len(retained),'reviewed':sum(curation[key]['review_state']=='approved' for key in retained),
+            'included':sum(curation[key]['included'] for key in retained),
+            'duration_seconds':sum(service.rows[key]['duration_seconds'] for key in retained)}
         payload["source_sha256s"] = sorted({row["source_sha256"] for row in rows})
         export_memberships = store.export_memberships() if export_memberships is None else export_memberships
         exported_ids = {key for key, links in export_memberships.items()
@@ -264,6 +280,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         rows=[service.rows[key] for key in identities if key in selected_set]
         ids={row['epoch_uuid'] for row in rows}
         excluded,approved=store.summary_decisions(protocol_uuid,identities,service._fingerprints)
+        retained_counts={'cells':len({service.rows[key]['cell_uuid'] for key in identities}),
+            'epochs':len(identities),'reviewed':len(approved),'included':len(identities)-len(excluded),
+            'duration_seconds':sum(service.rows[key]['duration_seconds'] for key in identities)}
         excluded &= ids;approved &= ids
         included=ids-excluded
         export_memberships=store.export_memberships() if export_memberships is None else export_memberships
@@ -301,7 +320,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         payload={'definition':definition,'starter_query':starter,
             'effective_query':result.get('effective_query',starter),
             'binding':compact_binding(result.get('dataset_binding')),
-            'counts':counts,'total_counts':{'cells':len({service.rows[key]['cell_uuid'] for key in identities}),'epochs':len(identities)},
+            'counts':counts,'total_counts':retained_counts,
             'selection_options':{'cell_types':sorted({service.rows[key]['cell_type'] for key in identities if service.rows[key].get('cell_type')})},
             'cells':cells,'groups':sorted({service.rows[key]['group_label'] for key in identities},key=str),
             'filters':dict(query_filters),'source_sha256s':sorted({row['source_sha256'] for row in rows}),
@@ -487,6 +506,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except Exception as error:
                     warnings.append('Metadata refreshed, but its SQL audit record could not be saved: ' + str(error))
                     app.logger.exception('Metadata refresh audit failed')
+                voltage_preparation=app.extensions['cell_qc'].prepare_baselines()
+                if voltage_preparation['status']=='failed':warnings.append('Supporting voltage preparation failed; retry from Cell QC.')
                 preparation=prepare_annotations()
                 if preparation['status']=='failed':warnings.append('Annotation preparation failed: '+preparation.get('reason',''))
                 return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation)
@@ -567,6 +588,45 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Lifecycle changes require action, expected_version and reason; actor is an optional client claim')
         with db_lock:
             return jsonify(data_stores.transition(source_sha256, **body))
+
+    @app.get('/api/data-stores/<source_sha256>/deletion')
+    def describe_data_store_deletion(source_sha256):
+        if request.args:
+            raise ValueError('Deletion confirmation takes no query options')
+        from workspace_datastore_deletion import DataStoreDeletion
+        with db_lock, data_stores.registration_locks():
+            return jsonify(DataStoreDeletion(data_stores).describe(source_sha256))
+
+    @app.post('/api/data-stores/<source_sha256>/delete')
+    def delete_data_store(source_sha256):
+        body = request.get_json()
+        if request.args or not isinstance(body, dict) or set(body) != {'confirmed', 'expected_revision'}:
+            raise ValueError('Deletion requires confirmed and expected_revision')
+        if not importing.acquire(blocking=False):
+            raise StaleWorkspace('An import or metadata refresh is running; wait before deleting')
+        try:
+            from workspace_datastore_deletion import DataStoreDeletion
+            with db_lock:
+                try:
+                    result = DataStoreDeletion(data_stores).delete(source_sha256, body['expected_revision'], confirmed=body['confirmed'])
+                except Exception:
+                    # Cleanup may fail after SQL committed. Invalidate live read
+                    # models before returning the visible, retryable failure.
+                    with contextlib.suppress(Exception):
+                        try:
+                            service.refresh()
+                        except (OSError, ValueError) as error:
+                            service.manager_recovery(error)
+                    raise
+                try:
+                    service.refresh()
+                    prepare_annotations()
+                except (OSError, ValueError) as error:
+                    service.manager_recovery(error)
+                    result['workspace_validation_error'] = str(error)
+                return jsonify(result)
+        finally:
+            importing.release()
 
     def propagation_plan(source_sha256):
         plan = data_stores.propagation_preview(source_sha256)
@@ -1398,7 +1458,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.get("/api/exports")
     def exports():
         with db_lock:
-            return jsonify(export_directory=str(export_root), exports=[{**row, "download_url": "/api/exports/" + row["dataset_uuid"] + "/download"}
+            active = {row['source_sha256'] for row in service.sources}
+            return jsonify(export_directory=str(export_root), exports=[{**row, "download_url": "/api/exports/" + row["dataset_uuid"] + "/download",
+                "unavailable_source_revisions": [sha for sha in row.get('source_revisions', []) if sha not in active]}
                 for row in store.list_dataset_revisions(request.args.get("protocol_uuid"))])
 
     @app.get("/api/exports/<dataset_uuid>/download")
@@ -1585,6 +1647,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     write_json(job_file, job)
                     proposals = protocol_suggestions.rerun(baselines, check['source_sha256'],
                         source.name, os.environ.get('USER', 'local-user'))
+                    reporter.emit('preparing_supporting_voltage')
+                    job['voltage_preparation']=app.extensions['cell_qc'].prepare_baselines(check['source_sha256'])
+                    if job['voltage_preparation']['status']=='failed':
+                        job['warnings'].append({'stage':'supporting_voltage_preparation','message':'Supporting voltage preparation failed; retry from Cell QC.',
+                            'failures':job['voltage_preparation']['failures']})
                     preparation=prepare_annotations(progress=lambda phase:reporter.emit(phase))
                     job['annotation_preparation']=preparation
                     if preparation['status']=='failed':
@@ -1753,6 +1820,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         register_tag_exchange_routes(app,service,shared_annotations,db_lock)
     from workspace_qc import register_qc_routes
     register_qc_routes(app, service, db_lock)
+    if hasattr(service.dj, 'Schema'):
+        with db_lock:
+            app.extensions['supporting_voltage_backfill']=app.extensions['cell_qc'].prepare_baselines()
     from workspace_search import register_search_routes
     register_search_routes(app, service, db_lock)
 
@@ -1769,7 +1839,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_backup_scheduler import BackupScheduler
         with db_lock:
             save_app_state(project_dir, service.dj.conn(), service=service)
-            prepare_annotations(reuse=True)
+            if service._loaded:
+                prepare_annotations(reuse=True)
         scheduler=BackupScheduler(lambda:save_app_state(project_dir,service.dj.conn(),service=service),
             db_lock,logger=app.logger)
         app.extensions['backup_scheduler']=scheduler
