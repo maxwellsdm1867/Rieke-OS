@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   ArrowLeft, ArrowRight, ArrowUp, Check, ChevronRight, Code2, Database,
   File, FileJson, Folder, FolderOpen, Link2, LockKeyhole,
-  RefreshCw, ShieldCheck, Upload, AlertTriangle, Copy, BookOpen, Download, Settings2, Activity,
+  RefreshCw, ShieldCheck, Upload, AlertTriangle, Copy, BookOpen, Download, Settings2, Activity, Package,
 } from 'lucide-react';
 import { useResource, number } from '../api.js';
 import { Badge, Empty, Status } from './Common.jsx';
@@ -39,7 +39,7 @@ const fileGroups = [
 ];
 const sectionNames={'raw-uploads':'Recording files',imports:'Imports',exports:'Exports',protocols:'Protocols','query-snapshots':'Saved queries',database:'Database',backups:'Backups',logs:'Activity logs',cache:'Temporary indexes'};
 
-export default function ProjectFiles({onStores,onFolder}) {
+export default function ProjectFiles({onStores,onFolder,onShare,onOpen}) {
   const [path, setPath] = useState('');
   const [offset, setOffset] = useState(0);
   const [copied,setCopied]=useState(false),[copyError,setCopyError]=useState('');
@@ -65,6 +65,11 @@ export default function ProjectFiles({onStores,onFolder}) {
         <RefreshCw size={16} className={storage.loading || files.loading ? 'spin' : ''}/> Refresh
       </button></div>
     </div>
+    <section className="pf-transfer-actions" aria-label="Whole-project transfer">
+      <div><h2>Share or open a whole project</h2><p>Portable copies contain recordings, database, saved work, tags, history and analysis exports.</p></div>
+      <div className="button-row"><button disabled={!onShare} onClick={onShare}><Package size={17}/> Share / export project</button><button disabled={!onOpen} onClick={onOpen}><FolderOpen size={17}/> Open a project</button></div>
+      <small>Open a working folder or restore a received portable copy into a new folder. To add H5 recordings, use Data stores. The Exports category below contains selected analysis results.</small>
+    </section>
     <Status {...storage} retry={storage.reload}>{data && <>
       <section className="pf-location" aria-label="Storage locations">
         <button type="button" className="pf-root-icon" onClick={onFolder} disabled={!onFolder}

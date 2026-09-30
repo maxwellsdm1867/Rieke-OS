@@ -46,7 +46,7 @@ export default function MasterLog({revision, onProtocol}) {
     } catch (e) {setError(e.message);}
   }
   return <div className="page master-log">
-    <div className="page-heading"><div><div className="eyebrow">PROJECT RECORD</div><h1>Activity & logs</h1>
+    <div className="page-heading"><div><div className="eyebrow">PROJECT RECORD</div><h1>Activity</h1>
       <p>Who changed what, when it happened, and the recorded versions and source fingerprints.</p></div>
       <button onClick={result.reload}><RefreshCw size={15}/> Refresh</button></div>
     <div className="source-strip"><Database size={16}/><span>SQL action history · <code>recording_workspace.Event</code></span><Badge kind="info"><ShieldCheck size={12}/> Curation audited transactionally</Badge></div>

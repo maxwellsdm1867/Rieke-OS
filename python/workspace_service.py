@@ -762,7 +762,9 @@ class WorkspaceService:
         return {'definition': definition, 'starter_query': definition['query'],
                 'effective_query': query.get('effective_query', definition['query']),
                 'binding': query.get('dataset_binding'),
-                'counts': self._counts(rows), 'cells': self._cell_summary(rows),
+                'counts': self._counts(rows), 'total_counts': self._counts(all_rows),
+                'selection_options': {'cell_types': sorted({r['cell_type'] for r in all_rows if r.get('cell_type')})},
+                'cells': self._cell_summary(rows),
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
 

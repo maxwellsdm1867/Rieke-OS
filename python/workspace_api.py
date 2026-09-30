@@ -220,6 +220,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         result, curation, revision = state(protocol_uuid)
         rows = service.filtered_rows(protocol_uuid, query_filters)
         ids = [r["epoch_uuid"] for r in rows]
+        retained=[member['uuid'] for member in result['epochs']]
+        payload['total_counts']={'cells':len({service.rows[key]['cell_uuid'] for key in retained}),
+            'epochs':len(retained),'reviewed':sum(curation[key]['review_state']=='approved' for key in retained),
+            'included':sum(curation[key]['included'] for key in retained),
+            'duration_seconds':sum(service.rows[key]['duration_seconds'] for key in retained)}
         payload["source_sha256s"] = sorted({row["source_sha256"] for row in rows})
         export_memberships = store.export_memberships() if export_memberships is None else export_memberships
         exported_ids = {key for key, links in export_memberships.items()
@@ -275,6 +280,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         rows=[service.rows[key] for key in identities if key in selected_set]
         ids={row['epoch_uuid'] for row in rows}
         excluded,approved=store.summary_decisions(protocol_uuid,identities,service._fingerprints)
+        retained_counts={'cells':len({service.rows[key]['cell_uuid'] for key in identities}),
+            'epochs':len(identities),'reviewed':len(approved),'included':len(identities)-len(excluded),
+            'duration_seconds':sum(service.rows[key]['duration_seconds'] for key in identities)}
         excluded &= ids;approved &= ids
         included=ids-excluded
         export_memberships=store.export_memberships() if export_memberships is None else export_memberships
@@ -312,7 +320,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         payload={'definition':definition,'starter_query':starter,
             'effective_query':result.get('effective_query',starter),
             'binding':compact_binding(result.get('dataset_binding')),
-            'counts':counts,'cells':cells,'groups':sorted({service.rows[key]['group_label'] for key in identities},key=str),
+            'counts':counts,'total_counts':retained_counts,
+            'selection_options':{'cell_types':sorted({service.rows[key]['cell_type'] for key in identities if service.rows[key].get('cell_type')})},
+            'cells':cells,'groups':sorted({service.rows[key]['group_label'] for key in identities},key=str),
             'filters':dict(query_filters),'source_sha256s':sorted({row['source_sha256'] for row in rows}),
             'source_eligibility':{'excluded_epoch_count':len(affected),
                 'excluded_sources':sorted({row['source_sha256'] for row in affected}),

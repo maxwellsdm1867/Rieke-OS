@@ -33,3 +33,14 @@ export function watchAppUpdates(check,{interval=15*60*1000,setTimer=setInterval,
   documentObject?.addEventListener('visibilitychange',visible);
   return()=>{clearTimer(timer);documentObject?.removeEventListener('visibilitychange',visible);};
 }
+
+// Claim a version once per app session, including transitions between launcher
+// and workspace. Storage can be unavailable; the component's set still dedupes.
+export function claimUpdateDiscovery(status,seen=new Set(),storage=globalThis.sessionStorage){
+ const notice=updateNotice(status);if(!notice)return false;
+ const key=`rieke.update.discovered.${status?.channel||'default'}.${notice.version}`;
+ if(seen.has(key))return false;
+ try{if(storage?.getItem(key)){seen.add(key);return false;}}catch{}
+ seen.add(key);try{storage?.setItem(key,'1');}catch{}
+ return true;
+}
