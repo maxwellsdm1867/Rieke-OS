@@ -26,6 +26,7 @@
     "workspace_catalog_identity.py",
     "workspace_curation.py",
     "workspace_curation_vocabulary.py",
+    "workspace_datastore_deletion.py",
     "workspace_datastores.py",
     "workspace_desktop.py",
     "workspace_desktop_paths.py",
