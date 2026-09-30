@@ -68,6 +68,7 @@ export function isUndoableRequest(path,options){return undoEnabled&&options?.met
 export function shouldUndoData(target){
  if(!target)return true;
  if(target.isContentEditable)return false;
+ if(target.readOnly||target.disabled||['checkbox','radio','button','submit','reset','range','file'].includes(target.type))return true;
  if(['INPUT','TEXTAREA','SELECT'].includes(target.tagName))return target.getAttribute?.('data-saved-undo')==='true'&&!target.value;
  return true;
 }

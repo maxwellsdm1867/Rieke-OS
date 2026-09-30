@@ -30,6 +30,7 @@ test('mounted committed tag undo survives epoch navigation and adds no ordinary 
   // Navigate to another original epoch before pressing Undo.
   await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-2'));
   await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-2');
+  assert.equal(input(h).props['data-saved-undo'],'true','A clean composer after epoch navigation must still hand off committed undo');
   const undo=h.root.findAllByType('button').find(row=>row.children.includes('Undo edit'));
   assert.equal(undo.props.disabled,false);await h.act(()=>undo.props.onClick());
   await h.waitFor(()=>h.fixture.requests.some(row=>row.path==='/annotations/undo'));

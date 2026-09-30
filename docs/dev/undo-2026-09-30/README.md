@@ -91,3 +91,12 @@ manually exercised. Existing exports remain immutable.
 For controlled baseline measurement only, set the browser local-storage key
 `rieke.undo.enabled` to `false` before mounting/reloading. Only this diagnostic
 flag persists; action history never does.
+
+## Integrated regression result
+
+After merging current main and desktop recovery work: Python 1,116 tests passed
+(33 opt-in skips); frontend 351 tests passed with the serial runner; desktop 91
+tests completed (90 passed, one opt-in skip); production Vite build passed.
+A parallel frontend run stalled during fixture startup on this busy workstation;
+its complete serial equivalent passed. Loopback/native desktop test fixtures
+required sandbox escalation and remained in disposable directories.

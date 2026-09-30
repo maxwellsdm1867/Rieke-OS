@@ -42,6 +42,8 @@ test('unfinished text keeps native undo; cleared saved tag input hands off exact
  assert.equal(shouldUndoData({tagName:'INPUT',value:'',getAttribute:()=> 'true'}),true);
  assert.equal(shouldUndoData({isContentEditable:true}),false);
  assert.equal(shouldUndoData({tagName:'BUTTON'}),true);
+ assert.equal(shouldUndoData({tagName:'INPUT',readOnly:true,value:'/project'}),true);
+ assert.equal(shouldUndoData({tagName:'INPUT',type:'checkbox'}),true);
 });
 test('curation undo reads only original targets and sends mixed minimal inverse in one mutation',async()=>{
  const a={kind:'curation',protocol_uuid:'p',operations:[{epoch_uuid:'first',expected_revision:2,changes:{included:true}},{epoch_uuid:'second',expected_revision:5,changes:{included:false,tags_add:['removed']}}]},calls=[];
@@ -89,4 +91,12 @@ test('compact 1000-target gestures fit the session budget without repeated tag o
  h.record(compact);assert.equal(h.view().count,1);assert.ok(h.view().bytes<512*1024);
  await h.undo(value=>{assert.equal(value.patterns.length,1);assert.equal(value.targets.length,1000);return {revisions:{}};});
  assert.equal(h.view().bytes,0);
+});
+
+test('a confirmed SQL inverse with failed recovery is never offered for replay',async()=>{
+ const h=createUndoHistory();h.project('A');h.record(action());
+ const error=Object.assign(Error('Recovery copy failed'),{saved:true});
+ await h.undo(()=>{throw error;});assert.equal(h.view().count,0);
+ assert.match(h.view().message,/inverse edit was saved to the database/);
+ let calls=0;assert.equal(await h.undo(()=>calls++),false);assert.equal(calls,0);
 });
