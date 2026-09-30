@@ -5,22 +5,22 @@ class DraftBarrier {
     this.timeout = timeout; this.send = send; this.pending = new Map();
   }
   acknowledge(payload, window) {
-    if (!payload || typeof payload.requestId !== 'string' || typeof payload.ok !== 'boolean' || Object.keys(payload).sort().join(',') !== 'ok,requestId') throw new TypeError('Invalid draft acknowledgement');
+    if (!payload || typeof payload.requestId !== 'string' || typeof payload.ok !== 'boolean' || Object.keys(payload).some(key => !['ok','requestId','reason'].includes(key)) || (payload.reason !== undefined && (typeof payload.reason !== 'string' || payload.reason.length > 1024))) throw new TypeError('Invalid draft acknowledgement');
     const pending = this.pending.get(payload.requestId);
     if (!pending || pending.window !== window) throw new Error('No matching draft request');
-    pending.resolve(payload.ok); return {acknowledged: true};
+    pending.resolve({ok:payload.ok,reason:payload.reason}); return {acknowledged: true};
   }
-  async prepare(windows) {
+  async prepare(windows, {timeout = this.timeout} = {}) {
     if ([...windows].some(window => window.isDestroyed() || window.draftUnavailable))
-      return {ready: false, reason: 'Renderer drafts have not been acknowledged. Restore the scientific window before quitting.'};
+      return {ready: false, reason: 'Renderer drafts have not been acknowledged. The last saved view is retained; its latest changes could not be confirmed.'};
     const results = await Promise.all([...windows].map(window => new Promise(resolve => {
       const requestId = randomUUID();
-      const finish = ok => { clearTimeout(timer); this.pending.delete(requestId); resolve(ok); };
-      const timer = setTimeout(() => finish(false), this.timeout);
+      const finish = value => { clearTimeout(timer); this.pending.delete(requestId); resolve(value); };
+      const timer = setTimeout(() => finish({ok:false}), timeout);
       this.pending.set(requestId, {window, resolve: finish});
-      try { this.send(window, {requestId}); } catch { finish(false); }
+      try { this.send(window, {requestId}); } catch { finish({ok:false}); }
     })));
-    return results.every(Boolean) ? {ready: true} : {ready: false, reason: 'Draft persistence was not acknowledged; quit and replacement are deferred'};
+    return results.every(result=>result.ok) ? {ready: true} : {ready: false, reason: results.filter(result=>!result.ok).map(result=>result.reason||'Latest view or accepted changes were not acknowledged. The last saved view is retained.').join(' ')};
   }
 }
 module.exports = {DraftBarrier};

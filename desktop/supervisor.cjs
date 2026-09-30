@@ -15,8 +15,13 @@ async function inspectExecutable(pid) {
 async function atomicJSON(filename, value) {
   await fs.mkdir(path.dirname(filename), {recursive: true, mode: 0o700});
   const temporary = `${filename}.${randomUUID()}.tmp`;
-  await fs.writeFile(temporary, JSON.stringify(value, null, 2), {mode: 0o600});
-  await fs.rename(temporary, filename);
+  try {
+    const file = await fs.open(temporary, 'wx', 0o600);
+    try {await file.writeFile(JSON.stringify(value, null, 2));await file.sync();} finally {await file.close();}
+    await fs.rename(temporary, filename);
+    const directory = await fs.open(path.dirname(filename), 'r');
+    try {await directory.sync();} finally {await directory.close();}
+  } finally {await fs.rm(temporary, {force:true});}
 }
 async function availablePort() {
   const server = net.createServer();
@@ -30,8 +35,8 @@ function matchesHealth(health, expected) {
     JSON.stringify(health[key]) === JSON.stringify(value));
 }
 class ServiceSupervisor {
-  constructor({resourcesPath, userData, appVersion, spawnProcess = spawn, request = fetch, inspectProcess = inspectExecutable, startupTimeout = 90000, drainTimeout = 30000, onFailure = () => {}}) {
-    Object.assign(this, {resourcesPath, userData, appVersion, spawnProcess, request, inspectProcess, startupTimeout, drainTimeout, onFailure});
+  constructor({resourcesPath, userData, appVersion, spawnProcess = spawn, request = fetch, inspectProcess = inspectExecutable, startupTimeout = 90000, drainTimeout = 30000, recoverProcess = null, onFailure = () => {}}) {
+    Object.assign(this, {resourcesPath, userData, appVersion, spawnProcess, request, inspectProcess, startupTimeout, drainTimeout, recoverProcess, onFailure});
     this.capability = randomBytes(32).toString('hex'); this.sessionId = randomUUID();
     this.rendererCapability = createHash('sha256').update(this.capability + ':renderer').digest('hex');
     this.origins = new Set(); this.child = null; this.exited = true; this.ready = false;
@@ -55,18 +60,7 @@ class ServiceSupervisor {
   async start() {
     if (this.child && !this.exited) throw new Error('Previous backend is still running; replacement is deferred');
     await this.loadManifest();
-    try {
-      const previous = JSON.parse(await fs.readFile(this.registryPath, 'utf8'));
-      if (!Number.isSafeInteger(previous.pid) || previous.pid <= 0 || !path.isAbsolute(previous.executable || '') || !previous.session_id)
-        throw new Error('Previous service registry is malformed; resolve recovery before opening projects');
-      const actualExecutable = await this.inspectProcess(previous.pid);
-      if (actualExecutable === previous.executable) throw new Error('A prior matching service is still active; resolve recovery before opening projects');
-      for (const record of previous.services || []) {
-        if (await this.inspectProcess(record.pid) === previous.executable)
-          throw new Error('A prior project service is still active; resolve recovery before opening projects');
-      }
-      // PID reuse is never treated as ownership and never authorizes termination.
-    } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    await this.reconcilePrevious();
     const port = await availablePort(); this.origin = `http://127.0.0.1:${port}`;
     const backendState = path.join(this.userData, 'backend');
     await fs.mkdir(backendState, {recursive: true, mode: 0o700});
@@ -120,6 +114,134 @@ class ServiceSupervisor {
     }
     throw new Error(this.exited ? `Packaged backend exited before readiness (${this.exitCode})` : 'Packaged backend readiness deadline exceeded; backend retained for safe recovery');
   }
+  async ownedPreviousCapability(record) {
+    if (this.recoverProcess) return this.recoverProcess(record);
+    // Read one private variable only AFTER proving the unique session/process
+    // identity. Nothing from the environment is persisted or logged.
+    const program = `import json,os,pathlib,sys,psutil
+record=json.loads(sys.argv[1])
+try:
+ p=psutil.Process(record['pid']); args=p.cmdline()
+ def arg(name):
+  i=args.index(name); return args[i+1]
+ assert p.status()!=psutil.STATUS_ZOMBIE
+ assert p.uids().real==os.getuid()
+ assert str(pathlib.Path(p.exe()).resolve())==record['executable']
+ assert arg('--session-id')==record['session_id']
+ assert str(pathlib.Path(arg('--user-state')).resolve())==str(pathlib.Path(sys.argv[2]).resolve())
+ if record.get('entry'): assert record['entry'] in args[1:3] and '-c' not in args[1:3]
+ assert arg('--port')==str(record['port'])
+ assert any(c.status==psutil.CONN_LISTEN and c.laddr.ip=='127.0.0.1' and c.laddr.port==record['port'] for c in p.net_connections(kind='tcp'))
+ if record.get('created_at') is not None: assert p.create_time()==record['created_at']
+ if record.get('project_path'): assert str(pathlib.Path(arg('--project-dir')).resolve())==record['project_path']
+ value=p.environ().get('RIEKE_DESKTOP_CAPABILITY')
+ assert isinstance(value,str) and len(value)>=32
+ print(json.dumps({'capability':value}))
+except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyError,IndexError):
+ print('{}')`;
+    const {stdout} = await promisify(execFile)(this.executable, ['-B', '-c', program, JSON.stringify(record), path.join(this.userData,'backend')], {timeout:3000, maxBuffer:4096});
+    return JSON.parse(stdout).capability || null;
+  }
+  async reconcilePrevious() {
+    let previous;
+    try { previous = JSON.parse(await fs.readFile(this.registryPath, 'utf8')); }
+    catch (error) { if (error.code === 'ENOENT') return; throw new Error('Previous desktop ownership record is unreadable; retry recovery before opening projects'); }
+    if (!Number.isSafeInteger(previous.pid) || previous.pid <= 0 || !path.isAbsolute(previous.executable || '') ||
+        !previous.session_id || !Number.isInteger(previous.port) || !path.isAbsolute(previous.entry || ''))
+      throw new Error('Previous service registry is malformed; resolve recovery before opening projects');
+    const live = await this.inspectProcess(previous.pid) === previous.executable;
+    if (live) {
+      // The current main already owns this profile's single-instance lock.
+      // An interrupted quit receipt may itself have failed; exact live
+      // process/session/profile/listener proof authorizes safe cleanup.
+      await this.finishPrevious(previous);
+    } else {
+      // The root may have stopped while an owned project service remained.
+      // Use the backend's existing exact process records, never PID alone.
+      const childrenPath = path.join(this.userData, 'backend', 'desktop-services.json');
+      let records = previous.services || [];
+      try { const children = JSON.parse(await fs.readFile(childrenPath, 'utf8')); records = children.services || records; }
+      catch (error) { if (error.code !== 'ENOENT') throw new Error('Prior project service evidence is unreadable; recovery is required'); }
+      for (const record of records) {
+        if (await this.inspectProcess(record.pid) !== record.executable) continue;
+        await this.finishPrevious(record);
+      }
+      // New backend startup independently requires clean native-database
+      // receipts for crashed children and unfinished database operations.
+    }
+    this.recoveredQuit = previous.quit;
+    await fs.rm(this.registryPath, {force:true});
+  }
+  async finishPrevious(record) {
+    // Current OS listener ownership supersedes an interrupted startup's older
+    // unbound receipt; the exact process must now own the registered port.
+    const capability = await this.ownedPreviousCapability(record);
+    if (!capability) throw new Error('Prior service ownership could not be inspected; retry recovery without restoring the old window');
+    const until = Date.now() + this.drainTimeout;
+    const call = async (operation, method = 'GET') => {
+      const response = await this.request(`http://127.0.0.1:${record.port}/api/desktop/${operation}`, {method,
+        headers:{'X-Rieke-Desktop-Capability':capability, 'X-Workspace-Request':'1','Content-Type':'application/json'},
+        signal:AbortSignal.timeout(Math.max(1, until-Date.now())), ...(method==='POST'?{body:'{}'}:{})});
+      const value = await response.json();
+      if (!response.ok || value.ready !== true && operation!=='health') {
+        const error=new Error(value.error || 'Prior service cleanup is still incomplete; retry recovery');
+        error.status=response.status;throw error;
+      }
+      return value;
+    };
+    const health = await call('health');
+    if (['pid','session_id','source_commit','application_version','project_uuid','project_path'].some(key =>
+      record[key] !== undefined && health[key] !== record[key])) throw new Error('Prior service health identity changed; recovery is required');
+    try {await call('quit', 'POST');}
+    catch(error){
+      // Only the verified legacy service's missing endpoint permits this
+      // compatibility path. Busy/error responses retain recovery evidence.
+      if(error.status!==404)throw error;
+      await call('drain', 'POST');
+    }
+    await call('stop', 'POST');
+    while (Date.now()<until && await this.inspectProcess(record.pid) === record.executable) await delay(50);
+    if (await this.inspectProcess(record.pid) === record.executable)
+      throw new Error('Prior service has not exited after cleanup; retry recovery');
+  }
+  async quit({timeout = this.drainTimeout, drafts} = {}) {
+    const until = Date.now()+timeout, remaining = () => Math.max(1, until-Date.now());
+    if (!this.child) {
+      try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified. Its ownership and operation records are retained for recovery.'};}
+      catch(error){if(error.code==='ENOENT')return {ready:true};throw error;}
+    }
+    // Retain an interrupted receipt BEFORE cleanup begins. It authorizes only
+    // future identity-verified cleanup; it never claims a clean database exit.
+    this.registry.bound = this.bound === true;
+    this.registry.quit = {requested:true, state:'closing', requested_at:new Date().toISOString(),
+      drafts_saved:drafts?.ready===true, reason:drafts?.reason || null};
+    await atomicJSON(this.registryPath, this.registry);
+    if (this.abnormalExit) return {ready:false, reason:'The backend stopped without clean shutdown evidence. Existing project operation records remain available for recovery.'};
+    if (this.exited) {this.ready=false;await fs.rm(this.registryPath,{force:true});return {ready:true};}
+    try {
+      const health = await this.api('/api/desktop/health',{timeout:Math.min(3000,remaining())});
+      if (!Object.entries(this.expectedHealth()).every(([key,value])=>JSON.stringify(health[key])===JSON.stringify(value)))
+        throw new Error('Owned backend identity changed before quit');
+      this.registry.services = health.services || [];
+      this.registry.bound = this.bound;
+      await atomicJSON(this.registryPath, this.registry);
+      const result = await this.api('/api/desktop/quit',{method:'POST',timeout:remaining()});
+      if (result.ready!==true) throw new Error('Backend quit cleanup was not acknowledged');
+      this.stopping=true;
+      await this.api('/api/desktop/stop',{method:'POST',timeout:remaining()});
+      while (!this.exited && Date.now()<until) await delay(Math.min(50,remaining()));
+      if (!this.exited) throw new Error('Backend process exit remains unconfirmed. Recovery will finish cleanup on relaunch.');
+      this.ready=false;this.origins.clear();
+      if(drafts?.ready===true)await fs.rm(this.registryPath,{force:true});
+      else {this.registry.quit.state='services_closed';await atomicJSON(this.registryPath,this.registry);}
+      return {ready:true};
+    } catch (error) {
+      this.registry.quit.state='interrupted';this.registry.quit.reason=error.message;
+      await atomicJSON(this.registryPath,this.registry);
+      // Do not resume admission, terminate writers or manufacture a clean exit.
+      return {ready:false, reason:error.message};
+    }
+  }
   expectedHealth() { return {pid: this.child.pid, session_id: this.sessionId,
     application_version: this.manifest.application_version, source_commit: this.manifest.source_commit,
     workspace_formats: this.manifest.workspace_formats, database_compatibility: this.manifest.database_compatibility}; }
@@ -157,7 +279,11 @@ class ServiceSupervisor {
   }
   async drain() {
     if (this.abnormalExit) return {ready: false, reason: 'Backend exited without a drain acknowledgement; project service exit must be recovered before replacement'};
-    if (!this.child || this.exited) { this.ready = false; await fs.rm(this.registryPath, {force: true}); return {ready: true}; }
+    if (!this.child) {
+      try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified; replacement must wait for recovery.'};}
+      catch(error){if(error.code==='ENOENT')return {ready:true};throw error;}
+    }
+    if (this.exited) { this.ready = false; await fs.rm(this.registryPath, {force: true}); return {ready: true}; }
     try {
       const result = await this.api('/api/desktop/drain', {method: 'POST', timeout: this.drainTimeout});
       if (result.ready !== true) throw new Error('Backend did not acknowledge drain');

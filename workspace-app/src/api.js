@@ -1,10 +1,12 @@
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
 import {cachedResourceRequest,epochResourceCache,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
 import { useCallback, useEffect, useState } from 'react';
-import {trackWrite} from './desktopLifecycle.js';
+import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
 export function api(path,options={}){
+  const write=['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase());
+  if(write){try{assertDesktopWritable();}catch(error){return Promise.reject(error);}}
   const operation=requestApi(path,options);
-  return ['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase())?trackWrite(operation):operation;
+  return write?trackWrite(operation):operation;
 }
 async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
@@ -12,7 +14,7 @@ async function requestApi(path, options = {}) {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || data.message || `Request failed (${response.status})`);
+  if (!response.ok) {const error=new Error(data.error || data.message || `Request failed (${response.status})`);if(data.saved===true)error.saved=true;throw error;}
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {
