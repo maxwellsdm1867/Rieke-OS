@@ -4,7 +4,7 @@
 
 Data Inspection, Selection, Comparison Operations · A Rieke Lab OS
 
-The app is migrating to Disco. Releases and support remain at the existing Rieke-OS repository until the bridge upgrade and repository rename are qualified; `maxwellsdm1867/disco` is the planned canonical destination.
+The application is named Disco. Source, releases, updates and support remain in the existing `maxwellsdm1867/Rieke-OS` repository.
 
 **Disco is a local research workspace for Symphony electrophysiology recordings.**
 It turns a folder of H5 files into an organized project where you can find cells

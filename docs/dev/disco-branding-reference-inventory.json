@@ -1,5 +1,5 @@
 {
-  "status": "draft migration audit; repository rename and installed upgrade not completed",
+  "status": "application-only naming audit; Rieke-OS repository and compatibility filenames retained; installed release qualification not claimed",
   "before": [
     {
       "path": ".github/workflows/desktop-candidate.yml",
@@ -4359,5 +4359,6 @@
         "disposition": "active product label renamed to Disco"
       }
     ]
-  }
+  },
+  "scope_update": "September 30, 2026: repository rename dropped; source, update and release defaults remain maxwellsdm1867/Rieke-OS. Before and migration scan records below preserve the original audit snapshots."
 }
