@@ -69,7 +69,7 @@ copy before removing the old folder.
 ## Desktop update availability
 
 The unsigned testing desktop checks official GitHub release metadata at startup
-and about once an hour. **Release / Publish** shows the available version quietly.
+and about once an hour. **App Updates** shows the available version quietly.
 Checking never downloads automatically: choose **Download update**, then
 **Restart to update** after complete archive/resource and compatibility validation.
 An ordinary Quit does not install the testing update. Active imports, unsaved

@@ -12,7 +12,7 @@ macOS **Privacy & Security → Open Anyway** approval before it can run.
 The app has a structurally verified local ad-hoc bundle seal, which needs no
 certificate and provides no Apple developer identity. The installer retains quarantine attributes and does not bypass Gatekeeper.
 
-In the app, **Release / Publish** displays a newer available version. Metadata
+In the app, **App Updates** displays a newer available version. Metadata
 checks run at startup and about once an hour; **Check for updates** also runs on
 request. A notice never starts a download. Users choose **Download update**, then
 **Restart to update** once the archive and app resources have been verified.

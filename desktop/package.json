@@ -102,17 +102,17 @@
     "publish": {
       "provider": "github",
       "owner": "maxwellsdm1867",
-      "repo": "disco",
+      "repo": "Rieke-OS",
       "releaseType": "draft"
     },
     "afterPack": "./seal-testing.cjs"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/maxwellsdm1867/disco.git"
+    "url": "https://github.com/maxwellsdm1867/Rieke-OS.git"
   },
-  "homepage": "https://github.com/maxwellsdm1867/disco",
+  "homepage": "https://github.com/maxwellsdm1867/Rieke-OS",
   "bugs": {
-    "url": "https://github.com/maxwellsdm1867/disco/issues"
+    "url": "https://github.com/maxwellsdm1867/Rieke-OS/issues"
   }
 }

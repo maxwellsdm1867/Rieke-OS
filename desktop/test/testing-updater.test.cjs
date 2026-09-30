@@ -18,11 +18,12 @@ test('testing descriptor and URL boundaries reject foreign provenance, migration
 async function fixture(t,options={}){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rieke-testing-update-'));
   const release={draft:false,prerelease:true,tag_name:'desktop-test-v0.1.3',html_url:'https://github.com/maxwellsdm1867/disco/releases/tag/desktop-test-v0.1.3',assets:[{name:'desktop-release.json',size:1000,browser_download_url:base+'desktop-release.json'},{name:descriptor.archive.filename,size:bytes.length,browser_download_url:base+descriptor.archive.filename}]};
+  if(options.legacy){release.html_url=release.html_url.replace('/disco/','/Rieke-OS/');for(const asset of release.assets)asset.browser_download_url=asset.browser_download_url.replace('/disco/','/Rieke-OS/');}
   let archiveCalls=0,helperCalls=0,drains=0,validationCalls=0,failDownload=false,failMetadata=false,metadataCalls=0;
   let archiveBytes=bytes;
   const server=http.createServer((request,response)=>{
     const url=new URL(request.url,'http://fixture');
-    if(url.pathname.endsWith('/releases')){metadataCalls++;if(failMetadata){response.writeHead(503);response.end('offline');}else response.end(JSON.stringify([release]));}
+    if(url.pathname.endsWith('/releases')){metadataCalls++;if(options.legacy&&url.pathname.includes('/disco/')){response.writeHead(404);response.end('not renamed');}else if(failMetadata){response.writeHead(503);response.end('offline');}else response.end(JSON.stringify([release]));}
     else if(url.pathname.endsWith('/desktop-release.json'))response.end(JSON.stringify(descriptor));
     else {archiveCalls++;if(failDownload){response.writeHead(200,{'Content-Length':bytes.length+10});response.end(bytes.subarray(0,2));}else response.end(archiveBytes);}
   });
@@ -213,4 +214,11 @@ with zipfile.ZipFile(sys.argv[2],'w',zipfile.ZIP_DEFLATED) as z:
   assert.ok(!executed.some(exe=>exe.startsWith(f.bundle)));
   await fs.writeFile(path.join(validated.bundle_path,'extra-after-validation'),'changed full app closure');
   await assert.rejects(revalidateTestingCandidate({candidate:validated,descriptor:next,manifest:current,hostVersion:'14.2',run:f.run}),/Prepared app bundle changed/);
+});
+
+test('pre-rename bridge discovers and downloads the existing repository release and keeps its live link',async t=>{
+ const f=await fixture(t,{legacy:true});await f.coordinator.start();
+ assert.equal(f.coordinator.getStatus().state,'Available');
+ assert.equal(f.coordinator.getStatus().release_url,'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.3');
+ await f.coordinator.download();assert.equal(f.coordinator.getStatus().state,'Ready');assert.equal(f.archiveCalls(),1);
 });

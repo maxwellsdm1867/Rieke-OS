@@ -3,7 +3,7 @@
 Disco is an independent application for organizing recordings, browsing
 metadata and waveforms, tagging cells and epochs, saving queries and selections,
 and exporting reproducible data. Its canonical source and releases are in
-[maxwellsdm1867/disco](https://github.com/maxwellsdm1867/disco).
+[maxwellsdm1867/disco](https://github.com/maxwellsdm1867/Rieke-OS).
 
 | Directory | Responsibility |
 | --- | --- |

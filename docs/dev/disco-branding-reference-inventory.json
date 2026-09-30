@@ -2691,11 +2691,36 @@
       ]
     },
     {
+      "path": "CITATION.cff",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "repository-code: \"https://github.com/maxwellsdm1867/Rieke-OS\""
+        }
+      ]
+    },
+    {
       "path": "README.md",
       "occurrences": [
         {
           "line": 1,
-          "text": "> **Complete Mac desktop testing app:** [Download Disco for Apple Silicon](https://github.com/maxwellsdm1867/disco/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Disco, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security \u2192 Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **Release / Publish** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md)."
+          "text": "> **Complete Mac desktop testing app:** [Download the current Mac testing app](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open the app, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security \u2192 Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **App Updates** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md)."
+        },
+        {
+          "line": 7,
+          "text": "The app is migrating to Disco. Releases and support remain at the existing Rieke-OS repository until the bridge upgrade and repository rename are qualified; `maxwellsdm1867/disco` is the planned canonical destination."
+        },
+        {
+          "line": 61,
+          "text": "**[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**"
+        },
+        {
+          "line": 63,
+          "text": "[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download"
+        },
+        {
+          "line": 76,
+          "text": "git clone https://github.com/maxwellsdm1867/Rieke-OS.git disco"
         }
       ]
     },
@@ -2747,6 +2772,15 @@
         {
           "line": 159,
           "text": "const previous = path.join(parent, '.Rieke OS.previous.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/branding.cjs",
+      "occurrences": [
+        {
+          "line": 4,
+          "text": "app.setName('Rieke OS');"
         }
       ]
     },
@@ -2892,6 +2926,22 @@
         {
           "line": 98,
           "text": "\"name\": \"Rieke OS.app\""
+        },
+        {
+          "line": 105,
+          "text": "\"repo\": \"Rieke-OS\","
+        },
+        {
+          "line": 112,
+          "text": "\"url\": \"https://github.com/maxwellsdm1867/Rieke-OS.git\""
+        },
+        {
+          "line": 114,
+          "text": "\"homepage\": \"https://github.com/maxwellsdm1867/Rieke-OS\","
+        },
+        {
+          "line": 116,
+          "text": "\"url\": \"https://github.com/maxwellsdm1867/Rieke-OS/issues\""
         }
       ]
     },
@@ -2925,32 +2975,40 @@
           "text": "const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/disco',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sha512:crypto.createHash('sha512').update(bytes).digest('base64')},asar_sha256:'a'.repeat(64),runtime_manifest_sha256:'b'.repeat(64)};"
         },
         {
-          "line": 34,
+          "line": 21,
+          "text": "if(options.legacy){release.html_url=release.html_url.replace('/disco/','/Rieke-OS/');for(const asset of release.assets)asset.browser_download_url=asset.browser_download_url.replace('/disco/','/Rieke-OS/');}"
+        },
+        {
+          "line": 35,
           "text": "const app={isPackaged:true,getPath:name=>name==='exe'?path.join(root,'Installed.app/Contents/MacOS/Rieke OS'):root};"
         },
         {
-          "line": 39,
+          "line": 40,
           "text": "verifyCandidate:async args=>{validationCalls++;const directory=await fs.mkdtemp(path.join(args.cacheDirectory,'candidate-'));const bundle=path.join(directory,'Rieke OS.app');await fs.mkdir(bundle);return {version:args.descriptor.application_version,downloadedFile:args.downloadedFile,bundle_path:bundle,candidate_directory:directory,bundle_sha256:'c'.repeat(64),archive_sha256:descriptor.archive.sha256,runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true};},"
         },
         {
-          "line": 149,
+          "line": 150,
           "text": "const bundle=path.join(root,'Rieke OS.app'),runtime=path.join(bundle,'Contents/Resources/runtime');"
         },
         {
-          "line": 164,
+          "line": 165,
           "text": "await fs.mkdir(path.join(bundle,'Contents/MacOS'));await fs.writeFile(path.join(bundle,'Contents/MacOS/Rieke OS'),'do not execute',{mode:0o755});"
         },
         {
-          "line": 165,
+          "line": 166,
           "text": "const plist='<?xml version=\"1.0\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleShortVersionString</key><string>0.1.3</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>';"
         },
         {
-          "line": 188,
+          "line": 189,
           "text": "let installedBundle=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');"
         },
         {
-          "line": 198,
+          "line": 199,
           "text": "const archive=path.join(f.root,'Rieke-OS-0.1.3-arm64.zip');"
+        },
+        {
+          "line": 222,
+          "text": "assert.equal(f.coordinator.getStatus().release_url,'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.3');"
         }
       ]
     },
@@ -2976,6 +3034,14 @@
         {
           "line": 62,
           "text": "verifyInstalled: async () => ({team: 'TESTTEAM', identifier: 'org.riekeos.desktop'}),"
+        },
+        {
+          "line": 127,
+          "text": "await coordinator.check();assert.deepEqual(calls,['disco','Rieke-OS']);"
+        },
+        {
+          "line": 128,
+          "text": "calls.length=0;await coordinator.check();assert.deepEqual(calls,['disco','Rieke-OS']);"
         }
       ]
     },
@@ -3033,11 +3099,11 @@
           "text": "const bundle=await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');"
         },
         {
-          "line": 166,
+          "line": 168,
           "text": "if(enabled===false||!app.isPackaged||process.platform!=='darwin'||process.arch!=='arm64'||distribution?.format!=='rieke-desktop-distribution'||distribution.version!==1||distribution.channel!=='unsigned-testing'||![REPOSITORY,'maxwellsdm1867/Rieke-OS'].includes(distribution.repository))return set('Deferred',{message:'This distribution does not enable GitHub testing updates.'});"
         },
         {
-          "line": 239,
+          "line": 241,
           "text": "const receipt={format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',operation:'update',install_path:installedBundle,current_executable:typeof identity==='object'?identity.executable:app.getPath('exe'),current_pid:process.pid,current_created_at:typeof identity==='object'?identity.created_at:identity,current_version:manifest.application_version,current_manifest_sha256:await hashFile(path.join(installedBundle,'Contents/Resources/runtime/runtime-manifest.json')),target_version:pending.version,runtime_manifest_sha256:pending.runtime_manifest_sha256,archive_path:pending.downloadedFile,archive_sha256:pending.archive_sha256,bundle_path:pending.bundle_path,bundle_sha256:pending.bundle_sha256,validated:true};"
         }
       ]
@@ -3072,6 +3138,27 @@
         {
           "line": 22,
           "text": "assert.equal(enclosingApp('/Applications/Rieke OS.app/Contents/MacOS/Rieke OS'), '/Applications/Rieke OS.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/branding.test.cjs",
+      "occurrences": [
+        {
+          "line": 11,
+          "text": "assert.equal(configureBranding(app),explicit||'/profiles/Rieke OS');"
+        },
+        {
+          "line": 12,
+          "text": "assert.equal(name,'Disco');assert.equal(saved,explicit||'/profiles/Rieke OS');"
+        },
+        {
+          "line": 19,
+          "text": "if(code===404){assert.deepEqual(await releaseList(transport),[]);assert.match(calls[1],/^https:\\/\\/api.github.com\\/repos\\/maxwellsdm1867\\/Rieke-OS\\/releases\\?/);}"
+        },
+        {
+          "line": 25,
+          "text": "for(const repo of ['disco','Rieke-OS']){"
         }
       ]
     },
@@ -3180,8 +3267,8 @@
       "path": "desktop/updater.cjs",
       "occurrences": [
         {
-          "line": 69,
-          "text": "updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'Rieke-OS',private:false});"
+          "line": 71,
+          "text": "feedRepository='Rieke-OS';"
         }
       ]
     },
@@ -3232,6 +3319,15 @@
       ]
     },
     {
+      "path": "docs/RIEKE_OS_ARCHITECTURE.md",
+      "occurrences": [
+        {
+          "line": 6,
+          "text": "[maxwellsdm1867/disco](https://github.com/maxwellsdm1867/Rieke-OS)."
+        }
+      ]
+    },
+    {
       "path": "docs/RIEKE_OS_OVERVIEW.md",
       "occurrences": [
         {
@@ -3255,6 +3351,10 @@
     {
       "path": "docs/RIEKE_OS_QUICK_START.md",
       "occurrences": [
+        {
+          "line": 10,
+          "text": "On [Disco Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases), choose"
+        },
         {
           "line": 20,
           "text": "app lives at `~/Applications/Rieke OS.app`; next time, open that app normally."
@@ -3725,6 +3825,24 @@
       ]
     },
     {
+      "path": "llms.txt",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "> export to MATLAB, SQLite or JSON. Repository: https://github.com/maxwellsdm1867/Rieke-OS"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_release.py",
+      "occurrences": [
+        {
+          "line": 76,
+          "text": "legacy = 'maxwellsdm1867/Rieke-OS'"
+        }
+      ]
+    },
+    {
       "path": "python/tests/test_desktop_release_plan.py",
       "occurrences": [
         {
@@ -4100,6 +4218,15 @@
       ]
     },
     {
+      "path": "workspace-app/README.md",
+      "occurrences": [
+        {
+          "line": 15,
+          "text": "git clone https://github.com/maxwellsdm1867/Rieke-OS.git"
+        }
+      ]
+    },
+    {
       "path": "workspace-app/index.html",
       "occurrences": [
         {
@@ -4135,5 +4262,6 @@
         }
       ]
     }
-  ]
+  ],
+  "after_note": "Final source scan after main integration. This audit and its evidence/inventory files are excluded to avoid recursively counting historical audit text."
 }

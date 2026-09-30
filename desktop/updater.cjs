@@ -8,6 +8,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
   receiptPath ||= path.join(cacheDirectory, 'status.json');
   installedBundle ||= path.resolve(app.getPath('exe'), '../../..');
   let status = {state: 'Current', installed: manifest.application_version, available: null, message: 'Using the installed version.'};
+  let feedRepository='disco';
   let pending = null, checking = null, installing = null, timer = null, stopped = false, active = false, validation = null;
   let receiptWrites = Promise.resolve();
   const listeners = [];
@@ -61,12 +62,14 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     checking = (async () => {
       set('Checking', {checked_at: new Date().toISOString(), check_error: null, message: 'Checking for a published update.'});
       try {
-        updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'disco',private:false});
+        feedRepository='disco';
+        updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:feedRepository,private:false});
         let result;
         try{result=await updater.checkForUpdates();}
         catch(error){
           if((error.statusCode ?? error.cause?.statusCode)!==404)throw error;
-          updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'Rieke-OS',private:false});
+          feedRepository='Rieke-OS';
+          updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:feedRepository,private:false});
           result=await updater.checkForUpdates();
         }
         // The pinned client resolves metadata before its automatic download.
@@ -99,7 +102,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     on('update-available', info => {
       try {
         if (compareVersions(info.version, manifest.application_version) <= 0) throw new Error('Older release');
-        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/disco/releases/tag/v${info.version}`, message: `Disco ${info.version} is available.`});
+        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/${feedRepository}/releases/tag/v${info.version}`, message: `Disco ${info.version} is available.`});
       } catch { updater.autoDownload = false; defer('Published update metadata was rejected.'); }
     });
     on('download-progress', progress => set('Downloading', {progress: Math.max(0, Math.min(100, Number(progress.percent) || 0)), message: 'Downloading an update quietly.'}));

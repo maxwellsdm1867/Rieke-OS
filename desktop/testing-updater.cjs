@@ -147,7 +147,9 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
             if(release.tag_name!==`v${descriptor.application_version}`&&release.tag_name!==`desktop-test-v${descriptor.application_version}`)throw new Error('Release tag differs from app version.');
             const archives=assets.filter(asset=>asset?.name===descriptor.archive.filename);
             if(archives.length!==1||archives[0].size!==descriptor.archive.size)throw new Error('Archive metadata differs from descriptor.');
-            candidate={descriptor,url:assetURL(archives[0],release.tag_name,descriptor.archive.filename),release_url:`https://github.com/${REPOSITORY}/releases/tag/${encodeURIComponent(release.tag_name)}`};break;
+            const url=assetURL(archives[0],release.tag_name,descriptor.archive.filename);
+            const repository=new URL(url).pathname.split('/').slice(1,3).join('/');
+            candidate={descriptor,url,release_url:`https://github.com/${repository}/releases/tag/${encodeURIComponent(release.tag_name)}`};break;
           }catch{rejections++;}
         }
         if(stopped)return {...status};

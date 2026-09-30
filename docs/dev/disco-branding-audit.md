@@ -27,13 +27,13 @@ The desktop testing client now accepts both exact owned API/asset paths, includi
 
 Hosted release workflows resolve the actual approved `GITHUB_REPOSITORY` for bridge publication before the rename. Baseline checks still require the checkout origin to match the selected owned repository and retain clean-checkout/exact-tag checks. Once renamed, the same hosted jobs resolve Disco. Foreign repositories are rejected. No release was published by this audit.
 
-An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on September 30, 2026. This establishes that the intended destination was not available through that account at the check time; it is not a completed reservation or rename. Canonical download/support/issue links therefore remain pending destination verification.
+An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on September 30, 2026. The existing Rieke-OS `desktop-test-v0.1.3` release endpoint returned its old-name release URL and expected DMG/ZIP/descriptor assets successfully. This establishes that the intended destination was not available through that account at the check time; it is not a completed reservation or rename. Canonical download/support/issue links therefore remain pending destination verification.
 
 ## Verification and limits
 
-- Desktop regression suite: 81 tests passed, including real disposable Electron tests and new profile preservation, feed fallback, asset alias, and foreign-origin rejection cases.
-- Focused Python release/update/runtime checks: 37 tests passed, one optional runtime integration skipped.
-- Frontend regression suite and Vite build passed. Generated `index.html` uses Disco; existing favicon URLs point to the default disco-ball assets.
+- Desktop regression suite: 82 tests passed, including real disposable Electron tests and new profile preservation, feed fallback, asset alias, and foreign-origin rejection cases.
+- Focused Python release/update/runtime checks: 37 tests passed, one optional runtime integration skipped. After merging current main, the full Python suite passed 1,106 tests with 33 optional skips.
+- After merging current main, all 335 frontend tests and the Vite build passed. Generated `index.html` uses Disco; existing favicon URLs point to the default disco-ball assets.
 - [Archived source-manager evidence](disco-legacy-discovery-evidence.json) executes `python/workspace_updates.py` from reported source commit `61f9e44c98fa541d670ecb78c35b3389ee2c1b7c` with an in-memory Disco release response. That old manager returns `error` because its official release URL check requires Rieke-OS. No network, installation, or scientific project was changed in this reproduction.
 - The reported commit has no `desktop/` source tree. Its manifest source commit alone therefore does not establish the exact installed desktop updater implementation. Old desktop redirect compatibility remains unproven; the pre-bridge source updater also has a strict single-repository redirect policy.
 - Browser fresh/existing-session Chrome smoke, generated signed/unsigned installed artifacts, first-open installer labels, restart/recovery behavior, sharing/receiving a project, and actual installed 0.1.0 upgrade/profile continuity have **not** been qualified by this audit.

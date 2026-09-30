@@ -7,7 +7,7 @@ if you choose to analyze an exported MAT data file with MATLAB.
 
 ## 1. Download, install, and open
 
-On [Disco Releases](https://github.com/maxwellsdm1867/disco/releases), choose
+On [Disco Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases), choose
 the Apple Silicon **unsigned testing** release and download its `.dmg` asset.
 The desktop DMG contains the complete app and private Python/MySQL runtime;
 GitHub's **Source code (zip)** is a separate developer download.
@@ -128,7 +128,7 @@ defer closing. It never force-stops a writer. Reopen the installed app and selec
 your remembered project. See [storage and recovery](STORAGE_RECOVERY.md).
 
 The unsigned testing app checks GitHub metadata at startup and about hourly.
-**Release / Publish** shows an available version; choose **Download update**, then
+**App Updates** shows an available version; choose **Download update**, then
 **Restart to update** when ready. Ordinary Quit does not install a testing update.
 
 ## If a step fails

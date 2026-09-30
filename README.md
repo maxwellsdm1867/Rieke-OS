@@ -1,8 +1,10 @@
-> **Complete Mac desktop testing app:** [Download Disco for Apple Silicon](https://github.com/maxwellsdm1867/disco/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Disco, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **Release / Publish** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
+> **Complete Mac desktop testing app:** [Download the current Mac testing app](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open the app, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **App Updates** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
 
 # Disco
 
 Data Inspection, Selection, Comparison Operations · A Rieke Lab OS
+
+The app is migrating to Disco. Releases and support remain at the existing Rieke-OS repository until the bridge upgrade and repository rename are qualified; `maxwellsdm1867/disco` is the planned canonical destination.
 
 **Disco is a local research workspace for Symphony electrophysiology recordings.**
 It turns a folder of H5 files into an organized project where you can find cells
@@ -56,9 +58,9 @@ projects, searches, working datasets, annotations and exports fit together.
 
 ## Source download (developer workflow)
 
-**[Download main as a ZIP](https://github.com/maxwellsdm1867/disco/archive/refs/heads/main.zip)**
+**[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
 for the current application and documentation, or choose a version from
-[Releases](https://github.com/maxwellsdm1867/disco/releases/latest) and download
+[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's
 **Code → Download ZIP** also downloads the current `main` branch.
 
@@ -71,7 +73,7 @@ its dependencies. Your recordings and research projects are separate.
 Prefer Git? Clone the same app:
 
 ```sh
-git clone https://github.com/maxwellsdm1867/disco.git
+git clone https://github.com/maxwellsdm1867/Rieke-OS.git disco
 cd disco
 ```
 

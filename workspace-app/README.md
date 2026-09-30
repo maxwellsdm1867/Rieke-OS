@@ -12,7 +12,7 @@ layout, see the [Rieke Lab OS quick start](../docs/RIEKE_OS_QUICK_START.md).
 Use the dedicated Disco development source:
 
 ```sh
-git clone https://github.com/maxwellsdm1867/disco.git
+git clone https://github.com/maxwellsdm1867/Rieke-OS.git
 cd disco
 ```
 
