@@ -194,7 +194,10 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
   }
   async quit({timeout = this.drainTimeout, drafts} = {}) {
     const until = Date.now()+timeout, remaining = () => Math.max(1, until-Date.now());
-    if (!this.child) return {ready:true};
+    if (!this.child) {
+      try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified. Its ownership and operation records are retained for recovery.'};}
+      catch(error){if(error.code==='ENOENT')return {ready:true};throw error;}
+    }
     // Retain an interrupted receipt BEFORE cleanup begins. It authorizes only
     // future identity-verified cleanup; it never claims a clean database exit.
     this.registry.bound = this.bound === true;
@@ -264,7 +267,11 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
   }
   async drain() {
     if (this.abnormalExit) return {ready: false, reason: 'Backend exited without a drain acknowledgement; project service exit must be recovered before replacement'};
-    if (!this.child || this.exited) { this.ready = false; await fs.rm(this.registryPath, {force: true}); return {ready: true}; }
+    if (!this.child) {
+      try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified; replacement must wait for recovery.'};}
+      catch(error){if(error.code==='ENOENT')return {ready:true};throw error;}
+    }
+    if (this.exited) { this.ready = false; await fs.rm(this.registryPath, {force: true}); return {ready: true}; }
     try {
       const result = await this.api('/api/desktop/drain', {method: 'POST', timeout: this.drainTimeout});
       if (result.ready !== true) throw new Error('Backend did not acknowledge drain');

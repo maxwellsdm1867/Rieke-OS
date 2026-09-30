@@ -127,3 +127,15 @@ test('inspection denial or missing owned bind evidence never transmits a prior c
  previous.bound=false;await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));supervisor.recoverProcess=async()=>null;
  await assert.rejects(supervisor.reconcilePrevious(),/ownership could not be inspected/);assert.equal(requests,0);
 });
+
+test('failed previous-service reconciliation cannot authorize replacement or erase its evidence when no new child started',async t=>{
+ const {supervisor}=await fixture(t,()=>assert.fail('No request without ownership proof'));
+ await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});
+ const previous={pid:99999999,executable:'/owned/python',port:9876,session_id:'prior-session',quit:{requested:true,state:'interrupted'}};
+ await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
+ supervisor.inspectProcess=async()=>previous.executable;supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/could not be inspected/);
+ assert.equal((await supervisor.drain()).ready,false);
+ assert.equal((await supervisor.quit({timeout:10})).ready,false);
+ assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);
+});
