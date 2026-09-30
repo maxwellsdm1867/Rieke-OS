@@ -4,6 +4,7 @@ No test here connects to or writes the research catalog. The Flask routes, recip
 files, curation validation, revision checks, and download checks are real.
 """
 import hashlib
+import copy
 import json
 import os
 from pathlib import Path
@@ -564,6 +565,34 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertGreater(payload['total_counts']['cells'], 0)
         self.assertEqual(payload['filters']['tagged'], 'true')
         self.assertFalse(self.curation.rows)
+        self.assertFalse(self.datasets.rows)
+
+    def test_undo_read_and_atomic_inverse_restore_each_original_target(self):
+        first,second=self.service.ids
+        start=self.client.post(self.base+'/curation',json={'epoch_uuids':[first],
+            'query_revision':self.revision(),'expected_revisions':{first:0},
+            'changes':{'included':False,'tags_add':['keep']}},headers=self.headers)
+        self.assertEqual(start.status_code,200,start.get_json())
+        forward=self.client.post(self.base+'/curation',json={'epoch_uuids':[first,second],
+            'query_revision':self.revision(),'expected_revisions':{first:1,second:0},
+            'changes':{'included':True,'tags_add':['keep']}},headers={**self.headers,'X-Rieke-Undo-Receipt':'1'})
+        self.assertEqual(forward.status_code,200,forward.get_json())
+        undo=forward.get_json()['undo'];self.assertEqual(len(undo['targets']),2)
+        read=self.client.post(self.base+'/curation/read',json={'epoch_uuids':[first,second],
+            'query_revision':None,'expected_binding_version':None,'selection_scope':{'filters':{},'cell_uuid':None},
+            'undo_read':True},headers=self.headers)
+        self.assertEqual(read.status_code,200,read.get_json());current=read.get_json()
+        body={'epoch_uuids':[row[0] for row in undo['targets']],'changes':{},
+            'query_revision':current['query_revision'],'expected_binding_version':current['expected_binding_version'],
+            'expected_revisions':{row[0]:row[1] for row in undo['targets']},
+            'per_epoch_changes':{row[0]:undo['patterns'][row[3]] for row in undo['targets']}}
+        restored=self.client.post(self.base+'/curation',json=body,headers=self.headers)
+        self.assertEqual(restored.status_code,200,restored.get_json());rows=restored.get_json()['curation']
+        self.assertFalse(rows[first]['included']);self.assertTrue(rows[second]['included'])
+        self.assertEqual(rows[first]['tags'],['keep']);self.assertEqual(rows[second]['tags'],[])
+        snapshot=copy.deepcopy(self.curation.rows)
+        conflicted=self.client.post(self.base+'/curation',json=body,headers=self.headers)
+        self.assertEqual(conflicted.status_code,409,conflicted.get_json());self.assertEqual(self.curation.rows,snapshot)
         self.assertFalse(self.datasets.rows)
 
     def test_two_named_exports_share_main_catalog_but_keep_filter_tree_and_tagged_membership(self):

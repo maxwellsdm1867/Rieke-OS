@@ -115,6 +115,25 @@ class CurationTests(unittest.TestCase):
         self.assertEqual(self.curation.rows, [])
         self.assertEqual(self.events.rows, [])
 
+    def test_atomic_minimal_undo_restores_mixed_inclusion_and_predating_tags(self):
+        first,second=self.ids
+        self.update({'included':False,'tags_add':['keep'],'review_state':'approved'},ids=[first])
+        result=self.store.update(self.protocol,self.ids,{'included':False,'tags_add':['keep']},
+            {first:1,second:0},self.fingerprints,'local',include_undo=True)
+        undo=result['undo'];inverse=undo['targets']
+        self.assertEqual([row[0] for row in inverse],[second])
+        restored=self.store.update(self.protocol,[second],{}, {second:1},{second:self.fingerprints[second]},
+            'local',per_epoch_changes={second:undo['patterns'][inverse[0][3]]})
+        current=self.store.read(self.protocol,self.ids,self.fingerprints)
+        self.assertFalse(current[first]['included']);self.assertTrue(current[second]['included'])
+        self.assertEqual(current[first]['tags'],['keep']);self.assertEqual(current[second]['tags'],[])
+        self.assertEqual(current[first]['review_state'],'approved')
+        before=copy.deepcopy(self.curation.rows)
+        with self.assertRaises(curation.RevisionConflict):
+            self.store.update(self.protocol,[second],{}, {second:1},{second:self.fingerprints[second]},
+                'local',per_epoch_changes={second:undo['patterns'][inverse[0][3]]})
+        self.assertEqual(self.curation.rows,before)
+
     def test_update_saves_current_state_and_rejects_stale_batch(self):
         result = self.update({"included": False, "tags_add": ["noisy"]})
         self.assertTrue(all(v["revision"] == 1 and v["tags"] == ["noisy"] for v in result["curation"].values()))

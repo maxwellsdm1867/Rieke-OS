@@ -1,0 +1,194 @@
+[
+  {
+    "family": "annotations",
+    "targets": 1,
+    "enabled": false,
+    "repeats": 200,
+    "median_ms": 4.9431,
+    "p95_ms": 5.8502,
+    "sql_per_edit": [
+      10
+    ],
+    "median_response_bytes": 892.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 401,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 1,
+    "enabled": true,
+    "repeats": 200,
+    "median_ms": 4.9534,
+    "p95_ms": 5.8119,
+    "sql_per_edit": [
+      10
+    ],
+    "median_response_bytes": 929.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 401,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "annotations",
+    "targets": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 197.3745,
+    "p95_ms": 223.7269,
+    "sql_per_edit": [
+      1010
+    ],
+    "median_response_bytes": 345350.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 61,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 199.1633,
+    "p95_ms": 221.9868,
+    "sql_per_edit": [
+      1010
+    ],
+    "median_response_bytes": 371532.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 61,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "annotations",
+    "targets": 1000,
+    "enabled": false,
+    "repeats": 20,
+    "median_ms": 420.6097,
+    "p95_ms": 562.931,
+    "sql_per_edit": [
+      2014
+    ],
+    "median_response_bytes": 690601.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 41,
+    "inverse_kinds": []
+  },
+  {
+    "family": "annotations",
+    "targets": 1000,
+    "enabled": true,
+    "repeats": 20,
+    "median_ms": 380.6305,
+    "p95_ms": 593.1714,
+    "sql_per_edit": [
+      2014
+    ],
+    "median_response_bytes": 742783.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 41,
+    "inverse_kinds": [
+      "annotations"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 1,
+    "enabled": false,
+    "repeats": 200,
+    "median_ms": 0.6798,
+    "p95_ms": 1.0508,
+    "sql_per_edit": [
+      7
+    ],
+    "median_response_bytes": 284.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 1,
+    "enabled": true,
+    "repeats": 200,
+    "median_ms": 0.6878,
+    "p95_ms": 1.0975,
+    "sql_per_edit": [
+      7
+    ],
+    "median_response_bytes": 489.0,
+    "persisted_rows_combined": 1,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 132.9793,
+    "p95_ms": 223.07,
+    "sql_per_edit": [
+      1006
+    ],
+    "median_response_bytes": 124784.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 134.1528,
+    "p95_ms": 222.8279,
+    "sql_per_edit": [
+      1006
+    ],
+    "median_response_bytes": 148689.0,
+    "persisted_rows_combined": 500,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  },
+  {
+    "family": "curation",
+    "targets": 1000,
+    "enabled": false,
+    "repeats": 20,
+    "median_ms": 275.2868,
+    "p95_ms": 2039.2119,
+    "sql_per_edit": [
+      2008
+    ],
+    "median_response_bytes": 246534.0,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 0,
+    "inverse_kinds": []
+  },
+  {
+    "family": "curation",
+    "targets": 1000,
+    "enabled": true,
+    "repeats": 20,
+    "median_ms": 277.1706,
+    "p95_ms": 450.9641,
+    "sql_per_edit": [
+      2008
+    ],
+    "median_response_bytes": 298681.5,
+    "persisted_rows_combined": 1000,
+    "event_rows_combined": 0,
+    "inverse_kinds": [
+      "curation"
+    ]
+  }
+]

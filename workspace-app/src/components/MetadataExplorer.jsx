@@ -1,3 +1,4 @@
+import {mutationUndo,undoEnabled,localUndoScope} from '../mutationUndo.js';
 import EpochViewer from './EpochViewer.jsx';
 import {treePreviewScope} from '../pagedTreeRequest.js';
 import {predicateWithTagFilters,tagFilterLabel} from '../protocolViewFilter.js';
@@ -25,7 +26,7 @@ import './MetadataExplorer.css';
 
 const initialSearch=()=>({...newGroup(),children:[{...newCondition(),field:'protocol',operator:'contains'}]});
 function draftOf(predicate){const node=predicateToDraft(predicate);return node.kind==='group'?node:{...newGroup(),children:[node]};}
-export default function MetadataExplorer({initialEditorOpen=false,openRequest=0,projectId,revision=0,protocols=[],onInspect,initialPredicate=null,initialRevisionId=null,initialProtocolId=null,initialExportIntent=null,onChange,onProtocolApplied,onNewSearch,onExit,onQC,session=null,onSession}) {
+export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=false,openRequest=0,projectId,revision=0,protocols=[],onInspect,initialPredicate=null,initialRevisionId=null,initialProtocolId=null,initialExportIntent=null,onChange,onProtocolApplied,onNewSearch,onExit,onQC,session=null,onSession}) {
   const saved=useRef(session).current;
   const [draft,setDraft]=useState(()=>saved?.draft || (initialPredicate?draftOf(initialPredicate):initialSearch()));
   const [viewFilters,setViewFilters]=useState(saved?.viewFilters||{}),[filteredPreview,setFilteredPreview]=useState({data:null,loading:false,error:null,key:null});
@@ -242,7 +243,21 @@ export default function MetadataExplorer({initialEditorOpen=false,openRequest=0,
     setFocused(null);setDestination(null);
     setResultsFromDraft(!applied);setStep('results');
   }
-  function toggleInclusion(epoch,included){if(busy)return;setExcludedEpochs(ids=>toggleSearchInclusion(ids,epoch.epoch_uuid,included));setDestination(null);setExportCandidate(null);}
+  const undoViewer=useRef(undoScopeId||crypto.randomUUID()),localState=useRef(null);
+  const undoGeneration=useMemo(()=>localUndoScope(predicateIdentity(resultPredicate)),[resultPredicate]);
+  localState.current={excludedEpochs,generation:undoGeneration,busy};
+  useEffect(()=>mutationUndo.local(undoViewer.current,action=>{
+    const current=localState.current;
+    if(current.busy||current.generation!==action.generation||!current.excludedEpochs.includes(action.epoch_uuid)!==action.after)throw Error('The temporary search selection changed since that action.');
+    setExcludedEpochs(ids=>toggleSearchInclusion(ids,action.epoch_uuid,action.prior));setDestination(null);setExportCandidate(null);
+    return {revisions:{}};
+  }),[]);
+  function toggleInclusion(epoch,included){
+    if(busy||mutationUndo.view().busy)return;
+    const prior=!excludedEpochs.includes(epoch.epoch_uuid);if(prior===included)return;
+    if(undoEnabled)mutationUndo.record({kind:'search-inclusion',viewer:undoViewer.current,generation:undoGeneration,epoch_uuid:epoch.epoch_uuid,prior,after:included});
+    setExcludedEpochs(ids=>toggleSearchInclusion(ids,epoch.epoch_uuid,included));setDestination(null);setExportCandidate(null);
+  }
   const exportDisabled=!!annotationHold||busy||resultLoading||!!resultError||!resultPreview?.matched_count;
   function openResultsExport(){
     if(step==='tree'){setFocused(null);setResultsFromDraft(false);setStep('results');prepareDestination('export',false);}

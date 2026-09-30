@@ -7,14 +7,14 @@ import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-export async function createWorkflowHarness({total=500,baseline=false,delay=0,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
+export async function createWorkflowHarness({total=500,baseline=false,delay=0,enableUndo=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
   const rootPath=fileURLToPath(new URL('../..',import.meta.url));
   const key=`__workflow${Math.random().toString(36).slice(2)}`;
   const baselineRoot=configuredBaselineRoot?path.resolve(configuredBaselineRoot):path.resolve(rootPath,'../docs/dev/scale-audit-2026-09-29/frozen-100000-dense-recovery/snapshot/workspace-app/src');
   const fixture={total,generation:0,requests:[],nodes:new Map(),mounts:0,unmounts:0,failNextSave:false,delay,profile:{profileUuid:'author',profileName:'Scientist',loading:false},annotations:new Map(),cellAnnotations:new Map(),annotationVersions:new Map(),curations:new Map(),pending:new Set(),route:{page:'protocol',protocol:'protocol-A',key:'route-1',inspection:{epoch_uuid:'epoch-0'}}};
   globalThis[key]=fixture;
   const old={fetch:globalThis.fetch,window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage};
-  const memory=new Map();
+  const memory=new Map();memory.set('rieke.undo.enabled',String(enableUndo));
   globalThis.localStorage={getItem:name=>memory.get(name)??null,setItem:(name,value)=>memory.set(name,value)};
   globalThis.window={innerWidth:1400,location:{href:'http://localhost/'}};
   globalThis.document={title:'',getElementById:()=>null,addEventListener:()=>{},removeEventListener:()=>{}};
@@ -105,7 +105,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,ba
         if(id==='./useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./useProtocolTreeLayout.js')return '\0workflow-layout';
         if(id==='./useImportQueue.js')return '\0workflow-import-queue';
-        if(id.endsWith('.jsx')&&!['./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
+        if(id.endsWith('.jsx')&&!['./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
       if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },

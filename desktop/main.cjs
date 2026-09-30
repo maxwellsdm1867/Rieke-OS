@@ -171,6 +171,7 @@ function registerIPC() {
     if (payload !== undefined) throw new TypeError('This desktop operation accepts no payload');
     return action(window);
   });
+  noPayload('desktop:undo-text', window=>window.webContents.undo());
   noPayload('desktop:status', () => status());
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {
@@ -231,7 +232,7 @@ else {
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Rieke OS', submenu: [{role: 'about'}, {type: 'separator'},
       {label: 'Check for Updates', click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Rieke OS', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
-    {label: 'Edit', submenu: [{role: 'undo'}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
+    {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
     {label: 'Window', submenu: [{role: 'minimize'}, {role: 'zoom'}]}]));
     if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Rieke OS', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Rieke OS GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
     else await startScientificUI();

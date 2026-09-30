@@ -38,6 +38,36 @@ class SharedAnnotationTests(unittest.TestCase):
     def epoch(self,key):
         return self.store.for_epochs([self.service.rows[key]])[key]
 
+    def test_bulk_undo_preserves_predating_and_other_author_tags_atomically(self):
+        other=self.store.create_profile('Other author','local')['profile_uuid']
+        self.edit('epoch',self.first,['keep'])
+        self.edit('epoch',self.second,['keep'],author=other)
+        result=self.store.update('epoch',[self.first,self.second],self.author,
+            {'tags_add':['keep']},{self.first:1,self.second:0},'local',include_undo=True)
+        undo=result['undo']
+        self.assertEqual([row[0] for row in undo['targets']],[self.second])
+        payload=[{'target_uuid':key,'target_kind':undo['target_kind'],'profile_uuid':undo['profile_uuid'],
+            'expected_revision':revision,**undo['patterns'][index]} for key,revision,before,index in undo['targets']]
+        response=self.client.post('/api/annotations/undo',json={'operations':payload},headers=self.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual([row['tag'] for row in self.epoch(self.first)['epoch_tags']],['keep'])
+        self.assertEqual([row['profile_uuid'] for row in self.epoch(self.second)['epoch_tags']],[other])
+        before=copy.deepcopy(self.records.rows)
+        refused=self.client.post('/api/annotations/undo',json={'operations':payload},headers=self.headers)
+        self.assertEqual(refused.status_code,409,refused.get_json())
+        self.assertEqual(self.records.rows,before)
+
+    def test_cell_remove_undo_restores_inheritance_at_original_scope(self):
+        self.edit('cell',self.cell,['inherited'])
+        result=self.store.update('cell',[self.cell],self.author,{'tags_remove':['inherited']},
+            {self.cell:1},'local',include_undo=True)
+        undo=result['undo'];key,revision,before,index=undo['targets'][0]
+        self.assertEqual(undo['target_kind'],'cell')
+        self.store.apply_batch([{'target_kind':'cell','target_uuid':key,'profile_uuid':undo['profile_uuid'],
+            'expected_revision':revision,**undo['patterns'][index]}],'local')
+        self.assertEqual([row['tag'] for row in self.epoch(self.first)['cell_tags']],['inherited'])
+        self.assertEqual(self.epoch(self.first)['epoch_tags'],[])
+
     def test_small_target_validation_uses_only_requested_identity_lookups(self):
         class BoundedLookup:
             def __init__(self,known):self.known=known;self.lookups=[]

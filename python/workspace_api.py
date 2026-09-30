@@ -1182,7 +1182,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def curation_batch_read(protocol_uuid):
         body = request.get_json()
         if (request.args or not isinstance(body, dict) or set(body) != {
-                'epoch_uuids', 'query_revision', 'expected_binding_version', 'selection_scope'}):
+                'epoch_uuids', 'query_revision', 'expected_binding_version', 'selection_scope'} | ({'undo_read'} if isinstance(body,dict) and body.get('undo_read') is True else set())):
             raise ValueError('Curation read requires epoch_uuids, query_revision, expected_binding_version and selection_scope')
         ids = body['epoch_uuids']
         if (not isinstance(ids, list) or not 1 <= len(ids) <= 1000
@@ -1191,19 +1191,22 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Choose a unique list of 1–1,000 epoch UUIDs')
         if any(str(uuid.UUID(key)) != key for key in ids):
             raise ValueError('Curation read requires exact epoch UUIDs')
+        undo_read=body.get('undo_read') is True
         binding_version = body['expected_binding_version']
-        if type(binding_version) is not int or binding_version < 0:
+        if not undo_read and (type(binding_version) is not int or binding_version < 0):
             raise ValueError('Expected binding version must be a nonnegative integer')
+        if undo_read and (body['query_revision'] is not None or binding_version is not None or body['selection_scope']!={'filters':{},'cell_uuid':None}):
+            raise ValueError('Undo reads require explicit original targets and no view filters')
         with db_lock:
             current, revision, current_binding_version = selected_state.read_selected(protocol_uuid,ids)
-            if (body['query_revision'] != revision or
+            if not undo_read and (body['query_revision'] != revision or
                     binding_version != current_binding_version):
                 raise StaleWorkspace('The inspected query or dataset binding changed. Refresh before saving.')
             if set(ids) - current.keys():
                 raise ValueError('Curation includes epochs outside this protocol query')
             rows = curation_selection_scope(ids, body['selection_scope'])
             return jsonify(protocol_uuid=protocol_uuid, query_revision=revision,
-                expected_binding_version=binding_version,
+                expected_binding_version=current_binding_version,
                 epochs=[{'epoch_uuid': row['epoch_uuid'], 'cell_uuid': row['cell_uuid'],
                          'curation_revision': current[row['epoch_uuid']]['revision']} for row in rows])
 
@@ -1238,6 +1241,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 curation_selection_scope(ids, body['selection_scope'])
             changed = store.update(protocol_uuid, ids, body["changes"], body["expected_revisions"],
                                    {key: fingerprints[key] for key in ids}, os.environ.get("USER", "local-user"),
+                                   per_epoch_changes=body.get("per_epoch_changes"),include_undo=request.headers.get('X-Rieke-Undo-Receipt')=='1',
                                    audit_context={"query_revision": revision, "source_revisions": result["source_revisions"]},
                                    expected_binding_version=result.get("dataset_binding", {}).get("version", 0),
                                    generation_preflight=(lambda:selected_state.assert_context_locked(protocol_uuid,context)) if context else None)
@@ -1844,7 +1848,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
         @app.after_request
         def backup_saved_state(response):
-            if request.endpoint=='annotation_update' and 200<=response.status_code<300:
+            if request.endpoint in {'annotation_update','annotation_undo'} and 200<=response.status_code<300:
                 # Rows and their immutable event are already committed together.
                 # The post-commit callback queued the independent recovery mirror.
                 result=response.get_json()

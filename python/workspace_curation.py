@@ -251,12 +251,21 @@ class CurationStore:
         return identity
 
     def update(self, protocol_uuid, epoch_ids, changes, expected_revisions, fingerprints, actor,
-               *, inclusion_by_epoch=None, audit_context=None, expected_binding_version=None, generation_preflight=None):
+               *, inclusion_by_epoch=None, per_epoch_changes=None, include_undo=False, audit_context=None, expected_binding_version=None, generation_preflight=None):
         protocol_uuid = _uuid(protocol_uuid)
         ids, fingerprints = _scope(epoch_ids, fingerprints)
         if not ids:
             raise ValueError("Select at least one epoch")
-        if inclusion_by_epoch is not None:
+        if per_epoch_changes is not None:
+            if (not isinstance(per_epoch_changes,dict) or set(per_epoch_changes)!=set(ids)
+                    or len(ids)>1000 or changes or inclusion_by_epoch is not None):
+                raise ValueError('Undo requires one minimal change for each original target')
+            for value in per_epoch_changes.values():
+                if not isinstance(value,dict) or set(value)-{'included','tags_add','tags_remove'}:
+                    raise ValueError('Undo supports tags and inclusion only')
+                _changes(value)
+            changes={}
+        elif inclusion_by_epoch is not None:
             if (not isinstance(inclusion_by_epoch, dict) or set(inclusion_by_epoch) != set(ids)
                     or any(type(value) is not bool for value in inclusion_by_epoch.values())):
                 raise ValueError("Inclusion mask must cover exactly every epoch with Boolean values")
@@ -285,11 +294,12 @@ class CurationStore:
             after = {}
             for key in ids:
                 state = dict(before[key])
+                current_changes=per_epoch_changes[key] if per_epoch_changes is not None else changes
                 state["included"] = (inclusion_by_epoch[key] if inclusion_by_epoch is not None
-                                     else changes.get("included", state["included"]))
-                state["tags"] = sorted((set(state["tags"]) | set(changes.get("tags_add", []))) -
-                                       set(changes.get("tags_remove", [])))
-                state["review_state"] = changes.get("review_state", state["review_state"])
+                                     else current_changes.get("included", state["included"]))
+                state["tags"] = sorted((set(state["tags"]) | set(current_changes.get("tags_add", []))) -
+                                       set(current_changes.get("tags_remove", [])))
+                state["review_state"] = current_changes.get("review_state", state["review_state"])
                 state["revision"] += 1
                 state["approval_stale"] = False
                 row = {"project_uuid": self.project_uuid, "protocol_uuid": protocol_uuid,
@@ -306,9 +316,11 @@ class CurationStore:
                 "before": before, "after": after, "query_context": audit_context or {},
                 "previous_metadata_fingerprints": {
                     key: rows[key]["metadata_fingerprint"] if key in rows else None for key in ids}})
-        if "tags_add" in changes or "tags_remove" in changes:
+        if "tags_add" in changes or "tags_remove" in changes or per_epoch_changes is not None:
             self._tag_vocabulary = None  # Invalidate only after successful commit.
-        return {"curation": after, "event_uuid": event_uuid}
+        from workspace_undo import curation_inverse
+        inverse=curation_inverse(protocol_uuid,before,after,changes,inclusion_by_epoch) if include_undo and per_epoch_changes is None else None
+        return {"curation": after, "event_uuid": event_uuid, **({"undo":inverse} if include_undo else {})}
 
     def record_dataset_revision(self, recipe, *, actor, expected_revisions,
                                 artifact_path, artifact_sha256):

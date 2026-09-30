@@ -1,0 +1,90 @@
+[
+  {
+    "total": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 5.747332999999912,
+    "p95_ms": 8.703125,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2076.2
+  },
+  {
+    "total": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 5.421124999999961,
+    "p95_ms": 7.824917000000141,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2237.233333333333
+  },
+  {
+    "total": 500,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 4.910209000000123,
+    "p95_ms": 7.394457999999986,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2237.233333333333
+  },
+  {
+    "total": 500,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 5.057957999999871,
+    "p95_ms": 7.767624999999953,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2076.2
+  },
+  {
+    "total": 100000,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 8.020457999999962,
+    "p95_ms": 10.85024999999996,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2076.2
+  },
+  {
+    "total": 100000,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 7.636792000000241,
+    "p95_ms": 11.063249999999698,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2237.233333333333
+  },
+  {
+    "total": 100000,
+    "enabled": true,
+    "repeats": 30,
+    "median_ms": 7.61908399999993,
+    "p95_ms": 11.443874999999935,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2237.233333333333
+  },
+  {
+    "total": 100000,
+    "enabled": false,
+    "repeats": 30,
+    "median_ms": 7.995832999999948,
+    "p95_ms": 10.73720800000001,
+    "ordinary_annotation_requests": [
+      1
+    ],
+    "mean_receipt_bytes": 2076.2
+  }
+]
