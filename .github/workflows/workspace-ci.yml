@@ -1,8 +1,13 @@
 name: Rieke OS regression checks
 on:
   pull_request:
+    paths-ignore: ['docs/**', '**/*.md']
   push:
     branches: [main, master, codex/rieke-native-e2e]
+    paths-ignore: ['docs/**', '**/*.md']
+concurrency:
+  group: regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

@@ -75,3 +75,8 @@ docs/legacy/old_epochtree/
 /desktop/build/
 /desktop/dist/
 /desktop/resources/
+
+# Private packaged smoke and verification receipts
+docs/dev/desktop-smoke-e2e.json
+docs/dev/desktop-native-database-e2e.json
+docs/dev/desktop-verification-provenance.json
