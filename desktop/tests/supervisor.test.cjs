@@ -131,11 +131,22 @@ test('inspection denial or missing owned bind evidence never transmits a prior c
 test('failed previous-service reconciliation cannot authorize replacement or erase its evidence when no new child started',async t=>{
  const {supervisor}=await fixture(t,()=>assert.fail('No request without ownership proof'));
  await fs.mkdir(path.dirname(supervisor.registryPath),{recursive:true});
- const previous={pid:99999999,executable:'/owned/python',port:9876,session_id:'prior-session',quit:{requested:true,state:'interrupted'}};
+ const previous={pid:99999999,executable:'/owned/python',entry:'/owned/workspace_desktop.py',port:9876,session_id:'prior-session',quit:{requested:true,state:'interrupted'}};
  await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));
  supervisor.inspectProcess=async()=>previous.executable;supervisor.recoverProcess=async()=>null;
  await assert.rejects(supervisor.reconcilePrevious(),/could not be inspected/);
  assert.equal((await supervisor.drain()).ready,false);
  assert.equal((await supervisor.quit({timeout:10})).ready,false);
  assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);
+});
+
+test('a failed interrupted-quit receipt or old unmarked registry still permits exact-owned safe cleanup without a renderer',async t=>{
+ const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true,services:[]}));await supervisor.start();
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));delete previous.quit;
+ await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));let live=true;const operations=[];
+ supervisor.inspectProcess=async()=>live?previous.executable:null;
+ supervisor.recoverProcess=async record=>{assert.equal(record.entry,supervisor.entry);return supervisor.capability;};
+ supervisor.request=async url=>{const operation=url.split('/').at(-1);operations.push(operation);if(operation==='stop')live=false;return response(operation==='health'?{...supervisor.expectedHealth(),ready:true}:{ready:true});};
+ await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','stop']);
+ await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
 });

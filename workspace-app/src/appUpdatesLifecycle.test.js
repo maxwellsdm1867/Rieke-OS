@@ -95,3 +95,10 @@ test('prepared testing update notice explains explicit restart rather than ordin
    assert.match(notice.props.title,/choose Restart to update/);assert.doesNotMatch(notice.props.title,/next launch/);
  }finally{await h.close();}
 });
+test('prepared signed desktop update also requires an explicit Restart to update and never promises next launch',async()=>{
+ const h=await harness({state:'Ready',installed:'0.1.3',available:'0.1.4',channel:'signed'});try{
+  const notice=h.buttons.find(node=>node.props['aria-haspopup']==='dialog');assert.match(notice.props.title,/choose Restart to update/);assert.doesNotMatch(notice.props.title,/next launch/);
+  await h.open();assert.match(h.text,/ordinary Quit closes the current app/);assert.doesNotMatch(h.text,/next launch|prepared for an orderly quit/);
+  assert.equal(h.fixture.restarts,0);h.fixture.restartResult={ready:true,installing:true};await h.click('Restart to update');assert.equal(h.fixture.restarts,1);
+ }finally{await h.close();}
+});

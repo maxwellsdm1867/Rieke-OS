@@ -128,6 +128,8 @@ try:
  assert p.uids().real==os.getuid()
  assert str(pathlib.Path(p.exe()).resolve())==record['executable']
  assert arg('--session-id')==record['session_id']
+ assert str(pathlib.Path(arg('--user-state')).resolve())==str(pathlib.Path(sys.argv[2]).resolve())
+ if record.get('entry'): assert record['entry'] in args[1:3] and '-c' not in args[1:3]
  assert arg('--port')==str(record['port'])
  assert any(c.status==psutil.CONN_LISTEN and c.laddr.ip=='127.0.0.1' and c.laddr.port==record['port'] for c in p.net_connections(kind='tcp'))
  if record.get('created_at') is not None: assert p.create_time()==record['created_at']
@@ -137,7 +139,7 @@ try:
  print(json.dumps({'capability':value}))
 except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyError,IndexError):
  print('{}')`;
-    const {stdout} = await promisify(execFile)(this.executable, ['-B', '-c', program, JSON.stringify(record)], {timeout:3000, maxBuffer:4096});
+    const {stdout} = await promisify(execFile)(this.executable, ['-B', '-c', program, JSON.stringify(record), path.join(this.userData,'backend')], {timeout:3000, maxBuffer:4096});
     return JSON.parse(stdout).capability || null;
   }
   async reconcilePrevious() {
@@ -145,11 +147,13 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
     try { previous = JSON.parse(await fs.readFile(this.registryPath, 'utf8')); }
     catch (error) { if (error.code === 'ENOENT') return; throw new Error('Previous desktop ownership record is unreadable; retry recovery before opening projects'); }
     if (!Number.isSafeInteger(previous.pid) || previous.pid <= 0 || !path.isAbsolute(previous.executable || '') ||
-        !previous.session_id || !Number.isInteger(previous.port))
+        !previous.session_id || !Number.isInteger(previous.port) || !path.isAbsolute(previous.entry || ''))
       throw new Error('Previous service registry is malformed; resolve recovery before opening projects');
     const live = await this.inspectProcess(previous.pid) === previous.executable;
     if (live) {
-      if (!previous.quit?.requested) throw new Error('A prior matching service is still active; retry recovery before opening projects');
+      // The current main already owns this profile's single-instance lock.
+      // An interrupted quit receipt may itself have failed; exact live
+      // process/session/profile/listener proof authorizes safe cleanup.
       await this.finishPrevious(previous);
     } else {
       // The root may have stopped while an owned project service remained.
@@ -160,7 +164,6 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       catch (error) { if (error.code !== 'ENOENT') throw new Error('Prior project service evidence is unreadable; recovery is required'); }
       for (const record of records) {
         if (await this.inspectProcess(record.pid) !== record.executable) continue;
-        if (!previous.quit?.requested) throw new Error('A prior project service is still active; recovery must finish before opening projects');
         await this.finishPrevious(record);
       }
       // New backend startup independently requires clean native-database

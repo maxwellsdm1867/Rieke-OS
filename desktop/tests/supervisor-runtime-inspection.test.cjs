@@ -12,7 +12,7 @@ s=socket.socket();s.bind(('127.0.0.1',int(sys.argv[sys.argv.index('--port')+1]))
 p=psutil.Process()
 print(json.dumps({'pid':os.getpid(),'created_at':p.create_time(),'executable':str(pathlib.Path(p.exe()).resolve())}),flush=True)
 sys.stdin.read()`;
- const child=spawn(python,['-B','-u','-c',program,'--session-id',session,'--port',String(port)],{env:{HOME:process.env.HOME,LANG:'en_US.UTF-8',RIEKE_DESKTOP_CAPABILITY:capability},stdio:['pipe','pipe','pipe']});
+ const child=spawn(python,['-B','-u','-c',program,'--session-id',session,'--port',String(port),'--user-state',path.join(root,'backend')],{env:{HOME:process.env.HOME,LANG:'en_US.UTF-8',RIEKE_DESKTOP_CAPABILITY:capability},stdio:['pipe','pipe','pipe']});
  t.after(()=>{child.stdin.end();});
  const packet=await new Promise((resolve,reject)=>{let output='';child.stdout.on('data',chunk=>{output+=chunk;if(output.includes('\n'))resolve(JSON.parse(output.split('\n')[0]));});child.once('error',reject);child.once('exit',code=>{if(!output.includes('\n'))reject(new Error(`Isolated helper exited before listener receipt (${code})`));});});
  const supervisor=new ServiceSupervisor({resourcesPath:root,userData:root,appVersion:'test'});supervisor.executable=python;
@@ -20,6 +20,9 @@ sys.stdin.read()`;
  assert.equal(await supervisor.ownedPreviousCapability({...record,session_id:'foreign-session'}),null);
  assert.equal(await supervisor.ownedPreviousCapability({...record,created_at:packet.created_at+1}),null);
  assert.equal(await supervisor.ownedPreviousCapability({...record,port:port+1}),null);
+ assert.equal(await supervisor.ownedPreviousCapability({...record,entry:'/different/workspace_desktop.py'}),null);
+ const originalProfile=supervisor.userData;supervisor.userData=path.join(root,'foreign-profile');
+ assert.equal(await supervisor.ownedPreviousCapability(record),null);supervisor.userData=originalProfile;
  const recovered=await supervisor.ownedPreviousCapability(record);
  if(recovered===null){t.skip('This platform denies same-user process environment or listener inspection; recovery remains safely deferred');return;}
  assert.equal(recovered,capability);
