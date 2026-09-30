@@ -72,7 +72,7 @@ async function main(){
  await check('ordinary Quit with a prepared testing update leaves the current complete app installed',async()=>{
   await page.keyboard.press('Escape');assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).state,'Ready');await gracefulQuit(application,page);application=null;
   const after=JSON.parse(await fs.readFile(manifestFile));assert.equal(after.application_version,'0.1.2');await verifyResources(runtime,manifest.resources);
-  assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'testing-updates');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\.json$/.test(name)));return {ordinary_quit_did_not_install:true,current_version:'0.1.2',runtime_immutable:true,native_orderly_exit:true};
+  assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'updates','unsigned-testing');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\.json$/.test(name)));return {ordinary_quit_did_not_install:true,current_version:'0.1.2',runtime_immutable:true,native_orderly_exit:true};
  });
  assert.equal(receipt.failures.length,0);await write();await new Promise(resolve=>server.close(resolve));server=null;console.log('GitHub update UI receipt: '+output);
 }
