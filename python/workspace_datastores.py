@@ -1,8 +1,9 @@
-"""H5 registration inventory and reversible manager lifecycle, never file deletion.
+"""H5 registration inventory and reversible manager lifecycle.
 
 Freeze locks registration changes. Archive only hides a manager entry;
 query exclusion independently controls eligibility for new queries. Neither
 changes acquisition data, historical exports, or existing working datasets.
+Explicit deletion is implemented separately in workspace_datastore_deletion.
 """
 from __future__ import annotations
 
@@ -349,7 +350,7 @@ class DataStores:
                 'imported_at': imported_at, 'validated_at': manifest.get('validated_at'),
                 'import_time_basis': 'recorded_import' if imported_at else 'not_recorded',
                 'recording_dates': sorted({row['date'] for row in rows if row.get('date')}),
-                'counts': {**self._quantities(rows), 'cell_types': len(cell_types), 'cells': len({row['cell_uuid'] for row in rows}), 'epochs': len(rows),
+                'counts': {**self._quantities(rows), 'cell_types': len(cell_types), 'cells': len({row['cell_uuid'] for row in rows}) if self.service._loaded else manifest.get('counts', {}).get('cells', 0), 'epochs': len(rows) if self.service._loaded else manifest.get('counts', {}).get('epochs', 0),
                            'acquisition_protocols': len(acquisition), 'protocol_workspaces': len(protocols) if detail_source is not None else None, 'exports': len(exports) if detail_source is not None else None},
                 'cell_types': [{'name': name, 'cells': len({row['cell_uuid'] for row in items}), 'epochs': len(items),
                     'duration_seconds': self._quantities(items)['duration_seconds']}
@@ -360,7 +361,7 @@ class DataStores:
                 'parser': {key: manifest[key] for key in ('parser_path', 'parser_sha256', 'parser_version',
                     'adapter_version', 'adapter_sha256', 'metadata_sha256', 'status', 'warnings') if key in manifest} if detail_source is not None else None,
                 'state': self._state(states.get(identity)), 'scope_note': SCOPE_NOTE})
-        return {'data_stores': results, 'storage': storage_summary(results), 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat(), 'counts': {'total': len(results),
+        return {'data_stores': results, 'validation_error': getattr(self.service, 'manager_error', None), 'storage': storage_summary(results), 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat(), 'counts': {'total': len(results),
             'active': sum(not row['state']['archived'] for row in results),
             'archived': sum(row['state']['archived'] for row in results),
             'frozen': sum(row['state']['frozen'] for row in results),
