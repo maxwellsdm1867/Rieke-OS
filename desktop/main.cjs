@@ -9,6 +9,8 @@ const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
+const {iconPath,applyAppIcon,savedAppIcon}=require('./app-icon.cjs');
+let appIcon='disco';
 const {distributionPolicy} = require('./distribution.cjs');
 const distribution = distributionPolicy(require('./distribution.json'));
 app.enableSandbox();
@@ -62,7 +64,7 @@ async function orderlyQuit() {
 }
 function createWindow() {
   const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
-    title: 'Rieke OS', backgroundColor: '#f4f5f3', show: false,
+    icon:iconPath(appIcon), title: 'Rieke OS', backgroundColor: '#f4f5f3', show: false,
     webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
       sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
       webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
@@ -154,6 +156,7 @@ function registerIPC() {
     if (payload !== undefined) throw new TypeError('This desktop operation accepts no payload');
     return action(window);
   });
+  handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant);appIcon=variant;return result;});
   noPayload('desktop:status', () => status());
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {
@@ -207,6 +210,7 @@ else {
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
+    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
     draftStore = new DraftStore(app.getPath('userData'));
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});

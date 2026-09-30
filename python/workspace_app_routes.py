@@ -63,6 +63,19 @@ def register_app_routes(app, *, application_dir=None):
                                     '/api/projects/prepare-transfer', '/api/projects/restore-transfer', '/api/projects/migrate-source', '/api/projects/relocate')):
             return local_request()
 
+    @app.get('/api/app/appearance')
+    def appearance_status():
+        from workspace_author_preferences import appearance_preferences
+        return jsonify(appearance_preferences())
+
+    @app.post('/api/app/appearance')
+    def appearance_change():
+        body = request.get_json(silent=True)
+        if request.args or not isinstance(body, dict) or set(body) != {'icon'} or not isinstance(body['icon'], str):
+            return jsonify(error='Choose a supported application icon.'), 400
+        from workspace_author_preferences import remember_appearance
+        return jsonify(remember_appearance(body['icon']))
+
     @app.get('/api/app/updates')
     def update_status():
         from workspace_updates import installation_status

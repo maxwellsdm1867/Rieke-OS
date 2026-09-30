@@ -8,6 +8,7 @@ function subscribe(channel, callback) {
 }
 contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   protocolVersion: 1,
+  applyAppIcon: variant=>ipcRenderer.invoke('desktop:app-icon',variant),
   status: () => ipcRenderer.invoke('desktop:status'),
   checkForUpdates: () => ipcRenderer.invoke('desktop:check-updates'),
   downloadUpdate: () => ipcRenderer.invoke('desktop:download-update'),

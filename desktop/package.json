@@ -40,7 +40,8 @@
       "recovery.js",
       "icon.png",
       "package.json",
-      "distribution.json"
+      "distribution.json",
+      "rieke-emblem.png"
     ],
     "extraResources": [
       {
