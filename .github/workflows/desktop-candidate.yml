@@ -1,11 +1,11 @@
-name: Rieke OS desktop candidate
+name: Disco desktop candidate
 on:
   push:
     tags: ['v*', 'desktop-test-v*']
   workflow_dispatch:
     inputs:
       tag:
-        description: Exact reviewed version tag in Rieke-OS
+        description: Exact reviewed version tag in Disco
         required: true
       signed:
         description: Require Developer ID signing and notarization
@@ -37,7 +37,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   plan:
-    if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
     runs-on: ubuntu-latest
     outputs:
       build_required: ${{ steps.plan.outputs.build_required }}
@@ -63,7 +63,7 @@ jobs:
           CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
           CHECK_SUITE: ${{ inputs.check_suite }}
         run: |
-          gh release list --repo maxwellsdm1867/Rieke-OS --limit 100 --json tagName,isDraft > "$RUNNER_TEMP/releases.json"
+          gh release list --repo "$GITHUB_REPOSITORY" --limit 100 --json tagName,isDraft > "$RUNNER_TEMP/releases.json"
           python3 - <<'PYTAGS'
           import json, os
           from pathlib import Path
@@ -102,7 +102,7 @@ jobs:
           retention-days: 30
   build:
     needs: plan
-    if: needs.plan.outputs.build_required == 'true' && !inputs.candidate_run_id && github.repository == 'maxwellsdm1867/Rieke-OS'
+    if: needs.plan.outputs.build_required == 'true' && !inputs.candidate_run_id && (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
     runs-on: macos-15
     timeout-minutes: 45
     environment: ${{ ((github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
@@ -256,12 +256,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
         run: |
-          gh api "repos/maxwellsdm1867/Rieke-OS/actions/runs/$CANDIDATE_RUN" > "$RUNNER_TEMP/candidate-run.json"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN" > "$RUNNER_TEMP/candidate-run.json"
           python3 - <<'PYRUN'
           import json, os
           from pathlib import Path
           run = json.loads((Path(os.environ['RUNNER_TEMP'])/'candidate-run.json').read_text())
-          assert run['repository']['full_name'] == 'maxwellsdm1867/Rieke-OS'
+          assert run['repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
           assert run['path'] == '.github/workflows/desktop-candidate.yml'
           assert run['status'] == 'completed', 'Do not consume an active candidate run'
           PYRUN

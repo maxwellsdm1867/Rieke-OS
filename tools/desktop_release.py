@@ -9,6 +9,7 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -16,7 +17,8 @@ import sys
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = 'maxwellsdm1867/Rieke-OS'
+REPOSITORY = 'maxwellsdm1867/disco'
+REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}
 REQUIREMENTS = [f'R{index:02}' for index in range(1, 13)]
 
 
@@ -40,13 +42,13 @@ def testing_baseline(tag, repository):
 
 def _baseline(tag, repository, testing):
     pattern = r'(?:v|desktop-test-v)\d+\.\d+\.\d+' if testing else r'v\d+\.\d+\.\d+'
-    if repository != REPOSITORY or not isinstance(tag, str) or not re.fullmatch(pattern, tag):
+    if repository not in REPOSITORIES or not isinstance(tag, str) or not re.fullmatch(pattern, tag):
         raise ValueError('Desktop release requires the canonical repository and stable version tag')
     origin = run('git', '-C', str(ROOT), 'remote', 'get-url', 'origin')
-    approved_origins = {f'https://github.com/{REPOSITORY}', f'https://github.com/{REPOSITORY}.git',
-                        f'git@github.com:{REPOSITORY}.git', f'ssh://git@github.com/{REPOSITORY}.git'}
+    approved_origins = {f'https://github.com/{repository}', f'https://github.com/{repository}.git',
+                        f'git@github.com:{repository}.git', f'ssh://git@github.com/{repository}.git'}
     if origin not in approved_origins:
-        raise ValueError('Desktop release Git origin must be the canonical Rieke-OS repository')
+        raise ValueError('Desktop release Git origin must be the canonical Disco repository')
     application_version = tag.removeprefix('desktop-test-v') if tag.startswith('desktop-test-v') else tag[1:]
     release = json.loads((ROOT / 'rieke-release.json').read_text())
     frontend = json.loads((ROOT / 'workspace-app/package.json').read_text())
@@ -54,12 +56,12 @@ def _baseline(tag, repository, testing):
     if release['version'] != application_version or any(item['version'] != release['version'] for item in (frontend, desktop)):
         raise ValueError('Release, frontend, desktop and tag versions differ')
     version(release['version'])
-    if release['repository'] != REPOSITORY or release['channel'] != 'stable':
+    if release['repository'] not in {REPOSITORY, 'maxwellsdm1867/Rieke-OS'} or release['channel'] != 'stable':
         raise ValueError('Desktop release provider or channel differs')
     if testing:
         distribution = json.loads((ROOT / 'desktop/distribution.json').read_text())
-        if distribution != {'format': 'rieke-desktop-distribution', 'version': 1,
-                            'channel': 'unsigned-testing', 'repository': REPOSITORY}:
+        if distribution not in [{'format': 'rieke-desktop-distribution', 'version': 1,
+                            'channel': 'unsigned-testing', 'repository': name} for name in REPOSITORIES]:
             raise ValueError('Testing baseline requires the explicit unsigned-testing distribution')
     if run('git', '-C', str(ROOT), 'status', '--porcelain'):
         raise ValueError('Desktop release requires a clean reviewed checkout')
@@ -71,7 +73,7 @@ def _baseline(tag, repository, testing):
     if run('git', '-C', str(ROOT), 'rev-parse', tag + '^{commit}') != commit:
         raise ValueError('Desktop build must use the exact reviewed tag commit')
     result = {'format': 'rieke-desktop-baseline', 'version': 1, 'source_commit': commit,
-            'application_version': release['version'], 'repository': REPOSITORY,
+            'application_version': release['version'], 'repository': repository, 'canonical_repository': REPOSITORY,
             'workspace_formats': release['workspace_formats'], 'database_compatibility': release['database_compatibility']}
     if testing:
         result.update(distribution_channel='unsigned-testing', production_ready=False)
@@ -149,27 +151,30 @@ def gh_json(*arguments, payload=None):
 
 
 def promote(directory, tag, evidence_path):
+    repository = os.environ.get('GITHUB_REPOSITORY', REPOSITORY)
+    if repository not in REPOSITORIES:
+        raise ValueError('Publication repository is outside the product migration')
     expected_version = tag.removeprefix('v')
     version(expected_version)
     artifacts = artifact_inventory(directory)
     verify_metadata(directory, expected_version)
     evidence = validate_evidence(json.loads(evidence_path.read_text()), artifacts, expected_version)
-    remote_tag = gh_json(f'repos/{REPOSITORY}/git/ref/tags/{tag}')['object']
+    remote_tag = gh_json(f'repos/{repository}/git/ref/tags/{tag}')['object']
     if remote_tag['type'] == 'tag':
         remote_tag = gh_json(remote_tag['url'])['object']
     if remote_tag.get('type') != 'commit' or remote_tag.get('sha') != evidence['source_commit']:
         raise ValueError('Qualification source commit differs from canonical release tag')
-    releases = gh_json(f'repos/{REPOSITORY}/releases?per_page=100')
+    releases = gh_json(f'repos/{repository}/releases?per_page=100')
     published = [release for release in releases if not release['draft'] and not release['prerelease'] and re.fullmatch(r'v\d+\.\d+\.\d+', release['tag_name'])]
     if any(version(release['tag_name'][1:]) > version(expected_version) for release in published):
         raise ValueError('A newer stable version is already published')
     release = next((item for item in releases if item['tag_name'] == tag), None)
     if release is None:
-        release = gh_json(f'repos/{REPOSITORY}/releases', '-X', 'POST', payload={'tag_name': tag, 'target_commitish': evidence['source_commit'], 'name': 'Rieke OS ' + tag,
+        release = gh_json(f'repos/{repository}/releases', '-X', 'POST', payload={'tag_name': tag, 'target_commitish': evidence['source_commit'], 'name': 'Disco ' + tag,
                            'draft': True, 'prerelease': False, 'make_latest': 'false'})
     if release['prerelease']:
         raise ValueError('Stable and prerelease channels cannot share a release')
-    existing = {asset['name']: asset for asset in gh_json(f"repos/{REPOSITORY}/releases/{release['id']}/assets?per_page=100")}
+    existing = {asset['name']: asset for asset in gh_json(f"repos/{repository}/releases/{release['id']}/assets?per_page=100")}
     for name, record in artifacts.items():
         if name in existing:
             asset_digest = existing[name].get('digest')
@@ -178,13 +183,13 @@ def promote(directory, tag, evidence_path):
         elif not release['draft']:
             raise ValueError('Published release is incomplete; do not mutate its artifact set')
         else:
-            subprocess.run(['gh', 'release', 'upload', tag, str(directory / name), '--repo', REPOSITORY], check=True)
+            subprocess.run(['gh', 'release', 'upload', tag, str(directory / name), '--repo', repository], check=True)
     if release['draft']:
-        gh_json(f"repos/{REPOSITORY}/releases/{release['id']}", '-X', 'PATCH', payload={'draft': False, 'make_latest': 'false'})
+        gh_json(f"repos/{repository}/releases/{release['id']}", '-X', 'PATCH', payload={'draft': False, 'make_latest': 'false'})
     # Expose the complete release without moving latest, then verify final public
     # download URLs with no authentication before changing stable selection.
     for name, record in artifacts.items():
-        url = f'https://github.com/{REPOSITORY}/releases/download/{tag}/{name}'
+        url = f'https://github.com/{repository}/releases/download/{tag}/{name}'
         hasher, size = hashlib.sha256(), 0
         with urlopen(Request(url, headers={'User-Agent': 'Rieke-OS-release-verifier'}), timeout=60) as response:
             if not response.url.startswith('https://'):
@@ -193,7 +198,7 @@ def promote(directory, tag, evidence_path):
                 hasher.update(chunk); size += len(chunk)
         if size != record['size'] or hasher.hexdigest() != record['sha256']:
             raise ValueError('Public artifact bytes differ; latest has not been promoted')
-    gh_json(f"repos/{REPOSITORY}/releases/{release['id']}", '-X', 'PATCH', payload={'make_latest': 'true'})
+    gh_json(f"repos/{repository}/releases/{release['id']}", '-X', 'PATCH', payload={'make_latest': 'true'})
     return {'published': tag, 'artifacts': artifacts}
 
 

@@ -1,4 +1,4 @@
-name: Promote qualified Rieke OS desktop
+name: Promote qualified Disco desktop
 on:
   workflow_dispatch:
     inputs:
@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   promote:
-    if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
     runs-on: macos-15
     # Repository owners must enable required reviewers here. YAML alone does not.
     environment: desktop-publishing
@@ -43,7 +43,7 @@ jobs:
           import json, os, re, subprocess
           run_id = os.environ['CANDIDATE_RUN']
           if not re.fullmatch(r'\d+', run_id): raise SystemExit('Invalid candidate run ID')
-          receipt = json.loads(subprocess.check_output(['gh','api',f'repos/maxwellsdm1867/Rieke-OS/actions/runs/{run_id}'],text=True))
+          receipt = json.loads(subprocess.check_output(['gh','api',f"repos/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{run_id}"],text=True))
           if receipt['conclusion'] != 'success' or receipt['path'] != '.github/workflows/desktop-candidate.yml':
               raise SystemExit('Candidate must be a successful desktop build')
           PY

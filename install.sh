@@ -46,4 +46,4 @@ export PATH="$runtime/native/bin:$PATH"
 # Execute inside the tool environment to activate its compiler and SDK settings.
 "$runtime/tools/bin/micromamba" run --prefix "$runtime/native" \
   uv run --no-project --python 3.11.13 python rieke.py setup
-printf '\nInstalled. Start Rieke Lab OS with: ./start.sh\n'
+printf '\nInstalled. Start Disco with: ./start.sh\n'

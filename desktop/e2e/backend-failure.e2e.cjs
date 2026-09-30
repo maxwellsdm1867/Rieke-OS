@@ -17,7 +17,7 @@ const {verifyResources} = require('../updater-validation.cjs');
   await fs.writeFile(entry, literalFailure);
   const manifest = await resealRuntimeManifest(runtime); await verifyResources(runtime, manifest.resources);
   const {application, page} = await launch(fixture);
-  await page.getByRole('heading', {name: 'Rieke OS recovery', exact: true}).waitFor({timeout: 90000});
+  await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 90000});
   const status = await page.evaluate(() => window.riekeDesktop.status());
   assert.equal(status.state, 'Recovery'); assert.match(status.detail, /exited before owning its listener/);
   assert.equal(await page.getByRole('heading', {name: 'Your projects', exact: true}).count(), 0);

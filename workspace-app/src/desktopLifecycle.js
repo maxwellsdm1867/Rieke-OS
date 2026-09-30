@@ -2,7 +2,7 @@ const savers=new Set(),writes=new Set();
 let closing=false;
 export const desktopBridge=()=>globalThis.window?.riekeDesktop || null;
 export function registerDraftSaver(save){savers.add(save);return()=>savers.delete(save);}
-export function assertDesktopWritable(){if(closing)throw new Error('Rieke OS is closing; new changes are paused.');}
+export function assertDesktopWritable(){if(closing)throw new Error('Disco is closing; new changes are paused.');}
 export function trackWrite(operation){
   writes.add(operation);
   operation.then(()=>writes.delete(operation),()=>writes.delete(operation));

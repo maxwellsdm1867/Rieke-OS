@@ -20,7 +20,7 @@ async function signatureIdentity(bundle, run = runFile) {
   const identifier = /^Identifier=(.+)$/m.exec(text)?.[1];
   const team = /^TeamIdentifier=(.+)$/m.exec(text)?.[1];
   if (identifier !== APP_ID || !team || team === 'not set' || !/^Authority=Developer ID Application:/m.test(text))
-    throw new Error('Install and Open requires the verified Developer ID signed Rieke OS app');
+    throw new Error('Install and Open requires the verified Developer ID signed Disco app');
   return {identifier, team};
 }
 async function assertNotRunning(bundle, run = runFile, ignorePid = null) {
@@ -30,7 +30,7 @@ async function assertNotRunning(bundle, run = runFile, ignorePid = null) {
     const match = /^\s*(\d+)\s+(.+)$/.exec(line);
     return match && Number(match[1]) !== ignorePid && match[2].startsWith(prefix);
   }))
-    throw new Error('The installed Rieke OS app is running. Quit it before installation.');
+    throw new Error('The installed Disco app is running. Quit it before installation.');
 }
 async function readBundleManifest(bundle) {
   return JSON.parse(await fs.readFile(path.join(bundle, 'Contents', 'Resources', 'runtime', 'runtime-manifest.json'), 'utf8'));

@@ -79,7 +79,7 @@ test('quiet downloads require validation and every drain acknowledgment before i
   assert.equal(updater.autoInstallOnAppQuit, false);
   assert.equal(updater.allowDowngrade, false);
   assert.equal(updater.allowPrerelease, false);
-  assert.equal(updater.feed.repo, 'Rieke-OS');
+  assert.equal(updater.feed.repo, 'disco');
   updater.emit('update-downloaded', {version: '1.1.0', downloadedFile: '/cache/update.zip'});
   await new Promise(resolve => setImmediate(resolve));
   assert.equal(coordinator.getStatus().state, 'Ready');
@@ -118,4 +118,16 @@ test('cache mutation during real drain cannot authorize the native installer', {
   updater.emit('update-downloaded',{version:'1.1.0'});await new Promise(resolve=>setImmediate(resolve));
   assert.equal((await coordinator.installPrepared()).ready,false);
   assert.equal(installs(),0);assert.equal(recovered,true);assert.equal(coordinator.getStatus().state,'Deferred');
+});
+
+test('signed bridge discovery retries only canonical404 and reselects canonical on later checks',async t=>{
+ const {coordinator,updater}=await fixture(t);
+ const calls=[];
+ updater.checkForUpdates=async()=>{calls.push(updater.feed.repo);if(updater.feed.repo==='disco')throw Object.assign(new Error('not published'),{statusCode:404});};
+ await coordinator.check();assert.deepEqual(calls,['disco','Rieke-OS']);
+ calls.length=0;await coordinator.check();assert.deepEqual(calls,['disco','Rieke-OS']);
+ for(const statusCode of [401,403,500]){
+  calls.length=0;updater.checkForUpdates=async()=>{calls.push(updater.feed.repo);throw Object.assign(new Error('unavailable'),{statusCode});};
+  await coordinator.check();assert.deepEqual(calls,['disco']);
+ }
 });

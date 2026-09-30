@@ -7,5 +7,6 @@
     1
   ],
   "database_compatibility": 1,
-  "updater_protocol": 1
+  "updater_protocol": 1,
+  "canonical_repository": "maxwellsdm1867/disco"
 }

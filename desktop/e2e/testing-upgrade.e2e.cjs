@@ -61,7 +61,7 @@ const app={isPackaged:true,getPath:name=>name==='exe'?process.execPath:config.us
  coordinator?.stop();setTimeout(()=>{fs.writeFileSync(config.driverResult,JSON.stringify({phase:config.phase,authorized,statuses,handoff}),{mode:0o600});process.exit(0);},50);
 }};
 const transport=url=>{
- const route=url==='https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1'?'/api':
+ const route=url==='https://api.github.com/repos/maxwellsdm1867/disco/releases?per_page=100&page=1'?'/api':
  url===config.descriptorURL?'/descriptor':url===config.archiveURL?'/archive':null;
  if(!route)return Promise.reject(new Error('Unexpected official release URL'));
  return new Promise((resolve,reject)=>http.get(config.base+route,response=>resolve({statusCode:response.statusCode,headers:response.headers,body:response})).on('error',reject));
@@ -162,7 +162,7 @@ async function main(){
  fixture=await createFixture({reuse:false});
  receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
  await versionPrior(priorVersion);const priorDigest=await bundleDigest(fixture.bundle);receipt.prior_fixture_bundle_sha256=priorDigest;
- const tag=`desktop-test-v${candidateVersion}`,baseURL=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;
+ const tag=`desktop-test-v${candidateVersion}`,baseURL=`https://github.com/maxwellsdm1867/disco/releases/download/${tag}/`;
  const releases=Buffer.from(JSON.stringify([{draft:false,prerelease:true,tag_name:tag,assets:[{name:'desktop-release.json',size:descriptorBytes.length,browser_download_url:baseURL+'desktop-release.json'},{name:descriptor.archive.filename,size:descriptor.archive.size,browser_download_url:baseURL+descriptor.archive.filename}]}]));
  server=http.createServer((request,response)=>{
   const resource=request.url==='/api'?releases:request.url==='/descriptor'?descriptorBytes:null;

@@ -38,7 +38,7 @@ try{
     const built=spawnSync('npm',['run','build'],{cwd:appDir,stdio:'inherit'});
     if(built.error||built.status!==0)throw new Error('The app build did not finish. Fix the reported build error before starting.');
   }
-  console.log(`\nRieke OS: http://127.0.0.1:${port}\nProjects: ${managedRoot}\nChoose a project or create an empty one. Databases start only when opened.\n`);
+  console.log(`\nDisco: http://127.0.0.1:${port}\nProjects: ${managedRoot}\nChoose a project or create an empty one. Databases start only when opened.\n`);
   const server=spawn(python,[join(repository,'python/workspace_launcher.py'),'--managed-root',managedRoot,'--retinanalysis',retinanalysis,'--port',String(port)],{cwd:repository,stdio:'inherit'});
   for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>server.kill(signal));
   server.on('exit',code=>process.exit(code??0));

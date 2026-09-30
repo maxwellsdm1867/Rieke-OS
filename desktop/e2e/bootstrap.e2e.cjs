@@ -47,7 +47,7 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   application=await _electron.launch({executablePath:fixture.executable,args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
   const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged}));
   assert.equal(actual.home,fixture.home);assert.equal(actual.userData,path.join(fixture.userData,'installer'));assert.ok(actual.appPath.startsWith(downloaded+'/'));assert.equal(actual.packaged,true);
-  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Rieke OS',exact:true}).waitFor();
+  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Disco',exact:true}).waitFor();
   await page.getByText('Unsigned testing',{exact:true}).waitFor();assert.match(await page.locator('#detail').innerText(),/Open Anyway/);
   await page.getByRole('button',{name:'Install and Open',exact:true}).waitFor();
   assert.equal(await fs.stat(target).then(()=>true,()=>false),false);assert.equal(await fs.stat(handoff).then(()=>true,()=>false),false);
@@ -77,7 +77,7 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(cleanArchive).headerString).digest('hex')}`,path.join(cleanDownload,'Contents/Info.plist')]);
   await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),cleanDownload]);await run('/usr/bin/codesign',['--verify','--deep','--strict',cleanDownload]);
   application=await _electron.launch({executablePath:path.join(cleanDownload,'Contents/MacOS/Rieke OS'),args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
-  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Rieke OS',exact:true}).waitFor();
+  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Disco',exact:true}).waitFor();
   const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();assert.equal(await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Clean installer did not finish')),420000).unref())]),0);
   assert.deepEqual(JSON.parse(await fs.readFile(cleanHandoff,'utf8')).args,['-n','-a',cleanTarget,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);
   assert.equal(await run('/usr/bin/xattr',['-p','com.apple.quarantine',cleanTarget]).then(()=>true,error=>{if(error.code===1)return false;throw error;}),false,'This startup fixture must never carry quarantine');

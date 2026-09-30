@@ -216,7 +216,7 @@ class UpdateTests(unittest.TestCase):
         self.assertTrue((self.installation / 'releases/0.2.0/.stage-failed.json').exists())
 
     def test_bounded_restart_never_kills_active_writer(self):
-        with patch.object(updates, 'activate_staged', side_effect=ValueError('Close all Rieke OS launchers')) as activate, \
+        with patch.object(updates, 'activate_staged', side_effect=ValueError('Close all Disco launchers')) as activate, \
                 patch.object(updates, 'main') as launch:
             with self.assertRaises(ValueError):
                 updates.activate_and_launch(self.installation, wait_seconds=0)
@@ -286,3 +286,16 @@ class UpdateTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+class BrandingMigrationTests(unittest.TestCase):
+    def test_official_feed_falls_back_only_on_canonical_404(self):
+        payload = json.dumps({'tag_name':'v0.1.3'}).encode()
+        for code in (404,403,500):
+            with self.subTest(code=code), patch.object(updates,'_download',side_effect=[HTTPError(updates.API,code,'',{},None),payload]) as download:
+                if code==404:
+                    self.assertEqual(updates._official_release()['tag_name'],'v0.1.3')
+                    self.assertEqual(download.call_args_list[1].args[0],'https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')
+                else:
+                    with self.assertRaises(HTTPError):updates._official_release()
+                    self.assertEqual(download.call_count,1)
+                self.assertEqual(download.call_args_list[0].args[0],updates.API)

@@ -7,7 +7,7 @@ test('only an available release creates an update indicator',()=>{
 });
 test('a failed refresh retains a known update until a successful check replaces it',()=>{
   const previous={state:'update_available',available:'1.2.0',installed:'1.1.0',
-    release_url:'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.2.0',
+    release_url:'https://github.com/maxwellsdm1867/disco/releases/tag/v1.2.0',
     release_notes:'Changes',checked_at:'2026-09-29T00:00:00Z',can_stage:true};
   const failed=mergeUpdateCheck(previous,{state:'error',available:null,release_url:null,
     checked_at:'2026-09-29T00:15:00Z',message:'Offline',can_stage:false});
@@ -27,8 +27,8 @@ test('a failed refresh retains a known update until a successful check replaces 
   assert.equal(updateNotice(mergeUpdateCheck(previous,{state:'update_available',available:'1.3.0'})).version,'1.3.0');
 });
 test('release links cannot navigate to executable or untrusted destinations',()=>{
-  for(const value of ['javascript:alert(1)','https://github.com.evil.test/releases','https://github.com/other/repo/releases','https://user:password@github.com/maxwellsdm1867/Rieke-OS/releases'])assert.equal(releaseLink(value),null);
-  assert.ok(releaseLink('https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.0.0'));
+  for(const value of ['javascript:alert(1)','https://github.com.evil.test/releases','https://github.com/other/repo/releases','https://user:password@github.com/maxwellsdm1867/disco/releases'])assert.equal(releaseLink(value),null);
+  assert.ok(releaseLink('https://github.com/maxwellsdm1867/disco/releases/tag/v1.0.0'));
 });
 test('automatically checks at startup, periodically, and on return after elapsed interval',()=>{
   let calls=0,tick,visible,time=0,cleared=false;
@@ -55,4 +55,34 @@ test('new update discovery is deduplicated across scans, readiness and launcher 
  assert.equal(claimUpdateDiscovery({...status,state:'Ready'},new Set(),storage),false);
  assert.equal(claimUpdateDiscovery({...status,available:'0.2.1'},seen,storage),true);
  assert.equal(claimUpdateDiscovery({...status,state:'error'},seen,storage),false);
+});
+
+test('session cookie dedupes release display across origin storage and bounds retained claims',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');
+ let cookie='';const documentObject={get cookie(){return cookie;},set cookie(value){cookie=value.split(';')[0];}};
+ const store=()=>{const data=new Map();return{getItem:key=>data.get(key),setItem:(key,value)=>data.set(key,value)};};
+ const status={state:'Available',channel:'unsigned-testing',available:'0.2.1'};
+ assert.equal(claimUpdateDiscovery(status,new Set(),store(),documentObject),true);
+ assert.equal(claimUpdateDiscovery(status,new Set(),store(),documentObject),false);
+ for(let n=2;n<25;n++)claimUpdateDiscovery({...status,available:`0.2.${n}`},new Set(),store(),documentObject);
+ const retained=JSON.parse(decodeURIComponent(cookie.split('=').slice(1).join('=')));
+ assert.equal(retained.length,12);
+ assert.equal(cookie.includes('Max-Age'),false);
+ assert.equal(cookie.includes('Expires'),false);
+});
+test('unavailable cookies and storage retain component-only notification dedupe',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');const seen=new Set();
+ const documentObject={get cookie(){throw new Error('cookies unavailable');},set cookie(value){throw new Error('cookies unavailable');}};
+ const storage={getItem(){throw new Error('storage unavailable');},setItem(){throw new Error('storage unavailable');}};
+ const status={state:'Available',available:'0.9.0'};
+ assert.equal(claimUpdateDiscovery(status,seen,storage,documentObject),true);
+ assert.equal(claimUpdateDiscovery(status,seen,storage,documentObject),false);
+});
+
+test('an existing origin session claim seeds the cross-port cookie without rediscovery',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');let cookie='';
+ const documentObject={get cookie(){return cookie;},set cookie(value){cookie=value.split(';')[0];}};
+ const status={state:'Available',available:'0.8.0'};
+ assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> '1'},documentObject),false);
+ assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> null,setItem(){}},documentObject),false);
 });

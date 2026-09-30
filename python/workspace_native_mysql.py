@@ -74,11 +74,11 @@ def native_binary(name='mysqld'):
             binary = prefix / 'bin' / name
             if binary.is_file() and os.access(binary, os.X_OK):
                 return binary.resolve()
-        raise ValueError('Private MySQL runtime is missing; run Rieke OS setup') from None
+        raise ValueError('Private MySQL runtime is missing; run Disco setup') from None
     runtime = mysql_runtime(root=ROOT)
     binary = Path(runtime.get(name) or Path(runtime['root']) / 'bin' / name)
     if not binary.is_file() or not os.access(binary, os.X_OK):
-        raise ValueError('Private MySQL client is missing; run Rieke OS setup')
+        raise ValueError('Private MySQL client is missing; run Disco setup')
     return binary.resolve()
 
 

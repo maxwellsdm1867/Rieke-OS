@@ -69,13 +69,13 @@ copy before removing the old folder.
 ## Desktop update availability
 
 The unsigned testing desktop checks official GitHub release metadata at startup
-and about once an hour. **Release / Publish** shows the available version quietly.
+and about once an hour. **App Updates** shows the available version quietly.
 Checking never downloads automatically: choose **Download update**, then
 **Restart to update** after complete archive/resource and compatibility validation.
 An ordinary Quit does not install the testing update. Active imports, unsaved
 views or scientific services can defer restart while the current app remains usable.
 
-Downloads and updates come only from the official Rieke OS repository over HTTPS.
+Downloads and updates come only from the official Disco repository over HTTPS.
 Unsigned testing checksums and a structural ad-hoc seal provide no Developer ID
 identity or notarization. **Install and Open** preserves quarantine; macOS initial
 approval remains manual. See [testing releases](dev/GITHUB_TESTING_RELEASE.md).
@@ -84,7 +84,7 @@ Source/developer installations use the separate source-manager contracts and
 cannot update a checkout in place. Their refresh interval and signing mechanism
 must not be confused with the Electron desktop channel. See [release operations](dev/releasing-rieke-os.md).
 
-MATLAB is unnecessary for running Rieke OS. Its MAT export is data-only; plotting,
+MATLAB is unnecessary for running Disco. Its MAT export is data-only; plotting,
 curation, tag exchange and JSON selection masks remain in the Rieke web interface.
 
 ## Open, move, or share a project folder

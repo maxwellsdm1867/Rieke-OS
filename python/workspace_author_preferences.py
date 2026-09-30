@@ -69,3 +69,31 @@ def remember_author(profile):
             profiles.append(profile)
         write_json(path, {'format': 'rieke-tag-author', 'version': 1, 'profile': profile, 'profiles': profiles})
     return profile
+
+
+def appearance_preferences():
+    path = preference_path().with_name('appearance.json')
+    if path.is_symlink():
+        raise ValueError('Appearance preference cannot be a symbolic link')
+    if not path.exists():
+        return {'icon': 'disco'}
+    if path.stat().st_size > 4096:
+        raise ValueError('Appearance preference is unexpectedly large')
+    value = json.loads(path.read_text())
+    if value.get('format') != 'disco-appearance' or value.get('version') != 1 or value.get('icon') not in {'disco', 'rieke'}:
+        raise ValueError('Appearance preference is invalid')
+    return {'icon': value['icon']}
+
+
+def remember_appearance(icon):
+    if icon not in {'disco', 'rieke'}:
+        raise ValueError('Choose a supported application icon')
+    path = preference_path().with_name('appearance.json')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_suffix('.lock')
+    if path.is_symlink() or lock_path.is_symlink():
+        raise ValueError('Appearance preference cannot be a symbolic link')
+    with lock_path.open('a') as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        write_json(path, {'format': 'disco-appearance', 'version': 1, 'icon': icon})
+    return {'icon': icon}

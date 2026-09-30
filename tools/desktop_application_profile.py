@@ -1,4 +1,4 @@
-"""Reviewed Rieke OS application closure, separate from EpicTreeGUI source.
+"""Reviewed Disco application closure, separate from EpicTreeGUI source.
 
 Only application resources are constrained here. Third-party parser/scientific
 libraries retain their pinned content, including any MATLAB support they use.
@@ -19,7 +19,7 @@ PROFILE = ROOT / 'desktop/application-profile.json'
 def load_profile(path=PROFILE):
     value = json.loads(Path(path).read_text())
     if value.get('format') != 'rieke-application-profile' or value.get('version') != 1:
-        raise ValueError('Unrecognized Rieke OS application profile')
+        raise ValueError('Unrecognized Disco application profile')
     names = value.get('python_modules', [])
     if not names or len(names) != len(set(names)) or any(
             Path(name).name != name or not name.endswith('.py') for name in names):
@@ -28,7 +28,7 @@ def load_profile(path=PROFILE):
 
 
 def validate_release_source(root, trackedpaths):
-    """Reject a mixed EpicTreeGUI/Rieke OS tracked release source tree.
+    """Reject a mixed EpicTreeGUI/Disco tracked release source tree.
 
     This read-only guard checks the supplied Git inventory against the profile
     in that source tree. Canonical repository/commit identity is a separate
@@ -53,7 +53,7 @@ def validate_release_source(root, trackedpaths):
     rejected = sorted(name for name in paths if name in exact or
                       any(fnmatch.fnmatchcase(name, pattern) for pattern in patterns))
     if rejected:
-        raise ValueError('Mixed EpicTreeGUI/Rieke OS release source contains excluded paths: ' +
+        raise ValueError('Mixed EpicTreeGUI/Disco release source contains excluded paths: ' +
                          ', '.join(rejected))
     return {'format': profile['format'], 'version': profile['version'],
             'tracked_paths_checked': len(paths), 'excluded_source_paths': []}
@@ -113,7 +113,7 @@ def audit_application(application, expected_profile=None):
                       path.relative_to(application).parts[0] in ('src', 'examples', 'tests') or
                       path.name in ('epicTreeGUI.m', 'install.m', 'launch_epictree.m'))]
     if unexpected:
-        raise ValueError('EpicTreeGUI/MATLAB interactive resources entered Rieke OS: ' + ', '.join(unexpected))
+        raise ValueError('EpicTreeGUI/MATLAB interactive resources entered Disco: ' + ', '.join(unexpected))
     return {'python_modules': len(actual), 'mat_data_export': profile['capabilities']['mat_data_export'],
             'matlab_gui_resources': [], 'source_exclusions': profile['source_exclusions']}
 

@@ -67,7 +67,7 @@ docs/legacy/old_epochtree/
 /workspace-app/node_modules/
 /workspace-app/dist/
 
-# Clone-local Rieke OS dependencies/config (never scientific project data)
+# Clone-local Disco dependencies/config (never scientific project data)
 /.rieke-runtime/
 
 # Desktop build closure and local packages (source/locks remain tracked)

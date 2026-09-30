@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'python'))
 from workspace_installation import initialize_workspace
-from workspace_native_database import stop_native_database
+from workspace_native_mysql import stop_native_database
 
 
 def request(base, path, data=None):
@@ -57,7 +57,7 @@ def main():
                 time.sleep(.2)
         else:raise TimeoutError('Launcher did not become ready')
         passed('clean-runtime launcher health')
-        with urlopen(base) as response:assert b'<title>Rieke OS</title>' in response.read()
+        with urlopen(base) as response:assert b'<title>Disco</title>' in response.read()
         passed('built browser app served')
         assert request(base,'/api/projects')['projects']==[]
         created=request(base,'/api/projects',{'name':'End-to-end verification'})

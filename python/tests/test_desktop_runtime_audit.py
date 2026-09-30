@@ -18,7 +18,7 @@ class RuntimeAuditTests(unittest.TestCase):
         self.root = Path(self.temp.name).resolve() / 'app'
         self.root.mkdir()
         self.write('python/workspace-source.json', {'commit': 'a' * 40, 'python': '3.11.13'})
-        self.write('rieke-release.json', {'version': '0.1.0', 'repository': 'maxwellsdm1867/Rieke-OS'})
+        self.write('rieke-release.json', {'version': '0.1.0', 'repository': 'maxwellsdm1867/disco'})
         self.write('workspace-app/package.json', {'version': '0.1.0'})
         self.write('.rieke-runtime/runtime.json', {'python': '.rieke-runtime/python/bin/python',
                    'retinanalysis': '.rieke-runtime/retinanalysis', 'retinanalysis_commit': 'a' * 40})

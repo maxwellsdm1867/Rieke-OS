@@ -1,22 +1,22 @@
-# Rieke OS — local React app
+# Disco — local React app
 
 This is the first working React application, backed by the imported RetinAnalysis
 DataJoint catalog. It uses real recordings; the earlier conversation sketch is
 separate and contains example data.
 
 For workspace initialization, launching from your research folder, and the file
-layout, see the [Rieke Lab OS quick start](../docs/RIEKE_OS_QUICK_START.md).
+layout, see the [Disco quick start](../docs/RIEKE_OS_QUICK_START.md).
 
 ## Fresh-clone setup
 
-Use the dedicated Rieke OS development source:
+Use the dedicated Disco development source:
 
 ```sh
 git clone https://github.com/maxwellsdm1867/Rieke-OS.git
-cd Rieke-OS
+cd disco
 ```
 
-Rieke OS is a separate application with web plotting, curation and data export.
+Disco is a separate application with web plotting, curation and data export.
 A source checkout does not imply a signed or notarized desktop release.
 
 The current bundled native database runs on **Apple Silicon macOS**. Linux and
@@ -80,7 +80,7 @@ several GB of free disk are needed. Package hashes and source revisions are
 pinned; compiled binaries remain platform/toolchain dependent. The fresh setup
 has been exercised on Apple Silicon macOS. Linux's Python source path is not a
 promise of a supported bundled database; that platform remains unvalidated.
-MATLAB is not required to run Rieke OS. MAT data exports can be read separately
+MATLAB is not required to run Disco. MAT data exports can be read separately
 with MATLAB’s standard data loading functions.
 
 For an explicit existing clean checkout at an accepted revision:
@@ -413,7 +413,7 @@ inspection action opens an epoch separately; the chosen epoch can then be handed
 to the matching tagging/export workspace without losing its identity. When several
 workspaces match, the user chooses one. No match is silently invented.
 
-The app's display title is **Rieke OS**. Scientific source names, stable project
+The app's display title is **Disco**. Scientific source names, stable project
 identities, managed storage paths and historical audit records keep their existing
 values.
 
@@ -570,9 +570,9 @@ as explicit query exclusions, without rewriting scientific records or old logs.
 It records migration evidence for legacy state rows and resumes safely after an
 interruption. New registrations start query-included and visible.
 
-### Rieke OS projects and data export
+### Disco projects and data export
 
-Rieke OS is the application. The current project is displayed as **Spike Response
+Disco is the application. The current project is displayed as **Spike Response
 Model** through `project.json.display_name`; its internal name, UUID, directory and
 SQL catalog identity remain stable. Display-name edits append a project audit
 event. The project rail and selector discover validated recording projects in
@@ -604,7 +604,7 @@ ordinary MATLAB struct names. Unsupported MEA data and flattening collisions
 fail before registering a successful export. Ancestors absent from the current
 service read model are not reconstructed.
 
-Rieke OS plots responses and edits tags and inclusion in its own web interface.
+Disco plots responses and edits tags and inclusion in its own web interface.
 **Selection masks** saves or restores Recording Selection Mask v1 JSON against
 an exact protocol membership and source identity. **Tags** exchanges generic
 UUID-based JSON with author attribution; it does not change inclusion masks.
@@ -648,7 +648,7 @@ separate from previewing, saving or making a one-off export.
 
 A Wheeler export uses `recording-workspace-sqlite` schema version 2 (the reader also supports version 1). Inspect
 `documentation`, `example_queries` and `epoch_overview` with standard SQLite. It
-has no dependency on the running Rieke OS server or DataJoint connection. For
+has no dependency on the running Disco server or DataJoint connection. For
 example:
 
 ```sql

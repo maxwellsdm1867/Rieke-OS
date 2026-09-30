@@ -56,7 +56,7 @@ def build(output, private_key, public_key, target):
     # files or an already-relocated private MySQL prefix.
     source = subprocess.check_output(['git', 'archive', '--format=tar', 'HEAD'], cwd=ROOT)
     output.mkdir(parents=True, exist_ok=True)
-    name = f'rieke-os-{metadata["version"]}-{target}.tar.gz'
+    name = f'disco-{metadata["version"]}-{target}.tar.gz'
     artifact = output / name
     with tarfile.open(fileobj=io.BytesIO(source)) as archive, tarfile.open(artifact, 'w:gz') as result:
         for entry in archive:
@@ -69,9 +69,9 @@ def build(output, private_key, public_key, target):
         for path in native_archives:
             result.add(path, arcname=path.relative_to(ROOT), recursive=False)
     payload = json.dumps({'format': 'rieke-release-manifest', 'updater_protocol': 1,
-        'repository': REPOSITORY, 'version': metadata['version'], 'commit': commit,
+        'repository': 'maxwellsdm1867/Rieke-OS', 'canonical_repository': REPOSITORY, 'version': metadata['version'], 'commit': commit,
         'database_compatibility': metadata['database_compatibility'],
-        'artifacts': [{'platform': target, 'url': f'https://github.com/{REPOSITORY}/releases/download/{expected}/{name}',
+        'artifacts': [{'platform': target, 'url': f'https://github.com/maxwellsdm1867/Rieke-OS/releases/download/{expected}/{name}',
                        'size': artifact.stat().st_size, 'sha256': hashlib.sha256(artifact.read_bytes()).hexdigest()}]},
         sort_keys=True, separators=(',', ':')).encode()
     payload_file = output / '.signing-payload'

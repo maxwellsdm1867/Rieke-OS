@@ -9,11 +9,14 @@ const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
+const {iconPath,applyAppIcon,savedAppIcon}=require('./app-icon.cjs');
+let appIcon='disco';
 const {QuitCoordinator} = require('./quit-coordinator.cjs');
+
 const {distributionPolicy} = require('./distribution.cjs');
 const distribution = distributionPolicy(require('./distribution.json'));
 app.enableSandbox();
-app.setName('Rieke OS');
+require('./branding.cjs').configureBranding(app);
 const windows = new Set();
 const scientificWindows = new Set();
 const recoveryPage = path.join(__dirname, 'recovery.html');
@@ -30,14 +33,15 @@ if (bootstrap) {
 }
 let supervisor, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false;
-let lifecycleStatus = {state: 'Starting', title: 'Starting Rieke OS', message: 'Verifying the complete app and its private runtime.'};
+let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Verifying the complete app and its private runtime.'};
+
 const draftBarrier = new DraftBarrier();
 function broadcast(value) {
   for (const window of windows) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
 }
 function status() { return lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus; }
 function recovery(message, detail = '') {
-  lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Rieke OS recovery', message, detail}; broadcast(lifecycleStatus);
+  lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Disco recovery', message, detail}; broadcast(lifecycleStatus);
   if (scientificWindows.size) viewUnavailable = true;
   // The recovery page has no scientific draft listener. Keep the last good
   // persisted draft; never request a snapshot from the page that replaced it.
@@ -45,6 +49,7 @@ function recovery(message, detail = '') {
     scientificWindows.delete(window);
     if (!window.isDestroyed()) window.loadFile(recoveryPage).catch(() => {});
   }
+
 }
 async function acknowledgeDrafts() {
   return draftBarrier.prepare(scientificWindows);
@@ -73,7 +78,7 @@ function orderlyQuit() {
 
 function createWindow() {
   const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
-    title: 'Rieke OS', backgroundColor: '#f4f5f3', show: false,
+    icon:iconPath(appIcon), title: 'Disco', backgroundColor: '#f4f5f3', show: false,
     webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
       sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
       webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
@@ -164,14 +169,16 @@ function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
     const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]);
     if (quitting && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
-      throw new Error('Rieke OS is closing; new work is paused.');
+      throw new Error('Disco is closing; new work is paused.');
     return action(payload, window);
   });
   const noPayload = (channel, action) => handle(channel, (payload, window) => {
     if (payload !== undefined) throw new TypeError('This desktop operation accepts no payload');
     return action(window);
   });
+  handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant);appIcon=variant;return result;});
   noPayload('desktop:undo-text', window=>window.webContents.undo());
+
   noPayload('desktop:status', () => status());
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {
@@ -225,16 +232,19 @@ else {
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
+    app.setAboutPanelOptions({applicationName:'Disco',applicationVersion:app.getVersion(),copyright:'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
+    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
     draftStore = new DraftStore(app.getPath('userData'));
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
-    Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Rieke OS', submenu: [{role: 'about'}, {type: 'separator'},
-      {label: 'Check for Updates', click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Rieke OS', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
+    Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
+      {label: 'Check for Updates', click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
+
     {label: 'Window', submenu: [{role: 'minimize'}, {role: 'zoom'}]}]));
-    if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Rieke OS', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Rieke OS GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
+    if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Disco', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Disco GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
     else await startScientificUI();
   }).catch(error => { console.error('Desktop startup failed:', error.name); app.exit(1); });
 }

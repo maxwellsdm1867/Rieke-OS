@@ -157,7 +157,7 @@ def _provenance(parser_manifest=None, source_files=None):
             "parser_sha256", "parser_version", "adapter_version", "adapter_sha256",
             "source_sha256", "metadata_sha256") if key in parser_manifest}
         parser = {"status": "recorded" if fields.get("parser_sha256") else "partial", **fields}
-    return {"application": {"name": "recording-workspace", "display_name": "Rieke OS", "version": version},
+    return {"application": {"name": "recording-workspace", "display_name": "Disco", "version": version},
             "contracts": dict(CONTRACT_VERSIONS), "schema": "recording_workspace",
             "runtime": {"python": platform.python_version(), "datajoint": _datajoint_version()},
             "code_fingerprint_scope": "local_source_files_on_disk_at_event",

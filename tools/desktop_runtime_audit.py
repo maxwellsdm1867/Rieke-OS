@@ -61,8 +61,8 @@ def audit_source_runtime(application):
     package = metadata(root / 'workspace-app/package.json', 'E01')
     if release.get('version') and package.get('version') != release['version']:
         issue('version_mismatch', 'E01', root / 'rieke-release.json', 'Application and frontend versions differ.')
-    if release and release.get('repository') != 'maxwellsdm1867/Rieke-OS':
-        issue('release_repository_mismatch', 'E01', root / 'rieke-release.json', 'Desktop publication must use Rieke-OS.')
+    if release and release.get('repository') not in {'maxwellsdm1867/disco', 'maxwellsdm1867/Rieke-OS'}:
+        issue('release_repository_mismatch', 'E01', root / 'rieke-release.json', 'Desktop publication must use the canonical Disco repository or its migration alias.')
     if source.get('commit') and config.get('retinanalysis_commit') != source['commit']:
         issue('parser_receipt_mismatch', 'E02', runtime / 'runtime.json', 'Parser runtime receipt differs from the source pin.')
 

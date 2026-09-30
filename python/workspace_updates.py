@@ -30,7 +30,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = 'maxwellsdm1867/Rieke-OS'
+REPOSITORY = 'maxwellsdm1867/disco'
+REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}
 API = f'https://api.github.com/repos/{REPOSITORY}/releases/latest'
 TRUST_KEY = 'release-signing-public.pem'
 MANIFEST_ASSET = 'rieke-release-manifest.json'
@@ -66,7 +67,7 @@ def _atomic(path, value):
 
 def release_metadata(root=ROOT):
     value = _read(Path(root) / 'rieke-release.json')
-    if value.get('format') != 'rieke-application-release' or value.get('repository') != REPOSITORY:
+    if value.get('format') != 'rieke-application-release' or value.get('repository') not in REPOSITORIES:
         raise ValueError('Invalid application release metadata')
     _version(value.get('version'))
     if value.get('updater_protocol') != 1:
@@ -129,6 +130,16 @@ def _download(url, limit=MAX_MANIFEST):
     return value
 
 
+def _official_release():
+    try:
+        payload = _download(API)
+    except HTTPError as error:
+        if error.code != 404:
+            raise
+        payload = _download('https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')
+    return json.loads(payload)
+
+
 def check_for_updates(root=ROOT, *, force=False):
     """Check the official stable channel. A missing release is not up-to-date."""
     root = Path(root).resolve()
@@ -139,25 +150,25 @@ def check_for_updates(root=ROOT, *, force=False):
         result = installation_status(root)
         result['checked_at'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
         try:
-            release = json.loads(_download(API))
+            release = _official_release()
             if not isinstance(release, dict) or release.get('draft') or release.get('prerelease'):
                 raise ValueError('No usable stable release was returned')
             tag = release.get('tag_name', '')
             version = tag.removeprefix('v')
             _version(version)
-            release_url = f'https://github.com/{REPOSITORY}/releases/tag/{tag}'
-            if release.get('html_url') != release_url:
+            release_url = release.get('html_url')
+            if release_url not in {f'https://github.com/{repository}/releases/tag/{tag}' for repository in REPOSITORIES}:
                 raise ValueError('Release is outside the official repository')
             available = _version(version) > _version(result['installed'])
             result.update(state='update_available' if available else 'up_to_date', available=version,
                           release_url=release_url, release_notes=str(release.get('body') or '')[:12000],
-                          message=(f'Rieke OS {version} is available.' if available else
+                          message=(f'Disco {version} is available.' if available else
                                    'This installation is at or ahead of the latest published release.'))
             if available and not result['can_stage']:
                 result['message'] += ' Automatic installation is not configured; review the release instructions.'
         except HTTPError as error:
             result.update(state='unavailable' if error.code == 404 else 'error',
-                          message=('No stable Rieke OS release has been published yet.' if error.code == 404
+                          message=('No stable Disco release has been published yet.' if error.code == 404
                                    else f'The release server returned HTTP {error.code}. Try again later.'))
         except (OSError, URLError, ValueError, TypeError) as error:
             result.update(state='error', message='Could not verify release availability. Your current app remains usable.')
@@ -201,7 +212,7 @@ def verify_manifest(envelope_bytes, public_key):
     if manifest.get('format') != 'rieke-release-manifest' or manifest.get('updater_protocol') != 1:
         raise ValueError('Unsupported signed release manifest')
     _version(manifest.get('version'))
-    if manifest.get('repository') != REPOSITORY or not re.fullmatch('[0-9a-f]{40}', manifest.get('commit', '')):
+    if manifest.get('repository') not in REPOSITORIES or not re.fullmatch('[0-9a-f]{40}', manifest.get('commit', '')):
         raise ValueError('Invalid signed release provenance')
     return manifest
 
@@ -213,7 +224,7 @@ def installation_lock(installation, *, exclusive=False, filename='application.lo
         try:
             fcntl.flock(handle.fileno(), (fcntl.LOCK_EX | fcntl.LOCK_NB) if exclusive else fcntl.LOCK_SH)
         except BlockingIOError as error:
-            raise ValueError('Close all Rieke OS launchers and project services before activating an update.') from error
+            raise ValueError('Close all Disco launchers and project services before activating an update.') from error
         yield handle.fileno()
 
 
@@ -235,7 +246,7 @@ def initialize_installation(installation, *, root=ROOT):
 def _installation(path):
     path = Path(path).expanduser().resolve()
     info = _read(path / 'installation.json')
-    if info != {'format': 'rieke-installation', 'version': 1, 'repository': REPOSITORY}:
+    if info not in [{'format': 'rieke-installation', 'version': 1, 'repository': repository} for repository in REPOSITORIES]:
         raise ValueError('Choose a managed application installation')
     return path
 
@@ -275,14 +286,14 @@ def stage_release(installation, *, root=ROOT):
     """
     installation = _installation(installation)
     with installation_lock(installation, exclusive=True, filename='stage.lock'):
-        release = json.loads(_download(API))
+        release = _official_release()
         if release.get('draft') or release.get('prerelease'):
             raise ValueError('Only official stable releases may be installed')
         tag = release.get('tag_name', '')
         _version(tag.removeprefix('v'))
-        prefix = f'https://github.com/{REPOSITORY}/releases/download/{tag}/'
+        prefixes = tuple(f'https://github.com/{repository}/releases/download/{tag}/' for repository in REPOSITORIES)
         assets = [a for a in release.get('assets', []) if a.get('name') == MANIFEST_ASSET]
-        if len(assets) != 1 or assets[0].get('browser_download_url') != prefix + MANIFEST_ASSET:
+        if len(assets) != 1 or assets[0].get('browser_download_url') not in {prefix + MANIFEST_ASSET for prefix in prefixes}:
             raise ValueError('This release has no official signed updater manifest')
         manifest = verify_manifest(_download(assets[0]['browser_download_url']), installation / TRUST_KEY)
         version = manifest['version']
@@ -297,7 +308,8 @@ def stage_release(installation, *, root=ROOT):
             raise ValueError(f'This release does not support {system}')
         artifact = artifacts[0]
         url = artifact.get('url', '')
-        if not url.startswith(prefix) or '/' in url[len(prefix):] or not url.endswith('.tar.gz'):
+        prefix = next((prefix for prefix in prefixes if url.startswith(prefix)), '')
+        if not prefix or '/' in url[len(prefix):] or not url.endswith('.tar.gz'):
             raise ValueError('Artifact must belong to this official release')
         if type(artifact.get('size')) is not int or not 0 < artifact['size'] <= MAX_ARTIFACT:
             raise ValueError('Invalid release artifact size')
@@ -309,7 +321,7 @@ def stage_release(installation, *, root=ROOT):
         command = shlex.join([sys.executable, str(installation / 'manager.py'),
                               '--installation', str(installation), 'activate-and-launch'])
         result = {'state': 'staged', 'version': version, 'apply_command': command,
-                  'message': 'Update ready. Close Rieke OS and all project services; the next launch will use this version.'}
+                  'message': 'Update ready. Close Disco and all project services; the next launch will use this version.'}
         if destination.exists():
             # Other tabs/project services may already have prepared this exact
             # signed artifact. Reuse only its matching completed receipt.
@@ -375,7 +387,7 @@ def activate_and_launch(installation, *, wait_seconds=300):
             activate_staged(installation)
             break
         except ValueError as error:
-            if 'Close all Rieke OS' not in str(error) or time.monotonic() >= deadline:
+            if 'Close all Disco' not in str(error) or time.monotonic() >= deadline:
                 raise
             time.sleep(0.5)
     return main(['--installation', str(installation), 'launch'])

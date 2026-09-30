@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: error
   publish:
     needs: candidate
-    if: github.repository == 'maxwellsdm1867/Rieke-OS' && (github.event_name == 'push' || inputs.publish)
+    if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS') && (github.event_name == 'push' || inputs.publish)
     runs-on: ubuntu-latest
     # Configure required reviewers here to attest the real upgrade/recovery and
     # worker-shutdown evidence in docs/dev/releasing-rieke-os.md before promotion.
@@ -87,4 +87,4 @@ jobs:
           CANDIDATE_DIRECTORY: ${{ runner.temp }}/rieke-candidate
         run: |
           gh release create "$RELEASE_TAG" "$CANDIDATE_DIRECTORY"/* \
-            --verify-tag --latest=false --generate-notes --title "Rieke OS source $RELEASE_TAG"
+            --verify-tag --latest=false --generate-notes --title "Disco source $RELEASE_TAG"

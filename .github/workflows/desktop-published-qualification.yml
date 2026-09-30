@@ -12,7 +12,7 @@ permissions:
   contents: read
 jobs:
   verify:
-    if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
     runs-on: macos-15
     timeout-minutes: 90
     steps:
@@ -31,7 +31,7 @@ jobs:
         run: |
           test "$(uname -m)" = arm64
           case "$RELEASE_TAG" in desktop-test-v*) ;; *) exit 1 ;; esac
-          uv run --no-project --python 3.11.13 python tools/desktop_release.py baseline-testing --tag "$RELEASE_TAG" --repository maxwellsdm1867/Rieke-OS --output "$RUNNER_TEMP/published-baseline.json"
+          uv run --no-project --python 3.11.13 python tools/desktop_release.py baseline-testing --tag "$RELEASE_TAG" --repository "$GITHUB_REPOSITORY" --output "$RUNNER_TEMP/published-baseline.json"
       - run: npm ci --prefix desktop
       - name: Download the public release bytes
         env:
@@ -40,7 +40,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./desktop/package.json').version")
           mkdir -p desktop/dist
-          gh release download "$RELEASE_TAG" --repo maxwellsdm1867/Rieke-OS --pattern "Rieke-OS-${VERSION}-arm64.zip" --pattern desktop-release.json --dir desktop/dist
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "Rieke-OS-${VERSION}-arm64.zip" --pattern desktop-release.json --dir desktop/dist
       - name: Check archive identity and bounds before extraction
         run: |
           uv run --no-project --python 3.11.13 python - <<'PY'
@@ -49,7 +49,7 @@ jobs:
           d = json.loads(Path('desktop/dist/desktop-release.json').read_text())
           version = json.loads(Path('desktop/package.json').read_text())['version']
           assert d['format'] == 'rieke-desktop-test-release' and d['version'] == 1
-          assert d['channel'] == 'unsigned-testing' and d['repository'] == 'maxwellsdm1867/Rieke-OS'
+          assert d['channel'] == 'unsigned-testing' and d['repository'] in {'maxwellsdm1867/disco', 'maxwellsdm1867/Rieke-OS'}
           assert d['source_commit'] == subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           assert d['source_dirty'] is False and d['production_ready'] is False
           assert d['application_version'] == version and d['platform'] == 'darwin' and d['architecture'] == 'arm64'
