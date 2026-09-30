@@ -15,7 +15,8 @@
     "pack": "electron-builder --mac --arm64 --dir",
     "dist": "electron-builder --mac dmg zip --arm64 --publish never",
     "test:e2e:bootstrap": "node e2e/bootstrap.e2e.cjs",
-    "test:e2e:github-updates": "node e2e/github-updates.e2e.cjs"
+    "test:e2e:github-updates": "node e2e/github-updates.e2e.cjs",
+    "test:e2e:branding": "node e2e/branding-browser.e2e.cjs"
   },
   "dependencies": {
     "electron-updater": "6.8.9"

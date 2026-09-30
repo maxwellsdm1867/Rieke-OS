@@ -1,4 +1,4 @@
-# Rieke Lab OS changelog
+# Disco changelog
 
 ## 0.1.3 - 2026-09-30
 

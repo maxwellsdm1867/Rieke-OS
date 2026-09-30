@@ -54,7 +54,7 @@ def initialize_workspace(folder, application):
     entry_point = installation / 'manager.py' if installation else application / 'rieke.py'
     arguments = ['--installation', str(installation), 'launch', '--'] if installation else ['launch']
     launcher = '''#!/usr/bin/env python3
-"""Launch this workspace with its installed Rieke Lab OS application."""
+"""Launch this workspace with its installed Disco application."""
 from pathlib import Path
 import subprocess
 import sys

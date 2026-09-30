@@ -1,4 +1,4 @@
-"""Set up Rieke Lab OS, initialize workspace storage, and launch the chooser.
+"""Set up Disco, initialize workspace storage, and launch the chooser.
 
 macOS/Linux only (the application uses POSIX process and file locking). Setup
 requires git, uv, Node/npm and a C++ compiler. Setup, init and doctor never

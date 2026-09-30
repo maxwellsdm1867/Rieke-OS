@@ -34,13 +34,31 @@ export function watchAppUpdates(check,{interval=15*60*1000,setTimer=setInterval,
   return()=>{clearTimer(timer);documentObject?.removeEventListener('visibilitychange',visible);};
 }
 
-// Claim a version once per app session, including transitions between launcher
-// and workspace. Storage can be unavailable; the component's set still dedupes.
-export function claimUpdateDiscovery(status,seen=new Set(),storage=globalThis.sessionStorage){
+// A host-only session cookie spans localhost ports during launcher/project
+// navigation. It contains bounded display claims, never update authority or
+// scientific state. Existing per-origin session storage remains the fallback.
+const discoveryCookie='rieke_update_discovery';
+const maxDiscoveryClaims=12;
+function cookieClaims(documentObject){
+ try{
+  const encoded=documentObject?.cookie?.split(';').map(value=>value.trim()).find(value=>value.startsWith(`${discoveryCookie}=`))?.slice(discoveryCookie.length+1);
+  const value=encoded?JSON.parse(decodeURIComponent(encoded)):[];
+  return Array.isArray(value)?value.filter(key=>typeof key==='string'&&key.startsWith('rieke.update.discovered.')&&key.length<=200).slice(-maxDiscoveryClaims):[];
+ }catch{return [];}
+}
+function rememberDiscoveryCookie(documentObject,claims,key){
+ if(key.length>200)return;
+ try{if(documentObject)documentObject.cookie=`${discoveryCookie}=${encodeURIComponent(JSON.stringify([...claims.filter(value=>value!==key),key].slice(-maxDiscoveryClaims)))}; Path=/; SameSite=Strict`;}catch{}
+}
+export function claimUpdateDiscovery(status,seen=new Set(),storage,documentObject=globalThis.document){
  const notice=updateNotice(status);if(!notice)return false;
  const key=`rieke.update.discovered.${status?.channel||'default'}.${notice.version}`;
  if(seen.has(key))return false;
- try{if(storage?.getItem(key)){seen.add(key);return false;}}catch{}
+ if(storage===undefined){try{storage=globalThis.sessionStorage;}catch{}}
+ const claims=cookieClaims(documentObject);
+ try{if(storage?.getItem(key)){seen.add(key);rememberDiscoveryCookie(documentObject,claims,key);return false;}}catch{}
+ if(claims.includes(key)){seen.add(key);try{storage?.setItem(key,'1');}catch{}return false;}
  seen.add(key);try{storage?.setItem(key,'1');}catch{}
+ rememberDiscoveryCookie(documentObject,claims,key);
  return true;
 }

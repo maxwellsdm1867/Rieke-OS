@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
-title: "Rieke Lab OS: Local Neurophysiology Recording Workspace"
+title: "Disco: Local Neurophysiology Recording Workspace"
 version: 0.1.3
 date-released: 2026-09-30
 authors:
@@ -16,6 +16,6 @@ keywords:
   - epoch tree
 license: MIT
 abstract: >
-  Rieke Lab OS provides local recording catalogs, metadata search, hierarchical
+  Disco provides local recording catalogs, metadata search, hierarchical
   epoch browsing, authored annotations, reproducible selections, and exports
   for MATLAB and SQLite analysis. Data export requires no MATLAB GUI integration.

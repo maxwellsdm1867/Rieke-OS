@@ -2,7 +2,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {EventEmitter}=require('node:events');
 function fixture(){
- const app=new EventEmitter();let quits=0;Object.assign(app,{enableSandbox(){},setName(){},getPath:()=>'/private/tmp/mock-rieke-desktop',getVersion:()=> '0.1.3',isPackaged:false,requestSingleInstanceLock:()=>true,whenReady:()=>new Promise(()=>{}),quit(){quits++;}});
+ const app=new EventEmitter();let quits=0;Object.assign(app,{enableSandbox(){},setName(){},setPath(){},getPath:()=>'/private/tmp/mock-rieke-desktop',getVersion:()=> '0.1.3',isPackaged:false,requestSingleInstanceLock:()=>true,whenReady:()=>new Promise(()=>{}),quit(){quits++;}});
  class Window extends EventEmitter{constructor(){super();this.webContents=new EventEmitter();this.messages=[];Object.assign(this.webContents,{send:(channel,value)=>this.messages.push({channel,value}),setWindowOpenHandler(){}});}isDestroyed(){return false;}loadFile(){return Promise.resolve();}loadURL(){return Promise.resolve();}}
  const electron={app,BrowserWindow:Window,ipcMain:{handle(){}},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));

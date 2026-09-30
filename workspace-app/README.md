@@ -5,7 +5,7 @@ DataJoint catalog. It uses real recordings; the earlier conversation sketch is
 separate and contains example data.
 
 For workspace initialization, launching from your research folder, and the file
-layout, see the [Rieke Lab OS quick start](../docs/RIEKE_OS_QUICK_START.md).
+layout, see the [Disco quick start](../docs/RIEKE_OS_QUICK_START.md).
 
 ## Fresh-clone setup
 

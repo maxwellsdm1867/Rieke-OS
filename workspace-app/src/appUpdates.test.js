@@ -56,3 +56,33 @@ test('new update discovery is deduplicated across scans, readiness and launcher 
  assert.equal(claimUpdateDiscovery({...status,available:'0.2.1'},seen,storage),true);
  assert.equal(claimUpdateDiscovery({...status,state:'error'},seen,storage),false);
 });
+
+test('session cookie dedupes release display across origin storage and bounds retained claims',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');
+ let cookie='';const documentObject={get cookie(){return cookie;},set cookie(value){cookie=value.split(';')[0];}};
+ const store=()=>{const data=new Map();return{getItem:key=>data.get(key),setItem:(key,value)=>data.set(key,value)};};
+ const status={state:'Available',channel:'unsigned-testing',available:'0.2.1'};
+ assert.equal(claimUpdateDiscovery(status,new Set(),store(),documentObject),true);
+ assert.equal(claimUpdateDiscovery(status,new Set(),store(),documentObject),false);
+ for(let n=2;n<25;n++)claimUpdateDiscovery({...status,available:`0.2.${n}`},new Set(),store(),documentObject);
+ const retained=JSON.parse(decodeURIComponent(cookie.split('=').slice(1).join('=')));
+ assert.equal(retained.length,12);
+ assert.equal(cookie.includes('Max-Age'),false);
+ assert.equal(cookie.includes('Expires'),false);
+});
+test('unavailable cookies and storage retain component-only notification dedupe',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');const seen=new Set();
+ const documentObject={get cookie(){throw new Error('cookies unavailable');},set cookie(value){throw new Error('cookies unavailable');}};
+ const storage={getItem(){throw new Error('storage unavailable');},setItem(){throw new Error('storage unavailable');}};
+ const status={state:'Available',available:'0.9.0'};
+ assert.equal(claimUpdateDiscovery(status,seen,storage,documentObject),true);
+ assert.equal(claimUpdateDiscovery(status,seen,storage,documentObject),false);
+});
+
+test('an existing origin session claim seeds the cross-port cookie without rediscovery',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');let cookie='';
+ const documentObject={get cookie(){return cookie;},set cookie(value){cookie=value.split(';')[0];}};
+ const status={state:'Available',available:'0.8.0'};
+ assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> '1'},documentObject),false);
+ assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> null,setItem(){}},documentObject),false);
+});

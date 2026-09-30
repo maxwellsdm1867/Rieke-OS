@@ -1,4 +1,4 @@
-# Rieke Lab OS
+# Disco
 
 > A local research workspace for Symphony electrophysiology: organize recordings,
 > inspect cells and response traces, curate reproducible epoch selections, and

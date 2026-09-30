@@ -169,7 +169,7 @@ function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
     const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]);
     if (quitting && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
-      throw new Error('Rieke OS is closing; new work is paused.');
+      throw new Error('Disco is closing; new work is paused.');
     return action(payload, window);
   });
   const noPayload = (channel, action) => handle(channel, (payload, window) => {

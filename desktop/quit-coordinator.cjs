@@ -20,7 +20,7 @@ class QuitCoordinator {
   async run() {
     const until = Date.now() + this.deadline, remaining = () => Math.max(1, until - Date.now());
     const warnings = [];
-    this.publish({state:'Closing', title:'Closing Rieke OS', message:'Finishing accepted changes and the latest available view.'});
+    this.publish({state:'Closing', title:'Closing Disco', message:'Finishing accepted changes and the latest available view.'});
     let drafts, backend;
     try {
       drafts = await bounded(() => this.prepareDrafts(Math.min(this.draftDeadline, remaining())),
