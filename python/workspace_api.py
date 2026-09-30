@@ -134,6 +134,17 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     store.binding_provider = explorer_history.protocol_binding
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
+    if hasattr(service.dj, 'Schema'):
+        from workspace_datastore_deletion import DataStoreDeletion
+        with db_lock:
+            deletion = DataStoreDeletion(data_stores)
+            with deletion._locks():
+                deletion.recover_pending()
+            if not service._loaded:
+                try:
+                    service.refresh()
+                except (OSError, ValueError) as error:
+                    service.manager_recovery(error)
     service.set_source_state_provider(data_stores.source_states)
     if hasattr(service, 'set_annotation_provider'):
         service.set_annotation_provider(lambda protocol_uuid, fingerprints:
@@ -577,6 +588,45 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Lifecycle changes require action, expected_version and reason; actor is an optional client claim')
         with db_lock:
             return jsonify(data_stores.transition(source_sha256, **body))
+
+    @app.get('/api/data-stores/<source_sha256>/deletion')
+    def describe_data_store_deletion(source_sha256):
+        if request.args:
+            raise ValueError('Deletion confirmation takes no query options')
+        from workspace_datastore_deletion import DataStoreDeletion
+        with db_lock, data_stores.registration_locks():
+            return jsonify(DataStoreDeletion(data_stores).describe(source_sha256))
+
+    @app.post('/api/data-stores/<source_sha256>/delete')
+    def delete_data_store(source_sha256):
+        body = request.get_json()
+        if request.args or not isinstance(body, dict) or set(body) != {'confirmed', 'expected_revision'}:
+            raise ValueError('Deletion requires confirmed and expected_revision')
+        if not importing.acquire(blocking=False):
+            raise StaleWorkspace('An import or metadata refresh is running; wait before deleting')
+        try:
+            from workspace_datastore_deletion import DataStoreDeletion
+            with db_lock:
+                try:
+                    result = DataStoreDeletion(data_stores).delete(source_sha256, body['expected_revision'], confirmed=body['confirmed'])
+                except Exception:
+                    # Cleanup may fail after SQL committed. Invalidate live read
+                    # models before returning the visible, retryable failure.
+                    with contextlib.suppress(Exception):
+                        try:
+                            service.refresh()
+                        except (OSError, ValueError) as error:
+                            service.manager_recovery(error)
+                    raise
+                try:
+                    service.refresh()
+                    prepare_annotations()
+                except (OSError, ValueError) as error:
+                    service.manager_recovery(error)
+                    result['workspace_validation_error'] = str(error)
+                return jsonify(result)
+        finally:
+            importing.release()
 
     def propagation_plan(source_sha256):
         plan = data_stores.propagation_preview(source_sha256)
@@ -1404,7 +1454,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.get("/api/exports")
     def exports():
         with db_lock:
-            return jsonify(export_directory=str(export_root), exports=[{**row, "download_url": "/api/exports/" + row["dataset_uuid"] + "/download"}
+            active = {row['source_sha256'] for row in service.sources}
+            return jsonify(export_directory=str(export_root), exports=[{**row, "download_url": "/api/exports/" + row["dataset_uuid"] + "/download",
+                "unavailable_source_revisions": [sha for sha in row.get('source_revisions', []) if sha not in active]}
                 for row in store.list_dataset_revisions(request.args.get("protocol_uuid"))])
 
     @app.get("/api/exports/<dataset_uuid>/download")
@@ -1783,7 +1835,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_backup_scheduler import BackupScheduler
         with db_lock:
             save_app_state(project_dir, service.dj.conn(), service=service)
-            prepare_annotations(reuse=True)
+            if service._loaded:
+                prepare_annotations(reuse=True)
         scheduler=BackupScheduler(lambda:save_app_state(project_dir,service.dj.conn(),service=service),
             db_lock,logger=app.logger)
         app.extensions['backup_scheduler']=scheduler

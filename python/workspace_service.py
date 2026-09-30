@@ -194,7 +194,26 @@ class WorkspaceService:
         import recording_workspace
         self._projection_contract = checksum([digest(Path(module.__file__)) for module in
             (recording_workspace, workspace_projection_cache, workspace_metadata_objects)] + [digest(Path(__file__))])
-        self.refresh()
+        try:
+            self.refresh()
+        except (OSError, ValueError) as error:
+            if not hasattr(self, 'dj'):
+                raise
+            self.manager_recovery(error)
+
+    def manager_recovery(self, error):
+        """Expose registrations for repair; all scientific reads remain blocked."""
+        from workspace_recording_files import recording_display_name
+        _, Source, _, _ = workspace_tables(self.dj)
+        records = (Source & {'project_uuid': self.project['project_uuid']}).to_dicts()
+        self.sources = [{'source_sha256': row['source_sha256'], 'source_path': row['manifest']['source_path'],
+            'filename': recording_display_name(row['manifest']), 'counts': row['manifest'].get('counts', {})} for row in records]
+        self.manifests = {row['source_sha256']: row['manifest'] for row in records}
+        self.rows, self.details, self.cells, self.protocols, self._fingerprints = {}, {}, {}, {}, {}
+        self.disk_index = None
+        self._source_metadata_cache = {}
+        self._loaded = False
+        self.manager_error = str(error)
 
     def set_curation_provider(self, provider):
         self.curation_provider = provider
@@ -350,7 +369,8 @@ class WorkspaceService:
         after = path.stat()
         if signature != (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
             raise ValueError('Source recording changed while reading metadata')
-        summary = {'source_sha256': source['source_sha256'], 'filename': path.name,
+        from workspace_recording_files import recording_display_name
+        summary = {'source_sha256': source['source_sha256'], 'filename': recording_display_name(manifest),
             'source_path': str(path), 'imported_at': manifest.get('imported_at', manifest['validated_at']),
             'counts': manifest['counts'], 'warnings': manifest.get('warnings', []),
             'experiment_uuid': document['uuid'], 'metadata': _metadata(document, {'animals'})}
@@ -407,6 +427,7 @@ class WorkspaceService:
         dj = (connect(provider, project_dir=self.project_dir) if provider['kind'] == 'native-project'
               else connect(provider['container']))
         _, Source, Event, _ = workspace_tables(dj)
+        self.project, self.config, self.dj, self.Event = project, config, dj, Event
         source_records = (Source & {'project_uuid': project['project_uuid']}).to_dicts()
         rows, cells, sources, manifests, fingerprints = {}, {}, [], {}, {}
         detail_maps = {}
@@ -580,6 +601,7 @@ class WorkspaceService:
         elif registered_cache is not None:
             self._registered_tree_cache = ((id(rows), len(rows), id(self.details), len(self.details)), registered_cache[1])
         self._loaded = True
+        self.manager_error = None
         if projection_store and disk_index is not None:
             try:
                 metrics['cache_cleanup']={'metadata':disk_index.publish(),

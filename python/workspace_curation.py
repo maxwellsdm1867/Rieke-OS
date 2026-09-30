@@ -413,6 +413,7 @@ class CurationStore:
                 timestamp = timestamp.replace(tzinfo=dt.timezone.utc).isoformat() if isinstance(timestamp, dt.datetime) else str(timestamp)
                 summary = {**{key: value for key, value in row.items() if key != "recipe"},
                            "name": name, "status": "completed", "format": recipe.get("destination", "reference-json"),
+                           "source_revisions": list(recipe.get("query_snapshot", {}).get("source_revisions", [])),
                            **({"export_scope":copy.deepcopy(recipe["options"]["export_scope"])}
                               if recipe.get("options",{}).get("export_scope") else {})}
                 summaries.append(summary)

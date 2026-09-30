@@ -37,7 +37,7 @@ export default function ProtocolExports({protocolId,revision,onReuse,disabled}) 
     {error&&<div className="error" role="alert">{error}</div>}
     <Status {...history} retry={history.reload}>{exports.length?<div>{exports.slice(0,limit).map(item=><div className="saved-export" key={item.dataset_uuid}>
       {item.format==='wheeler-sqlite'?<Database size={20}/>:['matlab-mat','epictree-mat'].includes(item.format)?<FileCode size={20}/>:<FileJson size={20}/>}
-      <div><strong>{item.name}</strong><p>{exportFormatLabel(item.format)} · {number(item.epoch_count)} epochs · {time(item.created_at)}</p><details><summary>Export record & provenance</summary><pre>{JSON.stringify(item,null,2)}</pre></details></div>
+      <div><strong>{item.name}</strong><p>{exportFormatLabel(item.format)} · {number(item.epoch_count)} epochs · {time(item.created_at)}</p>{item.unavailable_source_revisions?.length>0&&<p>This earlier saved result includes sources removed from the active project. Its artifact and recorded membership are unchanged.</p>}<details><summary>Export record & provenance</summary><pre>{JSON.stringify(item,null,2)}</pre></details></div>
       <button disabled={disabled||reusing!==null} onClick={()=>reuse(item)}><RefreshCw size={14} className={reusing===item.dataset_uuid?'spin':''}/> Reuse settings</button>
       {item.download_url&&<a className="button" href={item.download_url} download><Download size={14}/> {exportDownloadLabel(item.format)}</a>}
     </div>)}{exports.length>limit&&<button className="quiet" onClick={()=>setLimit(count=>count+10)}>Show more exports</button>}</div>:<Empty title="No exports from this protocol yet">Choose a destination above. Each export saves its query, selection and exact epoch identities.</Empty>}</Status>
