@@ -81,7 +81,14 @@ npm ci --prefix desktop
 npm test --prefix desktop
 python3 tools/desktop_build_runtime.py --skip-frontend
 python3 tools/desktop_runtime_manifest.py
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
+node - <<'NODE'
+const fs = require('node:fs'), path = require('node:path');
+const graceful = require.resolve('graceful-fs', {paths: [path.resolve('desktop')]});
+fs.writeFileSync('desktop/build/packaging-fs.cjs',
+  `require(${JSON.stringify(graceful)}).gracefulify(require('node:fs'));\n`);
+NODE
+NODE_OPTIONS="--require \"$PWD/desktop/build/packaging-fs.cjs\"" \
+  CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
 ```
 
 The pinned `@electron/osx-sign` walker opens runtime files concurrently before
@@ -90,9 +97,8 @@ applying its signing exclusions. CI therefore preloads the lockfile's
 adapter queues file-open retries when macOS reports `EMFILE` or `ENFILE`.
 `NODE_OPTIONS` is scoped to each packaging command; application launches and
 qualification tests use their normal filesystem implementation. The temporary
-adapter stays outside the app and source checkout. On a local host with a low
-file limit, use the same preload preparation and packaging command from
-`desktop-candidate.yml` with `RUNNER_TEMP` pointing to a temporary directory.
+adapter stays outside the app. The local commands above place the equivalent
+adapter in the ignored build directory; CI uses its runner temporary directory.
 
 To verify a workflow-only correction against an existing immutable release tag,
 dispatch `desktop-candidate.yml` from the corrected workflow ref and supply the
