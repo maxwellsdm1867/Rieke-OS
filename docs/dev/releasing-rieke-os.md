@@ -81,8 +81,21 @@ npm ci --prefix desktop
 npm test --prefix desktop
 python3 tools/desktop_build_runtime.py --skip-frontend
 python3 tools/desktop_runtime_manifest.py
+ulimit -S -n 65536
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
 ```
+
+The packaging shell needs a soft open-file limit of 65,536. The pinned
+`@electron/osx-sign` walker opens runtime files concurrently before applying its
+signing exclusions, which can exceed the default macOS runner limit. Both CI
+packaging steps set this limit in their own shell and fail before packaging if
+the host hard limit does not permit it. No system-wide limit is changed.
+
+To verify a workflow-only correction against an existing immutable release tag,
+dispatch `desktop-candidate.yml` from the corrected workflow ref and supply the
+published tag as the `tag` input. The baseline still checks out and verifies that
+exact tagged source. The candidate workflow only uploads Actions artifacts; it
+does not replace published release assets or move the tag.
 
 `desktop/distribution.json` must explicitly select the reviewed trust channel.
 The testing build has an ad-hoc structural seal; it has no Developer ID identity
