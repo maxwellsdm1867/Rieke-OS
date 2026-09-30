@@ -73,6 +73,14 @@ class DesktopReleaseTests(unittest.TestCase):
                 self.assertEqual(result['distribution_channel'], 'unsigned-testing')
                 self.assertFalse(result['production_ready'])
                 self.assertNotIn('distribution_channel', release.baseline('v0.1.3', release.REPOSITORY))
+                legacy = 'maxwellsdm1867/Rieke-OS'
+                git('remote','set-url','origin','https://github.com/'+legacy+'.git')
+                bridge = release.testing_baseline('desktop-test-v0.1.3', legacy)
+                self.assertEqual(bridge['repository'],legacy)
+                self.assertEqual(bridge['canonical_repository'],release.REPOSITORY)
+                with self.assertRaisesRegex(ValueError,'Git origin'):
+                    release.testing_baseline('desktop-test-v0.1.3', release.REPOSITORY)
+                git('remote','set-url','origin','https://github.com/'+release.REPOSITORY+'.git')
                 with self.assertRaisesRegex(ValueError,'stable version tag'):
                     release.baseline('desktop-test-v0.1.3', release.REPOSITORY)
                 git('remote','set-url','origin','https://github.com/other/EpicTreeGUI.git')

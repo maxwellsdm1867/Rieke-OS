@@ -44,7 +44,7 @@ scientific validation of stimulus reconstruction, cell typing, or every possible
 recording protocol. Waveform samples remain in the original H5, referenced by
 the catalog; the application does not copy all raw samples into SQL. Keep source
 files available. MAT data structures and values are read independently with SciPy. No MATLAB
-GUI or launcher is part of the Rieke OS distribution.
+GUI or launcher is part of the Disco distribution.
 
 Browser control evidence and remaining configuration/edge-case coverage are
 tracked in [the client validation ledger](../docs/dev/CLIENT_VALIDATION_MATRIX.md).

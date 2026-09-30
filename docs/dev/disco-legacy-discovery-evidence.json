@@ -1,0 +1,15 @@
+{
+  "source_commit": "61f9e44c98fa541d670ecb78c35b3389ee2c1b7c",
+  "source_file": "python/workspace_updates.py",
+  "method": "Execute archived source with in-memory official release response; no network, installation, or projects mutated",
+  "release_html_url": "https://github.com/maxwellsdm1867/disco/releases/tag/v0.1.3",
+  "result": {
+    "state": "error",
+    "installed": "0.1.0",
+    "can_stage": false,
+    "staged_version": null,
+    "checked_at": "2026-09-30T21:50:34.267565+00:00",
+    "message": "Could not verify release availability. Your current app remains usable."
+  },
+  "scope": "Source manager regression evidence only; installed desktop0.1.0 smoke remains unverified"
+}

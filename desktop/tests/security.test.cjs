@@ -22,6 +22,6 @@ test('drafts reject path traversal, unknown fields, missing JSON and oversize', 
   for (const payload of [{projectId: '../../evil', value: {}}, {projectId: 'launcher', value: {}, path: '/tmp'}, {projectId: 'launcher', value: undefined}, {projectId: 'launcher', value: 'x'.repeat(2 * 1024 * 1024)}]) assert.throws(() => validateDraft(payload));
 });
 test('external URLs are restricted to canonical HTTPS release notes', () => {
-  assert.equal(approvedReleaseURL('https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v0.1.0'), true);
-  for (const url of ['http://github.com/maxwellsdm1867/Rieke-OS/releases', 'https://github.com.evil.example/maxwellsdm1867/Rieke-OS/releases', 'https://github.com/user/other/releases', 'https://user:pass@github.com/maxwellsdm1867/Rieke-OS/releases']) assert.equal(approvedReleaseURL(url), false);
+  assert.equal(approvedReleaseURL('https://github.com/maxwellsdm1867/disco/releases/tag/v0.1.0'), true);
+  for (const url of ['http://github.com/maxwellsdm1867/disco/releases', 'https://github.com.evil.example/maxwellsdm1867/disco/releases', 'https://github.com/user/other/releases', 'https://user:pass@github.com/maxwellsdm1867/disco/releases']) assert.equal(approvedReleaseURL(url), false);
 });

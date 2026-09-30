@@ -140,7 +140,7 @@ class DesktopPackagingTests(unittest.TestCase):
             (root / 'rieke-release.json').write_text('{}')
             (root / 'workspace-app/dist').mkdir(parents=True)
             (root / 'workspace-app/package.json').write_text('{}')
-            (root / 'workspace-app/dist/index.html').write_text('Rieke OS')
+            (root / 'workspace-app/dist/index.html').write_text('Disco')
             # Refresh must also remove MATLAB resources left by an older build.
             (output / 'src/gui').mkdir(parents=True)
             (output / 'src/gui/old.m').write_text('old GUI resource')
@@ -154,7 +154,7 @@ class DesktopPackagingTests(unittest.TestCase):
             self.assertFalse((output / 'python/unreviewed.py').exists())
             self.assertEqual(list(output.rglob('*.m')), [])
             self.assertTrue((root / 'epicTreeGUI.m').is_file())
-            self.assertEqual((output / 'workspace-app/dist/index.html').read_text(), 'Rieke OS')
+            self.assertEqual((output / 'workspace-app/dist/index.html').read_text(), 'Disco')
             unknown = output / 'python/unreviewed.py'
             unknown.write_text('# unexpected module')
             with self.assertRaisesRegex(ValueError, 'allowlist'):

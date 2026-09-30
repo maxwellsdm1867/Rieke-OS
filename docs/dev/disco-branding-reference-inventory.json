@@ -1,0 +1,4139 @@
+{
+  "status": "draft migration audit; repository rename and installed upgrade not completed",
+  "before": [
+    {
+      "path": ".github/workflows/desktop-candidate.yml",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "name: Rieke OS desktop candidate",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 8,
+          "text": "        description: Exact reviewed version tag in Rieke-OS",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 28,
+          "text": "    if: github.repository == 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 104,
+          "text": "          codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 105,
+          "text": "          spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 106,
+          "text": "          xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 111,
+          "text": "          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" --output desktop/dist/desktop-release.json",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 157,
+          "text": "        run: python3 tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/desktop-promote.yml",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "name: Promote qualified Rieke OS desktop",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 23,
+          "text": "    if: github.repository == 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 46,
+          "text": "          receipt = json.loads(subprocess.check_output(['gh','api',f'repos/maxwellsdm1867/Rieke-OS/actions/runs/{run_id}'],text=True))",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/desktop-published-qualification.yml",
+      "occurrences": [
+        {
+          "line": 15,
+          "text": "    if: github.repository == 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 34,
+          "text": "          uv run --no-project --python 3.11.13 python tools/desktop_release.py baseline-testing --tag \"$RELEASE_TAG\" --repository maxwellsdm1867/Rieke-OS --output \"$RUNNER_TEMP/published-baseline.json\"",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 43,
+          "text": "          gh release download \"$RELEASE_TAG\" --repo maxwellsdm1867/Rieke-OS --pattern \"Rieke-OS-${VERSION}-arm64.zip\" --pattern desktop-release.json --dir desktop/dist",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 52,
+          "text": "          assert d['channel'] == 'unsigned-testing' and d['repository'] == 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 56,
+          "text": "          assert d['archive']['filename'] == f'Rieke-OS-{version}-arm64.zip'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 68,
+          "text": "          ditto -x -k \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" desktop/dist/mac-arm64",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 69,
+          "text": "          uv run --no-project --python 3.11.13 python tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" --output \"$RUNNER_TEMP/recomputed-descriptor.json\"",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 71,
+          "text": "          codesign --verify --deep --strict 'desktop/dist/mac-arm64/Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 74,
+          "text": "          const runtime=path.resolve('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources/runtime');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 86,
+          "text": "          resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/workspace-ci.yml",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "name: Rieke OS regression checks",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 30,
+          "text": "      - name: Reject mixed EpicTreeGUI source in Rieke OS",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 31,
+          "text": "        if: github.repository == 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/workspace-release-candidate.yml",
+      "occurrences": [
+        {
+          "line": 70,
+          "text": "    if: github.repository == 'maxwellsdm1867/Rieke-OS' && (github.event_name == 'push' || inputs.publish)",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 73,
+          "text": "    # worker-shutdown evidence in docs/dev/releasing-rieke-os.md before promotion.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 90,
+          "text": "            --verify-tag --latest=false --generate-notes --title \"Rieke OS source $RELEASE_TAG\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": ".gitignore",
+      "occurrences": [
+        {
+          "line": 70,
+          "text": "# Clone-local Rieke OS dependencies/config (never scientific project data)",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "CHANGELOG.md",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "- Independent Rieke OS source and explicit runtime application profile; MATLAB data export remains, while EpicTreeGUI/MATLAB GUI, plotting, launchers and UGM interaction are removed.",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "CITATION.cff",
+      "occurrences": [
+        {
+          "line": 8,
+          "text": "  - name: \"Rieke OS Contributors\"",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 9,
+          "text": "repository-code: \"https://github.com/maxwellsdm1867/Rieke-OS\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> **Complete Mac desktop testing app:** [Download Rieke OS for Apple Silicon](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Rieke OS, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security \u2192 Open Anyway** approval. It bund",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 5,
+          "text": "**Rieke OS is a local research workspace for Symphony electrophysiology recordings.**",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 12,
+          "text": "trials. Rieke OS keeps those relationships visible while you move between a",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 29,
+          "text": "| Your task | What Rieke OS provides |",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 57,
+          "text": "**[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 59,
+          "text": "[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 63,
+          "text": "This is the complete **Rieke OS browser application**, including its installer,",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 72,
+          "text": "git clone https://github.com/maxwellsdm1867/Rieke-OS.git",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 73,
+          "text": "cd Rieke-OS",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 82,
+          "text": "   `~/Applications/Rieke-OS-main`. Keep research projects outside it.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 93,
+          "text": "4. Keep Terminal open and visit [Rieke OS locally](http://127.0.0.1:8766).",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 159,
+          "text": "Rieke-OS/                       Application source and managed runtime",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 218,
+          "text": "Rieke OS application source is available under the [MIT license](LICENSE). The installer",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/README.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS desktop",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 42,
+          "text": "`mac-arm64/Rieke OS.app`, DMG, updater ZIP, blockmaps and `latest-mac.yml`.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 49,
+          "text": "`~/Applications/Rieke OS.app` without overwriting an existing installation.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 126,
+          "text": "The public provider is explicitly `maxwellsdm1867/Rieke-OS`. Application,",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 171,
+          "text": "The desktop bundles only the Rieke OS Python modules listed in",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/app-icon.cjs",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": " try{const file=path.join(process.env.RIEKE_PREFERENCES_DIR||path.join(os.homedir(),'.rieke-os'),'appearance.json');const stat=await fs.lstat(file);if(stat.isSymbolicLink()||stat.size>4096)throw new Error('Invalid appearance preference');const saved=JSON.parse(await fs.readFile(file,'utf8'));return saved.format==='disco-appearance'&&saved.version==",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/application-profile.json",
+      "occurrences": [
+        {
+          "line": 4,
+          "text": "  \"application\": \"Rieke OS\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 163,
+          "text": "      \"reason\": \"Legacy export_mat CLI contract; Rieke OS MAT data serialization covered by current export tests\"",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 167,
+          "text": "      \"reason\": \"MATLAB executable application code is outside the Rieke OS source distribution\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/bootstrap.cjs",
+      "occurrences": [
+        {
+          "line": 23,
+          "text": "    throw new Error('Install and Open requires the verified Developer ID signed Rieke OS app');",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 33,
+          "text": "    throw new Error('The installed Rieke OS app is running. Quit it before installation.');",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 110,
+          "text": "  if (executable.stdout.trim() !== 'Rieke OS' || !(await fs.stat(path.join(bundle, 'Contents', 'MacOS', 'Rieke OS'))).isFile()) throw new Error('Unsigned testing app executable is missing');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 135,
+          "text": "async function installCompleteBundle({source, destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app'), run = runFile, allowRollback = false, ignorePid = null, distribution, expectedBundleSha256}) {",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 156,
+          "text": "  const lock = path.join(parent, '.rieke-os-install.lock');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 158,
+          "text": "  const staging = path.join(parent, `.Rieke OS.install-${randomUUID()}.app`);",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 159,
+          "text": "  const previous = path.join(parent, '.Rieke OS.previous.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/distribution.cjs",
+      "occurrences": [
+        {
+          "line": 2,
+          "text": "const REPOSITORY = 'maxwellsdm1867/Rieke-OS';",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/distribution.json",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "  \"repository\": \"maxwellsdm1867/Rieke-OS\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/backend-failure.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 20,
+          "text": "  await page.getByRole('heading', {name: 'Rieke OS recovery', exact: true}).waitFor({timeout: 90000});",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/bootstrap.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": " const target=fixture.bundle,downloaded=path.join(fixture.home,'Downloads','Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 25,
+          "text": " fixture.bundle=downloaded;fixture.executable=path.join(downloaded,'Contents/MacOS/Rieke OS');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 50,
+          "text": "  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Rieke OS',exact:true}).waitFor();",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 72,
+          "text": "  const cleanTarget=fixture.bundle,cleanDownload=path.join(fixture.home,'Downloads','Rieke OS.app'),cleanHandoff=path.join(fixture.home,'launch-services-handoff.json');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 79,
+          "text": "  application=await _electron.launch({executablePath:path.join(cleanDownload,'Contents/MacOS/Rieke OS'),args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 80,
+          "text": "  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Rieke OS',exact:true}).waitFor();",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 84,
+          "text": "  fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Rieke OS');({application,page}=await launch(fixture));",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/github-updates.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 17,
+          "text": " const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),sourceManifestFile=path.join(published,'Contents/Resources/runtime/runtime-manifest.json'),sourceBytes=await fs.readFile(sourceManifestFile),sourceManifest=JSON.parse(sourceBytes);",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 20,
+          "text": " const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`),descriptorPath=path.join(fixture.root,'desktop-release.json');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 23,
+          "text": " const tag=`desktop-test-v${candidateVersion}`,root=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 32,
+          "text": " await fs.writeFile(transport,`'use strict';const http=require('node:http');exports.transport=(url,{kind}={})=>{const target=url==='https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1'?'/api':url===${JSON.stringify(root+'desktop-release.json')}?'/descriptor':url===${JSON.stringify(root+descriptor.archive.filename)}?'/a",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 78,
+          "text": "  assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'updates','unsigned-testing');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\\.json$/.test(name)));return {ordinary_quit_did_not_install:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/helpers.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "    const home = path.join(root, 'home'), bundle = path.join(home, 'Applications', 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 15,
+          "text": "    return {root, home, bundle, userData: path.join(home, 'state'), executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 19,
+          "text": "  const bundle = path.join(home, 'Applications', 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 22,
+          "text": "  await run('/usr/bin/ditto', [path.resolve(__dirname, '../dist/mac-arm64/Rieke OS.app'), bundle]);",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 23,
+          "text": "  return {root, home, bundle, userData, executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/packaged.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 80,
+          "text": "      assert.equal(geometry.source, '/rieke-os-icon.png'); assert.ok(geometry.naturalWidth > 0);",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 115,
+          "text": "  receipt.app_icon_sha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'frontend/rieke-os-icon.png'))).digest('hex');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 436,
+          "text": "    await page.getByRole('heading', {name: 'Rieke OS recovery', exact: true}).waitFor({timeout: 15000});",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/testing-upgrade.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 63,
+          "text": " const route=url==='https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1'?'/api':",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 153,
+          "text": " const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),zip=path.resolve(__dirname,'../dist/Rieke-OS-0.1.3-arm64.zip');",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 159,
+          "text": " const tag='desktop-test-v0.1.3',baseURL=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 171,
+          "text": "  assert.equal(await bundleDigest(fixture.bundle),await bundleDigest(published));assert.equal(await bundleDigest(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')),priorDigest);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/main.cjs",
+      "occurrences": [
+        {
+          "line": 17,
+          "text": "app.setName('Rieke OS');",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 22,
+          "text": "const destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 34,
+          "text": "let lifecycleStatus = {state: 'Starting', title: 'Starting Rieke OS', message: 'Verifying the complete app and its private runtime.'};",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 41,
+          "text": "  lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Rieke OS recovery', message, detail}; broadcast(lifecycleStatus);",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 67,
+          "text": "    icon:iconPath(appIcon), title: 'Rieke OS', backgroundColor: '#f4f5f3', show: false,",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 219,
+          "text": "    Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Rieke OS', submenu: [{role: 'about'}, {type: 'separator'},",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 220,
+          "text": "      {label: 'Check for Updates', click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Rieke OS', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 223,
+          "text": "    if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Rieke OS', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Rieke OS GitHub release. macO",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/package-lock.json",
+      "occurrences": [
+        {
+          "line": 2,
+          "text": "  \"name\": \"rieke-os-desktop\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 8,
+          "text": "      \"name\": \"rieke-os-desktop\",",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/package.json",
+      "occurrences": [
+        {
+          "line": 2,
+          "text": "  \"name\": \"rieke-os-desktop\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 5,
+          "text": "  \"description\": \"Rieke OS self-contained desktop application\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 6,
+          "text": "  \"author\": \"Rieke OS contributors\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 29,
+          "text": "    \"productName\": \"Rieke OS\",",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 30,
+          "text": "    \"artifactName\": \"Rieke-OS-${version}-${arch}.${ext}\",",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 82,
+          "text": "      \"title\": \"Open Rieke OS to install\",",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 93,
+          "text": "          \"name\": \"Rieke OS.app\"",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 100,
+          "text": "      \"repo\": \"Rieke-OS\",",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/recovery-install.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "  const expected = path.join(os.homedir(), 'Applications', 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 14,
+          "text": "  if (!Number.isSafeInteger(pid) || pid <= 0 || destination !== expected || enclosingApp(process.execPath) !== destination || !previous.endsWith(path.join('updates', 'previous', 'Rieke OS.app'))) throw new Error('Invalid recovery request.');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/recovery.html",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; base-uri 'none'; form-action 'none'\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Rieke OS</title><link rel=\"stylesheet\" href=\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/recovery.js",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "  document.getElementById('title').textContent = status.title || 'Rieke OS recovery';",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/security.cjs",
+      "occurrences": [
+        {
+          "line": 32,
+          "text": "    !url.username && !url.password && /^\\/maxwellsdm1867\\/Rieke-OS\\/releases(?:\\/|$)/.test(url.pathname); } catch { return false; }",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/test/testing-updater.test.cjs",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.l",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 10,
+          "text": "const distribution={format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS'};",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 11,
+          "text": "const base='https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/';",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 16,
+          "text": "  for(const url of ['http://github.com/maxwellsdm1867/Rieke-OS/releases/download/v0.1.3/a.zip','https://github.com/foreign/repo/releases/download/v1/a.zip','https://github.com.evil.invalid/maxwellsdm1867/Rieke-OS/releases/download/v1/a.zip','https://user:secret@github.com/maxwellsdm1867/Rieke-OS/releases/download/v1/a.zip','https://api.github.com/r",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 20,
+          "text": "  const release={draft:false,prerelease:true,tag_name:'desktop-test-v0.1.3',html_url:'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.3',assets:[{name:'desktop-release.json',size:1000,browser_download_url:base+'desktop-release.json'},{name:descriptor.archive.filename,size:bytes.length,browser_download_url:base+descriptor.a",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 34,
+          "text": "  const app={isPackaged:true,getPath:name=>name==='exe'?path.join(root,'Installed.app/Contents/MacOS/Rieke OS'):root};",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 39,
+          "text": "    verifyCandidate:async args=>{validationCalls++;const directory=await fs.mkdtemp(path.join(args.cacheDirectory,'candidate-'));const bundle=path.join(directory,'Rieke OS.app');await fs.mkdir(bundle);return {version:args.descriptor.application_version,downloadedFile:args.downloadedFile,bundle_path:bundle,candidate_directory:directory,bundle_sha256",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 149,
+          "text": "  const bundle=path.join(root,'Rieke OS.app'),runtime=path.join(bundle,'Contents/Resources/runtime');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 164,
+          "text": "  await fs.mkdir(path.join(bundle,'Contents/MacOS'));await fs.writeFile(path.join(bundle,'Contents/MacOS/Rieke OS'),'do not execute',{mode:0o755});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 188,
+          "text": "  let installedBundle=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 198,
+          "text": "  const archive=path.join(f.root,'Rieke-OS-0.1.3-arm64.zip');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/test/updater.test.cjs",
+      "occurrences": [
+        {
+          "line": 38,
+          "text": "        info=zipfile.ZipInfo('Rieke OS.app/escape');info.create_system=3;info.external_attr=(stat.S_IFLNK|0o777)<<16",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 39,
+          "text": "        archive.writestr(info,'../../escape');archive.writestr('Rieke OS.app/escape/file','data')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 41,
+          "text": "        archive.writestr('Rieke OS.app/Contents/file','data')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 42,
+          "text": "        info=zipfile.ZipInfo('Rieke OS.app/Contents/link');info.create_system=3;info.external_attr=(stat.S_IFLNK|0o777)<<16",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 82,
+          "text": "  assert.equal(updater.feed.repo, 'Rieke-OS');",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-install.cjs",
+      "occurrences": [
+        {
+          "line": 67,
+          "text": "  const expected=path.join(path.dirname(installed),'.Rieke OS.previous.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-update-validation.cjs",
+      "occurrences": [
+        {
+          "line": 8,
+          "text": "const REPOSITORY='maxwellsdm1867/Rieke-OS';",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 26,
+          "text": "  if(!archive||archive.filename!==`Rieke-OS-${value.application_version}-arm64.zip`||!Number.isSafeInteger(archive.size)||archive.size<=0||archive.size>2*1024**3||!/^[a-f0-9]{64}$/.test(archive.sha256||'')||!/^[A-Za-z0-9+/]{86}==$/.test(archive.sha512||'')||Buffer.from(archive.sha512,'base64').length!==64)throw new Error('Invalid testing archive me",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 78,
+          "text": "  const entry=await regularContained(bundle,'Contents/MacOS/Rieke OS');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 115,
+          "text": "    if(entries.length!==1||entries[0]!=='Rieke OS.app')throw new Error('Testing archive must contain exactly Rieke OS.app.');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-updater.cjs",
+      "occurrences": [
+        {
+          "line": 38,
+          "text": "    const request=https.get(url,{headers:{'User-Agent':'Rieke-OS-desktop-testing-updater','Accept':kind==='api'?'application/vnd.github+json':'application/octet-stream'}},response=>{",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 91,
+          "text": "    await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 104,
+          "text": "      const bundle=await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 150,
+          "text": "          offered=candidate;set('Available',{available:candidate.descriptor.application_version,release_url:candidate.release_url,source_dirty:null,message:`Rieke OS ${candidate.descriptor.application_version} testing update is available. Download when ready.`,check_error:null});",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/bootstrap.test.cjs",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": "  assert.deepEqual(await signatureIdentity('/tmp/Rieke OS.app', run), {identifier: 'org.riekeos.desktop', team: 'EXAMPLETEAM'});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 8,
+          "text": "  await assert.rejects(signatureIdentity('/tmp/Rieke OS.app', async () => ({stdout: '', stderr: 'Identifier=org.riekeos.desktop\\nTeamIdentifier=not set\\nSignature=adhoc'})), /Developer ID/);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 11,
+          "text": "  const run = async () => ({stdout: `  ${process.pid} /tmp/Rieke OS.app/Contents/MacOS/Rieke OS\\n  100 /usr/bin/other\\n`});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 12,
+          "text": "  await assert.rejects(assertNotRunning('/tmp/Rieke OS.app', run), /running/);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 13,
+          "text": "  await assertNotRunning('/tmp/Rieke OS.app', run, process.pid);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 22,
+          "text": "  assert.equal(enclosingApp('/Applications/Rieke OS.app/Contents/MacOS/Rieke OS'), '/Applications/Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/distribution.test.cjs",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": "  assert.equal(distributionPolicy({format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS'}).channel,'unsigned-testing');",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 10,
+          "text": "  for(const value of [{format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'someone/other'}, {format:'rieke-desktop-distribution',version:1,channel:'anything',repository:'maxwellsdm1867/Rieke-OS'}]) assert.throws(()=>distributionPolicy(value));",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/e2e/updater-client.cjs",
+      "occurrences": [
+        {
+          "line": 63,
+          "text": "    assert.equal(provider.provider,'github');assert.equal(provider.owner,'maxwellsdm1867');assert.equal(provider.repo,'Rieke-OS');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/physical-fs.test.cjs",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": " const content=path.join(root,'content'),bundle=path.join(root,'Rieke OS.app'),resources=path.join(bundle,'Contents/Resources');await fs.mkdir(content);await fs.mkdir(resources,{recursive:true});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/recovery-ui.test.cjs",
+      "occurrences": [
+        {
+          "line": 10,
+          "text": " const h=page({state:'Bootstrap',channel:'unsigned-testing',title:'Install Rieke OS',message:'Install this complete app in your Applications folder and open it.'});await h.settle();",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/security.test.cjs",
+      "occurrences": [
+        {
+          "line": 25,
+          "text": "  assert.equal(approvedReleaseURL('https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v0.1.0'), true);",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 26,
+          "text": "  for (const url of ['http://github.com/maxwellsdm1867/Rieke-OS/releases', 'https://github.com.evil.example/maxwellsdm1867/Rieke-OS/releases', 'https://github.com/user/other/releases', 'https://user:pass@github.com/maxwellsdm1867/Rieke-OS/releases']) assert.equal(approvedReleaseURL(url), false);",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/testing-install.test.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": " const source=path.join(root,'Downloads','Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 16,
+          "text": " await fs.writeFile(path.join(source,'Contents/MacOS/Rieke OS'),'native executable fixture',{mode:0o755});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 17,
+          "text": " await fs.writeFile(path.join(source,'Contents/Info.plist'),`<?xml version=\"1.0\"?><plist version=\"1.0\"><dict><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleExecutable</key><string>Rieke OS</string><key>CFBundleShortVersionString</key><string>${version}</string><key>LSMinimumSystemVersion</key><string>14.0</string></di",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 26,
+          "text": " const destination=path.join(root,'Applications','Rieke OS.app');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 43,
+          "text": "  assert.equal(await fs.readFile(path.join(f.destination,'Contents/MacOS/Rieke OS'),'utf8'),'native executable fixture');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 53,
+          "text": "  await assert.rejects(applyTestingInstall({receiptPath,currentExecutable:path.join(f.destination,'Contents/MacOS/Rieke OS'),run:f.run}),/receipt.*private/i);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 54,
+          "text": "  assert.equal(await fs.readFile(path.join(f.destination,'Contents/MacOS/Rieke OS'),'utf8'),'native executable fixture');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 61,
+          "text": " const candidate=path.join(cache,'Rieke OS.app');await fs.rename(fresh.source,candidate);",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 65,
+          "text": " const currentExecutable=path.join(f.destination,'Contents/MacOS/Rieke OS');",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 158,
+          "text": "  await assert.rejects(fs.stat(path.join(path.dirname(f.destination),'.Rieke OS.previous.app')),{code:'ENOENT'});",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "desktop/update-recovery.cjs",
+      "occurrences": [
+        {
+          "line": 14,
+          "text": "  const previous = path.join(directory, 'previous', 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 33,
+          "text": "  const copied = path.join(staging, 'Rieke OS.app');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/updater-validation.cjs",
+      "occurrences": [
+        {
+          "line": 94,
+          "text": "    if (bundles.length !== 1 || bundles[0] !== 'Rieke OS.app') throw new Error('Update must contain exactly the expected app.');",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "desktop/updater.cjs",
+      "occurrences": [
+        {
+          "line": 90,
+          "text": "    updater.setFeedURL({provider: 'github', owner: 'maxwellsdm1867', repo: 'Rieke-OS', private: false});",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 95,
+          "text": "        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v${info.version}`, message: `Rieke OS ${info.version} is available.`});",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "docs/DATA_EFFICIENCY_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS data-efficiency audit \u2014 2026-09-29",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 9,
+          "text": "Inspected the active app checkout at `/Users/maxwellsdm/Documents/GitHub/epicTreeGUI`, including the recent persistence changes. Compared core modules with `/Users/maxwellsdm/Documents/GitHub/Rieke-OS`; snapshot, cache, index, explorer, curation, and MATLAB modules matched at measurement time. Service/API/SQLite-export modules differ between checko",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/LLM_SETUP.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Install Rieke OS with an AI assistant",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS runs without an LLM or API key. These instructions are for an optional",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 13,
+          "text": "Help me download, install, and launch the complete Rieke OS application from",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 14,
+          "text": "https://github.com/maxwellsdm1867/Rieke-OS/tree/main.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 20,
+          "text": "This is the independent Rieke OS browser/desktop app with MATLAB data export.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 67,
+          "text": "- [Whole application ZIP from main](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 68,
+          "text": "- [Versioned releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest)",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/RIEKE_OS_ARCHITECTURE.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS application boundary",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS is an independent application for organizing recordings, browsing",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 6,
+          "text": "[maxwellsdm1867/Rieke-OS](https://github.com/maxwellsdm1867/Rieke-OS).",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 14,
+          "text": "| `docs/` | Rieke OS workflows, architecture and release procedures |",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 19,
+          "text": "MATLAB tests are not part of Rieke OS source releases or packaged applications.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 37,
+          "text": "Rieke OS keeps its own web waveform viewer, grouping and selection controls.",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "docs/RIEKE_OS_OVERVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# What Rieke OS does",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS connects recorded electrophysiology data to the datasets a researcher",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 77,
+          "text": "## Standalone Rieke OS application",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 82,
+          "text": "provide Rieke OS web plotting and curation without a MATLAB installation.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/RIEKE_OS_QUICK_START.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS quick start",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 5,
+          "text": "Rieke OS provides its own plotting and curation interface; MATLAB is needed only",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 10,
+          "text": "On [Rieke OS Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases), choose",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 15,
+          "text": "1. Open the DMG and open **Rieke OS** inside it.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 20,
+          "text": "   app lives at `~/Applications/Rieke OS.app`; next time, open that app normally.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 27,
+          "text": "For source development instead, extract or clone the dedicated Rieke OS",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "docs/SEARCH_PRESETS.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Rieke OS distinguishes three records:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/SELECTION_STATE_ARCHITECTURE.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS selection state",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS separates focused epochs, temporary bulk-action targets, saved protocol",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 17,
+          "text": "MAT data export serializes data/provenance for standard analysis. Rieke OS has no",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/TAGGING.md",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "using those identities. In Rieke OS, choose **Import tags**, select the JSON,",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 27,
+          "text": "tags are separate annotations. Rieke OS supports its portable JSON selection",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/WORKSPACE_SHARING_AND_UPDATES.md",
+      "occurrences": [
+        {
+          "line": 78,
+          "text": "Downloads and updates come only from the official Rieke OS repository over HTTPS.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 85,
+          "text": "must not be confused with the Electron desktop channel. See [release operations](dev/releasing-rieke-os.md).",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 87,
+          "text": "MATLAB is unnecessary for running Rieke OS. Its MAT export is data-only; plotting,",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-geometry-repair.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Built-in image_gen edit. Final asset: `workspace-app/public/rieke-os-icon.png`.",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-shadow-cleanup.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Edited with built-in image_gen. Final asset: `workspace-app/public/rieke-os-icon.png`.",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-top-bar.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Generated with built-in image_gen. Saved to `workspace-app/public/rieke-os-icon.png` and used by the sidebar and browser icon.",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS app icon",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 3,
+          "text": "Asset: `workspace-app/public/rieke-os-icon.png`",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 9,
+          "text": "Create one production app icon for Rieke OS. Reference 1 is the subject: preserve recognizable stylized R inside pentagonal diamond superhero shield. Reference 2 is style only: rounded square tile, thick layered inset border, restrained smooth gradient and dimensional offset relief. Reference 3 is palette/context only: muted lavender and deep auber",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/electron-production-spec.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Scope updated by the user on 2026-09-30: Rieke OS is independent of",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 7,
+          "text": "# Rieke OS Electron production specification",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 18,
+          "text": "Users install a complete app from Rieke-OS GitHub Releases and open its icon.",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 42,
+          "text": "such as `~/Applications/Rieke OS.app`, verifies the copied bundle, and launches",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 52,
+          "text": "| Rieke-OS public repository | Canonical reviewed application baseline, release tags, documentation and version history | New development behavior lives in a separate dirty epicTreeGUI checkout. Reconcile deliberately. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 59,
+          "text": "| electron-updater | Sole desktop download/install authority, configured for the public Rieke-OS GitHub provider | Source updater must be disabled for desktop installations. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 202,
+          "text": "In Rieke-OS, a reviewed version tag triggers the platform build. Build from a",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/one-click-installer.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS one click installer plan",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 9,
+          "text": "public Rieke OS app. It is based on the current public distribution, the",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 24,
+          "text": "`~/Applications/Rieke OS.app`, which the current user can update without needing",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 46,
+          "text": "[`maxwellsdm1867/Rieke-OS`](https://github.com/maxwellsdm1867/Rieke-OS).",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 53,
+          "text": "| Area | Published Rieke OS | Development checkout |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 55,
+          "text": "| Release | [v0.1.2](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v0.1.2), with a 1,463,427-byte source ZIP and SHA256SUMS | Coordinated metadata still says 0.1.0. Discovery now points to Rieke-OS. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 56,
+          "text": "| Installation | [install.sh](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/install.sh) downloads local tooling and dependencies and compiles/builds the app | Setup likewise builds Python/parser/frontend; managed launch can use prebuilt frontend assets. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 57,
+          "text": "| Launch | [start.sh](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/start.sh) requires a terminal and installed runtime | Python manager and chooser; no native desktop entry point. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 59,
+          "text": "| CI | [verify.yml](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/.github/workflows/verify.yml) verifies a fresh source installation | Signed source-candidate workflow and a proposed tag/publication job; these have not been carried into the public repo. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 77,
+          "text": "| Pattern | GitHub's role and client behavior | Implication for Rieke OS |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 99,
+          "text": "update metadata. Rieke OS can host its static feed on GitHub too. The inspected",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 149,
+          "text": "~/Applications/Rieke OS.app/       signed code and immutable resources",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 150,
+          "text": "~/Library/Application Support/RiekeOS/  preferences, service registry, update state",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 151,
+          "text": "~/Library/Caches/RiekeOS/          disposable runtime caches",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 152,
+          "text": "~/Library/Logs/RiekeOS/            application and installer diagnostics",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 212,
+          "text": "| I01 | Establish Rieke-OS as the public build authority; selectively reconcile the development changes and coordinate app, npm, bundle and tag versions. | None | A clean reviewed public commit reproduces the chosen feature baseline and version checks. No wholesale replacement of the independently validated public app. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 237,
+          "text": "native Quit. Published Rieke-OS documents that Ctrl-C stops the chooser while",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 239,
+          "text": "[Published shutdown behavior](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/docs/RIEKE_OS_QUICK_START.md).",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 250,
+          "text": "Proposed stable pipeline in Rieke-OS:",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 309,
+          "text": "| No MATLAB installation | All core installation, launch, data and update scenarios pass. MAT data integrity is checked independently; MATLAB GUI interoperability is outside the Rieke OS product scope. |",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/CLIENT_VALIDATION_MATRIX.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 87,
+          "text": "  `<temporary>/Rieke release candidate \u2026/Rieke OS`; native validation project",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 142,
+          "text": "See [integration contracts](/path/to/Rieke-OS/docs/dev/INTEGRATION_CONTRACTS_DRAFT.md) for boundary fields, validation scenarios and publication behavior.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/GITHUB_DESKTOP_UPDATE_PATTERNS.md",
+      "occurrences": [
+        {
+          "line": 6,
+          "text": "already added to Rieke OS.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 40,
+          "text": "interface. Do not copy Rectangle's user-notification policy as Rieke OS's policy.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 106,
+          "text": "## Proposed GitHub deployment for Rieke OS",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/GITHUB_TESTING_RELEASE.md",
+      "occurrences": [
+        {
+          "line": 4,
+          "text": "public `maxwellsdm1867/Rieke-OS` repository and remains separate from Developer ID",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 8,
+          "text": "Rieke OS, and click **Install and Open**. The app copies its complete private",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/INSTALLER_PRIMARY_SOURCE_REVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS installer source review",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 14,
+          "text": "Use one immutable, Developer-ID-signed and notarized `Rieke OS.app`. A small",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/MATCHING_RESULTS_AND_PROJECT_STARTUP_QA.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Validated locally on 2026-09-27 using the existing Spike Response Model catalog.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/NATIVE_E2E_VALIDATION.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 9,
+          "text": "1. Start Rieke OS and create a project from the project chooser.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 127,
+          "text": "  pointed at epicTreeGUI, whose release channel is empty. Rieke-OS is the actual",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 130,
+          "text": "  Rieke-OS; a fresh backend check returns `update_available`, available `0.1.2`,",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 144,
+          "text": "  publication condition allows only Rieke-OS. No workflow was dispatched and no",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/REACT_WORKSPACE_PLAN.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/RECORDING_WORKSPACE_IMPORT.md",
+      "occurrences": [
+        {
+          "line": 72,
+          "text": "The installed RetinAnalysis environment supplies the dependencies. From the dedicated Rieke OS repository:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 150,
+          "text": "The web tree uses recorded grouping fields. MAT exports contain data and provenance only; MATLAB GUI tree builders are outside the Rieke OS application.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/RIEKE_LAB_INFRASTRUCTURE_SPECIFICATION.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/SCIENTIFIC_UX_REVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 102,
+          "text": "Rieke OS now separates tree arrangement from the existing tree-and-trace inspector.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/SOURCE_FIRST_WORKFLOW.md",
+      "occurrences": [
+        {
+          "line": 39,
+          "text": "- The same file:698 still contains a placeholder auto-parser for missing JSON. Rieke OS's explicit parse/validate/import orchestration correctly fills this gap while reusing the parser and population functions.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 59,
+          "text": "## What Rieke OS already implements correctly",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 182,
+          "text": "Use the existing **catalog, query-to-source-hierarchy projection, object metadata lookup and device-discovery semantics** behind the current Rieke OS UI. Adapt them to a request-scoped service rather than requiring the separate old Flask app to hold the active query globally.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 198,
+          "text": "5. **Device reads:** `get_options` returns client-visible H5 paths and `get_trace_binary` reads an entire device trace into a PNG plotted against sample index. Retain the current Rieke OS server-side UUID/locator validation and bounded sample-window endpoint, calibrated time/units, and interactive display. Some stimulus objects have parameters but ",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 202,
+          "text": "9. **Export completion:** old download route returns after starting a background thread; failure is printed to the console. Keep Rieke OS's explicit job/artifact completion and checksum registration. \u201cRaw tree\u201d there means tree JSON, not raw voltage samples.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TAG_EXCHANGE.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "RiekeOS shared annotations are separate from protocol inclusion/review and from raw acquisition keywords. Each tag belongs to an exact `(target_kind, target_uuid, profile_uuid)`; the text is case-sensitive. Cell tags inherit through the recorded cell UUID, without creating per-epoch tag rows. Profile names are local attribution, not authenticated i",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 21,
+          "text": "explicit preview/apply import. Rieke OS ships no MATLAB tagging program, GUI",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 27,
+          "text": "The existing v2 `epoch_tags` table continues to mean protocol-specific curation tags. Additive optional v2 tables `shared_annotations` and `annotation_revisions` retain exact target kind/UUID, author profile/name, tag text, and revisions including emptied tag sets. `example_queries.shared_tags` joins inherited cell and direct epoch tags without con",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TAG_SCOPE_AND_PROFILE_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 18,
+          "text": "## Current Rieke OS gaps",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TREE_RESIZING_AND_DISK_INDEX_QA.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Validated on 2026-09-27 in the local Rieke OS app at port 8766.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/UI_POLISH_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 223,
+          "text": "Rieke OS is the product; Spike Response Model is the current project. The visible",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 280,
+          "text": "screenshot: `rieke-os-predicate-rows.png` in the session visualization directory.",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/releases/0.1.3-separated-source-validation.json",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": "  \"repository\": \"maxwellsdm1867/Rieke-OS\",",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 8,
+          "text": "  \"scope\": \"Independent Rieke OS application; MATLAB data export retained, MATLAB GUI integration removed\",",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/releasing-rieke-os.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS release operations",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 3,
+          "text": "Build and publish from the dedicated `maxwellsdm1867/Rieke-OS` repository. The",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 5,
+          "text": "it is not a release source or update channel for Rieke OS.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 7,
+          "text": "Rieke OS retains Python/SciPy MAT data export. Its reviewed application closure",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 54,
+          "text": "  --repository maxwellsdm1867/Rieke-OS --output /tmp/rieke-desktop-baseline.json",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 62,
+          "text": "  --repository maxwellsdm1867/Rieke-OS --output desktop/build/desktop-baseline.json",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 136,
+          "text": "Outputs include `desktop/dist/mac-arm64/Rieke OS.app`, the complete DMG and app",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 176,
+          "text": "  --installed 'desktop/dist/mac-arm64/Rieke OS.app' \\",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 188,
+          "text": "  --installed 'desktop/dist/mac-arm64/Rieke OS.app' \\",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 213,
+          "text": "  --app 'desktop/dist/mac-arm64/Rieke OS.app' \\",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 214,
+          "text": "  --archive desktop/dist/Rieke-OS-0.1.3-arm64.zip \\",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 229,
+          "text": "`~/Applications/Rieke OS.app`. The installer verifies/copies the complete bundle",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "llms.txt",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "> export to MATLAB, SQLite or JSON. Repository: https://github.com/maxwellsdm1867/Rieke-OS",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 14,
+          "text": "- [Rieke OS application boundary](docs/RIEKE_OS_ARCHITECTURE.md)",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "packaging/README.md",
+      "occurrences": [
+        {
+          "line": 47,
+          "text": "GUI or launcher is part of the Rieke OS distribution.",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "packaging/verify_e2e.py",
+      "occurrences": [
+        {
+          "line": 60,
+          "text": "        with urlopen(base) as response:assert b'<title>Rieke OS</title>' in response.read()",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "packaging/verify_workflows.py",
+      "occurrences": [
+        {
+          "line": 62,
+          "text": "        with urlopen(base) as response:assert b'<title>Rieke OS</title>' in response.read()",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/__init__.py",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "\"\"\"Tests for Rieke OS acquisition workspaces and scientific data exports.\"\"\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_runtime_audit.py",
+      "occurrences": [
+        {
+          "line": 21,
+          "text": "        self.write('rieke-release.json', {'version': '0.1.0', 'repository': 'maxwellsdm1867/Rieke-OS'})",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_runtime_packaging.py",
+      "occurrences": [
+        {
+          "line": 143,
+          "text": "            (root / 'workspace-app/dist/index.html').write_text('Rieke OS')",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 157,
+          "text": "            self.assertEqual((output / 'workspace-app/dist/index.html').read_text(), 'Rieke OS')",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_test_release.py",
+      "occurrences": [
+        {
+          "line": 17,
+          "text": "            root=Path(tmp);app=root/'Rieke OS.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 22,
+          "text": "            archive=root/'Rieke-OS-0.1.3-arm64.zip'",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_desktop_paths.py",
+      "occurrences": [
+        {
+          "line": 16,
+          "text": "            bundle = home / 'Rieke OS.app'",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 41,
+          "text": "        with patch.dict(os.environ, {'RIEKE_DESKTOP_MODE': '0', 'RIEKE_DESKTOP_RUNTIME': '/fixture/Rieke OS.app/Contents/Resources/runtime'}):",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_export_boundaries.py",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "\"\"\"Rieke OS accepts generic JSON curation, never plotting-GUI mask traffic.\"\"\"",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_handoffs.py",
+      "occurrences": [
+        {
+          "line": 128,
+          "text": "                json={'display_name': 'Spike Response Model'})",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 133,
+          "text": "        self.assertEqual(project['display_name'], 'Spike Response Model')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 135,
+          "text": "        self.assertEqual(registry['projects'][0]['name'], 'Spike Response Model')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 140,
+          "text": "        self.assertEqual(json.loads((Path(self.temp.name) / 'project.json').read_text())['display_name'], 'Spike Response Model')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_open_folder.py",
+      "occurrences": [
+        {
+          "line": 145,
+          "text": "               'container':'rieke-os-'+identity.replace('-','')+'-'+instance.replace('-','')}",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_projects.py",
+      "occurrences": [
+        {
+          "line": 37,
+          "text": "        other = self.make_project('other', 'Internal name', display_name='Spike Response Model')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 41,
+          "text": "        self.assertEqual(result['projects'][1]['name'], 'Spike Response Model')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 190,
+          "text": "        self.assertFalse((outside.parent / '.rieke-os.json').exists())",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 230,
+          "text": "        self.assertFalse((self.root / 'elsewhere/.rieke-os.json').exists())",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_startup.py",
+      "occurrences": [
+        {
+          "line": 160,
+          "text": "        identity=project['uuid'];container='rieke-os-'+identity.replace('-','')",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 174,
+          "text": "        return {'Config':{'Labels':{'rieke-os.project_uuid':project['uuid'],'rieke-os.project_path':project['path']}},",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 186,
+          "text": "            self.assertIn(f\"rieke-os.project_uuid={project['uuid']}\",create.args[0])",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 197,
+          "text": "        info['Config']['Labels']['rieke-os.project_uuid']='foreign'",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        },
+        {
+          "line": 206,
+          "text": "        info=self._info(project);info['Config']['Labels']['rieke-os.project_uuid']='another-project'",
+          "disposition": "historical evidence, regression fixture, or scientific/MATLAB scope"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_updates.py",
+      "occurrences": [
+        {
+          "line": 219,
+          "text": "        with patch.object(updates, 'activate_staged', side_effect=ValueError('Close all Rieke OS launchers')) as activate, \\",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_audit.py",
+      "occurrences": [
+        {
+          "line": 160,
+          "text": "    return {\"application\": {\"name\": \"recording-workspace\", \"display_name\": \"Rieke OS\", \"version\": version},",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_author_preferences.py",
+      "occurrences": [
+        {
+          "line": 11,
+          "text": "    return Path(os.environ.get('RIEKE_PREFERENCES_DIR', Path.home() / '.rieke-os')).expanduser() / 'annotation-author.json'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_launcher.py",
+      "occurrences": [
+        {
+          "line": 104,
+          "text": "                    expected = 'rieke-os-' + project['uuid'].replace('-', '') + '-' + instance.replace('-', '')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_matlab.py",
+      "occurrences": [
+        {
+          "line": 23,
+          "text": "MATLAB_DATA_GUIDE = \"\"\"Rieke OS MATLAB data export",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_mysql_runtime.py",
+      "occurrences": [
+        {
+          "line": 124,
+          "text": "            request = Request(url, headers={'User-Agent': 'Rieke-OS-native-runtime/1'})",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_native_mysql.py",
+      "occurrences": [
+        {
+          "line": 77,
+          "text": "        raise ValueError('Private MySQL runtime is missing; run Rieke OS setup') from None",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 81,
+          "text": "        raise ValueError('Private MySQL client is missing; run Rieke OS setup')",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_project_database.py",
+      "occurrences": [
+        {
+          "line": 41,
+          "text": "    if container.startswith('rieke-os-') and not owned:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 44,
+          "text": "        expected = 'rieke-os-' + identity.replace('-', '')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 70,
+          "text": "            '--label',f'rieke-os.project_uuid={identity}',",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 71,
+          "text": "            '--label',f'rieke-os.project_path={project_dir}',",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 83,
+          "text": "        if labels.get('rieke-os.project_uuid') != identity or labels.get('rieke-os.project_path') != str(project_dir):",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_startup_registry.py",
+      "occurrences": [
+        {
+          "line": 12,
+          "text": "    path = Path(root) / '.rieke-os.json'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 16,
+          "text": "        return {'format':'rieke-os-startup','version':1,'last_project_uuid':None}",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 20,
+          "text": "    if not isinstance(value,dict) or value.get('format') != 'rieke-os-startup' or value.get('version') != 1:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 29,
+          "text": "    lock_path = root / '.rieke-os.lock'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 37,
+          "text": "        write_json(root / '.rieke-os.json', value)",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 68,
+          "text": "        path = Path(os.environ.get('RIEKE_PREFERENCES_DIR', Path.home() / '.rieke-os')).expanduser() / 'project-index.json'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_updates.py",
+      "occurrences": [
+        {
+          "line": 33,
+          "text": "REPOSITORY = 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 122,
+          "text": "    request = Request(url, headers={'Accept': 'application/vnd.github+json', 'User-Agent': 'Rieke-OS-updater/1'})",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 154,
+          "text": "                          message=(f'Rieke OS {version} is available.' if available else",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 160,
+          "text": "                          message=('No stable Rieke OS release has been published yet.' if error.code == 404",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 216,
+          "text": "            raise ValueError('Close all Rieke OS launchers and project services before activating an update.') from error",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 312,
+          "text": "                  'message': 'Update ready. Close Rieke OS and all project services; the next launch will use this version.'}",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 378,
+          "text": "            if 'Close all Rieke OS' not in str(error) or time.monotonic() >= deadline:",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "rieke-release.json",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "  \"repository\": \"maxwellsdm1867/Rieke-OS\",",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/build_release.py",
+      "occurrences": [
+        {
+          "line": 59,
+          "text": "    name = f'rieke-os-{metadata[\"version\"]}-{target}.tar.gz'",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_application_profile.py",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "\"\"\"Reviewed Rieke OS application closure, separate from EpicTreeGUI source.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 22,
+          "text": "        raise ValueError('Unrecognized Rieke OS application profile')",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 31,
+          "text": "    \"\"\"Reject a mixed EpicTreeGUI/Rieke OS tracked release source tree.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 56,
+          "text": "        raise ValueError('Mixed EpicTreeGUI/Rieke OS release source contains excluded paths: ' +",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 116,
+          "text": "        raise ValueError('EpicTreeGUI/MATLAB interactive resources entered Rieke OS: ' + ', '.join(unexpected))",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_artifact_e2e.py",
+      "occurrences": [
+        {
+          "line": 64,
+          "text": "    if not os.access(bundle / 'Contents/MacOS/Rieke OS', os.X_OK):",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 94,
+          "text": "    shell_paths = ('Contents/Info.plist', 'Contents/MacOS/Rieke OS', 'Contents/Resources/app.asar',",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 236,
+          "text": "    expected_rejection('dirty or unreviewed source baseline',lambda:baseline('v'+manifest['application_version'],'maxwellsdm1867/Rieke-OS'),faults)",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 249,
+          "text": "              'unsafe metadata artifact path':original.replace('url: Rieke-OS','url: ../Rieke-OS',1),",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 286,
+          "text": "const installer=require(process.argv[4]);try{await installer.installCompleteBundle({source:process.argv[3],destination:p.join(process.argv[5],'must not install','Rieke OS.app')});throw Error('unsigned install accepted')}catch(e){if(e.message==='unsigned install accepted')throw e;tests.push({case:'unsigned real app rejected by first-open signed inst",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 317,
+          "text": "    report['installation_reference_kind']=('built-candidate' if reference == (ROOT/'desktop/dist/mac-arm64/Rieke OS.app').resolve()",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 331,
+          "text": "        bundles['zip']=ziproot/'Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 337,
+          "text": "            execute(['/usr/bin/ditto','--rsrc','--extattr','--acl',mount/'Rieke OS.app',dmgroot/'Rieke OS.app'],timeout=180)",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 338,
+          "text": "            bundles['dmg']=dmgroot/'Rieke OS.app'",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 393,
+          "text": "    parser.add_argument('--installed',type=Path,default=Path.home()/'Applications/Rieke OS.app')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_no_docker_smoke.py",
+      "occurrences": [
+        {
+          "line": 153,
+          "text": "    parser.add_argument('--resources',type=Path,default=Path(__file__).resolve().parents[1]/'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_release.py",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": "REPOSITORY = 'maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 49,
+          "text": "        raise ValueError('Desktop release Git origin must be the canonical Rieke-OS repository')",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 168,
+          "text": "        release = gh_json(f'repos/{REPOSITORY}/releases', '-X', 'POST', payload={'tag_name': tag, 'target_commitish': evidence['source_commit'], 'name': 'Rieke OS ' + tag,",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 189,
+          "text": "        with urlopen(Request(url, headers={'User-Agent': 'Rieke-OS-release-verifier'}), timeout=60) as response:",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_runtime_audit.py",
+      "occurrences": [
+        {
+          "line": 64,
+          "text": "    if release and release.get('repository') != 'maxwellsdm1867/Rieke-OS':",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 65,
+          "text": "        issue('release_repository_mismatch', 'E01', root / 'rieke-release.json', 'Desktop publication must use Rieke-OS.')",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_scientific_e2e.py",
+      "occurrences": [
+        {
+          "line": 674,
+          "text": "    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_startup_failures.py",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_test_release.py",
+      "occurrences": [
+        {
+          "line": 16,
+          "text": "REPOSITORY='maxwellsdm1867/Rieke-OS'",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 34,
+          "text": "    if archive.name!=f'Rieke-OS-{version}-arm64.zip':raise ValueError('Archive name differs from version')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 37,
+          "text": "        archived_manifest=z.read('Rieke OS.app/Contents/Resources/runtime/runtime-manifest.json')",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 38,
+          "text": "        archived_asar=hashlib.sha256(z.read('Rieke OS.app/Contents/Resources/app.asar')).hexdigest()",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/README.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS \u2014 local React app",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 12,
+          "text": "Use the dedicated Rieke OS development source:",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 15,
+          "text": "git clone https://github.com/maxwellsdm1867/Rieke-OS.git",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 16,
+          "text": "cd Rieke-OS",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 19,
+          "text": "Rieke OS is a separate application with web plotting, curation and data export.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 83,
+          "text": "MATLAB is not required to run Rieke OS. MAT data exports can be read separately",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 416,
+          "text": "The app's display title is **Rieke OS**. Scientific source names, stable project",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 573,
+          "text": "### Rieke OS projects and data export",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 575,
+          "text": "Rieke OS is the application. The current project is displayed as **Spike Response",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 607,
+          "text": "Rieke OS plots responses and edits tags and inclusion in its own web interface.",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 651,
+          "text": "has no dependency on the running Rieke OS server or DataJoint connection. For",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/index.html",
+      "occurrences": [
+        {
+          "line": 2,
+          "text": "<html lang=\"en\"><head><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/><meta name=\"theme-color\" content=\"#332735\"/><link rel=\"icon\" type=\"image/png\" href=\"/rieke-os-icon.png\"/><link rel=\"apple-touch-icon\" href=\"/rieke-os-icon.png\"/><title>Rieke OS</title></head><body><div id=\"root\"></div><script type=\"mo",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/App.jsx",
+      "occurrences": [
+        {
+          "line": 110,
+          "text": "  return <div className=\"page import-page\"><div className=\"page-heading\"><div><div className=\"eyebrow\">ADD TO MAIN CATALOG</div><h1>Import H5s</h1><p>Choose one or more H5 recordings. New imports are copied into this project and verified before parsing.</p></div><div className=\"ds-heading-actions\"><H5Inbox/><button onClick={onBack}><Database size={",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 171,
+          "text": "  const data=overview.data;const projectId=registry.data?.current_project_uuid || data?.project?.project_uuid;const registeredProjects=registry.data?.projects || [];const currentProject=registeredProjects.find(project=>project.current)||registeredProjects.find(project=>project.uuid===projectId);const projectName=data?.project?.display_name || curre",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/appUpdates.js",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "const releaseRoot='https://github.com/maxwellsdm1867/Rieke-OS/releases';",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 4,
+          "text": "  try{const url=new URL(value);return url.origin==='https://github.com'&&(url.pathname==='/maxwellsdm1867/Rieke-OS/releases'||url.pathname.startsWith('/maxwellsdm1867/Rieke-OS/releases/tag/'))&&!url.username&&!url.password?url.href:null;}catch{return null;}",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 8,
+          "text": "  return (status?.state==='update_available'||['Available','Downloading','Validating','Ready','Draining','Installing'].includes(status?.state))&&version?{version,message:`Rieke OS ${version} is available`,url:releaseLink(status.release_url)||releaseRoot}:null;",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/appUpdates.test.js",
+      "occurrences": [
+        {
+          "line": 10,
+          "text": "    release_url:'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.2.0',",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 30,
+          "text": "  for(const value of ['javascript:alert(1)','https://github.com.evil.test/releases','https://github.com/other/repo/releases','https://user:password@github.com/maxwellsdm1867/Rieke-OS/releases'])assert.equal(releaseLink(value),null);",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 31,
+          "text": "  assert.ok(releaseLink('https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.0.0'));",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/components/AppUpdates.jsx",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": "    <p>Rieke OS app version: <strong>{installed||'Development checkout'}</strong></p>",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 20,
+          "text": "    {testing&&<p><strong>Unsigned testing</strong> \u00b7 Install only releases you trust from the Rieke OS GitHub repository.</p>}",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 22,
+          "text": "    {!testing&&(desktop||status?.can_stage)&&<p>New versions download automatically. After you close Rieke OS and its project services, the next launch applies the prepared update.</p>}",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 23,
+          "text": "    <p role=\"status\">{status?.state==='Installing'?'Restarting to update\u2026':status?.state==='Draining'?'Waiting for current work to finish\u2026':status?.state==='Validating'?'Verifying the update\u2026':busy?(operation==='restart'?'Preparing to restart\u2026':operation==='download'||status?.state==='Downloading'?'Downloading the update\u2026':'Checking for updates\u2026'):",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        },
+        {
+          "line": 30,
+          "text": "    {ready&&!testing&&<p role=\"status\">{download?.result?.message||'Update ready. Close Rieke OS and all project services; the next launch will use this version.'}</p>}",
+          "disposition": "renamed or edited in migration"
+        },
+        {
+          "line": 70,
+          "text": "  const detail=ready?`Rieke OS ${notice?.version||status?.available||''} is ready${status?.channel==='unsigned-testing'?' \u2014 choose Restart to update':' for the next launch'}`:notice?.message;",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/components/ProjectFiles.jsx",
+      "occurrences": [
+        {
+          "line": 140,
+          "text": "    {data&&<details className=\"pf-database\" aria-label=\"App storage details\"><summary><Database size={18}/><span><strong>App storage details</strong><small>Your project database is managed by Rieke OS.</small></span><ChevronRight className=\"pf-detail-chevron\" size={17}/></summary><div className=\"pf-database-content\"><div className=\"pf-database-titl",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/components/ProjectOnboarding.jsx",
+      "occurrences": [
+        {
+          "line": 45,
+          "text": "    <header><div><small>RIEKE OS</small><h1 id={titleId}>{created?'Project ready':creating?'New project':'Your projects'}</h1></div><img className=\"onboarding-app-icon\" src=\"/rieke-os-icon.png\" alt=\"Rieke OS app icon\" title=\"Rieke OS\" width=\"48\" height=\"48\"/>{onCancel&&<button className=\"icon-button\" onClick={onCancel} disabled={busy||loading} aria",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/projectPreferences.js",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "  return field==='recent_searches'?`rieke-os.search-presets.v1.${projectId}`:`rieke-os.sidebar.protocols.v1.${projectId}`;",
+          "disposition": "compatibility identity, installation path, artifact layout, wire protocol, or migration alias retained"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/start.mjs",
+      "occurrences": [
+        {
+          "line": 41,
+          "text": "  console.log(`\\nRieke OS: http://127.0.0.1:${port}\\nProjects: ${managedRoot}\\nChoose a project or create an empty one. Databases start only when opened.\\n`);",
+          "disposition": "renamed or edited in migration"
+        }
+      ]
+    }
+  ],
+  "after": [
+    {
+      "path": ".github/workflows/desktop-candidate.yml",
+      "occurrences": [
+        {
+          "line": 40,
+          "text": "if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')"
+        },
+        {
+          "line": 105,
+          "text": "if: needs.plan.outputs.build_required == 'true' && !inputs.candidate_run_id && (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')"
+        },
+        {
+          "line": 185,
+          "text": "codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'"
+        },
+        {
+          "line": 186,
+          "text": "spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'"
+        },
+        {
+          "line": 187,
+          "text": "xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'"
+        },
+        {
+          "line": 192,
+          "text": "python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" --output desktop/dist/desktop-release.json"
+        },
+        {
+          "line": 295,
+          "text": "archive = dist/f'Rieke-OS-{version}-arm64.zip'"
+        },
+        {
+          "line": 301,
+          "text": "app = destination/'Rieke OS.app'"
+        },
+        {
+          "line": 337,
+          "text": "resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()"
+        },
+        {
+          "line": 350,
+          "text": "uv run --no-project --python 3.11.13 python tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/desktop-promote.yml",
+      "occurrences": [
+        {
+          "line": 23,
+          "text": "if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/desktop-published-qualification.yml",
+      "occurrences": [
+        {
+          "line": 15,
+          "text": "if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')"
+        },
+        {
+          "line": 43,
+          "text": "gh release download \"$RELEASE_TAG\" --repo \"$GITHUB_REPOSITORY\" --pattern \"Rieke-OS-${VERSION}-arm64.zip\" --pattern desktop-release.json --dir desktop/dist"
+        },
+        {
+          "line": 52,
+          "text": "assert d['channel'] == 'unsigned-testing' and d['repository'] in {'maxwellsdm1867/disco', 'maxwellsdm1867/Rieke-OS'}"
+        },
+        {
+          "line": 56,
+          "text": "assert d['archive']['filename'] == f'Rieke-OS-{version}-arm64.zip'"
+        },
+        {
+          "line": 68,
+          "text": "ditto -x -k \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" desktop/dist/mac-arm64"
+        },
+        {
+          "line": 69,
+          "text": "uv run --no-project --python 3.11.13 python tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive \"desktop/dist/Rieke-OS-${VERSION}-arm64.zip\" --output \"$RUNNER_TEMP/recomputed-descriptor.json\""
+        },
+        {
+          "line": 71,
+          "text": "codesign --verify --deep --strict 'desktop/dist/mac-arm64/Rieke OS.app'"
+        },
+        {
+          "line": 74,
+          "text": "const runtime=path.resolve('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources/runtime');"
+        },
+        {
+          "line": 86,
+          "text": "resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/workspace-ci.yml",
+      "occurrences": [
+        {
+          "line": 36,
+          "text": "if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/workspace-release-candidate.yml",
+      "occurrences": [
+        {
+          "line": 70,
+          "text": "if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS') && (github.event_name == 'push' || inputs.publish)"
+        },
+        {
+          "line": 73,
+          "text": "# worker-shutdown evidence in docs/dev/releasing-rieke-os.md before promotion."
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> **Complete Mac desktop testing app:** [Download Disco for Apple Silicon](https://github.com/maxwellsdm1867/disco/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Disco, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security \u2192 Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **Release / Publish** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md)."
+        }
+      ]
+    },
+    {
+      "path": "desktop/README.md",
+      "occurrences": [
+        {
+          "line": 42,
+          "text": "`mac-arm64/Rieke OS.app`, DMG, updater ZIP, blockmaps and `latest-mac.yml`."
+        },
+        {
+          "line": 49,
+          "text": "`~/Applications/Rieke OS.app` without overwriting an existing installation."
+        }
+      ]
+    },
+    {
+      "path": "desktop/app-icon.cjs",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": "try{const file=path.join(process.env.RIEKE_PREFERENCES_DIR||path.join(os.homedir(),'.rieke-os'),'appearance.json');const stat=await fs.lstat(file);if(stat.isSymbolicLink()||stat.size>4096)throw new Error('Invalid appearance preference');const saved=JSON.parse(await fs.readFile(file,'utf8'));return saved.format==='disco-appearance'&&saved.version===1&&variants.has(saved.icon)?saved.icon:'disco';}catch{return'disco';}"
+        }
+      ]
+    },
+    {
+      "path": "desktop/bootstrap.cjs",
+      "occurrences": [
+        {
+          "line": 10,
+          "text": "const APP_ID = 'org.riekeos.desktop';"
+        },
+        {
+          "line": 110,
+          "text": "if (executable.stdout.trim() !== 'Rieke OS' || !(await fs.stat(path.join(bundle, 'Contents', 'MacOS', 'Rieke OS'))).isFile()) throw new Error('Unsigned testing app executable is missing');"
+        },
+        {
+          "line": 135,
+          "text": "async function installCompleteBundle({source, destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app'), run = runFile, allowRollback = false, ignorePid = null, distribution, expectedBundleSha256}) {"
+        },
+        {
+          "line": 156,
+          "text": "const lock = path.join(parent, '.rieke-os-install.lock');"
+        },
+        {
+          "line": 158,
+          "text": "const staging = path.join(parent, `.Rieke OS.install-${randomUUID()}.app`);"
+        },
+        {
+          "line": 159,
+          "text": "const previous = path.join(parent, '.Rieke OS.previous.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/distribution.cjs",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "const REPOSITORIES=new Set([REPOSITORY,'maxwellsdm1867/Rieke-OS']);"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/bootstrap.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": "const target=fixture.bundle,downloaded=path.join(fixture.home,'Downloads','Rieke OS.app');"
+        },
+        {
+          "line": 25,
+          "text": "fixture.bundle=downloaded;fixture.executable=path.join(downloaded,'Contents/MacOS/Rieke OS');"
+        },
+        {
+          "line": 72,
+          "text": "const cleanTarget=fixture.bundle,cleanDownload=path.join(fixture.home,'Downloads','Rieke OS.app'),cleanHandoff=path.join(fixture.home,'launch-services-handoff.json');"
+        },
+        {
+          "line": 79,
+          "text": "application=await _electron.launch({executablePath:path.join(cleanDownload,'Contents/MacOS/Rieke OS'),args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});"
+        },
+        {
+          "line": 84,
+          "text": "fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Rieke OS');({application,page}=await launch(fixture));"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/github-updates.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 17,
+          "text": "const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),sourceManifestFile=path.join(published,'Contents/Resources/runtime/runtime-manifest.json'),sourceBytes=await fs.readFile(sourceManifestFile),sourceManifest=JSON.parse(sourceBytes);"
+        },
+        {
+          "line": 23,
+          "text": "const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`),descriptorPath=path.join(fixture.root,'desktop-release.json');"
+        },
+        {
+          "line": 82,
+          "text": "assert.equal(await fs.stat(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')).then(()=>true,()=>false),false);const cache=path.join(fixture.userData,'updates','unsigned-testing');const entries=await fs.readdir(cache).catch(()=>[]);assert.ok(!entries.some(name=>/^install-.*\\.json$/.test(name)));return {ordinary_quit_did_not_install:true,current_version:priorVersion,runtime_immutable:true,native_orderly_exit:true};"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/helper-result.cjs",
+      "occurrences": [
+        {
+          "line": 71,
+          "text": "const predicate=`process == \"tccd\" AND eventMessage CONTAINS[c] \"org.riekeos.desktop\" AND (eventMessage CONTAINS[c] ${quote(directory)} OR eventMessage CONTAINS[c] ${quote('pid='+helperPid)} OR eventMessage CONTAINS[c] ${quote('pid: '+helperPid)})`;"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/helpers.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "const home = path.join(root, 'home'), bundle = path.join(home, 'Applications', 'Rieke OS.app');"
+        },
+        {
+          "line": 15,
+          "text": "return {root, home, bundle, userData: path.join(home, 'state'), executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};"
+        },
+        {
+          "line": 19,
+          "text": "const bundle = path.join(home, 'Applications', 'Rieke OS.app');"
+        },
+        {
+          "line": 22,
+          "text": "await run('/usr/bin/ditto', [path.resolve(__dirname, '../dist/mac-arm64/Rieke OS.app'), bundle]);"
+        },
+        {
+          "line": 23,
+          "text": "return {root, home, bundle, userData, executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/packaged.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 80,
+          "text": "assert.equal(geometry.source, '/rieke-os-icon.png'); assert.ok(geometry.naturalWidth > 0);"
+        },
+        {
+          "line": 115,
+          "text": "receipt.app_icon_sha256 = createHash('sha256').update(await fs.readFile(path.join(runtime, 'frontend/rieke-os-icon.png'))).digest('hex');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/e2e/testing-upgrade.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 152,
+          "text": "const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');"
+        },
+        {
+          "line": 156,
+          "text": "const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`);"
+        },
+        {
+          "line": 177,
+          "text": "assert.equal(await bundleDigest(fixture.bundle),await bundleDigest(published));assert.equal(await bundleDigest(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')),priorDigest);"
+        }
+      ]
+    },
+    {
+      "path": "desktop/main.cjs",
+      "occurrences": [
+        {
+          "line": 22,
+          "text": "const destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/package.json",
+      "occurrences": [
+        {
+          "line": 29,
+          "text": "\"appId\": \"org.riekeos.desktop\","
+        },
+        {
+          "line": 30,
+          "text": "\"productName\": \"Rieke OS\","
+        },
+        {
+          "line": 31,
+          "text": "\"artifactName\": \"Rieke-OS-${version}-${arch}.${ext}\","
+        },
+        {
+          "line": 98,
+          "text": "\"name\": \"Rieke OS.app\""
+        }
+      ]
+    },
+    {
+      "path": "desktop/recovery-install.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "const expected = path.join(os.homedir(), 'Applications', 'Rieke OS.app');"
+        },
+        {
+          "line": 14,
+          "text": "if (!Number.isSafeInteger(pid) || pid <= 0 || destination !== expected || enclosingApp(process.execPath) !== destination || !previous.endsWith(path.join('updates', 'previous', 'Rieke OS.app'))) throw new Error('Invalid recovery request.');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/security.cjs",
+      "occurrences": [
+        {
+          "line": 32,
+          "text": "!url.username && !url.password && /^\\/maxwellsdm1867\\/(?:disco|Rieke-OS)\\/releases(?:\\/|$)/.test(url.pathname); } catch { return false; }"
+        }
+      ]
+    },
+    {
+      "path": "desktop/test/testing-updater.test.cjs",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/disco',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sha512:crypto.createHash('sha512').update(bytes).digest('base64')},asar_sha256:'a'.repeat(64),runtime_manifest_sha256:'b'.repeat(64)};"
+        },
+        {
+          "line": 34,
+          "text": "const app={isPackaged:true,getPath:name=>name==='exe'?path.join(root,'Installed.app/Contents/MacOS/Rieke OS'):root};"
+        },
+        {
+          "line": 39,
+          "text": "verifyCandidate:async args=>{validationCalls++;const directory=await fs.mkdtemp(path.join(args.cacheDirectory,'candidate-'));const bundle=path.join(directory,'Rieke OS.app');await fs.mkdir(bundle);return {version:args.descriptor.application_version,downloadedFile:args.downloadedFile,bundle_path:bundle,candidate_directory:directory,bundle_sha256:'c'.repeat(64),archive_sha256:descriptor.archive.sha256,runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true};},"
+        },
+        {
+          "line": 149,
+          "text": "const bundle=path.join(root,'Rieke OS.app'),runtime=path.join(bundle,'Contents/Resources/runtime');"
+        },
+        {
+          "line": 164,
+          "text": "await fs.mkdir(path.join(bundle,'Contents/MacOS'));await fs.writeFile(path.join(bundle,'Contents/MacOS/Rieke OS'),'do not execute',{mode:0o755});"
+        },
+        {
+          "line": 165,
+          "text": "const plist='<?xml version=\"1.0\"?><!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\"><plist version=\"1.0\"><dict><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleShortVersionString</key><string>0.1.3</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>';"
+        },
+        {
+          "line": 188,
+          "text": "let installedBundle=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');"
+        },
+        {
+          "line": 198,
+          "text": "const archive=path.join(f.root,'Rieke-OS-0.1.3-arm64.zip');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/test/updater.test.cjs",
+      "occurrences": [
+        {
+          "line": 38,
+          "text": "info=zipfile.ZipInfo('Rieke OS.app/escape');info.create_system=3;info.external_attr=(stat.S_IFLNK|0o777)<<16"
+        },
+        {
+          "line": 39,
+          "text": "archive.writestr(info,'../../escape');archive.writestr('Rieke OS.app/escape/file','data')"
+        },
+        {
+          "line": 41,
+          "text": "archive.writestr('Rieke OS.app/Contents/file','data')"
+        },
+        {
+          "line": 42,
+          "text": "info=zipfile.ZipInfo('Rieke OS.app/Contents/link');info.create_system=3;info.external_attr=(stat.S_IFLNK|0o777)<<16"
+        },
+        {
+          "line": 62,
+          "text": "verifyInstalled: async () => ({team: 'TESTTEAM', identifier: 'org.riekeos.desktop'}),"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-install.cjs",
+      "occurrences": [
+        {
+          "line": 67,
+          "text": "const expected=path.join(path.dirname(installed),'.Rieke OS.previous.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-update-validation.cjs",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "const REPOSITORIES=[REPOSITORY,'maxwellsdm1867/Rieke-OS'];"
+        },
+        {
+          "line": 27,
+          "text": "if(!archive||archive.filename!==`Rieke-OS-${value.application_version}-arm64.zip`||!Number.isSafeInteger(archive.size)||archive.size<=0||archive.size>2*1024**3||!/^[a-f0-9]{64}$/.test(archive.sha256||'')||!/^[A-Za-z0-9+/]{86}==$/.test(archive.sha512||'')||Buffer.from(archive.sha512,'base64').length!==64)throw new Error('Invalid testing archive metadata.');"
+        },
+        {
+          "line": 79,
+          "text": "const entry=await regularContained(bundle,'Contents/MacOS/Rieke OS');"
+        },
+        {
+          "line": 86,
+          "text": "for(const [key,expected] of [['CFBundleIdentifier','org.riekeos.desktop'],['CFBundleShortVersionString',descriptor.application_version],['LSMinimumSystemVersion',descriptor.minimum_macos_version]]){"
+        },
+        {
+          "line": 116,
+          "text": "if(entries.length!==1||entries[0]!=='Rieke OS.app')throw new Error('Testing archive must contain exactly Rieke OS.app.');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/testing-updater.cjs",
+      "occurrences": [
+        {
+          "line": 9,
+          "text": "const LEGACY_REPOSITORY='maxwellsdm1867/Rieke-OS';"
+        },
+        {
+          "line": 39,
+          "text": "const request=https.get(url,{headers:{'User-Agent':'Rieke-OS-desktop-testing-updater','Accept':kind==='api'?'application/vnd.github+json':'application/octet-stream'}},response=>{"
+        },
+        {
+          "line": 96,
+          "text": "await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');"
+        },
+        {
+          "line": 109,
+          "text": "const bundle=await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');"
+        },
+        {
+          "line": 166,
+          "text": "if(enabled===false||!app.isPackaged||process.platform!=='darwin'||process.arch!=='arm64'||distribution?.format!=='rieke-desktop-distribution'||distribution.version!==1||distribution.channel!=='unsigned-testing'||![REPOSITORY,'maxwellsdm1867/Rieke-OS'].includes(distribution.repository))return set('Deferred',{message:'This distribution does not enable GitHub testing updates.'});"
+        },
+        {
+          "line": 239,
+          "text": "const receipt={format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',operation:'update',install_path:installedBundle,current_executable:typeof identity==='object'?identity.executable:app.getPath('exe'),current_pid:process.pid,current_created_at:typeof identity==='object'?identity.created_at:identity,current_version:manifest.application_version,current_manifest_sha256:await hashFile(path.join(installedBundle,'Contents/Resources/runtime/runtime-manifest.json')),target_version:pending.version,runtime_manifest_sha256:pending.runtime_manifest_sha256,archive_path:pending.downloadedFile,archive_sha256:pending.archive_sha256,bundle_path:pending.bundle_path,bundle_sha256:pending.bundle_sha256,validated:true};"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/bootstrap.test.cjs",
+      "occurrences": [
+        {
+          "line": 6,
+          "text": "const run = async (_command, args) => ({stdout: '', stderr: args.includes('--display') ? 'Identifier=org.riekeos.desktop\\nTeamIdentifier=EXAMPLETEAM\\nAuthority=Developer ID Application: Example\\n' : ''});"
+        },
+        {
+          "line": 7,
+          "text": "assert.deepEqual(await signatureIdentity('/tmp/Rieke OS.app', run), {identifier: 'org.riekeos.desktop', team: 'EXAMPLETEAM'});"
+        },
+        {
+          "line": 8,
+          "text": "await assert.rejects(signatureIdentity('/tmp/Rieke OS.app', async () => ({stdout: '', stderr: 'Identifier=org.riekeos.desktop\\nTeamIdentifier=not set\\nSignature=adhoc'})), /Developer ID/);"
+        },
+        {
+          "line": 11,
+          "text": "const run = async () => ({stdout: `  ${process.pid} /tmp/Rieke OS.app/Contents/MacOS/Rieke OS\\n  100 /usr/bin/other\\n`});"
+        },
+        {
+          "line": 12,
+          "text": "await assert.rejects(assertNotRunning('/tmp/Rieke OS.app', run), /running/);"
+        },
+        {
+          "line": 13,
+          "text": "await assertNotRunning('/tmp/Rieke OS.app', run, process.pid);"
+        },
+        {
+          "line": 22,
+          "text": "assert.equal(enclosingApp('/Applications/Rieke OS.app/Contents/MacOS/Rieke OS'), '/Applications/Rieke OS.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/e2e/updater-client.cjs",
+      "occurrences": [
+        {
+          "line": 63,
+          "text": "assert.equal(provider.provider,'github');assert.equal(provider.owner,'maxwellsdm1867');assert.equal(provider.repo,'Rieke-OS');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/physical-fs.test.cjs",
+      "occurrences": [
+        {
+          "line": 19,
+          "text": "const content=path.join(root,'content'),bundle=path.join(root,'Rieke OS.app'),resources=path.join(bundle,'Contents/Resources');await fs.mkdir(content);await fs.mkdir(resources,{recursive:true});"
+        },
+        {
+          "line": 36,
+          "text": "run:async(exe,args,options)=>{if(exe==='/usr/bin/codesign'){if(args.at(-1)!==installed){extracted=true;throw new Error('untrusted candidate signer');}return {stdout:'',stderr:'TeamIdentifier=TESTTEAM\\\\nIdentifier=org.riekeos.desktop\\\\nAuthority=Developer ID Application: simulated current signature for cleanup boundary'};}return realRun(exe,args,options);}}),/untrusted candidate signer/);"
+        }
+      ]
+    },
+    {
+      "path": "desktop/tests/testing-install.test.cjs",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "const source=path.join(root,'Downloads','Rieke OS.app');"
+        },
+        {
+          "line": 16,
+          "text": "await fs.writeFile(path.join(source,'Contents/MacOS/Rieke OS'),'native executable fixture',{mode:0o755});"
+        },
+        {
+          "line": 17,
+          "text": "await fs.writeFile(path.join(source,'Contents/Info.plist'),`<?xml version=\"1.0\"?><plist version=\"1.0\"><dict><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleExecutable</key><string>Rieke OS</string><key>CFBundleShortVersionString</key><string>${version}</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>`);"
+        },
+        {
+          "line": 26,
+          "text": "const destination=path.join(root,'Applications','Rieke OS.app');"
+        },
+        {
+          "line": 43,
+          "text": "assert.equal(await fs.readFile(path.join(f.destination,'Contents/MacOS/Rieke OS'),'utf8'),'native executable fixture');"
+        },
+        {
+          "line": 53,
+          "text": "await assert.rejects(applyTestingInstall({receiptPath,currentExecutable:path.join(f.destination,'Contents/MacOS/Rieke OS'),run:f.run}),/receipt.*private/i);"
+        },
+        {
+          "line": 54,
+          "text": "assert.equal(await fs.readFile(path.join(f.destination,'Contents/MacOS/Rieke OS'),'utf8'),'native executable fixture');"
+        },
+        {
+          "line": 61,
+          "text": "const candidate=path.join(cache,'Rieke OS.app');await fs.rename(fresh.source,candidate);"
+        },
+        {
+          "line": 65,
+          "text": "const currentExecutable=path.join(f.destination,'Contents/MacOS/Rieke OS');"
+        },
+        {
+          "line": 66,
+          "text": "const receipt={format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',validated:true,"
+        },
+        {
+          "line": 158,
+          "text": "await assert.rejects(fs.stat(path.join(path.dirname(f.destination),'.Rieke OS.previous.app')),{code:'ENOENT'});"
+        },
+        {
+          "line": 250,
+          "text": "format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',validated:true}),{mode:0o600});"
+        }
+      ]
+    },
+    {
+      "path": "desktop/update-recovery.cjs",
+      "occurrences": [
+        {
+          "line": 14,
+          "text": "const previous = path.join(directory, 'previous', 'Rieke OS.app');"
+        },
+        {
+          "line": 33,
+          "text": "const copied = path.join(staging, 'Rieke OS.app');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/updater-validation.cjs",
+      "occurrences": [
+        {
+          "line": 85,
+          "text": "if (installed.identifier !== 'org.riekeos.desktop') throw new Error('Unexpected installed app identity.');"
+        },
+        {
+          "line": 94,
+          "text": "if (bundles.length !== 1 || bundles[0] !== 'Rieke OS.app') throw new Error('Update must contain exactly the expected app.');"
+        }
+      ]
+    },
+    {
+      "path": "desktop/updater.cjs",
+      "occurrences": [
+        {
+          "line": 69,
+          "text": "updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'Rieke-OS',private:false});"
+        }
+      ]
+    },
+    {
+      "path": "docs/DATA_EFFICIENCY_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS data-efficiency audit \u2014 2026-09-29"
+        },
+        {
+          "line": 9,
+          "text": "Inspected the active app checkout at `/Users/maxwellsdm/Documents/GitHub/epicTreeGUI`, including the recent persistence changes. Compared core modules with `/Users/maxwellsdm/Documents/GitHub/Rieke-OS`; snapshot, cache, index, explorer, curation, and MATLAB modules matched at measurement time. Service/API/SQLite-export modules differ between checkouts; source hashes are recorded in the measurements. Findings refer to the active checkout unless stated otherwise."
+        }
+      ]
+    },
+    {
+      "path": "docs/LLM_SETUP.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Install Rieke OS with an AI assistant"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS runs without an LLM or API key. These instructions are for an optional"
+        },
+        {
+          "line": 13,
+          "text": "Help me download, install, and launch the complete Rieke OS application from"
+        },
+        {
+          "line": 14,
+          "text": "https://github.com/maxwellsdm1867/Rieke-OS/tree/main."
+        },
+        {
+          "line": 20,
+          "text": "This is the independent Rieke OS browser/desktop app with MATLAB data export."
+        },
+        {
+          "line": 67,
+          "text": "- [Whole application ZIP from main](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)"
+        },
+        {
+          "line": 68,
+          "text": "- [Versioned releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest)"
+        }
+      ]
+    },
+    {
+      "path": "docs/RIEKE_OS_OVERVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# What Rieke OS does"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS connects recorded electrophysiology data to the datasets a researcher"
+        },
+        {
+          "line": 77,
+          "text": "## Standalone Rieke OS application"
+        },
+        {
+          "line": 82,
+          "text": "provide Rieke OS web plotting and curation without a MATLAB installation."
+        }
+      ]
+    },
+    {
+      "path": "docs/RIEKE_OS_QUICK_START.md",
+      "occurrences": [
+        {
+          "line": 20,
+          "text": "app lives at `~/Applications/Rieke OS.app`; next time, open that app normally."
+        }
+      ]
+    },
+    {
+      "path": "docs/SEARCH_PRESETS.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Rieke OS distinguishes three records:"
+        }
+      ]
+    },
+    {
+      "path": "docs/SELECTION_STATE_ARCHITECTURE.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS selection state"
+        },
+        {
+          "line": 3,
+          "text": "Rieke OS separates focused epochs, temporary bulk-action targets, saved protocol"
+        },
+        {
+          "line": 17,
+          "text": "MAT data export serializes data/provenance for standard analysis. Rieke OS has no"
+        }
+      ]
+    },
+    {
+      "path": "docs/TAGGING.md",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "using those identities. In Rieke OS, choose **Import tags**, select the JSON,"
+        },
+        {
+          "line": 27,
+          "text": "tags are separate annotations. Rieke OS supports its portable JSON selection"
+        }
+      ]
+    },
+    {
+      "path": "docs/WORKSPACE_SHARING_AND_UPDATES.md",
+      "occurrences": [
+        {
+          "line": 85,
+          "text": "must not be confused with the Electron desktop channel. See [release operations](dev/releasing-rieke-os.md)."
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-geometry-repair.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Built-in image_gen edit. Final asset: `workspace-app/public/rieke-os-icon.png`."
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-shadow-cleanup.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Edited with built-in image_gen. Final asset: `workspace-app/public/rieke-os-icon.png`."
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon-top-bar.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Generated with built-in image_gen. Saved to `workspace-app/public/rieke-os-icon.png` and used by the sidebar and browser icon."
+        }
+      ]
+    },
+    {
+      "path": "docs/design/app-icon.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS app icon"
+        },
+        {
+          "line": 3,
+          "text": "Asset: `workspace-app/public/rieke-os-icon.png`"
+        },
+        {
+          "line": 9,
+          "text": "Create one production app icon for Rieke OS. Reference 1 is the subject: preserve recognizable stylized R inside pentagonal diamond superhero shield. Reference 2 is style only: rounded square tile, thick layered inset border, restrained smooth gradient and dimensional offset relief. Reference 3 is palette/context only: muted lavender and deep aubergine sidebar. Make a purple rounded square tile with deep plum outer rim, lavender inner rim, violet-to-plum face, and a large high contrast pale lavender/ivory R shield emblem centered. Preserve the R with its broad curved upper bowl and diagonal leg, and its shield silhouette. Replace all red/yellow/blue with harmonious purples. Clean precise vector-like edges, bold simple legibility at 36px, minimal layers, no glossy sparkle, no text beyond the R, no additional symbols. Single straight-on square icon, almost fills canvas with only 2% transparent outer padding, genuinely transparent outside rounded corners. No mockup, no multiple versions, no background."
+        }
+      ]
+    },
+    {
+      "path": "docs/design/electron-production-spec.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Scope updated by the user on 2026-09-30: Rieke OS is independent of"
+        },
+        {
+          "line": 7,
+          "text": "# Rieke OS Electron production specification"
+        },
+        {
+          "line": 18,
+          "text": "Users install a complete app from Rieke-OS GitHub Releases and open its icon."
+        },
+        {
+          "line": 42,
+          "text": "such as `~/Applications/Rieke OS.app`, verifies the copied bundle, and launches"
+        },
+        {
+          "line": 52,
+          "text": "| Rieke-OS public repository | Canonical reviewed application baseline, release tags, documentation and version history | New development behavior lives in a separate dirty epicTreeGUI checkout. Reconcile deliberately. |"
+        },
+        {
+          "line": 59,
+          "text": "| electron-updater | Sole desktop download/install authority, configured for the public Rieke-OS GitHub provider | Source updater must be disabled for desktop installations. |"
+        },
+        {
+          "line": 202,
+          "text": "In Rieke-OS, a reviewed version tag triggers the platform build. Build from a"
+        }
+      ]
+    },
+    {
+      "path": "docs/design/one-click-installer.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS one click installer plan"
+        },
+        {
+          "line": 9,
+          "text": "public Rieke OS app. It is based on the current public distribution, the"
+        },
+        {
+          "line": 24,
+          "text": "`~/Applications/Rieke OS.app`, which the current user can update without needing"
+        },
+        {
+          "line": 46,
+          "text": "[`maxwellsdm1867/Rieke-OS`](https://github.com/maxwellsdm1867/Rieke-OS)."
+        },
+        {
+          "line": 53,
+          "text": "| Area | Published Rieke OS | Development checkout |"
+        },
+        {
+          "line": 55,
+          "text": "| Release | [v0.1.2](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v0.1.2), with a 1,463,427-byte source ZIP and SHA256SUMS | Coordinated metadata still says 0.1.0. Discovery now points to Rieke-OS. |"
+        },
+        {
+          "line": 56,
+          "text": "| Installation | [install.sh](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/install.sh) downloads local tooling and dependencies and compiles/builds the app | Setup likewise builds Python/parser/frontend; managed launch can use prebuilt frontend assets. |"
+        },
+        {
+          "line": 57,
+          "text": "| Launch | [start.sh](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/start.sh) requires a terminal and installed runtime | Python manager and chooser; no native desktop entry point. |"
+        },
+        {
+          "line": 59,
+          "text": "| CI | [verify.yml](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/.github/workflows/verify.yml) verifies a fresh source installation | Signed source-candidate workflow and a proposed tag/publication job; these have not been carried into the public repo. |"
+        },
+        {
+          "line": 77,
+          "text": "| Pattern | GitHub's role and client behavior | Implication for Rieke OS |"
+        },
+        {
+          "line": 99,
+          "text": "update metadata. Rieke OS can host its static feed on GitHub too. The inspected"
+        },
+        {
+          "line": 149,
+          "text": "~/Applications/Rieke OS.app/       signed code and immutable resources"
+        },
+        {
+          "line": 150,
+          "text": "~/Library/Application Support/RiekeOS/  preferences, service registry, update state"
+        },
+        {
+          "line": 151,
+          "text": "~/Library/Caches/RiekeOS/          disposable runtime caches"
+        },
+        {
+          "line": 152,
+          "text": "~/Library/Logs/RiekeOS/            application and installer diagnostics"
+        },
+        {
+          "line": 212,
+          "text": "| I01 | Establish Rieke-OS as the public build authority; selectively reconcile the development changes and coordinate app, npm, bundle and tag versions. | None | A clean reviewed public commit reproduces the chosen feature baseline and version checks. No wholesale replacement of the independently validated public app. |"
+        },
+        {
+          "line": 237,
+          "text": "native Quit. Published Rieke-OS documents that Ctrl-C stops the chooser while"
+        },
+        {
+          "line": 239,
+          "text": "[Published shutdown behavior](https://github.com/maxwellsdm1867/Rieke-OS/blob/f52312f06a651500ea3e121feaebd118201d0f7b/docs/RIEKE_OS_QUICK_START.md)."
+        },
+        {
+          "line": 250,
+          "text": "Proposed stable pipeline in Rieke-OS:"
+        },
+        {
+          "line": 309,
+          "text": "| No MATLAB installation | All core installation, launch, data and update scenarios pass. MAT data integrity is checked independently; MATLAB GUI interoperability is outside the Rieke OS product scope. |"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/CLIENT_VALIDATION_MATRIX.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        },
+        {
+          "line": 87,
+          "text": "`<temporary>/Rieke release candidate \u2026/Rieke OS`; native validation project"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/DATAJOINT_HANDOFF_SCHEMA_DRAFT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        },
+        {
+          "line": 142,
+          "text": "See [integration contracts](/path/to/Rieke-OS/docs/dev/INTEGRATION_CONTRACTS_DRAFT.md) for boundary fields, validation scenarios and publication behavior."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/GITHUB_DESKTOP_UPDATE_PATTERNS.md",
+      "occurrences": [
+        {
+          "line": 6,
+          "text": "already added to Rieke OS."
+        },
+        {
+          "line": 40,
+          "text": "interface. Do not copy Rectangle's user-notification policy as Rieke OS's policy."
+        },
+        {
+          "line": 106,
+          "text": "## Proposed GitHub deployment for Rieke OS"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/INSTALLER_PRIMARY_SOURCE_REVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "# Rieke OS installer source review"
+        },
+        {
+          "line": 14,
+          "text": "Use one immutable, Developer-ID-signed and notarized `Rieke OS.app`. A small"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/MATCHING_RESULTS_AND_PROJECT_STARTUP_QA.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Validated locally on 2026-09-27 using the existing Spike Response Model catalog."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/NATIVE_E2E_VALIDATION.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        },
+        {
+          "line": 9,
+          "text": "1. Start Rieke OS and create a project from the project chooser."
+        },
+        {
+          "line": 127,
+          "text": "pointed at epicTreeGUI, whose release channel is empty. Rieke-OS is the actual"
+        },
+        {
+          "line": 130,
+          "text": "Rieke-OS; a fresh backend check returns `update_available`, available `0.1.2`,"
+        },
+        {
+          "line": 144,
+          "text": "publication condition allows only Rieke-OS. No workflow was dispatched and no"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/REACT_WORKSPACE_PLAN.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/RECORDING_WORKSPACE_IMPORT.md",
+      "occurrences": [
+        {
+          "line": 72,
+          "text": "The installed RetinAnalysis environment supplies the dependencies. From the dedicated Rieke OS repository:"
+        },
+        {
+          "line": 150,
+          "text": "The web tree uses recorded grouping fields. MAT exports contain data and provenance only; MATLAB GUI tree builders are outside the Rieke OS application."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/RIEKE_LAB_INFRASTRUCTURE_SPECIFICATION.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/SCIENTIFIC_UX_REVIEW.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        },
+        {
+          "line": 102,
+          "text": "Rieke OS now separates tree arrangement from the existing tree-and-trace inspector."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/SOURCE_FIRST_WORKFLOW.md",
+      "occurrences": [
+        {
+          "line": 39,
+          "text": "- The same file:698 still contains a placeholder auto-parser for missing JSON. Rieke OS's explicit parse/validate/import orchestration correctly fills this gap while reusing the parser and population functions."
+        },
+        {
+          "line": 59,
+          "text": "## What Rieke OS already implements correctly"
+        },
+        {
+          "line": 182,
+          "text": "Use the existing **catalog, query-to-source-hierarchy projection, object metadata lookup and device-discovery semantics** behind the current Rieke OS UI. Adapt them to a request-scoped service rather than requiring the separate old Flask app to hold the active query globally."
+        },
+        {
+          "line": 198,
+          "text": "5. **Device reads:** `get_options` returns client-visible H5 paths and `get_trace_binary` reads an entire device trace into a PNG plotted against sample index. Retain the current Rieke OS server-side UUID/locator validation and bounded sample-window endpoint, calibrated time/units, and interactive display. Some stimulus objects have parameters but no stored waveform; expose that as reconstruction availability, not an empty \u201craw stimulus\u201d plot."
+        },
+        {
+          "line": 202,
+          "text": "9. **Export completion:** old download route returns after starting a background thread; failure is printed to the console. Keep Rieke OS's explicit job/artifact completion and checksum registration. \u201cRaw tree\u201d there means tree JSON, not raw voltage samples."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TAG_EXCHANGE.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "RiekeOS shared annotations are separate from protocol inclusion/review and from raw acquisition keywords. Each tag belongs to an exact `(target_kind, target_uuid, profile_uuid)`; the text is case-sensitive. Cell tags inherit through the recorded cell UUID, without creating per-epoch tag rows. Profile names are local attribution, not authenticated identities."
+        },
+        {
+          "line": 21,
+          "text": "explicit preview/apply import. Rieke OS ships no MATLAB tagging program, GUI"
+        },
+        {
+          "line": 27,
+          "text": "The existing v2 `epoch_tags` table continues to mean protocol-specific curation tags. Additive optional v2 tables `shared_annotations` and `annotation_revisions` retain exact target kind/UUID, author profile/name, tag text, and revisions including emptied tag sets. `example_queries.shared_tags` joins inherited cell and direct epoch tags without conflating them. Compressed `frozen_records` retains the complete per-epoch annotation snapshot. These tables have the same immutable-export triggers as existing handoff tables; later edits in RiekeOS do not change an old export."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TAG_SCOPE_AND_PROFILE_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 18,
+          "text": "## Current Rieke OS gaps"
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/TREE_RESIZING_AND_DISK_INDEX_QA.md",
+      "occurrences": [
+        {
+          "line": 3,
+          "text": "Validated on 2026-09-27 in the local Rieke OS app at port 8766."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/UI_POLISH_AUDIT.md",
+      "occurrences": [
+        {
+          "line": 1,
+          "text": "> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package."
+        },
+        {
+          "line": 223,
+          "text": "Rieke OS is the product; Spike Response Model is the current project. The visible"
+        },
+        {
+          "line": 280,
+          "text": "screenshot: `rieke-os-predicate-rows.png` in the session visualization directory."
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/releases/0.1.3-separated-source-validation.json",
+      "occurrences": [
+        {
+          "line": 7,
+          "text": "\"repository\": \"maxwellsdm1867/Rieke-OS\","
+        },
+        {
+          "line": 8,
+          "text": "\"scope\": \"Independent Rieke OS application; MATLAB data export retained, MATLAB GUI integration removed\","
+        }
+      ]
+    },
+    {
+      "path": "docs/dev/releasing-rieke-os.md",
+      "occurrences": [
+        {
+          "line": 155,
+          "text": "Outputs include `desktop/dist/mac-arm64/Rieke OS.app`, the complete DMG and app"
+        },
+        {
+          "line": 185,
+          "text": "--installed 'desktop/dist/mac-arm64/Rieke OS.app' \\"
+        },
+        {
+          "line": 197,
+          "text": "--installed 'desktop/dist/mac-arm64/Rieke OS.app' \\"
+        },
+        {
+          "line": 222,
+          "text": "--app 'desktop/dist/mac-arm64/Rieke OS.app' \\"
+        },
+        {
+          "line": 223,
+          "text": "--archive desktop/dist/Rieke-OS-0.1.3-arm64.zip \\"
+        },
+        {
+          "line": 238,
+          "text": "`~/Applications/Rieke OS.app`. The installer verifies/copies the complete bundle"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_release_plan.py",
+      "occurrences": [
+        {
+          "line": 103,
+          "text": "self.write('desktop/package.json', {'name': 'desktop', 'version': '0.1.3', 'build': {'appId': 'org.riekeos.desktop'}})"
+        },
+        {
+          "line": 219,
+          "text": "'dependencies': {'library': '1.0.0'}, 'build': {'appId': 'org.riekeos.desktop'}}"
+        },
+        {
+          "line": 236,
+          "text": "data['build']['appId'] = 'org.riekeos.changed'"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_desktop_test_release.py",
+      "occurrences": [
+        {
+          "line": 17,
+          "text": "root=Path(tmp);app=root/'Rieke OS.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)"
+        },
+        {
+          "line": 21,
+          "text": "(app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3'}))"
+        },
+        {
+          "line": 22,
+          "text": "archive=root/'Rieke-OS-0.1.3-arm64.zip'"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_desktop_paths.py",
+      "occurrences": [
+        {
+          "line": 16,
+          "text": "bundle = home / 'Rieke OS.app'"
+        },
+        {
+          "line": 41,
+          "text": "with patch.dict(os.environ, {'RIEKE_DESKTOP_MODE': '0', 'RIEKE_DESKTOP_RUNTIME': '/fixture/Rieke OS.app/Contents/Resources/runtime'}):"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_handoffs.py",
+      "occurrences": [
+        {
+          "line": 128,
+          "text": "json={'display_name': 'Spike Response Model'})"
+        },
+        {
+          "line": 133,
+          "text": "self.assertEqual(project['display_name'], 'Spike Response Model')"
+        },
+        {
+          "line": 135,
+          "text": "self.assertEqual(registry['projects'][0]['name'], 'Spike Response Model')"
+        },
+        {
+          "line": 140,
+          "text": "self.assertEqual(json.loads((Path(self.temp.name) / 'project.json').read_text())['display_name'], 'Spike Response Model')"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_open_folder.py",
+      "occurrences": [
+        {
+          "line": 145,
+          "text": "'container':'rieke-os-'+identity.replace('-','')+'-'+instance.replace('-','')}"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_projects.py",
+      "occurrences": [
+        {
+          "line": 37,
+          "text": "other = self.make_project('other', 'Internal name', display_name='Spike Response Model')"
+        },
+        {
+          "line": 41,
+          "text": "self.assertEqual(result['projects'][1]['name'], 'Spike Response Model')"
+        },
+        {
+          "line": 190,
+          "text": "self.assertFalse((outside.parent / '.rieke-os.json').exists())"
+        },
+        {
+          "line": 230,
+          "text": "self.assertFalse((self.root / 'elsewhere/.rieke-os.json').exists())"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_startup.py",
+      "occurrences": [
+        {
+          "line": 160,
+          "text": "identity=project['uuid'];container='rieke-os-'+identity.replace('-','')"
+        },
+        {
+          "line": 174,
+          "text": "return {'Config':{'Labels':{'rieke-os.project_uuid':project['uuid'],'rieke-os.project_path':project['path']}},"
+        },
+        {
+          "line": 186,
+          "text": "self.assertIn(f\"rieke-os.project_uuid={project['uuid']}\",create.args[0])"
+        },
+        {
+          "line": 197,
+          "text": "info['Config']['Labels']['rieke-os.project_uuid']='foreign'"
+        },
+        {
+          "line": 206,
+          "text": "info=self._info(project);info['Config']['Labels']['rieke-os.project_uuid']='another-project'"
+        }
+      ]
+    },
+    {
+      "path": "python/tests/test_workspace_updates.py",
+      "occurrences": [
+        {
+          "line": 297,
+          "text": "self.assertEqual(download.call_args_list[1].args[0],'https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_author_preferences.py",
+      "occurrences": [
+        {
+          "line": 11,
+          "text": "return Path(os.environ.get('RIEKE_PREFERENCES_DIR', Path.home() / '.rieke-os')).expanduser() / 'annotation-author.json'"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_launcher.py",
+      "occurrences": [
+        {
+          "line": 104,
+          "text": "expected = 'rieke-os-' + project['uuid'].replace('-', '') + '-' + instance.replace('-', '')"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_mysql_runtime.py",
+      "occurrences": [
+        {
+          "line": 124,
+          "text": "request = Request(url, headers={'User-Agent': 'Rieke-OS-native-runtime/1'})"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_project_database.py",
+      "occurrences": [
+        {
+          "line": 41,
+          "text": "if container.startswith('rieke-os-') and not owned:"
+        },
+        {
+          "line": 44,
+          "text": "expected = 'rieke-os-' + identity.replace('-', '')"
+        },
+        {
+          "line": 70,
+          "text": "'--label',f'rieke-os.project_uuid={identity}',"
+        },
+        {
+          "line": 71,
+          "text": "'--label',f'rieke-os.project_path={project_dir}',"
+        },
+        {
+          "line": 83,
+          "text": "if labels.get('rieke-os.project_uuid') != identity or labels.get('rieke-os.project_path') != str(project_dir):"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_startup_registry.py",
+      "occurrences": [
+        {
+          "line": 12,
+          "text": "path = Path(root) / '.rieke-os.json'"
+        },
+        {
+          "line": 16,
+          "text": "return {'format':'rieke-os-startup','version':1,'last_project_uuid':None}"
+        },
+        {
+          "line": 20,
+          "text": "if not isinstance(value,dict) or value.get('format') != 'rieke-os-startup' or value.get('version') != 1:"
+        },
+        {
+          "line": 29,
+          "text": "lock_path = root / '.rieke-os.lock'"
+        },
+        {
+          "line": 37,
+          "text": "write_json(root / '.rieke-os.json', value)"
+        },
+        {
+          "line": 68,
+          "text": "path = Path(os.environ.get('RIEKE_PREFERENCES_DIR', Path.home() / '.rieke-os')).expanduser() / 'project-index.json'"
+        }
+      ]
+    },
+    {
+      "path": "python/workspace_updates.py",
+      "occurrences": [
+        {
+          "line": 34,
+          "text": "REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}"
+        },
+        {
+          "line": 123,
+          "text": "request = Request(url, headers={'Accept': 'application/vnd.github+json', 'User-Agent': 'Rieke-OS-updater/1'})"
+        },
+        {
+          "line": 139,
+          "text": "payload = _download('https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')"
+        }
+      ]
+    },
+    {
+      "path": "rieke-release.json",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "\"repository\": \"maxwellsdm1867/Rieke-OS\","
+        }
+      ]
+    },
+    {
+      "path": "tools/build_release.py",
+      "occurrences": [
+        {
+          "line": 72,
+          "text": "'repository': 'maxwellsdm1867/Rieke-OS', 'canonical_repository': REPOSITORY, 'version': metadata['version'], 'commit': commit,"
+        },
+        {
+          "line": 74,
+          "text": "'artifacts': [{'platform': target, 'url': f'https://github.com/maxwellsdm1867/Rieke-OS/releases/download/{expected}/{name}',"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_artifact_e2e.py",
+      "occurrences": [
+        {
+          "line": 60,
+          "text": "if plist['CFBundleIdentifier'] != 'org.riekeos.desktop' or plist['CFBundleShortVersionString'] != manifest['application_version']:"
+        },
+        {
+          "line": 64,
+          "text": "if not os.access(bundle / 'Contents/MacOS/Rieke OS', os.X_OK):"
+        },
+        {
+          "line": 94,
+          "text": "shell_paths = ('Contents/Info.plist', 'Contents/MacOS/Rieke OS', 'Contents/Resources/app.asar',"
+        },
+        {
+          "line": 249,
+          "text": "'unsafe metadata artifact path':original.replace('url: Rieke-OS','url: ../Rieke-OS',1),"
+        },
+        {
+          "line": 286,
+          "text": "const installer=require(process.argv[4]);try{await installer.installCompleteBundle({source:process.argv[3],destination:p.join(process.argv[5],'must not install','Rieke OS.app')});throw Error('unsigned install accepted')}catch(e){if(e.message==='unsigned install accepted')throw e;tests.push({case:'unsigned real app rejected by first-open signed installer',rejected:true});}"
+        },
+        {
+          "line": 317,
+          "text": "report['installation_reference_kind']=('built-candidate' if reference == (ROOT/'desktop/dist/mac-arm64/Rieke OS.app').resolve()"
+        },
+        {
+          "line": 331,
+          "text": "bundles['zip']=ziproot/'Rieke OS.app'"
+        },
+        {
+          "line": 337,
+          "text": "execute(['/usr/bin/ditto','--rsrc','--extattr','--acl',mount/'Rieke OS.app',dmgroot/'Rieke OS.app'],timeout=180)"
+        },
+        {
+          "line": 338,
+          "text": "bundles['dmg']=dmgroot/'Rieke OS.app'"
+        },
+        {
+          "line": 393,
+          "text": "parser.add_argument('--installed',type=Path,default=Path.home()/'Applications/Rieke OS.app')"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_no_docker_smoke.py",
+      "occurrences": [
+        {
+          "line": 153,
+          "text": "parser.add_argument('--resources',type=Path,default=Path(__file__).resolve().parents[1]/'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_release.py",
+      "occurrences": [
+        {
+          "line": 21,
+          "text": "REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}"
+        },
+        {
+          "line": 59,
+          "text": "if release['repository'] not in {REPOSITORY, 'maxwellsdm1867/Rieke-OS'} or release['channel'] != 'stable':"
+        },
+        {
+          "line": 194,
+          "text": "with urlopen(Request(url, headers={'User-Agent': 'Rieke-OS-release-verifier'}), timeout=60) as response:"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_runtime_audit.py",
+      "occurrences": [
+        {
+          "line": 64,
+          "text": "if release and release.get('repository') not in {'maxwellsdm1867/disco', 'maxwellsdm1867/Rieke-OS'}:"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_scientific_e2e.py",
+      "occurrences": [
+        {
+          "line": 674,
+          "text": "parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_startup_failures.py",
+      "occurrences": [
+        {
+          "line": 13,
+          "text": "parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')"
+        }
+      ]
+    },
+    {
+      "path": "tools/desktop_test_release.py",
+      "occurrences": [
+        {
+          "line": 33,
+          "text": "if plist.get('CFBundleIdentifier')!='org.riekeos.desktop' or plist.get('CFBundleShortVersionString')!=version:raise ValueError('App identity or version differs')"
+        },
+        {
+          "line": 34,
+          "text": "if archive.name!=f'Rieke-OS-{version}-arm64.zip':raise ValueError('Archive name differs from version')"
+        },
+        {
+          "line": 37,
+          "text": "archived_manifest=z.read('Rieke OS.app/Contents/Resources/runtime/runtime-manifest.json')"
+        },
+        {
+          "line": 38,
+          "text": "archived_asar=hashlib.sha256(z.read('Rieke OS.app/Contents/Resources/app.asar')).hexdigest()"
+        },
+        {
+          "line": 41,
+          "text": "return {'format':'rieke-desktop-test-release','version':1,'channel':'unsigned-testing','repository':'maxwellsdm1867/Rieke-OS','canonical_repository':REPOSITORY,"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/index.html",
+      "occurrences": [
+        {
+          "line": 2,
+          "text": "<html lang=\"en\"><head><meta charset=\"UTF-8\"/><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"/><meta name=\"theme-color\" content=\"#332735\"/><link rel=\"icon\" type=\"image/png\" href=\"/rieke-os-icon.png\"/><link rel=\"apple-touch-icon\" href=\"/rieke-os-icon.png\"/><title>Disco</title></head><body><div id=\"root\"></div><script type=\"module\" src=\"/src/main.jsx\"></script></body></html>"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/appUpdates.js",
+      "occurrences": [
+        {
+          "line": 4,
+          "text": "try{const url=new URL(value);return url.origin==='https://github.com'&&['disco','Rieke-OS'].some(repo=>url.pathname===`/maxwellsdm1867/${repo}/releases`||url.pathname.startsWith(`/maxwellsdm1867/${repo}/releases/tag/`))&&!url.username&&!url.password?url.href:null;}catch{return null;}"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/components/ProjectOnboarding.jsx",
+      "occurrences": [
+        {
+          "line": 45,
+          "text": "<header><div><small>RIEKE OS</small><h1 id={titleId}>{created?'Project ready':creating?'New project':'Your projects'}</h1></div><img className=\"onboarding-app-icon\" src=\"/rieke-os-icon.png\" alt=\"Disco app icon\" title=\"Disco\" width=\"48\" height=\"48\"/>{onCancel&&<button className=\"icon-button\" onClick={onCancel} disabled={busy||loading} aria-label=\"Close project setup\"><X size={19}/></button>}</header>"
+        }
+      ]
+    },
+    {
+      "path": "workspace-app/src/projectPreferences.js",
+      "occurrences": [
+        {
+          "line": 5,
+          "text": "return field==='recent_searches'?`rieke-os.search-presets.v1.${projectId}`:`rieke-os.sidebar.protocols.v1.${projectId}`;"
+        }
+      ]
+    }
+  ]
+}

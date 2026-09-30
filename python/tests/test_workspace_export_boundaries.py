@@ -1,4 +1,4 @@
-"""Rieke OS accepts generic JSON curation, never plotting-GUI mask traffic."""
+"""Disco accepts generic JSON curation, never plotting-GUI mask traffic."""
 import copy
 import io
 import unittest

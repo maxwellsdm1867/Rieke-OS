@@ -7,7 +7,7 @@ function page(initial){
  return {element,get installs(){return installs;},emit:status=>listener(status),settle:()=>new Promise(resolve=>setImmediate(resolve)),click:async id=>element(id).onclick({target:element(id)})};
 }
 test('unsigned bootstrap explains Open Anyway only before installation and requires an explicit Install and Open',async()=>{
- const h=page({state:'Bootstrap',channel:'unsigned-testing',title:'Install Rieke OS',message:'Install this complete app in your Applications folder and open it.'});await h.settle();
+ const h=page({state:'Bootstrap',channel:'unsigned-testing',title:'Install Disco',message:'Install this complete app in your Applications folder and open it.'});await h.settle();
  assert.equal(h.element('channel').hidden,false);assert.match(h.element('channel').textContent,/Unsigned testing/);
  assert.equal(h.element('gatekeeper').hidden,false);assert.match(h.element('gatekeeper').textContent,/Open Anyway/);
  assert.equal(h.installs,0);await h.click('install');assert.equal(h.installs,1);assert.match(h.element('detail').textContent,/still running/);

@@ -1,15 +1,17 @@
-> **Complete Mac desktop testing app:** [Download Rieke OS for Apple Silicon](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Rieke OS, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **Release / Publish** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
+> **Complete Mac desktop testing app:** [Download Disco for Apple Silicon](https://github.com/maxwellsdm1867/disco/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open Disco, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **Release / Publish** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
 
-# Rieke Lab OS
+# Disco
 
-**Rieke OS is a local research workspace for Symphony electrophysiology recordings.**
+Data Inspection, Selection, Comparison Operations · A Rieke Lab OS
+
+**Disco is a local research workspace for Symphony electrophysiology recordings.**
 It turns a folder of H5 files into an organized project where you can find cells
 and trials, inspect recorded responses, decide which epochs belong in an analysis,
 and export that exact selection with its metadata and history.
 
 The app is designed around retinal physiology workflows: a cell can have
 characterization recordings, several acquisition protocols, and many repeated
-trials. Rieke OS keeps those relationships visible while you move between a
+trials. Disco keeps those relationships visible while you move between a
 project overview, a cell's recordings, a metadata search, and individual traces.
 An **epoch** is one recorded trial; a **protocol** is the acquisition procedure
 recorded in the source file.
@@ -26,7 +28,7 @@ LLM account, or API key. MATLAB data export uses bundled Python and SciPy.
 
 ## From recordings to an analysis dataset
 
-| Your task | What Rieke OS provides |
+| Your task | What Disco provides |
 | --- | --- |
 | Organize recordings | Import original Symphony H5 files by path or upload; browse dates, cells, acquisition protocols, blocks and epochs in a project catalog. |
 | Find the relevant trials | Search recorded metadata and authored tags with nested conditions; save reusable searches and inspect the matching epochs. |
@@ -54,13 +56,13 @@ projects, searches, working datasets, annotations and exports fit together.
 
 ## Source download (developer workflow)
 
-**[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
+**[Download main as a ZIP](https://github.com/maxwellsdm1867/disco/archive/refs/heads/main.zip)**
 for the current application and documentation, or choose a version from
-[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download
+[Releases](https://github.com/maxwellsdm1867/disco/releases/latest) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's
 **Code → Download ZIP** also downloads the current `main` branch.
 
-This is the complete **Rieke OS browser application**, including its installer,
+This is the complete **Disco browser application**, including its installer,
 backend and browser interface. Its application code is independent of EpicTreeGUI.
 MATLAB plotting, interactive GUI code and launchers are not included.
 The package includes the code needed to install the app; the installer downloads
@@ -69,8 +71,8 @@ its dependencies. Your recordings and research projects are separate.
 Prefer Git? Clone the same app:
 
 ```sh
-git clone https://github.com/maxwellsdm1867/Rieke-OS.git
-cd Rieke-OS
+git clone https://github.com/maxwellsdm1867/disco.git
+cd disco
 ```
 
 ## Install and launch
@@ -79,7 +81,7 @@ For the complete Mac app, use the DMG and **Install and Open** described above.
 The following commands apply only to a source checkout.
 
 1. Put the extracted application folder somewhere permanent, such as
-   `~/Applications/Rieke-OS-main`. Keep research projects outside it.
+   `~/Applications/disco-main`. Keep research projects outside it.
 2. Open Terminal and change into that folder. On macOS, type `cd `, drag the
    extracted folder into Terminal, and press Return. The folder must contain
    `install.sh` and `start.sh`.
@@ -90,7 +92,7 @@ The following commands apply only to a source checkout.
    sh start.sh
    ```
 
-4. Keep Terminal open and visit [Rieke OS locally](http://127.0.0.1:8766).
+4. Keep Terminal open and visit [Disco locally](http://127.0.0.1:8766).
    Choose a workspace folder, select **Add project**, and open the project.
    Use **Add data store** when you are ready to import a Symphony H5 recording.
    You can create and open an empty project without a recording.
@@ -156,7 +158,7 @@ workspace issues. Keep the exact error when asking for help.
 ## Your files
 
 ```text
-Rieke-OS/                       Application source and managed runtime
+disco/                       Application source and managed runtime
   .rieke-runtime/               Downloaded tools, parser, Python, and configuration
   workspace-app/dist/           Built browser interface
 
@@ -215,7 +217,7 @@ and verification receipt.
 
 ## Dependencies and license
 
-Rieke OS application source is available under the [MIT license](LICENSE). The installer
+Disco application source is available under the [MIT license](LICENSE). The installer
 fetches [RetinAnalysis](https://github.com/DRezeanu/retinanalysis), DataJoint,
 MySQL, scientific Python libraries, and conda-forge tools under their respective
 licenses. Third-party packages are installed separately, not relicensed as part

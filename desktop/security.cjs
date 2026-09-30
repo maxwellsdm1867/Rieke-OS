@@ -29,6 +29,6 @@ function validateDraft(payload) {
 }
 function approvedReleaseURL(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'github.com' &&
-    !url.username && !url.password && /^\/maxwellsdm1867\/Rieke-OS\/releases(?:\/|$)/.test(url.pathname); } catch { return false; }
+    !url.username && !url.password && /^\/maxwellsdm1867\/(?:disco|Rieke-OS)\/releases(?:\/|$)/.test(url.pathname); } catch { return false; }
 }
 module.exports = {isOwnedURL, validateSender, validateDraft, validateProjectId, approvedReleaseURL};

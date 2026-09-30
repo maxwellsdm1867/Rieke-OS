@@ -61,7 +61,14 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     checking = (async () => {
       set('Checking', {checked_at: new Date().toISOString(), check_error: null, message: 'Checking for a published update.'});
       try {
-        const result = await updater.checkForUpdates();
+        updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'disco',private:false});
+        let result;
+        try{result=await updater.checkForUpdates();}
+        catch(error){
+          if((error.statusCode ?? error.cause?.statusCode)!==404)throw error;
+          updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:'Rieke-OS',private:false});
+          result=await updater.checkForUpdates();
+        }
         // The pinned client resolves metadata before its automatic download.
         // Observe that separate promise so a failed checksum/network write
         // cannot escape as an unhandled rejection in the Electron main process.
@@ -87,12 +94,12 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     updater.allowDowngrade = false;
     updater.allowPrerelease = false;
     updater.logger = null; // Never log cache/session URLs or local paths.
-    updater.setFeedURL({provider: 'github', owner: 'maxwellsdm1867', repo: 'Rieke-OS', private: false});
+    updater.setFeedURL({provider: 'github', owner: 'maxwellsdm1867', repo: 'disco', private: false});
     on('checking-for-update', () => set('Checking'));
     on('update-available', info => {
       try {
         if (compareVersions(info.version, manifest.application_version) <= 0) throw new Error('Older release');
-        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v${info.version}`, message: `Rieke OS ${info.version} is available.`});
+        set('Available', {available: info.version, release_url: `https://github.com/maxwellsdm1867/disco/releases/tag/v${info.version}`, message: `Disco ${info.version} is available.`});
       } catch { updater.autoDownload = false; defer('Published update metadata was rejected.'); }
     });
     on('download-progress', progress => set('Downloading', {progress: Math.max(0, Math.min(100, Number(progress.percent) || 0)), message: 'Downloading an update quietly.'}));

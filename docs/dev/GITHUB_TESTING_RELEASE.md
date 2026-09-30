@@ -1,11 +1,11 @@
 # GitHub unsigned desktop testing releases
 
 The testing distribution is explicit in `desktop/distribution.json`. It uses the
-public `maxwellsdm1867/Rieke-OS` repository and remains separate from Developer ID
+public `maxwellsdm1867/disco` repository and remains separate from Developer ID
 signed production installation and updates.
 
 Users download the complete Apple Silicon DMG from a release asset link, open
-Rieke OS, and click **Install and Open**. The app copies its complete private
+Disco, and click **Install and Open**. The app copies its complete private
 runtime to the current user's Applications folder. No Terminal, Docker, Python,
 Node, or external MySQL setup is required. An unsigned download may require
 macOS **Privacy & Security → Open Anyway** approval before it can run.

@@ -7,7 +7,7 @@ test('only an available release creates an update indicator',()=>{
 });
 test('a failed refresh retains a known update until a successful check replaces it',()=>{
   const previous={state:'update_available',available:'1.2.0',installed:'1.1.0',
-    release_url:'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.2.0',
+    release_url:'https://github.com/maxwellsdm1867/disco/releases/tag/v1.2.0',
     release_notes:'Changes',checked_at:'2026-09-29T00:00:00Z',can_stage:true};
   const failed=mergeUpdateCheck(previous,{state:'error',available:null,release_url:null,
     checked_at:'2026-09-29T00:15:00Z',message:'Offline',can_stage:false});
@@ -27,8 +27,8 @@ test('a failed refresh retains a known update until a successful check replaces 
   assert.equal(updateNotice(mergeUpdateCheck(previous,{state:'update_available',available:'1.3.0'})).version,'1.3.0');
 });
 test('release links cannot navigate to executable or untrusted destinations',()=>{
-  for(const value of ['javascript:alert(1)','https://github.com.evil.test/releases','https://github.com/other/repo/releases','https://user:password@github.com/maxwellsdm1867/Rieke-OS/releases'])assert.equal(releaseLink(value),null);
-  assert.ok(releaseLink('https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/v1.0.0'));
+  for(const value of ['javascript:alert(1)','https://github.com.evil.test/releases','https://github.com/other/repo/releases','https://user:password@github.com/maxwellsdm1867/disco/releases'])assert.equal(releaseLink(value),null);
+  assert.ok(releaseLink('https://github.com/maxwellsdm1867/disco/releases/tag/v1.0.0'));
 });
 test('automatically checks at startup, periodically, and on return after elapsed interval',()=>{
   let calls=0,tick,visible,time=0,cleared=false;

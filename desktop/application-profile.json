@@ -1,7 +1,7 @@
 {
   "format": "rieke-application-profile",
   "version": 1,
-  "application": "Rieke OS",
+  "application": "Disco",
   "capabilities": {
     "mat_data_export": "Python/scipy; numeric data, acquisition provenance and frozen annotations",
     "matlab_gui": false,
@@ -160,11 +160,11 @@
     },
     {
       "pattern": "python/tests/test_export.py",
-      "reason": "Legacy export_mat CLI contract; Rieke OS MAT data serialization covered by current export tests"
+      "reason": "Legacy export_mat CLI contract; Disco MAT data serialization covered by current export tests"
     },
     {
       "pattern": "*.m",
-      "reason": "MATLAB executable application code is outside the Rieke OS source distribution"
+      "reason": "MATLAB executable application code is outside the Disco source distribution"
     }
   ],
   "runtime_only_exclusions": [

@@ -13,7 +13,7 @@ import plistlib
 import re
 import zipfile
 
-REPOSITORY='maxwellsdm1867/Rieke-OS'
+REPOSITORY='maxwellsdm1867/disco'
 
 def hashes(path):
     a,b=hashlib.sha256(),hashlib.sha512()
@@ -38,7 +38,7 @@ def build_descriptor(bundle,archive):
         archived_asar=hashlib.sha256(z.read('Rieke OS.app/Contents/Resources/app.asar')).hexdigest()
         if archived_manifest!=raw or archived_asar!=asar:raise ValueError('Archive is not the inspected app')
     sha256,sha512=hashes(archive)
-    return {'format':'rieke-desktop-test-release','version':1,'channel':'unsigned-testing','repository':REPOSITORY,
+    return {'format':'rieke-desktop-test-release','version':1,'channel':'unsigned-testing','repository':'maxwellsdm1867/Rieke-OS','canonical_repository':REPOSITORY,
             **{key:manifest[key] for key in ['application_version','platform','architecture','workspace_formats','database_compatibility','mysql_version','minimum_macos_version']},
             'archive':{'filename':archive.name,'size':archive.stat().st_size,'sha256':sha256,'sha512':sha512},
             'asar_sha256':asar,'runtime_manifest_sha256':hashlib.sha256(raw).hexdigest(),

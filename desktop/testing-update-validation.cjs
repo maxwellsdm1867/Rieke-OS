@@ -5,19 +5,20 @@ const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
 const {compareVersions,compatibleMacMinimum,verifyResources,ARCHIVE_CHECK}=require('./updater-validation.cjs');
-const REPOSITORY='maxwellsdm1867/Rieke-OS';
+const REPOSITORY='maxwellsdm1867/disco';
+const REPOSITORIES=[REPOSITORY,'maxwellsdm1867/Rieke-OS'];
 function approvedURL(value,kind='asset',redirect=false){
   const url=new URL(value);
   if(url.protocol!=='https:'||url.username||url.password||url.hash||(url.port&&url.port!=='443'))throw new Error('Only public GitHub HTTPS downloads are accepted.');
   if(kind==='api'){
-    if(url.hostname!=='api.github.com'||url.pathname!==`/repos/${REPOSITORY}/releases`)throw new Error('Unexpected release API.');
+    if(url.hostname!=='api.github.com'||!REPOSITORIES.some(repo=>url.pathname===`/repos/${repo}/releases`))throw new Error('Unexpected release API.');
   }else if(url.hostname==='github.com'){
-    if(!url.pathname.startsWith(`/${REPOSITORY}/releases/download/`)||url.search||decodeURIComponent(url.pathname).split('/').some(p=>p==='..'||p==='.')||/%2f|%5c/i.test(url.pathname))throw new Error('Unexpected release asset.');
+    if(!REPOSITORIES.some(repo=>url.pathname.startsWith(`/${repo}/releases/download/`))||url.search||decodeURIComponent(url.pathname).split('/').some(p=>p==='..'||p==='.')||/%2f|%5c/i.test(url.pathname))throw new Error('Unexpected release asset.');
   }else if(!redirect||!['release-assets.githubusercontent.com','objects.githubusercontent.com','github-releases.githubusercontent.com'].includes(url.hostname))throw new Error('Unexpected asset redirect.');
   return true;
 }
 function validateDescriptor(value,current,hostVersion){
-  if(!value||value.format!=='rieke-desktop-test-release'||value.version!==1||value.channel!=='unsigned-testing'||value.repository!==REPOSITORY)throw new Error('Unexpected testing release provenance.');
+  if(!value||value.format!=='rieke-desktop-test-release'||value.version!==1||value.channel!=='unsigned-testing'||!REPOSITORIES.includes(value.repository))throw new Error('Unexpected testing release provenance.');
   if(compareVersions(value.application_version,current.application_version)<=0)throw new Error('Testing update must be newer than the installed app.');
   if(value.platform!=='darwin'||value.architecture!=='arm64'||current.platform!==value.platform||current.architecture!==value.architecture)throw new Error('Unsupported testing platform.');
   if(value.mysql_version!==current.mysql_version||value.database_compatibility!==current.database_compatibility||!Array.isArray(value.workspace_formats)||!Array.isArray(current.workspace_formats)||!current.workspace_formats.every(f=>value.workspace_formats.includes(f)))throw new Error('Testing update requires a data migration.');

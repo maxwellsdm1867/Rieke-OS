@@ -2,7 +2,7 @@
 
 > A local research workspace for Symphony electrophysiology: organize recordings,
 > inspect cells and response traces, curate reproducible epoch selections, and
-> export to MATLAB, SQLite or JSON. Repository: https://github.com/maxwellsdm1867/Rieke-OS
+> export to MATLAB, SQLite or JSON. Repository: https://github.com/maxwellsdm1867/disco
 
 ## Start here
 
@@ -11,7 +11,7 @@
 - [Quick start: install through first export](docs/RIEKE_OS_QUICK_START.md)
 - [LLM installation instructions](docs/LLM_SETUP.md)
 - [Workspace reference](workspace-app/README.md)
-- [Rieke OS application boundary](docs/RIEKE_OS_ARCHITECTURE.md)
+- [Disco application boundary](docs/RIEKE_OS_ARCHITECTURE.md)
 - [Packaging and validation scope](packaging/README.md)
 
 ## Setup contract

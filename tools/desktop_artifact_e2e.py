@@ -233,7 +233,7 @@ def expected_rejection(name, action, results):
 def fault_checks(directory, manifest, scratch, bundle):
     faults=[]
     expected_rejection('foreign publication repository',lambda:baseline('v'+manifest['application_version'],'untrusted/repository'),faults)
-    expected_rejection('dirty or unreviewed source baseline',lambda:baseline('v'+manifest['application_version'],'maxwellsdm1867/Rieke-OS'),faults)
+    expected_rejection('dirty or unreviewed source baseline',lambda:baseline('v'+manifest['application_version'],'maxwellsdm1867/disco'),faults)
     artifacts=artifact_inventory(directory)
     evidence={'format':'rieke-desktop-qualification','version':1,'application_version':manifest['application_version'],
               'platform':'darwin','architecture':'arm64','source_commit':manifest['source_commit'],'artifacts':artifacts,'requirements':{}}

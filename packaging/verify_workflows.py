@@ -59,7 +59,7 @@ def main():
                 time.sleep(.2)
         else:raise TimeoutError('Launcher did not become ready')
         passed('clean-runtime launcher health')
-        with urlopen(base) as response:assert b'<title>Rieke OS</title>' in response.read()
+        with urlopen(base) as response:assert b'<title>Disco</title>' in response.read()
         passed('built browser app served')
         assert request(base,'/api/projects')['projects']==[]
         created=request(base,'/api/projects',{'name':'End-to-end verification'})

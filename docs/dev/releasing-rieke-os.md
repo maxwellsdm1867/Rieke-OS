@@ -1,10 +1,10 @@
-# Rieke OS release operations
+# Disco release operations
 
-Build and publish from the dedicated `maxwellsdm1867/Rieke-OS` repository. The
+Build and publish from the dedicated `maxwellsdm1867/disco` repository. The
 original EpicTreeGUI repository retains its MATLAB application and documentation;
-it is not a release source or update channel for Rieke OS.
+it is not a release source or update channel for Disco.
 
-Rieke OS retains Python/SciPy MAT data export. Its reviewed application closure
+Disco retains Python/SciPy MAT data export. Its reviewed application closure
 excludes MATLAB GUI/plotting programs, launchers, installers, UGM interactions
 and their tests. Web plotting/curation, generic UUID tag JSON and Recording
 Selection Mask v1 JSON remain supported. Historical export files stay readable.
@@ -51,7 +51,7 @@ an exact reviewed `v<version>` tag at HEAD:
 
 ```sh
 python3 tools/desktop_release.py baseline --tag v0.1.3 \
-  --repository maxwellsdm1867/Rieke-OS --output /tmp/rieke-desktop-baseline.json
+  --repository maxwellsdm1867/disco --output /tmp/rieke-desktop-baseline.json
 ```
 
 Use the version being released, not the example blindly. For an unsigned testing
@@ -59,7 +59,7 @@ release, create the reviewed local `desktop-test-v<version>` tag at HEAD and run
 
 ```sh
 python3 tools/desktop_release.py baseline-testing --tag desktop-test-v0.1.3 \
-  --repository maxwellsdm1867/Rieke-OS --output desktop/build/desktop-baseline.json
+  --repository maxwellsdm1867/disco --output desktop/build/desktop-baseline.json
 ```
 
 Both baselines verify the actual Git origin, clean source profile and exact tag

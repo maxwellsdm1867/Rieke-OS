@@ -1,4 +1,4 @@
-name: Rieke OS regression checks
+name: Disco regression checks
 on:
   pull_request:
     paths-ignore: ['docs/**', '**/*.md']
@@ -32,8 +32,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv pip install --system --require-hashes -r python/workspace-runtime.lock
       - run: python tools/build_release.py --validate-only
-      - name: Reject mixed EpicTreeGUI source in Rieke OS
-        if: github.repository == 'maxwellsdm1867/Rieke-OS'
+      - name: Reject mixed EpicTreeGUI source in Disco
+        if: (github.repository == 'maxwellsdm1867/disco' || github.repository == 'maxwellsdm1867/Rieke-OS')
         run: python tools/desktop_application_profile.py
       - run: python -m unittest discover -s python/tests -p 'test_*.py' -v
         env:

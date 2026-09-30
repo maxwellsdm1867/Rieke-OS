@@ -16,18 +16,18 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
   const ready=status?.state==='Ready'||!!notice&&(status?.staged_version===notice.version||download?.state==='complete'&&download.result?.version===notice.version);
   return createPortal(<dialog ref={dialog} className="app-update-dialog" aria-labelledby="app-update-title" onCancel={event=>{event.preventDefault();onClose();}}>
     <header><h2 id="app-update-title">Release / Publish</h2><button autoFocus className="icon-button" aria-label="Close updates" onClick={onClose}><X size={18}/></button></header>
-    <p>Rieke OS app version: <strong>{installed||'Development checkout'}</strong></p>
-    {testing&&<p><strong>Unsigned testing</strong> · Install only releases you trust from the Rieke OS GitHub repository.</p>}
+    <p>Disco app version: <strong>{installed||'Development checkout'}</strong></p>
+    {testing&&<p><strong>Unsigned testing</strong> · Install only releases you trust from the Disco GitHub repository.</p>}
     <p className="app-update-automatic">{testing?'Updates are checked automatically at startup and about once an hour. You choose when to download and restart to update.':desktop?'Updates are checked automatically at startup and about once an hour. Available updates download quietly.':'Updates are checked automatically when you open the app and every 15 minutes while it is visible. Available updates appear here quietly.'}</p>
-    {!testing&&(desktop||status?.can_stage)&&<p>New versions download automatically. After you close Rieke OS and its project services, the next launch applies the prepared update.</p>}
-    <p role="status">{status?.state==='Installing'?'Restarting to update…':status?.state==='Draining'?'Waiting for current work to finish…':status?.state==='Validating'?'Verifying the update…':busy?(operation==='restart'?'Preparing to restart…':operation==='download'||status?.state==='Downloading'?'Downloading the update…':'Checking for updates…'):notice?.message||status?.message||'Check for a published Rieke OS release.'}</p>
+    {!testing&&(desktop||status?.can_stage)&&<p>New versions download automatically. After you close Disco and its project services, the next launch applies the prepared update.</p>}
+    <p role="status">{status?.state==='Installing'?'Restarting to update…':status?.state==='Draining'?'Waiting for current work to finish…':status?.state==='Validating'?'Verifying the update…':busy?(operation==='restart'?'Preparing to restart…':operation==='download'||status?.state==='Downloading'?'Downloading the update…':'Checking for updates…'):notice?.message||status?.message||'Check for a published Disco release.'}</p>
     {status?.check_error&&!error&&<p role="status">{status.check_error} The previously found update is still shown.</p>}
     {error&&<p role="alert" className="error">{error}</p>}
     {notice&&!desktop&&!status?.can_stage&&<p>Automatic installation is not available for this installation. Review the release instructions before updating.</p>}
     {desktop&&['Downloading','Validating'].includes(status?.state)&&<p role="status">Preparing the update. The current app remains active.</p>}
     {desktop&&ready&&<p role="status">{testing?'Update ready. Choose when to restart to update.':'Update ready for an orderly quit. Startup will be checked before projects reopen.'}</p>}
     {download?.state==='running'&&<p role="status">Downloading and verifying the update. The current app remains active.</p>}
-    {ready&&!testing&&<p role="status">{download?.result?.message||'Update ready. Close Rieke OS and all project services; the next launch will use this version.'}</p>}
+    {ready&&!testing&&<p role="status">{download?.result?.message||'Update ready. Close Disco and all project services; the next launch will use this version.'}</p>}
     {download?.state==='failed'&&<p role="alert">{download.error}</p>}
     {status?.checked_at&&<small>Last checked: {new Date(status.checked_at).toLocaleString()}</small>}
     <footer>{url&&(desktop?<button onClick={()=>desktopBridge().openReleaseNotes(url)}>Release notes</button>:<a href={url} target="_blank" rel="noopener noreferrer">Release notes</a>)}{notice&&(testing?status.can_download:!desktop&&status.can_stage)&&!ready&&<button disabled={busy||download?.state==='running'} onClick={onDownload}>{download?.state==='failed'?'Retry download':'Download update'}</button>}{testing&&ready&&<button disabled={busy} onClick={onRestart}>Restart to update</button>}<button disabled={busy} onClick={onCheck}><RefreshCw size={14} className={busy?'spin':''}/> Check for updates</button></footer>
@@ -67,7 +67,7 @@ export default function AppUpdates({sidebar=false}){
   useEffect(()=>{alive.current=true;const bridge=desktopBridge();if(bridge){bridge.status().then(result=>{if(alive.current)setStatus(result);}).catch(()=>{});const stop=bridge.onStatus(result=>{if(alive.current)setStatus(result);});return()=>{alive.current=false;stop();};}const stop=watchAppUpdates(()=>check());return()=>{alive.current=false;stop();};},[]);
   const notice=updateNotice(status);
   const ready=status?.state==='Ready'||!!notice&&(status?.staged_version===notice.version||download?.state==='complete'&&download.result?.version===notice.version);
-  const detail=ready?`Rieke OS ${notice?.version||status?.available||''} is ready${status?.channel==='unsigned-testing'?' — choose Restart to update':' for the next launch'}`:notice?.message;
+  const detail=ready?`Disco ${notice?.version||status?.available||''} is ready${status?.channel==='unsigned-testing'?' — choose Restart to update':' for the next launch'}`:notice?.message;
   return <><button className={`${sidebar?'nav-item app-update-nav':'app-update-button'} ${notice?'has-update':''}`} onClick={()=>setOpen(true)} title={detail||status?.message||'App updates'} aria-label={`Release / Publish${detail?` — ${detail}`:''}`} aria-haspopup="dialog" aria-expanded={open}><ArrowUpCircle size={17}/><span>Release / Publish</span>{notice&&<span className="app-update-badge" role="status" aria-live="polite">{status?.channel==='unsigned-testing'?`${ready?'Ready · ':''}v${notice.version}`:ready?'Ready':'Update'}</span>}</button>
     {open&&<UpdateDialog status={status} busy={busy||!!operation||['Checking','Downloading','Validating','Draining','Installing'].includes(status?.state)} operation={operation} error={error} onCheck={()=>check(true)} onDownload={stage} onRestart={restart} download={download} onClose={()=>setOpen(false)}/>}</>;
 }

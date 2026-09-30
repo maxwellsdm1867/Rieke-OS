@@ -6,18 +6,18 @@ const {validateDescriptor,approvedURL,inspectTestingBundle,validateTestingCandid
 const {createTestingUpdateCoordinator}=require('../testing-updater.cjs');
 const current={application_version:'0.1.2',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1]};
 const bytes=Buffer.from('candidate archive bytes');
-const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sha512:crypto.createHash('sha512').update(bytes).digest('base64')},asar_sha256:'a'.repeat(64),runtime_manifest_sha256:'b'.repeat(64)};
-const distribution={format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS'};
-const base='https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/';
+const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/disco',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sha512:crypto.createHash('sha512').update(bytes).digest('base64')},asar_sha256:'a'.repeat(64),runtime_manifest_sha256:'b'.repeat(64)};
+const distribution={format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/disco'};
+const base='https://github.com/maxwellsdm1867/disco/releases/download/desktop-test-v0.1.3/';
 test('testing descriptor and URL boundaries reject foreign provenance, migration and nonstable versions',()=>{
   assert.equal(validateDescriptor(descriptor,current,'14.2'),descriptor);
   for(const patch of [{channel:'signed'},{repository:'foreign/repo'},{application_version:'0.1.2'},{application_version:'0.1.3-beta'},{architecture:'x64'},{database_compatibility:2},{workspace_formats:[2]},{minimum_macos_version:'15.0'},{archive:{...descriptor.archive,filename:'../bad.zip'}},{archive:{...descriptor.archive,size:0}},{archive:{...descriptor.archive,sha512:'bad'}}])assert.throws(()=>validateDescriptor({...descriptor,...patch},current,'14.2'));
   assert.equal(approvedURL(base+descriptor.archive.filename,'asset'),true);
-  for(const url of ['http://github.com/maxwellsdm1867/Rieke-OS/releases/download/v0.1.3/a.zip','https://github.com/foreign/repo/releases/download/v1/a.zip','https://github.com.evil.invalid/maxwellsdm1867/Rieke-OS/releases/download/v1/a.zip','https://user:secret@github.com/maxwellsdm1867/Rieke-OS/releases/download/v1/a.zip','https://api.github.com/repos/foreign/repo/releases','https://127.0.0.1/releases'])assert.throws(()=>approvedURL(url,'asset'));
+  for(const url of ['http://github.com/maxwellsdm1867/disco/releases/download/v0.1.3/a.zip','https://github.com/foreign/repo/releases/download/v1/a.zip','https://github.com.evil.invalid/maxwellsdm1867/disco/releases/download/v1/a.zip','https://user:secret@github.com/maxwellsdm1867/disco/releases/download/v1/a.zip','https://api.github.com/repos/foreign/repo/releases','https://127.0.0.1/releases'])assert.throws(()=>approvedURL(url,'asset'));
 });
 async function fixture(t,options={}){
   const root=await fs.mkdtemp(path.join(os.tmpdir(),'rieke-testing-update-'));
-  const release={draft:false,prerelease:true,tag_name:'desktop-test-v0.1.3',html_url:'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.3',assets:[{name:'desktop-release.json',size:1000,browser_download_url:base+'desktop-release.json'},{name:descriptor.archive.filename,size:bytes.length,browser_download_url:base+descriptor.archive.filename}]};
+  const release={draft:false,prerelease:true,tag_name:'desktop-test-v0.1.3',html_url:'https://github.com/maxwellsdm1867/disco/releases/tag/desktop-test-v0.1.3',assets:[{name:'desktop-release.json',size:1000,browser_download_url:base+'desktop-release.json'},{name:descriptor.archive.filename,size:bytes.length,browser_download_url:base+descriptor.archive.filename}]};
   let archiveCalls=0,helperCalls=0,drains=0,validationCalls=0,failDownload=false,failMetadata=false,metadataCalls=0;
   let archiveBytes=bytes;
   const server=http.createServer((request,response)=>{

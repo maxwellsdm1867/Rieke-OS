@@ -1,1 +1,1 @@
-"""Tests for Rieke OS acquisition workspaces and scientific data exports."""
+"""Tests for Disco acquisition workspaces and scientific data exports."""

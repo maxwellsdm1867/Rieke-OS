@@ -433,7 +433,7 @@ async function main() {
     recoveredBrowser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
     page = recoveredBrowser.contexts()[0].pages()[0];
     page.on('pageerror', error => receipt.failures.push({name: 'recovered-renderer-pageerror', message: error.message}));
-    await page.getByRole('heading', {name: 'Rieke OS recovery', exact: true}).waitFor({timeout: 15000});
+    await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 15000});
     assert.equal((await ownedControl(fixture, 'health')).pid, before.pid);
     const result = await page.evaluate(() => window.riekeDesktop.quit()); assert.equal(result.ready, false);
     await page.screenshot({path: path.join(output, 'renderer-recovery.png')});

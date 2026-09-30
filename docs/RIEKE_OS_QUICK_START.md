@@ -1,18 +1,18 @@
-# Rieke OS quick start
+# Disco quick start
 
 You can install and open an empty project before choosing a recording. For the
 import and export steps, have an original Symphony `.h5` or `.hdf5` file ready.
-Rieke OS provides its own plotting and curation interface; MATLAB is needed only
+Disco provides its own plotting and curation interface; MATLAB is needed only
 if you choose to analyze an exported MAT data file with MATLAB.
 
 ## 1. Download, install, and open
 
-On [Rieke OS Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases), choose
+On [Disco Releases](https://github.com/maxwellsdm1867/disco/releases), choose
 the Apple Silicon **unsigned testing** release and download its `.dmg` asset.
 The desktop DMG contains the complete app and private Python/MySQL runtime;
 GitHub's **Source code (zip)** is a separate developer download.
 
-1. Open the DMG and open **Rieke OS** inside it.
+1. Open the DMG and open **Disco** inside it.
 2. If macOS blocks the trusted unsigned download, review **System Settings →
    Privacy & Security → Open Anyway**. This is a manual macOS approval; the
    installer preserves quarantine and does not bypass it.
@@ -24,7 +24,7 @@ packaged desktop app. Apple Silicon macOS is the supported testing target; the
 bundle declares macOS 14.0 as its minimum, with minimum-version and independent
 clean-machine qualification tracked separately. See [testing release details](dev/GITHUB_TESTING_RELEASE.md).
 
-For source development instead, extract or clone the dedicated Rieke OS
+For source development instead, extract or clone the dedicated Disco
 repository and follow [source setup](../README.md#install-and-launch) or the
 [LLM setup prompt](LLM_SETUP.md). Source setup needs build tools and network
 access; it is not the desktop installation workflow.
