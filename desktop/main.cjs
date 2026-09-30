@@ -9,6 +9,7 @@ const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
+const {QuitCoordinator} = require('./quit-coordinator.cjs');
 const {distributionPolicy} = require('./distribution.cjs');
 const distribution = distributionPolicy(require('./distribution.json'));
 app.enableSandbox();
@@ -27,8 +28,8 @@ if (bootstrap) {
   require('node:fs').mkdirSync(installerState, {recursive:true,mode:0o700});
   app.setPath('userData', installerState);
 }
-let supervisor, coordinator, quitAuthorized = false, quitInProgress = false, startupInProgress = false;
-let draftStore;
+let supervisor, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
+let draftStore, viewUnavailable = false;
 let lifecycleStatus = {state: 'Starting', title: 'Starting Rieke OS', message: 'Verifying the complete app and its private runtime.'};
 const draftBarrier = new DraftBarrier();
 function broadcast(value) {
@@ -37,29 +38,39 @@ function broadcast(value) {
 function status() { return lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus; }
 function recovery(message, detail = '') {
   lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Rieke OS recovery', message, detail}; broadcast(lifecycleStatus);
-  for (const window of windows) if (!window.isDestroyed()) window.loadFile(recoveryPage).catch(() => {});
+  if (scientificWindows.size) viewUnavailable = true;
+  // The recovery page has no scientific draft listener. Keep the last good
+  // persisted draft; never request a snapshot from the page that replaced it.
+  for (const window of windows) {
+    scientificWindows.delete(window);
+    if (!window.isDestroyed()) window.loadFile(recoveryPage).catch(() => {});
+  }
 }
 async function acknowledgeDrafts() {
   return draftBarrier.prepare(scientificWindows);
 }
 async function prepareQuit() {
-  const drafts = await acknowledgeDrafts(); if (!drafts.ready) return drafts;
-  return supervisor ? supervisor.drain() : {ready: true};
+  const drafts = await acknowledgeDrafts();
+  if (!drafts.ready) { broadcast({...status(), message:drafts.reason}); return drafts; }
+  const result = supervisor ? await supervisor.drain() : {ready: true};
+  if (!result.ready) broadcast({...status(), message:result.reason});
+  return result;
 }
-async function orderlyQuit() {
-  if (quitInProgress) return {ready: false, reason: 'Quit preparation is already in progress'};
-  quitInProgress = true;
-  try {
-    if (distribution.channel !== 'unsigned-testing' && coordinator?.getStatus().state === 'Ready') {
-      const result = await coordinator.installPrepared();
-      if (result.installing) return result;
-      if (!result.ready) { broadcast({...status(), message: result.reason}); return result; }
-    }
-    const result = await prepareQuit();
-    if (!result.ready) { broadcast({...status(), message: result.reason}); return result; }
-    quitAuthorized = true; coordinator?.stop(); app.quit(); return result;
-  } finally { quitInProgress = false; }
+function orderlyQuit() {
+  if (!quitting) {
+    coordinator?.stop();
+    quitting = new QuitCoordinator({
+      prepareDrafts: timeout => viewUnavailable
+        ? Promise.resolve({ready:false,reason:'The scientific page is unavailable. The last saved view is retained; its latest changes could not be confirmed.'})
+        : draftBarrier.prepare(scientificWindows, {timeout}),
+      cleanup: options => supervisor ? supervisor.quit(options) : Promise.resolve({ready:true}),
+      publish: value => { lifecycleStatus = value; broadcast(value); },
+      exit: () => { quitAuthorized = true; app.quit(); }
+    });
+  }
+  return quitting.quit();
 }
+
 function createWindow() {
   const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
     title: 'Rieke OS', backgroundColor: '#f4f5f3', show: false,
@@ -81,7 +92,7 @@ function createWindow() {
   window.webContents.on('will-redirect', (event, url) => {
     if (!isOwnedURL(url, supervisor?.origins, [recoveryPage])) event.preventDefault();
   });
-  window.webContents.on('render-process-gone', () => { window.draftUnavailable = scientificWindows.has(window); recovery('The scientific window stopped. Restore the window to acknowledge drafts before shutdown.'); });
+  window.webContents.on('render-process-gone', () => { window.draftUnavailable = scientificWindows.has(window); recovery('The scientific window stopped. The last saved view is retained. Quit remains available; retry startup to recover the project.'); });
   window.on('close', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   window.on('closed', () => { windows.delete(window); scientificWindows.delete(window); });
   window.loadFile(recoveryPage); return window;
@@ -119,7 +130,7 @@ function configureSession() {
   });
 }
 async function startScientificUI() {
-  if (startupInProgress) return;
+  if (startupInProgress || quitting) return;
   startupInProgress = true;
   try {
     let origin;
@@ -142,13 +153,19 @@ async function startScientificUI() {
     for (const window of windows) {
       await window.loadURL(origin); window.draftUnavailable = false; scientificWindows.add(window);
     }
-    broadcast(status());
+    viewUnavailable = false;
+    broadcast(supervisor.recoveredQuit?.drafts_saved === false
+      ? {...status(),message:'The previous quit could not confirm the latest view. The last saved view is retained; accepted operations were reconciled before reopening.'}
+      : status());
   } catch (error) { recovery('The packaged scientific backend could not start. Projects have not been opened.', error.message); }
   finally { startupInProgress = false; }
 }
 function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
-    const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]); return action(payload, window);
+    const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]);
+    if (quitting && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
+      throw new Error('Rieke OS is closing; new work is paused.');
+    return action(payload, window);
   });
   const noPayload = (channel, action) => handle(channel, (payload, window) => {
     if (payload !== undefined) throw new TypeError('This desktop operation accepts no payload');

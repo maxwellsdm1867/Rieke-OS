@@ -1831,7 +1831,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 try:
                     if scheduler is not None:scheduler.flush()
                     prepare_annotations()
-                except Exception:
+                except Exception as error:
+                    error.desktop_shutdown_stage = 'recovery_snapshot'
                     inbox.start()
                     raise
                 with contextlib.suppress(Exception):

@@ -96,6 +96,7 @@ class DesktopBoundary:
         self.active = 0
         self.draining = False
         self.drained = False
+        self.quitting = False
         self.deadline = deadline
         self.services = services
         self.stop_callback = None
@@ -115,8 +116,8 @@ class DesktopBoundary:
 
     def resume(self):
         with self.operation_lock:
-            if self.stop_scheduled:
-                raise ValueError('Service shutdown was already acknowledged')
+            if self.stop_scheduled or self.quitting:
+                raise ValueError('Explicit service quit is already in progress')
             with self.condition:
                 self.draining = self.drained = False
             if self.services:
@@ -126,27 +127,37 @@ class DesktopBoundary:
             if inbox:
                 inbox.start()
 
-    def drain(self):
+    def drain(self, *, for_quit=False):
         with self.operation_lock:
             with self.condition:
                 if self.drained:
                     return True
-                if self._busy():
+                if not for_quit and self._busy():
                     return False
                 self.draining = True
-                if not self.condition.wait_for(lambda: self.active == 0, timeout=self.deadline):
+                self.quitting = self.quitting or for_quit
+                if for_quit:
+                    self._pause()
+                    if self.services and not self.services.quiesce():
+                        return False
+                    end = time.monotonic() + self.deadline
+                    while (self.active or self._busy()) and time.monotonic() < end:
+                        self.condition.wait(timeout=min(.05, max(0, end-time.monotonic())))
+                    if self.active or self._busy():
+                        return False
+                elif not self.condition.wait_for(lambda: self.active == 0, timeout=self.deadline):
                     self.draining = False
                     return False
             try:
                 self._pause()
                 if self._busy():
-                    self.resume()
+                    if not for_quit:self.resume()
                     return False
-                if self.services and not self.services.drain(self.deadline):
-                    self.resume()
+                if self.services and not self.services.drain(self.deadline, **({'for_quit':True} if for_quit else {})):
+                    if not for_quit:self.resume()
                     return False
             except Exception:
-                self.resume()
+                if not for_quit:self.resume()
                 raise
             self.drained = True
             return True
@@ -173,9 +184,30 @@ class DesktopBoundary:
                 return jsonify(ready=False, error='Service drain could not be verified'), 409
             return jsonify(ready=True, drained=True)
 
+        @self.app.post(_CONTROL + 'pause')
+        def desktop_pause():
+            if not empty_control():
+                return jsonify(error='Pause requires an empty object'), 400
+            with self.condition:
+                self.quitting = self.draining = True
+            self._pause()
+            return jsonify(ready=True, paused=True)
+
+        @self.app.post(_CONTROL + 'quit')
+        def desktop_quit():
+            if not empty_control():
+                return jsonify(error='Quit requires an empty object'), 400
+            try:
+                if not self.drain(for_quit=True):
+                    return jsonify(ready=False, error='Accepted operations remain active; admission is paused and existing recovery records are retained.'), 409
+            except Exception:
+                self.app.logger.exception('Explicit desktop quit cleanup was not acknowledged')
+                return jsonify(ready=False, error='Cleanup is unverified; admission remains paused for recovery.'), 409
+            return jsonify(ready=True, drained=True)
+
         @self.app.post(_CONTROL + 'resume')
         def desktop_resume():
-            if not empty_control() or self.stop_scheduled:
+            if not empty_control() or self.stop_scheduled or self.quitting:
                 return jsonify(error='Service cannot resume'), 409
             self.resume()
             return jsonify(ready=True)
@@ -190,9 +222,13 @@ class DesktopBoundary:
                     stop_database()
                 if self.services and self.services.records():
                     raise ValueError('Owned project services have not exited')
-            except Exception:
+            except Exception as error:
                 self.app.logger.exception('Desktop database shutdown was not acknowledged')
-                return jsonify(error='Database shutdown could not be verified'), 409
+                if self.quitting:self._pause()
+                backup_failed = getattr(error, 'desktop_shutdown_stage', None) == 'recovery_snapshot'
+                return jsonify(error='Accepted changes remain committed to the database, but recovery snapshot preparation failed.' if backup_failed
+                    else 'Database shutdown could not be verified; existing data and recovery evidence are retained.',
+                    stage='recovery_snapshot' if backup_failed else 'database_shutdown', ready=False), 409
             # Give Waitress the response before closing its sockets. The main
             # process awaits actual child exit, not this HTTP acknowledgement.
             self.stop_scheduled = True
@@ -271,7 +307,7 @@ class DesktopBoundary:
                 or (environ.get('PATH_INFO', '').startswith(_CONTROL) and not control_authorized)):
             return Response('Desktop session authorization required', status=403)(environ, start_response)
         control = environ.get('PATH_INFO', '') in {
-            _CONTROL + name for name in ('health', 'drain', 'resume', 'stop')
+            _CONTROL + name for name in ('health', 'drain', 'resume', 'stop', 'pause', 'quit')
         } or environ.get('PATH_INFO') == '/api/project/close'
         admitted = False
         if not control:
@@ -560,7 +596,20 @@ class DesktopServices:
         # Startup may hold a database write; neither terminate nor kill it.
         raise ValueError('Project startup timed out; its service was preserved for recovery')
 
-    def drain(self, timeout):
+    def quiesce(self):
+        """Stop child admission before waiting for accepted writers to finish."""
+        with self.lock:
+            self.draining = True
+            records = self.records()
+        complete = True
+        for record in records:
+            try:
+                complete = bool(self.call(record, 'pause', {}, timeout=2).get('paused')) and complete
+            except Exception:
+                complete = False
+        return complete
+
+    def drain(self, timeout, *, for_quit=False):
         with self.lock:
             self.draining = True
             records = self.records()
@@ -568,7 +617,7 @@ class DesktopServices:
         try:
             # Prepare ALL services before permitting any to shut down.
             for record in records:
-                if not self.call(record, 'drain', {}, timeout=timeout + 2).get('ready'):
+                if not self.call(record, 'quit' if for_quit else 'drain', {}, timeout=timeout + 2).get('ready'):
                     raise ValueError('Project service did not acknowledge drain')
                 prepared.append(record)
             for record in prepared:
@@ -581,11 +630,12 @@ class DesktopServices:
                 raise ValueError('Owned services have not exited')
             return True
         except Exception:
-            for record in prepared:
-                with contextlib.suppress(Exception):
-                    self.call(record, 'resume', {}, timeout=2)
-            with self.lock:
-                self.draining = False
+            if not for_quit:
+                for record in prepared:
+                    with contextlib.suppress(Exception):
+                        self.call(record, 'resume', {}, timeout=2)
+                with self.lock:
+                    self.draining = False
             return False
 
 

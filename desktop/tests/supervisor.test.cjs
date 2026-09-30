@@ -90,3 +90,40 @@ test('project authorization uses root validated process proof and never sends co
   assert.equal(await supervisor.authorizeProjectURL('http://127.0.0.1:12345/'), false);
   assert.equal(supervisor.origins.has('http://127.0.0.1:12345'), false);
 });
+test('explicit quit waits for clean receipts and process exit, then removes ownership evidence',async t=>{
+ const routes=[];
+ const {supervisor,child}=await fixture(t,(sup,worker,url)=>{routes.push(url);if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});});
+ await supervisor.start();const result=await supervisor.quit({timeout:100,drafts:{ready:true}});
+ assert.equal(result.ready,true);assert.equal(supervisor.exited,true);assert.ok(routes.some(url=>url.endsWith('/quit')));assert.ok(!routes.some(url=>url.endsWith('/resume')));
+ await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+ child.kill=()=>assert.fail('Quit never kills accepted writers');
+});
+test('failed explicit cleanup retains interrupted evidence with no capability or false clean receipt',async t=>{
+ const routes=[];
+ const {supervisor,child}=await fixture(t,(sup,_worker,url)=>{routes.push(url);return url.endsWith('/quit')?response({error:'Accepted job still active'},false,409):response({...sup.expectedHealth(),ready:true,services:[]});});
+ child.kill=()=>assert.fail('Accepted job must remain alive');
+ await supervisor.start();const result=await supervisor.quit({timeout:50,drafts:{ready:false,reason:'Latest view unavailable'}});
+ assert.equal(result.ready,false);assert.equal(supervisor.exited,false);assert.ok(!routes.some(url=>url.endsWith('/resume')));
+ const saved=await fs.readFile(supervisor.registryPath,'utf8'),record=JSON.parse(saved);
+ assert.equal(record.quit.state,'interrupted');assert.equal(record.quit.drafts_saved,false);assert.equal(record.bound,true);assert.ok(!saved.includes(supervisor.capability));assert.equal(record.clean_shutdown,undefined);
+});
+test('relaunch reconciles only positively owned interrupted service and never replays scientific edits',async t=>{
+ let live=true;const routes=[];
+ const {supervisor}=await fixture(t,(sup,_worker,url)=>{routes.push(url);if(url.endsWith('/stop'))live=false;return url.endsWith('/quit')?response({error:'busy'},false,409):response({...sup.expectedHealth(),ready:true,services:[]});});
+ await supervisor.start();await supervisor.quit({timeout:50,drafts:{ready:false}});
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));
+ supervisor.inspectProcess=async()=>live?previous.executable:null;
+ supervisor.recoverProcess=async record=>{assert.equal(record.session_id,previous.session_id);return supervisor.capability;};
+ routes.length=0;supervisor.request=async url=>{routes.push(url);if(url.endsWith('/stop'))live=false;return response(url.endsWith('/health')?{...supervisor.expectedHealth(),ready:false}:{ready:true});};
+ await supervisor.reconcilePrevious();assert.deepEqual(routes.map(url=>url.split('/').at(-1)),['health','quit','stop']);
+ assert.equal(supervisor.recoveredQuit.drafts_saved,false);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
+});
+test('inspection denial or missing owned bind evidence never transmits a prior capability',async t=>{
+ const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true}));await supervisor.start();
+ await supervisor.quit({timeout:5,drafts:{ready:false}});
+ const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));supervisor.inspectProcess=async()=>previous.executable;
+ let requests=0;supervisor.request=async()=>{requests++;assert.fail('No token may be sent');};supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/ownership could not be inspected/);assert.equal(requests,0);
+ previous.bound=false;await fs.writeFile(supervisor.registryPath,JSON.stringify(previous));supervisor.recoverProcess=async()=>null;
+ await assert.rejects(supervisor.reconcilePrevious(),/ownership could not be inspected/);assert.equal(requests,0);
+});
