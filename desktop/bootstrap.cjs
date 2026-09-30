@@ -44,6 +44,28 @@ async function quarantineAttribute(bundle, run) {
     throw error;
   }
 }
+function quarantinePreserved(source, copied) {
+  if (source === copied) return true;
+  const decode = value => {
+    if (typeof value !== 'string' || !/^(?:[a-f0-9]{2})+$/.test(value)) return null;
+    const text = Buffer.from(value, 'hex').toString('utf8');
+    if (Buffer.from(text, 'utf8').toString('hex') !== value) return null;
+    const fields = /^([a-fA-F0-9]{4});([a-fA-F0-9]{8});([^;\x00-\x1f\x7f]*);([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})$/.exec(text);
+    return fields && {flags: parseInt(fields[1], 16), timestamp: fields[2], agent: fields[3], uuid: fields[4]};
+  };
+  const original = decode(source), destination = decode(copied);
+  // Native ditto/copyfile propagation was observed to add only 0x0200 and
+  // redact timestamp/agent. Do not write attributes or accept approval bits,
+  // dropped source protections, or a different quarantine event identity.
+  // Apple documents copy propagation adding QTN_FLAG_DO_NOT_TRANSLOCATE:
+  // https://github.com/apple-oss-distributions/copyfile/blob/main/copyfile.3
+  // The precise accepted flags/metadata transformation is bounded by our
+  // real native ditto regression; it does not qualify manual OS approval.
+  return Boolean(original && destination && destination.flags === (original.flags | 0x0200) &&
+    destination.uuid === original.uuid &&
+    (destination.timestamp === original.timestamp || destination.timestamp === '00000000') &&
+    (destination.agent === original.agent || destination.agent === ''));
+}
 async function bundleDigest(bundle) {
   const info = await fs.lstat(bundle);
   if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('A regular complete application bundle is required');
@@ -154,7 +176,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     if (copiedIdentity.team !== sourceIdentity.team) throw new Error('Copied app signature differs from downloaded app');
     await verifyResources(path.join(staging, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
     if (unsignedTesting && await bundleDigest(staging) !== sourceDigest) throw new Error('Copied application bundle checksum differs');
-    if (unsignedTesting && await quarantineAttribute(staging, run) !== quarantine) throw new Error('Copied application quarantine attribute differs');
+    if (unsignedTesting && !quarantinePreserved(quarantine, await quarantineAttribute(staging, run))) throw new Error('Copied application quarantine attribute differs');
     if (!unsignedTesting) await run('/usr/sbin/spctl', ['--assess', '--type', 'execute', staging]);
     if (existing) {
       await assertNotRunning(destination, run, ignorePid);
@@ -171,4 +193,4 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     await fs.rm(lock, {recursive: true, force: true});
   }
 }
-module.exports = {APP_ID, enclosingApp, signatureIdentity, assertNotRunning, compatibleManifest, installCompleteBundle, readBundleManifest, bundleDigest, verifyTestingBundle};
+module.exports = {APP_ID, enclosingApp, signatureIdentity, assertNotRunning, compatibleManifest, installCompleteBundle, readBundleManifest, bundleDigest, verifyTestingBundle, quarantinePreserved};
