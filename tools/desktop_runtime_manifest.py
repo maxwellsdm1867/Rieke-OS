@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+from desktop_application_profile import audit_application
 
 ROOT = Path(__file__).resolve().parents[1]
 MACHO = {b'\xfe\xed\xfa\xce', b'\xce\xfa\xed\xfe', b'\xfe\xed\xfa\xcf',
@@ -79,6 +80,7 @@ def native_audit(runtime):
 
 
 def make_manifest(runtime, root=ROOT):
+    application_scope = audit_application(runtime / 'application')
     release = json.loads((runtime / 'application/rieke-release.json').read_text())
     source = json.loads((runtime / 'application/python/workspace-source.json').read_text())
     mysql = json.loads((runtime / 'mysql-lock.json').read_text())
@@ -93,6 +95,7 @@ def make_manifest(runtime, root=ROOT):
             'mysql_version': mysql['mysql_version'], 'workspace_formats': release['workspace_formats'],
             'database_compatibility': release['database_compatibility'],
             'excluded_optional_features': receipt.get('excluded_optional_features', []),
+            'application_scope': application_scope,
             'resources': inventory(runtime)}
 
 
@@ -109,6 +112,7 @@ def main():
         if manifest.get('format') != 'rieke-desktop-runtime' or manifest.get('version') != 1:
             raise ValueError('Cannot rehash an unrecognized manifest')
         manifest['resources'] = inventory(runtime)
+        manifest['application_scope'] = audit_application(runtime / 'application')
     else:
         manifest = make_manifest(runtime)
     audit = native_audit(runtime)

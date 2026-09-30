@@ -2,7 +2,7 @@ name: Rieke OS regression checks
 on:
   pull_request:
   push:
-    branches: [master, codex/rieke-native-e2e]
+    branches: [main, master, codex/rieke-native-e2e]
 permissions:
   contents: read
 jobs:
@@ -27,9 +27,13 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv pip install --system --require-hashes -r python/workspace-runtime.lock
       - run: python tools/build_release.py --validate-only
-      - run: python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
+      - name: Reject mixed EpicTreeGUI source in Rieke OS
+        if: github.repository == 'maxwellsdm1867/Rieke-OS'
+        run: python tools/desktop_application_profile.py
+      - run: python -m unittest discover -s python/tests -p 'test_*.py' -v
         env:
           PYTHONPATH: python
+          PYTHONDONTWRITEBYTECODE: '1'
   native-mysql:
     name: Apple Silicon native project lifecycle and transfer
     runs-on: macos-15

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, Check, Copy, Code2, ChevronDown, ChevronRight, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
 import { number, useResource } from '../api.js';
 import './TreeBuilder.css';
 import { reorderIds } from '../ordering.js';
@@ -51,9 +51,8 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   const [dragging,setDragging] = useState(null);
   const [dropSpot,setDropSpot] = useState(null);
   const [announcement,setAnnouncement] = useState('');
-  const [copyMessage,setCopyMessage]=useState(null),[layoutError,setLayoutError]=useState('');
+  const [layoutError,setLayoutError]=useState('');
   const orderKey = JSON.stringify(order), valueKey = JSON.stringify(value);
-  useEffect(()=>setCopyMessage(null),[orderKey]);
   useEffect(()=>setOrder(JSON.parse(valueKey)),[valueKey]);
   function changeOrder(next){
     const updated=typeof next==='function'?next(currentOrder.current):next;
@@ -147,11 +146,6 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
   const isCurrent = !loading && sameOrder((preview?.levels || []).map(level=>level.field),order);
   const pending = loading || orderKey!==valueKey;
   const showPending=useDelayedLoading(pending&&!error);
-  async function copyMatlab(){
-    if(!isCurrent||pending||error||!preview?.matlab_command)return;
-    try{await navigator.clipboard.writeText(preview.matlab_command);setCopyMessage({text:'Copied EpicTreeGUI command',error:false});}
-    catch{setCopyMessage({text:'Clipboard unavailable. Select the code to copy it.',error:true});}
-  }
   const heading = order.map(id=>fieldMap.get(id)?.label || id).join(' → ');
   const groups=shown.reduce((result,field,index)=>{
     const groupCategory=category==='Common'?'Common':field.category;
@@ -215,12 +209,6 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
       {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
       <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
-    <details className="tb-matlab-code"><summary><Code2 size={14}/> EpicTreeGUI code</summary>
-      <p>Export this layout to EpicTreeGUI, then run this line from the extracted bundle with EpicTreeGUI on your MATLAB path.</p>
-      {isCurrent&&!pending&&!error&&preview?.matlab_command?<pre>{preview.matlab_command}</pre>:<p role="status">Waiting for a valid tree preview…</p>}
-      <button onClick={copyMatlab} disabled={!isCurrent||pending||!!error||!preview?.matlab_command}><Copy size={14}/> Copy EpicTree code</button>
-      {copyMessage&&<p role={copyMessage.error?'alert':'status'}>{copyMessage.text}</p>}
-    </details>
     {open&&position&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
       onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}}}>
       <div className="tb-popup-title"><strong>Split on a recorded field</strong><button aria-label="Close split chooser" onClick={()=>{setOpen(false);trigger.current?.focus();}}><X size={14}/></button></div>

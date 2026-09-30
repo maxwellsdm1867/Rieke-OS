@@ -47,7 +47,7 @@ import useWorkspaceNavigation from './useWorkspaceNavigation.js';
 import {exportReuseRoute} from './exportReuse.js';
 import {resolveProtocolSession,restoredEpochFocus} from './workspaceNavigation.js';
 import './WorkspaceNavigation.css';
-import {EXPORT_FORMATS,exportDownloadLabel,exportFormatLabel,initialExportFormat,validExportReceipt} from './exportFormats.js';
+import {EXPORT_FORMATS,exportDownloadLabel,exportFormatLabel,initialExportFormat,normalizeExportFormat,validExportReceipt} from './exportFormats.js';
 
 function ActivityList({events=[]}) {return events.length?<div className="activity-list">{events.map((e,i)=><div className="activity-row" key={e.event_uuid||i}><span className="event-icon"><Activity size={15}/></span><div><strong>{humanize(e.action || e.status || 'Recorded event').replace(/_/g,' ')}</strong><p>{e.payload?.source_path || e.payload?.name || e.payload?.message || e.source_path || e.actor || 'Workspace'}</p><details><summary>Event details</summary><pre>{JSON.stringify(e.payload || e,null,2)}</pre></details></div><time>{time(e.occurred_at || e.at || e.started_at)}</time></div>)}</div>:<Empty title="No activity yet">Imports, review decisions, tags and exports appear here.</Empty>;}
 // Read-only summaries may refresh after tags change without unmounting the
@@ -67,7 +67,7 @@ export function Protocol({id,revision,structureRevision=revision,annotationChang
   const treeLayout=useProtocolTreeLayout(id,initialRecipe?.split_order);
   const splitOrder=treeLayout.order,setSplitOrder=treeLayout.remember;
   const [exportOpen,setExportOpen]=useState(saved.tab==='export');
-  const [tab,setTab]=useState(saved.tab==='export'?'overview':saved.tab || 'overview'),[scope,setScope]=useState(saved.scope || null),[filters,setFilters]=useState(saved.filters || {}),[exporting,setExporting]=useState(false),[policy,setPolicy]=useState(saved.policy || 'include_unreviewed'),[exportName,setExportName]=useState(saved.exportName || ''),[format,setFormat]=useState(()=>saved.format || initialExportFormat(initialRecipe)),[result,setResult]=useState(null),[error,setError]=useState(''),[diff,setDiff]=useState(null),[refreshing,setRefreshing]=useState(false);
+  const [tab,setTab]=useState(saved.tab==='export'?'overview':saved.tab || 'overview'),[scope,setScope]=useState(saved.scope || null),[filters,setFilters]=useState(saved.filters || {}),[exporting,setExporting]=useState(false),[policy,setPolicy]=useState(saved.policy || 'include_unreviewed'),[exportName,setExportName]=useState(saved.exportName || ''),[format,setFormat]=useState(()=>normalizeExportFormat(saved.format) || initialExportFormat(initialRecipe)),[result,setResult]=useState(null),[error,setError]=useState(''),[diff,setDiff]=useState(null),[refreshing,setRefreshing]=useState(false);
   const filteredQuery=new URLSearchParams(filters).toString();
   const inspecting=tab==='inspect';
   const summaryRevision=useSummaryRevision(revision,!inspecting,structureRevision);

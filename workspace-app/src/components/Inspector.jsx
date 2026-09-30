@@ -9,7 +9,6 @@ import {api, useResource, useEpochResource, useEpochPrefetch, number, humanize, 
 import {Badge} from './Common.jsx';
 import EpochConnections from './EpochConnections.jsx';
 import './InspectorPolish.css';
-import './MatlabMaskImport.css';
 import EpochTags from './EpochTags.jsx';
 import AnnotationTags from './AnnotationTags.jsx';
 import TagExchangeControls from './TagExchangeControls.jsx';
@@ -34,8 +33,7 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
   const [tagFocus,setTagFocus]=useState(0),[epochTagFocus,setEpochTagFocus]=useState(0);
   const [tag,setTag]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
   const [operationMessage,setOperationMessage]=useState(''),[maskMessage,setMaskMessage]=useState('');
-  const maskInput=useRef(null),matlabMaskInput=useRef(null);
-  const [matlabMaskFile,setMatlabMaskFile]=useState(null),[matlabDataset,setMatlabDataset]=useState(''),[matchingExports,setMatchingExports]=useState([]);
+  const maskInput=useRef(null);
   const [pendingNavigation,setPendingNavigation]=useState(null);
   const navigationIntent=useRef(null),anchorSteps=useRef(0);
   function selectEpoch(uuid){navigationIntent.current=null;anchorSteps.current=0;setPendingNavigation(null);setFocused(uuid);}
@@ -45,7 +43,6 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
   const [masksOpen,setMasksOpen]=useState(false);
   const [metadataOpen,setMetadataOpen]=useState(()=>{try{const saved=localStorage.getItem('workspace.inspector.metadata');return saved===null?window.innerWidth>=1350:saved==='true';}catch{return true;}});
   function toggleMetadata(next){setMetadataOpen(next);try{localStorage.setItem('workspace.inspector.metadata',String(next));}catch{}}
-  useEffect(()=>{setMatlabMaskFile(null);setMatlabDataset('');setMatchingExports([]);},[id]);
   const [designMode,setDesignMode]=useState(initialNavigation?.designMode || false),[designPath,setDesignPath]=useState(initialNavigation?.designPath || []);
   const [designNavigation,setDesignNavigation]=useState(initialNavigation?.designNavigation||null);
   const changeSplits=useCallback(fields=>{setSplits(fields.join(','));setDesignPath([]);setDesignNavigation(null);},[]);
@@ -162,11 +159,10 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
     setBusy(true);setError('');setMaskMessage('');setOperationMessage('Saving protocol selection mask…');
     try {
       const mask=await api(`/protocols/${id}/masks/export`);
-      const blob=new Blob([JSON.stringify(mask,null,2)+'\n'],{type:'application/json'});
-      const url=URL.createObjectURL(blob);
-      const link=document.createElement('a');link.href=url;link.download=`recording-mask-${id.slice(0,8)}.json`;
-      document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-      setMaskMessage('Selection mask saved for this protocol query. The JSON contains epoch identities and inclusion decisions.');
+      if(mask?.format!=='recording-selection-mask'||mask.version!==1||mask.protocol_uuid!==id||!Array.isArray(mask.epochs))throw new Error('The server did not return a valid protocol selection mask.');
+      const link=document.createElement('a');link.href=`/api/protocols/${encodeURIComponent(id)}/masks/export`;link.download=`recording-mask-${id.slice(0,8)}.json`;
+      document.body.appendChild(link);link.click();link.remove();
+      setMaskMessage('Selection mask ready. Choose where to save the JSON containing epoch identities and inclusion decisions.');
     }catch(e){setError(e.message);}finally{setBusy(false);}
   }
   async function importMask(event) {
@@ -177,29 +173,12 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
       if(file.size>5*1024*1024)throw new Error('Selection mask is larger than the 5 MB limit. Choose a Recording Selection Mask JSON file.');
       let mask;
       try{mask=JSON.parse(await file.text());}catch{throw new Error('The selected file is not valid JSON. Choose a Recording Selection Mask v1 file.');}
-      if(mask?.format!=='recording-selection-mask'||mask.version!==1)throw new Error('This button accepts Recording Selection Mask v1 JSON. Use Import MATLAB UGM below for .ugm masks.');
+      if(mask?.format!=='recording-selection-mask'||mask.version!==1)throw new Error('Choose a Recording Selection Mask v1 JSON file.');
       if(mask.protocol_uuid!==id)throw new Error('This mask belongs to a different protocol. Open that protocol before importing it.');
       const result=await api(`/protocols/${id}/masks/import`,{method:'POST',body:{mask,query_revision:queryRevision}});
       setMaskMessage(result.message || `Imported ${file.name}. Inclusion decisions were restored for the mask’s epochs; review approvals were not changed.`);
       onChange();
     }catch(e){setError(e.message);}finally{setBusy(false);}
-  }
-  async function importMatlabMask(){
-    if(!matlabMaskFile||busy)return;
-    setBusy(true);setError('');setMaskMessage('');setOperationMessage('Validating MATLAB mask against a completed export…');
-    try{
-      if(matlabMaskFile.size>32*1024*1024)throw new Error('MATLAB masks are limited to 32 MiB.');
-      if(!matlabMaskFile.size)throw new Error('The selected mask file is empty.');
-      if(!matlabMaskFile.name.toLowerCase().endsWith('.ugm'))throw new Error('Choose an EpicTree .ugm selection mask. This importer does not accept recording .mat files.');
-      const body=new FormData();body.append('file',matlabMaskFile);body.append('query_revision',queryRevision);
-      if(matlabDataset)body.append('dataset_uuid',matlabDataset);
-      const response=await fetch(`/api/protocols/${id}/masks/import-matlab`,{method:'POST',headers:{'X-Workspace-Request':'1'},body});
-      const result=await response.json().catch(()=>({}));
-      if(!response.ok){if(Array.isArray(result.matching_exports))setMatchingExports(result.matching_exports);throw new Error(result.error || result.message || `Mask import failed (${response.status})`);}
-      if(!Number.isInteger(result.imported_count)||result.imported_count<1||!Number.isInteger(result.included_count)||result.included_count<0||result.included_count>result.imported_count||typeof result.dataset_uuid!=='string'||typeof result.query_revision!=='string'){onChange();throw new Error('The server did not return a complete import receipt. Check Activity & logs before retrying.');}
-      setMaskMessage(result.message || `Imported ${number(result.imported_count)} MATLAB mask decisions from the matched export. Other epochs, tags and review states were unchanged.`);
-      setMatlabMaskFile(null);setMatchingExports([]);onChange();
-    }catch(error){setError(error.message);}finally{setBusy(false);}
   }
   const focusedPageIndex=rows.data?.epochs?.findIndex(e=>e.epoch_uuid===focused) ?? -1;
   function moveEpoch(direction) {
@@ -260,12 +239,6 @@ function InspectorContent({protocol,initialEpochUuid=null,cellScope,filters,revi
     {!designMode&&<>
 
     {masksOpen&&<SelectionMaskDialog busy={busy} onClose={()=>setMasksOpen(false)}>
-      <h3>Import MATLAB UGM</h3>
-      <p>The completed MATLAB export is matched automatically by exact epoch UUIDs. Only that export’s inclusion decisions are updated.</p>
-      <input ref={matlabMaskInput} type="file" accept=".ugm" hidden onChange={event=>{setMatlabMaskFile(event.target.files?.[0] || null);setMatlabDataset('');setMatchingExports([]);event.target.value='';}}/>
-      <button className="tag-file-picker" disabled={busy} onClick={()=>matlabMaskInput.current?.click()}><Upload size={20}/><span><strong>{matlabMaskFile?.name || 'Choose UGM file'}</strong><small>EpicTree selection mask · up to 32 MiB</small></span></button>
-      {matchingExports.length>0&&<label>More than one export matches<select aria-label="MATLAB mask export match" disabled={busy} value={matlabDataset} onChange={event=>setMatlabDataset(event.target.value)}><option value="">Choose the export that produced this mask</option>{matchingExports.map(item=><option key={item.dataset_uuid} value={item.dataset_uuid}>{item.name || item.dataset_uuid}{Number.isFinite(item.epoch_count)?` · ${number(item.epoch_count)} epochs`:''} · {item.dataset_uuid.slice(0,8)}</option>)}</select></label>}
-      <p><button className="primary" disabled={busy||!matlabMaskFile||!pageReady||(matchingExports.length>0&&!matlabDataset)} onClick={importMatlabMask}>{busy?'Applying…':'Apply MATLAB mask'}</button></p>
       <section className="selection-mask-json"><h3>Protocol JSON mask</h3><p>Save or restore inclusion decisions for the full protocol query, including cells outside the current view.</p>
         <button disabled={busy} onClick={saveMask}><Download size={14}/> Save JSON mask</button>{' '}
         <input ref={maskInput} type="file" accept=".json,application/json" hidden onChange={importMask}/>

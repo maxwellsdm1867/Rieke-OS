@@ -1,0 +1,324 @@
+{
+  "format": "rieke-application-profile",
+  "version": 1,
+  "application": "Rieke OS",
+  "capabilities": {
+    "mat_data_export": "Python/scipy; numeric data, acquisition provenance and frozen annotations",
+    "matlab_gui": false,
+    "matlab_interactive_masks": false,
+    "matlab_launcher": false
+  },
+  "python_modules": [
+    "field_mapper.py",
+    "recording_workspace.py",
+    "workspace_annotation_checkpoint.py",
+    "workspace_annotation_preparation.py",
+    "workspace_annotations.py",
+    "workspace_api.py",
+    "workspace_app_routes.py",
+    "workspace_audit.py",
+    "workspace_author_preferences.py",
+    "workspace_backup_scheduler.py",
+    "workspace_bootstrap.py",
+    "workspace_cache_lifecycle.py",
+    "workspace_candidate_exports.py",
+    "workspace_catalog_collision.py",
+    "workspace_catalog_identity.py",
+    "workspace_curation.py",
+    "workspace_curation_vocabulary.py",
+    "workspace_datastores.py",
+    "workspace_desktop.py",
+    "workspace_desktop_paths.py",
+    "workspace_diff.py",
+    "workspace_disk_index.py",
+    "workspace_explorer.py",
+    "workspace_export_folder.py",
+    "workspace_external_tags.py",
+    "workspace_folder_browser.py",
+    "workspace_frontend.py",
+    "workspace_h5_inbox.py",
+    "workspace_import_check.py",
+    "workspace_import_progress.py",
+    "workspace_installation.py",
+    "workspace_launcher.py",
+    "workspace_lifecycle.py",
+    "workspace_matching_epochs.py",
+    "workspace_matlab.py",
+    "workspace_metadata_objects.py",
+    "workspace_migration.py",
+    "workspace_mysql_profile.py",
+    "workspace_mysql_runtime.py",
+    "workspace_native_mysql.py",
+    "workspace_native_tag_filter.py",
+    "workspace_native_tag_lookup.py",
+    "workspace_paths.py",
+    "workspace_portability.py",
+    "workspace_predicates.py",
+    "workspace_project_database.py",
+    "workspace_project_preferences.py",
+    "workspace_project_servers.py",
+    "workspace_project_validation.py",
+    "workspace_projection_cache.py",
+    "workspace_projects.py",
+    "workspace_protocol_identity.py",
+    "workspace_protocol_state.py",
+    "workspace_qc.py",
+    "workspace_recipes.py",
+    "workspace_recording_files.py",
+    "workspace_recovery_generation.py",
+    "workspace_recovery_store.py",
+    "workspace_search.py",
+    "workspace_search_presets.py",
+    "workspace_service.py",
+    "workspace_shared_tag_index.py",
+    "workspace_shared_vocabulary.py",
+    "workspace_sqlite.py",
+    "workspace_startup_registry.py",
+    "workspace_state_generation.py",
+    "workspace_state_snapshot.py",
+    "workspace_storage.py",
+    "workspace_suggestions.py",
+    "workspace_tag_exchange.py",
+    "workspace_tag_predicates.py",
+    "workspace_tree.py",
+    "workspace_tree_layouts.py",
+    "workspace_tree_pages.py",
+    "workspace_updates.py"
+  ],
+  "source_exclusions": [
+    {
+      "pattern": "epicTreeGUI.m",
+      "reason": "EpicTreeGUI MATLAB application"
+    },
+    {
+      "pattern": "install.m",
+      "reason": "EpicTreeGUI MATLAB installer"
+    },
+    {
+      "pattern": "examples/**",
+      "reason": "EpicTreeGUI MATLAB examples"
+    },
+    {
+      "pattern": "python/export_mat.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/import_ugm.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/verify_workspace_matlab.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/verify_sept23_handoffs.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/workspace_matlab_routes.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/workspace_matlab_masks.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/workspace_mask_refresh.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/workspace_tree_code.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/__init__.py",
+      "reason": "EpicTreeGUI-only export, interactive mask/GUI or legacy verification code"
+    },
+    {
+      "pattern": "python/tests/test_workspace_matlab_masks.py",
+      "reason": "Tests for retired MATLAB GUI/interactive mask functionality"
+    },
+    {
+      "pattern": "python/tests/test_workspace_matlab_routes.py",
+      "reason": "Tests for retired MATLAB GUI/interactive mask functionality"
+    },
+    {
+      "pattern": "python/tests/test_workspace_mask_refresh.py",
+      "reason": "Tests for retired MATLAB GUI/interactive mask functionality"
+    },
+    {
+      "pattern": "python/tests/test_workspace_tree_code.py",
+      "reason": "Tests for retired MATLAB GUI/interactive mask functionality"
+    },
+    {
+      "pattern": "src/**",
+      "reason": "Original EpicTreeGUI MATLAB code and companion GUI documentation"
+    },
+    {
+      "pattern": "tests/**",
+      "reason": "Original EpicTreeGUI MATLAB GUI tests, data baselines and companion documentation"
+    },
+    {
+      "pattern": "python/tests/test_export.py",
+      "reason": "Legacy export_mat CLI contract; Rieke OS MAT data serialization covered by current export tests"
+    },
+    {
+      "pattern": "*.m",
+      "reason": "MATLAB executable application code is outside the Rieke OS source distribution"
+    }
+  ],
+  "runtime_only_exclusions": [
+    {
+      "path": "python/benchmark_workspace_metadata.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    },
+    {
+      "path": "python/manage_workspace_storage.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    },
+    {
+      "path": "python/query_protocol_workspace.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    },
+    {
+      "path": "python/query_workspace_export.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    },
+    {
+      "path": "python/snapshot_protocol_workspace.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    },
+    {
+      "path": "python/verify_import_progress.py",
+      "reason": "Development or standalone CLI; not required by desktop runtime"
+    }
+  ],
+  "third_party_scope": "Pinned parser, scientific Python packages and native dependencies remain intact; exclusions apply only to application source.",
+  "source_excluded_paths": [
+    "epicTreeGUI.m",
+    "examples/data/sample_epochs.mat",
+    "examples/example_analysis_workflow.m",
+    "examples/launch_epic_tree.m",
+    "examples/quickstart.m",
+    "examples/test_data_loading.m",
+    "install.m",
+    "python/__init__.py",
+    "python/export_mat.py",
+    "python/import_ugm.py",
+    "python/tests/test_export.py",
+    "python/tests/test_workspace_matlab_masks.py",
+    "python/tests/test_workspace_tree_code.py",
+    "python/verify_sept23_handoffs.py",
+    "python/verify_workspace_matlab.py",
+    "python/workspace_mask_refresh.py",
+    "python/workspace_matlab_masks.py",
+    "python/workspace_matlab_routes.py",
+    "python/workspace_tree_code.py",
+    "src/README_DISPLAY_SPLITTER.md",
+    "src/analysis/epicAnalysis.m",
+    "src/buildTreeFromEpicData.m",
+    "src/config/epicTreeConfig.m",
+    "src/config/getH5FilePath.m",
+    "src/displayNodeData.m",
+    "src/formatEpicNodeData.m",
+    "src/gui/epicGraphicalTree.m",
+    "src/gui/epicGraphicalTreeNode.m",
+    "src/gui/epicGraphicalTreeNodeWidget.m",
+    "src/gui/graphicalCheckBox.m",
+    "src/gui/graphicalTree.m",
+    "src/gui/graphicalTreeNode.m",
+    "src/gui/graphicalTreeNodeWidget.m",
+    "src/gui/singleEpoch.m",
+    "src/loadEpicTreeData.m",
+    "src/rebuildTreeWithSplit.m",
+    "src/splitters/splitOnCellType.m",
+    "src/splitters/splitOnParameter.m",
+    "src/splitters/splitOnRGCSubtype.m",
+    "src/stimuli/epicStimulusGenerators.m",
+    "src/tree/CompatibilityList.m",
+    "src/tree/README.md",
+    "src/tree/epicTreeTools.m",
+    "src/tree/launchWorkspaceTree.m",
+    "src/tree/readWorkspaceTags.m",
+    "src/tree/validateWorkspaceTags.m",
+    "src/tree/verifyWorkspaceSource.m",
+    "src/tree/workspaceTag.m",
+    "src/tree/writeWorkspaceTags.m",
+    "src/utilities/inspect_mat_file.m",
+    "src/utilities/show_available_splits.m",
+    "tests/baselines/MeanSelectedNodes_baseline.mat",
+    "tests/baselines/README.md",
+    "tests/baselines/getCycleAverageResponse_baseline.mat",
+    "tests/baselines/getLinearFilterAndPrediction_baseline.mat",
+    "tests/baselines/getMeanResponseTrace_baseline.mat",
+    "tests/baselines/getResponseAmplitudeStats_baseline.mat",
+    "tests/debug/debug_epoch_structure.m",
+    "tests/debug/debug_splitter_values.m",
+    "tests/debug/debug_tree_structure.m",
+    "tests/debug/investigate_selection_bug.m",
+    "tests/gui/GUIInteractionTest.m",
+    "tests/helpers/generateBaselines.m",
+    "tests/helpers/getTestDataPath.m",
+    "tests/helpers/loadTestTree.m",
+    "tests/integration/WorkflowTest.m",
+    "tests/test_all_splits_gui.m",
+    "tests/test_blank_gui_fix.m",
+    "tests/test_cell_type_full_names.m",
+    "tests/test_comprehensive_functions.m",
+    "tests/test_data_loading.m",
+    "tests/test_datajoint_export.m",
+    "tests/test_epicAnalysis.m",
+    "tests/test_epicTree.m",
+    "tests/test_epoch_display.m",
+    "tests/test_exact_legacy_pattern.m",
+    "tests/test_fixed_gui.m",
+    "tests/test_gold_standard_cell_types.m",
+    "tests/test_gui_display_data.m",
+    "tests/test_gui_splits.m",
+    "tests/test_h5_lazy_loading.m",
+    "tests/test_launch.m",
+    "tests/test_launch_workspace_tree.m",
+    "tests/test_legacy_pattern.m",
+    "tests/test_multisource_lazy_loading.m",
+    "tests/test_quick.m",
+    "tests/test_real_cell_types.m",
+    "tests/test_renamed.m",
+    "tests/test_robust_splits.m",
+    "tests/test_selection_navigation.m",
+    "tests/test_selection_navigation_auto.m",
+    "tests/test_selection_state.m",
+    "tests/test_splitters.m",
+    "tests/test_stimulus_generators.m",
+    "tests/test_tree_navigation.m",
+    "tests/test_tree_navigation_realdata.m",
+    "tests/test_ugm_persistence.m",
+    "tests/test_updated_gui.m",
+    "tests/test_workspace_matlab_gui.m",
+    "tests/test_workspace_source_integrity.m",
+    "tests/test_workspace_tag_exchange.m",
+    "tests/test_workspace_tag_gui.m",
+    "tests/test_workspace_tree_viewport.m",
+    "tests/unit/AnalysisFunctionsTest.m",
+    "tests/unit/DataExtractionTest.m",
+    "tests/unit/SplitterFunctionsTest.m",
+    "tests/unit/TreeNavigationTest.m",
+    "tests/utilities/TreeNavigationUtility.m",
+    "tests/verification/benchmark_selection_performance.m",
+    "tests/verification/check_paths.m",
+    "tests/verification/check_response.m",
+    "tests/verification/verify_rename.m",
+    "tests/verification/verify_task1.m",
+    "tests/verification/verify_task2.m",
+    "tests/verification/verify_task3.m",
+    "tests/verify_workspace_generated_bundle.m"
+  ],
+  "documentation_review_candidates": [
+    "docs/UserGuide.md",
+    "docs/dev/WORKFLOW_GUIDE.md",
+    "docs/dev/MATLAB_GENERATOR_E2E.md",
+    "docs/dev/oneoff_matlab_validation.json",
+    "docs/dev/matlab_generator_e2e_results.json",
+    "docs/dev/BUGFIX_TREE_GUI.md",
+    "docs/dev/EPOCH_TREE_SYSTEM_COMPREHENSIVE_GUIDE.md"
+  ]
+}

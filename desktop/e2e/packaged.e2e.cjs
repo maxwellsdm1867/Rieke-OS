@@ -33,6 +33,20 @@ async function chooseTestProfile() {
     await dialog.waitFor({state: 'hidden'});
   }
 }
+async function saveNextOwnedDownload(filename, click) {
+  await application.evaluate(({session}, filename) => {
+    global.__riekeE2EDownloadPromise = new Promise(resolve => {
+      session.fromPartition('rieke-desktop').once('will-download', (_event,item) => {
+        item.setSavePath(filename);
+        item.once('done',(_event,state)=>resolve({state,filename:item.getSavePath(),url:item.getURL()}));
+      });
+    });
+  },filename);
+  await click();
+  const result=await Promise.race([application.evaluate(()=>global.__riekeE2EDownloadPromise),delay(90000).then(()=>{throw new Error('Owned download did not complete');})]);
+  assert.equal(result.state,'completed');assert.equal(result.filename,filename);assert.ok(result.url.startsWith('http://127.0.0.1:'));
+  return result;
+}
 async function chooseNewProjectFolder(form, name) {
   const selected = form.locator('#new-project-directory');
   assert.equal(await selected.getAttribute('readonly'), '');
@@ -344,6 +358,41 @@ async function main() {
       return {real_epoch_inspection:true,trace_canvas_loaded:true,combined_epoch_count:combined.epochs.length,combined_cell_count:combined.cells.length,
         metadata_field_count:fields.fields.length,metadata_panel_visible:true,protocol_uuid:inspectedProtocolUuid};
     }finally{page.off('response',observe);}
+  });
+  if(process.env.RIEKE_E2E_H5) await check('selection masks retain JSON download and import without MATLAB GUI controls',async()=>{
+    await page.locator('.inspector-toolbar').getByRole('button',{name:'More',exact:true}).click();
+    await page.getByRole('button',{name:'Import mask file…',exact:true}).click();
+    const maskDialog=page.getByRole('dialog',{name:'Protocol selection mask',exact:true});await maskDialog.waitFor();
+    assert.doesNotMatch(await maskDialog.innerText(),/MATLAB|EpicTree|UGM/);
+    const filename=path.join(fixture.home,'selection-mask.json');
+    await saveNextOwnedDownload(filename,()=>maskDialog.getByRole('button',{name:'Save JSON mask',exact:true}).click());
+    const mask=JSON.parse(await fs.readFile(filename,'utf8'));
+    assert.equal(mask.format,'recording-selection-mask');assert.equal(mask.version,1);assert.ok(mask.epochs.length>0&&mask.source_revisions.length>0);
+    assert.ok(mask.epochs.every(epoch=>typeof epoch.epoch_uuid==='string'&&typeof epoch.included==='boolean'));
+    await maskDialog.locator('input[type=file]').setInputFiles(filename);
+    await maskDialog.getByRole('status').filter({hasText:/Imported .*Selection|Imported selection-mask/}).waitFor({timeout:30000});
+    const roundtrip=await page.evaluate(id=>fetch(`/api/protocols/${id}/masks/export`).then(response=>response.json()),mask.protocol_uuid);
+    assert.deepEqual(roundtrip.epochs,mask.epochs);
+    await maskDialog.getByRole('button',{name:'Close selection mask',exact:true}).click();
+    return {actual_owned_http_download:true,json_mask_import_roundtrip:true,epoch_count:mask.epochs.length,no_matlab_gui_controls:true};
+  });
+  if(process.env.RIEKE_E2E_H5) await check('protocol UI exports a standalone MAT data file without a MATLAB launcher or GUI workflow',async()=>{
+    await page.getByRole('button',{name:'Export',exact:true}).first().click();
+    const dialog=page.getByRole('dialog',{name:'Export protocol',exact:true});await dialog.waitFor();
+    assert.doesNotMatch(await dialog.innerText(),/EpicTree|launcher|selection mask|MATLAB bundle/);
+    await dialog.getByRole('radio',{name:/MATLAB data \(\.mat\)/}).check();
+    await dialog.getByRole('textbox',{name:'Export name',exact:true}).fill('Standalone MAT fixture');
+    let posted=null;const observe=request=>{if(request.method()==='POST'&&/^\/api\/protocols\/[^/]+\/exports$/.test(new URL(request.url()).pathname))posted=request.postDataJSON();};page.on('request',observe);
+    try{
+      await dialog.getByRole('button',{name:/^Save & export .* epochs$/}).click();
+      const download=dialog.getByRole('link',{name:'Download MAT data',exact:true});await download.waitFor({timeout:90000});
+      assert.equal(posted?.format,'matlab-mat');const filename=path.join(fixture.home,'recordings.mat');
+      await saveNextOwnedDownload(filename,()=>download.click());
+      const handle=await fs.open(filename,'r');const header=Buffer.alloc(128);try{await handle.read(header,0,header.length,0);}finally{await handle.close();}
+      assert.match(header.toString('ascii'),/^MATLAB (?:7\.3|5\.0) MAT-file/);assert.ok((await fs.stat(filename)).size>128);
+      await dialog.getByRole('button',{name:'Close protocol export',exact:true}).click();
+      return {explicit_canonical_matlab_mat_request:true,plain_mat_file_download:true,no_zip_launcher_or_gui:true};
+    }finally{page.off('request',observe);}
   });
   await check('durable real renderer draft survives orderly close and cold restart', async () => {
     await page.getByRole('button', {name: 'Project files', exact: true}).click();

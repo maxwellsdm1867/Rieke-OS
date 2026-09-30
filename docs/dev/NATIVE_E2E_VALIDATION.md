@@ -1,3 +1,5 @@
+> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.
+
 # Native project end-to-end validation
 
 Validated on macOS Apple Silicon, 29 September 2026.

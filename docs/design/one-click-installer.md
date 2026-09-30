@@ -37,7 +37,7 @@ to satisfy an update schedule.
 
 First scope assumption: Apple Silicon Macs. Intel Macs and Windows require their
 own build and native integration evidence before support is advertised. MATLAB
-is optional and used only to open the EpicTreeGUI export; Python writes the MAT
+is unnecessary for running the app; Python writes standalone MAT
 files and reads selection masks without running MATLAB.
 
 ## What the inspection found
@@ -306,7 +306,7 @@ this planning pass.
 | Active import, inbox ingestion, transfer/export, open second project and unsaved browser draft | Safe quit is postponed or drafts are preserved; no worker is killed to make an update succeed. All owned services acknowledge shutdown before installation. |
 | Offline server, invalid signature, wrong platform, truncated download, disk-full and permissions failure | Current app remains usable; incomplete updates are not activated. Necessary action is available in the release panel. |
 | New version fails startup or uses incompatible project/MySQL formats | Recovery restores compatible app behavior without silently migrating or downgrading data. Previous-app retention alone does not count as tested recovery. |
-| No MATLAB installation | All core installation, launch, data and update scenarios pass. Optional MATLAB GUI interoperability has its own validation claim. |
+| No MATLAB installation | All core installation, launch, data and update scenarios pass. MAT data integrity is checked independently; MATLAB GUI interoperability is outside the Rieke OS product scope. |
 
 Test the exact notarized installer and archive that will be published. Preserve
 machine/platform, versions, artifact hashes and pass/fail receipts. Neither the

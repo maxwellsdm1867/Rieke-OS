@@ -1,0 +1,38 @@
+{
+  "format": "rieke-source-release-validation",
+  "version": 1,
+  "application_version": "0.1.3",
+  "channel": "unsigned-testing",
+  "checked_at": "2026-09-30T17:05:14.631924+00:00",
+  "repository": "maxwellsdm1867/Rieke-OS",
+  "scope": "Independent Rieke OS application; MATLAB data export retained, MATLAB GUI integration removed",
+  "checks": {
+    "python_unittest": {
+      "total": 1066,
+      "skipped": 32,
+      "failures": 0,
+      "errors": 0
+    },
+    "frontend": {
+      "passed": 328
+    },
+    "frontend_production_build": {
+      "passed": true
+    },
+    "desktop": {
+      "passed": 61
+    },
+    "python_pytest": {
+      "passed": 1034,
+      "skipped": 32,
+      "subtests_passed": 2728
+    },
+    "release_gate_and_profile": {
+      "passed": 12
+    }
+  },
+  "limits": [
+    "Native external tests are gated in this local unittest run; native CI and exact packaged scientific qualification are recorded separately.",
+    "This source receipt does not qualify built installer bytes, Developer ID signing, notarization or a clean machine."
+  ]
+}

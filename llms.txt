@@ -11,7 +11,7 @@
 - [Quick start: install through first export](docs/RIEKE_OS_QUICK_START.md)
 - [LLM installation instructions](docs/LLM_SETUP.md)
 - [Workspace reference](workspace-app/README.md)
-- [Optional MATLAB/EpicTreeGUI companion](EPIC_TREE_GUIDE.md)
+- [Rieke OS application boundary](docs/RIEKE_OS_ARCHITECTURE.md)
 - [Packaging and validation scope](packaging/README.md)
 
 ## Setup contract

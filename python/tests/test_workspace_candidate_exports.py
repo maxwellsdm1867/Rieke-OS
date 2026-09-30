@@ -16,7 +16,6 @@ from scipy.io import loadmat
 
 import test_workspace_api as api_fixture
 from workspace_candidate_exports import register_candidate_export_routes,candidate_scope_uuid
-from workspace_matlab_masks import read_ugm
 from workspace_recipes import checksum
 from test_workspace_matlab import epochs as matlab_epochs
 
@@ -149,22 +148,20 @@ class CandidateExportTests(unittest.TestCase):
         history=self.client.get('/api/exports').get_json()['exports']
         self.assertEqual(history[0]['export_scope']['kind'],'explorer_candidate')
 
-    def test_matlab_bundle_roundtrip_mask_and_generated_script(self):
+    def test_matlab_data_download_preserves_exact_membership_without_gui_or_mask_files(self):
         candidate=self.save()
-        response=self.export(candidate,'epictree-mat')
+        response=self.export(candidate,'matlab-mat')
         self.assertEqual(response.status_code,201,response.get_json())
         result=response.get_json()
         self.assertTrue(result['name'])
         download=self.client.get(result['download_url'])
-        bundle=zipfile.ZipFile(io.BytesIO(download.data));download.close()
-        self.addCleanup(bundle.close)
-        data=loadmat(io.BytesIO(bundle.read('recordings.mat')),simplify_cells=True)
+        data=loadmat(io.BytesIO(download.data),simplify_cells=True);download.close()
         self.assertEqual({epoch['h5_uuid'] for epoch in matlab_epochs(data)},set(self.service.ids))
-        self.assertIn('launchWorkspaceTree',bundle.read('tree_layout.m').decode())
-        mask=Path(self.case.temp.name)/'roundtrip.ugm';mask.write_bytes(bundle.read('selection.ugm'))
-        loaded=read_ugm(mask,expected_epoch_uuids=self.service.ids)
-        self.assertTrue(all(loaded['mask']))
-        recipe=json.loads(bundle.read('recipe.json'))
+        self.assertEqual(result['format'],'matlab-mat')
+        root=Path(result['artifact_path']).parent
+        self.assertFalse(any(file.suffix in {'.m','.ugm'} for file in root.rglob('*')))
+        recipe=json.loads(data['metadata']['recipe_json'])
+        self.assertEqual(recipe['destination'],'matlab-mat')
         self.assertEqual(recipe['options']['export_scope']['revision_uuid'],candidate['revision_uuid'])
         self.assertEqual(self.case.curation.rows,[])
         self.assertEqual(self.case.protocol_bindings.rows,[])

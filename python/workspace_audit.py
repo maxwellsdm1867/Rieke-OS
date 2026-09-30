@@ -24,7 +24,7 @@ import uuid
 AUDIT_VERSION = 1
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = (
-    "python/workspace_mask_refresh.py", "python/workspace_matlab_routes.py",
+    "python/workspace_matlab.py", "python/workspace_candidate_exports.py",
     "python/workspace_export_folder.py", "workspace-app/src/components/MetadataRefresh.jsx",
     "python/workspace_external_tags.py", "workspace-app/src/externalTagMonitor.js",
     "workspace-app/src/components/ExternalTagSync.jsx",

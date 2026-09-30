@@ -144,7 +144,9 @@ class JointGroupingTests(unittest.TestCase):
         self.assertEqual({epoch['h5_uuid'] for epoch in matlab_tests.epochs(data)},set(case.service.ids))
         order=json.loads(data['metadata']['split_value_order_json'])[0]['values']
         self.assertEqual([json.loads(value)[0]['value'][0] for value in order],[25,100])
-        self.assertIn("{{'parameters/history1', 'parameters/history2', 'parameters/target'}}",Path(result['launch_script_path']).read_text())
+        self.assertNotIn('launch_script_path',result)
+        self.assertFalse(any(path.suffix=='.m' for path in Path(result['mat_path']).parent.iterdir()))
+        self.assertEqual(result['split_mapping'][0]['components'],HISTORY_COMPONENTS)
         self.assertEqual(mapping[0]['components'],HISTORY_COMPONENTS)
         display=json.loads(data['metadata']['split_display_json'])
         self.assertEqual(display[0]['field'],HISTORY_JOINT)

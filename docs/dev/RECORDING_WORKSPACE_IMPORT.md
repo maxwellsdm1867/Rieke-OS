@@ -69,7 +69,7 @@ The `last_import_check` field records the most recent check's source, count, tim
 
 ## Running and querying
 
-The installed RetinAnalysis environment supplies the dependencies. From the epicTreeGUI repository:
+The installed RetinAnalysis environment supplies the dependencies. From the dedicated Rieke OS repository:
 
 ```sh
 /path/to/repos/retinanalysis/.venv/bin/python \
@@ -147,9 +147,7 @@ block, group and protocol; `→` is accepted in place of commas. Missing metadat
 gets its own visible group. Invalid fields and duplicate epoch identities fail
 explicitly. Reordering splits never filters membership. This helper builds a
 metadata tree; the future React adapter must request/paginate children lazily.
-The original MATLAB `epicTreeTools.buildTree(keyPaths)` and custom splitters remain
-the scientific tree backbone. The preview additionally demonstrates mean, drug
-and phase grouping on illustrative data, not a validated generic parameter mapper.
+The web tree uses recorded grouping fields. MAT exports contain data and provenance only; MATLAB GUI tree builders are outside the Rieke OS application.
 
 Eight unit tests now cover importer checks plus export scope/review rejection,
 immutable snapshots, query diffs and tree membership invariance. The preview has

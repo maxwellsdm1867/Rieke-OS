@@ -22,7 +22,7 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 OPTIONAL_PID_ATTACH = 'python/lib/python3.11/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/attach.dylib'
-MATLAB_EXPORT_HELPERS = ('launchWorkspaceTree', 'readWorkspaceTags', 'validateWorkspaceTags', 'workspaceTag', 'writeWorkspaceTags')
+from desktop_application_profile import copy_python_application, audit_application
 sys.path.insert(0, str(ROOT / 'python'))
 from workspace_bootstrap import verify_checkout
 from workspace_mysql_runtime import install_mysql_runtime, mysql_runtime
@@ -96,15 +96,11 @@ def copy_application(root, output, frontend_source=None):
     application = output / 'application'
     if application.exists():
         shutil.rmtree(application)
-    (application / 'python').mkdir(parents=True)
-    # Explicit allowlist excludes tests, projects, source runtime, credentials and receipts.
-    for path in (root / 'python').glob('*.py'):
-        shutil.copy2(path, application / 'python' / path.name)
+    copy_python_application(root, application)
     for name in ('workspace-source.json', 'workspace-mysql-runtime.json'):
         shutil.copy2(root / 'python' / name, application / 'python' / name)
     shutil.copy2(root / 'rieke-release.json', application / 'rieke-release.json')
     shutil.copy2(root / 'workspace-app/package.json', application / 'workspace-app-package.json')
-    copy_matlab_application(root, application)
     dist = Path(frontend_source) if frontend_source else root / 'workspace-app/dist'
     if not (dist / 'index.html').is_file():
         raise ValueError('Build the frontend before assembling desktop resources')
@@ -116,28 +112,7 @@ def copy_application(root, output, frontend_source=None):
     # Existing Flask static route contract, contained relocatable link.
     (application / 'workspace-app/dist').symlink_to('../../frontend', target_is_directory=True)
     shutil.copy2(root / 'workspace-app/package.json', application / 'workspace-app/package.json')
-
-
-def copy_matlab_application(root, application):
-    """Ship the source closure required by MAT exports and their GUI launcher.
-
-    MATLAB is not required to create exports. These reviewed source helpers let
-    a recipient with MATLAB use the exported launcher without the source clone.
-    Recordings, examples, tests and arbitrary adjacent files are not resources.
-    """
-    root, application = Path(root), Path(application)
-    required = [root / 'epicTreeGUI.m', root / 'src/loadEpicTreeData.m',
-                root / 'src/buildTreeFromEpicData.m', root / 'src/tree/epicTreeTools.m']
-    required.extend(root / 'src/tree' / (name + '.m') for name in MATLAB_EXPORT_HELPERS)
-    if any(not path.is_file() for path in required):
-        raise ValueError('MATLAB export/launcher source closure is incomplete')
-    paths = [root / 'epicTreeGUI.m', *sorted((root / 'src').rglob('*.m'))]
-    for source in paths:
-        if source.is_symlink() or not source.resolve().is_relative_to(root.resolve()):
-            raise ValueError('MATLAB application source escapes the reviewed code tree')
-        target = application / source.relative_to(root)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, target)
+    audit_application(application)
 
 
 def build_frontend():

@@ -11,13 +11,12 @@ import contextlib
 import os
 from pathlib import Path
 import uuid
-import zipfile
 
 from recording_workspace import digest, now, write_json
 from workspace_recipes import checksum, member_map, prepare_export, save_snapshot, seal
 from workspace_storage import managed_directory
 
-FORMATS = {'reference-json','wheeler-sqlite','epictree-mat'}
+FORMATS = {'reference-json','wheeler-sqlite','matlab-mat'}
 
 
 class StaleCandidateExport(ValueError):
@@ -130,33 +129,13 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
             build_sqlite_export(package,artifact)
             from workspace_external_tags import prepare_return_folder
             prepare_return_folder(output,package)
-        elif format=='epictree-mat':
+        elif format=='matlab-mat':
             from workspace_matlab import build_matlab_export
-            from workspace_matlab_masks import write_ugm
             matlab_dir=output/'matlab'
             matlab=build_matlab_export(service,recipe,matlab_dir,epoch_records=records)
-            write_ugm(matlab_dir/'selection.ugm',matlab['epoch_order'],[True]*len(matlab['epoch_order']),metadata={
-                'project_uuid':recipe['project_uuid'],'protocol_uuid':scope_uuid,
-                'dataset_uuid':recipe['export_uuid'],'export_uuid':recipe['export_uuid'],
-                'query_sha256':recipe['query_sha256'],'recipe_sha256':recipe['content_sha256'],
-                'mat_file_basename':'recordings','source_scope_revision':preview['source_scope']['revision']})
             write_json(matlab_dir/'export-report.json',{key:value for key,value in matlab.items()
-                if key not in {'mat_path','launch_script_path','recipe_path'}})
-            (matlab_dir/'README.txt').write_text(
-                'One-off saved search export\n\n'
-                'This bundle contains the exact saved candidate, without creating a protocol workspace.\n'
-                'All candidate epochs are included and unreviewed. No protocol tags or masks are implicitly merged.\n'
-                'Explicit scoped tag predicates and their saved evidence are in recipe.json/query_snapshot.\n'
-                'Add the current EpicTreeGUI checkout to MATLAB path, then run launch_epictree.m.\n'
-                'tree_layout.m reconstructs the saved grouping; it does not rerun the query.\n'
-                'Original H5 files must remain accessible. Traces load lazily and verify source SHA256.\n'
-                'selection.ugm is matched by UUID; Save Epoch Mask updates this extracted bundle only.\n'
-                'Returning a mask to an unrelated protocol requires an explicit matching scope; this export creates none.\n')
-            artifact=output/'epictree-bundle.zip'
-            with zipfile.ZipFile(artifact,'w',compression=zipfile.ZIP_DEFLATED) as bundle:
-                bundle.write(output/'recordings.json','recordings.json')
-                bundle.write(output/'recipe.json','recipe.json')
-                for file in sorted(matlab_dir.iterdir()):bundle.write(file,file.name)
+                if key not in {'mat_path','recipe_path'}})
+            artifact=Path(matlab['mat_path'])
         from workspace_tag_predicates import annotation_locks
         with annotation_locks(service,candidate['predicate'],extra_protocols=[scope_uuid]):
             if candidate.get('annotation_scope'):

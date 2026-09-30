@@ -34,7 +34,7 @@ class CompactExplorerTests(unittest.TestCase):
         self.assertNotIn('membership',created['preview'])
         self.assertNotIn('children',created['preview']['tree'])
         self.assertEqual(created['preview']['baseline_diff'],{'added':0,'removed':0,'changed':0})
-        self.assertIn('matlab_command',created['preview']['tree'])
+        self.assertNotIn('matlab_command',created['preview']['tree'])
         path='/api/explore/revisions/'+created['revision_uuid']
         full=self.client.get(path).get_json()
         canonical=full['recipe']

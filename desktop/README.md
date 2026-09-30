@@ -164,3 +164,13 @@ The production specification remains the acceptance authority:
 Signing, notarization, clean-machine installation, source-user migration, full
 fault-injection qualification and a real signed old-to-new update remain gates
 until independently demonstrated with the final artifacts.
+
+
+## Application boundary
+
+The desktop bundles only the Rieke OS Python modules listed in
+`application-profile.json`, its web interface, and pinned native dependencies.
+It does not ship EpicTreeGUI, MATLAB GUI/plotting source, launchers, or interactive
+MATLAB masks. MAT data export runs with bundled Python/SciPy; no MATLAB install
+is required. Source and artifact audits enforce this boundary. See
+[architecture](../docs/RIEKE_OS_ARCHITECTURE.md).

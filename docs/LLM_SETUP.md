@@ -17,7 +17,7 @@ Application folder: <absolute path to a permanent application folder>
 Research workspace: <absolute path to a separate project storage folder>
 
 Read the repository's README.md and docs/RIEKE_OS_QUICK_START.md first.
-This is the local browser app, with an optional MATLAB/EpicTreeGUI companion.
+This is the independent Rieke OS browser/desktop app with MATLAB data export.
 Do not substitute the older epicTreeGUI repository or a Matplotlib application.
 
 1. Check my OS and architecture. Apple Silicon macOS is the verified platform;
@@ -69,7 +69,7 @@ Do not substitute the older epicTreeGUI repository or a Matplotlib application.
 - [Requirements and installation](../README.md#install-and-launch)
 - [First recording, export, and troubleshooting](RIEKE_OS_QUICK_START.md)
 - [Runtime and export details](../workspace-app/README.md)
-- [MATLAB companion](../EPIC_TREE_GUIDE.md)
+- [Application boundary](RIEKE_OS_ARCHITECTURE.md)
 
 The ZIP includes the application source and installer, not installed dependencies,
 recordings, or a scientific database. Installation downloads dependencies; it is

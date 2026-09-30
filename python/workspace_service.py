@@ -20,7 +20,6 @@ from recording_workspace import (connect, digest, epochs, evaluate_protocol_file
                                  validate_protocol_definition, workspace_tables)
 from workspace_recipes import build_tree, parse_splits, checksum
 from workspace_tree import catalog as tree_catalog, value_label, humanize as field_label
-from workspace_tree_code import matlab_tree_command
 from workspace_predicates import validate as validate_predicate, matches as predicate_matches, predicate_catalog
 
 TREE_CACHE_VALUE_BUDGET = 2_000_000
@@ -1015,7 +1014,7 @@ class WorkspaceService:
         if include_catalog_summary:
             scoped_catalog, scoped_values = materialize_combinations(scoped_catalog, scoped_values, order)
         tree = self._render_tree(rows, scoped_catalog, scoped_values, splits) if include_tree else {
-            'count': len(rows), 'split_order': order, 'matlab_command': matlab_tree_command(order)}
+            'count': len(rows), 'split_order': order}
         from workspace_tree_pages import selection_revision
         return {'predicate': validated, 'splits': splits, 'tree': tree, 'catalog': scoped_catalog,
                 **({'catalog_summary': False} if not include_catalog_summary else {}),
@@ -1104,7 +1103,6 @@ class WorkspaceService:
         annotate(result)
         result['levels'] = levels
         result['split_order'] = order
-        result['matlab_command'] = matlab_tree_command(order)
         return result
 
     def epoch(self, epoch_uuid, protocol_uuid=None):

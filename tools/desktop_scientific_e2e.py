@@ -238,8 +238,8 @@ with sqlite3.connect('file:'+sys.argv[3]+'?mode=ro',uri=True) as db:
     assert frozen['parameters']==spec['reference']['parameters']
 mat_checked=False
 if len(sys.argv)>4:
-    with zipfile.ZipFile(sys.argv[4]) as archive:
-        mat=scipy.io.loadmat(io.BytesIO(archive.read('recordings.mat')),simplify_cells=True)
+    assert not zipfile.is_zipfile(sys.argv[4]), 'New MATLAB data export must be a plain MAT file'
+    mat=scipy.io.loadmat(sys.argv[4],simplify_cells=True)
     found=[]
     def walk(obj):
         if isinstance(obj,dict):
@@ -374,7 +374,7 @@ def exercise(h, recording):
         return {'download_matches_published_hash': True}
     h.check('reference-export-real-artifact-download', lambda: export('reference-json'))
     h.check('SQLite-export-real-artifact-download', lambda: export('wheeler-sqlite'))
-    h.check('MAT-export-real-artifact-download', lambda: export('epictree-mat'))
+    h.check('MAT-data-export-real-artifact-download-without-GUI-files', lambda: export('matlab-mat'))
 
     def trace():
         package = json.loads(Path(artifacts['reference-json']['artifact_path']).read_text())
@@ -384,8 +384,12 @@ def exercise(h, recording):
         spec = h.state / 'trace-private.json'
         spec.write_text(json.dumps({'reference': row, 'stream': stream, 'api': api}))
         arguments = [spec, artifacts['wheeler-sqlite']['artifact_path']]
-        if 'epictree-mat' in artifacts:
-            arguments.append(artifacts['epictree-mat']['artifact_path'])
+        if 'matlab-mat' in artifacts:
+            mat_path = Path(artifacts['matlab-mat']['artifact_path'])
+            assert mat_path.suffix == '.mat'
+            assert not any(file.suffix in {'.m', '.ugm'} for file in mat_path.parent.rglob('*'))
+            assert 'EpicTree' not in (mat_path.parent / 'README.txt').read_text()
+            arguments.append(mat_path)
         return h.python_code(TRACE_CHECK, *arguments)
     h.check('numeric-trace-fidelity-HTTP-and-frozen-export-pointers', trace)
 
@@ -668,7 +672,8 @@ def fault_recovery(h, recording):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')
-    parser.add_argument('--recording', type=Path, default=ROOT / 'test_data/h5/2025-12-02_F.h5')
+    parser.add_argument('--recording', type=Path, required=True,
+                        help='Existing scientific H5 fixture; never copied into the application bundle')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/dev/desktop-scientific-e2e.json')
     parser.add_argument('--state', type=Path)
     args = parser.parse_args()

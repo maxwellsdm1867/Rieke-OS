@@ -9,19 +9,18 @@ layout, see the [Rieke Lab OS quick start](../docs/RIEKE_OS_QUICK_START.md).
 
 ## Fresh-clone setup
 
-Use the complete development source on `codex/rieke-native-e2e`:
+Use the dedicated Rieke OS development source:
 
 ```sh
-git clone --branch codex/rieke-native-e2e https://github.com/maxwellsdm1867/epicTreeGUI.git
-cd epicTreeGUI
+git clone https://github.com/maxwellsdm1867/Rieke-OS.git
+cd Rieke-OS
 ```
 
-The public `master` branch still contains the legacy MATLAB application.
-The review branch is source for development, not a stable signed app release.
+Rieke OS is a separate application with web plotting, curation and data export.
+A source checkout does not imply a signed or notarized desktop release.
 
 The current bundled native database runs on **Apple Silicon macOS**. Linux and
-Windows do not yet have validated native runtime packages. The separate MATLAB
-EpicTreeGUI has its own platform requirements. Source setup needs:
+Windows do not yet have validated native runtime packages. Source setup needs:
 
 - Git, including access to the public RetinAnalysis GitHub repository.
 - Python 3.10+ to run the standard-library bootstrap script, and `uv` on PATH.
@@ -80,8 +79,9 @@ PyTorch, because upstream RetinAnalysis imports it eagerly. Internet access and
 several GB of free disk are needed. Package hashes and source revisions are
 pinned; compiled binaries remain platform/toolchain dependent. The fresh setup
 has been exercised on Apple Silicon macOS. Linux's Python source path is not a
-promise of a supported bundled database; that platform remains unvalidated. MATLAB is
-optional for this app and needed only to run the exported EpicTree GUI.
+promise of a supported bundled database; that platform remains unvalidated.
+MATLAB is not required to run Rieke OS. MAT data exports can be read separately
+with MATLAB’s standard data loading functions.
 
 For an explicit existing clean checkout at an accepted revision:
 
@@ -218,12 +218,12 @@ Use `workspace-runtime.lock` through `rieke.py setup` for the full backend.
   earlier artifact. A changed query definition is rejected instead of silently
   using a different predicate.
 
-Exports support a queryable Wheeler SQLite snapshot and an EpicTree MATLAB
-bundle, with reference JSON retained under Advanced. These exports use lazy H5
+Exports support a queryable Wheeler SQLite snapshot and standalone MATLAB data
+(.mat), with reference JSON retained under Advanced. These exports use lazy H5
 pointers, so original recordings must remain accessible. Nested All/Any/None
 predicates, project creation and switching, direct matching-epoch inspection,
 and one-off saved-selection exports are implemented. User-created protocol
-workspaces, figure analysis and desktop packaging remain future work. The recording-workspace SQLite schema does not fabricate or replace fitted
+workspaces and desktop packaging are implemented; figure analysis remains future work. The recording-workspace SQLite schema does not fabricate or replace fitted
 SRM/VMN analysis results.
 
 ## Reuse and boundaries
@@ -231,7 +231,7 @@ SRM/VMN analysis results.
 `python/workspace_api.py` is the loopback HTTP adapter. `workspace_service.py`
 uses the existing `recording_workspace.py` evaluator, RetinAnalysis schema,
 validated parser output and source H5 pointers. `workspace_recipes.py` supplies
-query/export snapshots and EpicTree's ordered-field grouping model.
+query/export snapshots and ordered-field grouping for the web tree.
 `workspace_curation.py` adds only bookkeeping tables in `recording_workspace`;
 it does not edit acquisition rows or raw recordings.
 
@@ -339,8 +339,8 @@ Import requires exact current membership and source hashes, plus a current
 query revision. All inclusion changes and the audit event commit together;
 tags and approvals are preserved. A mask from before adding new recordings
 must be reconciled explicitly, not silently applied as a partial mask. This is
-not the legacy UGM/MAT format. See the function parity inventory for remaining
-integration work.
+separate from MAT data export. Tag JSON and protocol selection masks remain
+independent exchanges.
 
 
 ## Visual tree builder
@@ -457,7 +457,7 @@ Samarjit's shared `Tags` table or merge annotations across workspaces.
 From matching results, choose **Edit tree**, **Use in protocol**, or **Export
 selection**. Saving a selection does not itself create a protocol or pin.
 One-off export publishes the saved exact membership to Wheeler SQLite, an
-EpicTree MATLAB bundle, or reference JSON. It includes all matching epochs with
+standalone MATLAB data (.mat), or reference JSON. It includes all matching epochs with
 no implicit protocol inclusion/review mask or merged tags. Explicit tag predicates
 retain their protocol identity and selection-time evidence in the recipe. A stale
 source, membership, fingerprint or queried annotation revision requires a new
@@ -570,7 +570,7 @@ as explicit query exclusions, without rewriting scientific records or old logs.
 It records migration evidence for legacy state rows and resumes safely after an
 interruption. New registrations start query-included and visible.
 
-### Rieke OS projects and MATLAB handoff
+### Rieke OS projects and data export
 
 Rieke OS is the application. The current project is displayed as **Spike Response
 Model** through `project.json.display_name`; its internal name, UUID, directory and
@@ -587,41 +587,33 @@ Protocol **Export control** supports:
 - **Wheeler SQLite**: normalized, queryable cells, epochs, protocol settings,
   frozen tags and source/stream pointers, with recipe/query provenance, schema
   documentation and runnable SQL examples inside the database.
-- **Reference JSON** (Advanced): exact predicate, membership, source revisions, metadata,
-  curation and saved grouping for downstream database/analysis consumers.
-- **MATLAB bundle**: a ZIP containing `recordings.mat`, `selection.ugm`,
-  `launch_epictree.m`, both exact recipes, the reference JSON and a compatibility
-  report. Run the launcher with EpicTreeGUI available. The MAT structure follows
-  `loadEpicTreeData`/`buildTreeFromEpicData`; original H5 files supply traces lazily.
-  Stable acquisition UUIDs survive export; numeric IDs are display ordinals.
-  The launcher loads only the bundled mask, not an unrelated latest UGM.
+- **Reference JSON** (Advanced): exact predicate, membership, source revisions,
+  metadata, curation and saved grouping for downstream analysis consumers.
+- **MATLAB data (.mat)**: a standalone `recordings.mat` data file containing the
+  selected records, typed metadata, inclusion decisions, frozen annotations,
+  exact epoch identities, recipe provenance and lazy H5 references. The managed
+  export folder also retains the reference JSON, recipe and data documentation.
+  Load the file with MATLAB’s standard `load`; use the recorded H5 references
+  with `h5read` for response samples. Keep those original H5 files available and
+  unchanged. The export contains no plotting GUI, launcher, MATLAB program or
+  UGM interaction workflow.
 
-Saved grouping fields map to explicit `workspaceGrouping.gNNN` paths, with a
-field/label mapping in MAT metadata and the compatibility report. Typed values
-remain distinguishable. Exact source metadata JSON preserves fields that MATLAB
-cannot represent as ordinary struct names. Unsupported MEA data and flattening
-collisions fail without registering a successful export. Animal/preparation
-ancestors absent from the current service read model are not reconstructed.
+The SQL and MAT exports consume the same sealed selection recipe. Typed values
+and source metadata remain distinguishable, including fields unsuitable as
+ordinary MATLAB struct names. Unsupported MEA data and flattening collisions
+fail before registering a successful export. Ancestors absent from the current
+service read model are not reconstructed.
 
-In **Inspect & select → Selection masks → Import MATLAB UGM**, choose a returned
-UUID-based `.ugm` version 1.1 and explicitly apply it. The server checks the saved
-completed MATLAB artifact, exact export UUID set, recipe/source fingerprints and
-current query/curation revisions. MATLAB drops custom provenance when re-saving;
-when multiple exports have the same UUID set, choose the corresponding completed
-export. The import changes only those epochs' inclusion decisions. Tags, review
-state and epochs outside the exported subset remain unchanged. The SQL audit
-records mask content hash, dataset/recipe/artifact identities and before/after
-curation. Positional, duplicate, partial and stale masks are rejected.
+Rieke OS plots responses and edits tags and inclusion in its own web interface.
+**Selection masks** saves or restores Recording Selection Mask v1 JSON against
+an exact protocol membership and source identity. **Tags** exchanges generic
+UUID-based JSON with author attribution; it does not change inclusion masks.
+**Refresh metadata** verifies sources and refreshes changed metadata only.
 
-The MATLAB reader now prefers each response's H5 pointer over a project fallback,
-which prevents mixed-recording trees from reading another source at the same H5
-path. `loadH5ResponseData(response, new_path)` still supports deliberate relocation.
-Workspace response pointers include their source SHA-256. The MATLAB workspace
-reader verifies the source before lazy access, caches verification only while the
-file identity/signature remains unchanged, and rejects detected changes. This
-workspace guard is separate from the legacy reader's behavior for older bundles.
-Keep the original H5 files unchanged. Install `python/workspace-requirements.txt` in the
-RetinAnalysis environment for the MATLAB v7.3 mask writer (`hdf5storage`).
+Existing historical MATLAB ZIP artifacts remain readable through the export
+log as **Legacy MATLAB bundle**. Reusing an old saved destination opens the
+current data-only MAT export choice and requires an explicit new export; it
+never executes or restores a MATLAB GUI integration.
 
 ### Predicate filtering
 

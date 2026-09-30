@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from desktop_runtime_manifest import inventory, native_audit
 from desktop_release import artifact_inventory, verify_metadata, validate_evidence, baseline
+from desktop_application_profile import audit_application, load_profile
 
 
 def digest(path, algorithm='sha256'):
@@ -88,10 +89,7 @@ def inspect_bundle(bundle):
                 python_paths.append(file.relative_to(runtime).as_posix())
     if python_paths or list(runtime.rglob('pyvenv.cfg')):
         raise ValueError('Python has editable/external/venv path state')
-    missing = [name for name in ('epicTreeGUI.m','src/loadEpicTreeData.m','src/buildTreeFromEpicData.m',
-             'src/tree/epicTreeTools.m','src/tree/launchWorkspaceTree.m','src/tree/readWorkspaceTags.m',
-             'src/tree/validateWorkspaceTags.m','src/tree/workspaceTag.m','src/tree/writeWorkspaceTags.m')
-             if not (application / name).is_file()]
+    application_scope = audit_application(application, load_profile())
     signature = subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict',str(bundle)], capture_output=True)
     shell_paths = ('Contents/Info.plist', 'Contents/MacOS/Rieke OS', 'Contents/Resources/app.asar',
                    'Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
@@ -105,7 +103,7 @@ def inspect_bundle(bundle):
             'minimum_macos_version':manifest['minimum_macos_version'],
             'excluded_optional_features':manifest.get('excluded_optional_features',[]),
             'development_paths_in_operational_python_paths':[], 'private_application_data_files':[],
-            'missing_matlab_export_resources':missing,
+            'application_scope':application_scope,
             'developer_id_qualified':False, 'codesign_structural_verification':signature.returncode==0,
             'source_dirty':manifest.get('source_dirty'), 'application_version':manifest['application_version']}, manifest
 
@@ -344,8 +342,6 @@ def run(args):
         inspections={};manifests={}
         for name,bundle in bundles.items():
             inspections[name],manifests[name]=inspect_bundle(bundle)
-            if inspections[name]['missing_matlab_export_resources']:
-                report['failures'].append({'case':name+' MATLAB export closure','missing':inspections[name]['missing_matlab_export_resources']})
             if inspections[name]['native_packages_missing_license_coverage']:
                 report['failures'].append({'case':name+' native license coverage',
                                           'missing':inspections[name]['native_packages_missing_license_coverage']})

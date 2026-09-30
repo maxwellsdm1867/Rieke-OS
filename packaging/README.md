@@ -1,7 +1,7 @@
 # Distribution and verification
 
 The GitHub source ZIP contains the app, installer, Python and frontend source,
-locked Python dependencies, MATLAB integration, tests, and documentation.
+locked Python dependencies, MAT data export, tests, and documentation.
 `./install.sh` obtains the native tools and builds the parser and frontend.
 `./start.sh` serves the built app using the managed Python runtime.
 
@@ -43,8 +43,8 @@ These are checks of import fidelity and implemented arithmetic, not independent
 scientific validation of stimulus reconstruction, cell typing, or every possible
 recording protocol. Waveform samples remain in the original H5, referenced by
 the catalog; the application does not copy all raw samples into SQL. Keep source
-files available. MATLAB bundle structure and values were read independently in
-Python; executing the MATLAB GUI requires a separate MATLAB installation.
+files available. MAT data structures and values are read independently with SciPy. No MATLAB
+GUI or launcher is part of the Rieke OS distribution.
 
 Browser control evidence and remaining configuration/edge-case coverage are
 tracked in [the client validation ledger](../docs/dev/CLIENT_VALIDATION_MATRIX.md).

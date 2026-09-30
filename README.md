@@ -22,7 +22,7 @@ linked to its source identity.
 
 **It runs on your computer in a browser, with a separate local database for each
 project.** The installer manages the required tools; new projects need no Docker,
-LLM account, or API key. The included MATLAB/EpicTreeGUI companion is optional.
+LLM account, or API key. MATLAB data export uses bundled Python and SciPy.
 
 ## From recordings to an analysis dataset
 
@@ -34,7 +34,7 @@ LLM account, or API key. The included MATLAB/EpicTreeGUI companion is optional.
 | Arrange an experiment | Group epochs into trees using recorded fields such as date, cell, block or stimulus parameters. Save a named protocol working dataset from a compatible selection. |
 | Record scientific decisions | Tag a whole cell or individual epochs with an author name; include or exclude epochs for a working dataset. Review markers are optional. |
 | Keep a selection reproducible | Review additions and removals before updating a working dataset. Save exports with the query, exact epoch identities, inclusion decisions, annotations and source checksums. |
-| Continue analysis | Download a queryable SQLite database, an EpicTree MATLAB bundle, or reference JSON. Bring supported tags and MATLAB selection masks back into the workspace. |
+| Continue analysis | Download a queryable SQLite database, MATLAB data (.mat), or reference JSON. Portable tag and selection JSON can be imported into the workspace. |
 
 For example, you can import recordings from several days, find one recorded
 protocol in cells of interest, split its trials by a stimulus parameter, inspect
@@ -52,7 +52,7 @@ responsibility.
 Read the [product and data-model overview](docs/RIEKE_OS_OVERVIEW.md) for how
 projects, searches, working datasets, annotations and exports fit together.
 
-## Download the whole app
+## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
 for the current application and documentation, or choose a version from
@@ -61,8 +61,8 @@ its **Source code (zip)**. Extract the entire archive before installing. GitHub'
 **Code → Download ZIP** also downloads the current `main` branch.
 
 This is the complete **Rieke OS browser application**, including its installer,
-backend, browser interface, and optional MATLAB/EpicTreeGUI companion. You do not
-need a separate EpicTreeGUI checkout. It is not a Matplotlib desktop application.
+backend and browser interface. Its application code is independent of EpicTreeGUI.
+MATLAB plotting, interactive GUI code and launchers are not included.
 The package includes the code needed to install the app; the installer downloads
 its dependencies. Your recordings and research projects are separate.
 
@@ -74,6 +74,9 @@ cd Rieke-OS
 ```
 
 ## Install and launch
+
+For the complete Mac app, use the DMG and **Install and Open** described above.
+The following commands apply only to a source checkout.
 
 1. Put the extracted application folder somewhere permanent, such as
    `~/Applications/Rieke-OS-main`. Keep research projects outside it.
@@ -148,7 +151,7 @@ workspace issues. Keep the exact error when asking for help.
 - [Tags, authors and scope](docs/TAGGING.md)
 - [Reusable searches](docs/SEARCH_PRESETS.md)
 - [Browser workspace reference](workspace-app/README.md)
-- [MATLAB/EpicTreeGUI companion](EPIC_TREE_GUIDE.md)
+- [Application architecture](docs/RIEKE_OS_ARCHITECTURE.md)
 
 ## Your files
 
@@ -197,7 +200,7 @@ PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app run build
 ```
 
 The full integration check creates an isolated project and tests real H5 import,
-queries, saved selections, tags, JSON and MATLAB masks, all three export formats,
+queries, saved selections, tags, portable JSON selection masks, all three export formats,
 source changes, and database restart persistence. It independently reads exported
 files and compares trace and QC values with the original H5. It rejects Docker
 invocations:
@@ -212,7 +215,7 @@ and verification receipt.
 
 ## Dependencies and license
 
-Rieke Lab OS includes EpicTreeGUI under the [MIT license](LICENSE). The installer
+Rieke OS application source is available under the [MIT license](LICENSE). The installer
 fetches [RetinAnalysis](https://github.com/DRezeanu/retinanalysis), DataJoint,
 MySQL, scientific Python libraries, and conda-forge tools under their respective
 licenses. Third-party packages are installed separately, not relicensed as part

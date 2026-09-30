@@ -89,15 +89,17 @@ class MatlabExportTests(unittest.TestCase):
             self.assertEqual(exact['metadata']['epoch']['attributes']['ticks'], 639258608779858225)
         self.assertEqual(json.loads(data['metadata']['recipe_json']), self.recipe)
         self.assertEqual(result['split_mapping'][0]['field'], 'parameters/example')
-        self.assertIn("launchWorkspaceTree(fullfile(exportFolder, 'recordings.mat'), {'parameters/example', 'cell'})", Path(result['launch_script_path']).read_text())
         self.assertEqual((self.service.rows, self.service.details), before)
-        script = Path(result['launch_script_path']).read_text()
-        helper = Path(result['mat_path']).with_name('launchWorkspaceTree.m').read_text()
-        self.assertIn("'LoadUserMetadata', 'none'", helper)
-        self.assertIn("'selection.ugm'", helper)
-        self.assertIn('loadUserMetadata', helper)
-        self.assertIn(result['matlab_command'], Path(result['mat_path']).with_name('tree_layout.m').read_text())
-        # checked buildTreeFromEpicData indexes struct arrays, not cell arrays.
+        output = Path(result['mat_path']).parent
+        self.assertEqual({file.name for file in output.iterdir()},
+                         {'recordings.mat', 'matlab_recipe.json', 'annotations.json', 'README.txt'})
+        self.assertNotIn('launch_script_path', result)
+        self.assertNotIn('matlab_command', result)
+        instructions = (output / 'README.txt').read_text()
+        self.assertIn("load('recordings.mat')", instructions)
+        self.assertIn('h5read(', instructions)
+        self.assertNotIn('EpicTree', instructions)
+        # MATLAB data retains structured hierarchy arrays and acquisition IDs.
         raw = loadmat(result['mat_path'])
         self.assertIsNotNone(raw['experiments'].dtype.names)
         self.assertIsNotNone(raw['experiments']['cells'][0, 0].dtype.names)

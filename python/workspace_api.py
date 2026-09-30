@@ -21,7 +21,6 @@ import threading
 import time
 import traceback
 import uuid
-import zipfile
 
 from flask import Flask, jsonify, request, send_file, send_from_directory
 from flask.json.provider import DefaultJSONProvider
@@ -455,7 +454,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.get('/api/metadata/status')
     def metadata_status():
         return jsonify(status='ready' if service._loaded else 'needs_refresh',
-                       masks=app.extensions['mask_refresh'].latest if 'mask_refresh' in app.extensions else None,
                        last_refresh=getattr(service, 'last_successful_refresh', None),
                        latest_attempt=getattr(service, 'last_refresh', None),
                        annotation_preparation=getattr(service,'annotation_preparation',None))
@@ -482,11 +480,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 service.last_refresh = result
                 service.last_successful_refresh = result
                 warnings = []
-                masks = None
-                try:
-                    masks = app.extensions['mask_refresh'].scan()
-                except Exception as error:
-                    warnings.append('Metadata refreshed, but MATLAB masks could not be checked: ' + str(error))
                 try:
                     record_event('metadata_refreshed', result)
                 except Exception as error:
@@ -494,7 +487,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     app.logger.exception('Metadata refresh audit failed')
                 preparation=prepare_annotations()
                 if preparation['status']=='failed':warnings.append('Annotation preparation failed: '+preparation.get('reason',''))
-                return jsonify(refresh=result, warnings=warnings, masks=masks, annotation_preparation=preparation)
+                return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation)
         except Exception as error:
             with db_lock:
                 try:
@@ -1195,11 +1188,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         with db_lock:
             service.refresh()
             result, curation, _ = state(protocol_uuid)
-            return jsonify(format="recording-selection-mask", version=1,
+            response = jsonify(format="recording-selection-mask", version=1,
                            protocol_uuid=protocol_uuid,
                            source_revisions=sorted(set(result["source_revisions"])),
                            epochs=[{"epoch_uuid": key, "included": curation[key]["included"]}
                                    for key in sorted(curation)])
+            response.headers['Content-Disposition'] = 'attachment; filename="recording-mask-' + str(uuid.UUID(protocol_uuid)) + '.json"'
+            return response
 
     @app.post("/api/protocols/<protocol_uuid>/masks/import")
     def import_mask(protocol_uuid):
@@ -1317,7 +1312,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body, dict):
             raise ValueError('Export requires an options object')
         export_format = body.get('format', 'reference-json')
-        if not isinstance(export_format, str) or export_format not in {'reference-json', 'epictree-mat', 'wheeler-sqlite'}:
+        if not isinstance(export_format, str) or export_format not in {'reference-json', 'matlab-mat', 'wheeler-sqlite'}:
             raise ValueError('Unsupported export format')
         managed_directory(project_dir, 'exports')  # Recheck live links before any query/publication work.
         with db_lock, data_stores.registration_locks(), (shared_annotations.lock() if shared_annotations else contextlib.nullcontext()):
@@ -1377,40 +1372,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     build_sqlite_export(package, artifact)
                     from workspace_external_tags import prepare_return_folder
                     prepare_return_folder(output, package)
-                elif export_format == 'epictree-mat':
+                elif export_format == 'matlab-mat':
                     from workspace_matlab import build_matlab_export
-                    from workspace_matlab_masks import write_ugm
                     matlab = build_matlab_export(service, recipe, output / 'matlab', epoch_records=package['epochs'])
-                    write_ugm(output / 'matlab' / 'selection.ugm', matlab['epoch_order'],
-                        [True] * len(matlab['epoch_order']), metadata={
-                            'project_uuid': recipe['project_uuid'], 'protocol_uuid': protocol_uuid,
-                            'dataset_uuid': recipe['export_uuid'], 'export_uuid': recipe['export_uuid'],
-                            'query_sha256': recipe['query_sha256'], 'recipe_sha256': recipe['content_sha256'],
-                            'mat_file_basename': 'recordings',
-                            'source_scope_revision': result['source_scope']['revision']})
                     write_json(output / 'matlab' / 'export-report.json', {key: value for key, value in matlab.items()
-                        if key not in {'mat_path', 'launch_script_path', 'recipe_path'}})
-                    (output / 'matlab' / 'README.txt').write_text(
-                        'EpicTreeGUI handoff\n\nAdd EpicTreeGUI to your MATLAB path, then run launch_epictree.m.\n'
-                        'tree_layout.m contains the same readable one-line command shown in Rieke OS.\n'
-                        'launchWorkspaceTree.m resolves field IDs through this bundle; unavailable fields fail explicitly.\n'
-                        'Run the copied command from this extracted bundle with EpicTreeGUI on your MATLAB path.\n'
-                        'The line reconstructs grouping over this frozen export; it does not rerun the source query.\n'
-                        'Grouping and exact epoch sequence come from recorded metadata; no LLM is called.\n'
-                        'Original H5 files must remain accessible at their recorded paths; traces load on demand.\n'
-                        'Use the current EpicTreeGUI checkout: workspace traces verify source SHA-256 before loading, with a cache for unchanged files.\n'
-                        'selection.ugm contains this export only, matched by stable epoch UUID.\n'
-                        'Save Epoch Mask updates this extracted bundle selection.ugm; reopening the generated command resumes it.\n'
-                        'The original exported ZIP remains unchanged. Global latest-mask discovery is disabled for workspace bundles.\n'
-                        'Save MATLAB selections as .ugm and explicitly import them in Rieke OS.\n'
-                        'Tags and the exact query are frozen in recordings.json and matlab_recipe.json.\n'
-                        'Existing exports and non-exported epochs are never overwritten by mask import.\n')
-                    artifact = output / 'epictree-bundle.zip'
-                    with zipfile.ZipFile(artifact, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
-                        bundle.write(output / 'recordings.json', 'recordings.json')
-                        bundle.write(output / 'recipe.json', 'recipe.json')
-                        for member in sorted((output / 'matlab').iterdir()):
-                            bundle.write(member, member.name)
+                        if key not in {'mat_path', 'recipe_path'}})
+                    artifact = Path(matlab['mat_path'])
                 saved = store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
                     expected_revisions={k: v["revision"] for k, v in curation.items()},
                     artifact_path=str(artifact), artifact_sha256=digest(artifact))
@@ -1783,8 +1750,6 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     from workspace_search import register_search_routes
     register_search_routes(app, service, db_lock)
 
-    from workspace_matlab_routes import register_matlab_mask_routes
-    register_matlab_mask_routes(app, service, store, state, db_lock)
     from workspace_tree_pages import register_tree_page_routes
     register_tree_page_routes(app, service, db_lock, data_stores.registration_locks)
     from workspace_matching_epochs import register_matching_epoch_routes

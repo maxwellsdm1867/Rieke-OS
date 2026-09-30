@@ -2,4 +2,4 @@
 
 .metadata-refresh-panel .metadata-refresh-warning{color:var(--warning-ink,#78531d);background:#fff5e6;border-left:3px solid #c59b58;border-radius:3px;padding:8px 10px}.metadata-refresh-warning span{display:block;margin-top:4px}
 
-.metadata-refresh-panel{max-height:80vh;overflow:auto}.metadata-mask-refresh{border-top:1px solid var(--border);padding-top:12px;margin-top:12px}.metadata-mask-refresh small{display:block;overflow-wrap:anywhere}.metadata-mask-refresh button{margin:8px 0;font-size:12px}
+.metadata-refresh-panel{max-height:80vh;overflow:auto}

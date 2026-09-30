@@ -1,3 +1,9 @@
+> Scope updated by the user on 2026-09-30: Rieke OS is independent of
+> EpicTreeGUI. Retain MATLAB data export, remove MATLAB plotting/interactive
+> GUI/launchers and UGM roundtrips. This instruction supersedes any companion
+> integration described in the earlier specification. See
+> [application boundary](../RIEKE_OS_ARCHITECTURE.md).
+
 # Rieke OS Electron production specification
 
 Status: implementation specification, 2026-09-29. Electron is the selected

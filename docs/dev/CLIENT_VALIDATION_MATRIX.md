@@ -1,3 +1,5 @@
+> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.
+
 # New-client validation matrix
 
 This is a coverage ledger, not a claim that all controls work. Inventory is based

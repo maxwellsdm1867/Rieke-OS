@@ -2,10 +2,12 @@ import {useEffect,useRef,useState} from 'react';
 import {Database,Download,FileCode,LoaderCircle} from 'lucide-react';
 import {api,number} from '../api.js';
 import './CandidateExportPanel.css';
+import {EXPORT_FORMATS,normalizeExportFormat,exportDownloadLabel} from '../exportFormats.js';
+const candidateFormat=value=>{const format=normalizeExportFormat(value);return Object.hasOwn(EXPORT_FORMATS,format)?format:'wheeler-sqlite';};
 
 // A saved candidate is an immutable search result, not a pinned protocol.
 export default function CandidateExportPanel({candidate,onExported,disabled=false,onChange,defaultName='',defaultFormat='wheeler-sqlite',onBusyChange}) {
-  const [name,setName]=useState(defaultName),[format,setFormat]=useState(['wheeler-sqlite','epictree-mat','reference-json'].includes(defaultFormat)?defaultFormat:'wheeler-sqlite');
+  const [name,setName]=useState(defaultName),[format,setFormat]=useState(candidateFormat(defaultFormat));
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[completed,setCompleted]=useState(null);
   useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
   const inFlight=useRef(false),currentRevision=useRef(null);
@@ -13,7 +15,7 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
   currentRevision.current=revision;
   const expected=recipe?.full_recipe_sha256||recipe?.content_sha256;
   const count=recipe?.epoch_count??candidate?.summary?.matched_count??recipe?.epochs?.length??0;
-  useEffect(()=>{setError('');setCompleted(null);setName(defaultName);setFormat(['wheeler-sqlite','epictree-mat','reference-json'].includes(defaultFormat)?defaultFormat:'wheeler-sqlite');},[revision,defaultName,defaultFormat]);
+  useEffect(()=>{setError('');setCompleted(null);setName(defaultName);setFormat(candidateFormat(defaultFormat));},[revision,defaultName,defaultFormat]);
   function changeName(value){setName(value);onChange?.({name:value,format});}
   function changeFormat(value){setFormat(value);onChange?.({name,format:value});}
   async function exportResult(event){
@@ -36,13 +38,13 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
       <label className="candidate-export-name">Name <span>(optional)</span><input value={name} onChange={event=>changeName(event.target.value)} maxLength={120} placeholder={recipe?.name?`${recipe.name} · automatic date`:'Automatic name and date'} disabled={busy||disabled}/></label>
       <fieldset disabled={busy||disabled}><legend>Handoff format</legend>
         <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="wheeler-sqlite" checked={format==='wheeler-sqlite'} onChange={()=>changeFormat('wheeler-sqlite')}/><Database size={15}/><span>SQLite database<small>Query in Wheeler or another SQL tool</small></span></label>
-        <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="epictree-mat" checked={format==='epictree-mat'} onChange={()=>changeFormat('epictree-mat')}/><FileCode size={15}/><span>EpicTree / MATLAB<small>Tree, lazy traces and selection mask</small></span></label>
+        <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="matlab-mat" checked={format==='matlab-mat'} onChange={()=>changeFormat('matlab-mat')}/><FileCode size={15}/><span>MATLAB data (.mat)<small>Recorded metadata, selection and H5 references</small></span></label>
         {format==='reference-json'&&<label><input type="radio" checked readOnly/><FileCode size={15}/><span>Reference JSON<small>Preserved from this saved export</small></span></label>}
       </fieldset>
       <div className="candidate-export-actions"><button className="primary" type="submit" disabled={busy||disabled||!revision||!expected||!count}>{busy?<LoaderCircle size={15} className="candidate-export-spinner"/>:<Download size={15}/>} {busy?'Preparing export…':'Export result'}</button><small>Original H5 files remain linked. No protocol or pin is created.</small></div>
     </form>
     {!revision&&<p className="candidate-export-note">Save the current result before exporting.</p>}
     {error&&<p role="alert" className="candidate-export-error">{error}</p>}
-    {completed&&<div role="status" className="candidate-export-complete"><span>{completed.name} · {number(completed.epoch_count)} epochs exported</span><a href={completed.download_url} download><Download size={14}/> Download {completed.format==='epictree-mat'?'MATLAB bundle':completed.format==='reference-json'?'reference package':'SQLite database'}</a></div>}
+    {completed&&<div role="status" className="candidate-export-complete"><span>{completed.name} · {number(completed.epoch_count)} epochs exported</span><a href={completed.download_url} download><Download size={14}/> Download {exportDownloadLabel(completed.format)}</a></div>}
   </section>;
 }

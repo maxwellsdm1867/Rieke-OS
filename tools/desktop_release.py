@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,24 +31,51 @@ def version(value):
 
 
 def baseline(tag, repository):
-    if repository != REPOSITORY or not re.fullmatch(r'v\d+\.\d+\.\d+', tag):
+    return _baseline(tag, repository, testing=False)
+
+
+def testing_baseline(tag, repository):
+    return _baseline(tag, repository, testing=True)
+
+
+def _baseline(tag, repository, testing):
+    pattern = r'(?:v|desktop-test-v)\d+\.\d+\.\d+' if testing else r'v\d+\.\d+\.\d+'
+    if repository != REPOSITORY or not isinstance(tag, str) or not re.fullmatch(pattern, tag):
         raise ValueError('Desktop release requires the canonical repository and stable version tag')
+    origin = run('git', '-C', str(ROOT), 'remote', 'get-url', 'origin')
+    approved_origins = {f'https://github.com/{REPOSITORY}', f'https://github.com/{REPOSITORY}.git',
+                        f'git@github.com:{REPOSITORY}.git', f'ssh://git@github.com/{REPOSITORY}.git'}
+    if origin not in approved_origins:
+        raise ValueError('Desktop release Git origin must be the canonical Rieke-OS repository')
+    application_version = tag.removeprefix('desktop-test-v') if tag.startswith('desktop-test-v') else tag[1:]
     release = json.loads((ROOT / 'rieke-release.json').read_text())
     frontend = json.loads((ROOT / 'workspace-app/package.json').read_text())
     desktop = json.loads((ROOT / 'desktop/package.json').read_text())
-    if release['version'] != tag[1:] or any(item['version'] != release['version'] for item in (frontend, desktop)):
+    if release['version'] != application_version or any(item['version'] != release['version'] for item in (frontend, desktop)):
         raise ValueError('Release, frontend, desktop and tag versions differ')
     version(release['version'])
     if release['repository'] != REPOSITORY or release['channel'] != 'stable':
         raise ValueError('Desktop release provider or channel differs')
+    if testing:
+        distribution = json.loads((ROOT / 'desktop/distribution.json').read_text())
+        if distribution != {'format': 'rieke-desktop-distribution', 'version': 1,
+                            'channel': 'unsigned-testing', 'repository': REPOSITORY}:
+            raise ValueError('Testing baseline requires the explicit unsigned-testing distribution')
     if run('git', '-C', str(ROOT), 'status', '--porcelain'):
         raise ValueError('Desktop release requires a clean reviewed checkout')
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from desktop_application_profile import validate_release_source
+    tracked = subprocess.check_output(['git', '-C', str(ROOT), 'ls-files', '-z']).decode().split('\0')
+    validate_release_source(ROOT, [name for name in tracked if name])
     commit = run('git', '-C', str(ROOT), 'rev-parse', 'HEAD')
     if run('git', '-C', str(ROOT), 'rev-parse', tag + '^{commit}') != commit:
         raise ValueError('Desktop build must use the exact reviewed tag commit')
-    return {'format': 'rieke-desktop-baseline', 'version': 1, 'source_commit': commit,
+    result = {'format': 'rieke-desktop-baseline', 'version': 1, 'source_commit': commit,
             'application_version': release['version'], 'repository': REPOSITORY,
             'workspace_formats': release['workspace_formats'], 'database_compatibility': release['database_compatibility']}
+    if testing:
+        result.update(distribution_channel='unsigned-testing', production_ready=False)
+    return result
 
 
 def digest(file, algorithm='sha256'):
@@ -171,7 +199,7 @@ def promote(directory, tag, evidence_path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['baseline', 'inventory', 'verify', 'promote'])
+    parser.add_argument('command', choices=['baseline', 'baseline-testing', 'inventory', 'verify', 'promote'])
     parser.add_argument('--tag')
     parser.add_argument('--repository', default=REPOSITORY)
     parser.add_argument('--directory', type=Path, default=ROOT / 'desktop/dist')
@@ -180,6 +208,8 @@ def main():
     args = parser.parse_args()
     if args.command == 'baseline':
         result = baseline(args.tag, args.repository)
+    elif args.command == 'baseline-testing':
+        result = testing_baseline(args.tag, args.repository)
     elif args.command == 'inventory':
         result = {'format': 'rieke-desktop-artifacts', 'version': 1, 'artifacts': artifact_inventory(args.directory)}
     elif args.command == 'verify':

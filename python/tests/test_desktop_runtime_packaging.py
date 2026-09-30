@@ -15,8 +15,9 @@ import workspace_bootstrap as boot
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
-from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, copy_matlab_application, MATLAB_EXPORT_HELPERS, refresh_native_license_inventory
+from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, refresh_native_license_inventory, copy_application
 from desktop_runtime_manifest import inventory
+from desktop_application_profile import audit_application, load_profile, validate_source_closure, validate_release_source
 
 
 class DesktopPackagingTests(unittest.TestCase):
@@ -120,25 +121,92 @@ class DesktopPackagingTests(unittest.TestCase):
             self.assertEqual(value['python_distributions'][0]['version'], '1.8.22')
             self.assertEqual(value['excluded_optional_features'], features)
 
-    def test_matlab_export_and_gui_source_closure_excludes_recordings_and_examples(self):
+    def test_data_export_application_allowlist_excludes_gui_and_legacy_cli(self):
         with tempfile.TemporaryDirectory() as temporary:
-            root, output = Path(temporary) / 'source', Path(temporary) / 'application'
-            names = ['epicTreeGUI.m', 'src/loadEpicTreeData.m', 'src/buildTreeFromEpicData.m',
-                     'src/tree/epicTreeTools.m', 'src/gui/widget.m']
-            names.extend('src/tree/' + name + '.m' for name in MATLAB_EXPORT_HELPERS)
-            for name in names + ['src/private-recording.h5', 'examples/sample.m', 'tests/test_gui.m']:
+            root, runtime = Path(temporary) / 'source', Path(temporary) / 'runtime'
+            output = runtime / 'application'
+            (root / 'python').mkdir(parents=True)
+            profile = load_profile()
+            for name in profile['python_modules']:
+                (root / 'python' / name).write_text('# reviewed module\n')
+            for name in ('export_mat.py', 'import_ugm.py', 'workspace_matlab_routes.py', 'unreviewed.py'):
+                (root / 'python' / name).write_text('# excluded or unknown\n')
+            for name in ('epicTreeGUI.m', 'install.m', 'src/gui/widget.m', 'examples/sample.m'):
                 path = root / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text(name)
-            copy_matlab_application(root, output)
-            for name in names:
-                self.assertEqual((output / name).read_text(), name)
-            self.assertFalse((output / 'src/private-recording.h5').exists())
-            self.assertFalse((output / 'examples').exists())
-            self.assertFalse((output / 'tests').exists())
-            (root / 'src/tree/launchWorkspaceTree.m').unlink()
-            with self.assertRaisesRegex(ValueError, 'incomplete'):
-                copy_matlab_application(root, output)
+            for name in ('workspace-source.json', 'workspace-mysql-runtime.json'):
+                (root / 'python' / name).write_text('{}')
+            (root / 'rieke-release.json').write_text('{}')
+            (root / 'workspace-app/dist').mkdir(parents=True)
+            (root / 'workspace-app/package.json').write_text('{}')
+            (root / 'workspace-app/dist/index.html').write_text('Rieke OS')
+            # Refresh must also remove MATLAB resources left by an older build.
+            (output / 'src/gui').mkdir(parents=True)
+            (output / 'src/gui/old.m').write_text('old GUI resource')
+            copy_application(root, runtime)
+            scope = audit_application(output, profile)
+            self.assertEqual(scope['python_modules'], len(profile['python_modules']))
+            self.assertTrue((output / 'python/workspace_matlab.py').is_file())
+            self.assertTrue((output / 'python/field_mapper.py').is_file())
+            self.assertFalse((output / 'python/export_mat.py').exists())
+            self.assertFalse((output / 'python/import_ugm.py').exists())
+            self.assertFalse((output / 'python/unreviewed.py').exists())
+            self.assertEqual(list(output.rglob('*.m')), [])
+            self.assertTrue((root / 'epicTreeGUI.m').is_file())
+            self.assertEqual((output / 'workspace-app/dist/index.html').read_text(), 'Rieke OS')
+            unknown = output / 'python/unreviewed.py'
+            unknown.write_text('# unexpected module')
+            with self.assertRaisesRegex(ValueError, 'allowlist'):
+                audit_application(output)
+            unknown.unlink()
+            # Numeric export may remain; interactive launchers must fail audit.
+            (output / 'launch_epictree.m').write_text('interactive launcher')
+            with self.assertRaisesRegex(ValueError, 'interactive resources'):
+                audit_application(output)
+
+    def test_allowlist_rejects_excluded_imports_missing_sources_and_links(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'python').mkdir()
+            profile = {'python_modules': ['workspace_matlab.py'],
+                       'source_exclusions': [{'pattern': 'python/export_mat.py'}]}
+            source = root / 'python/workspace_matlab.py'
+            source.write_text('from export_mat import export\n')
+            with self.assertRaisesRegex(ValueError, 'import closure excludes export_mat'):
+                validate_source_closure(root, profile)
+            source.write_text('import scipy.io\n')
+            validate_source_closure(root, profile)
+            source.unlink()
+            with self.assertRaisesRegex(ValueError, 'Missing or redirected'):
+                validate_source_closure(root, profile)
+            outside = root / 'outside.py'
+            outside.write_text('import scipy.io\n')
+            source.symlink_to(outside)
+            with self.assertRaisesRegex(ValueError, 'redirected'):
+                validate_source_closure(root, profile)
+
+    def test_release_source_rejects_gui_companions_and_legacy_cli_tests(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / 'desktop').mkdir()
+            (root / 'desktop/application-profile.json').write_text(json.dumps(load_profile()))
+            safe = ['desktop/application-profile.json', 'python/workspace_matlab.py',
+                    'python/field_mapper.py', 'python/tests/test_workspace_export_boundaries.py',
+                    'python/tests/test_workspace_matlab.py', 'workspace-app/src/App.jsx',
+                    'tools/desktop_build_runtime.py']
+            self.assertEqual(validate_release_source(root, safe)['tracked_paths_checked'], len(safe))
+            for path in ('src/loadEpicTreeData.m', 'src/tree/README.md', 'src/README_DISPLAY_SPLITTER.md',
+                         'tests/baselines/README.md', 'tests/baselines/numbers.mat',
+                         'tests/test_gui.m', 'examples/data/sample.mat', 'python/tests/test_export.py',
+                         'python/import_ugm.py', 'python/workspace_matlab_routes.py', 'other/reintroduced_gui.m'):
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, 'excluded paths'):
+                    validate_release_source(root, safe + [path])
+            for path in ('../src/file.m', '/external.py', 'src\\\\file.m'):
+                with self.subTest(path=path), self.assertRaisesRegex(ValueError, 'Unsafe tracked'):
+                    validate_release_source(root, safe + [path])
+            with self.assertRaisesRegex(ValueError, 'profile is absent'):
+                validate_release_source(root, safe[1:])
 
     def test_native_notice_sources_are_version_and_hash_pinned_with_shared_coverage(self):
         with tempfile.TemporaryDirectory() as temporary:

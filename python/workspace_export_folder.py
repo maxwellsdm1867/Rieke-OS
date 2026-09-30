@@ -7,17 +7,18 @@ Point Wheeler, MATLAB, or another analysis service at this folder once.
 Each UUID subfolder is one export; keep its recipe and identities with its data.
 
 - recordings.sqlite: frozen metadata for Wheeler and other SQL clients.
-- epictree-bundle.zip: frozen MATLAB bundle; the matlab/ folder holds its local working files.
+- matlab/recordings.mat: standard MATLAB data with embedded query, provenance and H5 references.
 - recordings.json and recipe.json: exact source identities and export membership.
 - annotation-return.json: tag-return format and exact allowed targets for SQLite exports.
 
 Return new tags to <export UUID>/annotations/incoming/ as complete JSON messages.
 The open project app picks these up automatically. Read annotation-return.json for examples.
 
-Save updated MATLAB selection masks as <export UUID>/selection.ugm or update
-<export UUID>/matlab/selection.ugm in place. Refresh metadata in the app discovers
-them and offers Apply updated mask. It validates the export and exact epoch UUIDs.
-Do not edit recordings.sqlite or epictree-bundle.zip; their checksums preserve the export.
+Load recordings.mat with MATLAB load or a compatible MAT reader, then use
+standard h5read to read lazy response pointers. No plotting GUI or scripts are
+required. Keep original H5 files accessible and verify their source_sha256.
+Generic UUID-based JSON selection masks can be explicitly imported in the app.
+Do not edit completed artifacts; their checksums preserve each frozen export.
 
 Use completed exports shown in the app's Export log. A failure.json marks an
 unsuccessful export attempt. This folder belongs to one project; UUIDs must not

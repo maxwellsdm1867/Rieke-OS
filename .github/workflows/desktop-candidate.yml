@@ -1,7 +1,7 @@
 name: Rieke OS desktop candidate
 on:
   push:
-    tags: ['v*']
+    tags: ['v*', 'desktop-test-v*']
   workflow_dispatch:
     inputs:
       tag:
@@ -20,7 +20,7 @@ jobs:
   build:
     if: github.repository == 'maxwellsdm1867/Rieke-OS'
     runs-on: macos-15
-    environment: ${{ (github.event_name == 'push' || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
+    environment: ${{ ((github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,9 +34,15 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
           RELEASE_REPOSITORY: ${{ github.repository }}
+          SIGNED_BUILD: ${{ (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed }}
         run: |
           test "$(uname -m)" = arm64
-          python3 tools/desktop_release.py baseline --tag "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY" --output "$RUNNER_TEMP/desktop-baseline.json"
+          python3 tools/desktop_application_profile.py
+          if [ "$SIGNED_BUILD" = true ]; then
+            python3 tools/desktop_release.py baseline --tag "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY" --output "$RUNNER_TEMP/desktop-baseline.json"
+          else
+            python3 tools/desktop_release.py baseline-testing --tag "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY" --output "$RUNNER_TEMP/desktop-baseline.json"
+          fi
       - run: npm ci && npm test && npm run build
         working-directory: workspace-app
       - run: npm ci && npm test
@@ -52,13 +58,13 @@ jobs:
           PYTHONPATH: python
           PYTHONDONTWRITEBYTECODE: '1'
       - name: Build unsigned local qualification candidate
-        if: github.event_name != 'push' && !inputs.signed
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
         run: npm run dist
       - name: Build signed and notarized candidate
-        if: github.event_name == 'push' || inputs.signed
+        if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed
         working-directory: desktop
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -83,8 +89,18 @@ jobs:
       - name: Exercise the actual packaged desktop UI and orderly lifecycle
         run: npm run test:e2e --prefix desktop
       - name: Exercise explicit unsigned Install and Open
-        if: github.event_name != 'push' && !inputs.signed
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         run: npm run test:e2e:bootstrap --prefix desktop
+      - name: Create exact-byte unsigned release metadata
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" --output desktop/dist/desktop-release.json
+      - name: Exercise user-driven GitHub download and native update helper
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        run: |
+          npm run test:e2e:github-updates --prefix desktop
+          node desktop/e2e/testing-upgrade.e2e.cjs
       - name: Verify recovery before opening projects when backend startup fails
         run: npm run test:e2e:startup-failure --prefix desktop
       - name: Audit extracted installers and native database workflows
@@ -102,6 +118,7 @@ jobs:
             docs/dev/desktop-updater-client-e2e.json
             docs/dev/desktop-ui-e2e/
             docs/dev/desktop-artifact-e2e.json
+            docs/dev/desktop-testing-upgrade-e2e.json
           if-no-files-found: warn
           retention-days: 30
       - uses: actions/upload-artifact@v4
@@ -115,5 +132,6 @@ jobs:
             desktop/dist/artifacts.json
             desktop/dist/desktop-baseline.json
             desktop/dist/runtime-audit.json
+            desktop/dist/desktop-release.json
           if-no-files-found: error
           retention-days: 30

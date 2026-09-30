@@ -14,7 +14,6 @@ from workspace_recipes import checksum, parse_splits
 from workspace_tree import (field_value_order, joint_definition, joint_value,
                             value_key, protocol_family)
 from workspace_predicates import validate as validate_predicate, matches
-from workspace_tree_code import matlab_tree_command
 from workspace_service import validate_filters
 
 
@@ -320,7 +319,6 @@ class TreePages:
         depth = len(path)
         payload = {'revision':revision,'split_order':order,'levels':levels,'total_epochs':total_epochs,
             'count':root_summary['count'],'cells':root_summary['cells'],'duration_seconds':root_summary['duration_seconds'],
-            'matlab_command':matlab_tree_command(order),
             'path':path,'depth':depth,'offset':offset,'limit':limit,'branches':[],'epochs':[],
             'selection':_summary(selected), 'ancestors':ancestors,
             'source_scope_revision':self.service.source_scope()['revision'] if body.get('protocol_uuid') is None else None}

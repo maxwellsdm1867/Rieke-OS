@@ -66,41 +66,26 @@ disk, close the project, copy its whole folder with the file manager, and open t
 copy before removing the old folder.
 
 
-## Automatic update availability
+## Desktop update availability
 
-Rieke OS checks the official GitHub release channel when you open the app, every
-15 minutes while the page is visible, and when you return after that interval.
-No button press is required. A newer release highlights **Release / Publish**
-with a persistent **Update** badge in the project sidebar and project chooser.
-There is no toast, system notification, or automatically opened dialog. Opening
-and closing the panel leaves the badge available until a successful check shows
-there is no newer release.
+The unsigned testing desktop checks official GitHub release metadata at startup
+and about once an hour. **Release / Publish** shows the available version quietly.
+Checking never downloads automatically: choose **Download update**, then
+**Restart to update** after complete archive/resource and compatibility validation.
+An ordinary Quit does not install the testing update. Active imports, unsaved
+views or scientific services can defer restart while the current app remains usable.
 
-Open **Release / Publish** for installed version, last check, release notes, and
-an optional manual retry. The panel distinguishes **Up to date**, **No release
-published**, and **Update check unavailable**. An offline check does not count as
-up to date or erase an update already discovered during this app-service session;
-the panel explains when a refresh failed. Manual retries bypass the automatic
-check cache.
+Downloads and updates come only from the official Rieke OS repository over HTTPS.
+Unsigned testing checksums and a structural ad-hoc seal provide no Developer ID
+identity or notarization. **Install and Open** preserves quarantine; macOS initial
+approval remains manual. See [testing releases](dev/GITHUB_TESTING_RELEASE.md).
 
-Managed installations with the official trusted signing key automatically
-download and verify a new release in the background. The download prepares a
-separate installation; it does not replace the running app or modify projects.
-The badge changes to **Ready** once preparation completes. Close Rieke OS and all
-project services, then launch normally through the stable manager or a workspace
-launcher created by the managed app. That launch applies the prepared update.
-If another service is still open, the current version continues to run.
-Incompatible database versions are refused. Automatic shutdown/restart from the
-browser is not implemented. Development checkouts can check for releases but
-cannot install them in place.
+Source/developer installations use the separate source-manager contracts and
+cannot update a checkout in place. Their refresh interval and signing mechanism
+must not be confused with the Electron desktop channel. See [release operations](dev/releasing-rieke-os.md).
 
-No signed release or trusted production key has been published by this change.
-Release workflows and signing setup must be configured before downloads become
-available to users.
-
-MATLAB is optional: the app runs without it. Only opening the EpicTreeGUI export
-in MATLAB needs a MATLAB installation. The self-contained desktop installer is
-still release-engineering work; the current source bundle requires setup tools.
+MATLAB is unnecessary for running Rieke OS. Its MAT export is data-only; plotting,
+curation, tag exchange and JSON selection masks remain in the Rieke web interface.
 
 ## Open, move, or share a project folder
 
@@ -174,5 +159,5 @@ do not resume automatically; inspect the reported destination before retrying.
 Plain-folder locator rebasing keeps a recovery journal and retries on the next open.
 
 Restart an already-running development app to load these local-service changes,
-then refresh its browser. A standalone signed desktop installer remains separate
-release work; this implementation makes project storage independent of Docker.
+then refresh its browser. Packaged desktop releases load their bundled frontend
+and runtime; signed production qualification remains a separate release gate.

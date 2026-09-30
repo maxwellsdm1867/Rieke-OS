@@ -33,6 +33,9 @@ def build(output, private_key, public_key, target):
     metadata = validate_versions()
     if subprocess.check_output(['git', 'status', '--porcelain', '--untracked-files=normal'], cwd=ROOT).strip():
         raise ValueError('Release builds require a clean reviewed checkout')
+    from desktop_application_profile import validate_release_source
+    tracked = subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).decode().split('\0')
+    validate_release_source(ROOT, [name for name in tracked if name])
     commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     expected = 'v' + metadata['version']
     tag_commit = subprocess.check_output(['git', 'rev-parse', expected + '^{commit}'], cwd=ROOT, text=True).strip()
