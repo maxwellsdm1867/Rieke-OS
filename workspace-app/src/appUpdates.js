@@ -1,4 +1,4 @@
-const releaseRoot='https://github.com/maxwellsdm1867/disco/releases';
+const releaseRoot='https://github.com/maxwellsdm1867/Rieke-OS/releases';
 export function releaseLink(value){
   if(typeof value!=='string')return null;
   try{const url=new URL(value);return url.origin==='https://github.com'&&['disco','Rieke-OS'].some(repo=>url.pathname===`/maxwellsdm1867/${repo}/releases`||url.pathname.startsWith(`/maxwellsdm1867/${repo}/releases/tag/`))&&!url.username&&!url.password?url.href:null;}catch{return null;}

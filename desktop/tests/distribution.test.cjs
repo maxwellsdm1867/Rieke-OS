@@ -9,3 +9,8 @@ test('normal installs retain signed update policy unless an explicit testing bui
 test('a testing build cannot redirect users to a foreign repository or unknown trust channel', () => {
   for(const value of [{format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'someone/other'}, {format:'rieke-desktop-distribution',version:1,channel:'anything',repository:'maxwellsdm1867/disco'}]) assert.throws(()=>distributionPolicy(value));
 });
+
+test('default policy and checked-in distribution use the existing repository',()=>{
+ assert.equal(distributionPolicy().repository,'maxwellsdm1867/Rieke-OS');
+ assert.equal(require('../distribution.json').repository,'maxwellsdm1867/Rieke-OS');
+});

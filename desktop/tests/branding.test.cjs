@@ -12,13 +12,13 @@ test('Disco preserves established and explicitly selected Electron profiles',()=
   assert.equal(name,'Disco');assert.equal(saved,explicit||'/profiles/Rieke OS');
  }
 });
-test('testing feed prefers Disco and falls back to the exact migration alias only for404',async()=>{
- for(const code of [404,403,500]){
+test('testing feed uses the existing repository once for success and server failures',async()=>{
+ for(const code of [200,404,401,403,500]){
   const calls=[];
-  const transport=async url=>{calls.push(url);return{statusCode:calls.length===1?code:200,body:Readable.from([Buffer.from('[]')]),headers:{}};};
-  if(code===404){assert.deepEqual(await releaseList(transport),[]);assert.match(calls[1],/^https:\/\/api.github.com\/repos\/maxwellsdm1867\/Rieke-OS\/releases\?/);}
-  else{await assert.rejects(releaseList(transport));assert.equal(calls.length,1);}
-  assert.match(calls[0],/^https:\/\/api.github.com\/repos\/maxwellsdm1867\/disco\/releases\?/);
+  const transport=async url=>{calls.push(url);return{statusCode:code,body:Readable.from([Buffer.from('[]')]),headers:{}};};
+  if(code===200)assert.deepEqual(await releaseList(transport),[]);
+  else await assert.rejects(releaseList(transport));
+  assert.deepEqual(calls,['https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1']);
  }
 });
 test('release assets and redirect policy accept both owned names and reject other repositories',()=>{

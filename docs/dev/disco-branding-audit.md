@@ -1,6 +1,6 @@
-# Disco migration audit — draft, not release qualification
+# Disco application branding audit
 
-Issue #20 is **incomplete**. The source implements a bridge client, but the repository has not been renamed and an installed Rieke OS 0.1.0 upgrade has not been qualified. Do not close the issue or rename the repository based on these checks.
+The scientist narrowed issue #20 on September 30, 2026 to the application name. **Disco** is the product name; **maxwellsdm1867/Rieke-OS** remains the repository. Repository renaming and executable, bundle-path or release-archive renaming are outside this scope. Existing installation/profile identifiers and filenames are retained deliberately. This audit records source verification; it does not qualify a published release or an actual installed 0.1.0 upgrade.
 
 Disco is the application name. About introduces **Data Inspection, Selection, Comparison Operations**, with **A Rieke Lab OS** as supporting attribution. Startup, recovery, menus, quit, update screens, web titles, and current documentation use Disco. The disco ball remains the default; the classic emblem is an optional choice from About.
 
@@ -13,21 +13,21 @@ The [complete reference inventory](disco-branding-reference-inventory.json) reco
 | `org.riekeos.desktop` | Stable bundle/signing/installation identity; changing it can disconnect the existing updater. |
 | Electron `Rieke OS` profile selection before `Disco` display naming | Captures the established user-data path, then restores it after setting the display name. Explicitly supplied profile paths also remain intact. Existing drafts, preferences, icon choice, and update receipts are reused. |
 | `.rieke-runtime`, `.rieke-os`, existing storage keys and `rieke-*` document formats | Existing installations/projects and scientific identities continue using their established locations/contracts. No new browser caching, database, or global save mechanism was added. |
-| `Rieke OS.app`, `Contents/MacOS/Rieke OS`, `Rieke-OS-<version>-arm64.zip` | Existing installers/updaters validate exact bundle, executable, and archive layouts. `CFBundleDisplayName`/`CFBundleName` become Disco while these paths remain migration aliases. Finder/executable branding therefore still needs a later qualified alias/layout migration. |
-| Signed/testing descriptor `repository: maxwellsdm1867/Rieke-OS` and source `rieke-release.json.repository` | Legacy consumers enforce this provenance. Additive `canonical_repository` identifies Disco without invalidating the old wire contract. |
-| Legacy repository URLs | The bridge accepts only the two owned repository identities. New feeds prefer Disco and fall back to the exact Rieke-OS endpoint only on canonical HTTP 404. Authentication, server, parse, and integrity failures never trigger an expanded trust fallback. |
+| `Rieke OS.app`, `Contents/MacOS/Rieke OS`, `Rieke-OS-<version>-arm64.zip` | Existing installers/updaters validate exact bundle, executable, and archive layouts. `CFBundleDisplayName`/`CFBundleName` become Disco while these paths remain migration aliases. These identity-bearing filenames remain deliberately unchanged under the application-only scope. |
+| Signed/testing descriptor `repository: maxwellsdm1867/Rieke-OS` and source `rieke-release.json.repository` | The repository remains Rieke-OS. Release provenance and any additive `canonical_repository` field identify that actual repository. |
+| Repository URLs | Rieke-OS is the operational default for discovery, support, downloads and publication. The existing bounded parser support for both owned repository identities does not change that default or authorize foreign repositories. |
 | Historical documentation, fixtures, earlier release evidence, scientific/MATLAB code | Recorded history and unrelated scientific names must not be rewritten as though earlier releases were called Disco. Existing documentation filenames remain compatible links. |
-| Git remote | Remains the real Rieke-OS remote until the authorized repository rename is performed and continuity is verified. |
+| Git remote | Remains the real Rieke-OS remote. No repository rename is planned for this issue. |
 
 There is no application service worker, IndexedDB database, or web-app install manifest in the inspected web source. Existing local/session storage keys and loopback routes, origins, CORS/CSP policy, and scientific API paths stay stable. A host-only notification session cookie retains at most 12 display claims across localhost ports; it has no Max-Age or Expires and contains no update authority or scientific state. Existing per-origin session storage remains the fallback. The favicon asset filename remains a compatible URL; its pixels are the disco ball. Shared project formats and user-assigned project names are unchanged.
 
-## Updater and publishing bridge
+## Updates and publishing
 
-The desktop testing client now accepts both exact owned API/asset paths, including redirects between them, and validates returned asset URLs for either identity. Signed desktop discovery retries the legacy GitHub feed only for a structured canonical 404. The source manager similarly accepts either official release URL, artifact URL, installation identity, and signed provenance; it prefers the canonical feed and retries only a 404.
+Signed desktop, testing desktop and source update discovery use the existing Rieke-OS feed directly. Release-tool defaults and distribution/provenance metadata identify Rieke-OS. Support/download links, package metadata and local Git remotes remain valid without a repository migration. The owned-repository URL/provenance checks continue rejecting foreign repositories; clean-checkout, exact-tag and asset-integrity checks remain required.
 
-Hosted release workflows resolve the actual approved `GITHUB_REPOSITORY` for bridge publication before the rename. Baseline checks still require the checkout origin to match the selected owned repository and retain clean-checkout/exact-tag checks. Once renamed, the same hosted jobs resolve Disco. Foreign repositories are rejected. No release was published by this audit.
+Hosted release workflows resolve the actual approved `GITHUB_REPOSITORY`. The current repository remains Rieke-OS. No release was published by this audit.
 
-An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on September 30, 2026. The existing Rieke-OS `desktop-test-v0.1.3` release endpoint returned its old-name release URL and expected DMG/ZIP/descriptor assets successfully. This establishes that the intended destination was not available through that account at the check time; it is not a completed reservation or rename. Canonical download/support/issue links therefore remain pending destination verification.
+The earlier migration investigation found that the proposed `maxwellsdm1867/disco` endpoint returned HTTP 404 and that the archived 0.1.0 source manager rejected a Disco release URL. These are historical compatibility findings, not pending requirements to rename the repository. Keeping the real repository avoids introducing that migration into application naming.
 
 ## Verification and limits
 
@@ -40,15 +40,14 @@ An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on Septe
 - Real existing-project Chrome profiles, generated signed/unsigned installed artifacts, first-open installer labels, production restart/recovery behavior, sharing/receiving a project, and actual installed 0.1.0 upgrade/profile continuity have **not** been qualified by this audit.
 - Package qualification entrypoints were repaired to import `workspace_native_mysql.stop_native_database`; both `packaging/verify_workflows.py --help` and `packaging/verify_e2e.py --help` run successfully in the application venv. Their generated-page title assertions require Disco. This repairs the harness entrypoints and does not constitute an installed 0.1.0 upgrade qualification.
 
-## Required order before completion
+Application-only follow-up verification: 99 desktop tests run (98 passed, one skipped), 355 frontend tests passed, 39 focused Python update/release tests run (38 passed, one skipped), six additional feed/distribution tests passed, production build and release configuration validation passed. Regression cases verify direct Rieke-OS discovery with one request on success or 404/authentication/server failure, and checked-in source/distribution/descriptor provenance. Modified E2E scripts passed syntax checks; no actual installed upgrade is claimed.
 
-1. Choose a new version newer than supported installed releases; do not overwrite an existing published version or tag. Publish the verified bridge under the still-existing Rieke-OS repository, retaining old descriptor and bundle/archive contracts. Qualify actual installed 0.1.0 discovery/download/restart and existing project/profile state using disposable test copies.
-2. Qualify package/browser smoke and address visible legacy bundle/executable aliases. Keep compatibility layouts until the installed bridge can accept the qualified replacement layout.
-3. Recheck target availability, rename the existing repository in place, update applicable local remotes, and verify issue/PR/history continuity, old-link redirects, hosted actions, project-site URLs if present, and every canonical download/support/update destination.
-4. Re-run both fresh and existing Chrome sessions and the complete signed/unsigned upgrade path after the rename. Record exact artifact hashes and results before closing #20.
+## Release qualification limits
+
+Repository migration and old-link redirect qualification are no longer required for issue #20. Future release publication still needs the normal signed/unsigned package and installed-upgrade qualification, using disposable test copies and recorded artifact hashes. Those release checks have not been claimed by this source audit. Existing bundle/executable/archive aliases remain supported rather than being renamed for this issue.
 
 User projects, scientific identities, and existing export artifacts must retain their original names and meaning throughout these steps.
 
 The issue #18 safe-quit implementation was merged while retaining the Disco profile/icon behavior. New closing/recovery copy and previously missed active Rieke Lab OS setup/installation/catalog titles were corrected to Disco; lab attribution remains supporting About copy.
 
-Issue #19 UndoControls, scoped history, native Cmd+Z routing, and text undo were integrated alongside the Disco icon/profile APIs. Final integration checks above include these features. Repository rename and installed 0.1.0 qualification remain pending.
+Issue #19 UndoControls, scoped history, native Cmd+Z routing, and text undo were integrated alongside the Disco icon/profile APIs. Final integration checks above include these features. The application-only branding scope retains Rieke-OS as the repository. Actual installed 0.1.0 qualification remains separate release work.

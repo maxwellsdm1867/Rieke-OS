@@ -8,7 +8,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
   receiptPath ||= path.join(cacheDirectory, 'status.json');
   installedBundle ||= path.resolve(app.getPath('exe'), '../../..');
   let status = {state: 'Current', installed: manifest.application_version, available: null, message: 'Using the installed version.'};
-  let feedRepository='disco';
+  const feedRepository='Rieke-OS';
   let pending = null, checking = null, installing = null, timer = null, stopped = false, active = false, validation = null;
   let receiptWrites = Promise.resolve();
   const listeners = [];
@@ -62,16 +62,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     checking = (async () => {
       set('Checking', {checked_at: new Date().toISOString(), check_error: null, message: 'Checking for a published update.'});
       try {
-        feedRepository='disco';
-        updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:feedRepository,private:false});
-        let result;
-        try{result=await updater.checkForUpdates();}
-        catch(error){
-          if((error.statusCode ?? error.cause?.statusCode)!==404)throw error;
-          feedRepository='Rieke-OS';
-          updater.setFeedURL({provider:'github',owner:'maxwellsdm1867',repo:feedRepository,private:false});
-          result=await updater.checkForUpdates();
-        }
+        const result=await updater.checkForUpdates();
         // The pinned client resolves metadata before its automatic download.
         // Observe that separate promise so a failed checksum/network write
         // cannot escape as an unhandled rejection in the Electron main process.
@@ -97,7 +88,7 @@ function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepa
     updater.allowDowngrade = false;
     updater.allowPrerelease = false;
     updater.logger = null; // Never log cache/session URLs or local paths.
-    updater.setFeedURL({provider: 'github', owner: 'maxwellsdm1867', repo: 'disco', private: false});
+    updater.setFeedURL({provider: 'github', owner: 'maxwellsdm1867', repo: feedRepository, private: false});
     on('checking-for-update', () => set('Checking'));
     on('update-available', info => {
       try {

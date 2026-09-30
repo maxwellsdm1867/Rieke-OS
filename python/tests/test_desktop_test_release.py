@@ -25,6 +25,8 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
                     if p.is_file():z.write(p,p.relative_to(root))
             descriptor=module.build_descriptor(app,archive)
             self.assertEqual(descriptor['channel'],'unsigned-testing')
+            self.assertEqual(descriptor['repository'],'maxwellsdm1867/Rieke-OS')
+            self.assertEqual(descriptor['canonical_repository'],'maxwellsdm1867/Rieke-OS')
             self.assertEqual(descriptor['archive']['sha256'],hashlib.sha256(archive.read_bytes()).hexdigest())
             self.assertEqual(descriptor['application_version'],'0.1.3')
             self.assertFalse(descriptor['production_ready'])

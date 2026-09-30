@@ -30,8 +30,8 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = 'maxwellsdm1867/disco'
-REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}
+REPOSITORY = 'maxwellsdm1867/Rieke-OS'
+REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/disco'}
 API = f'https://api.github.com/repos/{REPOSITORY}/releases/latest'
 TRUST_KEY = 'release-signing-public.pem'
 MANIFEST_ASSET = 'rieke-release-manifest.json'
@@ -131,13 +131,7 @@ def _download(url, limit=MAX_MANIFEST):
 
 
 def _official_release():
-    try:
-        payload = _download(API)
-    except HTTPError as error:
-        if error.code != 404:
-            raise
-        payload = _download('https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')
-    return json.loads(payload)
+    return json.loads(_download(API))
 
 
 def check_for_updates(root=ROOT, *, force=False):

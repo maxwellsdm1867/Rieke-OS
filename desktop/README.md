@@ -127,7 +127,7 @@ application. Isolated shutdown tests do not close the user's running installatio
 
 ## Signed releases
 
-The public provider is explicitly `maxwellsdm1867/disco`. Application,
+The public provider is explicitly `maxwellsdm1867/Rieke-OS`. Application,
 frontend, and desktop metadata are coordinated at version 0.1.3. The current
 `unsigned-testing` policy uses the separate `desktop-test-v0.1.3` prerelease;
 it does not promote or replace the stable source release. Build from the exact

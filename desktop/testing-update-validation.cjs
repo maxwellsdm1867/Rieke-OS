@@ -5,8 +5,8 @@ const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
 const {compareVersions,compatibleMacMinimum,verifyResources,ARCHIVE_CHECK}=require('./updater-validation.cjs');
-const REPOSITORY='maxwellsdm1867/disco';
-const REPOSITORIES=[REPOSITORY,'maxwellsdm1867/Rieke-OS'];
+const REPOSITORY='maxwellsdm1867/Rieke-OS';
+const REPOSITORIES=Object.freeze([REPOSITORY,'maxwellsdm1867/disco']);
 function approvedURL(value,kind='asset',redirect=false){
   const url=new URL(value);
   if(url.protocol!=='https:'||url.username||url.password||url.hash||(url.port&&url.port!=='443'))throw new Error('Only public GitHub HTTPS downloads are accepted.');
@@ -125,4 +125,4 @@ async function revalidateTestingCandidate({candidate,descriptor,manifest,hostVer
   if(result.bundle_sha256!==candidate.bundle_sha256)throw new Error('Prepared app bundle changed.');
   return result;
 }
-module.exports={REPOSITORY,approvedURL,validateDescriptor,hashFile,verifyArchive,ensurePrivateCache,inspectTestingBundle,validateTestingCandidate,revalidateTestingCandidate};
+module.exports={REPOSITORY,REPOSITORIES,approvedURL,validateDescriptor,hashFile,verifyArchive,ensurePrivateCache,inspectTestingBundle,validateTestingCandidate,revalidateTestingCandidate};

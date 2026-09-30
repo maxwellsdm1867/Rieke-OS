@@ -17,8 +17,8 @@ import sys
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
-REPOSITORY = 'maxwellsdm1867/disco'
-REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/Rieke-OS'}
+REPOSITORY = 'maxwellsdm1867/Rieke-OS'
+REPOSITORIES = {REPOSITORY, 'maxwellsdm1867/disco'}
 REQUIREMENTS = [f'R{index:02}' for index in range(1, 13)]
 
 
@@ -56,7 +56,7 @@ def _baseline(tag, repository, testing):
     if release['version'] != application_version or any(item['version'] != release['version'] for item in (frontend, desktop)):
         raise ValueError('Release, frontend, desktop and tag versions differ')
     version(release['version'])
-    if release['repository'] not in {REPOSITORY, 'maxwellsdm1867/Rieke-OS'} or release['channel'] != 'stable':
+    if release['repository'] not in REPOSITORIES or release['channel'] != 'stable':
         raise ValueError('Desktop release provider or channel differs')
     if testing:
         distribution = json.loads((ROOT / 'desktop/distribution.json').read_text())

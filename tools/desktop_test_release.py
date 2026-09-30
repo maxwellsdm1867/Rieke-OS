@@ -13,7 +13,7 @@ import plistlib
 import re
 import zipfile
 
-REPOSITORY='maxwellsdm1867/disco'
+REPOSITORY='maxwellsdm1867/Rieke-OS'
 
 def hashes(path):
     a,b=hashlib.sha256(),hashlib.sha512()
