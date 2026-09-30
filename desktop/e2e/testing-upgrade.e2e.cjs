@@ -6,28 +6,45 @@ const {spawn}=require('node:child_process'),{createHash}=require('node:crypto'),
 const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cjs');
 const {bundleDigest}=require('../bootstrap.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
+const {waitForHelperResult,captureHelperDiagnostics}=require('./helper-result.cjs');
 const output=path.resolve(__dirname,'../../docs/dev/desktop-testing-upgrade-e2e.json');
+const diagnosticOutput=path.resolve(__dirname,'../build/native-qualification-diagnostics');
 const receipt={format:'rieke-packaged-testing-native-upgrade-e2e',version:1,production_ready:false,checks:[],failures:[],
   seams:['Official GitHub HTTPS transport mapped to owned loopback server serving exact final ZIP/descriptor.',
          'Native helper macOS open boundary recorded instead of OS launch; installed app then starts with real Electron/WSGI in isolated HOME/profile.'],
-  limits:['Synthetic version-only prior app, not an authentic previously published 0.1.2 desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true};
+  limits:['Synthetic version-only prior app, not an authentic previously published 0.1.2 desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true,phases:[]};
 let fixture,server,application;const requests={api:0,descriptor:0,archive:0};
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify({...receipt,requests},null,2)+'\n');}
 async function check(name,fn){const start=Date.now();try{const evidence=await fn();receipt.checks.push({name,passed:true,elapsed_ms:Date.now()-start,evidence});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
+async function preservePhaseDiagnostics(phase,observed){
+ await fs.mkdir(diagnosticOutput,{recursive:true,mode:0o700});observed.uploaded_diagnostics=[];
+ const selected=new Set([`${phase}-helper-lifecycle.jsonl`,`${phase}-helper-stderr.txt`,`${phase}-driver-progress.json`,`${phase}-helper-long-wait.json`,`${phase}-helper-long-wait.sample.txt`,`${phase}-helper-timeout.json`,`${phase}-helper-timeout.sample.txt`]);
+ for(const name of selected){
+  const source=path.join(fixture.root,name);let stat;
+  try{stat=await fs.lstat(source);}catch(error){if(error.code==='ENOENT')continue;throw error;}
+  if(!stat.isFile()||stat.isSymbolicLink()||stat.uid!==process.getuid())throw new Error('Selected helper diagnostic is not an owned regular file');
+  const handle=await fs.open(source,'r');let data;
+  try{const bytes=Buffer.alloc(128*1024);const read=await handle.read(bytes,0,bytes.length,0);data=bytes.subarray(0,read.bytesRead);}finally{await handle.close();}
+  const destination=path.join(diagnosticOutput,name);await fs.writeFile(destination,data,{mode:0o600});
+  observed.uploaded_diagnostics.push({path:path.relative(path.resolve(__dirname,'../..'),destination),bytes:data.length,truncated:stat.size>data.length});
+ }
+}
 const WRAPPER=String.raw`
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),{promisify}=require('node:util');
 const realRun=promisify(require('node:child_process').execFile);
 const config=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const helper=require(path.join(config.bundle,'Contents/Resources/app.asar/testing-install.cjs'));
+fs.writeFileSync(config.helperLifecycle,JSON.stringify({phase:config.phase,pid:process.pid,event:'started',timestamp:new Date().toISOString()})+'\n',{mode:0o600});
+process.on('exit',code=>fs.appendFileSync(config.helperLifecycle,JSON.stringify({phase:config.phase,pid:process.pid,event:'exit',code,timestamp:new Date().toISOString()})+'\n',{mode:0o600}));
 let opens=0;
 helper.applyTestingInstall({receiptPath:process.argv[3],run:async(exe,args,options)=>{
  if(exe!=='/usr/bin/open')return realRun(exe,args,options);
  opens++;fs.appendFileSync(config.openLog,JSON.stringify({phase:config.phase,args})+'\n',{mode:0o600});
  if(config.fail_first_open&&opens===1)throw new Error('Owned test simulates macOS refusing the candidate launch');
  return {stdout:'',stderr:''};
-}}).catch(error=>{fs.writeFileSync(process.argv[3]+'.result.json',JSON.stringify({state:'Deferred',error_type:error.name,message:error.message}));process.exitCode=1;});
+}}).catch(error=>{fs.writeFileSync(process.argv[3]+'.result.json',JSON.stringify({state:'Deferred',error_type:error.name,message:error.message}),{mode:0o600});process.exitCode=1;});
 `;
 const DRIVER=String.raw`
 'use strict';
@@ -38,6 +55,7 @@ const packaged=path.join(config.bundle,'Contents/Resources/app.asar');
 const helper=require(path.join(packaged,'testing-install.cjs'));
 const {createTestingUpdateCoordinator}=require(path.join(packaged,'testing-updater.cjs'));
 const statuses=[];let coordinator,handoff,authorized=false;
+const progress=state=>{const temporary=config.driverProgress+'.tmp';fs.writeFileSync(temporary,JSON.stringify({phase:config.phase,state,timestamp:new Date().toISOString()}),{mode:0o600});fs.renameSync(temporary,config.driverProgress);};progress('Starting');
 const app={isPackaged:true,getPath:name=>name==='exe'?process.execPath:config.userData,quit(){
  coordinator?.stop();setTimeout(()=>{fs.writeFileSync(config.driverResult,JSON.stringify({phase:config.phase,authorized,statuses,handoff}),{mode:0o600});process.exit(0);},50);
 }};
@@ -47,14 +65,19 @@ const transport=url=>{
  if(!route)return Promise.reject(new Error('Unexpected official release URL'));
  return new Promise((resolve,reject)=>http.get(config.base+route,response=>resolve({statusCode:response.statusCode,headers:response.headers,body:response})).on('error',reject));
 };
-const spawnHelper=(exe,args,options)=>spawn(exe,[config.wrapper,process.argv[2],args[2]],options);
+const spawnHelper=(exe,args,options)=>{
+ const child=spawn(exe,[config.wrapper,process.argv[2],args[2]],options);let bytes=0;
+ child.stderr.on('data',chunk=>{const keep=chunk.subarray(0,Math.max(0,65536-bytes));if(keep.length){fs.appendFileSync(config.helperStderr,keep,{mode:0o600});bytes+=keep.length;}});
+ return child;
+};
 (async()=>{
  const authorizeQuit=()=>{authorized=true;};
  if(config.phase==='restore'){
+  progress('PreparingRestore');
   handoff=await helper.restoreTestingPriorBundle({app,manifest,prepareQuit:async()=>({ready:true}),authorizeQuit,spawnHelper});
  }else{
   coordinator=createTestingUpdateCoordinator({app,manifest,distribution:require(path.join(packaged,'distribution.json')),transport,
-   publishStatus:status=>{if(statuses.at(-1)!==status.state)statuses.push(status.state);},prepareQuit:async()=>({ready:true}),authorizeQuit,
+   publishStatus:status=>{if(statuses.at(-1)!==status.state){statuses.push(status.state);progress(status.state);}},prepareQuit:async()=>({ready:true}),authorizeQuit,
    installHelper:async options=>{handoff=await helper.launchTestingInstall({...options,spawnHelper});return handoff;}});
   await coordinator.start();if(!['Available','Ready'].includes(coordinator.getStatus().state))throw new Error('Official fixture did not offer update');
   await coordinator.download();if(coordinator.getStatus().state!=='Ready')throw new Error('Real candidate validation did not become Ready');
@@ -80,15 +103,37 @@ async function versionPrior(){
  await run('/usr/bin/codesign',['--verify','--deep','--strict',fixture.bundle]);await verifyResources(runtime,manifest.resources);
 }
 async function phase(phase,config){
+ const observed={phase,started_at:new Date().toISOString(),driver_started_at:new Date().toISOString(),helper_observations:[],diagnostics:[]};receipt.phases.push(observed);
  const configFile=path.join(fixture.root,phase+'.json'),driverResult=path.join(fixture.root,phase+'-driver.json');
- await fs.writeFile(configFile,JSON.stringify({...config,phase,driverResult,fail_first_open:phase==='rollback'}),{mode:0o600});
+ const driverProgress=path.join(fixture.root,phase+'-driver-progress.json'),helperLifecycle=path.join(fixture.root,phase+'-helper-lifecycle.jsonl'),helperStderr=path.join(fixture.root,phase+'-helper-stderr.txt');
+ observed.diagnostic_paths={driver_progress:driverProgress,helper_lifecycle:helperLifecycle,helper_stderr:helperStderr};observed.driver_timeout_ms=15*60*1000;observed.helper_timeout_ms=15*60*1000;
+ await fs.writeFile(configFile,JSON.stringify({...config,phase,driverResult,driverProgress,helperLifecycle,helperStderr,fail_first_open:phase==='rollback'}),{mode:0o600});
  const log=await fs.open(path.join(fixture.root,phase+'.log'),'w');
  const child=spawn(fixture.executable,[config.driver,configFile],{cwd:fixture.root,env:{HOME:fixture.home,TMPDIR:fixture.root,PATH:'/usr/bin:/bin',LANG:'en_US.UTF-8',ELECTRON_RUN_AS_NODE:'1',PYTHONDONTWRITEBYTECODE:'1'},stdio:['ignore',log.fd,log.fd]});
- const exit=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('exit',resolve);});await log.close();
- const driver=JSON.parse(await fs.readFile(driverResult));assert.equal(exit,0,JSON.stringify(driver));assert.equal(driver.authorized,true);assert.ok(driver.handoff?.resultPath);
- let outcome;for(let n=0;n<600;n++){try{outcome=JSON.parse(await fs.readFile(driver.handoff.resultPath));break;}catch{await delay(500);}}
- assert.ok(outcome,'Native helper result missing after exact current process exit');
- return {driver,outcome};
+ const driverStarted=Date.now();let exit,error,heartbeatAt=driverStarted;
+ child.once('error',value=>{error=value;});child.once('exit',(code,signal)=>{exit={code,signal};});observed.driver_pid=child.pid;
+ try{
+  while(!exit&&!error){await delay(500);if(Date.now()-driverStarted>=observed.driver_timeout_ms)throw new Error('Native qualification driver exceeded its bounded exit deadline; owned diagnostics retained');if(Date.now()-heartbeatAt>=60000){
+   let progress;try{progress=JSON.parse(await fs.readFile(driverProgress,'utf8'));}catch(error){if(error.code!=='ENOENT')throw error;}
+   if(progress&&(!/^[a-zA-Z]+$/.test(progress.state)||progress.phase!==phase))throw new Error('Native qualification driver progress is malformed');
+   observed.driver_progress=progress||{phase,state:'Starting'};console.log(`::notice::Native ${phase} driver elapsed=${Math.floor((Date.now()-driverStarted)/1000)}s state=${observed.driver_progress.state}`);observed.driver_elapsed_ms=Date.now()-driverStarted;await write();heartbeatAt=Date.now();}}
+  if(error)throw error;
+  observed.driver_elapsed_ms=Date.now()-driverStarted;observed.driver_exit=exit;observed.driver_exited_at=new Date().toISOString();
+  observed.driver_progress=JSON.parse(await fs.readFile(driverProgress,'utf8'));
+  const driver=JSON.parse(await fs.readFile(driverResult));assert.equal(exit.code,0,JSON.stringify(driver));assert.equal(driver.authorized,true);assert.ok(driver.handoff?.resultPath);assert.ok(Number.isSafeInteger(driver.handoff.helperPid)&&driver.handoff.helperPid>0);
+  observed.helper_pid=driver.handoff.helperPid;observed.helper_wait_started_at=new Date().toISOString();observed.driver_statuses=driver.statuses;await write();
+  const waited=await waitForHelperResult({resultPath:driver.handoff.resultPath,helperPid:driver.handoff.helperPid,wrapper:config.wrapper,configFile,phase,
+   onObservation:async value=>{observed.helper_observations.push(value);await write();},
+   onHeartbeat:async value=>console.log(`::notice::Native ${phase} helper elapsed=${Math.floor(value.elapsed_ms/1000)}s state=${value.status}`),
+   onDiagnostics:async value=>{observed.diagnostics.push(await captureHelperDiagnostics({helperPid:driver.handoff.helperPid,wrapper:config.wrapper,configFile,directory:fixture.root,phase,reason:value.reason}));await write();}});
+  observed.helper_elapsed_ms=waited.elapsed_ms;observed.helper_outcome=waited.result.state;observed.completed_at=new Date().toISOString();await write();
+  return {driver,outcome:waited.result};
+ }catch(error){observed.failure={message:error.message,observation:error.observation||null};observed.failed_at=new Date().toISOString();await write();throw error;}
+ finally{
+  await log.close();
+  try{await preservePhaseDiagnostics(phase,observed);}catch(error){observed.diagnostic_preservation_error=error.message;await write();throw error;}
+  await write();
+ }
 }
 async function startup(version){
  const launched=await launch(fixture);application=launched.application;
@@ -98,7 +143,13 @@ async function startup(version){
  return{application_version:health.application_version,owned_wsgi_ready:true,real_electron_started:true,isolated_home_and_profile:true,orderly_shutdown:true};
 }
 async function main(){
+ const harnessRoot=path.resolve(__dirname,'../..');
+ receipt.qualification_harness_commit=(await run('/usr/bin/git',['rev-parse','HEAD'],{cwd:harnessRoot})).stdout.trim();
+ receipt.qualification_harness_sha256=createHash('sha256').update(await fs.readFile(__filename)).digest('hex');
+ receipt.qualification_helper_sha256=createHash('sha256').update(await fs.readFile(path.join(__dirname,'helper-result.cjs'))).digest('hex');
+ await write();
  fixture=await createFixture({reuse:false});
+ receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
  const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),zip=path.resolve(__dirname,'../dist/Rieke-OS-0.1.3-arm64.zip');
  const sourceManifest=await fs.readFile(path.join(published,'Contents/Resources/runtime/runtime-manifest.json'));
  assert.equal(JSON.parse(sourceManifest).application_version,'0.1.3');receipt.runtime_manifest_sha256=createHash('sha256').update(sourceManifest).digest('hex');
