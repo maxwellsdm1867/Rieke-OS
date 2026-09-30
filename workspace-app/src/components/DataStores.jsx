@@ -1,9 +1,10 @@
 import H5Inbox from './H5Inbox.jsx';
 import {useDeferredValue,useEffect,useMemo,useRef,useState} from 'react';
-import {Archive,ArrowLeft,ArrowRight,Check,ChevronRight,Database,FileClock,FileUp,FolderOpen,HardDrive,History,Link2,LockKeyhole,MoreHorizontal,RefreshCw,Search,ShieldCheck,UnlockKeyhole,X} from 'lucide-react';
+import {Archive,ArrowLeft,ArrowRight,Check,ChevronRight,Database,FileClock,FileUp,FolderOpen,HardDrive,History,Link2,LockKeyhole,MoreHorizontal,RefreshCw,Search,ShieldCheck,UnlockKeyhole,Trash2,X} from 'lucide-react';
 import {api,duration,humanize,number,useResource} from '../api.js';
 import {Badge,Empty,Metadata,Status} from './Common.jsx';
 import './DataStores.css';
+import {epochResourceCache} from '../resourceCache.js';
 import SourcePropagation from './SourcePropagation.jsx';
 import {availabilityLabel,availabilityExplanation} from '../metadataRefresh.js';
 
@@ -35,7 +36,7 @@ function QueryParticipation({source,onStage,disabled}){
 function StoreActions({source,onStage,onPropagate,disabled}){
   const state=source.state || {},frozen=state.frozen===true;
   return <div className="ds-row-actions">{state.archived&&<><button disabled={disabled||frozen} onClick={()=>onStage(source,'restore')} title={frozen?'Unfreeze registration to restore it':'Return this registration to the Current list'}><RefreshCw size={13}/> Restore to current list</button>{frozen&&<small>Restore is locked. Use Manage → Unfreeze first.</small>}</>}{onPropagate&&<button disabled={disabled} onClick={()=>onPropagate(source)} title="Preview complete saved-query changes before updating working datasets"><RefreshCw size={13}/> Propagate changes</button>}
-    <details className="ds-manage"><summary aria-disabled={disabled} onClick={event=>{if(disabled)event.preventDefault();}}><MoreHorizontal size={15}/> Manage</summary><div><button disabled={disabled} onClick={()=>onStage(source,frozen?'unfreeze':'freeze')} title="Freeze locks participation and archive controls; epoch curation stays editable">{frozen?<UnlockKeyhole size={13}/>:<LockKeyhole size={13}/>} {frozen?'Unfreeze':'Freeze registration'}</button>{!state.archived&&<button disabled={disabled||frozen} onClick={()=>onStage(source,'archive')} title={frozen?'Unfreeze registration before changing list visibility':'Hide in Archived; queries and H5 files are kept. This does not delete the store.'}>{state.archived?<RefreshCw size={13}/>:<Archive size={13}/>} Hide in Archived</button>}</div></details>
+    <button disabled={disabled} onClick={()=>onStage(source,'delete')} title="Delete this project's managed H5 copy and active data; earlier exports are retained"><Trash2 size={13}/> Delete data store</button><details className="ds-manage"><summary aria-disabled={disabled} onClick={event=>{if(disabled)event.preventDefault();}}><MoreHorizontal size={15}/> Manage</summary><div><button disabled={disabled} onClick={()=>onStage(source,frozen?'unfreeze':'freeze')} title="Freeze locks participation and archive controls; epoch curation stays editable">{frozen?<UnlockKeyhole size={13}/>:<LockKeyhole size={13}/>} {frozen?'Unfreeze':'Freeze registration'}</button>{!state.archived&&<button disabled={disabled||frozen} onClick={()=>onStage(source,'archive')} title={frozen?'Unfreeze registration before changing list visibility':'Hide in Archived; queries and H5 files are kept. This does not delete the store.'}>{state.archived?<RefreshCw size={13}/>:<Archive size={13}/>} Hide in Archived</button>}</div></details>
   </div>;
 }
 function LifecycleForm({pending,reason,setReason,busy,error,onCancel,onSubmit}){
@@ -45,6 +46,17 @@ function LifecycleForm({pending,reason,setReason,busy,error,onCancel,onSubmit}){
     <div className="ds-action-fields"><label>Reason <small>optional</small><input value={reason} onChange={event=>setReason(event.target.value)} maxLength={1000} disabled={busy} placeholder="Why is this store changing state?"/></label><button type="button" onClick={onCancel} disabled={busy}>Cancel</button><button className="primary" disabled={busy} type="submit">{busy?'Recording change…':action.verb}</button></div>
     {error&&<p className="ds-operation-error" role="alert">{error}</p>}
   </form>;
+}
+function DeleteStoreDialog({source,busy,error,onCancel,onConfirm}){
+  const dialog=useRef(null);
+  const info=useResource(`/data-stores/${source.source_sha256}/deletion`);
+  useEffect(()=>{dialog.current?.showModal();return()=>dialog.current?.close();},[]);
+  return <dialog ref={dialog} className="ds-delete-dialog" aria-labelledby="ds-delete-title" onCancel={event=>{event.preventDefault();if(!busy)onCancel();}}>
+    <h2 id="ds-delete-title">Delete data store?</h2><strong>{source.filename}</strong><p className="ds-mono">SHA-256: {source.source_sha256}</p>
+    <p>This will delete this project's imported H5 copy and remove its data from the database. The change will automatically propagate to downstream pinned protocols. Your existing exports will remain unchanged. Continue?</p>
+    <Status {...info} retry={info.reload}>{info.data&&<><p className="ds-mono">{info.data.source_path}</p><p>{info.data.managed_file?'Only this project’s managed imported H5 is removed. Any external original is retained.':'This legacy store references an external recording. Its project reference and active data are removed; the external H5 is retained.'}</p></>}</Status>
+    {error&&<p role="alert" className="ds-operation-error">{error}</p>}<div className="ds-heading-actions"><button type="button" disabled={busy} onClick={onCancel}>Cancel</button><button type="button" className="primary" disabled={busy||!info.data||info.loading} onClick={()=>onConfirm(info.data)}>{busy?'Deleting and updating protocols…':'Confirm'}</button></div>
+  </dialog>;
 }
 function EventDetails({event}){
   const [open,setOpen]=useState(false);
@@ -114,12 +126,19 @@ export default function DataStores({importing=false,revision=0,onChange,onImport
     catch(error){setError(`${error.message} Refresh the inventory before retrying a conflicting change.`);}finally{setBusy(false);}
   }
   function refresh(){if(busy)return;setPending(null);setError('');inventory.reload();}
-  const form=pending?<LifecycleForm pending={pending} reason={reason} setReason={setReason} busy={actionsBusy} error={error} onCancel={()=>setPending(null)} onSubmit={changeState}/>:null;
+  async function deleteStore(info){
+    if(busy)return;setBusy(true);setError('');
+    try{const result=await api(`/data-stores/${info.source_sha256}/delete`,{method:'POST',body:{confirmed:true,expected_revision:info.registration_revision}});if(result.stage!=='completed')throw new Error('Deletion is incomplete. Preserve its recovery journal and retry.');epochResourceCache.invalidate();setSelected(null);setPending(null);setChangedSource(null);setVersion(value=>value+1);setMessage(`${info.filename} deleted; pinned protocols updated. Existing exports are unchanged.${result.workspace_validation_error?` Remaining project validation needs attention: ${result.workspace_validation_error}`:''}`);onChange?.({kind:'source-deleted',removedEpochs:result.removed_epoch_uuids,removedCells:result.removed_cell_uuids});}
+    catch(error){epochResourceCache.invalidate();setError(`${error.message} Deletion recovery remains available; retry this confirmation.`);inventory.reload();onChange?.();}finally{setBusy(false);}
+  }
+  const form=pending&&pending.action!=='delete'?<LifecycleForm pending={pending} reason={reason} setReason={setReason} busy={actionsBusy} error={error} onCancel={()=>setPending(null)} onSubmit={changeState}/>:null;
   const counts=inventory.data?.counts || {};
   const openPropagation=store=>{setPending(null);setPropagationSource(store);};
   const propagated=()=>{setVersion(value=>value+1);onChange?.();};
   return <div className="page data-stores"><div className="page-heading"><div><div className="eyebrow">PROJECT SOURCES</div><h1>Data stores</h1><p>Imported H5 recordings and their connections to project datasets.</p></div><div className="ds-heading-actions"><H5Inbox/><button disabled={busy||inventory.loading} onClick={refresh} title="Check source paths and file sizes; no full checksum scan"><RefreshCw size={15} className={inventory.loading?'spin':''}/> Check sources</button>{onImport&&<button className="primary" onClick={onImport} disabled={busy}>{importing?<RefreshCw size={15} className="spin"/>:<FileUp size={15}/>} {importing?'Importing H5s…':'Import H5s'}</button>}</div></div>
     <div className="ds-availability-check" role="status"><span><strong>Availability checked:</strong> {checkedTime(inventory.data?.checked_at || inventory.data?.counts?.checked_at)}</span><span>Lightweight path and size check · file contents are verified separately when read or refreshed.</span></div>
+    {pending?.action==='delete'&&<DeleteStoreDialog source={pending.source} busy={busy} error={error} onCancel={()=>setPending(null)} onConfirm={deleteStore}/>}
+    {inventory.data?.validation_error&&<p role="alert" className="ds-operation-error">Scientific views are unavailable until source validation succeeds. You can delete a corrupted or missing store here: {inventory.data.validation_error}</p>}
     {message&&<div className="ds-operation-result" role="status"><Check size={15}/>{message}{changedSource&&<button className="ds-preview-propagation" onClick={()=>openPropagation(sources.find(item=>item.source_sha256===changedSource.source_sha256) || changedSource)}>Preview protocol updates <ArrowRight size={13}/></button>}<button onClick={()=>setMessage('')} aria-label="Dismiss result"><X size={14}/></button></div>}
     {!propagationSource&&selected&&(!source||detail.error||inventory.error)&&<button className="ds-detail-back" onClick={()=>{setSelected(null);setPending(null);}}><ArrowLeft size={14}/> Back to data stores</button>}
     <Status {...inventory} retry={refresh}>{propagationSource?<SourcePropagation key={propagationSource.source_sha256} source={sources.find(item=>item.source_sha256===propagationSource.source_sha256) || propagationSource} onBack={()=>setPropagationSource(null)} onChange={propagated} onProtocol={onProtocol}/>:selected?<Status {...detail} data={source} loading={detailLoading} retry={detail.reload}>{source&&<StoreDetail key={source.source_sha256} source={source} revision={`${revision}:${version}`} onBack={()=>{setSelected(null);setPending(null);}} onStage={stage} onPropagate={openPropagation} busy={actionsBusy} pending={pending} form={form} onProtocol={onProtocol} onFiles={onFiles} onLogs={onLogs}/>}</Status>:<>
