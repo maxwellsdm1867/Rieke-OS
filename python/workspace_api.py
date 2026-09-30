@@ -496,6 +496,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 except Exception as error:
                     warnings.append('Metadata refreshed, but its SQL audit record could not be saved: ' + str(error))
                     app.logger.exception('Metadata refresh audit failed')
+                voltage_preparation=app.extensions['cell_qc'].prepare_baselines()
+                if voltage_preparation['status']=='failed':warnings.append('Supporting voltage preparation failed; retry from Cell QC.')
                 preparation=prepare_annotations()
                 if preparation['status']=='failed':warnings.append('Annotation preparation failed: '+preparation.get('reason',''))
                 return jsonify(refresh=result, warnings=warnings, annotation_preparation=preparation)
@@ -1631,6 +1633,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     write_json(job_file, job)
                     proposals = protocol_suggestions.rerun(baselines, check['source_sha256'],
                         source.name, os.environ.get('USER', 'local-user'))
+                    reporter.emit('preparing_supporting_voltage')
+                    job['voltage_preparation']=app.extensions['cell_qc'].prepare_baselines(check['source_sha256'])
+                    if job['voltage_preparation']['status']=='failed':
+                        job['warnings'].append({'stage':'supporting_voltage_preparation','message':'Supporting voltage preparation failed; retry from Cell QC.',
+                            'failures':job['voltage_preparation']['failures']})
                     preparation=prepare_annotations(progress=lambda phase:reporter.emit(phase))
                     job['annotation_preparation']=preparation
                     if preparation['status']=='failed':
@@ -1799,6 +1806,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         register_tag_exchange_routes(app,service,shared_annotations,db_lock)
     from workspace_qc import register_qc_routes
     register_qc_routes(app, service, db_lock)
+    if hasattr(service.dj, 'Schema'):
+        with db_lock:
+            app.extensions['supporting_voltage_backfill']=app.extensions['cell_qc'].prepare_baselines()
     from workspace_search import register_search_routes
     register_search_routes(app, service, db_lock)
 

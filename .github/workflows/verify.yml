@@ -1,8 +1,14 @@
 name: Verify source installation
 on:
   push:
+    branches: [main, master]
+    paths: ['install.sh', 'install.ps1', 'rieke.py', 'python/workspace_bootstrap.py', 'python/workspace_mysql_runtime.py', 'python/workspace-mysql-runtime.json', 'python/workspace-runtime.lock', 'requirements.txt', '.github/workflows/verify.yml']
   pull_request:
+    paths: ['install.sh', 'install.ps1', 'rieke.py', 'python/workspace_bootstrap.py', 'python/workspace_mysql_runtime.py', 'python/workspace-mysql-runtime.json', 'python/workspace-runtime.lock', 'requirements.txt', '.github/workflows/verify.yml']
   workflow_dispatch:
+concurrency:
+  group: source-install-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
