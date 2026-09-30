@@ -244,7 +244,8 @@ class StateGenerationAuthority:
         # This contract is validated against the bundled MySQL 8.4 family.
         if not str(server['version']).startswith('8.4.'):
             raise ValueError('native generation authority requires verified MySQL 8.4')
-        optional_lookup=('app_shared_tag_lookup','app_shared_tag_lookup_checkpoint')
+        optional_lookup=('app_shared_tag_lookup','app_shared_tag_lookup_checkpoint',
+                         'app_shared_tag_dictionary','app_shared_tag_authors')
         names=','.join('%s' for _ in (*WATCHED,*optional_lookup))
         rows=self._rows(f'SELECT NAME,TABLE_ID FROM information_schema.INNODB_TABLES WHERE NAME IN ({names})',
                         tuple(SCHEMA+'/'+table for table in (*WATCHED,*optional_lookup)))

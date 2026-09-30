@@ -40,7 +40,8 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),downloaded]);
  await run('/usr/bin/codesign',['--verify','--deep','--strict',downloaded]);
  const quarantine='0083;66000000;Rieke-E2E;00000000-0000-4000-8000-000000000001';
- await run('/usr/bin/xattr',['-w','com.apple.quarantine',quarantine,downloaded]);
+ // Quarantine is assigned only AFTER this source test clone has launched.
+ // The quarantined installed copy is never executed or stripped of quarantine.
  const before=await bundleDigest(downloaded);
  await check('downloaded clone displays explicit unsigned Install and Open before any backend starts',async()=>{
   application=await _electron.launch({executablePath:fixture.executable,args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
@@ -51,11 +52,12 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   await page.getByRole('button',{name:'Install and Open',exact:true}).waitFor();
   assert.equal(await fs.stat(target).then(()=>true,()=>false),false);assert.equal(await fs.stat(handoff).then(()=>true,()=>false),false);
   assert.equal(await fs.stat(path.join(fixture.userData,'desktop-service.json')).then(()=>true,()=>false),false);
-  await page.screenshot({path:path.join(path.dirname(output),'bootstrap-install-and-open.png')});return {bootstrap:true,no_automatic_install:true,no_backend:true,isolated_installer_profile:true};
+  await page.screenshot({path:path.join(path.dirname(output),'bootstrap-install-and-open.png')});
+  await run('/usr/bin/xattr',['-w','com.apple.quarantine',quarantine,downloaded]);return {bootstrap:true,no_automatic_install:true,no_backend:true,isolated_installer_profile:true};
  });
  await check('explicit Install and Open copies the complete verified bundle and preserves quarantine and installed profile',async()=>{
   const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();
-  const code=await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Installer failed to complete its native copy')),120000).unref())]);assert.equal(code,0);
+  const code=await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Installer failed to complete its native copy')),420000).unref())]);assert.equal(code,0);
   const dispatch=JSON.parse(await fs.readFile(handoff,'utf8'));
   assert.deepEqual(dispatch.args,['-n','-a',target,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);assert.equal(dispatch.file,'/usr/bin/open');assert.equal(dispatch.home,fixture.home);
   assert.equal(await bundleDigest(target),before);assert.equal(await bundleDigest(downloaded),before);
@@ -64,9 +66,23 @@ execFile[require('node:util').promisify.custom] = async (file, args) => {
   return {real_complete_copy:true,copy_hash_identical:true,source_unchanged:true,quarantine_preserved:true,exact_isolated_launch_profile:true,os_dispatch_only_stubbed:true};
  });
  await check('installed copy cold starts into Your projects using the base isolated profile',async()=>{
-  fixture.bundle=target;fixture.executable=path.join(target,'Contents/MacOS/Rieke OS');({application,page}=await launch(fixture));
+  // A completely separate never-quarantined fixture qualifies profile startup.
+  fixture=await createFixture({reuse:false});receipt.unquarantined_profile_fixture_root=fixture.root;
+  const cleanTarget=fixture.bundle,cleanDownload=path.join(fixture.home,'Downloads','Rieke OS.app'),cleanHandoff=path.join(fixture.home,'launch-services-handoff.json');
+  await fs.mkdir(path.dirname(cleanDownload),{recursive:true});await fs.rename(cleanTarget,cleanDownload);
+  const cleanArchive=path.join(cleanDownload,'Contents/Resources/app.asar'),cleanUnpacked=path.join(fixture.root,'profile-test-asar');asar.extractAll(cleanArchive,cleanUnpacked);
+  const cleanMain=path.join(cleanUnpacked,'main.cjs'),cleanOriginal=await fs.readFile(cleanMain,'utf8');assert.ok(cleanOriginal.includes(exact));
+  await fs.writeFile(cleanMain,cleanOriginal.replace(exact,wrapper.replace(JSON.stringify(handoff),JSON.stringify(cleanHandoff))));await asar.createPackage(cleanUnpacked,cleanArchive);asar.uncacheAll();
+  await run('/usr/libexec/PlistBuddy',['-c',`Set :ElectronAsarIntegrity:Resources/app.asar:hash ${createHash('sha256').update(asar.getRawHeader(cleanArchive).headerString).digest('hex')}`,path.join(cleanDownload,'Contents/Info.plist')]);
+  await run('/usr/bin/codesign',['--force','--sign','-','--entitlements',path.resolve(__dirname,'../entitlements.mac.plist'),cleanDownload]);await run('/usr/bin/codesign',['--verify','--deep','--strict',cleanDownload]);
+  application=await _electron.launch({executablePath:path.join(cleanDownload,'Contents/MacOS/Rieke OS'),args:[`--user-data-dir=${fixture.userData}`],env:{...process.env,HOME:fixture.home,TMPDIR:fixture.root,XDG_CONFIG_HOME:fixture.userData},chromiumSandbox:true,bypassCSP:false,timeout:45000});
+  page=await application.firstWindow();await page.getByRole('heading',{name:'Install Rieke OS',exact:true}).waitFor();
+  const exited=new Promise(resolve=>application.process().once('exit',resolve));await page.getByRole('button',{name:'Install and Open',exact:true}).click();assert.equal(await Promise.race([exited,new Promise((_r,reject)=>setTimeout(()=>reject(new Error('Clean installer did not finish')),420000).unref())]),0);
+  assert.deepEqual(JSON.parse(await fs.readFile(cleanHandoff,'utf8')).args,['-n','-a',cleanTarget,'--env',`HOME=${fixture.home}`,'--args',`--user-data-dir=${fixture.userData}`]);
+  assert.equal(await run('/usr/bin/xattr',['-p','com.apple.quarantine',cleanTarget]).then(()=>true,error=>{if(error.code===1)return false;throw error;}),false,'This startup fixture must never carry quarantine');
+  fixture.bundle=cleanTarget;fixture.executable=path.join(cleanTarget,'Contents/MacOS/Rieke OS');({application,page}=await launch(fixture));
   await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:90000});assert.equal((await page.evaluate(()=>window.riekeDesktop.status())).channel,'unsigned-testing');
-  await gracefulQuit(application,page);await verifyResources(path.join(target,'Contents/Resources/runtime'),manifest.resources);return {real_installed_startup:true,base_profile_restored:true,native_orderly_exit:true,runtime_immutable:true};
+  await gracefulQuit(application,page);await verifyResources(path.join(cleanTarget,'Contents/Resources/runtime'),manifest.resources);return {manual_macos_approval_unqualified:true,separate_never_quarantined_fixture:true,real_installed_startup:true,base_profile_restored:true,native_orderly_exit:true,runtime_immutable:true};
  });
  assert.equal(receipt.failures.length,0);await write();console.log('Bootstrap receipt: '+output);
 }

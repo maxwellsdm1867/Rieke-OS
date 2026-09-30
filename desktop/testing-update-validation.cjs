@@ -1,6 +1,7 @@
 'use strict';
-const fs=require('node:fs/promises'),path=require('node:path'),crypto=require('node:crypto');
-const {constants}=require('node:fs');
+const physicalFS=require('./physical-fs.cjs');
+const fs=physicalFS.promises,path=require('node:path'),crypto=require('node:crypto');
+const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
 const {compareVersions,compatibleMacMinimum,verifyResources,ARCHIVE_CHECK}=require('./updater-validation.cjs');

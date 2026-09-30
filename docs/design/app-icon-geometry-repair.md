@@ -1,0 +1,7 @@
+# App icon geometry repair
+
+Built-in image_gen edit. Final asset: `workspace-app/public/rieke-os-icon.png`.
+
+## Prompt
+
+Correct the malformed R in this app icon. Inspect the top of the letter: there are unwanted pale diagonal wings/chevron extensions running down-left and down-right from the R's top bar parallel to the shield shoulders. REMOVE BOTH OF THESE WINGS COMPLETELY and fill their areas with matching purple. The outer shield perimeter must remain a single uninterrupted pale narrow outline. Inside the shield, draw a clearly recognizable rounded capital R: straight vertical stem on left, horizontal top bar starting exactly at the left stem and ending in the rounded right bowl, enclosed purple bowl counter, and graceful diagonal leg. The letter's top bar must NOT extend left beyond its vertical stem, and must NOT extend right beyond its rounded bowl. NO diagonal shoulders or chevrons on the letter's top. A clean purple gap must separate the complete top of the R from the outer shield border, and purple must also separate the R's upper left and upper right from the shield shoulders. Preserve the R's sweeping leg and purple negative space underneath, existing muted lavender/plum palette, rounded square tile, soft matte layered rim, transparent exterior. Keep the overall shield size and composition. This is a targeted geometry repair, no new decorative lines, no double shield, no inner chevron, no additional symbols. One finished app icon.

@@ -57,17 +57,13 @@ class Harness:
         self.cases = []
         self.failures = []
 
-    def python_code(self, code, *arguments, source=False, timeout=180):
+    def python_code(self, code, *arguments, timeout=180):
         environment = dict(self.env)
-        if source:
-            executable = ROOT / '.rieke-runtime/venv/bin/python'
-            application = ROOT
-        else:
-            executable = self.python
-            application = self.runtime / 'application'
-            environment.update(RIEKE_DESKTOP_MODE='1', RIEKE_DESKTOP_RUNTIME=str(self.runtime),
-                RIEKE_DESKTOP_USER_STATE=str(self.state / 'user-state'),
-                RIEKE_PARSER_CONFIG=str(self.state / 'user-state/parser/config.ini'))
+        executable = self.python
+        application = self.runtime / 'application'
+        environment.update(RIEKE_DESKTOP_MODE='1', RIEKE_DESKTOP_RUNTIME=str(self.runtime),
+            RIEKE_DESKTOP_USER_STATE=str(self.state / 'user-state'),
+            RIEKE_PARSER_CONFIG=str(self.state / 'user-state/parser/config.ini'))
         command = [str(executable), '-B', '-c',
                    "import sys; sys.path.insert(0, sys.argv[1]); " + code,
                    str(application / 'python'), *map(str, arguments)]
@@ -700,6 +696,7 @@ def main():
         source_unchanged = original == sha(recording)
         receipt = {'format': 'rieke-desktop-scientific-e2e', 'version': 1, 'production_ready': False,
             'runtime_manifest_sha256': sha(h.runtime / 'runtime-manifest.json'), 'runtime_resource_count': len(h.manifest['resources']),
+            'app_asar_sha256': sha(h.resources / 'app.asar'),
             'runtime_identity': {key: h.manifest[key] for key in ('application_version', 'source_commit', 'parser_commit', 'platform', 'architecture', 'python_version', 'mysql_version')},
             'cases': h.cases, 'packaged_resources_unchanged': unchanged, 'original_recording_unchanged': source_unchanged,
             'limitations': ['Unsigned developer machine; no signed update or clean-machine certification',

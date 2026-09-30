@@ -1,0 +1,39 @@
+{
+  "format": "rieke-source-release-validation",
+  "version": 1,
+  "application_version": "0.1.3",
+  "channel": "unsigned-testing",
+  "checked_at": "2026-09-30T16:04:32.127523+00:00",
+  "source_files": 554,
+  "source_sha256": "80a5a14af9c4f0ce8205ef818cd37a33c46d9e2218d0460dcc180cfa8861bc8d",
+  "source_unchanged_during_validation": true,
+  "checks": {
+    "python_native_enabled": {
+      "passed": 1115,
+      "skipped": 1,
+      "subtests": 2792
+    },
+    "previously_skipped_real_recording_portability": {
+      "passed": 1,
+      "source_recording_read_only": true,
+      "disposable_projects": true
+    },
+    "frontend": {
+      "passed": 322
+    },
+    "frontend_production_build": {
+      "passed": true
+    },
+    "desktop": {
+      "passed": 61,
+      "source_unchanged_during_run": true
+    },
+    "coordinated_versions": {
+      "passed": true
+    },
+    "diff_whitespace": {
+      "passed": true
+    }
+  },
+  "artifact_qualification": "Performed separately against the rebuilt package from the canonical source commit. This source receipt does not certify installer bytes, Developer ID signing, or notarization."
+}

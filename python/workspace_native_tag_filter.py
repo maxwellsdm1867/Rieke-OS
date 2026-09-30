@@ -69,29 +69,34 @@ def matching(rows,filters,predicate,lookup):
 
 
 def suggestions(lookup,query,limit):
-    """Prefix-filter the indexed tag dictionary before counting memberships."""
-    from workspace_native_tag_lookup import SCHEMA,TABLE,INDEX
-    # (project,tag) is the leftmost prefix of by_tag, permitting a loose index
-    # scan when MySQL's statistics favor it; covering scans remain correct.
-    dictionary=lookup._rows(f'SELECT tag FROM `{SCHEMA}`.`{TABLE}` FORCE INDEX ({INDEX}) '
-        'WHERE project_uuid=%s GROUP BY project_uuid,tag',(lookup.project_uuid,))
+    """Rank the compact persisted dictionary; memberships only serve point seeks."""
+    from workspace_native_tag_lookup import SCHEMA,TABLE,INDEX,DICTIONARY,AUTHORS
+    lookup.fill_fold_keys()
     prefix=query.strip().casefold()
-    matching=[bytes(row['tag']) for row in dictionary if bytes(row['tag']).decode('utf-8').casefold().startswith(prefix)]
-    candidates=[]
-    for offset in range(0,len(matching),200):
-        batch=matching[offset:offset+200]
-        placeholders=','.join('%s' for _ in batch)
-        counts=lookup._rows(f'SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount '
-            f'FROM `{SCHEMA}`.`{TABLE}` FORCE INDEX ({INDEX}) WHERE project_uuid=%s '
-            f'AND tag IN ({placeholders}) GROUP BY project_uuid,tag',(lookup.project_uuid,*batch))
-        candidates.extend((bytes(row['tag']).decode('utf-8'),int(row['amount'])) for row in counts)
-    candidates.sort(key=lambda value:(-value[1],value[0].casefold(),value[0]))
-    selected=candidates[:limit];authors={tag:[] for tag,_ in selected}
+    try:fold=prefix.encode('utf-8')
+    except UnicodeEncodeError:fold=None
+    where='project_uuid=%s';arguments=(lookup.project_uuid,)
+    if fold is None:where+=' AND FALSE'
+    elif fold:
+        where+=' AND fold_key>=%s AND fold_key<%s';arguments+=(fold,fold+b'\xff')
+    dictionary_index='by_prefix' if fold else 'by_rank'
+    total=int(lookup._rows(f'SELECT COUNT(*) AS amount FROM `{SCHEMA}`.`{DICTIONARY}` FORCE INDEX (by_prefix) WHERE '+where,arguments)[0]['amount'])
+    ranked=lookup._rows(f'SELECT tag,target_count FROM `{SCHEMA}`.`{DICTIONARY}` FORCE INDEX ({dictionary_index}) WHERE '+where+
+        ' ORDER BY target_count DESC,fold_key,tag LIMIT %s',arguments+(limit,))
+    selected=[(bytes(row['tag']).decode('utf-8'),int(row['target_count'])) for row in ranked]
+    authors={tag:[] for tag,_ in selected}
     if selected:
         placeholders=','.join('%s' for _ in selected)
-        winners=lookup._rows(f'SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,\'/\',target_uuid) AS BINARY)) AS position '
-            f'FROM `{SCHEMA}`.`{TABLE}` FORCE INDEX ({INDEX}) WHERE project_uuid=%s AND tag IN ({placeholders}) '
-            'GROUP BY project_uuid,tag,profile_uuid',(lookup.project_uuid,*(tag.encode('utf-8') for tag,_ in selected)))
+        profiles=lookup._rows(f'SELECT tag,profile_uuid FROM `{SCHEMA}`.`{AUTHORS}` '
+            f'WHERE project_uuid=%s AND tag IN ({placeholders})',(lookup.project_uuid,*(tag.encode('utf-8') for tag,_ in selected)))
+        winners=[]
+        for profile in profiles:
+            row=lookup._rows(f'SELECT target_kind,target_uuid FROM `{SCHEMA}`.`{TABLE}` FORCE INDEX ({INDEX}) '
+                'WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1',
+                (lookup.project_uuid,bytes(profile['tag']),profile['profile_uuid']))
+            if len(row)!=1:raise ValueError('Shared annotation authors changed during tag suggestions; retry')
+            winners.append({'tag':profile['tag'],'profile_uuid':profile['profile_uuid'],
+                'position':(row[0]['target_kind']+'/'+row[0]['target_uuid']).encode('ascii')})
         by_key={}
         for row in winners:
             kind,target=bytes(row['position']).decode('ascii').split('/',1)
@@ -113,5 +118,5 @@ def suggestions(lookup,query,limit):
                 for tag in by_key[key]:authors[tag].append({'profile_uuid':row['profile_uuid'],'display_name':row['author_name']})
             if found!=set(batch):raise ValueError('Shared annotation authors changed during tag suggestions; retry')
     return {'tags':[{'tag':tag,'count':count,'authors':sorted(authors[tag],key=lambda a:a['profile_uuid'])} for tag,count in selected],
-        'scope':'project_shared_annotations','query':query,'total':len(candidates),'limit':limit,
-        'count_unit':'distinct_annotation_targets','match':'case_insensitive_prefix','has_more':len(candidates)>limit}
+        'scope':'project_shared_annotations','query':query,'total':total,'limit':limit,
+        'count_unit':'distinct_annotation_targets','match':'case_insensitive_prefix','has_more':total>limit}

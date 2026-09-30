@@ -1,0 +1,1462 @@
+{
+  "scope": "Native SQL lookup versus prior SQLite tag cache, same scientist workflow. Disposable native database, synthetic acquisition metadata, HTTP test-client timings.",
+  "passed": true,
+  "source_and_harness_unchanged_across_both_native_runs": true,
+  "samples_per_workflow_operation": 5,
+  "snapshot_manifest": "native-tag-source-snapshot.json",
+  "native_harness_sha256": "26d058c7a3b9c5f67071e38d70df66a566b37cef7b543656b0bcb521c04df133",
+  "scales": {
+    "500": {
+      "native_receipt": "native-tag-sequence-500.json",
+      "prior_receipt": "tag-sequence-after-500.json",
+      "comparison_ms": {
+        "first10_save": {
+          "prior_p50": 15.186292002908885,
+          "native_p50": 20.486874971538782,
+          "native_first_sample": 44.35537499375641,
+          "native_maximum": 44.35537499375641
+        },
+        "second10_save": {
+          "prior_p50": 13.435167027637362,
+          "native_p50": 19.969207991380244,
+          "native_first_sample": 20.426875038538128,
+          "native_maximum": 22.125250019598752
+        },
+        "filter20": {
+          "prior_p50": 31.089458032511175,
+          "native_p50": 24.433874990791082,
+          "native_first_sample": 33.14845898421481,
+          "native_maximum": 33.14845898421481
+        },
+        "tag10_then10_filter20_http_total": {
+          "prior_p50": 73.59912293031812,
+          "native_p50": 77.54574995487928,
+          "native_first_sample": 116.95775098633021,
+          "native_maximum": 116.95775098633021
+        },
+        "cell_save": {
+          "prior_p50": 6.7298339563421905,
+          "native_p50": 8.321208006236702,
+          "native_first_sample": 12.93837500270456,
+          "native_maximum": 12.93837500270456
+        },
+        "filter_cell100": {
+          "prior_p50": 41.47870797896758,
+          "native_p50": 43.737958010751754,
+          "native_first_sample": 43.737958010751754,
+          "native_maximum": 61.345916998106986
+        },
+        "filter_cell_and_epoch10": {
+          "prior_p50": 17.395791015587747,
+          "native_p50": 22.31991698499769,
+          "native_first_sample": 19.91629198892042,
+          "native_maximum": 27.239874994847924
+        },
+        "cell_tag_then_cell_filter_http_total": {
+          "prior_p50": 48.06662496412173,
+          "native_p50": 51.80883401772007,
+          "native_first_sample": 56.676333013456315,
+          "native_maximum": 72.56833399878815
+        }
+      },
+      "sqlite_tag_cache_calls": {
+        "membership_index": 0,
+        "refresh": 0
+      },
+      "checks": [
+        {
+          "name": "populated_native_migration_ready_before_timed_operations",
+          "passed": true
+        },
+        {
+          "name": "native_autocomplete_exact_counts_and_profile_authors",
+          "passed": true
+        },
+        {
+          "name": "autocomplete_has_no_membership_aggregation",
+          "passed": true,
+          "membership_selects": 30,
+          "maximum_rows_per_seek": 1
+        },
+        {
+          "name": "autocomplete_compact_dictionary_fetches_are_bounded",
+          "passed": true,
+          "dictionary_selects": 9,
+          "scope": "Counts may scan matching compact entries; no unbounded dictionary rows are fetched for Python prefix filtering."
+        },
+        {
+          "name": "autocomplete_membership_winner_seeks_are_indexed",
+          "passed": true,
+          "plans": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1098",
+              "ref": "const,const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Backward index scan; Using index"
+            }
+          ]
+        },
+        {
+          "name": "actual_filter_uses_persistent_by_tag_sql_index",
+          "passed": true,
+          "queries": 1
+        },
+        {
+          "name": "persistent_native_lookup_reused_without_rebuild",
+          "passed": true
+        },
+        {
+          "name": "exact_native_case_upper",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_case_lower",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_unicode_nfc",
+          "passed": true,
+          "count": 167
+        },
+        {
+          "name": "exact_native_unicode_nfd",
+          "passed": true,
+          "count": 333
+        },
+        {
+          "name": "exact_native_or",
+          "passed": true,
+          "count": 333
+        },
+        {
+          "name": "exact_native_not_with_inheritance",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_inherited_excluded_from_direct",
+          "passed": true,
+          "count": 0
+        },
+        {
+          "name": "no_sqlite_tag_membership_or_refresh_used",
+          "passed": true,
+          "calls": {
+            "membership_index": 0,
+            "refresh": 0
+          }
+        },
+        {
+          "name": "canonical_final_markers_removed",
+          "passed": true
+        },
+        {
+          "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+          "passed": true,
+          "records": 63
+        },
+        {
+          "name": "one_canonical_cell_record_no_child_copies",
+          "passed": true,
+          "child_epochs": 100
+        },
+        {
+          "name": "independent_protocol_curation_untouched",
+          "passed": true
+        },
+        {
+          "name": "all_product_modules_loaded_from_selected_source",
+          "passed": true
+        }
+      ],
+      "native_lookup_query_plans": [
+        {
+          "sql": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1060",
+              "ref": "const,const",
+              "rows": 20,
+              "filtered": 10.0,
+              "Extra": "Using where; Using index; Using temporary"
+            }
+          ]
+        }
+      ],
+      "autocomplete_query_plans": [
+        {
+          "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": "const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using index condition; Using filesort"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_authors",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "1060",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1098",
+              "ref": "const,const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Backward index scan; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "shared_annotation",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "331",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 41,
+              "filtered": 100.0,
+              "Extra": "Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_rank",
+              "key": "by_rank",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_authors",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "1060",
+              "ref": null,
+              "rows": 24,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "shared_annotation",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "331",
+              "ref": null,
+              "rows": 9,
+              "filtered": 100.0,
+              "Extra": "Using where"
+            }
+          ]
+        }
+      ],
+      "autocomplete_sql": {
+        "autocomplete_cold_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.00012283300748094916,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+            "seconds": 0.0001301250304095447,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.00014424999244511127,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+            "seconds": 0.00013224995927885175,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001396249863319099,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013120798394083977,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011324998922646046,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.00016866601072251797,
+            "result_rows": 3
+          }
+        ],
+        "autocomplete_warm_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.0001443749642930925,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+            "seconds": 0.000144040968734771,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.0001740000443533063,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+            "seconds": 0.00016950001008808613,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00016325002070516348,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013179198140278459,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00019791699014604092,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.00021045899484306574,
+            "result_rows": 3
+          }
+        ],
+        "autocomplete_empty_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.0002182909520342946,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+            "seconds": 0.00022295804228633642,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.0002453330089338124,
+            "result_rows": 12
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "seconds": 0.0002537500113248825,
+            "result_rows": 24
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00014916702639311552,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013404199853539467,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011974998051300645,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00017691700486466289,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013070798013359308,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011962500866502523,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012362503912299871,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012741703540086746,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001378749730065465,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013474997831508517,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001284580212086439,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001437499886378646,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013579102233052254,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013800000306218863,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011987495236098766,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011399999493733048,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011145800817757845,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011766701936721802,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011616700794547796,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012120796600356698,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00020866701379418373,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00018604198703542352,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010916695464402437,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010958401253446937,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.0004837500164285302,
+            "result_rows": 9
+          }
+        ]
+      },
+      "autocomplete_requests": {
+        "autocomplete_cold_diagnostic": {
+          "q": "gate",
+          "limit": 12,
+          "total": 3
+        },
+        "autocomplete_warm_diagnostic": {
+          "q": "gate",
+          "limit": 12,
+          "total": 3
+        },
+        "autocomplete_empty_diagnostic": {
+          "q": "",
+          "limit": 12,
+          "total": 41
+        }
+      },
+      "autocomplete_diagnostic_ms": {
+        "autocomplete_cold_diagnostic": 21.61020803032443,
+        "autocomplete_warm_diagnostic": 24.96337500633672,
+        "autocomplete_empty_diagnostic": 30.342624988406897
+      },
+      "initial_native_setup": {
+        "status": "ready",
+        "storage": "native_sql",
+        "phases": {
+          "preparing_protocol_reads": {
+            "seconds": 0.06283
+          }
+        },
+        "project_uuid": "69b6a7e7-762d-4adf-ad65-b1c3a8eff7f1",
+        "reused": false,
+        "protocols_prepared": 2,
+        "protocols_deferred": 0,
+        "phase": "complete",
+        "seconds": 0.436276
+      },
+      "fixture_construction": {
+        "strategy": "canonical seed before normal app startup and populated native migration",
+        "native_derived_tables_absent_during_seed": true,
+        "canonical_shared_records": 1515,
+        "canonical_curation_records": 1000,
+        "product_triggers_disabled_during_timed_operations": false
+      },
+      "populated_native_startup_seconds": 1.002701541990973,
+      "same_server_native_lookup_reuse": {
+        "checkpoint": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {
+            "preparing_protocol_reads": {
+              "seconds": 0.022153
+            }
+          },
+          "project_uuid": "69b6a7e7-762d-4adf-ad65-b1c3a8eff7f1",
+          "reused": true,
+          "protocols_prepared": 2,
+          "protocols_deferred": 0,
+          "phase": "complete",
+          "seconds": 0.102921
+        },
+        "reopened": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {
+            "preparing_protocol_reads": {
+              "seconds": 0.02182
+            }
+          },
+          "project_uuid": "69b6a7e7-762d-4adf-ad65-b1c3a8eff7f1",
+          "reused": true,
+          "protocols_prepared": 2,
+          "protocols_deferred": 0,
+          "phase": "complete",
+          "seconds": 0.175279
+        },
+        "seconds": 0.27823945798445493,
+        "scope": "Native lookup checkpoint followed by a fresh Python lookup adapter in the same server; not a MySQL-process restart."
+      },
+      "same_server_native_reuse_filter_ms": 26.880667021032423,
+      "final_backup_status": {
+        "status": "current",
+        "pending": false,
+        "running": false,
+        "last_success": "2026-09-30T15:39:04.669427+00:00",
+        "last_error": null,
+        "requested_sequence": 34,
+        "completed_sequence": 34
+      },
+      "mysql_version": "8.4.2",
+      "runtime_seconds": 11.342676208994817,
+      "seed_seconds": 0.08865733398124576,
+      "seed_checkpoint_seconds": 0.05130733299301937,
+      "owned_native_runtime_stopped": true
+    },
+    "100000": {
+      "native_receipt": "native-tag-sequence-100000.json",
+      "prior_receipt": "tag-sequence-after-100000.json",
+      "comparison_ms": {
+        "first10_save": {
+          "prior_p50": 17.622290994040668,
+          "native_p50": 20.654458028730005,
+          "native_first_sample": 50.29199999989942,
+          "native_maximum": 50.29199999989942
+        },
+        "second10_save": {
+          "prior_p50": 16.18437498109415,
+          "native_p50": 24.3177090305835,
+          "native_first_sample": 22.857792035210878,
+          "native_maximum": 24.691416998393834
+        },
+        "filter20": {
+          "prior_p50": 119.21920796157792,
+          "native_p50": 128.1725830049254,
+          "native_first_sample": 231.92245897371322,
+          "native_maximum": 231.92245897371322
+        },
+        "tag10_then10_filter20_http_total": {
+          "prior_p50": 165.9542090492323,
+          "native_p50": 191.6327920043841,
+          "native_first_sample": 331.8292510230094,
+          "native_maximum": 331.8292510230094
+        },
+        "cell_save": {
+          "prior_p50": 7.809958013240248,
+          "native_p50": 7.998415967449546,
+          "native_first_sample": 7.998415967449546,
+          "native_maximum": 9.052958048414439
+        },
+        "filter_cell100": {
+          "prior_p50": 129.82887495309114,
+          "native_p50": 156.9541670032777,
+          "native_first_sample": 156.9541670032777,
+          "native_maximum": 164.91170797962695
+        },
+        "filter_cell_and_epoch10": {
+          "prior_p50": 106.19708400918171,
+          "native_p50": 115.23075000150129,
+          "native_first_sample": 122.18404200393707,
+          "native_maximum": 122.18404200393707
+        },
+        "cell_tag_then_cell_filter_http_total": {
+          "prior_p50": 137.83216592855752,
+          "native_p50": 164.95258297072724,
+          "native_first_sample": 164.95258297072724,
+          "native_maximum": 172.59591701440513
+        }
+      },
+      "sqlite_tag_cache_calls": {
+        "membership_index": 0,
+        "refresh": 0
+      },
+      "checks": [
+        {
+          "name": "populated_native_migration_ready_before_timed_operations",
+          "passed": true
+        },
+        {
+          "name": "native_autocomplete_exact_counts_and_profile_authors",
+          "passed": true
+        },
+        {
+          "name": "autocomplete_has_no_membership_aggregation",
+          "passed": true,
+          "membership_selects": 30,
+          "maximum_rows_per_seek": 1
+        },
+        {
+          "name": "autocomplete_compact_dictionary_fetches_are_bounded",
+          "passed": true,
+          "dictionary_selects": 9,
+          "scope": "Counts may scan matching compact entries; no unbounded dictionary rows are fetched for Python prefix filtering."
+        },
+        {
+          "name": "autocomplete_membership_winner_seeks_are_indexed",
+          "passed": true,
+          "plans": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1098",
+              "ref": "const,const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Backward index scan; Using index"
+            }
+          ]
+        },
+        {
+          "name": "actual_filter_uses_persistent_by_tag_sql_index",
+          "passed": true,
+          "queries": 1
+        },
+        {
+          "name": "persistent_native_lookup_reused_without_rebuild",
+          "passed": true
+        },
+        {
+          "name": "exact_native_case_upper",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_case_lower",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_unicode_nfc",
+          "passed": true,
+          "count": 33334
+        },
+        {
+          "name": "exact_native_unicode_nfd",
+          "passed": true,
+          "count": 66666
+        },
+        {
+          "name": "exact_native_or",
+          "passed": true,
+          "count": 66667
+        },
+        {
+          "name": "exact_native_not_with_inheritance",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_inherited_excluded_from_direct",
+          "passed": true,
+          "count": 0
+        },
+        {
+          "name": "no_sqlite_tag_membership_or_refresh_used",
+          "passed": true,
+          "calls": {
+            "membership_index": 0,
+            "refresh": 0
+          }
+        },
+        {
+          "name": "canonical_final_markers_removed",
+          "passed": true
+        },
+        {
+          "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+          "passed": true,
+          "records": 63
+        },
+        {
+          "name": "one_canonical_cell_record_no_child_copies",
+          "passed": true,
+          "child_epochs": 100
+        },
+        {
+          "name": "independent_protocol_curation_untouched",
+          "passed": true
+        },
+        {
+          "name": "all_product_modules_loaded_from_selected_source",
+          "passed": true
+        }
+      ],
+      "native_lookup_query_plans": [
+        {
+          "sql": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1060",
+              "ref": "const,const",
+              "rows": 20,
+              "filtered": 10.0,
+              "Extra": "Using where; Using index; Using temporary"
+            }
+          ]
+        }
+      ],
+      "autocomplete_query_plans": [
+        {
+          "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": "const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "1571",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using index condition; Using filesort"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_authors",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "1060",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1098",
+              "ref": "const,const,const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using where; Backward index scan; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "shared_annotation",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "331",
+              "ref": null,
+              "rows": 3,
+              "filtered": 100.0,
+              "Extra": "Using where"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_prefix",
+              "key": "by_prefix",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 41,
+              "filtered": 100.0,
+              "Extra": "Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_dictionary",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_rank",
+              "key": "by_rank",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 1,
+              "filtered": 100.0,
+              "Extra": "Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_authors",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "1060",
+              "ref": null,
+              "rows": 24,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "shared_annotation",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "331",
+              "ref": null,
+              "rows": 12,
+              "filtered": 100.0,
+              "Extra": "Using where"
+            }
+          ]
+        }
+      ],
+      "autocomplete_sql": {
+        "autocomplete_cold_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.0001382920308969915,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+            "seconds": 0.0001492909505032003,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.00015729200094938278,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+            "seconds": 0.0001496669719927013,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00015233299927785993,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013812503311783075,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013883301289752126,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.00019345799228176475,
+            "result_rows": 3
+          }
+        ],
+        "autocomplete_warm_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.00014100002590566874,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+            "seconds": 0.00015254097525030375,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.00016245798906311393,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+            "seconds": 0.00017329101683571935,
+            "result_rows": 3
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00016587501158937812,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00014037505025044084,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001366669894196093,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.00019987503765150905,
+            "result_rows": 3
+          }
+        ],
+        "autocomplete_empty_diagnostic": [
+          {
+            "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+            "seconds": 0.0002447500010021031,
+            "result_rows": 0
+          },
+          {
+            "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+            "seconds": 0.00015116599388420582,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+            "seconds": 0.00016816600691527128,
+            "result_rows": 12
+          },
+          {
+            "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+            "seconds": 0.00023812497965991497,
+            "result_rows": 24
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00014874996850267053,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00017024995759129524,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00029045797418802977,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012725003762170672,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00020070798927918077,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001289580250158906,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013695796951651573,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012425001477822661,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00012670899741351604,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011995801469311118,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011025002459064126,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011108402395620942,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.0001033750013448298,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011508399620652199,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011308299144729972,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00014779099728912115,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011537497630342841,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010775000555440784,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011224998161196709,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010175001807510853,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010091596050187945,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00010791700333356857,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00013529200805351138,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+            "seconds": 0.00011187494965270162,
+            "result_rows": 1
+          },
+          {
+            "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+            "seconds": 0.00030766602139919996,
+            "result_rows": 12
+          }
+        ]
+      },
+      "autocomplete_requests": {
+        "autocomplete_cold_diagnostic": {
+          "q": "gate",
+          "limit": 12,
+          "total": 3
+        },
+        "autocomplete_warm_diagnostic": {
+          "q": "gate",
+          "limit": 12,
+          "total": 3
+        },
+        "autocomplete_empty_diagnostic": {
+          "q": "",
+          "limit": 12,
+          "total": 41
+        }
+      },
+      "autocomplete_diagnostic_ms": {
+        "autocomplete_cold_diagnostic": 22.329957981128246,
+        "autocomplete_warm_diagnostic": 20.90041700284928,
+        "autocomplete_empty_diagnostic": 25.776874972507358
+      },
+      "initial_native_setup": {
+        "status": "ready",
+        "storage": "native_sql",
+        "phases": {
+          "preparing_protocol_reads": {
+            "seconds": 1.508189
+          }
+        },
+        "project_uuid": "4dff9ec3-f69a-4387-9e77-a43eb4b14f4a",
+        "reused": false,
+        "protocols_prepared": 2,
+        "protocols_deferred": 0,
+        "phase": "complete",
+        "seconds": 128.9519
+      },
+      "fixture_construction": {
+        "strategy": "canonical seed before normal app startup and populated native migration",
+        "native_derived_tables_absent_during_seed": true,
+        "canonical_shared_records": 303000,
+        "canonical_curation_records": 200000,
+        "product_triggers_disabled_during_timed_operations": false
+      },
+      "populated_native_startup_seconds": 144.54315195797244,
+      "same_server_native_lookup_reuse": {
+        "checkpoint": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {
+            "preparing_protocol_reads": {
+              "seconds": 0.054597
+            }
+          },
+          "project_uuid": "4dff9ec3-f69a-4387-9e77-a43eb4b14f4a",
+          "reused": true,
+          "protocols_prepared": 2,
+          "protocols_deferred": 0,
+          "phase": "complete",
+          "seconds": 0.139045
+        },
+        "reopened": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {
+            "preparing_protocol_reads": {
+              "seconds": 0.052419
+            }
+          },
+          "project_uuid": "4dff9ec3-f69a-4387-9e77-a43eb4b14f4a",
+          "reused": true,
+          "protocols_prepared": 2,
+          "protocols_deferred": 0,
+          "phase": "complete",
+          "seconds": 0.181751
+        },
+        "seconds": 0.32084808399667963,
+        "scope": "Native lookup checkpoint followed by a fresh Python lookup adapter in the same server; not a MySQL-process restart."
+      },
+      "same_server_native_reuse_filter_ms": 120.17941597150639,
+      "final_backup_status": {
+        "status": "current",
+        "pending": false,
+        "running": false,
+        "last_success": "2026-09-30T15:43:05.619622+00:00",
+        "last_error": null,
+        "requested_sequence": 34,
+        "completed_sequence": 34
+      },
+      "mysql_version": "8.4.2",
+      "runtime_seconds": 219.8653925419785,
+      "seed_seconds": 14.418896374991164,
+      "seed_checkpoint_seconds": 0.03377008403185755,
+      "owned_native_runtime_stopped": true
+    }
+  },
+  "query_architecture_gates_passed": true,
+  "workflow_uniformly_faster_than_prior_sqlite": false,
+  "limitations": [
+    "The 100k two-save/filter median is 191.6 ms versus the prior 166.0 ms; other metadata and response work remains.",
+    "Populated 100k application startup/migration took 144.543 seconds; subsequent same-server lookup-adapter preparation reused the structures in 0.182 seconds.",
+    "The exact empty-query total counts 41 compact dictionary entries; no membership aggregation or unbounded dictionary row fetch occurs."
+  ],
+  "autocomplete_100k_sql_summary": {
+    "autocomplete_cold_diagnostic": {
+      "statements": 8,
+      "seconds": 0.0012172909919172525,
+      "maximum_statement_seconds": 0.00019345799228176475
+    },
+    "autocomplete_warm_diagnostic": {
+      "statements": 8,
+      "seconds": 0.001272082095965743,
+      "maximum_statement_seconds": 0.00019987503765150905
+    },
+    "autocomplete_empty_diagnostic": {
+      "statements": 29,
+      "seconds": 0.0042779138893820345,
+      "maximum_statement_seconds": 0.00030766602139919996
+    }
+  }
+}

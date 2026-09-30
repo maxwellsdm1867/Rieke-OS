@@ -319,12 +319,14 @@ class DesktopServices:
                     raise ValueError('Desktop service registry is invalid')
                 try:
                     process = psutil.Process(record['pid'])
-                    if process.status() == psutil.STATUS_ZOMBIE:
-                        continue
                     # PID existence alone neither authorizes shutdown nor proves
                     # prior scientific operations finished. Matching processes
                     # require recovery; foreign/reused PIDs are not our services.
-                    if (process.create_time() == record.get('created_at')
+                    # A zombie cannot serve HTTP, but its independent database
+                    # or inherited import worker may still be active. It must
+                    # satisfy the same clean receipt checks as any exited child.
+                    if (process.status() != psutil.STATUS_ZOMBIE
+                            and process.create_time() == record.get('created_at')
                             and str(Path(process.exe()).resolve()) == record.get('executable')):
                         raise ValueError('A previous desktop project service is still alive; recovery must close it before opening projects')
                 except (psutil.NoSuchProcess, psutil.AccessDenied):

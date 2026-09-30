@@ -30,7 +30,7 @@ Evidence: [measurements](dev/data-efficiency-audit/measurements.json), [local me
 
 ### 1. High: the snapshot hook runs on read-only POSTs and captures too much
 
-[API hook](../python/workspace_api.py), [capture](../python/workspace_state_snapshot.py), [query compaction](../python/workspace_state_snapshot.py).
+[API hook](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_api.py:1416), [capture](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_state_snapshot.py:34), [query compaction](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_state_snapshot.py:99).
 
 Every successful POST/PUT/PATCH/DELETE performs a synchronous snapshot while holding the shared database lock. POST is also used for annotation reads, tree pages, predicate previews, and membership queries. These operations can therefore rebuild backup state without changing anything. The equality check prevents a final file write, but occurs **after** reading SQL, decoding JSON, sorting, rerunning pinned queries, and serializing the snapshot.
 
@@ -42,7 +42,7 @@ Every successful POST/PUT/PATCH/DELETE performs a synchronous snapshot while hol
 
 ### 2. High: each epoch carries a large copy of its block metadata
 
-[Detail construction](../python/workspace_service.py), [per-epoch index storage](../python/workspace_disk_index.py), [detail cache](../python/workspace_disk_index.py).
+[Detail construction](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:273), [per-epoch index storage](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py:74), [detail cache](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py:396).
 
 The inspected epoch response was 123,639 bytes. Its block metadata accounted for 112,287 bytes, including a **111,371-byte `frameTimesMs` array**. That block contains 430 epochs. The block array is copied into each epoch's serialized detail record and reconstructed on each uncached detail read. The current 64-entry detail cache holds independent decoded copies, so compression on disk hides repeated decoding and allocation.
 
@@ -54,7 +54,7 @@ Serializing that shared array for all 430 epoch details represents approximately
 
 ### 3. High: obsolete cache generations are never reclaimed
 
-[Generation selection](../python/workspace_service.py), [index publication](../python/workspace_disk_index.py), [projection writer](../python/workspace_projection_cache.py).
+[Generation selection](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:380), [index publication](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py:140), [projection writer](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_projection_cache.py:42).
 
 There are **seven complete indexes**, each covering the same 1,776 epochs. They total 100.3 MiB logical / 104.9 MiB allocated; one index is 14.3 MiB logical. Source projections add another 20.5 MiB allocated. Changed signatures/code produce new filenames; cleanup removes temporary build files, not superseded published generations.
 
@@ -64,7 +64,7 @@ There are **seven complete indexes**, each covering the same 1,776 epochs. They 
 
 ### 4. Medium: query-based recovery does not yet make live SQL pins query-based
 
-[Revision creation](../python/workspace_explorer.py), [recipe cache](../python/workspace_explorer.py).
+[Revision creation](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_explorer.py:125), [recipe cache](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_explorer.py:58).
 
 The recent backup optimization removes epoch lists from reproducible pins **in the backup**. Live `ExplorerHistory.create()` still stores a complete epoch list, UUID diff lists, and provenance in every new revision. There are 28 revisions containing 6,886 epoch references for five active bindings. `_recipe_cache` is also keyed by revision UUID without eviction.
 
@@ -76,7 +76,7 @@ The present 1.50 MiB of recipe JSON is modest. The concern is growth proportiona
 
 ### 5. Medium: the overview mostly transports historical event detail
 
-[Overview events](../python/workspace_service.py), [five visible events](../workspace-app/src/components/Overview.jsx).
+[Overview events](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:623), [five visible events](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/workspace-app/src/components/Overview.jsx:34).
 
 The overview response was 284,851 bytes; its `events` value alone was 265,071 bytes (about 93%). The server includes 25 full events while the view displays five. Old provenance-heavy events remain large even though routine new edits no longer create them. With gzip, the complete response body was 40,774 bytes: compression helps transport, but not SQL decoding and constructing the original JSON objects.
 
@@ -86,7 +86,7 @@ The overview response was 284,851 bytes; its `events` value alone was 265,071 by
 
 ### 6. Medium: bounded page responses still require whole-scope work
 
-[Filtered rows](../python/workspace_service.py), [epoch pagination](../python/workspace_service.py), [temporary query scope](../python/workspace_disk_index.py), [export-membership copy](../python/workspace_curation.py).
+[Filtered rows](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:572), [epoch pagination](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:637), [temporary query scope](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py:172), [export-membership copy](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_curation.py:397).
 
 A one-epoch page is small on the wire, but `filtered_rows()` constructs/decorates/sorts the whole protocol membership before slicing. Query helpers create and populate a temporary scope table for each call, and predicate matching materializes Python sets. Protocol binding access deep-copies the full recipe. Some summary paths deep-copy the project-wide export-membership index as well.
 
@@ -98,7 +98,7 @@ The measured one-epoch page was 3,793 bytes and 54 ms median. This small-project
 
 ### 7. Medium: cold rebuild and MATLAB export can defeat lazy metadata loading
 
-[Index build](../python/workspace_disk_index.py), [cold source JSON load](../python/workspace_service.py), [MATLAB catalog construction](../python/workspace_matlab.py).
+[Index build](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py:85), [cold source JSON load](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_service.py:418), [MATLAB catalog construction](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_matlab.py:139).
 
 Changed generations build a complete new index. On a projection-cache miss, the full source JSON is decoded before index construction. Warm loading still keeps lightweight rows/fingerprints for every epoch in memory; only detailed metadata is lazy.
 
@@ -110,7 +110,7 @@ The MATLAB export builder separately runs `catalog(list(service.rows.values()), 
 
 ### 8. Medium: daily state backups repeatedly embed immutable exports
 
-[Captured state tables](../python/workspace_state_snapshot.py), [daily snapshot](../python/workspace_state_snapshot.py).
+[Captured state tables](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_state_snapshot.py:17), [daily snapshot](/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/python/workspace_state_snapshot.py:194).
 
 Current settings/query/edit state is 31,971 bytes, while the complete snapshot is 538,865 bytes because it includes seven existing export recipes. On each active new UTC date a complete new SQLite snapshot is written, even if the state is identical. At the current logical payload alone, 365 active days would repeat about 188 MiB. That is arithmetic, not an observed annual workload.
 

@@ -1,5 +1,5 @@
 'use strict';
-const fs = require('node:fs/promises');
+const fs = require('./physical-fs.cjs').promises;
 const path = require('node:path');
 const {spawn} = require('node:child_process');
 const {promisify} = require('node:util');

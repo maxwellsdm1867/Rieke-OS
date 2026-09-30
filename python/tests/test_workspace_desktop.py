@@ -193,6 +193,26 @@ class DesktopRegistryTests(unittest.TestCase):
         process.terminate.assert_not_called()
         process.kill.assert_not_called()
 
+    def test_zombie_service_still_requires_clean_database_exit_proof(self):
+        import psutil
+        root = self.state / 'zombie-native'
+        database = root / 'database'
+        database.mkdir(parents=True)
+        owner = database / 'native-owner.json'
+        owner.write_text(json.dumps({'project_uuid': 'project', 'clean_shutdown': False}))
+        record = {'pid': 123456789, 'project_path': str(root), 'project_uuid': 'project'}
+        self.services.path.write_text(json.dumps({'version': 1, 'services': [record]}))
+        zombie = Mock(); zombie.status.return_value = psutil.STATUS_ZOMBIE
+        with patch('psutil.Process', return_value=zombie):
+            with self.assertRaisesRegex(ValueError, 'clean database exit receipt'):
+                DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
+        self.assertEqual(json.loads(self.services.path.read_text())['services'], [record])
+        zombie.terminate.assert_not_called(); zombie.kill.assert_not_called()
+        owner.write_text(json.dumps({'project_uuid': 'project', 'clean_shutdown': True}))
+        with patch('psutil.Process', return_value=zombie):
+            recovered = DesktopServices(self.state, self.state / 'resources', self.state / 'manifest', 'next', 's' * 48, {})
+        self.assertEqual(recovered.records(), [])
+
     def test_busy_second_child_resumes_first_and_never_stops_any(self):
         records = [{'pid': 1}, {'pid': 2}]
         self.services.records = Mock(return_value=records)

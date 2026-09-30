@@ -299,6 +299,14 @@ async function main() {
       await delay(500);
     }
     assert.ok(['complete', 'completed'].includes(status?.status), 'Import must finish successfully before test shutdown');
+    // Completion is observed by the UI on its own polling cycle. Close its
+    // automatic review explicitly after it appears, rather than sending Escape
+    // before the dialog has been mounted.
+    const review=page.getByRole('dialog',{name:'Review imported data',exact:true});
+    if(await review.waitFor({state:'visible',timeout:10000}).then(()=>true,()=>false)) {
+      await review.getByRole('button',{name:'Close import review',exact:true}).click();
+      await review.waitFor({state:'hidden'});
+    }
     await page.keyboard.press('Escape');
     return {real_import: true, bridge_quit_deferred: true, native_window_close_deferred: true, root_pid_preserved: true, completed: true};
   });
@@ -306,15 +314,17 @@ async function main() {
     await page.keyboard.press('Escape');
     const overview=await page.evaluate(()=>fetch('/api/overview').then(response=>response.json()));
     const protocol=overview.protocols?.[0];assert.ok(protocol?.protocol_uuid,'Imported protocols must be available');
-    let combined=null;const pending=[];
+    let combined=null,inspectedProtocolUuid=null;const pending=[];
     const observe=response=>{
       const url=new URL(response.url());
-      if(url.pathname===`/api/protocols/${protocol.protocol_uuid}/epochs`&&url.searchParams.get('include_cells')==='true'&&response.status()===200)
-        pending.push(response.json().then(value=>{combined=value;}));
+      if(/^\/api\/protocols\/[^/]+\/epochs$/.test(url.pathname)&&url.searchParams.get('include_cells')==='true'&&response.status()===200)
+        pending.push(response.json().then(value=>{combined=value;inspectedProtocolUuid=url.pathname.split('/')[3];}));
     };
     page.on('response',observe);
     try{
-      await page.locator(`[data-protocol-shortcut="${protocol.protocol_uuid}"] .protocol-nav`).click();
+      await page.getByRole('button',{name:'Project overview',exact:true}).click();
+      await page.locator('.ov-protocol-row:visible').first().click({timeout:90000});
+      await page.getByRole('button',{name:'Open inspection',exact:true}).click();
       const tree=page.locator('.inspection-cell-tree');await tree.waitFor({state:'visible',timeout:90000});
       await tree.locator('.cell-tree-date>summary').first().click();
       await tree.locator('.cell-tree-cell>summary').first().click();
@@ -332,7 +342,7 @@ async function main() {
       assert.ok(combined.query_revision);assert.ok(Number.isSafeInteger(combined.expected_binding_version));
       assert.ok(!await page.getByText('Predicate field catalog unavailable.',{exact:false}).count());
       return {real_epoch_inspection:true,trace_canvas_loaded:true,combined_epoch_count:combined.epochs.length,combined_cell_count:combined.cells.length,
-        metadata_field_count:fields.fields.length,metadata_panel_visible:true,protocol_uuid:protocol.protocol_uuid};
+        metadata_field_count:fields.fields.length,metadata_panel_visible:true,protocol_uuid:inspectedProtocolUuid};
     }finally{page.off('response',observe);}
   });
   await check('durable real renderer draft survives orderly close and cold restart', async () => {

@@ -3,7 +3,7 @@
 // services; this helper additionally waits for the main process to actually exit.
 const path = require('node:path');
 const os = require('node:os');
-const fs = require('node:fs/promises');
+const fs = require('./physical-fs.cjs').promises;
 const {promisify} = require('node:util');
 const run = promisify(require('node:child_process').execFile);
 const {installCompleteBundle, signatureIdentity, readBundleManifest, enclosingApp} = require('./bootstrap.cjs');

@@ -123,11 +123,13 @@ the user's older running installation unchanged.
 
 ## Signed releases
 
-The public provider is explicitly `maxwellsdm1867/Rieke-OS`. Development remains
-in this dirty epicTreeGUI checkout; it is not a reviewed canonical release.
-Local version 0.1.0 must be reconciled with the public baseline, whose tags already
-include v0.1.2, before coordinated release tagging. `tools/desktop_release.py`
-rejects dirty, mismatched or foreign build baselines and incomplete promotion.
+The public provider is explicitly `maxwellsdm1867/Rieke-OS`. Application,
+frontend, and desktop metadata are coordinated at version 0.1.3. The current
+`unsigned-testing` policy uses the separate `desktop-test-v0.1.3` prerelease;
+it does not promote or replace the stable source release. Build from the exact
+clean canonical source commit and qualify the resulting bytes before publishing.
+`tools/desktop_release.py` separately rejects dirty, mismatched or foreign signed
+production baselines and incomplete promotion.
 
 The desktop candidate workflow builds exact tagged sources. Signing is performed
 on the native closure before resealing the runtime manifest and signing the outer

@@ -12,7 +12,7 @@ import uuid
 from test_workspace_state_generation import NativeConnection
 from workspace_annotations import SharedAnnotations
 from workspace_annotation_preparation import prepare_project_annotations
-from workspace_native_tag_lookup import TABLE,MARKER,TRIGGER_MANIFEST,NativeTagLookup
+from workspace_native_tag_lookup import TABLE,MARKER,DICTIONARY,AUTHORS,TRIGGER_MANIFEST,NativeTagLookup
 from workspace_projects import create_project
 from workspace_state_generation import bootstrap as generation_bootstrap,verify_export_triggers
 from workspace_state_snapshot import save as save_recovery
@@ -90,12 +90,13 @@ class NativeTagIntegrationTests(unittest.TestCase):
             ('epoch',3,101,['other'],'Later unrelated alias'),
             ('epoch',4,102,['qc','😀'*255],'Other historical scientist'),
             ('cell',202,101,['STRASSE'],'Later cell alias')]
+        cases.append(('epoch',5,101,['ß','SS','Σ','σ','ς','ΐ'*255],'Unicode author'))
         for kind,target,profile,tags,name in cases:self.write(kind,identity(target),identity(profile),tags,name)
 
     def test_autocomplete_matches_canonical_unicode_counts_and_historical_authors(self):
         self.seed_authors();self.prepare()
         with patch.object(self.shared,'_membership_index',side_effect=AssertionError('Native autocomplete must not open SQLite')):
-            for query in ('',' qC ','STRASSE','strass','é','e\u0301','i','i\u0307','😀','no match'):
+            for query in ('',' qC ','STRASSE','strass','é','e\u0301','i','i\u0307','😀','ss','σ','ς','ΐ'*255,'no match'):
                 for limit in (1,3,100):
                     with self.subTest(query=query,limit=limit):
                         result=self.shared.suggestions(query,limit);expected=self.oracle(query,limit)
@@ -108,6 +109,61 @@ class NativeTagIntegrationTests(unittest.TestCase):
             self.assertEqual(self.shared.suggestions('QC',100)['tags'],self.oracle('QC',100)['tags'])
             self.write('epoch',identity(2),identity(101),['new'],'New saved author')
             self.assertEqual(self.shared.suggestions('QC',100)['tags'],self.oracle('QC',100)['tags'])
+
+    def test_counts_concurrent_profiles_old_snapshot_rollback_and_duplicate_update(self):
+        import pymysql
+        import threading
+        import time
+        self.prepare()
+        second=NativeConnection(pymysql.connect(**native.connection_parameters(self.root),autocommit=True))
+        self.addCleanup(second._conn.close)
+        target=identity(70);tag='same target'
+        statement=('INSERT INTO recording_workspace.shared_annotation '
+            '(project_uuid,target_kind,target_uuid,profile_uuid,tags,author_name,revision,updated_at) VALUES (%s,%s,%s,%s,%s,%s,1,%s)')
+        def args(profile):return (self.project_id,'epoch',target,profile,json.dumps([tag]),'Writer',dt.datetime(2026,9,30,12))
+        second.query('START TRANSACTION WITH CONSISTENT SNAPSHOT');second.in_transaction=True
+        second.query(f'SELECT COUNT(*) FROM recording_workspace.{TABLE}').fetchone()
+        self.write('epoch',target,identity(101),[tag],'Writer')
+        second.query(statement,args(identity(102)));second._conn.commit();second.in_transaction=False
+        def counts():
+            rows=self.connection.query(f'SELECT tag,target_count,fold_key FROM recording_workspace.{DICTIONARY} WHERE project_uuid=%s',(self.project_id,),as_dict=True).fetchall()
+            return {bytes(row['tag']).decode():row for row in rows}
+        self.assertEqual(counts()[tag]['target_count'],1)
+        self.assertEqual(len(self.shared.suggestions(tag,30)['tags'][0]['authors']),2)
+        before=counts();token=self.shared.generation_token()
+        with self.assertRaises(Exception):
+            self.connection.query('UPDATE recording_workspace.shared_annotation SET tags=%s WHERE project_uuid=%s AND profile_uuid=%s',
+                (json.dumps([tag,tag]),self.project_id,identity(101)))
+        self.assertEqual(counts(),before);self.assertEqual(self.shared.generation_token(),token)
+        with self.assertRaisesRegex(RuntimeError,'rollback'):
+            with self.connection.transaction:
+                self.write('epoch',target,identity(103),[tag,'rolled back'],'Writer')
+                self.assertEqual(counts()[tag]['target_count'],1)
+                raise RuntimeError('rollback')
+        self.assertEqual(counts(),before)
+        # Two writers overlap while the second has its own older snapshot.
+        target=identity(71);errors=[];started=threading.Event()
+        self.connection._conn.begin();self.connection.in_transaction=True
+        self.connection.query(statement,args(identity(101)))
+        def insert_second():
+            try:
+                started.set()
+                with second.transaction:second.query(statement,args(identity(102)))
+            except BaseException as error:errors.append(error)
+        worker=threading.Thread(target=insert_second);worker.start();self.assertTrue(started.wait(1));time.sleep(.03)
+        self.connection._conn.commit();self.connection.in_transaction=False
+        worker.join(5);self.assertFalse(worker.is_alive());self.assertEqual(errors,[])
+        self.assertEqual(counts()[tag]['target_count'],2)
+        fold=counts()[tag]['fold_key']
+        self.connection.query('UPDATE recording_workspace.shared_annotation SET tags=JSON_ARRAY(%s,%s) WHERE project_uuid=%s AND target_uuid=%s AND profile_uuid=%s',
+            (tag,'new tag',self.project_id,target,identity(101)))
+        self.assertEqual(counts()[tag]['fold_key'],fold)
+        self.assertIsNone(counts()['new tag']['fold_key'])
+        self.assertEqual(self.shared.suggestions('NEW TAG',30)['tags'][0]['count'],1)
+        self.assertIsNotNone(counts()['new tag']['fold_key'])
+        self.connection.query('DELETE FROM recording_workspace.shared_annotation WHERE project_uuid=%s',(self.project_id,))
+        self.assertEqual(counts(),{})
+        self.assertEqual(self.connection.query(f'SELECT COUNT(*) FROM recording_workspace.{AUTHORS} WHERE project_uuid=%s',(self.project_id,)).fetchone()[0],0)
 
     def test_lifecycle_bootstrap_checkpoint_reopen_and_dropped_trigger_rebuild(self):
         self.write('epoch',identity(1),identity(101),['before'],'Original author')
@@ -132,6 +188,27 @@ class NativeTagIntegrationTests(unittest.TestCase):
         self.assertEqual(self.shared.native_tag_lookup.targets('after'),set())
         self.assertEqual(self.shared.native_tag_lookup.targets('written during gap'),{('epoch',identity(1))})
         self.assertTrue(self.shared.native_tag_lookup.validate_current())
+
+    def test_legacy_lookup_migration_and_compact_table_truncation_rebuild(self):
+        from workspace_native_tag_lookup import LEGACY_TRIGGER_MANIFEST
+        self.write('epoch',identity(1),identity(101),['Straße'],'Historical author');self.prepare()
+        for name in TRIGGER_MANIFEST:self.connection.query('DROP TRIGGER recording_workspace.'+name)
+        for table in (DICTIONARY,AUTHORS):self.connection.query('DROP TABLE recording_workspace.'+table)
+        self.connection.query(f'ALTER TABLE recording_workspace.{TABLE} DROP INDEX by_tag,ADD INDEX by_tag(project_uuid,tag,target_kind,target_uuid)')
+        for name,spec in LEGACY_TRIGGER_MANIFEST.items():
+            self.connection.query('CREATE TRIGGER recording_workspace.'+name+' AFTER '+spec['event']+
+                ' ON recording_workspace.shared_annotation FOR EACH ROW '+spec['body'])
+        self.connection.query(f'UPDATE recording_workspace.{MARKER} SET version=1 WHERE project_uuid=%s',(self.project_id,))
+        result=self.prepare();self.assertFalse(result['reused'])
+        self.assertEqual(self.shared.suggestions('STRASSE',30)['tags'],self.oracle('STRASSE',30)['tags'])
+        for table in (DICTIONARY,AUTHORS):
+            old=self.shared.native_tag_lookup;token=self.shared.generation_token()
+            self.connection.query('TRUNCATE TABLE recording_workspace.'+table)
+            self.assertNotEqual(self.shared.generation_token().authority,token.authority)
+            with self.assertRaisesRegex(ValueError,'incarnation'):old.validate_current()
+            result=self.prepare();self.assertFalse(result['reused'])
+            self.assertEqual(self.shared.suggestions('STRASSE',30)['tags'],self.oracle('STRASSE',30)['tags'])
+        self.assertTrue(self.prepare()['reused'])
 
     def test_protocol_preparation_is_bounded_without_shared_sqlite_and_fences_changes(self):
         from workspace_protocol_state import STATE_CACHE_SCOPES
@@ -215,18 +292,27 @@ class NativeTagIntegrationTests(unittest.TestCase):
         after=scanned()
         self.assertEqual(result['tags'],[{'tag':'edited','count':10,
             'authors':[{'profile_uuid':identity(101),'display_name':'Historical author'}]}])
-        dictionary_plan=json.loads(self.connection.query('EXPLAIN FORMAT=JSON '+queries[0][0],queries[0][1]).fetchone()[0])
-        self.assertLess(sum(query_reads[1:]),1000,'Counts and authors must avoid unrelated memberships')
-        dictionary_table=dictionary_plan['query_block']['grouping_operation']['table']
-        self.assertEqual(dictionary_table['key'],'by_tag')
-        self.assertTrue(dictionary_table.get('using_index') or dictionary_table.get('using_index_for_group_by'))
-        for sql,args in queries[1:3]:
-            plan=json.loads(self.connection.query('EXPLAIN FORMAT=JSON '+sql,args).fetchone()[0])
-            self.assertIn('"key": "by_tag"',json.dumps(plan))
+        self.assertLess(sum(query_reads),1000,'Compact dictionary and point winner queries must avoid unrelated memberships')
+        membership_queries=[(sql,args) for sql,args in queries if f'`{TABLE}`' in sql]
+        self.assertTrue(membership_queries)
+        for sql,args in membership_queries:
+            self.assertIn('LIMIT 1',sql)
+            self.assertNotIn('GROUP BY',sql);self.assertNotIn('COUNT(',sql)
+            block=json.loads(self.connection.query('EXPLAIN FORMAT=JSON '+sql,args).fetchone()[0])['query_block']
+            plan=block.get('table') or block['ordering_operation']['table']
+            self.assertEqual(plan['key'],'by_tag')
+            self.assertEqual(plan['used_key_parts'],['project_uuid','tag','profile_uuid'])
         source_sql,source_args=next((sql,args) for sql,args in queries if '`shared_annotation`' in sql)
         source_plan=json.loads(self.connection.query('EXPLAIN FORMAT=JSON '+source_sql,source_args).fetchone()[0])['query_block']['table']
         self.assertEqual(source_plan['key'],'PRIMARY')
         self.assertEqual(source_plan['used_key_parts'],list(fields))
+        queries.clear();query_reads.clear()
+        with patch.object(lookup,'_rows',side_effect=capture):suggestions(lookup,'',3)
+        self.assertLess(sum(query_reads),1000)
+        sql,args=next((sql,args) for sql,args in queries if 'ORDER BY target_count DESC' in sql)
+        plan=json.loads(self.connection.query('EXPLAIN FORMAT=JSON '+sql,args).fetchone()[0])
+        self.assertIn('"key": "by_rank"',json.dumps(plan))
+        self.assertNotIn('"using_filesort": true',json.dumps(plan))
 
     def test_export_omits_only_exact_managed_trigger_contracts(self):
         self.write('epoch',identity(1),identity(101),['tag'],'Author');self.prepare()
