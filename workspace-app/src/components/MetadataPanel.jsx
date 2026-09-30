@@ -14,7 +14,7 @@ function PanelSection({section,query,fields,initialOpen=false}){
   if(query&&!shown.length)return null;
   return <section className="metadata-panel-section"><button className="metadata-section-toggle" aria-expanded={open||!!query} onClick={()=>setOpen(value=>!value)}><ChevronDown size={14} className={open||query?'expanded':''}/><span>{section.title}</span><small>{shown.length}</small></button>{(open||query)&&<Metadata title={null} rows={shown} fields={fields} copyable compact/>}</section>;
 }
-export default function MetadataPanel({epoch,catalog,onClose,context,connections,tags}){
+export default function MetadataPanel({epoch,catalog,onClose,context,connections,tags,selectionCell=null,selectedEpochs=[],onClearSelection}){
   const [tab,setTab]=useState('settings');
   const [search,setSearch]=useState(''),query=search.trim(),parsedSearch=parseMetadataSearch(query);
   const sections=useMemo(()=>{
@@ -35,6 +35,11 @@ export default function MetadataPanel({epoch,catalog,onClose,context,connections
   const total=sections.reduce((sum,section)=>sum+section.rows.length,0);
   const visibleSections=tab==='settings'?sections.filter(section=>['parameters','technical'].includes(section.id)):sections;
   const matched=visibleSections.reduce((sum,section)=>sum+section.rows.filter(row=>matchesMetadataSearch(row,parsedSearch,catalog?.data?.fields || [])).length,0);
+  if(selectionCell||selectedEpochs.length>0)return <aside id="epoch-metadata-sidebar" className="inspection-metadata" aria-label="Selection details">
+    <header className="metadata-panel-header"><div><h2>{selectionCell?'Cell details':`${selectedEpochs.length} epochs`}</h2><span>{selectionCell?`${selectionCell.date} · ${selectionCell.label||selectionCell.cell_label}`:'Multiple selection'}</span></div><button onClick={onClose} aria-label="Hide metadata sidebar"><PanelRightClose size={17}/></button></header>
+    {tags}
+    <div className="metadata-panel-scroll">{selectionCell?<><dl className="metadata-key-facts"><div><dt>Cell type</dt><dd>{selectionCell.cell_type||'Not recorded'}</dd></div><div><dt>Matching epochs</dt><dd>{selectionCell.epochs}</dd></div></dl><Metadata title="Cell metadata" data={{cell_uuid:selectionCell.cell_uuid,...epoch?.metadata?.cell}} compact copyable/></>:<><p className="metadata-panel-note">Select an epoch to return to its individual details.</p><button onClick={onClearSelection}>Clear selection</button></>}</div>
+  </aside>;
   return <aside id="epoch-metadata-sidebar" className="inspection-metadata" aria-label="Epoch metadata sidebar"><header className="metadata-panel-header"><div><h2>Epoch details</h2><span>{epoch?`${epoch.date} · ${epoch.cell_label}`:'Select an epoch'}</span></div><button onClick={onClose} aria-label="Hide metadata sidebar" title="Hide metadata sidebar"><PanelRightClose size={17}/></button></header>
     {epoch&&tags}
     <nav className="metadata-view-tabs" aria-label="Epoch detail views">{[['settings','Settings'],['summary','Summary'],['fields','All fields'],['links','Links']].map(([key,label])=><button key={key} className={tab===key?'active':''} aria-pressed={tab===key} onClick={()=>{setTab(key);setSearch('');}}>{label}</button>)}</nav>

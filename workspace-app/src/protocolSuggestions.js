@@ -41,3 +41,15 @@ export function importAttemptNotice(job){
   if(['failed','failure'].includes(job.status))return {pending:false,failed:true,message:'Import failed. See the diagnostic details in import history below.'};
   return {pending:true,failed:false,message:job.status==='queued'?'Import attempt queued. Duplicate checking and validation results appear below.':'Import is running. Its current checks and results appear in import history below.'};
 }
+
+// A bulk approval uses exactly the same compare/version gate as an individual
+// approval. A changed comparison is returned for review, never silently applied.
+export async function approveProtocolSuggestion(suggestion,shown,request){
+  const root=`/explore/revisions/${suggestion.candidate_revision_uuid}`;
+  const fresh=await request(`${root}/compare-to-protocol`,{method:'POST',body:{protocol_uuid:suggestion.protocol_uuid}});
+  if(!Number.isInteger(fresh.expected_binding_version)||typeof fresh.expected_query_revision!=='string')throw new Error('The comparison did not include a valid dataset version. Refresh this protocol before retrying.');
+  if(!sameSuggestionComparison(shown,fresh))return {comparison:fresh,applied:false};
+  const receipt=await request(`${root}/apply-to-protocol`,{method:'POST',body:{protocol_uuid:suggestion.protocol_uuid,expected_binding_version:fresh.expected_binding_version,expected_query_revision:fresh.expected_query_revision}});
+  if(receipt.binding?.revision_uuid!==suggestion.candidate_revision_uuid||!Number.isInteger(receipt.binding?.version))throw new Error('The update did not return a complete receipt. Check Activity & logs before retrying.');
+  return {applied:true,receipt};
+}

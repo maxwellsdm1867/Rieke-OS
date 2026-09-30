@@ -61,3 +61,33 @@ test('same counts with a different working binding require a refreshed visible c
   assert.equal(sameSuggestionComparison(fresh,{...fresh,expected_binding_version:5}),false);
   assert.equal(sameSuggestionComparison({...displayed,baseline_binding_version:undefined},fresh),false);
 });
+
+test('approval rechecks displayed candidate and sends both concurrency guards',async()=>{
+  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const suggestion={protocol_uuid:'p',candidate_revision_uuid:'r'};
+  const shown={expected_binding_version:2,expected_query_revision:'q',diff_counts:{added:3,removed:0,changed:0},diff_summary:{current:{cells:1,epochs:2},proposed:{cells:2,epochs:5}}};
+  const calls=[];
+  const result=await approveProtocolSuggestion(suggestion,shown,async(path,options)=>{
+    calls.push({path,body:options.body});
+    return path.endsWith('compare-to-protocol')?shown:{binding:{revision_uuid:'r',version:3}};
+  });
+  assert.equal(result.applied,true);
+  assert.deepEqual(calls[1].body,{protocol_uuid:'p',expected_binding_version:2,expected_query_revision:'q'});
+});
+test('changed bulk approval is held for visible review without mutating dataset',async()=>{
+  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const shown={expected_binding_version:2,expected_query_revision:'q',diff_counts:{added:3}};
+  const fresh={...shown,expected_binding_version:3};
+  let calls=0;
+  const result=await approveProtocolSuggestion({protocol_uuid:'p',candidate_revision_uuid:'r'},shown,async()=>{calls++;return fresh;});
+  assert.equal(calls,1);
+  assert.equal(result.applied,false);
+  assert.equal(result.comparison,fresh);
+});
+test('approval refuses invalid comparison and ambiguous apply receipt',async()=>{
+  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const candidate={protocol_uuid:'p',candidate_revision_uuid:'r'};
+  await assert.rejects(()=>approveProtocolSuggestion(candidate,{},async()=>({expected_binding_version:1})),/valid dataset version/);
+  const shown={expected_binding_version:1,expected_query_revision:'q'};
+  await assert.rejects(()=>approveProtocolSuggestion(candidate,shown,async path=>path.endsWith('compare-to-protocol')?shown:{binding:{revision_uuid:'other',version:2}}),/complete receipt/);
+});

@@ -11,14 +11,12 @@ import contextlib
 import os
 from pathlib import Path
 import uuid
-import zipfile
 
 from recording_workspace import digest, now, write_json
 from workspace_recipes import checksum, member_map, prepare_export, save_snapshot, seal
-from workspace_export_names import naming_options
 from workspace_storage import managed_directory
 
-FORMATS = {'reference-json','wheeler-sqlite','epictree-mat'}
+FORMATS = {'reference-json','wheeler-sqlite','matlab-mat'}
 
 
 class StaleCandidateExport(ValueError):
@@ -42,7 +40,7 @@ def export_candidate(service, store, history, revision_uuid, **options):
 
 
 def _export_candidate_locked(service, store, history, revision_uuid, *, format,
-                     expected_recipe_sha256, name=None, export_date=None, actor='local-user'):
+                     expected_recipe_sha256, name=None, actor='local-user'):
     """Caller holds the app DB lock and project registration lock throughout."""
     if not isinstance(format,str) or format not in FORMATS:
         raise ValueError('Unsupported export format')
@@ -54,6 +52,7 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
         raise ValueError('Expected the saved candidate recipe SHA256')
     if name is not None and (not isinstance(name,str) or len(name)>120):
         raise ValueError('Export name must be text of at most 120 characters')
+    managed_directory(service.project_dir, 'exports')  # Reject live redirects before reads or publication.
     record=history.get(revision_uuid)
     candidate=record['recipe']
     if candidate['content_sha256']!=expected_recipe_sha256:
@@ -84,8 +83,7 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
         service._verified_source(service.manifests[source_sha])
     grouping=preview['tree']['split_order']
     fields={field['id']:field for field in preview['catalog']['fields']}
-    naming=naming_options(name,candidate.get('name') or 'Search',export_date)
-    name=naming['name']
+    name=(name or '').strip() or ((candidate.get('name') or 'Search')[:85]+' · '+now()[:19].replace('T',' '))
     scope={'kind':'explorer_candidate','revision_uuid':revision_uuid,'candidate_recipe_sha256':expected_recipe_sha256,
         'export_only_scope_uuid':scope_uuid,'protocol_workspace_created':False,
         'curation_policy':'all_candidate_epochs_included_unreviewed_no_implicit_protocol_tags_or_masks'}
@@ -103,11 +101,11 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
         snapshot['annotation_scope']=copy.deepcopy(candidate['annotation_scope'])
     snapshot=seal(snapshot)
     recipe=prepare_export(snapshot,sorted(saved),destination=format,review_policy='include_unreviewed',actor=actor,
-        options={**naming,'filters':{},'split_order':candidate['splits'],'export_scope':scope,
+        options={'name':name,'filters':{},'split_order':candidate['splits'],'export_scope':scope,
             'tree_view':{'format':'recording-tree-view','version':1,
                 'fields':[{key:fields[field][key] for key in ('id','label','path','category','components') if key in fields[field]}
                           for field in grouping]}})
-    output=managed_directory(service.project_dir, 'exports')/recipe['export_uuid']
+    output=managed_directory(service.project_dir,'exports')/recipe['export_uuid']
     output.mkdir(parents=True,exist_ok=False)
     artifact=output/'recordings.json'
     try:
@@ -129,33 +127,15 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
             from workspace_sqlite import build_sqlite_export
             artifact=output/'recordings.sqlite'
             build_sqlite_export(package,artifact)
-        elif format=='epictree-mat':
+            from workspace_external_tags import prepare_return_folder
+            prepare_return_folder(output,package)
+        elif format=='matlab-mat':
             from workspace_matlab import build_matlab_export
-            from workspace_matlab_masks import write_ugm
             matlab_dir=output/'matlab'
             matlab=build_matlab_export(service,recipe,matlab_dir,epoch_records=records)
-            write_ugm(matlab_dir/'selection.ugm',matlab['epoch_order'],[True]*len(matlab['epoch_order']),metadata={
-                'project_uuid':recipe['project_uuid'],'protocol_uuid':scope_uuid,
-                'dataset_uuid':recipe['export_uuid'],'export_uuid':recipe['export_uuid'],
-                'query_sha256':recipe['query_sha256'],'recipe_sha256':recipe['content_sha256'],
-                'mat_file_basename':'recordings','source_scope_revision':preview['source_scope']['revision']})
             write_json(matlab_dir/'export-report.json',{key:value for key,value in matlab.items()
-                if key not in {'mat_path','launch_script_path','recipe_path'}})
-            (matlab_dir/'README.txt').write_text(
-                'One-off saved search export\n\n'
-                'This bundle contains the exact saved candidate, without creating a protocol workspace.\n'
-                'All candidate epochs are included and unreviewed. No protocol tags or masks are implicitly merged.\n'
-                'Explicit scoped tag predicates and their saved evidence are in recipe.json/query_snapshot.\n'
-                'Add the current EpicTreeGUI checkout to MATLAB path, then run launch_epictree.m.\n'
-                'tree_layout.m reconstructs the saved grouping; it does not rerun the query.\n'
-                'Original H5 files must remain accessible. Traces load lazily and verify source SHA256.\n'
-                'selection.ugm is matched by UUID; Save Epoch Mask updates this extracted bundle only.\n'
-                'Returning a mask to an unrelated protocol requires an explicit matching scope; this export creates none.\n')
-            artifact=output/'epictree-bundle.zip'
-            with zipfile.ZipFile(artifact,'w',compression=zipfile.ZIP_DEFLATED) as bundle:
-                bundle.write(output/'recordings.json','recordings.json')
-                bundle.write(output/'recipe.json','recipe.json')
-                for file in sorted(matlab_dir.iterdir()):bundle.write(file,file.name)
+                if key not in {'mat_path','recipe_path'}})
+            artifact=Path(matlab['mat_path'])
         from workspace_tag_predicates import annotation_locks
         with annotation_locks(service,candidate['predicate'],extra_protocols=[scope_uuid]):
             if candidate.get('annotation_scope'):
@@ -187,8 +167,8 @@ def register_candidate_export_routes(app,service,store,history,db_lock,registrat
         try:body=request.get_json()
         except (RecursionError,OverflowError) as error:
             raise ValueError('Candidate export options exceed JSON limits') from error
-        if not isinstance(body,dict) or set(body)-{'name','export_date','format','expected_recipe_sha256'} or not {'format','expected_recipe_sha256'}<=set(body):
-            raise ValueError('Candidate export requires format and expected_recipe_sha256 only, with optional name and export_date')
+        if not isinstance(body,dict) or set(body)-{'name','format','expected_recipe_sha256'} or not {'format','expected_recipe_sha256'}<=set(body):
+            raise ValueError('Candidate export requires format and expected_recipe_sha256 only, with an optional name')
         with db_lock,registration_locks():
             try:
                 result=export_candidate(service,store,history,revision_uuid,actor=os.environ.get('USER','local-user'),**body)

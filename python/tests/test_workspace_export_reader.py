@@ -49,6 +49,19 @@ class ExportReaderTests(unittest.TestCase):
         self.epoch = self.service.ids[0]
         self.stream = self.service.rows[self.epoch]['streams'][0]['uuid']
 
+    def test_managed_recording_lazy_trace_survives_deleted_download(self):
+        from workspace_recording_files import retain_recording
+        retained = retain_recording(self.service.project_dir, self.raw, digest(self.raw))
+        self.service.sources[0]['source_path'] = str(retained)
+        self.service.manifests[digest(retained)]['source_path'] = str(retained)
+        package = self.case.package_for(self.service.ids)
+        exported = self.path.with_name('managed-copy.sqlite')
+        build_sqlite_export(package, exported)
+        self.raw.unlink()
+        result = read_export_trace(exported, self.epoch, self.stream, start=3, count=5)
+        self.assertEqual(result['values'], [3, 4, 5, 6, 7])
+        self.assertEqual(result['units'], 'pA')
+
     def test_bounded_full_rate_samples_work_without_datajoint(self):
         with patch('recording_workspace.connect', side_effect=AssertionError('No catalog connection')):
             result = read_export_trace(self.path, self.epoch, self.stream, start=3, count=5)

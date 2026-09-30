@@ -11,8 +11,10 @@ import json
 import os
 from pathlib import Path
 import sqlite3
+import sys
 import tempfile
 import threading
+import weakref
 import zlib
 from collections import OrderedDict
 from collections.abc import Mapping
@@ -21,10 +23,13 @@ from urllib.parse import unquote
 
 import workspace_tree as tree
 import workspace_predicates as predicates
+from workspace_cache_lifecycle import CacheNamespace
+from workspace_metadata_objects import Encoder as MetadataEncoder, Decoder as MetadataDecoder
 
-FORMAT = 1
+FORMAT = 3  # Shared ancestors are referenced by source revision and exact UUID.
 CHUNK_SIZE = 256
 CACHE_SIZE = 64
+DETAIL_CACHE_BYTES = 8 * 1024 * 1024
 
 
 def _json(value):
@@ -60,9 +65,24 @@ def _raw_definition(field):
 class DiskMetadataIndex:
     @classmethod
     def build(cls, path, rows, details, sources, generation, project_uuid):
+        path=Path(path)
+        namespace=CacheNamespace(path.parent,'metadata',project_uuid)
+        with namespace.writer(path.name):
+            # Another process may have finished this immutable generation while
+            # we waited. Reuse its verified inode so existing lazy readers stay
+            # usable; a reader lease prevents reclamation after this open.
+            try:
+                return cls.open(path,generation,project_uuid)
+            except (OSError,ValueError,sqlite3.DatabaseError):
+                pass
+            return cls._build(path,rows,details,sources,generation,project_uuid)
+
+    @classmethod
+    def _build(cls, path, rows, details, sources, generation, project_uuid):
         path = Path(path)
         sources = tuple(sources)
         path.parent.mkdir(parents=True, exist_ok=True)
+        builder_lease=CacheNamespace(path.parent,'metadata',project_uuid).lease(path.name)
         fd, temporary = tempfile.mkstemp(prefix=path.name+'.', suffix='.building', dir=path.parent)
         os.close(fd)
         connection = sqlite3.connect(temporary)
@@ -82,6 +102,7 @@ class DiskMetadataIndex:
                 CREATE INDEX values_reverse ON epoch_values(field_no,value_id,epoch_id);
                 CREATE TABLE sources(source_sha TEXT PRIMARY KEY,source_json TEXT NOT NULL);
             ''')
+            metadata_encoder = MetadataEncoder(connection)
             connection.executemany('INSERT INTO sources VALUES(?,?)',[(s['source_sha256'],_json(s)) for s in sources])
             row_list = list(rows.values()) if isinstance(rows, Mapping) else list(rows)
             value_cache = OrderedDict()
@@ -101,7 +122,7 @@ class DiskMetadataIndex:
                     identity = row['epoch_uuid']; datum=chunk_details[identity]
                     fingerprint = hashlib.sha256(json.dumps({'epoch':datum,'source_sha256':row.get('source_sha256')},sort_keys=True,allow_nan=False).encode()).hexdigest()
                     cursor=connection.execute('INSERT INTO epochs(epoch_uuid,source_sha,cell_uuid,row_json,detail_blob,fingerprint) VALUES(?,?,?,?,?,?)',
-                        (identity,row.get('source_sha256'),row.get('cell_uuid'),_json(row),zlib.compress(_json(datum).encode()),fingerprint))
+                        (identity,row.get('source_sha256'),row.get('cell_uuid'),_json(row),metadata_encoder.encode(row, datum),fingerprint))
                     epoch_id=cursor.lastrowid
                     links=[]
                     for key,value in values[identity].items():
@@ -131,8 +152,12 @@ class DiskMetadataIndex:
                 provisional._definitions=[dict(id=key,label=label,category=category,path=field_path) for key,(label,category,field_path) in tree.BASE_FIELDS.items()]
             provisional._catalog_cache=None;provisional._predicate_cache=None
             catalog=provisional.catalog();predicate_catalog=provisional.predicate_catalog()
-            with sqlite3.connect(temporary) as summary_connection:
-                summary_connection.executemany('INSERT INTO meta VALUES(?,?)',[('catalog',_json(catalog)),('predicate_catalog',_json(predicate_catalog))])
+            summary_connection=sqlite3.connect(temporary)
+            try:
+                with summary_connection:
+                    summary_connection.executemany('INSERT INTO meta VALUES(?,?)',[('catalog',_json(catalog)),('predicate_catalog',_json(predicate_catalog))])
+            finally:
+                summary_connection.close()
             seal=dict(format=FORMAT,generation=generation,project_uuid=project_uuid,sha256=_sha(temporary))
             seal_path=temporary+'.json'
             with open(seal_path,'w') as stream:
@@ -144,29 +169,67 @@ class DiskMetadataIndex:
             connection.close()
             for leftover in (temporary,temporary+'.json'):
                 if os.path.exists(leftover): os.unlink(leftover)
+            builder_lease.close()
 
     @classmethod
     def open(cls,path,generation,project_uuid):
-        instance=cls();instance.path=Path(path).resolve();instance.generation=generation;instance.project_uuid=project_uuid
-        before=_signature(instance.path)
-        seal=json.loads(Path(str(instance.path)+'.sha256.json').read_text())
-        if any(seal.get(k)!=v for k,v in dict(format=FORMAT,generation=generation,project_uuid=project_uuid).items()):
-            raise ValueError('Metadata index generation/project/format mismatch')
-        if _sha(instance.path)!=seal.get('sha256') or before!=_signature(instance.path):
-            raise ValueError('Metadata index checksum mismatch or changed during verification')
-        instance._signature=before;instance._catalog_cache=None;instance._predicate_cache=None
-        with instance._connect() as connection:
-            metadata={key:json.loads(value) for key,value in connection.execute('SELECT key,value FROM meta')}
-            if any(metadata.get(k)!=v for k,v in dict(format=FORMAT,generation=generation,project_uuid=project_uuid,complete=True).items()):
-                raise ValueError('Incomplete or incompatible metadata index')
-            if connection.execute('PRAGMA quick_check').fetchone()[0]!='ok': raise ValueError('Metadata index integrity check failed')
-            instance._definitions=[json.loads(row[0]) for row in connection.execute('SELECT definition_json FROM fields ORDER BY field_no')]
-            instance._catalog_cache=metadata.get('catalog');instance._predicate_cache=metadata.get('predicate_catalog')
-            instance._epoch_count=connection.execute('SELECT COUNT(*) FROM epochs').fetchone()[0]
-        instance.details=_Details(instance)
-        return instance
+        location=Path(path)
+        if location.is_symlink():raise ValueError('Derived metadata indexes cannot be symbolic links')
+        namespace=CacheNamespace(location.parent,'metadata',project_uuid)
+        instance=cls();instance.path=location.resolve();instance.generation=generation;instance.project_uuid=project_uuid
+        instance._lease=namespace.lease(location.name)
+        instance._closed=False
+        try:
+            before=_signature(instance.path)
+            seal=json.loads(Path(str(instance.path)+'.sha256.json').read_text())
+            if any(seal.get(k)!=v for k,v in dict(format=FORMAT,generation=generation,project_uuid=project_uuid).items()):
+                raise ValueError('Metadata index generation/project/format mismatch')
+            if _sha(instance.path)!=seal.get('sha256') or before!=_signature(instance.path):
+                raise ValueError('Metadata index checksum mismatch or changed during verification')
+            instance._signature=before;instance._catalog_cache=None;instance._predicate_cache=None
+            with instance._connect() as connection:
+                metadata={key:json.loads(value) for key,value in connection.execute('SELECT key,value FROM meta')}
+                if any(metadata.get(k)!=v for k,v in dict(format=FORMAT,generation=generation,project_uuid=project_uuid,complete=True).items()):
+                    raise ValueError('Incomplete or incompatible metadata index')
+                if connection.execute('PRAGMA quick_check').fetchone()[0]!='ok': raise ValueError('Metadata index integrity check failed')
+                instance._definitions=[json.loads(row[0]) for row in connection.execute('SELECT definition_json FROM fields ORDER BY field_no')]
+                instance._catalog_cache=metadata.get('catalog');instance._predicate_cache=metadata.get('predicate_catalog')
+                instance._epoch_count=connection.execute('SELECT COUNT(*) FROM epochs').fetchone()[0]
+            instance._detail_cache=OrderedDict();instance._detail_lock=threading.RLock();instance._details_reference=None
+            instance._detail_cache_costs={};instance._detail_cache_bytes=0
+            instance._metadata_decoder=MetadataDecoder()
+            return instance
+        except BaseException:
+            instance.close();raise
+
+    @property
+    def details(self):
+        # An exported lazy detail view pins this index. The index only holds a
+        # weak reference back to the wrapper, avoiding a reader-lifetime cycle.
+        self._check()
+        with self._detail_lock:
+            result=self._details_reference() if self._details_reference is not None else None
+            if result is None:
+                result=_Details(self);self._details_reference=weakref.ref(result)
+            return result
+
+    def publish(self):
+        """Mark current only after the owning service publishes a valid refresh."""
+        self._check()
+        return CacheNamespace(self.path.parent,'metadata',self.project_uuid).publish([self.path.name])
+
+    def close(self):
+        self._closed=True
+        lease=getattr(self,'_lease',None)
+        if lease is not None:lease.close();self._lease=None
+        cache=getattr(self,'_detail_cache',None)
+        if cache is not None:cache.clear()
+        self._detail_cache_costs={};self._detail_cache_bytes=0
+        decoder=getattr(self,'_metadata_decoder',None)
+        if decoder is not None:decoder.clear()
 
     def _check(self):
+        if getattr(self,'_closed',False):raise ValueError('Metadata index reader is closed')
         if _signature(self.path)!=self._signature: raise ValueError('Metadata index changed; reopen a verified generation')
 
     @contextmanager
@@ -211,7 +274,7 @@ class DiskMetadataIndex:
                 row=json.loads(raw);rows[identity]=row;fingerprints[identity]=fingerprint
                 datum=None
                 if not lazy_details:
-                    datum=json.loads(zlib.decompress(record[3]));details[identity]=datum
+                    datum=self._metadata_decoder.decode(connection,row,record[3]);details[identity]=datum
                 cell_uuid=row.get('cell_uuid')
                 if cell_uuid in cells: continue
                 if datum is None: datum=self.details[identity]
@@ -294,6 +357,26 @@ class DiskMetadataIndex:
         return result
 
     def match(self,predicate,ids=None):
+        # Acquisition UUID equality has a dedicated unique index. Validation
+        # needs the known field type, not every recorded UUID decoded twice.
+        # Avoid constructing a project-wide temporary scope for a single ID.
+        epoch_types=next((field['types'] for field in (self._predicate_cache or {}).get('fields',[])
+                          if field['id']=='epoch'),None)
+        if (isinstance(predicate,dict) and set(predicate)=={'field','operator','value'}
+                and predicate.get('field')=='epoch' and predicate.get('operator')=='eq'
+                and epoch_types in ([],['string'])):
+            with self._connect([]) as connection:
+                representatives={'type':{'epoch':''}} if epoch_types else {}
+                validated=predicates.validate(predicate,{'fields':self._definitions},representatives)
+                value=validated['value']
+                if not isinstance(value,str):
+                    return validated,[]
+                found=connection.execute('SELECT epoch_uuid FROM epochs WHERE epoch_uuid=?',(value,)).fetchone()
+                if found is None:
+                    return validated,[]
+                if ids is not None and found[0] not in ids:
+                    return validated,[]
+                return validated,[found[0]]
         with self._connect(ids) as connection:
             referenced=set();pending=[predicate];visited=0
             while pending and visited <= predicates.MAX_NODES:
@@ -393,7 +476,7 @@ class _Values(Mapping):
 
 
 class _Details(Mapping):
-    def __init__(self,index): self.index=index;self.cache=OrderedDict();self.lock=threading.RLock()
+    def __init__(self,index): self.index=index;self.cache=index._detail_cache;self.lock=index._detail_lock
     def __len__(self):
         self.index._check();return self.index._epoch_count
     def __iter__(self): return iter(self.index.values())
@@ -402,10 +485,21 @@ class _Details(Mapping):
             self.index._check()
             if key not in self.cache:
                 with self.index._connect([]) as connection:
-                    row=connection.execute('SELECT detail_blob FROM epochs WHERE epoch_uuid=?',(key,)).fetchone()
+                    row=connection.execute('SELECT row_json,detail_blob FROM epochs WHERE epoch_uuid=?',(key,)).fetchone()
                     if row is None: raise KeyError(key)
-                    self.cache[key]=json.loads(zlib.decompress(row[0]))
-                    if len(self.cache)>CACHE_SIZE: self.cache.popitem(last=False)
+                    datum,cost,reusable=self.index._metadata_decoder.decode(connection,json.loads(row[0]),row[1],
+                        shared_objects=True,cache_receipt=True)
+                    cost+=sys.getsizeof(key)+256
+                    # Oversized uncached ancestors must not be multiplied by a
+                    # second, count-only epoch cache. Charge the full reachable
+                    # detail graph conservatively, including shared ancestors.
+                    if not reusable or cost>DETAIL_CACHE_BYTES:
+                        return copy.deepcopy(datum)
+                    while self.cache and (len(self.cache)>=CACHE_SIZE or self.index._detail_cache_bytes+cost>DETAIL_CACHE_BYTES):
+                        removed,_=self.cache.popitem(last=False)
+                        self.index._detail_cache_bytes-=self.index._detail_cache_costs.pop(removed)
+                    self.cache[key]=datum;self.index._detail_cache_costs[key]=cost
+                    self.index._detail_cache_bytes+=cost
             self.cache.move_to_end(key);return copy.deepcopy(self.cache[key])
 
 class _ScopedDetails(Mapping):
@@ -432,7 +526,7 @@ def _suggest(fields,index,ids,family):
     for field in fields:
         field.update(suggested_rank=None,suggestion_reason='')
         count=field['recorded_distinct_count'];high=count>24 or count>max(5,len(ids)*.25);field['high_cardinality']=high
-        if not field['varying'] or high or field.get('grouping_role')=='technical' or field['id'] in {'block','block time','group'}: continue
+        if not field['varying'] or high or field.get('grouping_role')=='technical' or field['id'] in {'epoch','block','block time','group'}: continue
         if field['id'].rsplit('/',1)[-1].lower() in {'seed','uuid','id'}: continue
         candidates.append(field)
     candidates.sort(key=lambda f:(priority.get(f['id'],20 if f['category']=='Parameters' else 30),not f.get('varies_within_cell',False),f['missing_count'],f['recorded_distinct_count'],f['id']))

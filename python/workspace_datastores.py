@@ -45,6 +45,51 @@ def sha(value):
     return value
 
 
+def metadata_file_size(manifest, project_dir):
+    """Stat the registered parsed-metadata artifact, never its contents or SQL."""
+    raw = manifest.get('metadata_path')
+    if not raw:
+        return None, 'not_recorded', None
+    try:
+        path = Path(raw).resolve()
+        if not path.is_relative_to((Path(project_dir) / 'imports').resolve()):
+            return None, 'outside_imports', None
+        info = path.stat()
+        if not path.is_file():
+            return None, 'missing', str(path)
+        return info.st_size, 'available', str(path)
+    except FileNotFoundError:
+        return None, 'missing', str(path)
+    except (OSError, RuntimeError, ValueError, TypeError):
+        return None, 'unreadable', None
+
+
+def storage_summary(rows):
+    """Registered source bytes plus parsed metadata; deduplicate registered paths."""
+    def total(size_key, path_key):
+        seen, known, missing = set(), 0, 0
+        for row in rows:
+            key = row.get(path_key) or row['source_sha256']
+            if key in seen:
+                continue
+            seen.add(key)
+            size = row.get(size_key)
+            if isinstance(size, int) and size >= 0:
+                known += size
+            else:
+                missing += 1
+        return {'known_bytes': known, 'size_bytes': known if not missing else None,
+                'unavailable_files': missing, 'files': len(seen)}
+    recordings = total('size_bytes', 'source_path')
+    metadata = total('metadata_size_bytes', 'metadata_path')
+    complete = recordings['unavailable_files'] + metadata['unavailable_files'] == 0
+    return {'recordings': recordings, 'parsed_metadata': metadata,
+            'combined': {'known_bytes': recordings['known_bytes'] + metadata['known_bytes'],
+                         'size_bytes': recordings['known_bytes'] + metadata['known_bytes'] if complete else None,
+                         'unavailable_files': recordings['unavailable_files'] + metadata['unavailable_files']},
+            'scope': 'All registered H5 source files and their parsed metadata artifacts, including archived sources. Excludes MySQL storage, caches, exports, logs, and unregistered files.'}
+
+
 def migrate_query_eligibility(dj, event_table):
     """Crash-resumable schema upgrade preserving legacy archived exclusions.
 
@@ -294,9 +339,11 @@ class DataStores:
                 file_status = 'missing'
             except OSError:
                 file_status = 'unreadable'
+            metadata_size, metadata_status, metadata_path = metadata_file_size(manifest, self.service.project_dir)
             imported_at = imports.get(identity) or manifest.get('imported_at')
             results.append({'source_sha256': identity, 'filename': source.get('filename', path.name),
                 'source_path': str(path), 'file_status': file_status, 'size_bytes': size,
+                'metadata_size_bytes': metadata_size, 'metadata_file_status': metadata_status, 'metadata_path': metadata_path,
                 'checked_at': checked_at, 'check_kind': 'filesystem_availability_and_size',
                 'recorded_size_bytes': manifest.get('source_size'), 'modified_at': modified,
                 'imported_at': imported_at, 'validated_at': manifest.get('validated_at'),
@@ -313,7 +360,7 @@ class DataStores:
                 'parser': {key: manifest[key] for key in ('parser_path', 'parser_sha256', 'parser_version',
                     'adapter_version', 'adapter_sha256', 'metadata_sha256', 'status', 'warnings') if key in manifest} if detail_source is not None else None,
                 'state': self._state(states.get(identity)), 'scope_note': SCOPE_NOTE})
-        return {'data_stores': results, 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat(), 'counts': {'total': len(results),
+        return {'data_stores': results, 'storage': storage_summary(results), 'checked_at': dt.datetime.now(dt.timezone.utc).isoformat(), 'counts': {'total': len(results),
             'active': sum(not row['state']['archived'] for row in results),
             'archived': sum(row['state']['archived'] for row in results),
             'frozen': sum(row['state']['frozen'] for row in results),

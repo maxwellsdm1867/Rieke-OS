@@ -309,3 +309,37 @@ class DataStoreTests(unittest.TestCase):
         transitions = [row['payload'] for row in self.case.events.rows]
         self.assertEqual([row['new_query_eligibility_changed'] for row in transitions],
                          [False, True, False, False, False, True])
+
+class StorageSizeTests(unittest.TestCase):
+    def test_registered_metadata_size_is_stat_only_and_restricted_to_imports(self):
+        import tempfile
+        from workspace_datastores import metadata_file_size
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            metadata = root / 'imports' / 'metadata.json'
+            metadata.parent.mkdir()
+            metadata.write_bytes(b'parsed metadata')
+            with patch.object(Path, 'read_bytes', side_effect=AssertionError('No content reads')):
+                size, status, path = metadata_file_size({'metadata_path': str(metadata)}, root)
+            self.assertEqual(size, 15)
+            self.assertEqual(status, 'available')
+            self.assertEqual(path, str(metadata.resolve()))
+            self.assertEqual(metadata_file_size({}, root)[:2], (None, 'not_recorded'))
+            self.assertEqual(metadata_file_size({'metadata_path': str(root / 'outside')}, root)[:2], (None, 'outside_imports'))
+            metadata.unlink()
+            self.assertEqual(metadata_file_size({'metadata_path': str(metadata)}, root)[:2], (None, 'missing'))
+
+    def test_combined_sizes_are_deduplicated_and_missing_values_stay_partial(self):
+        from workspace_datastores import storage_summary
+        rows = [{'source_sha256': 'a', 'source_path': '/a.h5', 'size_bytes': 100,
+                 'metadata_path': '/a.json', 'metadata_size_bytes': 20},
+                {'source_sha256': 'b', 'source_path': '/b.h5', 'size_bytes': 200,
+                 'metadata_path': '/a.json', 'metadata_size_bytes': 20}]
+        result = storage_summary(rows)
+        self.assertEqual(result['combined']['size_bytes'], 320)
+        self.assertEqual(result['parsed_metadata']['files'], 1)
+        rows[1]['size_bytes'] = None
+        result = storage_summary(rows)
+        self.assertIsNone(result['combined']['size_bytes'])
+        self.assertEqual(result['combined']['known_bytes'], 120)
+        self.assertEqual(result['combined']['unavailable_files'], 1)

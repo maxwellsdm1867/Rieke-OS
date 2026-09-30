@@ -65,6 +65,20 @@ class RootBoundaryTests(unittest.TestCase):
         self.assertEqual(note.read_text(), 'Preserve this file')
         self.assertTrue((second / MANIFEST).is_file())
 
+    def test_explicit_project_folder_under_workspace_preserves_root_and_cannot_nest_in_project(self):
+        from workspace_projects import create_project_at
+        preference = self.app / '.rieke-runtime/workspace-selection.json'
+        original = preference.read_bytes()
+        chosen = self.root / 'Organization' / 'Exact study folder'
+        created = create_project_at(str(chosen), 'Exact study', code_root=self.app)
+        self.assertEqual(Path(created['path']), chosen)
+        self.assertEqual(preference.read_bytes(), original)
+        self.assertFalse((chosen.parent / MANIFEST).exists())
+        rejected = chosen / 'imports' / 'Nested project'
+        with self.assertRaisesRegex(ValueError, 'parent workspace'):
+            create_project_at(str(rejected), 'Nested project', code_root=self.app)
+        self.assertFalse(rejected.exists())
+
     def test_missing_saved_root_not_recreated_and_explicit_override_works(self):
         from workspace_bootstrap import runtime_paths
         moved = self.root.with_name('Moved workspace')

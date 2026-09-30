@@ -1,4 +1,4 @@
-"""Exact frozen workspace selection → existing EpicTreeGUI MAT v1 loader.
+"""Exact frozen workspace selection as standard MATLAB MAT data.
 
 Waveforms stay in H5. Numeric `id` fields are display ordinals; `h5_uuid` is the
 unchanged acquisition identity. Exact metadata/query JSON accompanies convenient
@@ -19,7 +19,25 @@ from field_mapper import build_response_struct, build_stimulus_struct, flatten_j
 from workspace_tag_exchange import frozen_annotation_entries, frozen_document
 from workspace_recipes import verify, parse_splits, SPLIT_FIELDS
 from workspace_tree import catalog, value_key, field_value_order, materialize_combinations
-from workspace_tree_code import matlab_tree_command, matlab_split_fields
+
+MATLAB_DATA_GUIDE = """Rieke OS MATLAB data export
+
+Load the standard MAT file with MATLAB, Octave, or a compatible MAT reader:
+    data = load('recordings.mat');
+    experiment = data.experiments(1);
+    epoch = experiment.cells(1).epoch_groups(1).epoch_blocks(1).epochs(1);
+    response = epoch.responses(1);
+    samples = h5read(response.h5_file, [response.h5_path '/data']);
+
+Waveforms remain in the original H5 files at their recorded paths. H5 compound
+datasets retain quantity and units; read samples.quantity for numeric values.
+Check each source_sha256 before reading a moved or changed recording.
+Numeric IDs are display ordinals. h5_uuid preserves the acquisition identity.
+metadata.recipe_json, source_metadata_json and workspace_tags_json retain the
+exact frozen query, source facts, tags, author profiles and export provenance.
+No plotting application, GUI, generated script or MATLAB path setup is needed.
+This file is a frozen data export; changing it does not update project decisions.
+"""
 
 
 def _json(value):
@@ -100,7 +118,7 @@ def _grouping_order(rows, values, fields):
 
 
 def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
-    """Write recordings.mat + launch_epictree.m for exact recipe['epochs'].
+    """Write recordings.mat and provenance JSON for exact recipe['epochs'].
 
     Caller supplies frozen reference-package epoch_records to retain protocol
     tags. This function does not query live curation or mutate the database.
@@ -257,7 +275,7 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
             'tags': _structs([]), 'cells': _structs(cell_items)})
     # Source timestamps include microseconds in a format MATLAB's datenum does
     # not reliably parse. Freeze exact UI sequencing as UUIDs, independently of
-    # MAT hierarchy order (which is also the UGM positional/index order).
+    # MAT acquisition hierarchy order.
     epoch_sequence = [row['epoch_uuid'] for row in sorted(rows, key=lambda row:
         (row['date'], row['start_time'][11:], row['epoch_uuid']))]
     metadata = {'created_date': recipe['created_at'], 'data_source': 'Recording workspace; lazy H5 references',
@@ -270,27 +288,12 @@ def build_matlab_export(service, recipe, output_dir, *, epoch_records=None):
     buffer = io.BytesIO()
     scipy.io.savemat(buffer, {'format_version': '1.0', 'metadata': metadata, 'experiments': _structs(experiments)},
                      do_compression=True, long_field_names=True, oned_as='row')
-    root = str(Path(__file__).resolve().parents[1]).replace("'", "''")
-    command = matlab_tree_command(order)
-    split_literal = matlab_split_fields(order)
-    script = f"""% Generated frozen selection; edit EpicTreeGUI location if moving computers.
-epicTreeRoot = '{root}';
-addpath(genpath(epicTreeRoot));
-exportFolder = fileparts(mfilename('fullpath'));
-addpath(exportFolder);
-% Resolve readable split IDs through this bundle's verified field mapping.
-[tree, gui] = launchWorkspaceTree(fullfile(exportFolder, 'recordings.mat'), {split_literal});
-"""
-    helper = Path(__file__).resolve().parents[1] / 'src' / 'tree' / 'launchWorkspaceTree.m'
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    files = {'recordings.mat': buffer.getvalue(), 'launch_epictree.m': script.encode(),
+    files = {'recordings.mat': buffer.getvalue(),
              'matlab_recipe.json': (_json(recipe) + '\n').encode(),
-             'launchWorkspaceTree.m': helper.read_bytes(),
-             'tree_layout.m': ('% Run from this extracted EpicTreeGUI bundle.\n'+command+'\n').encode()}
+             'README.txt': MATLAB_DATA_GUIDE.encode()}
     files['annotations.json'] = (_json(frozen_document(frozen_tag_records, service.project['project_uuid'])) + '\n').encode()
-    for helper_name in ('readWorkspaceTags', 'validateWorkspaceTags', 'workspaceTag', 'writeWorkspaceTags'):
-        files[helper_name + '.m'] = (helper.parent / (helper_name + '.m')).read_bytes()
     if any((output / name).exists() for name in files):
         raise ValueError('MATLAB export files already exist; refusing overwrite')
     written = []
@@ -304,6 +307,6 @@ addpath(exportFolder);
         for path in written:
             path.unlink()
         raise
-    return {'mat_path': str(output / 'recordings.mat'), 'launch_script_path': str(output / 'launch_epictree.m'),
+    return {'mat_path': str(output / 'recordings.mat'),
             'recipe_path': str(output / 'matlab_recipe.json'), 'epoch_count': len(ids), 'epoch_order': epoch_order,
-            'source_revisions': sorted(used_sources), 'split_mapping': mapping, 'matlab_command': command, 'warnings': sorted(warnings)}
+            'source_revisions': sorted(used_sources), 'split_mapping': mapping, 'warnings': sorted(warnings)}

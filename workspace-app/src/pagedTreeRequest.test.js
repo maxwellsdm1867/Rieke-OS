@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {treePageRequest,treeNavigationSnapshot,treeNavigationStart} from './pagedTreeRequest.js';
+import {treePageRequest,treeNavigationSnapshot,treeNavigationStart,treePreviewScope} from './pagedTreeRequest.js';
 
 test('bounded tree pages preserve filters and opaque paths without posting full memberships',()=>{
   const filters={cell_type:'OFF parasol'};
@@ -37,4 +37,16 @@ test('tree return preserves scroll locally without sending it into scientific pa
   assert.equal(Object.hasOwn(treePageRequest({protocolId:'p'},restored),'scrollTop'),false);
   assert.equal(treeNavigationStart({...page,scrollTop:-1},'date,cell').scrollTop,0);
   assert.equal(treeNavigationStart({...page,scrollTop:Infinity},'date,cell').scrollTop,0);
+});
+
+
+test('compact preview revisions stay paired with their own layouts during rapid designer changes',()=>{
+ const predicate={all:[]},old={tree_revision:'a'.repeat(64),tree:{count:173,split_order:['date','cell']}};
+ const pending={predicate,splits:'date,cell,group,block',...treePreviewScope(old)};
+ const body=treePageRequest(pending,{reset:true});
+ assert.equal(body.splits,'date,cell');
+ assert.equal(body.revision,old.tree_revision);
+ const flat={tree_revision:'b'.repeat(64),tree:{count:173,split_order:[]}};
+ const refreshed=treePageRequest({...pending,...treePreviewScope(flat)},{reset:true});
+ assert.equal(refreshed.splits,'');assert.equal(refreshed.revision,flat.tree_revision);
 });

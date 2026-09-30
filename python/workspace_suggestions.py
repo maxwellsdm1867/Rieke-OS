@@ -161,6 +161,22 @@ class ProtocolSuggestions:
             else:
                 status = 'pending'
             item['status'] = status
-        return {'suggestions': list(latest.values()),
+        approvals = {}
+        for event in (self.history.Event & {'project_uuid': self.project_uuid, 'action': 'protocol_dataset_bound'}).to_dicts():
+            payload = event.get('payload') or {}
+            if payload.get('reason') == 'pre_import_baseline_freeze':
+                continue
+            key = (payload.get('protocol_uuid'), payload.get('revision_uuid'))
+            approvals[key] = event.get('occurred_at')
+        approved_history = []
+        seen = set()
+        for row in rows:
+            item = copy.deepcopy(row['summary'])
+            key = (item['protocol_uuid'], item['candidate_revision_uuid'])
+            if key in approvals and key not in seen:
+                item.update(status='applied', approved_at=str(approvals[key]))
+                approved_history.append(item)
+                seen.add(key)
+        return {'approved_history': approved_history, 'suggestions': list(latest.values()),
                 'counts': {status: sum(item['status'] == status for item in latest.values())
                            for status in ('pending', 'applied', 'superseded', 'stale')}}

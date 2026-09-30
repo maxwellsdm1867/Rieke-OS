@@ -60,7 +60,7 @@ multi-user accounts.
 | Format | Use |
 | --- | --- |
 | SQLite | Query the selected cells, groups, blocks, epochs, parameters, annotations and H5 stream references using standard SQLite tools, including compatible Wheeler tools. |
-| MATLAB bundle | Open the selected recording structure in the optional EpicTreeGUI companion. The bundle includes metadata, query/tree information, selection mask and launch/tag helpers. |
+| MATLAB data (.mat) | Load a standalone MAT data file with standard MATLAB `load`; inspect recorded metadata, frozen annotations/selection and provenance, and use lazy H5 references with `h5read`. No GUI or launcher is included. |
 | Reference JSON | Inspect the frozen query, exact epoch membership, metadata and source pointers in a portable structured document. |
 
 New download names use `Protocol_Name_YYYY-MM-DD.ext` by default and can be
@@ -69,27 +69,23 @@ exports retain references to waveform data: the original H5 recordings must
 remain accessible. A SQLite export contains recording-workspace metadata, not
 precomputed SRM fits or a replacement for a fitted-analysis database.
 
-Supported tag JSON and UUID-based MATLAB `.ugm` selection masks can be imported
-back into a project. A MATLAB mask is matched to its completed export so its
-scope is explicit. Imports preserve decisions outside that export's membership.
+Supported UUID-based tag JSON and Recording Selection Mask v1 JSON can be
+imported explicitly. Mask imports require the exact protocol membership and
+source revisions. Historical MATLAB bundles remain readable as legacy artifacts;
+new exports are data-only.
 
-## Browser app and MATLAB companion
+## Standalone Rieke OS application
 
-The primary application is a React browser interface backed by a local Python
-service, the RetinAnalysis parser, and DataJoint/MySQL catalogs. The installer
-manages its runtime. Each project has separate storage, and the app listens on
-localhost. It requires no LLM account, API key or Docker for new projects.
+The application is a React interface hosted by its local Python service and
+DataJoint/MySQL catalog. The desktop app bundles its scientific runtime and owns
+its service lifetime. Source setup remains an optional developer workflow. Both
+provide Rieke OS web plotting and curation without a MATLAB installation.
 
-The repository also includes the MATLAB EpicTreeGUI and tree tools. Their code
-provides hierarchical selection and analysis helpers such as receptive-field
-analysis, spike detection and baseline correction. Those helpers run in MATLAB;
-they are distinct from the browser's recorded-trace and QC displays. MATLAB is
-optional for the browser workflow, and requires its own installation to execute.
-
-Figure linking is marked planned in the browser. Automatic migration of moved
-projects, an internet-facing team service, and a signed offline desktop installer
-are outside the current release. The verified installation platform is Apple
-Silicon macOS; the quick start records the other platform limits.
+EpicTreeGUI remains in its separate repository; its MATLAB GUI, plotting helpers,
+launchers and UGM interaction are not part of this application. Figure linking
+remains planned. Apple Silicon is the current desktop testing target; signed
+production, independent clean-machine and other-platform qualification are
+tracked separately in the release procedure.
 
 ## Where these behaviors live in the code
 
@@ -102,7 +98,6 @@ Silicon macOS; the quick start records the other platform limits.
 | Cell characterization | [CellQC UI](../workspace-app/src/components/CellQC.jsx), [QC methods](../python/workspace_qc.py) |
 | Curation and authored tags | [curation](../python/workspace_curation.py), [annotations](../python/workspace_annotations.py), [tag exchange](../python/workspace_tag_exchange.py) |
 | Export provenance and formats | [recipes](../python/workspace_recipes.py), [SQLite](../python/workspace_sqlite.py), [MATLAB](../python/workspace_matlab.py), [query exports](../python/workspace_candidate_exports.py) |
-| Optional MATLAB analysis | [tree tools](../src/tree/epicTreeTools.m), [analysis helpers](../src/analysis/epicAnalysis.m) |
 
 Start with the [quick start](RIEKE_OS_QUICK_START.md) to install the app and work
 through a real recording. The [validation ledger](dev/CLIENT_VALIDATION_MATRIX.md)

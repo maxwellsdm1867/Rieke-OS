@@ -1,3 +1,5 @@
+> Historical development evidence: MATLAB GUI/UGM integration and older installation or update claims below are superseded by the Rieke-only application profile. Current instructions are in [release operations](releasing-rieke-os.md) and [quick start](../RIEKE_OS_QUICK_START.md); this ledger does not certify the current package.
+
 # Scientific UI polish audit
 
 Date: 2026-09-27. This is an implementation and adversarial review record, not a claim of complete accessibility certification or scientific validation. No acquisition records, curation decisions, candidate revisions or dataset bindings were written during this audit.

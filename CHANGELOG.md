@@ -1,5 +1,27 @@
 # Rieke Lab OS changelog
 
+## 0.1.3 - 2026-09-30
+
+This desktop candidate uses the explicit unsigned testing channel, separate
+from signed production distribution.
+
+### Added
+- Independent Rieke OS source and explicit runtime application profile; MATLAB data export remains, while EpicTreeGUI/MATLAB GUI, plotting, launchers and UGM interaction are removed.
+- Self-contained Apple Silicon desktop packaging with private Python and MySQL runtimes, folder selection, controlled installation, and testing-channel updates.
+- Persistent native tag membership and autocomplete dictionaries, with Unicode prefix indexes, maintained usage counts, and exact author attribution.
+- Transactional annotation history, incremental current-state recovery, and verified index migration and reuse.
+
+### Improved
+- Small annotation batches acknowledge durable saves promptly; cell tags inherit by cell UUID without copying annotations into every epoch.
+- Large-project browsing, selection, metadata storage, cache validation, and protocol-scoped curation preserve exact scientific identities.
+- Portable project handling, folder-boundary checks, draft preservation, and desktop service lifecycle validation.
+
+At 100,000 synthetic epochs, tag autocomplete measured 21–26 ms. Initial native
+index preparation took about two minutes; the paired two-save/filter API sequence
+measured 192 ms. See the [reproducible benchmark report](docs/dev/scale-audit-2026-09-29/native-tag-sequence-results.md)
+for scope, first-use measurements, and limitations.
+
+
 ## 0.1.2 — 2026-09-28
 
 - Reject workspace roots inside an existing project or workspace before writing files.

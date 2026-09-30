@@ -16,7 +16,6 @@ from scipy.io import loadmat
 
 import test_workspace_api as api_fixture
 from workspace_candidate_exports import register_candidate_export_routes,candidate_scope_uuid
-from workspace_matlab_masks import read_ugm
 from workspace_recipes import checksum
 from test_workspace_matlab import epochs as matlab_epochs
 
@@ -56,19 +55,45 @@ class CandidateExportTests(unittest.TestCase):
         return self.client.post('/api/explore/revisions/'+candidate['revision_uuid']+'/exports',json={
             'format':format,'expected_recipe_sha256':candidate['recipe']['full_recipe_sha256'],**options},headers=self.headers)
 
-    def test_query_export_download_uses_custom_name_and_recorded_local_date(self):
-        candidate=self.save()
-        response=self.export(candidate,'wheeler-sqlite',name='Client trial',export_date='2026-09-28')
+    def test_local_search_exclusion_preserves_visible_query_and_exports_included_uuid(self):
+        base = {'field':'protocol','operator':'eq','value':'example'}
+        before = copy.deepcopy((self.case.curation.rows,self.case.protocol_bindings.rows))
+        visible = self.save(base)
+        self.assertEqual(visible['recipe']['epoch_count'],2)
+        excluded, included = self.service.ids
+        candidate = self.save({'all':[base,{'field':'epoch','operator':'not_in','value':[excluded]}]})
+        self.assertEqual(candidate['recipe']['epoch_count'],1)
+        response = self.export(candidate,'wheeler-sqlite')
         self.assertEqual(response.status_code,201,response.get_json())
-        result=response.get_json()
-        self.assertEqual(result['name'],'Client trial')
-        download=self.client.get(result['download_url'])
-        self.assertEqual(download.headers['Content-Disposition'],
-                         'attachment; filename=Client_trial_2026-09-28.sqlite')
-        record=self.store.get_dataset_revision(result['dataset_uuid'])
-        self.assertEqual(record['recipe']['options']['download_naming'],{'version':1,'date':'2026-09-28'})
-        self.assertEqual(download.data[:16],b'SQLite format 3\x00')
-        download.close()
+        saved = self.store.get_dataset_revision(response.get_json()['dataset_uuid'])
+        self.assertEqual([row['uuid'] for row in saved['recipe']['epochs']],[included])
+        self.assertEqual(self.case.explorer_history.get(visible['revision_uuid'])['recipe']['predicate'],base)
+        self.assertEqual((self.case.curation.rows,self.case.protocol_bindings.rows),before)
+
+    def test_many_local_exclusions_in_bounded_literals_preserve_exact_membership(self):
+        excluded = [self.service.ids[0]] + [str(uuid.uuid4()) for _ in range(250)]
+        clauses = [{'field':'epoch','operator':'not_in','value':excluded[offset:offset+64]}
+                   for offset in range(0,len(excluded),64)]
+        candidate = self.save({'all':[{'field':'protocol','operator':'eq','value':'example'},*clauses]})
+        self.assertEqual(candidate['recipe']['epoch_count'],1)
+        response = self.export(candidate,'wheeler-sqlite')
+        self.assertEqual(response.status_code,201,response.get_json())
+        saved = self.store.get_dataset_revision(response.get_json()['dataset_uuid'])
+        self.assertEqual([row['uuid'] for row in saved['recipe']['epochs']],self.service.ids[1:])
+
+    def test_focused_search_epoch_uuid_intersects_query_and_exports_one_row(self):
+        key = self.service.ids[1]  # Both rows have the same block epoch number.
+        candidate = self.save({'all': [
+            {'field': 'protocol', 'operator': 'eq', 'value': 'example'},
+            {'field': 'epoch', 'operator': 'eq', 'value': key}]})
+        self.assertEqual(candidate['recipe']['epoch_count'], 1)
+        response = self.export(candidate, 'wheeler-sqlite')
+        self.assertEqual(response.status_code, 201, response.get_json())
+        saved = self.store.get_dataset_revision(response.get_json()['dataset_uuid'])
+        self.assertEqual([row['uuid'] for row in saved['recipe']['epochs']], [key])
+        self.assertEqual(response.get_json()['epoch_count'], 1)
+        self.assertFalse(self.case.curation.rows)
+        self.assertFalse(self.case.protocol_bindings.rows)
 
     def test_sqlite_exact_candidate_ignores_unrelated_protocol_masks_and_keeps_history(self):
         key=self.service.ids[0]
@@ -84,6 +109,9 @@ class CandidateExportTests(unittest.TestCase):
         self.assertEqual(result['epoch_count'],1)
         self.assertEqual((self.service.rows,self.service.details,self.service.protocols,self.case.curation.rows,self.case.protocol_bindings.rows),before)
         record=self.store.get_dataset_revision(result['dataset_uuid'])
+        returned=json.loads((Path(record['artifact_path']).parent/'annotation-return.json').read_text())
+        self.assertEqual(returned['export_uuid'],result['dataset_uuid'])
+        self.assertEqual({entry['target_uuid'] for entry in returned['targets'] if entry['target_kind']=='epoch'},{key})
         self.assertNotIn(record['protocol_uuid'],self.service.protocols)
         self.assertEqual(record['protocol_uuid'],candidate_scope_uuid(self.project,candidate['revision_uuid']))
         with sqlite3.connect('file:'+record['artifact_path']+'?mode=ro',uri=True) as db:
@@ -120,36 +148,43 @@ class CandidateExportTests(unittest.TestCase):
         history=self.client.get('/api/exports').get_json()['exports']
         self.assertEqual(history[0]['export_scope']['kind'],'explorer_candidate')
 
-    def test_matlab_bundle_roundtrip_mask_and_generated_script(self):
+    def test_matlab_data_download_preserves_exact_membership_without_gui_or_mask_files(self):
         candidate=self.save()
-        response=self.export(candidate,'epictree-mat')
+        response=self.export(candidate,'matlab-mat')
         self.assertEqual(response.status_code,201,response.get_json())
         result=response.get_json()
         self.assertTrue(result['name'])
         download=self.client.get(result['download_url'])
-        bundle=zipfile.ZipFile(io.BytesIO(download.data));download.close()
-        self.addCleanup(bundle.close)
-        data=loadmat(io.BytesIO(bundle.read('recordings.mat')),simplify_cells=True)
+        data=loadmat(io.BytesIO(download.data),simplify_cells=True);download.close()
         self.assertEqual({epoch['h5_uuid'] for epoch in matlab_epochs(data)},set(self.service.ids))
-        self.assertIn('launchWorkspaceTree',bundle.read('tree_layout.m').decode())
-        mask=Path(self.case.temp.name)/'roundtrip.ugm';mask.write_bytes(bundle.read('selection.ugm'))
-        loaded=read_ugm(mask,expected_epoch_uuids=self.service.ids)
-        self.assertTrue(all(loaded['mask']))
-        recipe=json.loads(bundle.read('recipe.json'))
+        self.assertEqual(result['format'],'matlab-mat')
+        root=Path(result['artifact_path']).parent
+        self.assertFalse(any(file.suffix in {'.m','.ugm'} for file in root.rglob('*')))
+        recipe=json.loads(data['metadata']['recipe_json'])
+        self.assertEqual(recipe['destination'],'matlab-mat')
         self.assertEqual(recipe['options']['export_scope']['revision_uuid'],candidate['revision_uuid'])
         self.assertEqual(self.case.curation.rows,[])
         self.assertEqual(self.case.protocol_bindings.rows,[])
 
     def test_stale_metadata_and_candidate_receipt_reject_before_publication(self):
+        # App setup creates export-folder documentation; rejection must preserve
+        # that baseline and publish no additional files or directories.
+        export_root=self.service.project_dir/'exports'
+        def export_contents():
+            return {str(path.relative_to(export_root)):path.read_bytes() if path.is_file() else None
+                    for path in export_root.rglob('*')}
+        before=export_contents()
         candidate=self.save()
         self.service._fingerprints[self.service.ids[0]]='c'*64
         response=self.export(candidate)
         self.assertEqual(response.status_code,409,response.get_json())
         self.assertEqual(response.get_json()['code'],'stale_candidate_export')
         self.assertEqual(self.case.datasets.rows,[])
-        self.assertEqual(list((self.service.project_dir/'exports').iterdir()),[])
+        self.assertEqual(export_contents(),before)
         wrong=self.export(candidate,expected_recipe_sha256='0'*64)
         self.assertEqual(wrong.status_code,409)
+        self.assertEqual(export_contents(),before)
+        self.assertEqual(self.case.datasets.rows,[])
 
     def test_writer_failure_creates_no_success_dataset_or_curation(self):
         candidate=self.save()

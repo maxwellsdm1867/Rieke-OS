@@ -1,8 +1,8 @@
 export function annotationGroups(annotations={}){
   return {cell:Array.isArray(annotations.cell_tags)?annotations.cell_tags:[],epoch:Array.isArray(annotations.epoch_tags)?annotations.epoch_tags:[]};
 }
-export function annotationIndicator(record={}){
-  const {cell,epoch}=annotationGroups(record.annotations),dataset=Array.isArray(record.curation?.tags)?record.curation.tags:[];
+export function annotationIndicator(record={},level=null){
+  const groups=annotationGroups(record.annotations),cell=level==='epoch'?[]:groups.cell,epoch=level==='cell'?[]:groups.epoch,dataset=level==='cell'?[]:Array.isArray(record.curation?.tags)?record.curation.tags:[];
   const shared=cell.length+epoch.length;
   return {count:shared+dataset.length,cell:cell.length,epoch:epoch.length,dataset:dataset.length,
     title:[...cell.map(item=>`Cell: ${item.tag} · ${item.author_name||'Author not recorded'}`),...epoch.map(item=>`Epoch: ${item.tag} · ${item.author_name||'Author not recorded'}`),...dataset.map(tag=>`Dataset: ${tag}`)].join('\n')};
@@ -32,3 +32,20 @@ export async function navigateAfterTagSave({draft,save,isCurrent,navigate,direct
   if(!isCurrent())return false;
   navigate(direction);return true;
 }
+
+
+// Colors are stable by tag text, independent of author or current row order.
+export function compactAnnotationTags(record={},level='epoch'){
+  const groups=annotationGroups(record.annotations),rows=level==='cell'?groups.cell:groups.epoch;
+  const tags=new Map();
+  for(const row of rows){
+    const authors=tags.get(row.tag)||[];
+    authors.push(row.author_name||'Author not recorded');tags.set(row.tag,authors);
+  }
+  if(level==='epoch')for(const tag of record.curation?.tags||[])tags.set(tag,[...(tags.get(tag)||[]),'Dataset tag']);
+  return [...tags].map(([tag,authors])=>{
+    return {tag,color:annotationTagColor(tag),title:`${tag} · ${[...new Set(authors)].join(', ')}`};
+  });
+}
+
+export function annotationTagColor(tag){let hash=0;for(const char of tag)hash=(hash*31+char.codePointAt(0))>>>0;return hash%6;}

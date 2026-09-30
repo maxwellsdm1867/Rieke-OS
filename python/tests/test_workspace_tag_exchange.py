@@ -118,7 +118,7 @@ class FrozenSharedTagTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT count(*) FROM epoch_tags').fetchone()[0],4)
             self.assertEqual({r[0] for r in db.execute('SELECT profile_uuid FROM shared_annotations')},{author})
         from scipy.io import loadmat
-        recipe=copy.deepcopy(self.package['recipe']);recipe['destination']='epictree-mat'
+        recipe=copy.deepcopy(self.package['recipe']);recipe['destination']='matlab-mat'
         from workspace_recipes import seal
         recipe=seal(recipe)
         target=Path(self.case.temp.name)/'mat-shared'
@@ -127,7 +127,9 @@ class FrozenSharedTagTests(unittest.TestCase):
         self.assertEqual(len(document['entries']),4)
         data=loadmat(target/'recordings.mat',simplify_cells=True)
         self.assertEqual(json.loads(data['metadata']['workspace_tags_json']),document)
-        self.assertTrue((target/'workspaceTag.m').exists())
+        self.assertFalse(any(path.suffix=='.m' for path in target.iterdir()))
+        self.assertEqual(json.loads(data['metadata']['recipe_json']),recipe)
+        self.assertEqual(json.loads((target/'matlab_recipe.json').read_text()),recipe)
 
 
 class TagExchangeTransactionTests(unittest.TestCase):

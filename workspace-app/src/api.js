@@ -1,17 +1,18 @@
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
 import {cachedResourceRequest,epochResourceCache,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
 import { useCallback, useEffect, useState } from 'react';
-export async function api(path, options = {}) {
+import {trackWrite} from './desktopLifecycle.js';
+export function api(path,options={}){
+  const operation=requestApi(path,options);
+  return ['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase())?trackWrite(operation):operation;
+}
+async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
     ...options, headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...options.headers },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const error = new Error(data.error || data.message || `Request failed (${response.status})`);
-    error.status = response.status;
-    throw error;
-  }
+  if (!response.ok) throw new Error(data.error || data.message || `Request failed (${response.status})`);
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {

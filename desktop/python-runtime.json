@@ -1,0 +1,10 @@
+{
+  "format": "rieke-standalone-python",
+  "version": 1,
+  "python_version": "3.11.13",
+  "build": "20251007",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "url": "https://github.com/astral-sh/python-build-standalone/releases/download/20251007/cpython-3.11.13%2B20251007-aarch64-apple-darwin-install_only_stripped.tar.gz",
+  "sha256": "78bc6defdc1dac5bf6765c8f938e6849383dbed831ea1e2d11576a4683fb1e8c"
+}

@@ -311,7 +311,7 @@ class DynamicTreeTests(unittest.TestCase):
                 service.details[key]['parameters'].update(history1=[100,500],isControl=index)
             result=service.tree(service.protocol_id,splits='parameters/isControl,parameters/history1')
             self.assertEqual([n['label'] for n in result['children']],['0 · History sequence','1 · Target-only control'])
-            self.assertIn("{'parameters/isControl', 'parameters/history1'}",result['matlab_command'])
+            self.assertNotIn('matlab_command',result)
             for node in result['children']:
                 self.assertEqual(node['children'][0]['value'],[100,500])
                 self.assertEqual(node['children'][0]['label'],'Mean 100 · SD 500')

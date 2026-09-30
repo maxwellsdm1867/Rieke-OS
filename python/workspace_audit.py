@@ -24,6 +24,10 @@ import uuid
 AUDIT_VERSION = 1
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_FILES = (
+    "python/workspace_matlab.py", "python/workspace_candidate_exports.py",
+    "python/workspace_export_folder.py", "workspace-app/src/components/MetadataRefresh.jsx",
+    "python/workspace_external_tags.py", "workspace-app/src/externalTagMonitor.js",
+    "workspace-app/src/components/ExternalTagSync.jsx",
     "python/workspace_annotations.py", "python/workspace_tag_predicates.py", "python/workspace_tag_exchange.py",
     "python/workspace_search_presets.py",
     "python/workspace_audit.py", "python/recording_workspace.py",

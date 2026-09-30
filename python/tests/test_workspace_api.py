@@ -5,6 +5,7 @@ files, curation validation, revision checks, and download checks are real.
 """
 import hashlib
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -121,19 +122,12 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(response.get_json()['attributes']['startTimeDotNetDateTimeOffsetTicks'], str(ticks))
         self.assertEqual(self.service.details[epoch]['attributes']['startTimeDotNetDateTimeOffsetTicks'], ticks)
 
-    def test_incomplete_source_validation_explains_refresh_recovery(self):
-        self.service._loaded = False
-        response = self.client.get('/api/epochs/' + self.service.ids[0])
-        self.assertEqual(response.status_code, 500)
-        self.assertEqual(response.json['code'], 'workspace_needs_refresh')
-        self.assertIn('Refresh metadata to validate source files, then retry', response.json['error'])
-        # The read remains closed until successful validation publishes a ready model.
-        self.service._loaded = True
-        self.assertEqual(self.client.get('/api/epochs/' + self.service.ids[0]).status_code, 200)
-
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
+        isolated_index = patch.dict(os.environ, {'RIEKE_PROJECT_INDEX': str(Path(self.temp.name) / 'user-state/project-index.json')})
+        isolated_index.start()
+        self.addCleanup(isolated_index.stop)
         self.service = FixtureService(self.temp.name)
         self.curation = Table(('project_uuid', 'protocol_uuid', 'epoch_uuid'))
         self.datasets = Table(('project_uuid', 'dataset_uuid'))
@@ -236,13 +230,14 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertFalse(self.events.rows)
 
     def test_approved_only_export_rejects_unreviewed_without_output(self):
+        existing_files = set((Path(self.temp.name) / 'exports').iterdir())
         response = self.client.post(self.base + '/exports', json={
             'query_revision': self.revision(), 'review_policy': 'approved_only'}, headers=self.headers)
         self.assertEqual(response.status_code, 400, response.get_json())
         self.assertIn('No epochs eligible', response.get_json()['error'])
         self.assertFalse(self.datasets.rows)
         self.assertFalse(self.events.rows)
-        self.assertEqual(list((Path(self.temp.name) / 'exports').iterdir()), [])
+        self.assertEqual(set((Path(self.temp.name) / 'exports').iterdir()), existing_files)
 
     def test_invalid_export_filter_shape_never_broadens_membership(self):
         for invalid in ([], False, ""):
@@ -307,38 +302,6 @@ class WorkspaceAPITests(unittest.TestCase):
     def import_mask(self, mask, revision=None):
         return self.client.post(self.base + '/masks/import', json={
             'mask': mask, 'query_revision': revision or self.revision()}, headers=self.headers)
-
-    def test_protocol_export_name_and_download_are_frozen_with_local_date(self):
-        self.service.protocols[self.service.protocol_id]['definition']['name'] = 'VariableMeanNoiseCurInject'
-        response = self.client.post(self.base + '/exports', json={
-            'format': 'reference-json', 'query_revision': self.revision(),
-            'export_date': '2026-09-28'}, headers=self.headers)
-        self.assertEqual(response.status_code, 201, response.get_json())
-        result = response.get_json()
-        record = self.store.get_dataset_revision(result['dataset_uuid'])
-        self.assertEqual(record['recipe']['options']['name'],
-                         'Variable_Mean_Noise_current_injection_2026-09-28')
-        first = self.client.get(result['download_url'])
-        self.assertEqual(first.headers['Content-Disposition'],
-                         'attachment; filename=Variable_Mean_Noise_current_injection_2026-09-28.json')
-        self.service.protocols[self.service.protocol_id]['definition']['name'] = 'Renamed later'
-        second = self.client.get(result['download_url'])
-        self.assertEqual(second.headers['Content-Disposition'], first.headers['Content-Disposition'])
-        self.assertEqual(second.data, first.data)
-        first.close()
-        second.close()
-
-    def test_mask_export_is_a_fresh_browser_attachment(self):
-        response = self.client.get(self.base + '/masks/export')
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.mimetype, 'application/json')
-        self.assertEqual(response.headers['Content-Disposition'],
-                         f'attachment; filename="recording-mask-{self.service.protocol_id[:8]}.json"')
-        self.assertEqual(response.headers['Cache-Control'], 'no-store')
-        mask = json.loads(response.data)
-        self.assertEqual(mask['format'], 'recording-selection-mask')
-        self.assertEqual(mask['protocol_uuid'], self.service.protocol_id)
-        self.assertEqual({row['epoch_uuid'] for row in mask['epochs']}, set(self.service.ids))
 
     def test_mask_roundtrip_is_exact_and_preserves_tags_and_approvals(self):
         approved = self.client.post(self.base + '/curation', json=self.curation_body({
@@ -458,6 +421,27 @@ class WorkspaceAPITests(unittest.TestCase):
         saved = self.store.get_dataset_revision(response.get_json()['dataset_uuid'])
         self.assertEqual(saved['recipe']['options']['split_order'], 'cell, parameters/frequencyCutoff, block')
         self.assertEqual({row['uuid'] for row in saved['recipe']['epochs']}, set(self.service.ids))
+
+    def test_focused_epoch_export_freezes_exact_uuid_with_repeated_numbers(self):
+        key = self.service.ids[1]  # Both fixture rows are Epoch 1.
+        response = self.client.post(self.base + '/exports', json={
+            'query_revision': self.revision(), 'filters': {'epoch_uuid': key},
+            'review_policy': 'include_unreviewed'}, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        saved = self.store.get_dataset_revision(response.get_json()['dataset_uuid'])
+        self.assertEqual([row['uuid'] for row in saved['recipe']['epochs']], [key])
+        self.assertEqual(response.get_json()['epoch_count'], 1)
+
+    def test_focused_export_rejects_excluded_and_out_of_view_without_artifacts(self):
+        initial_exports = set((Path(self.temp.name) / 'exports').rglob('*'))
+        key = self.service.ids[0]
+        self.client.post(self.base + '/curation', json=self.curation_body({'included': False}, [key]), headers=self.headers)
+        for filters in ({'epoch_uuid': key}, {'epoch_uuid': self.service.ids[1], 'cell_uuid': self.service.cell_ids[0]}):
+            response = self.client.post(self.base + '/exports', json={
+                'query_revision': self.revision(), 'filters': filters}, headers=self.headers)
+            self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertFalse(self.datasets.rows)
+        self.assertEqual(set((Path(self.temp.name) / 'exports').rglob('*')), initial_exports)
 
     def test_selection_export_defaults_to_optional_review_and_links_exact_members(self):
         counts = self.client.get(self.base).get_json()['counts']

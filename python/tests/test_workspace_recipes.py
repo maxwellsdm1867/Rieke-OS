@@ -6,7 +6,7 @@ import unittest
 import uuid
 
 from workspace_recipes import (build_tree, capture_query, compare_query,
-                               prepare_export, save_snapshot, verify)
+                               prepare_export, save_snapshot, verify, parse_splits)
 
 
 class RecipeTests(unittest.TestCase):
@@ -59,6 +59,21 @@ class RecipeTests(unittest.TestCase):
                 save_snapshot(path, self.snapshot)
             self.assertEqual(json.loads(path.read_text()), self.snapshot)
             self.assertEqual(list(path.parent.iterdir()), [path])
+
+    def test_legacy_importer_tree_fields_preserve_exact_recorded_grouping(self):
+        canonical = ['cell type', 'metadata/cell/start_time']
+        self.assertEqual(parse_splits('cell.type, cell.start_time', set(canonical)), canonical)
+        rows = [{'epoch_uuid': identity, 'cell_uuid': 'cell-a', 'cell_type': 'RGC'} for identity in self.ids]
+        values = {identity: {'metadata/cell/start_time': str(index % 2)} for index, identity in enumerate(self.ids)}
+        legacy = build_tree(rows, 'cell.type, cell.start_time', values, canonical)
+        current = build_tree(rows, ', '.join(canonical), values, canonical)
+        self.assertEqual(legacy, current)
+        self.assertEqual(legacy['count'], 3)
+        for text, allowed in [('cell.type, cell type', set(canonical)),
+                              ('cell.start_time', {'cell type'}),
+                              ('cell.unknown', set(canonical))]:
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                parse_splits(text, allowed)
 
     def test_tree_reordering_preserves_all_members_including_missing_values(self):
         rows = [{"epoch_uuid": identity, "start_time": "2026-09-24T12:00:00",

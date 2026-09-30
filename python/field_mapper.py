@@ -1,8 +1,8 @@
 """
-Field Mapper: DataJoint to EpicTreeGUI Field Extraction and Sanitization
+Field Mapper: DataJoint Acquisition Metadata to MATLAB Data Structures
 
 This module provides utilities for converting DataJoint query results
-into epicTreeGUI's .mat format structure.
+into MATLAB-compatible metadata and stream-reference structures.
 """
 
 import re

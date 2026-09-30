@@ -1,3 +1,4 @@
+import EpochInclusionToggle from './EpochInclusionToggle.jsx';
 import {revealWithin} from '../epochListScroll.js';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,ChevronDown,ChevronRight,Folder,FolderOpen,LoaderCircle,RefreshCw} from 'lucide-react';
@@ -7,7 +8,6 @@ import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,r
 import {datedCellLabel} from '../recordingIdentity.js';
 import {hierarchyKey,pathContains,mergeHierarchyPage,collapseHierarchy,expandHierarchy,hierarchySnapshot,hierarchyRestore,cancelUnloadedExpansion} from '../hierarchyTreeState.js';
 import './HierarchyTree.css';
-import AnnotationIndicator from './AnnotationIndicator.jsx';
 
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){
@@ -78,16 +78,26 @@ export default function HierarchyTree(props){
   },[state.pages,state.expanded,state.loading,state.error]);
   useEffect(()=>{if(!state.loading&&focusScroll.current){const node=container.current?.querySelector(`[data-epoch-uuid="${focusScroll.current}"]`);if(node){revealWithin(scroll.current,node);focusScroll.current=null;}}},[selected,state.pages,state.loading]);
   function toggle(branch){
-    if(current.current.error)return;
+    if(current.current.error)return false;
     const key=hierarchyKey(branch.path),opened=current.current.expanded.some(path=>hierarchyKey(path)===key);
     if(opened){
+      revealSelected.current=null;focusScroll.current=null;
       if(current.current.loadingPath&&pathContains(branch.path,current.current.loadingPath)){controller.current?.abort();serial.current++;callbacks.current.onStatus?.({loading:false,error:null});}
       commit(old=>({...collapseHierarchy(old,branch.path),loading:old.loadingPath&&pathContains(branch.path,old.loadingPath)?false:old.loading,loadingPath:old.loadingPath&&pathContains(branch.path,old.loadingPath)?null:old.loadingPath}));
     }else{
       commit(old=>expandHierarchy(old,branch.path));
       if(!current.current.pages.some(page=>hierarchyKey(page.path)===key))load({path:branch.path});
     }
+    return !opened;
   }
+  function collapseAll(){
+    controller.current?.abort();serial.current++;
+    revealSelected.current=null;focusScroll.current=null;
+    commit(old=>({...old,expanded:[],loading:false,loadingPath:null}));
+    callbacks.current.onStatus?.({loading:false,error:null});
+  }
+  const previousCollapseRequest=useRef(props.collapseRequest);
+  useEffect(()=>{if(previousCollapseRequest.current!==props.collapseRequest){previousCollapseRequest.current=props.collapseRequest;collapseAll();}},[props.collapseRequest]);
   function branchKeys(event,branch,opened){
     if(event.key==='ArrowRight'){event.preventDefault();event.stopPropagation();if(!opened)toggle(branch);else event.currentTarget.closest('li')?.querySelector('ul button')?.focus({preventScroll:true});}
     if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();if(opened)toggle(branch);else event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}
@@ -97,10 +107,10 @@ export default function HierarchyTree(props){
     const entries=page.kind==='epochs'?page.epochs:page.branches,field=page.levels?.[page.depth];
     const label=page.kind==='epochs'?'Epochs':readableField(field?.label,field?.field);
     return <ul className={isRoot?'ht-root':'ht-children'} role={isRoot?'tree':'group'} aria-label={isRoot?'Recording hierarchy':label}>
-      {entries.map(item=>{
-        if(page.kind==='epochs')return <li className="ht-leaf" key={item.epoch_uuid} role="treeitem" aria-selected={selected===item.epoch_uuid}><button data-epoch-uuid={item.epoch_uuid} className={selected===item.epoch_uuid?'selected':''} disabled={blocked||state.loading} title={item.epoch_uuid} onKeyDown={event=>{if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}}} onClick={()=>{remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item);}}><Activity size={14}/><span className="ht-value">{epochLeafLabel(item)}<small>{datedCellLabel(item)}</small></span><AnnotationIndicator epoch={item}/></button></li>;
+      {entries.map((item,index)=>{
+        if(page.kind==='epochs'){const epoch=props.inclusionForEpoch?props.inclusionForEpoch(item):item;return <li className="ht-leaf" key={item.epoch_uuid} role="treeitem" aria-selected={props.selectedEpochs?.includes(item.epoch_uuid)||(!props.selectedCell&&selected===item.epoch_uuid)}><button data-epoch-uuid={item.epoch_uuid} className={(props.selectedEpochs?.includes(item.epoch_uuid)||(!props.selectedCell&&selected===item.epoch_uuid))?'selected':''} disabled={blocked||state.loading||props.actionsDisabled} title={item.epoch_uuid} onKeyDown={event=>{if(event.key==='ArrowLeft'){event.preventDefault();event.stopPropagation();event.currentTarget.closest('ul')?.closest('li')?.querySelector(':scope > button')?.focus({preventScroll:true});}}} onClick={event=>{remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item,event,page,index);}}><Activity size={14}/><span className="ht-value">{epochLeafLabel(item)}<small>{datedCellLabel(item)}</small></span></button>{props.onToggleInclusion&&<EpochInclusionToggle epoch={epoch} label={`epoch ${epochLeafLabel(item)}`} disabled={blocked||state.loading||props.actionsDisabled} onToggle={props.onToggleInclusion}/>}{!props.onToggleInclusion&&<span className={`ht-inclusion-state ${epoch.curation?.included===false?'excluded':''}`}>{epoch.curation?.included===false?'Excluded':'Included'}</span>}</li>;}
         const key=hierarchyKey(item.path),opened=state.expanded.some(path=>hierarchyKey(path)===key),children=state.pages.find(child=>hierarchyKey(child.path)===key),loading=state.loading&&hierarchyKey(state.loadingPath||[])===key;
-        return <li key={item.key} role="treeitem" aria-expanded={opened} className={opened?'ht-branch expanded':'ht-branch'}><button aria-expanded={opened} disabled={blocked} onClick={()=>toggle(item)} onKeyDown={event=>branchKeys(event,item,opened)} title={[branchTooltip(item,field?.field),item.start_time&&`Recorded start: ${item.start_time}`].filter(Boolean).join('\n')}>{loading?<LoaderCircle size={14} className="spin"/>:opened?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<span className="ht-folder">{opened?<FolderOpen size={15}/>:<Folder size={15}/>}</span><span className="ht-value"><span className="ht-field">{label}: </span>{item.components?.length?<span className="ht-combination">{item.components.map(part=><span key={part.field}><small>{componentLabel(part)}</small> {componentValue(part)}</span>)}</span>:field?.field==='block'&&item.start_time?item.start_time:branchLabel(item,field?.field)}</span><span className="ht-count">{number(item.count)} <small>epochs</small></span></button>{opened&&(children?renderPage(children):<div className="ht-loading" role="status">{loading?'Loading branch…':'Branch is not loaded.'}</div>)}</li>;
+        return <li key={item.key} role="treeitem" aria-expanded={opened} className={opened?'ht-branch expanded':'ht-branch'}><button className={field?.field==='cell'&&props.selectedCell===item.value?'selected':''} aria-expanded={opened} disabled={blocked} onClick={()=>{if(toggle(item))callbacks.current.onSelectBranch?.(item,field,page.revision);}} onKeyDown={event=>branchKeys(event,item,opened)} title={[branchTooltip(item,field?.field),item.start_time&&`Recorded start: ${item.start_time}`].filter(Boolean).join('\n')}>{loading?<LoaderCircle size={14} className="spin"/>:opened?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<span className="ht-folder">{opened?<FolderOpen size={15}/>:<Folder size={15}/>}</span><span className="ht-value"><span className="ht-field">{!item.components?.length&&`${label}: `}</span>{item.components?.length?<span className="ht-combination">{item.components.map(part=><span key={part.field}><small>{componentLabel(part)}</small> {componentValue(part)}</span>)}</span>:field?.field==='block'&&item.start_time?item.start_time:branchLabel(item,field?.field)}</span>{field?.field!=='cell'&&<span className="ht-count">{number(item.count)} <small>epochs</small></span>}</button>{opened&&(children?renderPage(children):<div className="ht-loading" role="status">{loading?'Loading branch…':'Branch is not loaded.'}</div>)}</li>;
       })}
       {!entries.length&&<li className="ht-empty">No matching epochs.</li>}
       {(page.offset>0||page.has_more)&&<li role="none" className="ht-pagination"><button disabled={blocked||state.loading||!page.offset} aria-label={`Previous ${label} page`} onClick={()=>load({path:page.path,offset:Math.max(0,page.offset-60)})}><ArrowLeft size={13}/></button><span>{page.offset+1}–{page.offset+entries.length} / {number(page.total)}</span><button disabled={blocked||state.loading||!page.has_more} aria-label={`Next ${label} page`} onClick={()=>load({path:page.path,offset:page.offset+60})}><ArrowRight size={13}/></button></li>}
@@ -112,6 +122,6 @@ export default function HierarchyTree(props){
     {state.error&&<div className="ht-error" role="alert">{state.error}<button onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true})}><RefreshCw size={13}/> Refresh tree</button></div>}
     {state.notice&&<div className="ht-notice" role="status">{state.notice}</div>}
     <div className="ht-scroll" ref={scroll} aria-busy={state.loading} onScroll={()=>{if(!scrollFrame.current)scrollFrame.current=requestAnimationFrame(()=>{scrollFrame.current=null;remember();});}}>{root?renderPage(root,true):!state.error&&<p className="ht-loading" role="status">Loading tree…</p>}</div>
-    <footer className="ht-footer"><span>Expand groups to inspect epochs. Grouping preserves the selection.</span><button disabled={blocked||state.loading||!state.expanded.length} onClick={()=>commit(old=>({...old,expanded:[]}))}>Collapse all</button></footer>
+    {!props.externalCollapseControl&&<footer className="ht-footer"><button disabled={blocked||!state.expanded.length} onClick={collapseAll}>Collapse all</button></footer>}
   </section>;
 }

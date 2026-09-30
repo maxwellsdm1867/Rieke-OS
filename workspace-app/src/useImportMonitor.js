@@ -1,12 +1,12 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {api} from './api.js';
-import {isImportPending,importMonitorDelay,shouldRefreshImportCompletion} from './importProgress.js';
+import {isImportPending,importMonitorDelay,shouldRefreshImportCompletion,completedImportToReview} from './importProgress.js';
 import {importCompletionKey} from './protocolSuggestions.js';
 // This lightweight endpoint has its own timeout; parsing/export requests do not.
 // A failed read retains the last confirmed state and never retries an import POST.
 export default function useImportMonitor(revision,onCompleted,watchingRequest=false,enabled=true){
   const [state,setState]=useState({data:null,loading:true,error:null,observedAt:null});
-  const [nonce,setNonce]=useState(0),callback=useRef(onCompleted),previous=useRef(null),recovering=useRef(false);
+  const [nonce,setNonce]=useState(0),callback=useRef(onCompleted),previous=useRef(null),recovering=useRef(false),previousJobs=useRef(null);
   callback.current=onCompleted;
   const reload=useCallback(()=>setNonce(value=>value+1),[]);
   useEffect(()=>{
@@ -34,7 +34,9 @@ export default function useImportMonitor(revision,onCompleted,watchingRequest=fa
     const refresh=shouldRefreshImportCompletion(previous.current,completed,watchingRequest,recovering.current);
     recovering.current=false;
     previous.current=completed;
-    if(refresh)callback.current();
+    const reviewJob=completedImportToReview(previousJobs.current,state.data.jobs,watchingRequest);
+    previousJobs.current=state.data.jobs;
+    if(refresh)callback.current(reviewJob);
   },[completed,state.data,state.error,state.loading,watchingRequest]);
   return {...state,reload,connectionError:state.error};
 }

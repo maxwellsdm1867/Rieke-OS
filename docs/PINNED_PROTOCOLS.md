@@ -2,7 +2,7 @@
 
 From search results, **Export** offers three choices:
 
-- **Export directly** writes SQLite or EpicTree/MATLAB output without updating a pinned dataset.
+- **Export directly** writes SQLite or standalone MATLAB data (.mat) without updating a pinned dataset.
 - **Update pinned protocol** compares the saved selection with an existing working dataset. Every candidate epoch must have the exact recorded acquisition Protocol ID required by that destination's original definition. Matching display names or broad `contains` predicates are not identity evidence. A matching selection may be smaller because of tags, dates, cell types, or settings. The popup shows the diff and requires acknowledgement of removals before enabling the update.
 - **Create pinned protocol** names a new working dataset from the saved selection. It requires one recorded Protocol ID and at least one epoch. Mixed results must be narrowed first. The original pinned datasets are unchanged.
 

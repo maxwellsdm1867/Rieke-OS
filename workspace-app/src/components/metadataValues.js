@@ -35,14 +35,30 @@ export function metadataPredicateValueSupported(value,depth=0){
   return supported&&predicateLiteralText(value).length<=4096;
 }
 
+// Catalog responses are immutable snapshots. Decode each snapshot once and let
+// old snapshots be collected when their panels/searches release them.
+const registeredFieldsByCatalog=new WeakMap();
+function registeredFieldIndex(fields){
+  let index=registeredFieldsByCatalog.get(fields);
+  if(index)return index;
+  index=new Map();
+  for(const field of fields){
+    let path;
+    if(!field.id.includes('/'))path=[field.path];
+    else{
+      try{path=field.id.split('/').map(part=>decodeURIComponent(part).replace(/~1/g,'/').replace(/~0/g,'~'));}
+      catch{continue;}
+    }
+    // Non-text aliases retain the original strict comparison in the fallback.
+    if(!path.every(part=>typeof part==='string'))continue;
+    const key=JSON.stringify(path);
+    if(!index.has(key))index.set(key,field); // First registered match wins.
+  }
+  registeredFieldsByCatalog.set(fields,index);return index;
+}
 export function registeredMetadataField(path,fields=[]){
-  return fields.find(field=>{
-    if(!field.id.includes('/'))return path.length===1&&field.path===path[0];
-    try{
-      const parts=field.id.split('/').map(part=>decodeURIComponent(part).replace(/~1/g,'/').replace(/~0/g,'~'));
-      return parts.length===path.length&&parts.every((part,index)=>part===path[index]);
-    }catch{return false;}
-  });
+  if(path.every(part=>typeof part==='string'))return registeredFieldIndex(fields).get(JSON.stringify(path));
+  return fields.find(field=>!field.id.includes('/')&&path.length===1&&field.path===path[0]);
 }
 export function metadataClipboard(row,kind,field){
   if(kind==='key')return row.key;

@@ -17,7 +17,7 @@ DIRECTORIES = {
     'database': ('Main database', 'Database service configuration and managed MySQL storage.'),
     'protocols': ('Protocol queries', 'Reusable protocol query definitions.'),
     'imports': ('Parsed recordings', 'Validated metadata, source pointers and parse manifests.'),
-    'raw-uploads': ('Uploaded recordings', 'Local copies selected through the browser.'),
+    'raw-uploads': ('Managed recordings', 'Verified project copies used for lazy waveform loading; keep these files in the project.'),
     'query-snapshots': ('Query snapshots', 'Frozen query baselines for comparisons.'),
     'exports': ('Exports', 'Versioned reference packages and their recipes.'),
     'logs': ('Logs', 'Import jobs, app jobs, failures and storage operations.'),
@@ -144,6 +144,15 @@ class ManagedStorage:
         database = {'adapter': config.get('adapter'), 'database': config.get('database'),
                     'workspace_database': config.get('workspace_database'), 'container': container,
                     'storage_path': None, 'status': 'unavailable'}
+        if provider.get('kind') == 'native-project':
+            from workspace_native_mysql import connection_parameters
+            database.update(storage_path=str(self.root / 'database/mysql'), managed=True,
+                            runtime='bundled-mysql', container=None)
+            try:
+                connection_parameters(self.root)
+                database['status'] = 'running'
+            except (OSError, ValueError):
+                database['status'] = 'stopped'
         if container:
             result = subprocess.run(['docker', 'inspect', '--format',
                 '{"mounts":{{json .Mounts}},"running":{{json .State.Running}}}', container],
@@ -155,12 +164,6 @@ class ManagedStorage:
                     database.update(storage_path=mount['Source'],
                         status='running' if runtime['running'] else 'stopped',
                         managed=Path(mount['Source']).resolve() == self.root / 'database/mysql')
-        if provider.get('kind') == 'native-mysql':
-            from workspace_native_database import descriptor, read_state, running
-            root, expected = descriptor(self.root)
-            active = (root / 'database/native.json').exists() and running(read_state(root, expected), root / 'database/mysql')
-            database.update(storage_path=str(root / 'database/mysql'), managed=True,
-                status='running' if active else 'stopped', runtime='native-mysql')
         refs = []
         for source in sources:
             path = Path(source['source_path']).resolve()

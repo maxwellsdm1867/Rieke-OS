@@ -38,6 +38,29 @@ class SharedAnnotationTests(unittest.TestCase):
     def epoch(self,key):
         return self.store.for_epochs([self.service.rows[key]])[key]
 
+    def test_small_target_validation_uses_only_requested_identity_lookups(self):
+        class BoundedLookup:
+            def __init__(self,known):self.known=known;self.lookups=[]
+            def __contains__(self,key):self.lookups.append(key);return key in self.known
+            def keys(self):raise AssertionError('Small tag edits must not enumerate project epochs')
+        rows=BoundedLookup({self.first,self.second})
+        with patch.object(self.service,'rows',rows):
+            self.assertEqual(self.store._scope('epoch',[self.first,self.second]),[self.first,self.second])
+            self.assertEqual(rows.lookups,[self.first,self.second])
+            with self.assertRaisesRegex(ValueError,'outside'):self.store._scope('epoch',[str(uuid.uuid4())])
+
+    def test_predicate_cell_rows_include_cell_tags_outside_epoch_page(self):
+        self.edit('cell',self.other_cell,['cell badge'])
+        body={'predicate':{'all':[]},'splits':'cell','summary_only':True}
+        preview=self.client.post('/api/explore/preview',json=body,headers=self.headers).get_json()
+        result=self.client.post('/api/explore/epochs',json={
+            'predicate':body['predicate'],'splits':'cell','revision':preview['tree_revision'],
+            'include_cells':True,'limit':1},headers=self.headers)
+        self.assertEqual(result.status_code,200,result.get_json())
+        cells={cell['cell_uuid']:cell for cell in result.get_json()['cells']}
+        self.assertEqual([tag['tag'] for tag in cells[self.other_cell]['annotations']['cell_tags']],['cell badge'])
+        self.assertEqual(cells[self.cell]['annotations']['cell_tags'],[])
+
     def test_same_labels_never_cross_dates_or_uuid_kinds_and_unknown_batch_rolls_back(self):
         self.service.rows[self.second]['cell_label']=self.service.rows[self.first]['cell_label']
         self.edit('cell',self.cell,['ON'])
@@ -106,6 +129,12 @@ class SharedAnnotationTests(unittest.TestCase):
         self.assertEqual(len(self.store.snapshot()['records']),1)
         self.edit('epoch',self.first,['New'],revision=1)
         self.assertEqual(self.store.suggestions('new')['tags'][0]['tag'],'New')
+
+    def test_custom_annotation_reader_keeps_its_autocomplete_policy(self):
+        self.edit('epoch',self.first,['Visible'])
+        with patch.object(self.store,'_rows',return_value=[]), \
+             patch.object(self.store,'_membership_index',side_effect=AssertionError('Do not bypass a custom reader')):
+            self.assertEqual(self.store.suggestions()['tags'],[])
 
     def test_cell_direct_effective_and_author_predicates_are_distinct_and_exact(self):
         self.edit('cell',self.cell,['cellA']);self.edit('epoch',self.second,['directB'])
@@ -178,8 +207,8 @@ class SharedAnnotationTests(unittest.TestCase):
         read=self.client.get(f'/api/epochs/{self.first}/annotations').get_json()
         self.assertIn('Check response',str(read))
         events=self.client.get('/api/events?action=shared_annotations_updated&limit=50').get_json()['events']
-        self.assertIsNone(receipt['event_uuid'])
-        self.assertEqual(events,[])
+        self.assertTrue(receipt['event_uuid'])
+        self.assertEqual([row['event_uuid'] for row in events],[receipt['event_uuid']])
         self.assertEqual(self.records.rows[0]['tags'],['Check response'])
 
     def test_bulk_tag_save_targets_selected_epochs_across_cells_only(self):
@@ -194,7 +223,48 @@ class SharedAnnotationTests(unittest.TestCase):
             self.assertEqual([tag['tag'] for tag in self.epoch(key)['epoch_tags']],['Batch review'])
             self.assertEqual(self.epoch(key)['cell_tags'],[])
         self.assertEqual({row['target_uuid'] for row in self.records.rows},set(ids))
-        self.assertEqual(self.case.events.rows,[])
+        self.assertEqual(len(self.case.events.rows),1)
+
+    def test_event_failure_rolls_back_rows_profiles_and_does_not_queue_backup(self):
+        from unittest.mock import Mock
+        self.store.on_commit=Mock()
+        with patch.object(self.case.events,'insert1',side_effect=OSError('Event storage failed')):
+            with self.assertRaisesRegex(OSError,'Event storage failed'):self.edit('epoch',self.first,['durable'])
+        self.assertEqual(self.records.rows,[])
+        self.assertEqual(self.profiles.rows,[])
+        self.store.on_commit.assert_not_called()
+        result=self.edit('epoch',self.first,['durable'])
+        self.store.on_commit.assert_called_once_with()
+        self.assertEqual(result['event_uuid'],self.case.events.rows[0]['event_uuid'])
+
+    def test_http_annotation_ack_queues_backup_and_reports_failure_independently(self):
+        from unittest.mock import Mock
+        save=Mock();self.service.dj.Schema=object()
+        with patch('workspace_state_snapshot.save',save), \
+             patch('workspace_annotation_preparation.prepare_project_annotations',return_value={'status':'unavailable'}):
+            app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
+                explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
+                protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.store)
+        scheduler=app.extensions['backup_scheduler'];scheduler.delay=60;scheduler.max_delay=60
+        self.addCleanup(lambda:scheduler.close(flush=False))
+        self.addCleanup(app.extensions['app_state_session_lock'].close)
+        save.reset_mock();client=app.test_client()
+        body={'target_kind':'epoch','target_uuids':[self.first],'profile_uuid':self.author,
+            'tags_add':['committed'],'expected_revisions':{self.first:0}}
+        response=client.post('/api/annotations',json=body,headers=self.headers)
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual(response.get_json()['persistence']['database'],'committed')
+        self.assertEqual(response.get_json()['persistence']['backup']['status'],'pending')
+        save.assert_not_called()
+        self.assertEqual(self.records.rows[0]['tags'],['committed'])
+        self.assertEqual(self.case.events.rows[0]['event_uuid'],response.get_json()['event_uuid'])
+        save.side_effect=OSError('Disk full')
+        with self.assertRaises(OSError):scheduler.flush()
+        self.assertEqual(client.get('/api/backup/status').get_json()['status'],'degraded')
+        self.assertEqual(client.post('/api/annotations',json=body,headers=self.headers).status_code,409)
+        self.assertEqual(scheduler.status()['requested_sequence'],1)
+        save.side_effect=None;scheduler.flush()
+        self.assertEqual(client.get('/api/backup/status').get_json()['status'],'current')
 
     def test_unchanged_blank_operation_writes_no_profile_or_event(self):
         result=self.edit('epoch',self.first)
@@ -208,6 +278,110 @@ class SharedAnnotationTests(unittest.TestCase):
         self.assertFalse(self.records.rows)
         for raw in ('limit=true','limit=1.5','limit=-1','limit=1&limit=2','limit=%D9%A1'):
             with self.subTest(raw=raw):self.assertEqual(self.client.get('/api/annotation-tags?'+raw).status_code,400)
+
+    def test_protocol_local_tag_filter_matches_inherited_and_direct_tags_across_views_and_export(self):
+        base = '/api/protocols/' + self.service.protocol_id
+        original = copy.deepcopy(self.service.query_result(self.service.protocol_id))
+        self.edit('cell', self.cell, ['selected'])
+        self.edit('epoch', self.second, ['other'])
+        summary = self.client.get(base + '?tag=selected').get_json()
+        self.assertEqual(summary['counts']['epochs'], 1)
+        self.assertEqual([cell['cell_uuid'] for cell in summary['cells']], [self.cell])
+        page = self.client.get(base + '/epochs?tag=selected').get_json()
+        self.assertEqual([row['epoch_uuid'] for row in page['epochs']], [self.first])
+        tree = self.client.get(base + '/tree?tag=selected&splits=cell')
+        self.assertEqual(tree.status_code, 200, tree.get_json())
+        self.assertEqual(tree.get_json()['count'], 1)
+        self.assertEqual(tree.get_json()['children'][0]['epoch_uuids'], [self.first])
+        fields = self.client.get(base + '/tree-fields?tag=selected')
+        self.assertEqual(fields.status_code, 200, fields.get_json())
+        paged = self.client.post('/api/tree-pages', json={
+            'protocol_uuid': self.service.protocol_id, 'filters': {'tag': 'selected'},
+            'splits': 'cell'}, headers=self.headers).get_json()
+        self.assertEqual(paged['total_epochs'], 1)
+        leaf = self.client.post('/api/tree-pages', json={
+            'protocol_uuid': self.service.protocol_id, 'filters': {'tag': 'selected'},
+            'splits': 'cell', 'path': paged['branches'][0]['path'],
+            'revision': paged['revision']}, headers=self.headers).get_json()
+        self.assertEqual([row['epoch_uuid'] for row in leaf['epochs']], [self.first])
+        self.assertEqual(self.client.get(base + '/epochs?tagged=true').get_json()['total'], 2)
+        self.assertEqual(self.client.get(base + '/epochs?tag=Selected').get_json()['total'], 0)
+        exported = self.client.post(base + '/exports', json={
+            'query_revision': summary['query_revision'], 'filters': {'tag': 'selected'}}, headers=self.headers)
+        self.assertEqual(exported.status_code, 201, exported.get_json())
+        response = self.client.get(exported.get_json()['download_url'])
+        package = json.loads(response.data); response.close()
+        self.assertEqual([row['epoch_uuid'] for row in package['epochs']], [self.first])
+        self.assertEqual(package['recipe']['options']['filters'], {'tag': 'selected'})
+        self.assertEqual(self.service.query_result(self.service.protocol_id), original)
+
+    def test_protocol_tag_predicate_all_any_and_negation_keep_tree_and_exports_consistent(self):
+        base = '/api/protocols/' + self.service.protocol_id
+        original = copy.deepcopy(self.service.query_result(self.service.protocol_id))
+        self.edit('cell', self.cell, ['good'])
+        self.edit('epoch', self.first, ['inspect'])
+        self.edit('epoch', self.second, ['reject'])
+        def rule(tag, field='annotations/effective/tags'):
+            return {'field': field, 'operator': 'contains', 'value': tag}
+        cases = [({'all': [rule('good'), rule('inspect'), {'not': rule('reject')}]}, [self.first]),
+                 ({'any': [rule('good'), rule('reject')]}, [self.first, self.second]),
+                 ({'all': [rule('good', 'annotations/epoch/tags')]}, []),
+                 ({'all': [{'not': rule('reject')}]}, [self.first])]
+        for predicate, expected in cases:
+            with self.subTest(predicate=predicate):
+                filters = {'tag_predicate': json.dumps(predicate)}
+                response = self.client.get(base, query_string=filters)
+                self.assertEqual(response.status_code, 200, response.get_json())
+                summary = response.get_json()
+                self.assertEqual(summary['counts']['epochs'], len(expected))
+                page = self.client.get(base + '/epochs', query_string=filters).get_json()
+                self.assertEqual([row['epoch_uuid'] for row in page['epochs']], expected)
+                tree = self.client.get(base + '/tree', query_string={**filters, 'splits': 'cell'}).get_json()
+                self.assertEqual(tree['count'], len(expected))
+                paged = self.client.post('/api/tree-pages', json={
+                    'protocol_uuid': self.service.protocol_id, 'filters': filters,
+                    'splits': 'cell'}, headers=self.headers).get_json()
+                self.assertEqual(paged['total_epochs'], len(expected))
+                if expected:
+                    exported = self.client.post(base + '/exports', json={
+                        'query_revision': summary['query_revision'], 'filters': filters}, headers=self.headers)
+                    self.assertEqual(exported.status_code, 201, exported.get_json())
+                    download = self.client.get(exported.get_json()['download_url'])
+                    package = json.loads(download.data); download.close()
+                    self.assertEqual([row['epoch_uuid'] for row in package['epochs']], expected)
+        self.assertEqual(self.service.query_result(self.service.protocol_id), original)
+
+    def test_protocol_tag_predicate_rejects_non_tag_fields_and_invalid_ast(self):
+        base = '/api/protocols/' + self.service.protocol_id
+        predicates = ['{', 'null', json.dumps({'field': 'parameters/example', 'operator': 'eq', 'value': 1}),
+            json.dumps({'field': 'annotations/effective/tags', 'operator': 'contains', 'value': 3}),
+            json.dumps({'field': 'annotations/effective/tags', 'operator': 'unknown', 'value': 'x'}),
+            json.dumps({'all': [], 'extra': True}), json.dumps({'not': {'all': []}, 'extra': True})]
+        for predicate in predicates:
+            with self.subTest(predicate=predicate):
+                filters = {'tag_predicate': predicate}
+                self.assertEqual(self.client.get(base + '/epochs', query_string=filters).status_code, 400)
+                self.assertEqual(self.client.post('/api/tree-pages', json={
+                    'protocol_uuid': self.service.protocol_id, 'filters': filters}, headers=self.headers).status_code, 400)
+
+    def test_tag_filter_tree_fields_refresh_after_annotation_change_and_reject_malformed_filters(self):
+        base = '/api/protocols/' + self.service.protocol_id
+        self.edit('epoch', self.first, ['selected'])
+        before = self.service._tree_fields(self.service.protocol_id, {'tag': 'selected'})
+        self.edit('epoch', self.first, remove=['selected'], revision=1)
+        self.edit('epoch', self.second, ['selected'])
+        after = self.service._tree_fields(self.service.protocol_id, {'tag': 'selected'})
+        self.assertNotEqual(before[1], after[1])
+        self.assertEqual([row['epoch_uuid'] for row in self.service.filtered_rows(
+            self.service.protocol_id, {'tag': 'selected'})], [self.second])
+        for query in ('tagged=false', 'tagged=1', 'tag=', 'tag=%20selected', 'tag=selected%0A', 'tag=selected&tag=other', 'tagged=true&tagged=false'):
+            with self.subTest(query=query):
+                self.assertEqual(self.client.get(base + '/epochs?' + query).status_code, 400)
+        for filters in ({'tag': True}, {'tagged': True}, {'tag': ['selected']}, {'tagged': ''}):
+            with self.subTest(filters=filters):
+                response = self.client.post('/api/tree-pages', json={
+                    'protocol_uuid': self.service.protocol_id, 'filters': filters}, headers=self.headers)
+                self.assertEqual(response.status_code, 400)
 
     def test_protocol_export_freezes_annotations_and_stale_tags_reject_old_revision(self):
         base='/api/protocols/'+self.service.protocol_id

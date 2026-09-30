@@ -46,7 +46,7 @@ test('monitor polling waits for its bounded request and recovers connection erro
   assert.equal(importMonitorDelay({loading:false,pending:true}),2500);
   assert.equal(importMonitorDelay({loading:false,error:'timed out',pending:false}),10000);
   assert.equal(importMonitorDelay({loading:false,pending:false,watching:true}),2500);
-  assert.equal(importMonitorDelay({loading:false,pending:false,error:null}),null);
+  assert.equal(importMonitorDelay({loading:false,pending:false,error:null}),10000);
 });
 test('confirmed commit with reconciliation remains a warning, not an unknown commit',async()=>{
   const {sourceCountsLabel}=await import('./importProgress.js');
@@ -68,4 +68,15 @@ test('monitor recovery refreshes failed workspace reads even when membership is 
   assert.equal(shouldRefreshImportCompletion('job:duplicate','job:duplicate',false,true),true);
   assert.equal(shouldRefreshImportCompletion('job:duplicate','job:duplicate',false,false),false);
   assert.equal(shouldRefreshImportCompletion(null,'',false,true),true);
+});
+
+import {completedImportToReview} from './importProgress.js';
+test('import review opens only for newly successful imports, not old history or failures',()=>{
+  const old={job_uuid:'old',status:'complete'}, next={job_uuid:'next',status:'complete'};
+  assert.equal(completedImportToReview(null,[old]),null);
+  assert.equal(completedImportToReview([old],[old]),null);
+  assert.equal(completedImportToReview([old],[next,old]),'next');
+  assert.equal(completedImportToReview([],[{...next,status:'failed'}]),null);
+  assert.equal(completedImportToReview(null,[next],true),'next');
+  assert.equal(completedImportToReview([],[{...next,status:'complete_with_warnings',catalog_committed:true}]),'next');
 });

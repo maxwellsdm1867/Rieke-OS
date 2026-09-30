@@ -76,3 +76,29 @@ test('click-to-copy values use plain text for strings and exact JSON for structu
  assert.equal(metadataClipboard(row('9007199254740993'),'text'),'9007199254740993');
  assert.throws(()=>metadataClipboard(row(Number.MAX_SAFE_INTEGER+1),'text'));
 });
+
+test('catalog indexing preserves first match, decoding order, malformed IDs and snapshot replacement',()=>{
+  const first={id:'parameters/slash%2Fkey/~01',marker:'first'};
+  const duplicate={id:'parameters/slash~1key/~01',marker:'second'};
+  const malformed={id:'parameters/bad%GG'};
+  const alias={id:'top-level-alias',path:'parameters'};
+  const fields=[first,duplicate,malformed,alias];
+  assert.equal(registeredMetadataField(['parameters','slash/key','~1'],fields),first);
+  assert.equal(registeredMetadataField(['parameters','slash','key','~1'],fields),undefined);
+  assert.equal(registeredMetadataField(['parameters','bad%GG'],fields),undefined);
+  assert.equal(registeredMetadataField(['parameters'],fields),alias);
+  assert.equal(registeredMetadataField(['parameters','slash/key','~1'],[duplicate,...fields]),duplicate);
+  assert.equal(registeredMetadataField([undefined],[{id:'absent-path'}]).id,'absent-path');
+  assert.equal(registeredMetadataField([null],[{id:'absent-path'}]),undefined);
+});
+
+test('repeated metadata lookups decode a catalog only once per immutable snapshot',()=>{
+  let reads=0;
+  const fields=Array.from({length:10000},(_,i)=>({get id(){reads++;return `parameters/value${i}`;}}));
+  for(let i=9900;i<10000;i++)assert.equal(registeredMetadataField(['parameters',`value${i}`],fields),fields[i]);
+  const firstPassReads=reads;
+  for(let i=9900;i<10000;i++)assert.equal(registeredMetadataField(['parameters',`value${i}`],fields),fields[i]);
+  assert.equal(reads,firstPassReads,'Warm lookups must not rescan or redecode fields');
+  assert.equal(registeredMetadataField(['parameters','absent'],fields),undefined);
+  assert.equal(reads,firstPassReads);
+});

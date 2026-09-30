@@ -22,3 +22,11 @@
 .header-predicate-button{flex-shrink:0;white-space:nowrap;border-color:#b8a1ca;color:var(--accent);background:#f6f0fa;font-weight:600}
 .protocol-view-tabs>button{display:flex;align-items:center;gap:6px}
 .app-header .breadcrumb{flex:0 1 auto}.app-header .header-predicate-button{margin-right:8px}
+
+/* Keep protocol navigation and inspection actions in one compact header. */
+.workspace-context-toolbar{flex-wrap:wrap;column-gap:10px;row-gap:6px}
+.protocol-inspector-controls,.epoch-browser-header-controls{margin-left:auto;min-width:0}
+.protocol-inspector-controls:empty,.epoch-browser-header-controls:empty{display:none}
+.protocol-inspector-controls>.compact-inspector-toolbar,.epoch-browser-header-controls>.compact-inspector-toolbar{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px;padding:0;border:0;min-height:0;position:relative;z-index:40}
+.protocol-inspector-controls .spacer,.epoch-browser-header-controls .spacer{display:none}
+.protocol-inspector-controls .inspection-filter-summary{font-size:11px}

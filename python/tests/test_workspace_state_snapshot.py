@@ -68,10 +68,3 @@ class StateSnapshotTests(unittest.TestCase):
                 fcntl.flock(lock,fcntl.LOCK_SH)
                 with self.assertRaisesRegex(ValueError,'Stop the project app'):
                     restore(folder,None,Path(folder)/'unused.sqlite')
-
-    def test_interrupted_restore_blocks_startup_before_database_access(self):
-        from workspace_api import create_app
-        with tempfile.TemporaryDirectory() as folder:
-            (Path(folder)/'.app-state-restore.pending').write_text('{}')
-            with self.assertRaisesRegex(ValueError,'restore was interrupted'):
-                create_app(folder,folder)

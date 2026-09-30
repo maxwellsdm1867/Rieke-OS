@@ -57,7 +57,11 @@ def legacy_predicate_catalog(catalog, values):
 class CatalogOptimizationTests(unittest.TestCase):
     def test_catalog_and_values_match_preoptimization_fixture_exactly(self):
         catalog, values = tree.catalog(*fixture())
-        digest = hashlib.sha256(json.dumps([catalog, values], sort_keys=True, allow_nan=False).encode()).hexdigest()
+        # Epoch UUID is a new identity field; existing scientific fields retain the historical oracle.
+        self.assertEqual({key: current['epoch'] for key, current in values.items()}, {key: key for key in values})
+        legacy_catalog = {**catalog, 'fields': [field for field in catalog['fields'] if field['id'] != 'epoch']}
+        legacy_values = {key: {field: value for field, value in current.items() if field != 'epoch'} for key, current in values.items()}
+        digest = hashlib.sha256(json.dumps([legacy_catalog, legacy_values], sort_keys=True, allow_nan=False).encode()).hexdigest()
         # Captured from the unoptimized implementation before this change.
         self.assertEqual(digest, '97d7c1e6971e4a563f4caaafb4f0d3d241404a45a23a2279847bc8fe17377df1')
         fields = {item['id']: item for item in catalog['fields']}

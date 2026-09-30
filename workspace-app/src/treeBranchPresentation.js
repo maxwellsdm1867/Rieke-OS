@@ -35,8 +35,8 @@ export function branchTooltip(node,parentField){
   return [parentField&&`Field: ${parentField}`,parentField==='block'&&node.label&&`Recorded label: ${node.label}`,node.value!==undefined&&`Source value: ${text(node.value)}`].filter(Boolean).join('\n');
 }
 export function epochLeafLabel(epoch){
-  if(epoch.label&&!opaque(epoch.label)&&epoch.label!==epoch.epoch_uuid?.slice(0,8))return compactTime(epoch.label);
-  const ordinal=epoch.epoch_number!=null?` ${epoch.epoch_number}`:'';
+  if(epoch.label&&!opaque(epoch.label)&&epoch.label!==epoch.epoch_uuid?.slice(0,8))return compactTime(epoch.label).replace(/^Epoch\s+/i,'');
+  const ordinal=epoch.epoch_number!=null?String(epoch.epoch_number):'—';
   const time=epoch.start_time?.split(/[ T]/)[1]?.slice(0,8);
-  return `Epoch${ordinal}${time?` · ${time}`:''}`;
+  return `${ordinal}${time?` · ${time}`:''}`;
 }

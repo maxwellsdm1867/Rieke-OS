@@ -46,6 +46,31 @@ class ImportPathTests(unittest.TestCase):
             self.assertIn('symbolic links', response.json['error'])
             self.assertEqual(list(Path(outside).iterdir()), [])
 
+    def test_queued_upload_worker_rejects_late_directory_redirect_before_read_or_cleanup(self):
+        import json
+        with patch('workspace_api.threading.Thread') as thread:
+            response = self.case.client.post('/api/imports',
+                data={'file': (io.BytesIO(b'Unparsed fixture'), 'recording.h5')},
+                content_type='multipart/form-data', headers=self.case.headers)
+        self.assertEqual(response.status_code, 202, response.json)
+        arguments = thread.call_args.kwargs
+        source, job_file = arguments['args']
+        uploads = source.parent.parent
+        uploads.rename(uploads.with_name('raw-uploads.saved'))
+        with tempfile.TemporaryDirectory() as outside:
+            external = Path(outside) / source.parent.name
+            external.mkdir()
+            recording = external / source.name
+            recording.write_bytes(b'Unparsed fixture')
+            uploads.symlink_to(outside, target_is_directory=True)
+            with patch('workspace_api.classify_source') as classify, patch('recording_workspace.workspace_tables', return_value=(None, None, self.case.events, None)):
+                arguments['target'](source, job_file)
+                classify.assert_not_called()
+            self.assertEqual(recording.read_bytes(), b'Unparsed fixture')
+            job = json.loads(job_file.read_text())
+            self.assertEqual(job['status'], 'failed')
+            self.assertFalse(job['catalog_committed'])
+
 
 if __name__ == '__main__':
     unittest.main()

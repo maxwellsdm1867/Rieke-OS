@@ -1,8 +1,8 @@
 export const MAX_TAG_IMPORT_BYTES=8*1024*1024;
 export async function readTagDocument(file){
  if(!file||file.size>MAX_TAG_IMPORT_BYTES)throw new Error('Choose a tag JSON file smaller than 8 MB.');
- if(/\.ugm$/i.test(file.name||''))throw new Error('UGM files are selection masks. Import them under Selection masks in protocol inspection.');
- let value;try{value=JSON.parse(await file.text());}catch{throw new Error('This file is not valid tag JSON. Export a tag JSON from MATLAB or the source workspace.');}
+ if(/\.ugm$/i.test(file.name||''))throw new Error('UGM files are not supported. Choose a tag JSON file.');
+ let value;try{value=JSON.parse(await file.text());}catch{throw new Error('This file is not valid tag JSON. Choose a tag JSON exported from a compatible source workspace.');}
  if(!value||Array.isArray(value)||typeof value!=='object')throw new Error('A tag file must contain a JSON object with UUID-based tag entries.');
  return value;
 }

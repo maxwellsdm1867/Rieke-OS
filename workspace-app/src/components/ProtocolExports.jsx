@@ -1,12 +1,12 @@
 import {useState} from 'react';
-import {Check, Database, Download, FileJson, GitBranch, History, RefreshCw} from 'lucide-react';
+import {Check, Database, Download, FileJson, FileCode, History, RefreshCw} from 'lucide-react';
 import {api, number, time, useResource} from '../api.js';
 import {exportDownloadLabel, exportFormatLabel} from '../exportFormats.js';
 import {Empty, Status} from './Common.jsx';
 import './ProtocolExports.css';
 
 const destinations = [
-  {format:'epictree-mat',title:'EpicTreeGUI',detail:'MATLAB bundle · tree + selection mask',icon:GitBranch},
+  {format:'matlab-mat',title:'MATLAB data (.mat)',detail:'Recorded metadata, selection and H5 references',icon:FileCode},
   {format:'wheeler-sqlite',title:'Wheeler SQL database',detail:'SQLite · queryable epoch metadata + H5 links',icon:Database},
 ];
 export function ExportDestination({value,onChange,disabled}) {
@@ -36,7 +36,7 @@ export default function ProtocolExports({protocolId,revision,onReuse,disabled}) 
     <div className="section-heading"><h2><History size={17}/> Exports from this protocol <span className="muted">{exports.length}</span></h2><button className="quiet" onClick={history.reload} disabled={history.loading} aria-label="Refresh protocol exports"><RefreshCw size={15}/></button></div>
     {error&&<div className="error" role="alert">{error}</div>}
     <Status {...history} retry={history.reload}>{exports.length?<div>{exports.slice(0,limit).map(item=><div className="saved-export" key={item.dataset_uuid}>
-      {item.format==='wheeler-sqlite'?<Database size={20}/>:item.format==='epictree-mat'?<GitBranch size={20}/>:<FileJson size={20}/>}
+      {item.format==='wheeler-sqlite'?<Database size={20}/>:['matlab-mat','epictree-mat'].includes(item.format)?<FileCode size={20}/>:<FileJson size={20}/>}
       <div><strong>{item.name}</strong><p>{exportFormatLabel(item.format)} · {number(item.epoch_count)} epochs · {time(item.created_at)}</p><details><summary>Export record & provenance</summary><pre>{JSON.stringify(item,null,2)}</pre></details></div>
       <button disabled={disabled||reusing!==null} onClick={()=>reuse(item)}><RefreshCw size={14} className={reusing===item.dataset_uuid?'spin':''}/> Reuse settings</button>
       {item.download_url&&<a className="button" href={item.download_url} download><Download size={14}/> {exportDownloadLabel(item.format)}</a>}

@@ -137,6 +137,15 @@ class CurationStore:
             raise ValueError('Tag suggestion limit must be an integer from 1 to 100')
         query = query.strip()
         prefix = query.casefold()
+        tracker=getattr(self,'recovery_tracker',None)
+        if tracker is not None and tracker.ready and tracker.token() is not None:
+            from workspace_curation_vocabulary import CurationVocabulary
+            index=getattr(self,'_curation_vocabulary_index',None)
+            if index is None or index.tracker is not tracker:
+                if index is not None:index.close()
+                index=self._curation_vocabulary_index=CurationVocabulary(self,tracker)
+            indexed=index.suggestions(query,limit)
+            if indexed is not None:return indexed
         cached = getattr(self, '_tag_vocabulary', None)
         if cached is None or cached[0] != self.project_uuid or time.monotonic() >= cached[1]:
             rows = (self.Curation & {'project_uuid': self.project_uuid}).proj('tags').to_dicts()
@@ -158,19 +167,25 @@ class CurationStore:
                 'scope':'project_saved_curation', 'count_unit':'distinct_epochs',
                 'match':'case_insensitive_prefix', 'history_included':False}
 
-    def _rows(self, protocol_uuid, ids):
+    def _rows(self, protocol_uuid, ids, *, selected_only=False):
         if not ids:
             return {}
         relation = self.Curation & {"project_uuid": self.project_uuid,
                                     "protocol_uuid": protocol_uuid}
-        if len(ids) <= 250:
-            rows = (relation & [{"epoch_uuid": key} for key in ids]).to_dicts()
-            return {row['epoch_uuid']: row for row in rows}
+        if len(ids) <= 250 or selected_only:
+            rows = {}
+            for start in range(0,len(ids),250):
+                selected = (relation & [{"epoch_uuid": key} for key in ids[start:start+250]]).to_dicts()
+                rows.update((row['epoch_uuid'],row) for row in selected)
+            return rows
         # Full protocol summaries commonly request tens of thousands of epochs.
         # Fetch the sparse saved decisions through the project/protocol key once,
         # instead of emitting an enormous OR expression for every epoch UUID.
+        saved = relation.to_dicts()
+        if not saved:
+            return {}
         allowed = set(ids)
-        return {row['epoch_uuid']: row for row in relation.to_dicts() if row['epoch_uuid'] in allowed}
+        return {row['epoch_uuid']: row for row in saved if row['epoch_uuid'] in allowed}
 
     @staticmethod
     def _state(row, fingerprint):
@@ -189,6 +204,24 @@ class CurationStore:
         ids, fingerprints = _scope(epoch_ids, fingerprints)
         rows = self._rows(protocol_uuid, ids)
         return {key: self._state(rows.get(key), fingerprints[key]) for key in ids}
+
+    def summary_decisions(self, protocol_uuid, epoch_ids, fingerprints):
+        """Only decisions that differ from default summary counts; no tag JSON.
+
+        The caller supplies already verified protocol membership. Approval is
+        counted only against its exact current metadata fingerprint.
+        """
+        protocol_uuid=_uuid(protocol_uuid)
+        allowed=set(epoch_ids)
+        rows=(self.Curation & {'project_uuid':self.project_uuid,'protocol_uuid':protocol_uuid}
+            & [{'included':False},{'review_state':'approved'}]).proj('included','review_state','metadata_fingerprint').to_dicts()
+        excluded,approved=set(),set()
+        for row in rows:
+            key=row['epoch_uuid']
+            if key not in allowed:continue
+            if not row['included']:excluded.add(key)
+            if row['review_state']=='approved' and row['metadata_fingerprint']==fingerprints[key]:approved.add(key)
+        return excluded,approved
 
     @contextlib.contextmanager
     def _transaction(self, protocol_uuid):
@@ -218,7 +251,7 @@ class CurationStore:
         return identity
 
     def update(self, protocol_uuid, epoch_ids, changes, expected_revisions, fingerprints, actor,
-               *, inclusion_by_epoch=None, audit_context=None, expected_binding_version=None):
+               *, inclusion_by_epoch=None, audit_context=None, expected_binding_version=None, generation_preflight=None):
         protocol_uuid = _uuid(protocol_uuid)
         ids, fingerprints = _scope(epoch_ids, fingerprints)
         if not ids:
@@ -235,12 +268,17 @@ class CurationStore:
         actor = _actor(actor)
         _expectations(ids, expected_revisions)
         with self._transaction(protocol_uuid):
+            if generation_preflight is not None:generation_preflight()
             provider = getattr(self, 'binding_provider', None)
             if provider and expected_binding_version is not None:
-                binding = provider(protocol_uuid)
+                header_provider=getattr(self,'binding_header_provider',None)
+                binding = (header_provider or provider)(protocol_uuid)
                 if (binding['version'] if binding else 0) != expected_binding_version:
                     raise RevisionConflict({'binding_version': binding['version'] if binding else 0})
-            rows = self._rows(protocol_uuid, ids)
+            # Mutation preflight is proportional to its explicit targets, even
+            # for a batch larger than one SQL restriction chunk. Full summaries
+            # retain the sparse whole-protocol read path above.
+            rows = self._rows(protocol_uuid, ids, selected_only=True)
             before = {key: self._state(rows.get(key), fingerprints[key]) for key in ids}
             if any(before[key]["revision"] != expected_revisions[key] for key in ids):
                 raise RevisionConflict(before)

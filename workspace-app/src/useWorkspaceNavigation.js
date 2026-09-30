@@ -19,5 +19,12 @@ export default function useWorkspaceNavigation(){
     window.history.pushState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
     furthest.current=next.index;current.current=next;setLocation(next);
   },[]);
-  return {route:location.route,go,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>window.history.back(),forward:()=>window.history.forward()};
+  const restore=useCallback(route=>{
+    if(!validWorkspaceRoute(route))return;
+    const next={route,index:0};
+    current.current=next;furthest.current=0;
+    window.history.replaceState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
+    setLocation(next);
+  },[]);
+  return {route:location.route,go,restore,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>window.history.back(),forward:()=>window.history.forward()};
 }

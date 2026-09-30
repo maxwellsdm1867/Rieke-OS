@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {epochPageRequest} from './epochBrowserSource.js';
+import {epochPageRequest,epochPageRevision} from './epochBrowserSource.js';
 
 test('shared browser preserves protocol filters and locates cell pages by UUID',()=>{
  const source={kind:'protocol',protocolId:'saved',query:'group_label=NBQX&cell_type=ON'};
@@ -20,4 +20,12 @@ test('shared predicate pages retain exact predicate and revision when expanding 
  const overview=epochPageRequest(source,{anchorUuid:'epoch-d',includeCells:true});
  assert.equal(overview.options.body.anchor_uuid,'epoch-d');assert.equal(overview.options.body.include_cells,true);
  assert.ok(!Object.hasOwn(overview.options.body,'offset'));assert.deepEqual(overview.options.body.predicate,predicate);
+});
+test('protocol and predicate revisions retain their source-specific receipt contracts',()=>{
+ const protocol={kind:'protocol',queryRevision:'protocol-A'},predicate={kind:'predicate',treeRevision:'explorer-A'};
+ assert.equal(epochPageRevision(protocol,{query_revision:'protocol-A',revision:'other'}),'protocol-A');
+ assert.equal(epochPageRevision(predicate,{revision:'explorer-A',query_revision:'other'}),'explorer-A');
+ for(const page of [{query_revision:'protocol-B'},{revision:'protocol-A'},{}])assert.throws(()=>epochPageRevision(protocol,page),/query changed/);
+ for(const page of [{revision:'explorer-B'},{query_revision:'explorer-A'},{}])assert.throws(()=>epochPageRevision(predicate,page),/query changed/);
+ assert.equal(epochPageRevision({kind:'protocol'},{query_revision:'observed'}),'observed');
 });

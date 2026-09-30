@@ -12,3 +12,9 @@ export function treeNavigationStart(saved,splits){
   if(!saved||!Array.isArray(saved.path)||saved.path.length>8||!saved.path.every(key=>typeof key==='string'&&/^[0-9a-f]{64}$/.test(key))||!Number.isSafeInteger(saved.offset)||saved.offset<0||typeof saved.revision!=='string'||!/^[0-9a-f]{64}$/.test(saved.revision)||saved.split_order?.join(',')!==splits)return null;
   return {path:saved.path,offset:saved.offset,revisionOverride:saved.revision,scrollTop:Number.isFinite(saved.scrollTop)?Math.max(0,saved.scrollTop):0};
 }
+
+// Compact previews carry split_order, without expanded tree levels. Keep their
+// exact revision and layout together while a replacement preview is pending.
+export function treePreviewScope(preview){
+  return {splits:preview.tree.split_order.join(','),expectedRevision:preview.tree_revision};
+}

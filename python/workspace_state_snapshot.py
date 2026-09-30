@@ -1,16 +1,21 @@
-"""Recoverable current app state; no query results, waveforms, or action replay.
+"""Recoverable current app state; no waveforms or action replay.
 
-The live JSON is replaced atomically after successful saves. A standalone SQLite
-snapshot is sealed once per active UTC day. Restore is an explicit offline tool;
-source imports and H5 files remain separate and must match the snapshot.
+Verified changes update a compact SQLite mirror before save acknowledgment; a
+small JSON pointer locates it. Full capture remains the fallback and old JSON /
+SQLite snapshots remain readable. Restore is an explicit offline tool; sources
+remain separate and must match. Frozen selections keep their explicit members.
 """
 from __future__ import annotations
 import argparse
+from contextlib import closing
 import fcntl
 import datetime as dt
 import hashlib
 import json
+import logging
 import os
+import secrets
+import stat
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -31,7 +36,7 @@ def serialized(value):
     return json.dumps(value, default=encode, sort_keys=True, separators=(',', ':'), allow_nan=False)
 
 
-def capture(project_dir, connection):
+def capture(project_dir, connection, *, include_tables=True, ordered=True):
     root = Path(project_dir).resolve()
     project = json.loads((root/'project.json').read_text())
     identity = project['project_uuid']
@@ -43,14 +48,31 @@ def capture(project_dir, connection):
     existing = {row[0] for row in connection.query(
         "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
     tables = {table: [] for table in TABLES}
-    for table in TABLES:
+    for table in TABLES if include_tables else ():
         if table not in existing:
             continue
-        rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s',
-                                args=(identity,), as_dict=True).fetchall()
+        restriction, arguments = '', (identity,)
+        if table == 'search_preset_version':
+            if 'search_preset' not in existing:
+                continue
+            restriction = (' AND EXISTS (SELECT 1 FROM recording_workspace.search_preset AS current '
+                'WHERE current.project_uuid=search_preset_version.project_uuid '
+                'AND current.preset_uuid=search_preset_version.preset_uuid '
+                'AND current.version=search_preset_version.version)')
+        elif table == 'explorer_revision':
+            revisions = {row['revision_uuid'] for row in tables.get('protocol_binding', [])}
+            revisions.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
+            revisions.discard(None)
+            if not revisions:
+                continue
+            revision_ids = sorted(revisions)
+            restriction = ' AND revision_uuid IN (' + ','.join(['%s'] * len(revision_ids)) + ')'
+            arguments += tuple(revision_ids)
+        rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s' + restriction,
+                                args=arguments, as_dict=True).fetchall()
         json_fields = {row[0] for row in connection.query(
             f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall() if row[1] == 'json'}
-        tables[table] = [{key:json.loads(value) if key in json_fields and isinstance(value, (str,bytes)) else value
+        tables[table] = [{key:_column_value(value, key in json_fields)
                           for key,value in dict(row).items()} for row in rows]
     # Only saved current query versions and active membership snapshots belong
     # in recovery state. Historical recipes/exports stay immutable in live SQL.
@@ -62,8 +84,9 @@ def capture(project_dir, connection):
     revisions.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
     if 'explorer_revision' in tables:
         tables['explorer_revision'] = [row for row in tables['explorer_revision'] if row['revision_uuid'] in revisions]
-    for table, rows in tables.items():
-        tables[table] = sorted(rows, key=serialized)
+    if ordered:
+        for table, rows in tables.items():
+            tables[table] = sorted(rows, key=serialized)
     sources = []
     source_references = []
     if 'source' in existing:
@@ -76,8 +99,15 @@ def capture(project_dir, connection):
         source_references.sort(key=lambda row:row['source_sha256'])
     state = dict(format=FORMAT, version=1, project=project, source_sha256s=sources,
                  source_references=source_references, protocols=protocols, tables=tables)
-    # Normalize datetime values before hashing and SQL restore.
-    return json.loads(serialized(state))
+    return state
+
+
+def _column_value(value, json_column=False):
+    if json_column and isinstance(value, (str, bytes)):
+        return json.loads(value)
+    if isinstance(value, (dt.datetime, dt.date)):
+        return value.isoformat()
+    return value
 
 
 
@@ -147,13 +177,36 @@ def expand_queries(state, service):
         if key in remap:definition['initial_revision_uuid']=remap[key]
 
 
-def atomic_write(path, data):
+def atomic_write(path, data, *, preserve_permissions=False):
     if path.is_symlink() or path.parent.is_symlink():
         raise ValueError('App state must use regular project files')
-    fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.app-state-')
+    mode = None
+    if preserve_permissions:
+        try:
+            mode = stat.S_IMODE(path.stat().st_mode)
+        except FileNotFoundError:
+            pass
+        # General project JSON keeps normal creation permissions. Let open()
+        # apply the caller's umask atomically; never change the process umask in
+        # a threaded server. Snapshot callers retain mkstemp's private 0600.
+        for _ in range(100):
+            temporary = path.parent / ('.app-state-' + secrets.token_hex(16))
+            try:
+                fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                             0o600 if mode is not None else 0o666)
+                break
+            except FileExistsError:
+                continue
+        else:
+            raise FileExistsError('Could not allocate an exclusive project JSON temporary file')
+    else:
+        fd, temporary = tempfile.mkstemp(dir=path.parent, prefix='.app-state-')
     try:
         with os.fdopen(fd, 'wb') as handle:
-            handle.write(data); handle.flush(); os.fsync(handle.fileno())
+            handle.write(data); handle.flush()
+            if mode is not None:
+                os.fchmod(handle.fileno(), mode)
+            os.fsync(handle.fileno())
         os.replace(temporary, path)
         directory_fd = os.open(path.parent, os.O_RDONLY)
         try:os.fsync(directory_fd)
@@ -172,56 +225,112 @@ def save(project_dir, connection, *, day=None, service=None):
 
 
 def _save(project_dir, connection, *, day=None, service=None):
+    # A verified native change feed makes ordinary tag saves proportional to
+    # changed rows. The full capture remains the correctness fallback when the
+    # authority cannot prove coverage, including unsupported SQL providers.
+    from workspace_recovery_store import inspect as inspect_recovery, write as write_recovery
     root = Path(project_dir).resolve()
     if connection.in_transaction:
         raise ValueError('Snapshot must follow the completed app transaction')
-    with connection.transaction:
-        state = capture(root, connection)
+    current = inspect_recovery(root)
+    identity = json.loads((root / 'project.json').read_text())['project_uuid']
+    tracker = getattr(service, '_recovery_tracker', None) if service is not None else None
+    if (tracker is None or tracker.connection is not connection
+            or tracker.project_uuid != identity):
+        from workspace_recovery_generation import RecoveryTracker
+        tracker = RecoveryTracker(connection, identity)
         if service is not None:
-            compact_queries(state, service)
-    if service is None and state['tables'].get('explorer_revision'):
-        service = query_service(root)
-        # Re-read after lazy service initialization: predicate/tag evaluation
-        # and the captured current state must share the same SQL snapshot.
-        with connection.transaction:
-            state = capture(root, connection)
-            compact_queries(state, service)
-    data = serialized(state).encode()
-    target = root/'app-state.json'
-    changed = not target.exists() or target.read_bytes() != data
-    if changed:
-        atomic_write(target, data)
-    folder = root/'backups/app-state'
-    if (root/'backups').is_symlink() or folder.is_symlink():
-        raise ValueError('App state backups cannot be symbolic links')
-    folder.mkdir(parents=True, exist_ok=True)
-    date = day or dt.datetime.now(dt.timezone.utc).date().isoformat()
-    dt.date.fromisoformat(date)
-    daily = folder/(date+'.sqlite')
-    if not daily.exists():
-        fd, temporary = tempfile.mkstemp(dir=folder, prefix='.snapshot-')
-        os.close(fd)
-        try:
-            with sqlite3.connect(temporary) as database:
-                database.execute('CREATE TABLE snapshot (format TEXT, version INTEGER, sha256 TEXT, document TEXT)')
-                database.execute('INSERT INTO snapshot VALUES (?,?,?,?)',
-                    (FORMAT,1,hashlib.sha256(data).hexdigest(),data.decode()))
-            with open(temporary,'rb') as handle:
-                os.fsync(handle.fileno())
-            os.chmod(temporary, 0o400)
+            service._recovery_tracker = tracker
+    if tracker is not None:
+        prior = current['header']['watermark'] if current is not None else None
+        result = None
+        with tracker.capture(prior) as plan:
+            if plan is not None:
+                state = capture(root, connection, include_tables=False)
+                keys = {table: list(names) for table, names in plan.primary_keys.items() if table in TABLES}
+                columns = {table: list(names) for table, names in plan.columns.items() if table in TABLES}
+                # These tables change which immutable recipes/versions belong
+                # in recovery. Reconcile them with a full pruned capture rather
+                # than adding unreferenced history to the current-state mirror.
+                full_tables = {'source', 'search_preset', 'search_preset_version',
+                               'protocol_binding', 'explorer_revision', 'dataset_revision'}
+                incremental = (current is not None and plan.complete
+                    and bool(current['header'].get('table_seals'))
+                    and keys == current['header']['keys'] and columns == current['header']['columns']
+                    and state == current['header']['state']
+                    and not any(plan.keys.get(table) for table in full_tables))
+                changes = deleted = None
+                if incremental:
+                    changes, deleted = recovery_after_images(connection, identity, plan)
+                else:
+                    state = capture(root, connection, ordered=False)
+                expected_header = {**state, 'tables': {table: [] for table in TABLES}}
+                if capture(root, connection, include_tables=False) != expected_header:
+                    raise ValueError('Project or protocol files changed during recovery capture; retry the save')
+                plan.verify()
+                result = write_recovery(root, state=state, keys=keys, columns=columns,
+                    watermark=plan.watermark, changes=changes, deleted=deleted, day=day)
+        if result is not None:
             try:
-                os.link(temporary, daily)  # Never replace an existing daily snapshot.
-            except FileExistsError:
-                pass
-        finally:
-            Path(temporary).unlink(missing_ok=True)
-    return {'path':str(target), 'bytes':len(data), 'changed':changed, 'daily_backup':str(daily)}
+                tracker.prune(plan.watermark)
+            except Exception:
+                # A durable mirror is already committed. Retaining extra feed
+                # rows is safe; losing them before that commit would not be.
+                logging.getLogger(__name__).exception('Recovery is durable but change-feed cleanup failed')
+                result['feed_cleanup_pending'] = True
+            return result
+    # Providers without a verified change authority still get compact current
+    # state, but must read canonical rows to prove that backup is complete.
+    with connection.transaction:
+        state = capture(root, connection, ordered=False)
+        keys, columns = recovery_schema(connection)
+    return write_recovery(root, state=state, keys=keys, columns=columns, watermark=None, day=day)
+
+
+def recovery_schema(connection):
+    existing = {row[0] for row in connection.query(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
+    keys, columns = {}, {}
+    for table in TABLES:
+        if table not in existing:
+            continue
+        heading = connection.query(f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall()
+        columns[table] = [row[0] for row in heading]
+        primary = connection.query(f'SHOW INDEX FROM recording_workspace.`{table}` WHERE Key_name=\'PRIMARY\'', as_dict=True).fetchall()
+        keys[table] = [row['Column_name'] for row in sorted(primary, key=lambda row: row['Seq_in_index'])]
+        if not keys[table]:
+            raise ValueError('Recovery requires an exact primary key for ' + table)
+    return keys, columns
+
+
+def recovery_after_images(connection, identity, plan):
+    """Fetch only changed complete keys within the authority's SQL snapshot."""
+    changes, deleted = {}, {}
+    for table, identities in plan.keys.items():
+        if table not in TABLES or not identities:
+            continue
+        names = plan.primary_keys[table]
+        deleted[table] = [list(key) for key in identities]
+        changes[table] = []
+        for offset in range(0, len(identities), 200):
+            batch = identities[offset:offset+200]
+            predicate = ' OR '.join('(' + ' AND '.join('`' + name + '`=%s' for name in names) + ')' for _ in batch)
+            args = (identity, *(value for key in batch for value in key))
+            rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` '
+                f'WHERE project_uuid=%s AND ({predicate})', args=args, as_dict=True).fetchall()
+            for row in rows:
+                changes[table].append({key: _column_value(value, key in plan.json_columns[table])
+                    for key, value in dict(row).items()})
+    return changes, deleted
 
 
 def load(path):
     path = Path(path)
     if path.suffix == '.sqlite':
-        with sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True) as database:
+        with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True)) as database:
+            if database.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_header'").fetchone():
+                from workspace_recovery_store import load_database
+                return load_database(path)
             rows = database.execute('SELECT format,version,sha256,document FROM snapshot').fetchall()
         if len(rows) != 1:
             raise ValueError('Expected one app state snapshot')
@@ -231,6 +340,9 @@ def load(path):
         state = json.loads(document)
     else:
         state = json.loads(path.read_text())
+        if state.get('format') == FORMAT and state.get('version') == 2:
+            from workspace_recovery_store import load_database, pointer_path
+            return load_database(pointer_path(path.parent, state), expected=state)
     if state.get('format') != FORMAT or state.get('version') != 1 or set(state.get('tables', {}))-set(TABLES):
         raise ValueError('Unsupported app state snapshot')
     return state
@@ -334,8 +446,9 @@ def main():
     parser.add_argument('--project-dir',type=Path,required=True)
     parser.add_argument('--restore',type=Path,help='Offline only: restore saved current state; stop the app first')
     args=parser.parse_args()
-    from recording_workspace import connect, configured_container
-    dj=connect(configured_container(args.project_dir))
+    from recording_workspace import connect, configured_database
+    provider=configured_database(args.project_dir)
+    dj=connect(provider,project_dir=args.project_dir) if isinstance(provider,dict) else connect(provider)
     result=restore(args.project_dir,dj.conn(),args.restore) if args.restore else save(args.project_dir,dj.conn())
     print(json.dumps(result))
 

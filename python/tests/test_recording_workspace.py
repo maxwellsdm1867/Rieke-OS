@@ -1,6 +1,10 @@
 import copy
 import json
+import os
 from pathlib import Path
+import stat
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -51,6 +55,87 @@ class RecordingWorkspaceSafetyTests(unittest.TestCase):
             ticks = np.int64(639258608779858225)
             workspace.write_json(path, {"ticks": ticks})
             self.assertEqual(json.loads(path.read_text())["ticks"], int(ticks))
+
+    def test_durable_json_flushes_file_before_publish_and_directory_after(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metadata.json'
+            events = []
+            real_fsync, real_replace = os.fsync, os.replace
+            def sync(fd):
+                events.append('sync')
+                return real_fsync(fd)
+            def replace(source, destination):
+                events.append('replace')
+                return real_replace(source, destination)
+            with patch('workspace_state_snapshot.os.fsync', side_effect=sync), \
+                    patch('workspace_state_snapshot.os.replace', side_effect=replace):
+                workspace.write_json(path, {'revision': 2})
+            self.assertEqual(events, ['sync', 'replace', 'sync'])
+            self.assertEqual(json.loads(path.read_text()), {'revision': 2})
+
+    def test_failed_file_flush_or_replace_preserves_previous_json_and_cleans_temporary(self):
+        for operation in ('fsync', 'replace'):
+            with self.subTest(operation=operation), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'metadata.json'
+                workspace.write_json(path, {'revision': 1})
+                before = path.read_bytes()
+                with patch('workspace_state_snapshot.os.' + operation, side_effect=OSError('disk fault')):
+                    with self.assertRaisesRegex(OSError, 'disk fault'):
+                        workspace.write_json(path, {'revision': 2})
+                self.assertEqual(path.read_bytes(), before)
+                self.assertEqual(list(Path(directory).iterdir()), [path])
+
+    def test_directory_flush_failure_is_reported_after_atomic_publication(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metadata.json'
+            workspace.write_json(path, {'revision': 1})
+            with patch('workspace_state_snapshot.os.fsync', side_effect=[None, OSError('directory fault')]):
+                with self.assertRaisesRegex(OSError, 'directory fault'):
+                    workspace.write_json(path, {'revision': 2})
+            # Publication already happened. Never report success or pretend the
+            # old value was restored after a failed durability confirmation.
+            self.assertEqual(json.loads(path.read_text()), {'revision': 2})
+            self.assertEqual(list(Path(directory).iterdir()), [path])
+
+    def test_general_json_preserves_existing_permissions_but_snapshots_remain_private(self):
+        from workspace_state_snapshot import atomic_write
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metadata.json'
+            path.write_text('{"revision":1}\n');path.chmod(0o640)
+            workspace.write_json(path, {'revision':2})
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode),0o640)
+            self.assertEqual(json.loads(path.read_text()),{'revision':2})
+            atomic_write(path,b'{"revision":3}\n')
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode),0o600)
+
+    def test_new_general_json_uses_normal_creation_umask_without_changing_parent_process(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'metadata.json'
+            code = '''import os,stat,sys
+from pathlib import Path
+from recording_workspace import write_json
+os.umask(0o027)
+path=Path(sys.argv[1])
+write_json(path,{'revision':1})
+assert stat.S_IMODE(path.stat().st_mode)==0o640
+assert os.umask(0o027)==0o027
+'''
+            env={**os.environ,'PYTHONPATH':str(Path(__file__).resolve().parents[1])}
+            result=subprocess.run([sys.executable,'-c',code,str(path)],env=env,
+                                  capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode),0o640)
+
+    def test_permission_failure_preserves_previous_json_and_cleans_temporary(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path=Path(directory)/'metadata.json'
+            workspace.write_json(path,{'revision':1});path.chmod(0o640)
+            with patch('workspace_state_snapshot.os.fchmod',side_effect=OSError('permission fault')):
+                with self.assertRaisesRegex(OSError,'permission fault'):
+                    workspace.write_json(path,{'revision':2})
+            self.assertEqual(json.loads(path.read_text()),{'revision':1})
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode),0o640)
+            self.assertEqual(list(Path(directory).iterdir()),[path])
 
     def test_tampered_parser_cache_is_rejected_before_reading_h5(self):
         with tempfile.TemporaryDirectory() as directory:

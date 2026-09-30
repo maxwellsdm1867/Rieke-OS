@@ -1,0 +1,3463 @@
+{
+  "scope": "Persistent native tag lookup: tag-ten, tag-another-ten, filter-twenty and cell/epoch hierarchy.\n\nEvery project/database is disposable. Acquisition metadata is synthetic; actual\nMySQL, triggers, Flask routes, derived indexes and each version's save hooks\nare used. Native SQL commits are checked immediately; any background recovery\nmirror is explicitly flushed before its final oracle. HTTP times include Flask serialization/client JSON decoding, exclude\noracle work, and do not model browser concurrency/rendering. Sequential bundle\ntimes are sums of their separately measured requests. Profiles are separate.\n",
+  "epochs": 500,
+  "profiles": 3,
+  "tags_per_annotation": 5,
+  "protocols": 2,
+  "samples": 5,
+  "source_root": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9",
+  "source_inventory_before": {
+    "python/__init__.py": "6631251543e036e4b9bb74daabaacd0421877388e0900e12da92c464fd1127cb",
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/export_mat.py": "bb7179baefb9f5d09d593769747fe91b3e62702833cd46790d1b15bad4b16fe2",
+    "python/field_mapper.py": "7d02cd79bbb73f84e513ddda4436bb9fa4601877b7794f8fbf2a694d3321609b",
+    "python/import_ugm.py": "84efca3868208c062710acc1bbc426ee9512c7eb0a90ea5acbf463db07d06f6c",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "ad7adbf587069f60d06779def9f5f6b5e2848a6d43750daaee587c8fdaa1aa9f",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "814e202d031e0f73ca168aa5c712a3b7e0f1a8f2cd8ddc9a64e3d7ec987b9ac2",
+    "python/tests/test_desktop_release.py": "d35ae42a5b649ae02cd71474de2361a4ff51c251987cae2d65e9e09d9ea42e0f",
+    "python/tests/test_desktop_runtime_audit.py": "60b96a141e90e6f61f36b6c038cf8bf3464a643a92170964304d3cb78d8b5ef4",
+    "python/tests/test_desktop_runtime_packaging.py": "e2023fd3f7175e442968b9632845b38fa9d1f5659662286c0c52ae752de64876",
+    "python/tests/test_desktop_test_release.py": "912c946581e5668c69c44a1c7824bef1b2fdd7304b50d42a227c1b25b4e03e08",
+    "python/tests/test_export.py": "0814aa8279dbbb4a0adbaa7a624c70066699236867c422169351f36bc28b655f",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "0c7a411dcc2a54c4ae2742afcc61aa6e8c0ed43c4c83d3d568b8a5803201764f",
+    "python/tests/test_workspace_api.py": "31c2647b0bebe8e62b37a939d8d53cfbb19398c25f578c371ffef41c763fb935",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "0ca17b614df4ba8258e1fc8ae111d13358316debd6b2e13122a8361ff401a904",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "8be5d4ba2aedde78c1b01fe7a0495b5ce22862a4cdaf8a6f7ef39bb564a8bf26",
+    "python/tests/test_workspace_compact_explorer.py": "9073fab984393fe9b33af6971f7164ce287ab335e6cfaae58816fa667796073b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "9bff9716ec32af3a43176cfac0d38640469b9c88da17e2f97ccaedbea2fd209f",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "17c37104693d46b416064ab05027c54added8d26ddd2ba6b7de202911ce5d592",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "ae4c272cc0faa24885f9a4bb7282e43a3c6a892da04cf8d096136010b49d6736",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "595b55c8343db1cee429914a329c6fb0d16e1b8edc8e4037c651d4e2b3250883",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_mask_refresh.py": "a16cf823fab7a30b18b31489951d4844d54b4904552a70910f97209e2583c8ff",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "57be7801220f1a5ded314f402992002d78e84ddab608206887655c0018b971a9",
+    "python/tests/test_workspace_matlab_masks.py": "9f8e9819bc4322ed2b59218936a637c56b3aa256eb3dce8b8dc8683cde1dbab1",
+    "python/tests/test_workspace_matlab_routes.py": "740f681ad4fb7967eecfc47d3de8a50daa461b8c093ade901533d5657a6f33ce",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3f4b346a59e1b78aeea51b1d1c2812582eed009b4cb2cc36831830e0d62601ca",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "ff3875c9233271834a4320d1d23844cf5f0539a6b0973157f03dbf1118c66d39",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "0ddf442ffefd00e16441868e89d5785ee4b302ffbb39ed6d0f17c9825d70c3ab",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "d74f2520953085c8216c12af4186755d11fe39fd81d328f6f58b04d981240489",
+    "python/tests/test_workspace_tag_exchange.py": "6c4e5109813b93fa9906f34d3108c7d90201b79b9ad108a1a0615bd891d4e3e3",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "f137c7fb5a5e9206abde92a866fcae5db8eabde6cb29f8de109b41b1b16d3414",
+    "python/tests/test_workspace_tree_code.py": "c2b64c14234c31108944ac3bc36a1dfecec2a8e64fe6d17f1f3c131ebb563893",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_updates.py": "bca29343f41d275c8d640f7ae55929d5659bbcdebc667d707cfd20389b0f33dd",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/verify_sept23_handoffs.py": "e20b9a08dfe47e0b7a1845a934d3023e033e4204d90b60c1ee25f72205d7513c",
+    "python/verify_workspace_matlab.py": "cfd8b0ce3d5b04d2010d3864504cf64f41a2da00457614a4724f702a6f6eb566",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "7c6bf29aa97bcb7c49c39311ac34f71c2ca744c8dc2125849e22ed97a8b735b1",
+    "python/workspace_api.py": "8efc55e5fb6079072014c616223872464c0451c6d85bfcb2c61693f9baaed1ff",
+    "python/workspace_app_routes.py": "29e2b03d11c1c5454fbbe270be2117afd21bcfca0edb3e66320ff01203e11684",
+    "python/workspace_audit.py": "4b5b033cb59319f4e0277754beaf66eb22788579d8c4452630c18c4e3e7bcc46",
+    "python/workspace_author_preferences.py": "e36bc7d074c6fbed2f63399538a580adb0f749f1a95024bb39e774671f2ef847",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "cca734e7ee8faab854204a080c729236339fd45dce2e39b99302c46f62964e07",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "e5a2421919e08351d2b8367ff773a4019f2433de46ca65cf598781fc55a0b51a",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "9048064f3ab40a20d97e7cde974cdf1541cbcb627f776a8a20edd03a5557fb90",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastores.py": "afc6139a965bdbfad78643a13ee33ed555339235239c9be938c77b48fd1d7e4a",
+    "python/workspace_desktop.py": "66a6a04c107053b3c0492e5ccd2e6f6e10b8479c107c0b58d5b5fd712800312c",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "ca98d97d2b693245a10267a103b292c707b394b8593e6eddf08c6bd9d72c9a7b",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "e195c160696ac9e2f59a7bd6e79c78e8638dbe3730cdfbb3ebda7296cdff8838",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_mask_refresh.py": "c42948d361060b6a1522255120ed59aa4c76f4cacc6a734e8f8dd1b5277a8546",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "3dd168a224a48a9bfd4f32e14cc3c46c3d0966e95be5ea9ea62f715f9ee31d34",
+    "python/workspace_matlab_masks.py": "3f0a22f973605d43ce026519a8086b5dc986f0e917c0d1e0e52c39b4aeffdecc",
+    "python/workspace_matlab_routes.py": "4997dd190e181540ae8217f6aa10e307b2cb4c4f810d17ee92dc8306c54322af",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "06c463bac69caebdb89a8e394e5a5ae0e7c747d07c40a0587a10e83aeb829775",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "46e2075bd9aa2bf69d2041f06bfdd41305032be2bd8864dfb8c5d0de774e3905",
+    "python/workspace_native_tag_filter.py": "a43e66ff47aaec64d0a862277b7751901775ab7f193f58c0106437b9fab1331b",
+    "python/workspace_native_tag_lookup.py": "d549e8084af074ab484759a2851fdacde7e632c334f55e2d65caee368e04ffd5",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "582a50eebeabea8f546ac829395e3aef72ab544112147dfb7fa409fd9db39d91",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "ae2fddb5d70edb6a66b803bb44587c8693f3c03dd44ea2b9bcf9874e4175159c",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "c055b81c518b38da1b632b2ac544f3f2dd277fda4fb4f9d496a41ae9624fa50b",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "40ba54acf2c5e9983c2e2766179a3d365b30ad1cdc4955410571936f7dfb4954",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "1917ae5b36553048027a19e1b68f99677a754dae1501d1e52be1cd3faaa2b4a5",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_code.py": "84698df192726094117e2d633e6604200cc618460c4c1e51b927fe0614f5936e",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "dbaa70e3ffe77be07c01e51ffedecc4d9b04221d08133ae2d1dce9b399e0d332",
+    "python/workspace_updates.py": "770a6486f9dcc830ae808428b83929a51785b16e10e2f2c8074474d38cd82d4a"
+  },
+  "fixture_module": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/docs/dev/scale-audit-2026-09-29/benchmark_service_scale.py",
+  "harness_sha256": "468173271c08020e7e1a7ce8b0fcdfc59693be0f9e3699a8caec342b2e77affd",
+  "started_at": "2026-09-30T15:17:16.330782+00:00",
+  "release_ready": false,
+  "operations": {
+    "first10_revision_preflight": {
+      "samples_seconds": [
+        0.006863583053927869,
+        0.005767875001765788,
+        0.005951334023848176,
+        0.006857750006020069,
+        0.006089958013035357
+      ],
+      "p50_seconds": 0.006089958013035357,
+      "p95_seconds": 0.006863583053927869,
+      "p99_seconds": 0.006863583053927869,
+      "maximum_seconds": 0.006863583053927869,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15362,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15362,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15363,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15363,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15363,
+          "Questions": 4
+        }
+      ]
+    },
+    "first10_save": {
+      "samples_seconds": [
+        0.03397225000662729,
+        0.01669733296148479,
+        0.01590783294523135,
+        0.01774270902387798,
+        0.018389292003121227
+      ],
+      "p50_seconds": 0.01774270902387798,
+      "p95_seconds": 0.03397225000662729,
+      "p99_seconds": 0.03397225000662729,
+      "maximum_seconds": 0.03397225000662729,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 18598,
+          "Questions": 36
+        },
+        {
+          "Bytes_sent": 12452,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12423,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12453,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12453,
+          "Questions": 29
+        }
+      ]
+    },
+    "second10_revision_preflight": {
+      "samples_seconds": [
+        0.006374125019647181,
+        0.005576791998464614,
+        0.006221582996658981,
+        0.0060125000309199095,
+        0.005592082976363599
+      ],
+      "p50_seconds": 0.0060125000309199095,
+      "p95_seconds": 0.006374125019647181,
+      "p99_seconds": 0.006374125019647181,
+      "maximum_seconds": 0.006374125019647181,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15380,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15380,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15381,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15381,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15381,
+          "Questions": 4
+        }
+      ]
+    },
+    "second10_save": {
+      "samples_seconds": [
+        0.01842504198430106,
+        0.016915374959353358,
+        0.01750191702740267,
+        0.016256875009275973,
+        0.01602291699964553
+      ],
+      "p50_seconds": 0.016915374959353358,
+      "p95_seconds": 0.01842504198430106,
+      "p99_seconds": 0.01842504198430106,
+      "maximum_seconds": 0.01842504198430106,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12464,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12464,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12435,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12465,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12465,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter20": {
+      "samples_seconds": [
+        0.02724245801800862,
+        0.022826333006378263,
+        0.03516616701381281,
+        0.021462041011545807,
+        0.023176041955593973
+      ],
+      "p50_seconds": 0.023176041955593973,
+      "p95_seconds": 0.03516616701381281,
+      "p99_seconds": 0.03516616701381281,
+      "maximum_seconds": 0.03516616701381281,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 141272,
+          "Questions": 64
+        },
+        {
+          "Bytes_sent": 134733,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 134734,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 134734,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 134734,
+          "Questions": 57
+        }
+      ]
+    },
+    "cell_save": {
+      "samples_seconds": [
+        0.007502541993744671,
+        0.00725866702850908,
+        0.018350000027567148,
+        0.007054875022731721,
+        0.007763291010633111
+      ],
+      "p50_seconds": 0.007502541993744671,
+      "p95_seconds": 0.018350000027567148,
+      "p99_seconds": 0.018350000027567148,
+      "maximum_seconds": 0.018350000027567148,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4165,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4168,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4168,
+          "Questions": 11
+        }
+      ]
+    },
+    "filter_cell100": {
+      "samples_seconds": [
+        0.03877783298958093,
+        0.03749154199613258,
+        0.04011900001205504,
+        0.038218542002141476,
+        0.03963516699150205
+      ],
+      "p50_seconds": 0.03877783298958093,
+      "p95_seconds": 0.04011900001205504,
+      "p99_seconds": 0.04011900001205504,
+      "maximum_seconds": 0.04011900001205504,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 168042,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 168042,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 168043,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 168043,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 168043,
+          "Questions": 57
+        }
+      ]
+    },
+    "filter_cell_and_epoch10": {
+      "samples_seconds": [
+        0.01800766703672707,
+        0.018951375037431717,
+        0.020278000039979815,
+        0.018302250013221055,
+        0.01821737503632903
+      ],
+      "p50_seconds": 0.018302250013221055,
+      "p95_seconds": 0.020278000039979815,
+      "p99_seconds": 0.020278000039979815,
+      "maximum_seconds": 0.020278000039979815,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 125358,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 125358,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 125359,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 125359,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 125359,
+          "Questions": 58
+        }
+      ]
+    },
+    "remove_first10_revision_preflight": {
+      "samples_seconds": [
+        0.0059079170459881425,
+        0.00627808301942423,
+        0.006188458995893598,
+        0.005992332997266203,
+        0.007050833024550229
+      ],
+      "p50_seconds": 0.006188458995893598,
+      "p95_seconds": 0.007050833024550229,
+      "p99_seconds": 0.007050833024550229,
+      "maximum_seconds": 0.007050833024550229,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15799,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15799,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15800,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15800,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15800,
+          "Questions": 4
+        }
+      ]
+    },
+    "remove_first10_save": {
+      "samples_seconds": [
+        0.016256083035841584,
+        0.01609495800221339,
+        0.016188249981496483,
+        0.015846625028643757,
+        0.018834499991498888
+      ],
+      "p50_seconds": 0.016188249981496483,
+      "p95_seconds": 0.018834499991498888,
+      "p99_seconds": 0.018834499991498888,
+      "maximum_seconds": 0.018834499991498888,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12452,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12452,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12423,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12453,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12453,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter_hierarchy_after_epoch_remove": {
+      "samples_seconds": [
+        0.011758790991734713,
+        0.012778042000718415,
+        0.012820375035516918,
+        0.01242733298568055,
+        0.011840666003990918
+      ],
+      "p50_seconds": 0.01242733298568055,
+      "p95_seconds": 0.012820375035516918,
+      "p99_seconds": 0.012820375035516918,
+      "maximum_seconds": 0.012820375035516918,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 112890,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 112890,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 112891,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 112891,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 112891,
+          "Questions": 55
+        }
+      ]
+    },
+    "filter_remaining10": {
+      "samples_seconds": [
+        0.0174046250176616,
+        0.017987709026783705,
+        0.01727400004165247,
+        0.01689045800594613,
+        0.017530124983750284
+      ],
+      "p50_seconds": 0.0174046250176616,
+      "p95_seconds": 0.017987709026783705,
+      "p99_seconds": 0.017987709026783705,
+      "maximum_seconds": 0.017987709026783705,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 124593,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 124593,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 124594,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 124594,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 124594,
+          "Questions": 57
+        }
+      ]
+    },
+    "remove_second10_revision_preflight": {
+      "samples_seconds": [
+        0.005977375025395304,
+        0.005894292029552162,
+        0.006003624992445111,
+        0.005952916049864143,
+        0.006602292007301003
+      ],
+      "p50_seconds": 0.005977375025395304,
+      "p95_seconds": 0.006602292007301003,
+      "p99_seconds": 0.006602292007301003,
+      "maximum_seconds": 0.006602292007301003,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15800,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15800,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        }
+      ]
+    },
+    "remove_second10_save": {
+      "samples_seconds": [
+        0.016056958003900945,
+        0.015534125035628676,
+        0.015537166967988014,
+        0.015851082978770137,
+        0.01648387499153614
+      ],
+      "p50_seconds": 0.015851082978770137,
+      "p95_seconds": 0.01648387499153614,
+      "p99_seconds": 0.01648387499153614,
+      "maximum_seconds": 0.01648387499153614,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12464,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12464,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12435,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12465,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12465,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter_after_all_epoch_removals": {
+      "samples_seconds": [
+        0.011692999978549778,
+        0.011391708976589143,
+        0.011859584017656744,
+        0.011452833947259933,
+        0.012298792018555105
+      ],
+      "p50_seconds": 0.011692999978549778,
+      "p95_seconds": 0.012298792018555105,
+      "p99_seconds": 0.012298792018555105,
+      "maximum_seconds": 0.012298792018555105,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 112133,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112133,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        }
+      ]
+    },
+    "remove_cell_save": {
+      "samples_seconds": [
+        0.0071121660294011235,
+        0.007018374977633357,
+        0.007366625010035932,
+        0.007096500019542873,
+        0.007313000038266182
+      ],
+      "p50_seconds": 0.0071121660294011235,
+      "p95_seconds": 0.007366625010035932,
+      "p99_seconds": 0.007366625010035932,
+      "maximum_seconds": 0.007366625010035932,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4168,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4165,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4168,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4168,
+          "Questions": 11
+        }
+      ]
+    },
+    "filter_after_cell_removal": {
+      "samples_seconds": [
+        0.011266125016845763,
+        0.01227129198377952,
+        0.013780042005237192,
+        0.011646541010122746,
+        0.011481249995995313
+      ],
+      "p50_seconds": 0.011646541010122746,
+      "p95_seconds": 0.013780042005237192,
+      "p99_seconds": 0.013780042005237192,
+      "maximum_seconds": 0.013780042005237192,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 112133,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 112134,
+          "Questions": 54
+        }
+      ]
+    },
+    "tag10_then10_filter20_http_total": {
+      "samples_seconds": [
+        0.09287745808251202,
+        0.06778370792744681,
+        0.08074883400695398,
+        0.06833187508163974,
+        0.06927029194775969
+      ],
+      "p50_seconds": 0.06927029194775969,
+      "p95_seconds": 0.09287745808251202,
+      "p99_seconds": 0.09287745808251202,
+      "maximum_seconds": 0.09287745808251202,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "cell_tag_then_cell_filter_http_total": {
+      "samples_seconds": [
+        0.0462803749833256,
+        0.04475020902464166,
+        0.05846900003962219,
+        0.0452734170248732,
+        0.04739845800213516
+      ],
+      "p50_seconds": 0.0462803749833256,
+      "p95_seconds": 0.05846900003962219,
+      "p99_seconds": 0.05846900003962219,
+      "maximum_seconds": 0.05846900003962219,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "first10_selected_action_http_total": {
+      "samples_seconds": [
+        0.04083583306055516,
+        0.022465207963250577,
+        0.021859166969079524,
+        0.024600459029898047,
+        0.024479250016156584
+      ],
+      "p50_seconds": 0.024479250016156584,
+      "p95_seconds": 0.04083583306055516,
+      "p99_seconds": 0.04083583306055516,
+      "maximum_seconds": 0.04083583306055516,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "second10_selected_action_http_total": {
+      "samples_seconds": [
+        0.02479916700394824,
+        0.02249216695781797,
+        0.02372350002406165,
+        0.022269375040195882,
+        0.02161499997600913
+      ],
+      "p50_seconds": 0.02249216695781797,
+      "p95_seconds": 0.02479916700394824,
+      "p99_seconds": 0.02479916700394824,
+      "maximum_seconds": 0.02479916700394824,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "autocomplete_cold_diagnostic": {
+      "samples_seconds": [
+        0.023283249989617616
+      ],
+      "p50_seconds": 0.023283249989617616,
+      "p95_seconds": 0.023283249989617616,
+      "p99_seconds": 0.023283249989617616,
+      "maximum_seconds": 0.023283249989617616,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 215729,
+          "Questions": 91
+        }
+      ]
+    },
+    "autocomplete_warm_diagnostic": {
+      "samples_seconds": [
+        0.029437625024002045
+      ],
+      "p50_seconds": 0.029437625024002045,
+      "p95_seconds": 0.029437625024002045,
+      "p99_seconds": 0.029437625024002045,
+      "maximum_seconds": 0.029437625024002045,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 215729,
+          "Questions": 91
+        }
+      ]
+    },
+    "autocomplete_empty_diagnostic": {
+      "samples_seconds": [
+        0.03325066698016599
+      ],
+      "p50_seconds": 0.03325066698016599,
+      "p95_seconds": 0.03325066698016599,
+      "p99_seconds": 0.03325066698016599,
+      "maximum_seconds": 0.03325066698016599,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 218807,
+          "Questions": 91
+        }
+      ]
+    },
+    "same_server_native_reuse_filter20": {
+      "samples_seconds": [
+        0.020739166997373104
+      ],
+      "p50_seconds": 0.020739166997373104,
+      "p95_seconds": 0.020739166997373104,
+      "p99_seconds": 0.020739166997373104,
+      "maximum_seconds": 0.020739166997373104,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 134735,
+          "Questions": 57
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "native_autocomplete_exact_counts_and_profile_authors",
+      "passed": true
+    },
+    {
+      "name": "actual_filter_uses_persistent_by_tag_sql_index",
+      "passed": true,
+      "queries": 1
+    },
+    {
+      "name": "persistent_native_lookup_reused_without_rebuild",
+      "passed": true
+    },
+    {
+      "name": "exact_native_case_upper",
+      "passed": true,
+      "count": 250
+    },
+    {
+      "name": "exact_native_case_lower",
+      "passed": true,
+      "count": 250
+    },
+    {
+      "name": "exact_native_unicode_nfc",
+      "passed": true,
+      "count": 167
+    },
+    {
+      "name": "exact_native_unicode_nfd",
+      "passed": true,
+      "count": 333
+    },
+    {
+      "name": "exact_native_or",
+      "passed": true,
+      "count": 333
+    },
+    {
+      "name": "exact_native_not_with_inheritance",
+      "passed": true,
+      "count": 250
+    },
+    {
+      "name": "exact_native_inherited_excluded_from_direct",
+      "passed": true,
+      "count": 0
+    },
+    {
+      "name": "no_sqlite_tag_membership_or_refresh_used",
+      "passed": true,
+      "calls": {
+        "membership_index": 0,
+        "refresh": 0
+      }
+    },
+    {
+      "name": "canonical_final_markers_removed",
+      "passed": true
+    },
+    {
+      "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+      "passed": true,
+      "records": 63
+    },
+    {
+      "name": "one_canonical_cell_record_no_child_copies",
+      "passed": true,
+      "child_epochs": 100
+    },
+    {
+      "name": "independent_protocol_curation_untouched",
+      "passed": true
+    },
+    {
+      "name": "all_product_modules_loaded_from_selected_source",
+      "passed": true
+    }
+  ],
+  "page_cells": true,
+  "target_specification": "tag10_then10_filter20_and_cell_epoch_hierarchy",
+  "baseline_harness_sha256": "272fe050c8762ed4ea45bd013e236e8723d8fe46f5e7e293c58e2edf1fd52ddc",
+  "mysql_version": "8.4.2",
+  "seed_seconds": 0.4073622500291094,
+  "seed_checkpoint_seconds": 0.18052658397937194,
+  "native_lookup_startup_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {
+      "preparing_protocol_reads": {
+        "seconds": 0.054246
+      }
+    },
+    "project_uuid": "e9bffb2b-d4b9-42e6-add4-e9fef1532cf7",
+    "reused": false,
+    "protocols_prepared": 2,
+    "protocols_deferred": 0,
+    "phase": "complete",
+    "seconds": 0.233545
+  },
+  "selected_epoch_uuids": {
+    "first10": [
+      "5feceb66-ffc8-6f38-d952-786c6d696c79",
+      "6b86b273-ff34-fce1-9d6b-804eff5a3f57",
+      "d4735e3a-265e-16ee-e03f-59718b9b5d03",
+      "4e074085-62be-db8b-60ce-05c1decfe3ad",
+      "4b227777-d4dd-1fc6-1c6f-884f48641d02",
+      "ef2d127d-e37b-942b-aad0-6145e54b0c61",
+      "e7f6c011-776e-8db7-cd33-0b54174fd76f",
+      "7902699b-e42c-8a8e-46fb-bb4501726517",
+      "2c624232-cdd2-2177-1294-dfbb310aca00",
+      "19581e27-de7c-ed00-ff1c-e50b2047e7a5"
+    ],
+    "second10": [
+      "ad573668-6512-6e55-649e-cb23ae1d4888",
+      "16dc368a-89b4-28b2-4854-84313ba67a39",
+      "37834f2f-2576-2f23-e1f7-4a531cbe445d",
+      "454f63ac-30c8-3229-97ef-025edff6abd2",
+      "5ef6fdf3-2513-aa7c-d11f-72beccf132b9",
+      "1253e937-3e78-1b75-0026-6caa55150e08",
+      "482d9673-cfee-5de3-91f9-7fde4d1c84f9",
+      "3346f2bb-f6c3-4bd2-dbe2-8bd1bb657d0e",
+      "9537f32e-c759-9e1a-e953-af6c9f929fe7",
+      "0fd42b3f-73c4-48b3-4940-b339f87d07ad"
+    ],
+    "cell": "0604cd31-38fe-ed20-2ef2-93e062da2f47",
+    "cell_children": [
+      "5feceb66-ffc8-6f38-d952-786c6d696c79",
+      "6b86b273-ff34-fce1-9d6b-804eff5a3f57",
+      "d4735e3a-265e-16ee-e03f-59718b9b5d03",
+      "4e074085-62be-db8b-60ce-05c1decfe3ad",
+      "4b227777-d4dd-1fc6-1c6f-884f48641d02",
+      "ef2d127d-e37b-942b-aad0-6145e54b0c61",
+      "e7f6c011-776e-8db7-cd33-0b54174fd76f",
+      "7902699b-e42c-8a8e-46fb-bb4501726517",
+      "2c624232-cdd2-2177-1294-dfbb310aca00",
+      "19581e27-de7c-ed00-ff1c-e50b2047e7a5",
+      "4a44dc15-3642-04a8-0fe8-0e9039455cc1",
+      "4fc82b26-aecb-47d2-868c-4efbe3581732",
+      "6b51d431-df5d-7f14-1cbe-ceccf79edf3d",
+      "3fdba35f-04dc-8c46-2986-c992bcf87554",
+      "8527a891-e224-1369-50ff-32ca212b45bc",
+      "e629fa65-98d7-3276-8f7c-726b4b621285",
+      "b17ef6d1-9c7a-5b1e-e83b-907c595526dc",
+      "4523540f-1504-cd17-100c-4835e85b7eef",
+      "4ec9599f-c203-d176-a301-536c2e091a19",
+      "9400f1b2-1cb5-27d7-fa3d-3eabba93557a",
+      "f5ca38f7-48a1-d6ea-f726-b8a42fb575c3",
+      "6f4b6612-125f-b3a0-daec-d2799dfd6c9c",
+      "785f3ec7-eb32-f30b-90cd-0fcf3657d388",
+      "535fa30d-7e25-dd8a-49f1-536779734ec8",
+      "c2356069-e9d1-e79c-a924-378153cfbbfb",
+      "b7a56873-cd77-1f2c-446d-369b649430b6",
+      "5f9c4ab0-8cac-7457-e911-1a30e4664920",
+      "670671cd-9740-4156-226e-507973f2ab83",
+      "59e19706-d51d-39f6-6711-c2653cd7eb12",
+      "35135aaa-6cc2-3891-b40c-b3f378c53a17",
+      "624b60c5-8c9d-8bfb-6ff1-886c2fd605d2",
+      "eb1e33e8-a81b-697b-7585-5af6bfcdbcbf",
+      "e29c9c18-0c62-79b0-b02a-bd6a1801c7c0",
+      "c6f3ac57-944a-5314-90cd-39902d0f7777",
+      "86e50149-6586-6131-2a9e-0b35558d84f6",
+      "9f14025a-f006-5b30-e47e-23ebb3b491d3",
+      "76a50887-d8f1-c2e9-3017-55428990ad81",
+      "7a61b537-01be-fdae-0eee-ffaecc73f14e",
+      "aea92132-c4cb-eb26-3e6a-c2bf6c183b5d",
+      "0b918943-df09-62bc-7a18-24c0555a3893",
+      "d59eced1-ded0-7f84-c145-592f65bdf854",
+      "3d914f93-48c9-cc0f-f8a7-9716700b9fcd",
+      "73475cb4-0a56-8e8d-a8a0-45ced110137e",
+      "44cb730c-4204-80a0-477b-505ae68af508",
+      "71ee45a3-c0db-9a98-65f7-313dd3372cf6",
+      "811786ad-1ae7-4adf-dd20-dd0372abaaeb",
+      "25fc0e70-96fc-6537-1820-2dc30b0c580b",
+      "31489056-e091-6d59-fe3a-dd79e63f095a",
+      "98010bd9-270f-9b10-0b62-14a21754fd33",
+      "0e17daca-5f3e-175f-448b-acace3bc0da4",
+      "1a656259-0ef1-9d10-45d0-6c4055742d38",
+      "031b4af5-197e-c30a-926f-48cf40e11a7d",
+      "41cfc0d1-f2d1-27b0-4555-b7246d84019b",
+      "2858dcd1-057d-3eae-7f7d-5f782167e24b",
+      "2fca346d-b656-1871-02ce-806ac732e06a",
+      "02d20bbd-7e39-4ad5-999a-4cebabac9619",
+      "7688b6ef-5255-5962-d008-fff894223582",
+      "c837649c-ce43-f272-9138-e72cc3152070",
+      "6208ef0f-7750-c111-548c-f90b6ea1d0d0",
+      "3e1e967e-9b79-3e90-8f8e-ae83c74dba9b",
+      "39fa9ec1-90ee-e7b6-f4df-f1100d6343e1",
+      "d029fa3a-95e1-74a1-9934-857f535eb942",
+      "81b8a03f-97e8-787c-53fe-1a86bda042b6",
+      "da4ea2a5-506f-2693-eae1-90d9360a1f31",
+      "a68b412c-4282-555f-1554-6cf6e1fc4289",
+      "108c995b-953c-8a35-5611-03e2014cf828",
+      "3ada92f2-8b4c-eda3-8562-ebf047c6ff05",
+      "49d180ec-f561-3281-9571-bf39d9b7b342",
+      "a21855da-08cb-102d-1d21-7c53dc5824a3",
+      "c75cb66a-e28d-8ebc-6ede-d002c28a8ba0",
+      "ff5a1ae0-12af-a5d4-c889-c50ad427aaf5",
+      "7f2253d7-e228-b22a-08bd-a1f09c516f6f",
+      "87226162-0421-7edd-b39e-7df969e0698a",
+      "96061e92-f58e-4bdc-dee7-3df36183fe3a",
+      "eb624dbe-56eb-6620-ae62-080c10a273ca",
+      "f369cb89-fc62-7e66-8987-007d121ed1ea",
+      "f74efabe-f12e-a619-e30b-79bddef89cff",
+      "a88a7902-cb4e-f697-ba0b-6759c50e8c10",
+      "349c4120-1b62-db85-1192-665c504b350f",
+      "98a3ab7c-340e-8a03-3e7b-37b6ef942875",
+      "48449a14-a4ff-7d79-bb7a-1b6f3d488eba",
+      "5316ca1c-5ddc-a8e6-cecc-fce58f3b8540",
+      "a46e3763-2fa6-ca51-a13f-e39a567b3c23",
+      "bbb965ab-0c80-d653-8cf2-184babad2a56",
+      "44c8031c-b036-a735-0d8b-9b8603af662a",
+      "b4944c6f-f08d-c6f4-3da2-e9c824669b7d",
+      "434c9b5a-e514-646b-bd91-b50032ca579e",
+      "bdd2d3af-3a5a-1213-497d-4f1f7bfcda89",
+      "8b940be7-fb78-aaa6-b656-7dd7a3987996",
+      "cd70bea0-23f7-52a0-564a-bb6ed08d42c1",
+      "69f59c27-3b6e-669a-c32a-6dd5e1b2cb63",
+      "1da51b8d-8ff9-8f6a-48f8-0ae79fe3ca6c",
+      "82416496-09f8-8ccd-2a0a-5b233a07a538",
+      "6e400187-1c0c-f27c-7634-ef1dc478408f",
+      "e3d6c4d4-599e-0088-2384-ca981ee287ed",
+      "ad48ff99-415b-2f00-7dc3-5b7eb553fd1e",
+      "7b1a278f-5abe-8e9d-a907-fc9c29dfd432",
+      "d6d824ab-ba4a-fde8-1129-c71dea75b810",
+      "29db0c67-82db-d500-0559-ef4d9e953e30",
+      "8c1f1046-219d-dd21-6a02-3f792356ddf1"
+    ]
+  },
+  "backup_receipts": [
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 1,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 2,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 3,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 4,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 5,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 6,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 7,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 8,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 9,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 10,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 11,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 12,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 13,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 14,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 15,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 16,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 17,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 18,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 19,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 20,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 21,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 22,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 23,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 24,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 25,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 26,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 27,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 28,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 29,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 30,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "profile_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 30,
+          "last_error": null,
+          "last_success": "2026-09-30T15:17:24.169576+00:00",
+          "pending": true,
+          "requested_sequence": 31,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "profile_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 30,
+          "last_error": null,
+          "last_success": "2026-09-30T15:17:24.169576+00:00",
+          "pending": true,
+          "requested_sequence": 32,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "profile_remove_first10",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 32,
+          "last_error": null,
+          "last_success": "2026-09-30T15:17:24.486314+00:00",
+          "pending": true,
+          "requested_sequence": 33,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "profile_remove_second10",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 32,
+          "last_error": null,
+          "last_success": "2026-09-30T15:17:24.486314+00:00",
+          "pending": true,
+          "requested_sequence": 34,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    }
+  ],
+  "preparation_index_seconds": 0,
+  "lookup_mode": "persistent_native_sql_no_post_seed_tag_cache_preparation",
+  "bundle_definitions": {
+    "tag10_then10_filter20_http_total": [
+      "first10_revision_preflight",
+      "first10_save",
+      "second10_revision_preflight",
+      "second10_save",
+      "filter20"
+    ],
+    "cell_tag_then_cell_filter_http_total": [
+      "cell_save",
+      "filter_cell100"
+    ],
+    "first10_selected_action_http_total": [
+      "first10_revision_preflight",
+      "first10_save"
+    ],
+    "second10_selected_action_http_total": [
+      "second10_revision_preflight",
+      "second10_save"
+    ]
+  },
+  "final_backup_status": {
+    "status": "current",
+    "pending": false,
+    "running": false,
+    "last_success": "2026-09-30T15:17:25.252632+00:00",
+    "last_error": null,
+    "requested_sequence": 34,
+    "completed_sequence": 34
+  },
+  "autocomplete_sql": {
+    "autocomplete_cold_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s GROUP BY project_uuid,tag",
+        "seconds": 0.0019153340253978968
+      },
+      {
+        "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag",
+        "seconds": 0.0005384999676607549
+      },
+      {
+        "sql": "SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag,profile_uuid",
+        "seconds": 0.0007603340200148523
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.0002502499846741557
+      }
+    ],
+    "autocomplete_warm_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s GROUP BY project_uuid,tag",
+        "seconds": 0.0018970409873872995
+      },
+      {
+        "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag",
+        "seconds": 0.00045908300671726465
+      },
+      {
+        "sql": "SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag,profile_uuid",
+        "seconds": 0.0006526659708470106
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.00018674996681511402
+      }
+    ],
+    "autocomplete_empty_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s GROUP BY project_uuid,tag",
+        "seconds": 0.001917750050779432
+      },
+      {
+        "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) GROUP BY project_uuid,tag",
+        "seconds": 0.005181541957426816
+      },
+      {
+        "sql": "SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) GROUP BY project_uuid,tag,profile_uuid",
+        "seconds": 0.005963417002931237
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.0002708330284804106
+      }
+    ]
+  },
+  "autocomplete_requests": {
+    "autocomplete_cold_diagnostic": {
+      "q": "gate",
+      "limit": 12,
+      "total": 3
+    },
+    "autocomplete_warm_diagnostic": {
+      "q": "gate",
+      "limit": 12,
+      "total": 3
+    },
+    "autocomplete_empty_diagnostic": {
+      "q": "",
+      "limit": 12,
+      "total": 41
+    }
+  },
+  "autocomplete_query_plans": [
+    {
+      "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s GROUP BY project_uuid,tag",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "38",
+          "ref": "const",
+          "rows": 3787,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1060",
+          "ref": null,
+          "rows": 542,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY project_uuid,tag,profile_uuid",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1060",
+          "ref": null,
+          "rows": 542,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index; Using temporary"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "shared_annotation",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "331",
+          "ref": null,
+          "rows": 3,
+          "filtered": 100.0,
+          "Extra": "Using where"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) GROUP BY project_uuid,tag",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1108",
+          "ref": null,
+          "rows": 9769,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index for group-by (scanning)"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) GROUP BY project_uuid,tag,profile_uuid",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "index",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1108",
+          "ref": null,
+          "rows": 7575,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index; Using temporary"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "shared_annotation",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "331",
+          "ref": null,
+          "rows": 9,
+          "filtered": 100.0,
+          "Extra": "Using where"
+        }
+      ]
+    }
+  ],
+  "filter20_cpu_profile": {
+    "top_functions": [
+      {
+        "file": "docs/dev/scale-audit-2026-09-29/benchmark_native_tag_sequence.py",
+        "line": 331,
+        "function": "<lambda>",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 5.833000000000001e-06,
+        "cumulative_seconds": 0.055883583
+      },
+      {
+        "file": "docs/dev/scale-audit-2026-09-29/benchmark_native_tag_sequence.py",
+        "line": 159,
+        "function": "request",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 4.125e-06,
+        "cumulative_seconds": 0.055855125000000005
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/test.py",
+        "line": 1163,
+        "function": "get",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 5.916000000000001e-06,
+        "cumulative_seconds": 0.055037958000000005
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/testing.py",
+        "line": 204,
+        "function": "open",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 1.5292000000000002e-05,
+        "cumulative_seconds": 0.055032042
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/test.py",
+        "line": 1062,
+        "function": "open",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 4.916e-06,
+        "cumulative_seconds": 0.054734000000000005
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/test.py",
+        "line": 984,
+        "function": "run_wsgi_app",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 1.0544000000000001e-05,
+        "cumulative_seconds": 0.054719959000000006
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/test.py",
+        "line": 1230,
+        "function": "run_wsgi_app",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 6.206e-06,
+        "cumulative_seconds": 0.054527291000000006
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py",
+        "line": 1529,
+        "function": "__call__",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 6.25e-06,
+        "cumulative_seconds": 0.054501125000000004
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py",
+        "line": 1479,
+        "function": "wsgi_app",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 1.0334000000000001e-05,
+        "cumulative_seconds": 0.054494875000000005
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py",
+        "line": 904,
+        "function": "full_dispatch_request",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 7.959000000000001e-06,
+        "cumulative_seconds": 0.05426191700000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py",
+        "line": 879,
+        "function": "dispatch_request",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 9.316600000000001e-05,
+        "cumulative_seconds": 0.05404975
+      },
+      {
+        "file": "python/workspace_api.py",
+        "line": 716,
+        "function": "epoch_page",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 9.011800000000001e-05,
+        "cumulative_seconds": 0.053952625000000004
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 295,
+        "function": "for_epochs",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 0.000110742,
+        "cumulative_seconds": 0.021559708
+      },
+      {
+        "file": "docs/dev/scale-audit-2026-09-29/benchmark_native_tag_sequence.py",
+        "line": 322,
+        "function": "traced_query",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 0.00020169600000000002,
+        "cumulative_seconds": 0.021302794
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/connection.py",
+        "line": 412,
+        "function": "query",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 9.6835e-05,
+        "cumulative_seconds": 0.020735294
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/connection.py",
+        "line": 402,
+        "function": "_execute_query",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 0.000112442,
+        "cumulative_seconds": 0.020493535
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.next>",
+        "primitive_calls": 27,
+        "calls": 38,
+        "self_seconds": 2.8749000000000002e-05,
+        "cumulative_seconds": 0.020399084
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "line": 249,
+        "function": "native_read",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 1.0751000000000001e-05,
+        "cumulative_seconds": 0.020334834
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/cursors.py",
+        "line": 150,
+        "function": "execute",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 5.8716000000000005e-05,
+        "cumulative_seconds": 0.020121799000000003
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/cursors.py",
+        "line": 332,
+        "function": "_query",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 6.766500000000001e-05,
+        "cumulative_seconds": 0.019671499000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 575,
+        "function": "query",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 7.2996e-05,
+        "cumulative_seconds": 0.019196248000000003
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 851,
+        "function": "_read_query_result",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 5.2428e-05,
+        "cumulative_seconds": 0.018222878
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 1288,
+        "function": "read",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 7.029700000000001e-05,
+        "cumulative_seconds": 0.018144459
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 101,
+        "function": "_rows",
+        "primitive_calls": 46,
+        "calls": 46,
+        "self_seconds": 5.5586000000000006e-05,
+        "cumulative_seconds": 0.016481585
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 197,
+        "function": "response_contract",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 2.6333e-05,
+        "cumulative_seconds": 0.016095541
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 233,
+        "function": "_attest_contract",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 6.5583e-05,
+        "cumulative_seconds": 0.016065292000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/copy.py",
+        "line": 128,
+        "function": "deepcopy",
+        "primitive_calls": 78,
+        "calls": 17170,
+        "self_seconds": 0.009397953,
+        "cumulative_seconds": 0.016016376000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/copy.py",
+        "line": 201,
+        "function": "_deepcopy_list",
+        "primitive_calls": 62,
+        "calls": 102,
+        "self_seconds": 0.000313937,
+        "cumulative_seconds": 0.015887622
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/copy.py",
+        "line": 227,
+        "function": "_deepcopy_dict",
+        "primitive_calls": 1242,
+        "calls": 1284,
+        "self_seconds": 0.002823383,
+        "cumulative_seconds": 0.013861159000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 763,
+        "function": "_read_packet",
+        "primitive_calls": 765,
+        "calls": 765,
+        "self_seconds": 0.001183477,
+        "cumulative_seconds": 0.013647774000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 813,
+        "function": "_read_bytes",
+        "primitive_calls": 1530,
+        "calls": 1530,
+        "self_seconds": 0.00055718,
+        "cumulative_seconds": 0.010595909
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/contextlib.py",
+        "line": 132,
+        "function": "__enter__",
+        "primitive_calls": 1,
+        "calls": 4,
+        "self_seconds": 2.4160000000000002e-06,
+        "cumulative_seconds": 0.01029525
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/contextlib.py",
+        "line": 141,
+        "function": "__exit__",
+        "primitive_calls": 1,
+        "calls": 4,
+        "self_seconds": 5.961e-06,
+        "cumulative_seconds": 0.010047500000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'read' of '_io.BufferedReader' objects>",
+        "primitive_calls": 1530,
+        "calls": 1530,
+        "self_seconds": 0.000202833,
+        "cumulative_seconds": 0.009966704
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/socket.py",
+        "line": 704,
+        "function": "readinto",
+        "primitive_calls": 67,
+        "calls": 67,
+        "self_seconds": 7.1325e-05,
+        "cumulative_seconds": 0.009763871
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/ssl.py",
+        "line": 1299,
+        "function": "recv_into",
+        "primitive_calls": 67,
+        "calls": 67,
+        "self_seconds": 7.6537e-05,
+        "cumulative_seconds": 0.00965621
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/ssl.py",
+        "line": 1157,
+        "function": "read",
+        "primitive_calls": 67,
+        "calls": 67,
+        "self_seconds": 4.4206e-05,
+        "cumulative_seconds": 0.009569875
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'read' of '_ssl._SSLSocket' objects>",
+        "primitive_calls": 67,
+        "calls": 67,
+        "self_seconds": 0.009520961000000001,
+        "cumulative_seconds": 0.009520961000000001
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 134,
+        "function": "_active_ddl_guard",
+        "primitive_calls": 4,
+        "calls": 4,
+        "self_seconds": 3.4702e-05,
+        "cumulative_seconds": 0.009518833
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 1370,
+        "function": "_read_result_packet",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 5.7791e-05,
+        "cumulative_seconds": 0.008029705
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/json/__init__.py",
+        "line": 138,
+        "function": "jsonify",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 9.917e-06,
+        "cumulative_seconds": 0.007209750000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/json/provider.py",
+        "line": 189,
+        "function": "response",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 4.0667e-05,
+        "cumulative_seconds": 0.0071941670000000004
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 869,
+        "function": "to_dicts",
+        "primitive_calls": 9,
+        "calls": 9,
+        "self_seconds": 2.0088e-05,
+        "cumulative_seconds": 0.007106127
+      },
+      {
+        "file": "python/workspace_api.py",
+        "line": 61,
+        "function": "dumps",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 3.9334e-05,
+        "cumulative_seconds": 0.007095667000000001
+      },
+      {
+        "file": "python/workspace_api.py",
+        "line": 62,
+        "function": "browser_safe",
+        "primitive_calls": 1,
+        "calls": 9641,
+        "self_seconds": 0.003128445,
+        "cumulative_seconds": 0.005557
+      },
+      {
+        "file": "python/workspace_api.py",
+        "line": 66,
+        "function": "<dictcomp>",
+        "primitive_calls": 1,
+        "calls": 1363,
+        "self_seconds": 0.001356685,
+        "cumulative_seconds": 0.0055550420000000005
+      },
+      {
+        "file": "python/workspace_api.py",
+        "line": 68,
+        "function": "<listcomp>",
+        "primitive_calls": 2,
+        "calls": 102,
+        "self_seconds": 0.000207931,
+        "cumulative_seconds": 0.005543167000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 1416,
+        "function": "_read_rowdata_packet",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 0.000348339,
+        "cumulative_seconds": 0.005187870000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 1231,
+        "function": "cursor",
+        "primitive_calls": 9,
+        "calls": 9,
+        "self_seconds": 1.4085000000000002e-05,
+        "cumulative_seconds": 0.004998834000000001
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 173,
+        "function": "_rows",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 1.2874e-05,
+        "cumulative_seconds": 0.004452666
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "line": 268,
+        "function": "_native_read",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 2.8374000000000003e-05,
+        "cumulative_seconds": 0.00418375
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "line": 311,
+        "function": "native_context",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 3.9625e-05,
+        "cumulative_seconds": 0.0041300420000000004
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 1429,
+        "function": "_read_row_from_packet",
+        "primitive_calls": 428,
+        "calls": 428,
+        "self_seconds": 0.000943448,
+        "cumulative_seconds": 0.00309484
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 125,
+        "function": "_observer_status",
+        "primitive_calls": 8,
+        "calls": 8,
+        "self_seconds": 3.0752e-05,
+        "cumulative_seconds": 0.002996167
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 1448,
+        "function": "_get_descriptions",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 0.00031073,
+        "cumulative_seconds": 0.0027641270000000003
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 115,
+        "function": "_triggers",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 1.0840000000000001e-06,
+        "cumulative_seconds": 0.00249225
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/protocol.py",
+        "line": 163,
+        "function": "read_length_coded_string",
+        "primitive_calls": 2712,
+        "calls": 2712,
+        "self_seconds": 0.0008386870000000001,
+        "cumulative_seconds": 0.002463757
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 107,
+        "function": "_ddl",
+        "primitive_calls": 4,
+        "calls": 4,
+        "self_seconds": 2.6045000000000002e-05,
+        "cumulative_seconds": 0.002096749
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 898,
+        "function": "<listcomp>",
+        "primitive_calls": 9,
+        "calls": 9,
+        "self_seconds": 5.2901e-05,
+        "cumulative_seconds": 0.002083417
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "line": 185,
+        "function": "_metadata",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 1.8873e-05,
+        "cumulative_seconds": 0.001887292
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 195,
+        "function": "_chips",
+        "primitive_calls": 66,
+        "calls": 66,
+        "self_seconds": 3.8842000000000005e-05,
+        "cumulative_seconds": 0.0018064630000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 899,
+        "function": "<dictcomp>",
+        "primitive_calls": 86,
+        "calls": 86,
+        "self_seconds": 0.00036378800000000003,
+        "cumulative_seconds": 0.0017890520000000002
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "line": 101,
+        "function": "selected",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 1.0127000000000001e-05,
+        "cumulative_seconds": 0.0017238330000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+        "line": 183,
+        "function": "dumps",
+        "primitive_calls": 11,
+        "calls": 11,
+        "self_seconds": 2.5582e-05,
+        "cumulative_seconds": 0.0017133740000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+        "line": 183,
+        "function": "encode",
+        "primitive_calls": 11,
+        "calls": 11,
+        "self_seconds": 2.1001e-05,
+        "cumulative_seconds": 0.0016796250000000001
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 188,
+        "function": "_validated_tags",
+        "primitive_calls": 66,
+        "calls": 66,
+        "self_seconds": 6.0735e-05,
+        "cumulative_seconds": 0.0016687540000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+        "line": 205,
+        "function": "iterencode",
+        "primitive_calls": 9,
+        "calls": 9,
+        "self_seconds": 0.001655624,
+        "cumulative_seconds": 0.001655624
+      },
+      {
+        "file": "python/workspace_curation.py",
+        "line": 170,
+        "function": "_rows",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 6.041e-06,
+        "cumulative_seconds": 0.0016269580000000002
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<method 'get' of 'dict' objects>",
+        "primitive_calls": 37540,
+        "calls": 37540,
+        "self_seconds": 0.001579066,
+        "cumulative_seconds": 0.001579066
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/protocol.py",
+        "line": 232,
+        "function": "__init__",
+        "primitive_calls": 169,
+        "calls": 169,
+        "self_seconds": 8.209100000000001e-05,
+        "cumulative_seconds": 0.0015381350000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/json/provider.py",
+        "line": 166,
+        "function": "dumps",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 4.5840000000000005e-06,
+        "cumulative_seconds": 0.001499333
+      },
+      {
+        "file": "python/workspace_service.py",
+        "line": 748,
+        "function": "epoch_page",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 2.0418e-05,
+        "cumulative_seconds": 0.001481625
+      },
+      {
+        "file": "python/workspace_service.py",
+        "line": 778,
+        "function": "_epoch_page_identities",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 5.3036000000000005e-05,
+        "cumulative_seconds": 0.0014375000000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/protocol.py",
+        "line": 236,
+        "function": "_parse_field_descriptor",
+        "primitive_calls": 169,
+        "calls": 169,
+        "self_seconds": 0.000321222,
+        "cumulative_seconds": 0.001434004
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 347,
+        "function": "token",
+        "primitive_calls": 4,
+        "calls": 4,
+        "self_seconds": 1.1835000000000001e-05,
+        "cumulative_seconds": 0.001308874
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 359,
+        "function": "_fresh_token",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 1.9957000000000002e-05,
+        "cumulative_seconds": 0.001283249
+      },
+      {
+        "file": "python/workspace_state_generation.py",
+        "line": 311,
+        "function": "_scope",
+        "primitive_calls": 4,
+        "calls": 4,
+        "self_seconds": 1.0588000000000001e-05,
+        "cumulative_seconds": 0.0012372090000000002
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 282,
+        "function": "__and__",
+        "primitive_calls": 14,
+        "calls": 14,
+        "self_seconds": 1.0955000000000001e-05,
+        "cumulative_seconds": 0.001231415
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/expression.py",
+        "line": 178,
+        "function": "restrict",
+        "primitive_calls": 14,
+        "calls": 14,
+        "self_seconds": 8.0241e-05,
+        "cumulative_seconds": 0.00122046
+      },
+      {
+        "file": "python/workspace_explorer.py",
+        "line": 60,
+        "function": "protocol_binding_header",
+        "primitive_calls": 3,
+        "calls": 3,
+        "self_seconds": 1.0375000000000001e-05,
+        "cumulative_seconds": 0.001140292
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/heading.py",
+        "line": 223,
+        "function": "attributes",
+        "primitive_calls": 1006,
+        "calls": 1006,
+        "self_seconds": 0.000370603,
+        "cumulative_seconds": 0.001131045
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 34,
+        "function": "text",
+        "primitive_calls": 416,
+        "calls": 416,
+        "self_seconds": 0.000344121,
+        "cumulative_seconds": 0.001093559
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+        "line": 299,
+        "function": "loads",
+        "primitive_calls": 89,
+        "calls": 89,
+        "self_seconds": 5.7661e-05,
+        "cumulative_seconds": 0.0010433340000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/protocol.py",
+        "line": 61,
+        "function": "read",
+        "primitive_calls": 2712,
+        "calls": 2712,
+        "self_seconds": 0.000883326,
+        "cumulative_seconds": 0.001001099
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.all>",
+        "primitive_calls": 22,
+        "calls": 78,
+        "self_seconds": 5.9162e-05,
+        "cumulative_seconds": 0.0009938730000000002
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 40,
+        "function": "tags",
+        "primitive_calls": 66,
+        "calls": 66,
+        "self_seconds": 6.4268e-05,
+        "cumulative_seconds": 0.000976505
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.isinstance>",
+        "primitive_calls": 20369,
+        "calls": 20369,
+        "self_seconds": 0.000925852,
+        "cumulative_seconds": 0.000956848
+      },
+      {
+        "file": "python/workspace_service.py",
+        "line": 236,
+        "function": "source_scope",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 2.9469000000000002e-05,
+        "cumulative_seconds": 0.000953541
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/heading.py",
+        "line": 285,
+        "function": "__getitem__",
+        "primitive_calls": 745,
+        "calls": 745,
+        "self_seconds": 0.000133812,
+        "cumulative_seconds": 0.0009465220000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+        "line": 332,
+        "function": "decode",
+        "primitive_calls": 89,
+        "calls": 89,
+        "self_seconds": 8.2749e-05,
+        "cumulative_seconds": 0.0009448740000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/condition.py",
+        "line": 278,
+        "function": "make_condition",
+        "primitive_calls": 14,
+        "calls": 56,
+        "self_seconds": 0.000252074,
+        "cumulative_seconds": 0.00090821
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 42,
+        "function": "<listcomp>",
+        "primitive_calls": 66,
+        "calls": 66,
+        "self_seconds": 5.4155000000000006e-05,
+        "cumulative_seconds": 0.000898625
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/pymysql/connections.py",
+        "line": 869,
+        "function": "_execute_command",
+        "primitive_calls": 56,
+        "calls": 56,
+        "self_seconds": 0.00017737200000000002,
+        "cumulative_seconds": 0.0008883750000000001
+      },
+      {
+        "file": "python/workspace_annotations.py",
+        "line": 261,
+        "function": "filter_epoch_ids",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 8.886e-05,
+        "cumulative_seconds": 0.0008803330000000001
+      },
+      {
+        "file": "python/workspace_datastores.py",
+        "line": 192,
+        "function": "source_states",
+        "primitive_calls": 2,
+        "calls": 2,
+        "self_seconds": 7.208e-06,
+        "cumulative_seconds": 0.0008665830000000001
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.any>",
+        "primitive_calls": 456,
+        "calls": 456,
+        "self_seconds": 0.000230088,
+        "cumulative_seconds": 0.0008293720000000001
+      },
+      {
+        "file": "/Users/maxwellsdm/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+        "line": 343,
+        "function": "raw_decode",
+        "primitive_calls": 89,
+        "calls": 89,
+        "self_seconds": 0.000817002,
+        "cumulative_seconds": 0.000817002
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/wrappers/response.py",
+        "line": 601,
+        "function": "get_json",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 2.9590000000000004e-06,
+        "cumulative_seconds": 0.000812959
+      },
+      {
+        "file": "/Users/maxwellsdm/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/json/provider.py",
+        "line": 181,
+        "function": "loads",
+        "primitive_calls": 1,
+        "calls": 1,
+        "self_seconds": 1.5830000000000001e-06,
+        "cumulative_seconds": 0.00079675
+      },
+      {
+        "file": "~",
+        "line": 0,
+        "function": "<built-in method builtins.id>",
+        "primitive_calls": 20016,
+        "calls": 20016,
+        "self_seconds": 0.000750718,
+        "cumulative_seconds": 0.000750718
+      }
+    ],
+    "native_sql_calls": [
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0007289999630302191
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.00034683296689763665
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_consumers WHERE NAME IN ('?','?','?')",
+        "seconds": 0.00028316699899733067
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_instruments WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.0003928749938495457
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT PROCESSLIST_ID,NAME,INSTRUMENTED FROM performance_schema.threads WHERE TYPE='?' AND PROCESSLIST_ID IS NOT NULL",
+        "seconds": 0.00027595803840085864
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0003370419726707041
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT EVENT_SCHEMA,EVENT_NAME FROM information_schema.EVENTS LIMIT 1",
+        "seconds": 0.0003447500057518482
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT CHANNEL_NAME FROM performance_schema.replication_applier_configuration LIMIT 1",
+        "seconds": 0.0001521250233054161
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT THREAD_ID,EVENT_NAME FROM performance_schema.events_statements_current WHERE EVENT_NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) AND END_EVENT_ID IS NULL LIMIT 1",
+        "seconds": 0.00021983298938721418
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT @@server_uuid AS server_uuid,@@version AS version,CONNECTION_ID() AS connection_id",
+        "seconds": 0.00019200000679120421
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,TABLE_ID FROM information_schema.INNODB_TABLES WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.0005740419728681445
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT TRIGGER_NAME,EVENT_MANIPULATION,EVENT_OBJECT_TABLE,ACTION_TIMING,ACTION_STATEMENT,CREATED FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=%s",
+        "seconds": 0.0012521659955382347
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0003592920256778598
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_consumers WHERE NAME IN ('?','?','?')",
+        "seconds": 0.00018645799718797207
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_instruments WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.0003763329586945474
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT PROCESSLIST_ID,NAME,INSTRUMENTED FROM performance_schema.threads WHERE TYPE='?' AND PROCESSLIST_ID IS NOT NULL",
+        "seconds": 0.0002121249563060701
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.00033579202136024833
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT EVENT_SCHEMA,EVENT_NAME FROM information_schema.EVENTS LIMIT 1",
+        "seconds": 0.00029208301566541195
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT CHANNEL_NAME FROM performance_schema.replication_applier_configuration LIMIT 1",
+        "seconds": 0.00018783297855407
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT THREAD_ID,EVENT_NAME FROM performance_schema.events_statements_current WHERE EVENT_NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) AND END_EVENT_ID IS NULL LIMIT 1",
+        "seconds": 0.00022912502754479647
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0004045419627800584
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT scope_epoch,generation FROM `recording_workspace`.`app_state_generation` WHERE project_uuid=%s AND scope_kind=%s AND scope_uuid=%s",
+        "seconds": 0.000322542036883533
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT scope_epoch,generation FROM `recording_workspace`.`app_state_generation` WHERE project_uuid=%s AND scope_kind=%s AND scope_uuid=%s",
+        "seconds": 0.00017604196909815073
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`protocol_uuid`,`revision_uuid`,`version`,`bound_at` FROM `recording_workspace`.`protocol_binding` WHERE ( (`project_uuid`='?')AND(`protocol_uuid`='?'))",
+        "seconds": 0.00023958302335813642
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`source_sha256`,`version`,`frozen`,`archived`,`query_excluded`,`updated_at`,`actor`,`actor_kind`,`server_actor`,`reason` FROM `recording_workspace`.`data_store_state` WHERE ( (`project_uuid`='?'))",
+        "seconds": 0.0003084169584326446
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`protocol_uuid`,`revision_uuid`,`version`,`bound_at` FROM `recording_workspace`.`protocol_binding` WHERE ( (`project_uuid`='?')AND(`protocol_uuid`='?'))",
+        "seconds": 0.00023937498917803168
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+        "seconds": 0.00037987501127645373
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`protocol_uuid`,`epoch_uuid`,`included`,`tags`,`review_state`,`revision`,`metadata_fingerprint` FROM `recording_workspace`.`curation` WHERE ( (`project_uuid`='?')AND(`protocol_uuid`='?'))AND( ( (`epoch_uuid`='?') OR  (",
+        "seconds": 0.0007103749667294323
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`dataset_uuid`,`created_at`,`artifact_sha256` FROM `recording_workspace`.`dataset_revision` WHERE ( (`project_uuid`='?'))",
+        "seconds": 0.0002502910210750997
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`target_kind`,`target_uuid`,`profile_uuid`,`tags`,`author_name`,`revision`,`updated_at` FROM `recording_workspace`.`shared_annotation` WHERE ( (`project_uuid`='?'))AND( (`target_kind`='?'))AND( ( (`target_uuid`='?') OR",
+        "seconds": 0.001726499991491437
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`target_kind`,`target_uuid`,`profile_uuid`,`tags`,`author_name`,`revision`,`updated_at` FROM `recording_workspace`.`shared_annotation` WHERE ( (`project_uuid`='?'))AND( (`target_kind`='?'))AND( ( (`target_uuid`='?') OR",
+        "seconds": 0.000497999950312078
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT scope_epoch,generation FROM `recording_workspace`.`app_state_generation` WHERE project_uuid=%s AND scope_kind=%s AND scope_uuid=%s",
+        "seconds": 0.00047483399976044893
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT scope_epoch,generation FROM `recording_workspace`.`app_state_generation` WHERE project_uuid=%s AND scope_kind=%s AND scope_uuid=%s",
+        "seconds": 0.0002162500168196857
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`protocol_uuid`,`revision_uuid`,`version`,`bound_at` FROM `recording_workspace`.`protocol_binding` WHERE ( (`project_uuid`='?')AND(`protocol_uuid`='?'))",
+        "seconds": 0.0002269999822601676
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT `project_uuid`,`source_sha256`,`version`,`frozen`,`archived`,`query_excluded`,`updated_at`,`actor`,`actor_kind`,`server_actor`,`reason` FROM `recording_workspace`.`data_store_state` WHERE ( (`project_uuid`='?'))",
+        "seconds": 0.00030795898055657744
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0004632920026779175
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.00035358400782570243
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_consumers WHERE NAME IN ('?','?','?')",
+        "seconds": 0.0002062080311588943
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_instruments WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.0004330839728936553
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT PROCESSLIST_ID,NAME,INSTRUMENTED FROM performance_schema.threads WHERE TYPE='?' AND PROCESSLIST_ID IS NOT NULL",
+        "seconds": 0.00023366697132587433
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0004393329727463424
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT EVENT_SCHEMA,EVENT_NAME FROM information_schema.EVENTS LIMIT 1",
+        "seconds": 0.00040429196087643504
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT CHANNEL_NAME FROM performance_schema.replication_applier_configuration LIMIT 1",
+        "seconds": 0.00015970796812325716
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT THREAD_ID,EVENT_NAME FROM performance_schema.events_statements_current WHERE EVENT_NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) AND END_EVENT_ID IS NULL LIMIT 1",
+        "seconds": 0.000274707970675081
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT @@server_uuid AS server_uuid,@@version AS version,CONNECTION_ID() AS connection_id",
+        "seconds": 0.00019929197151213884
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,TABLE_ID FROM information_schema.INNODB_TABLES WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.000484999967738986
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT TRIGGER_NAME,EVENT_MANIPULATION,EVENT_OBJECT_TABLE,ACTION_TIMING,ACTION_STATEMENT,CREATED FROM information_schema.TRIGGERS WHERE TRIGGER_SCHEMA=%s",
+        "seconds": 0.0012307920260354877
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0003642079536803067
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_consumers WHERE NAME IN ('?','?','?')",
+        "seconds": 0.0001947919954545796
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT NAME,ENABLED FROM performance_schema.setup_instruments WHERE NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.000389167049434036
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT PROCESSLIST_ID,NAME,INSTRUMENTED FROM performance_schema.threads WHERE TYPE='?' AND PROCESSLIST_ID IS NOT NULL",
+        "seconds": 0.0002192090032622218
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0003327500307932496
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT EVENT_SCHEMA,EVENT_NAME FROM information_schema.EVENTS LIMIT 1",
+        "seconds": 0.00029916601488366723
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT CHANNEL_NAME FROM performance_schema.replication_applier_configuration LIMIT 1",
+        "seconds": 0.00014970795018598437
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SELECT THREAD_ID,EVENT_NAME FROM performance_schema.events_statements_current WHERE EVENT_NAME IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) AND END_EVENT_ID IS NULL LIMIT 1",
+        "seconds": 0.0002160840085707605
+      },
+      {
+        "thread": "filter",
+        "sql_shape": "SHOW GLOBAL STATUS WHERE Variable_name IN ('?','?','?','?','?','?','?','?','?','?','?','?','?','?')",
+        "seconds": 0.0003625000244937837
+      }
+    ],
+    "limits": "Separate instrumented filter; background mirror flushed before profile. CPU cumulative times overlap."
+  },
+  "native_lookup_query_plans": [
+    {
+      "sql": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1070",
+          "ref": "const,const,const",
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    }
+  ],
+  "same_server_native_lookup_reuse": {
+    "checkpoint": {
+      "status": "ready",
+      "storage": "native_sql",
+      "phases": {
+        "preparing_protocol_reads": {
+          "seconds": 0.019975
+        }
+      },
+      "project_uuid": "e9bffb2b-d4b9-42e6-add4-e9fef1532cf7",
+      "reused": true,
+      "protocols_prepared": 2,
+      "protocols_deferred": 0,
+      "phase": "complete",
+      "seconds": 0.088638
+    },
+    "reopened": {
+      "status": "ready",
+      "storage": "native_sql",
+      "phases": {
+        "preparing_protocol_reads": {
+          "seconds": 0.01782
+        }
+      },
+      "project_uuid": "e9bffb2b-d4b9-42e6-add4-e9fef1532cf7",
+      "reused": true,
+      "protocols_prepared": 2,
+      "protocols_deferred": 0,
+      "phase": "complete",
+      "seconds": 0.131056
+    },
+    "seconds": 0.21972979203565046,
+    "scope": "Native lookup checkpoint followed by a fresh Python lookup adapter in the same server; not a MySQL-process restart."
+  },
+  "sqlite_tag_cache_calls": {
+    "membership_index": 0,
+    "refresh": 0
+  },
+  "workflow_peak_rss_before_durable_oracle_bytes": 170164224,
+  "durable_snapshot_verify_seconds": 0.03063724999083206,
+  "loaded_product_modules": {
+    "workspace_tree": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_tree.py",
+    "workspace_predicates": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_predicates.py",
+    "workspace_cache_lifecycle": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_cache_lifecycle.py",
+    "workspace_metadata_objects": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_metadata_objects.py",
+    "workspace_disk_index": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_disk_index.py",
+    "workspace_catalog_identity": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_catalog_identity.py",
+    "recording_workspace": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/recording_workspace.py",
+    "workspace_recipes": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_recipes.py",
+    "workspace_tree_code": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_tree_code.py",
+    "workspace_service": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_service.py",
+    "workspace_tree_pages": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_tree_pages.py",
+    "workspace_projects": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_projects.py",
+    "workspace_mysql_profile": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_mysql_profile.py",
+    "workspace_native_mysql": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_native_mysql.py",
+    "workspace_mysql_runtime": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_mysql_runtime.py",
+    "workspace_storage": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_storage.py",
+    "workspace_diff": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_diff.py",
+    "workspace_protocol_identity": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_protocol_identity.py",
+    "workspace_import_check": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_import_check.py",
+    "workspace_audit": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_audit.py",
+    "workspace_api": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_api.py",
+    "workspace_state_snapshot": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_state_snapshot.py",
+    "workspace_author_preferences": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_author_preferences.py",
+    "workspace_curation": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_curation.py",
+    "workspace_annotations": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_annotations.py",
+    "workspace_shared_tag_index": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_shared_tag_index.py",
+    "workspace_paths": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_paths.py",
+    "workspace_desktop_paths": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_desktop_paths.py",
+    "workspace_startup_registry": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_startup_registry.py",
+    "workspace_explorer": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_explorer.py",
+    "workspace_datastores": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_datastores.py",
+    "workspace_suggestions": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_suggestions.py",
+    "workspace_tag_predicates": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_tag_predicates.py",
+    "workspace_export_folder": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_export_folder.py",
+    "workspace_import_progress": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_import_progress.py",
+    "workspace_project_preferences": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_project_preferences.py",
+    "workspace_protocol_state": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_protocol_state.py",
+    "workspace_state_generation": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_state_generation.py",
+    "workspace_project_servers": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_project_servers.py",
+    "workspace_launcher": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_launcher.py",
+    "workspace_app_routes": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_app_routes.py",
+    "workspace_folder_browser": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_folder_browser.py",
+    "workspace_h5_inbox": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_h5_inbox.py",
+    "workspace_tag_exchange": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_tag_exchange.py",
+    "workspace_external_tags": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_external_tags.py",
+    "workspace_qc": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_qc.py",
+    "workspace_search": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_search.py",
+    "workspace_matlab_masks": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_matlab_masks.py",
+    "workspace_matlab_routes": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_matlab_routes.py",
+    "workspace_mask_refresh": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_mask_refresh.py",
+    "workspace_matching_epochs": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_matching_epochs.py",
+    "workspace_candidate_exports": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_candidate_exports.py",
+    "workspace_backup_scheduler": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_backup_scheduler.py",
+    "workspace_recovery_store": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_recovery_store.py",
+    "workspace_recovery_generation": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_recovery_generation.py",
+    "workspace_annotation_preparation": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_annotation_preparation.py",
+    "workspace_native_tag_lookup": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_native_tag_lookup.py",
+    "workspace_lifecycle": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_lifecycle.py",
+    "workspace_native_tag_filter": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-native-tags-frozen-7porgom9/python/workspace_native_tag_filter.py"
+  },
+  "owned_native_runtime_stopped": true,
+  "source_inventory_after": {
+    "python/__init__.py": "6631251543e036e4b9bb74daabaacd0421877388e0900e12da92c464fd1127cb",
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/export_mat.py": "bb7179baefb9f5d09d593769747fe91b3e62702833cd46790d1b15bad4b16fe2",
+    "python/field_mapper.py": "7d02cd79bbb73f84e513ddda4436bb9fa4601877b7794f8fbf2a694d3321609b",
+    "python/import_ugm.py": "84efca3868208c062710acc1bbc426ee9512c7eb0a90ea5acbf463db07d06f6c",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "ad7adbf587069f60d06779def9f5f6b5e2848a6d43750daaee587c8fdaa1aa9f",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "814e202d031e0f73ca168aa5c712a3b7e0f1a8f2cd8ddc9a64e3d7ec987b9ac2",
+    "python/tests/test_desktop_release.py": "d35ae42a5b649ae02cd71474de2361a4ff51c251987cae2d65e9e09d9ea42e0f",
+    "python/tests/test_desktop_runtime_audit.py": "60b96a141e90e6f61f36b6c038cf8bf3464a643a92170964304d3cb78d8b5ef4",
+    "python/tests/test_desktop_runtime_packaging.py": "e2023fd3f7175e442968b9632845b38fa9d1f5659662286c0c52ae752de64876",
+    "python/tests/test_desktop_test_release.py": "912c946581e5668c69c44a1c7824bef1b2fdd7304b50d42a227c1b25b4e03e08",
+    "python/tests/test_export.py": "0814aa8279dbbb4a0adbaa7a624c70066699236867c422169351f36bc28b655f",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "0c7a411dcc2a54c4ae2742afcc61aa6e8c0ed43c4c83d3d568b8a5803201764f",
+    "python/tests/test_workspace_api.py": "31c2647b0bebe8e62b37a939d8d53cfbb19398c25f578c371ffef41c763fb935",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "0ca17b614df4ba8258e1fc8ae111d13358316debd6b2e13122a8361ff401a904",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "8be5d4ba2aedde78c1b01fe7a0495b5ce22862a4cdaf8a6f7ef39bb564a8bf26",
+    "python/tests/test_workspace_compact_explorer.py": "9073fab984393fe9b33af6971f7164ce287ab335e6cfaae58816fa667796073b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "9bff9716ec32af3a43176cfac0d38640469b9c88da17e2f97ccaedbea2fd209f",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "17c37104693d46b416064ab05027c54added8d26ddd2ba6b7de202911ce5d592",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "ae4c272cc0faa24885f9a4bb7282e43a3c6a892da04cf8d096136010b49d6736",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "595b55c8343db1cee429914a329c6fb0d16e1b8edc8e4037c651d4e2b3250883",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_mask_refresh.py": "a16cf823fab7a30b18b31489951d4844d54b4904552a70910f97209e2583c8ff",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "57be7801220f1a5ded314f402992002d78e84ddab608206887655c0018b971a9",
+    "python/tests/test_workspace_matlab_masks.py": "9f8e9819bc4322ed2b59218936a637c56b3aa256eb3dce8b8dc8683cde1dbab1",
+    "python/tests/test_workspace_matlab_routes.py": "740f681ad4fb7967eecfc47d3de8a50daa461b8c093ade901533d5657a6f33ce",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3f4b346a59e1b78aeea51b1d1c2812582eed009b4cb2cc36831830e0d62601ca",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "ff3875c9233271834a4320d1d23844cf5f0539a6b0973157f03dbf1118c66d39",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "0ddf442ffefd00e16441868e89d5785ee4b302ffbb39ed6d0f17c9825d70c3ab",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "d74f2520953085c8216c12af4186755d11fe39fd81d328f6f58b04d981240489",
+    "python/tests/test_workspace_tag_exchange.py": "6c4e5109813b93fa9906f34d3108c7d90201b79b9ad108a1a0615bd891d4e3e3",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "f137c7fb5a5e9206abde92a866fcae5db8eabde6cb29f8de109b41b1b16d3414",
+    "python/tests/test_workspace_tree_code.py": "c2b64c14234c31108944ac3bc36a1dfecec2a8e64fe6d17f1f3c131ebb563893",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_updates.py": "bca29343f41d275c8d640f7ae55929d5659bbcdebc667d707cfd20389b0f33dd",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/verify_sept23_handoffs.py": "e20b9a08dfe47e0b7a1845a934d3023e033e4204d90b60c1ee25f72205d7513c",
+    "python/verify_workspace_matlab.py": "cfd8b0ce3d5b04d2010d3864504cf64f41a2da00457614a4724f702a6f6eb566",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "7c6bf29aa97bcb7c49c39311ac34f71c2ca744c8dc2125849e22ed97a8b735b1",
+    "python/workspace_api.py": "8efc55e5fb6079072014c616223872464c0451c6d85bfcb2c61693f9baaed1ff",
+    "python/workspace_app_routes.py": "29e2b03d11c1c5454fbbe270be2117afd21bcfca0edb3e66320ff01203e11684",
+    "python/workspace_audit.py": "4b5b033cb59319f4e0277754beaf66eb22788579d8c4452630c18c4e3e7bcc46",
+    "python/workspace_author_preferences.py": "e36bc7d074c6fbed2f63399538a580adb0f749f1a95024bb39e774671f2ef847",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "cca734e7ee8faab854204a080c729236339fd45dce2e39b99302c46f62964e07",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "e5a2421919e08351d2b8367ff773a4019f2433de46ca65cf598781fc55a0b51a",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "9048064f3ab40a20d97e7cde974cdf1541cbcb627f776a8a20edd03a5557fb90",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastores.py": "afc6139a965bdbfad78643a13ee33ed555339235239c9be938c77b48fd1d7e4a",
+    "python/workspace_desktop.py": "66a6a04c107053b3c0492e5ccd2e6f6e10b8479c107c0b58d5b5fd712800312c",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "ca98d97d2b693245a10267a103b292c707b394b8593e6eddf08c6bd9d72c9a7b",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "e195c160696ac9e2f59a7bd6e79c78e8638dbe3730cdfbb3ebda7296cdff8838",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_mask_refresh.py": "c42948d361060b6a1522255120ed59aa4c76f4cacc6a734e8f8dd1b5277a8546",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "3dd168a224a48a9bfd4f32e14cc3c46c3d0966e95be5ea9ea62f715f9ee31d34",
+    "python/workspace_matlab_masks.py": "3f0a22f973605d43ce026519a8086b5dc986f0e917c0d1e0e52c39b4aeffdecc",
+    "python/workspace_matlab_routes.py": "4997dd190e181540ae8217f6aa10e307b2cb4c4f810d17ee92dc8306c54322af",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "06c463bac69caebdb89a8e394e5a5ae0e7c747d07c40a0587a10e83aeb829775",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "46e2075bd9aa2bf69d2041f06bfdd41305032be2bd8864dfb8c5d0de774e3905",
+    "python/workspace_native_tag_filter.py": "a43e66ff47aaec64d0a862277b7751901775ab7f193f58c0106437b9fab1331b",
+    "python/workspace_native_tag_lookup.py": "d549e8084af074ab484759a2851fdacde7e632c334f55e2d65caee368e04ffd5",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "582a50eebeabea8f546ac829395e3aef72ab544112147dfb7fa409fd9db39d91",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "ae2fddb5d70edb6a66b803bb44587c8693f3c03dd44ea2b9bcf9874e4175159c",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "c055b81c518b38da1b632b2ac544f3f2dd277fda4fb4f9d496a41ae9624fa50b",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "40ba54acf2c5e9983c2e2766179a3d365b30ad1cdc4955410571936f7dfb4954",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "1917ae5b36553048027a19e1b68f99677a754dae1501d1e52be1cd3faaa2b4a5",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_code.py": "84698df192726094117e2d633e6604200cc618460c4c1e51b927fe0614f5936e",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "dbaa70e3ffe77be07c01e51ffedecc4d9b04221d08133ae2d1dce9b399e0d332",
+    "python/workspace_updates.py": "770a6486f9dcc830ae808428b83929a51785b16e10e2f2c8074474d38cd82d4a"
+  },
+  "source_unchanged": true,
+  "harness_unchanged": true,
+  "seconds": 9.253306082973722,
+  "finished_at": "2026-09-30T15:17:25.584669+00:00",
+  "peak_rss_bytes": 170164224,
+  "passed": true
+}

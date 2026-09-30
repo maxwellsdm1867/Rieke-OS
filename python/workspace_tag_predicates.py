@@ -146,9 +146,15 @@ class TagPredicates:
     def catalog_fields(self,ids):
         definitions=self.definitions()
         if not definitions: return []
-        states,_=self.snapshot({field['id'] for field in definitions})
+        all_fields={field['id'] for field in definitions};indexed={}
+        shared=getattr(self.service,'shared_annotations',None)
+        if shared is not None and hasattr(shared,'catalog_fields'):
+            indexed=shared.catalog_fields([self.service.rows[key] for key in ids],all_fields & SHARED_FIELDS.keys()) or {}
+        states,_=self.snapshot(all_fields-indexed.keys())
         fields=[]
         for definition in definitions:
+            if definition['id'] in indexed:
+                fields.append({**definition,**indexed[definition['id']]});continue
             key=definition['id'];values={identity:{key:states[key].get(identity,[])} for identity in ids}
             distinct={value_key(current[key]):current[key] for current in values.values()}
             examples=[value_label(value)[:160] for value in sorted(distinct.values(),key=value_order)[:5]]

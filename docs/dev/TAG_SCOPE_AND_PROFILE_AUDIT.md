@@ -5,7 +5,7 @@ Reviewed 2026-09-28. This records the integration contract, not an implemented m
 ## Reference behavior
 
 Upstream: https://github.com/SamarjitK/datajoint
-Local fork: /path/to/repos/datajoint (origin maxwellsdm1867, upstream SamarjitK).
+Local fork: /Users/maxwellsdm/Documents/GitHub/datajoint (origin maxwellsdm1867, upstream SamarjitK).
 
 - next-app/api/schema.py:255: Tags attaches tag text and user to a table/object identity and its H5 UUID.
 - next-app/api/helpers/query.py:106–147: tag predicates restrict the selected hierarchy level; joins carry matching cells down to their epochs.

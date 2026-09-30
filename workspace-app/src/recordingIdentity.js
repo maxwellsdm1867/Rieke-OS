@@ -6,5 +6,6 @@ export function recordingDate(record={}){
 export function datedCellLabel(record={},cellRow=false){
   const label=record.cell_label || (cellRow?record.label:undefined) || 'Cell label not recorded';
   const date=recordingDate(record);
-  return String(label).startsWith(`${date} · `)?String(label):`${date} · ${label}`;
+  const dated=String(label).startsWith(`${date} · `)?String(label):`${date} · ${label}`;
+  return record.identity_qualifier?`${dated} · ${record.identity_qualifier}`:dated;
 }

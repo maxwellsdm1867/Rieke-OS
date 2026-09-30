@@ -15,37 +15,30 @@ from workspace_service import WorkspaceService, bounded_window, number_block_epo
 
 class EventRelation:
     """Minimal queryable event fixture that records the actual fetch contract."""
-    def __init__(self, rows, calls, restrictions=(), fields=None):
-        self.rows, self.calls, self.restrictions = rows, calls, restrictions
-        self.fields = fields
+    def __init__(self, rows, calls, restrictions=(), projected=None):
+        self.rows, self.calls, self.restrictions, self.projected = rows, calls, restrictions, projected
 
     def __and__(self, restriction):
-        return EventRelation(self.rows, self.calls, self.restrictions + (restriction,), self.fields)
+        return EventRelation(self.rows, self.calls, self.restrictions + (restriction,), self.projected)
 
     def proj(self, *fields):
-        return EventRelation(self.rows, self.calls, self.restrictions,
-                             ('event_uuid', *fields))
-
-    def to_dicts(self):
-        return self.fetch(as_dict=True)
+        return EventRelation(self.rows, self.calls, self.restrictions, {'event_uuid', *fields})
 
     def fetch(self, *, as_dict, order_by=None, limit=None, offset=0):
         self.calls.append({'restrictions': self.restrictions, 'order_by': order_by,
                            'limit': limit, 'offset': offset})
         def matches(row, restriction):
             if isinstance(restriction, list):
-                return any(matches(row, choice) for choice in restriction)
+                return any(matches(row, item) for item in restriction)
             return all(row.get(key) == value for key, value in restriction.items())
-        rows = [row for row in self.rows if all(matches(row, restriction)
-                                               for restriction in self.restrictions)]
+        rows = [row for row in self.rows if all(matches(row, restriction) for restriction in self.restrictions)]
         for clause in reversed((order_by or '').split(',')):
             if clause.strip():
                 field, direction = clause.strip().split()
                 rows.sort(key=lambda row: row[field], reverse=direction == 'DESC')
         rows = rows[offset:None if limit is None else offset + limit]
-        if self.fields is not None:
-            rows = [{key: row[key] for key in self.fields} for row in rows]
-        return copy.deepcopy(rows)
+        return copy.deepcopy([{key: row[key] for key in self.projected} for row in rows]
+                             if self.projected is not None else rows)
 
 
 class EventReadTests(unittest.TestCase):

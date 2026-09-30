@@ -1,0 +1,632 @@
+{
+  "scope": "Native SQL lookup versus prior SQLite membership/vocabulary cache, same scientist tag workflow; isolated synthetic fixture; HTTP test client timings, not browser paint.",
+  "passed": false,
+  "workflow_correctness_checks_passed": true,
+  "source_and_harness_unchanged_across_both_native_runs": false,
+  "samples_per_workflow_operation": 5,
+  "source_inventory_sha256": "40bc48eab49a28794aae0e50858e5476c2332325720798e9ffc3f128b6994c25",
+  "native_harness_sha256": "a2b5e70861826936fdb4c9d6a5c76efd7645486ad5ce05e1482e3e6aab694fde",
+  "scales": {
+    "500": {
+      "native_receipt": "native-tag-sequence-pre-autocompletefix-500.json",
+      "receipt_passed": true,
+      "source_unchanged": true,
+      "changed_during_run": {},
+      "prior_receipt": "tag-sequence-after-500.json",
+      "comparison_ms": {
+        "first10_save": {
+          "prior_p50": 15.186292002908885,
+          "native_p50": 15.526416013017297,
+          "native_first_sample": 39.7009999724105,
+          "native_maximum": 39.7009999724105
+        },
+        "second10_save": {
+          "prior_p50": 13.435167027637362,
+          "native_p50": 15.676334034651518,
+          "native_first_sample": 15.676334034651518,
+          "native_maximum": 17.85816700430587
+        },
+        "filter20": {
+          "prior_p50": 31.089458032511175,
+          "native_p50": 21.898082981351763,
+          "native_first_sample": 37.99974999856204,
+          "native_maximum": 37.99974999856204
+        },
+        "tag10_then10_filter20_http_total": {
+          "prior_p50": 73.59912293031812,
+          "native_p50": 66.94854190573096,
+          "native_first_sample": 105.94183497596532,
+          "native_maximum": 105.94183497596532
+        },
+        "cell_save": {
+          "prior_p50": 6.7298339563421905,
+          "native_p50": 7.273291994351894,
+          "native_first_sample": 7.789916999172419,
+          "native_maximum": 7.789916999172419
+        },
+        "filter_cell100": {
+          "prior_p50": 41.47870797896758,
+          "native_p50": 39.671292004641145,
+          "native_first_sample": 41.86395899159834,
+          "native_maximum": 41.86395899159834
+        },
+        "filter_cell_and_epoch10": {
+          "prior_p50": 17.395791015587747,
+          "native_p50": 18.39087496045977,
+          "native_first_sample": 18.39087496045977,
+          "native_maximum": 22.742124972864985
+        },
+        "cell_tag_then_cell_filter_http_total": {
+          "prior_p50": 48.06662496412173,
+          "native_p50": 46.97904200293124,
+          "native_first_sample": 49.65387599077076,
+          "native_maximum": 49.65387599077076
+        }
+      },
+      "sqlite_tag_cache_calls": {
+        "membership_index": 0,
+        "refresh": 0
+      },
+      "checks": [
+        {
+          "name": "native_autocomplete_exact_counts_and_profile_authors",
+          "passed": true
+        },
+        {
+          "name": "actual_filter_uses_persistent_by_tag_sql_index",
+          "passed": true,
+          "queries": 1
+        },
+        {
+          "name": "persistent_native_lookup_reused_without_rebuild",
+          "passed": true
+        },
+        {
+          "name": "exact_native_case_upper",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_case_lower",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_unicode_nfc",
+          "passed": true,
+          "count": 167
+        },
+        {
+          "name": "exact_native_unicode_nfd",
+          "passed": true,
+          "count": 333
+        },
+        {
+          "name": "exact_native_or",
+          "passed": true,
+          "count": 333
+        },
+        {
+          "name": "exact_native_not_with_inheritance",
+          "passed": true,
+          "count": 250
+        },
+        {
+          "name": "exact_native_inherited_excluded_from_direct",
+          "passed": true,
+          "count": 0
+        },
+        {
+          "name": "no_sqlite_tag_membership_or_refresh_used",
+          "passed": true,
+          "calls": {
+            "membership_index": 0,
+            "refresh": 0
+          }
+        },
+        {
+          "name": "canonical_final_markers_removed",
+          "passed": true
+        },
+        {
+          "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+          "passed": true,
+          "records": 63
+        },
+        {
+          "name": "one_canonical_cell_record_no_child_copies",
+          "passed": true,
+          "child_epochs": 100
+        },
+        {
+          "name": "independent_protocol_curation_untouched",
+          "passed": true
+        },
+        {
+          "name": "all_product_modules_loaded_from_selected_source",
+          "passed": true
+        }
+      ],
+      "native_lookup_query_plans": [
+        {
+          "sql": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1070",
+              "ref": "const,const,const",
+              "rows": 20,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        }
+      ],
+      "autocomplete_query_plans": [
+        {
+          "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "PRIMARY,by_tag",
+              "key": "PRIMARY",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 3787,
+              "filtered": 100.0,
+              "Extra": "Using index; Using filesort"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "PRIMARY",
+              "table": "<derived2>",
+              "partitions": null,
+              "type": "ALL",
+              "possible_keys": null,
+              "key": null,
+              "key_len": null,
+              "ref": null,
+              "rows": 542,
+              "filtered": 100.0,
+              "Extra": null
+            },
+            {
+              "id": 1,
+              "select_type": "PRIMARY",
+              "table": "a",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "111",
+              "ref": "const,func",
+              "rows": 1,
+              "filtered": 5.0,
+              "Extra": "Using where"
+            },
+            {
+              "id": 2,
+              "select_type": "DERIVED",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "range",
+              "possible_keys": "PRIMARY,by_tag",
+              "key": "by_tag",
+              "key_len": "1060",
+              "ref": null,
+              "rows": 542,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index; Using temporary"
+            }
+          ]
+        }
+      ],
+      "autocomplete_sql": {
+        "autocomplete_cold_diagnostic": [
+          {
+            "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+            "seconds": 0.006383416010066867
+          },
+          {
+            "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+            "seconds": 0.0028258750098757446
+          }
+        ],
+        "autocomplete_warm_diagnostic": [
+          {
+            "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+            "seconds": 0.007205624948255718
+          },
+          {
+            "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+            "seconds": 0.0027852500206790864
+          }
+        ]
+      },
+      "autocomplete_diagnostic_ms": {
+        "autocomplete_cold_diagnostic": 25.664957996923476,
+        "autocomplete_warm_diagnostic": 28.46150001278147
+      },
+      "initial_empty_native_setup": {
+        "status": "ready",
+        "storage": "native_sql",
+        "phases": {},
+        "project_uuid": "7c07d8c5-6f30-473f-90be-19146e25d0c8",
+        "reused": false,
+        "phase": "complete",
+        "seconds": 0.165026
+      },
+      "same_server_native_lookup_reuse": {
+        "checkpoint": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {},
+          "project_uuid": "7c07d8c5-6f30-473f-90be-19146e25d0c8",
+          "reused": true,
+          "phase": "complete",
+          "seconds": 0.064545
+        },
+        "reopened": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {},
+          "project_uuid": "7c07d8c5-6f30-473f-90be-19146e25d0c8",
+          "reused": true,
+          "phase": "complete",
+          "seconds": 0.095174
+        },
+        "seconds": 0.1597440000041388,
+        "scope": "Native lookup checkpoint followed by a fresh Python lookup adapter in the same server; not a MySQL-process restart."
+      },
+      "same_server_native_reuse_filter_ms": 19.670958979986608,
+      "final_backup_status": {
+        "status": "current",
+        "pending": false,
+        "running": false,
+        "last_success": "2026-09-30T15:00:33.647722+00:00",
+        "last_error": null,
+        "requested_sequence": 34,
+        "completed_sequence": 34
+      },
+      "mysql_version": "8.4.2",
+      "runtime_seconds": 9.550093834055588,
+      "seed_seconds": 0.41018587502185255,
+      "seed_checkpoint_seconds": 0.17138437496032566,
+      "owned_native_runtime_stopped": true
+    },
+    "100000": {
+      "native_receipt": "native-tag-sequence-pre-autocompletefix-100000.json",
+      "receipt_passed": false,
+      "source_unchanged": false,
+      "changed_during_run": {
+        "python/tests/test_workspace_path_api.py": {
+          "before": "4c586415a445d806ffe8d64d74f4d53d6d453be6fdcb2b4812da49f69a4525a2",
+          "after": "eb16d29e4e6656db8d47f6812cfa2a44c882a8624701ad5b590e85acfacf1388"
+        },
+        "python/workspace_api.py": {
+          "before": "6587dcb57e94489175dad26bbbfaa9142170f7eb1b947fe7b3becf40707e11cf",
+          "after": "bac9888aef2eac472e3278902f9285ed5651b0164fa1a76a665ab881c6927ee4"
+        },
+        "python/workspace_paths.py": {
+          "before": "a75c94ce4c2a5863fb2bf5d79c6abaf4304fb7aa90726d89d80a9e69114d5710",
+          "after": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab"
+        },
+        "python/workspace_projects.py": {
+          "before": "3f5ec51667618b9e0a215f6371dd22a9e1502afd54166da0efb9b677045d4216",
+          "after": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce"
+        }
+      },
+      "prior_receipt": "tag-sequence-after-100000.json",
+      "comparison_ms": {
+        "first10_save": {
+          "prior_p50": 17.622290994040668,
+          "native_p50": 20.763959037140012,
+          "native_first_sample": 44.37404201598838,
+          "native_maximum": 44.37404201598838
+        },
+        "second10_save": {
+          "prior_p50": 16.18437498109415,
+          "native_p50": 24.33695795480162,
+          "native_first_sample": 27.478916046675295,
+          "native_maximum": 27.478916046675295
+        },
+        "filter20": {
+          "prior_p50": 119.21920796157792,
+          "native_p50": 124.48295799549669,
+          "native_first_sample": 984.3111250083894,
+          "native_maximum": 984.3111250083894
+        },
+        "tag10_then10_filter20_http_total": {
+          "prior_p50": 165.9542090492323,
+          "native_p50": 217.5220000790432,
+          "native_first_sample": 1074.6557911043055,
+          "native_maximum": 1074.6557911043055
+        },
+        "cell_save": {
+          "prior_p50": 7.809958013240248,
+          "native_p50": 8.591292018536478,
+          "native_first_sample": 8.944916015025228,
+          "native_maximum": 8.944916015025228
+        },
+        "filter_cell100": {
+          "prior_p50": 129.82887495309114,
+          "native_p50": 156.82324999943376,
+          "native_first_sample": 156.82324999943376,
+          "native_maximum": 162.14675002265722
+        },
+        "filter_cell_and_epoch10": {
+          "prior_p50": 106.19708400918171,
+          "native_p50": 124.58279100246727,
+          "native_first_sample": 116.38466699514538,
+          "native_maximum": 130.77333301771432
+        },
+        "cell_tag_then_cell_filter_http_total": {
+          "prior_p50": 137.83216592855752,
+          "native_p50": 165.76816601445898,
+          "native_first_sample": 165.76816601445898,
+          "native_maximum": 171.01029201876372
+        }
+      },
+      "sqlite_tag_cache_calls": {
+        "membership_index": 0,
+        "refresh": 0
+      },
+      "checks": [
+        {
+          "name": "native_autocomplete_exact_counts_and_profile_authors",
+          "passed": true
+        },
+        {
+          "name": "actual_filter_uses_persistent_by_tag_sql_index",
+          "passed": true,
+          "queries": 1
+        },
+        {
+          "name": "persistent_native_lookup_reused_without_rebuild",
+          "passed": true
+        },
+        {
+          "name": "exact_native_case_upper",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_case_lower",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_unicode_nfc",
+          "passed": true,
+          "count": 33334
+        },
+        {
+          "name": "exact_native_unicode_nfd",
+          "passed": true,
+          "count": 66666
+        },
+        {
+          "name": "exact_native_or",
+          "passed": true,
+          "count": 66667
+        },
+        {
+          "name": "exact_native_not_with_inheritance",
+          "passed": true,
+          "count": 50000
+        },
+        {
+          "name": "exact_native_inherited_excluded_from_direct",
+          "passed": true,
+          "count": 0
+        },
+        {
+          "name": "no_sqlite_tag_membership_or_refresh_used",
+          "passed": true,
+          "calls": {
+            "membership_index": 0,
+            "refresh": 0
+          }
+        },
+        {
+          "name": "canonical_final_markers_removed",
+          "passed": true
+        },
+        {
+          "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+          "passed": true,
+          "records": 63
+        },
+        {
+          "name": "one_canonical_cell_record_no_child_copies",
+          "passed": true,
+          "child_epochs": 100
+        },
+        {
+          "name": "independent_protocol_curation_untouched",
+          "passed": true
+        },
+        {
+          "name": "all_product_modules_loaded_from_selected_source",
+          "passed": true
+        }
+      ],
+      "native_lookup_query_plans": [
+        {
+          "sql": "SELECT DISTINCT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND target_kind IN (%s) AND tag=%s",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "by_tag",
+              "key": "by_tag",
+              "key_len": "1070",
+              "ref": "const,const,const",
+              "rows": 20,
+              "filtered": 100.0,
+              "Extra": "Using where; Using index"
+            }
+          ]
+        }
+      ],
+      "autocomplete_query_plans": [
+        {
+          "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "SIMPLE",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "PRIMARY,by_tag",
+              "key": "PRIMARY",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 613093,
+              "filtered": 100.0,
+              "Extra": "Using index; Using filesort"
+            }
+          ]
+        },
+        {
+          "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+          "explain": [
+            {
+              "id": 1,
+              "select_type": "PRIMARY",
+              "table": "<derived2>",
+              "partitions": null,
+              "type": "ALL",
+              "possible_keys": null,
+              "key": null,
+              "key_len": null,
+              "ref": null,
+              "rows": 183927,
+              "filtered": 100.0,
+              "Extra": null
+            },
+            {
+              "id": 1,
+              "select_type": "PRIMARY",
+              "table": "a",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "PRIMARY",
+              "key": "PRIMARY",
+              "key_len": "111",
+              "ref": "const,func",
+              "rows": 1,
+              "filtered": 5.0,
+              "Extra": "Using where"
+            },
+            {
+              "id": 2,
+              "select_type": "DERIVED",
+              "table": "app_shared_tag_lookup",
+              "partitions": null,
+              "type": "ref",
+              "possible_keys": "PRIMARY,by_tag",
+              "key": "PRIMARY",
+              "key_len": "38",
+              "ref": "const",
+              "rows": 613093,
+              "filtered": 30.0,
+              "Extra": "Using where; Using index; Using temporary"
+            }
+          ]
+        }
+      ],
+      "autocomplete_sql": {
+        "autocomplete_cold_diagnostic": [
+          {
+            "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+            "seconds": 5.976898541965056
+          },
+          {
+            "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+            "seconds": 4.200603792036418
+          }
+        ],
+        "autocomplete_warm_diagnostic": [
+          {
+            "sql": "SELECT tag,COUNT(DISTINCT target_kind,target_uuid) AS amount FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s GROUP BY tag",
+            "seconds": 5.332792375003919
+          },
+          {
+            "sql": "SELECT picked.tag,a.profile_uuid,a.author_name FROM (SELECT tag,profile_uuid,MAX(CAST(CONCAT(target_kind,'/',target_uuid) AS BINARY)) AS position FROM `recording_workspace`.`app_shared_tag_lookup` WHERE project_uuid=%s AND tag IN (%s,%s,%s) GROUP BY tag,profile_uuid) picked JOIN `recording_workspace`.`shared_annotation` a ON a.project_uuid=%s AND a.profile_uuid=picked.profile_uuid AND a.target_kind=SUBSTRING_INDEX(picked.position,'/',1) AND a.target_uuid=SUBSTRING_INDEX(picked.position,'/',-1)",
+            "seconds": 4.116656041005626
+          }
+        ]
+      },
+      "autocomplete_diagnostic_ms": {
+        "autocomplete_cold_diagnostic": 10202.606874983758,
+        "autocomplete_warm_diagnostic": 9474.194333015475
+      },
+      "initial_empty_native_setup": {
+        "status": "ready",
+        "storage": "native_sql",
+        "phases": {},
+        "project_uuid": "2aa92db9-6472-4c39-9292-5794937593db",
+        "reused": false,
+        "phase": "complete",
+        "seconds": 0.173335
+      },
+      "same_server_native_lookup_reuse": {
+        "checkpoint": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {},
+          "project_uuid": "2aa92db9-6472-4c39-9292-5794937593db",
+          "reused": true,
+          "phase": "complete",
+          "seconds": 0.068206
+        },
+        "reopened": {
+          "status": "ready",
+          "storage": "native_sql",
+          "phases": {},
+          "project_uuid": "2aa92db9-6472-4c39-9292-5794937593db",
+          "reused": true,
+          "phase": "complete",
+          "seconds": 0.114146
+        },
+        "seconds": 0.1826643330277875,
+        "scope": "Native lookup checkpoint followed by a fresh Python lookup adapter in the same server; not a MySQL-process restart."
+      },
+      "same_server_native_reuse_filter_ms": 143.8881250214763,
+      "final_backup_status": {
+        "status": "current",
+        "pending": false,
+        "running": false,
+        "last_success": "2026-09-30T15:06:18.387002+00:00",
+        "last_error": null,
+        "requested_sequence": 34,
+        "completed_sequence": 34
+      },
+      "mysql_version": "8.4.2",
+      "runtime_seconds": 212.61365483299596,
+      "seed_seconds": 115.08456225000555,
+      "seed_checkpoint_seconds": 14.813979834027123,
+      "owned_native_runtime_stopped": true
+    }
+  }
+}

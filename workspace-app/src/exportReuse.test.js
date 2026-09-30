@@ -6,7 +6,7 @@ test('candidate reuse opens immutable selection for review, never its export-onl
   const recipe={kind:'explorer_candidate',protocol_uuid:scope,candidate_revision_uuid:candidate,
     export_scope:{kind:'explorer_candidate'},export_intent:{name:'One-off',format:'epictree-mat'},source_export_uuid:scope};
   const route=exportReuseRoute(recipe);
-  assert.deepEqual(route,{page:'explore',details:{exploreRevisionId:candidate,exploreExportIntent:{name:'One-off',format:'epictree-mat',source_export_uuid:scope}}});
+  assert.deepEqual(route,{page:'explore',details:{exploreRevisionId:candidate,exploreExportIntent:{name:'One-off',format:'matlab-mat',source_export_uuid:scope}}});
   assert.equal(route.details.protocol,undefined);assert.equal(route.details.autoExport,undefined);
 });
 test('protocol reuse keeps its saved settings',()=>{const recipe={protocol_uuid:scope,format:'wheeler-sqlite',filters:{cell_type:'ON'}};assert.deepEqual(exportReuseRoute(recipe),{page:'protocol',details:{protocol:scope,recipe}});});

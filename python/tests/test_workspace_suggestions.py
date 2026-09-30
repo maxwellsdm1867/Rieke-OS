@@ -104,6 +104,19 @@ class ImportSuggestionTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         self.assertEqual(response.get_json()['protocol']['counts']['epochs'], 3)
         self.assertEqual(self.suggestions()['suggestions'][0]['status'], 'applied')
+        approved = self.suggestions()['approved_history']
+        self.assertEqual(len(approved), 1)
+        self.assertEqual(approved[0]['candidate_revision_uuid'], suggestion['candidate_revision_uuid'])
+        # A newer proposal must not erase the previous approval from the log.
+        row = copy.deepcopy(self.case.suggestion_rows.rows[0])
+        row['suggestion_uuid'] = str(uuid.uuid4())
+        row['summary']['candidate_revision_uuid'] = str(uuid.uuid4())
+        row['summary']['created_at'] = '2099-01-01T00:00:00+00:00'
+        self.case.suggestion_rows.insert1(row)
+        after = self.suggestions()
+        self.assertNotEqual(after['suggestions'][0]['candidate_revision_uuid'], suggestion['candidate_revision_uuid'])
+        self.assertEqual(after['approved_history'][0]['candidate_revision_uuid'], suggestion['candidate_revision_uuid'])
+
 
     def test_candidate_failure_does_not_relabel_committed_import_as_failed(self):
         with patch.object(self.case.service, 'explore_preview', side_effect=ValueError('Unsupported new metadata')):

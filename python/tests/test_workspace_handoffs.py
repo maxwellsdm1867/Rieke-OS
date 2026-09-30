@@ -14,7 +14,6 @@ if __package__:
     from . import test_workspace_api as api_tests
 else:
     import test_workspace_api as api_tests
-from workspace_matlab_masks import read_ugm
 
 
 class HandoffTests(unittest.TestCase):
@@ -28,36 +27,27 @@ class HandoffTests(unittest.TestCase):
         (root / 'catalog.json').write_text(json.dumps({'format': 'recording-catalog-reference',
             'version': 1, 'project_uuid': self.service.project['project_uuid']}))
 
-    def test_matlab_bundle_and_saved_format_are_complete(self):
+    def test_matlab_data_download_and_saved_format_are_complete_without_gui(self):
         source_id = str(uuid.uuid4())
         self.service.sources[0].update(experiment_uuid=source_id, metadata={'uuid': source_id, 'rig_type': 'PATCH'})
         response = self.client.post(self.base + '/exports', headers=self.headers,
-            json={'query_revision': self.revision(), 'format': 'epictree-mat'})
+            json={'query_revision': self.revision(), 'format': 'matlab-mat'})
         self.assertEqual(response.status_code, 201, response.get_json())
         saved = response.get_json()
-        self.assertEqual(saved['format'], 'epictree-mat')
+        self.assertEqual(saved['format'], 'matlab-mat')
         download = self.client.get(saved['download_url'])
         self.assertEqual(download.status_code, 200)
-        self.assertIn('.zip', download.headers['Content-Disposition'])
-        with zipfile.ZipFile(io.BytesIO(download.data)) as bundle:
-            self.assertEqual(set(bundle.namelist()), {'recordings.mat', 'selection.ugm', 'launch_epictree.m',
-                'recipe.json', 'matlab_recipe.json', 'recordings.json', 'export-report.json', 'README.txt',
-                'launchWorkspaceTree.m', 'tree_layout.m', 'annotations.json', 'readWorkspaceTags.m',
-                'validateWorkspaceTags.m', 'workspaceTag.m', 'writeWorkspaceTags.m'})
-            mat = loadmat(io.BytesIO(bundle.read('recordings.mat')), simplify_cells=True)
-            self.assertEqual(mat['metadata']['dataset_uuid'], saved['dataset_uuid'])
-            path = Path(self.temp.name) / 'returned.ugm'
-            path.write_bytes(bundle.read('selection.ugm'))
-            mask = read_ugm(path, expected_epoch_uuids=self.service.ids)
-            self.assertEqual(mask['mask'], [True, True])
-            self.assertEqual(mask['metadata']['dataset_uuid'], saved['dataset_uuid'])
-            self.assertIn('selection.ugm', bundle.read('launchWorkspaceTree.m').decode())
-            self.assertIn('launchWorkspaceTree', bundle.read('launch_epictree.m').decode())
-            self.assertIn("{'date', 'cell', 'block'}", bundle.read('tree_layout.m').decode())
+        self.assertIn('.mat', download.headers['Content-Disposition'])
+        mat = loadmat(io.BytesIO(download.data), simplify_cells=True)
+        download.close()
+        self.assertEqual(mat['metadata']['dataset_uuid'], saved['dataset_uuid'])
+        root = Path(saved['artifact_path']).parent
+        self.assertFalse(any(file.suffix in {'.m', '.ugm'} for file in root.rglob('*')))
+        self.assertNotIn('EpicTree', (root / 'README.txt').read_text())
         summary = self.client.get('/api/exports').get_json()['exports'][0]
-        self.assertEqual(summary['format'], 'epictree-mat')
+        self.assertEqual(summary['format'], 'matlab-mat')
         reuse = self.client.get('/api/exports/' + saved['dataset_uuid'] + '/reuse').get_json()
-        self.assertEqual(reuse['format'], 'epictree-mat')
+        self.assertEqual(reuse['format'], 'matlab-mat')
 
     def test_sqlite_export_is_queryable_self_describing_and_downloadable(self):
         for key, row in self.service.rows.items():
@@ -74,6 +64,7 @@ class HandoffTests(unittest.TestCase):
         self.assertIn('.sqlite', download.headers['Content-Disposition'])
         file = Path(self.temp.name) / 'downloaded.sqlite'
         file.write_bytes(download.data)
+        download.close()
         with sqlite3.connect(file.as_uri() + '?mode=ro', uri=True) as connection:
             self.assertEqual(connection.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
             self.assertEqual(connection.execute('PRAGMA foreign_key_check').fetchall(), [])
@@ -94,11 +85,40 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(self.client.get('/api/exports').get_json()['exports'], [])
         response = self.client.post(self.base + '/exports', headers=self.headers,
-            json={'query_revision': self.revision(), 'format': 'epictree-mat'})
+            json={'query_revision': self.revision(), 'format': 'matlab-mat'})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(self.client.get('/api/exports').get_json()['exports'], [])
         failures = list((Path(self.temp.name) / 'exports').glob('*/failure.json'))
         self.assertEqual(len(failures), 1)
+
+    def test_legacy_matlab_history_and_exact_zip_download_survive_but_new_gui_exports_reject(self):
+        from workspace_recipes import seal
+        response = self.client.post(self.base + '/exports', headers=self.headers,
+            json={'query_revision': self.revision(), 'format': 'reference-json'})
+        self.assertEqual(response.status_code, 201, response.get_json())
+        record = self.datasets.rows[0]
+        # Seed a completed historical artifact in this isolated relation fixture.
+        artifact = Path(record['artifact_path']).with_name('epictree-bundle.zip')
+        with zipfile.ZipFile(artifact, 'w') as bundle:
+            bundle.writestr('historical-data.txt', 'immutable legacy artifact')
+        record['artifact_path'] = str(artifact)
+        record['artifact_sha256'] = hashlib.sha256(artifact.read_bytes()).hexdigest()
+        record['recipe'] = seal({key: value for key, value in {**record['recipe'], 'destination': 'epictree-mat'}.items()
+                                 if key != 'content_sha256'})
+        before = json.dumps(self.datasets.rows, sort_keys=True, default=str)
+        original = artifact.read_bytes()
+        saved = self.client.get('/api/exports').get_json()['exports'][0]
+        self.assertEqual(saved['format'], 'epictree-mat')
+        download = self.client.get(saved['download_url'])
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download.data, original); download.close()
+        self.assertEqual(self.client.get('/api/exports/' + saved['dataset_uuid'] + '/reuse').get_json()['format'], 'epictree-mat')
+        rejected = self.client.post(self.base + '/exports', headers=self.headers,
+            json={'query_revision': self.revision(), 'format': 'epictree-mat'})
+        self.assertEqual(rejected.status_code, 400)
+        self.assertEqual(rejected.get_json()['error'], 'Unsupported export format')
+        self.assertEqual(json.dumps(self.datasets.rows, sort_keys=True, default=str), before)
+        self.assertEqual(artifact.read_bytes(), original)
 
     def test_project_identity_display_and_audit_rollback(self):
         self.manifests()

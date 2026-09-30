@@ -1,0 +1,90 @@
+name: Legacy source-release candidate (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Reviewed stable version tag, for example v0.1.0
+        required: true
+      publish:
+        description: Publish the validated candidate as the latest stable GitHub Release
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: rieke-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    # First advertised platform only. Linux needs its own native validation.
+    runs-on: macos-15
+    environment: release-signing
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+      - uses: astral-sh/setup-uv@v6
+      - name: Require the advertised native architecture
+        run: test "$(uname -m)" = arm64
+      - name: Install and verify isolated release runtime
+        run: uv run --no-project --python 3.11.13 python rieke.py setup && .rieke-runtime/venv/bin/python rieke.py doctor --json
+      - run: .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
+        env:
+          PYTHONPATH: python
+      - name: Exercise real bundled MySQL without Docker
+        run: .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p test_workspace_native_mysql.py -v
+        env:
+          PYTHONPATH: python
+          RIEKE_TEST_NATIVE_MYSQL: '1'
+      - name: Exercise native portable project restore and folder copy
+        run: .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p test_workspace_portability.py -v
+        env:
+          PYTHONPATH: python
+          RIEKE_TEST_NATIVE_TRANSFER: '1'
+      - run: npm test && npm run build
+        working-directory: workspace-app
+      - name: Sign candidate with protected release key
+        env:
+          RELEASE_SIGNING_PRIVATE_KEY: ${{ secrets.RELEASE_SIGNING_PRIVATE_KEY }}
+        run: |
+          test -f release-signing-public.pem
+          .rieke-runtime/venv/bin/python - <<'PY'
+          import os, pathlib, subprocess, sys, tempfile
+          with tempfile.TemporaryDirectory() as folder:
+              key = pathlib.Path(folder) / 'private.pem'
+              key.write_text(os.environ['RELEASE_SIGNING_PRIVATE_KEY'])
+              key.chmod(0o600)
+              subprocess.run([sys.executable, 'tools/build_release.py', '--private-key', str(key), '--output', os.environ['RUNNER_TEMP'] + '/rieke-candidate'], check=True)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: signed-rieke-release-candidate
+          path: ${{ runner.temp }}/rieke-candidate/
+          if-no-files-found: error
+  publish:
+    needs: candidate
+    if: github.repository == 'maxwellsdm1867/Rieke-OS' && (github.event_name == 'push' || inputs.publish)
+    runs-on: ubuntu-latest
+    # Configure required reviewers here to attest the real upgrade/recovery and
+    # worker-shutdown evidence in docs/dev/releasing-rieke-os.md before promotion.
+    environment: release-publishing
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: signed-rieke-release-candidate
+          path: ${{ runner.temp }}/rieke-candidate
+      - name: Publish the exact signed candidate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          CANDIDATE_DIRECTORY: ${{ runner.temp }}/rieke-candidate
+        run: |
+          gh release create "$RELEASE_TAG" "$CANDIDATE_DIRECTORY"/* \
+            --verify-tag --latest=false --generate-notes --title "Rieke OS source $RELEASE_TAG"

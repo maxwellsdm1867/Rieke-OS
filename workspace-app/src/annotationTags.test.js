@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {annotationChange,annotationIndicator,annotationPredicate,bulkAnnotationChange,canRemoveAnnotation,navigateAfterTagSave} from './annotationTags.js';
+import {compactAnnotationTags,annotationChange,annotationIndicator,annotationPredicate,bulkAnnotationChange,canRemoveAnnotation,navigateAfterTagSave} from './annotationTags.js';
 const first={epoch_uuid:'epoch-a',cell_uuid:'cell-a',cell_label:'Cell1',date:'2026-09-23'};
 const second={epoch_uuid:'epoch-b',cell_uuid:'cell-b',cell_label:'Cell1',date:'2026-09-24'};
 const annotations={revisions:{cell:{me:3},epoch:{me:2}}};
@@ -37,4 +37,23 @@ test('Tab waits for a tag save and never advances on failure or a changed epoch'
  assert.deepEqual(calls,[]);
  assert.equal(await navigateAfterTagSave({...base,draft:' ',direction:-1,save:()=>{throw Error('Blank tag must not save');}}),true);
  assert.deepEqual(calls,[-1]);
+});
+
+
+test('compact row indicators show cell tags once and direct tags only on epochs',()=>{
+  const row={annotations:{cell_tags:[{tag:'cell',author_name:'A'}],epoch_tags:[{tag:'epoch',author_name:'B'}]},curation:{tags:['dataset']}};
+  assert.equal(annotationIndicator(row,'cell').count,1);
+  assert.equal(annotationIndicator(row,'epoch').count,2);
+  assert.doesNotMatch(annotationIndicator(row,'epoch').title,/Cell:/);
+  assert.equal(annotationIndicator({annotations:{cell_tags:row.annotations.cell_tags}},'epoch').count,0);
+});
+
+
+test('tag pills keep one color per text and merge authors without hiding distinct tags',()=>{
+  const a={tag:'Quality',author_name:'Alice'},b={tag:'Reviewed',author_name:'Bob'};
+  const first=compactAnnotationTags({annotations:{epoch_tags:[a,{...a,author_name:'Bob'},b]}});
+  const reordered=compactAnnotationTags({annotations:{cell_tags:[b,a]}},'cell');
+  assert.equal(first.length,2);
+  assert.equal(first[0].color,reordered[1].color);
+  assert.match(first[0].title,/Alice, Bob/);
 });
