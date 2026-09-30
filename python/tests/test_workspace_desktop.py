@@ -105,6 +105,61 @@ class DesktopBoundaryTests(unittest.TestCase):
         self.assertEqual(self.post('stop').status_code, 409)
         self.boundary.stop_callback.assert_not_called()
 
+    def test_explicit_quit_keeps_admission_paused_when_accepted_job_cannot_finish(self):
+        busy = [True]
+        inbox = Mock()
+        self.app.extensions.update(project_active_writers=lambda: busy[0], h5_inbox=inbox)
+        self.assertEqual(self.post('quit').status_code, 409)
+        self.assertTrue(self.boundary.quitting)
+        self.assertTrue(self.boundary.draining)
+        self.assertFalse(self.boundary.drained)
+        self.assertEqual(self.get('/api/write').status_code, 503)
+        self.assertEqual(self.post('resume').status_code, 409)
+        inbox.stop.assert_called()
+        inbox.start.assert_not_called()
+        busy[0] = False
+        self.assertEqual(self.post('quit').status_code, 200)
+        self.assertTrue(self.boundary.drained)
+
+    def test_explicit_quit_waits_for_last_moment_accepted_write_without_replay(self):
+        busy = [True]
+        self.app.extensions['project_active_writers'] = lambda: busy[0]
+        self.boundary.deadline = .1
+        finish = threading.Timer(.01, lambda: busy.__setitem__(0, False))
+        finish.start()
+        self.addCleanup(finish.join)
+        self.assertEqual(self.post('quit').status_code, 200)
+        self.assertTrue(self.boundary.drained)
+        self.assertEqual(self.get('/api/write').status_code, 503)
+
+    def test_pause_propagates_before_waiting_for_all_services(self):
+        services = Mock()
+        services.lock = threading.RLock()
+        services.database_operation_records.return_value = []
+        services.quiesce.return_value = True
+        services.drain.return_value = False
+        self.boundary.services = services
+        self.assertEqual(self.post('quit').status_code, 409)
+        services.quiesce.assert_called_once()
+        services.drain.assert_called_once_with(self.boundary.deadline, for_quit=True)
+        self.assertTrue(self.boundary.draining)
+        self.assertFalse(self.boundary.drained)
+        self.assertEqual(self.post('resume').status_code, 409)
+
+    def test_backup_failure_keeps_committed_data_distinct_from_unclean_database_exit(self):
+        failure = OSError('disk full')
+        failure.desktop_shutdown_stage = 'recovery_snapshot'
+        self.app.extensions['desktop_stop_database'] = Mock(side_effect=failure)
+        self.boundary.stop_callback = Mock()
+        self.assertEqual(self.post('quit').status_code, 200)
+        with self.assertLogs(self.app.logger, level='ERROR'):
+            response = self.post('stop')
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json['stage'], 'recovery_snapshot')
+        self.assertIn('remain committed', response.json['error'])
+        self.assertFalse(response.json['ready'])
+        self.boundary.stop_callback.assert_not_called()
+
     def test_source_updates_disabled_even_with_managed_installation(self):
         app = Flask('desktop_updates')
         with patch.dict(os.environ, {'RIEKE_DESKTOP_MODE': '1', 'RIEKE_INSTALLATION_ROOT': '/old/source'}):
@@ -225,6 +280,21 @@ class DesktopRegistryTests(unittest.TestCase):
         self.services.call = call
         self.assertFalse(self.services.drain(.01))
         self.assertEqual(calls, [(1, 'drain'), (2, 'drain'), (1, 'resume')])
+
+    def test_explicit_quit_failure_never_resumes_children_or_admits_more_work(self):
+        records = [{'pid': 1}, {'pid': 2}]
+        self.services.records = Mock(return_value=records)
+        calls = []
+        def call(record, operation, body, timeout):
+            calls.append((record['pid'], operation))
+            if record['pid'] == 2 and operation == 'quit':
+                raise ValueError('accepted job still active')
+            return {'ready': True, 'paused': True}
+        self.services.call = call
+        self.assertTrue(self.services.quiesce())
+        self.assertFalse(self.services.drain(.01, for_quit=True))
+        self.assertTrue(self.services.draining)
+        self.assertEqual(calls, [(1, 'pause'), (2, 'pause'), (1, 'quit'), (2, 'quit')])
 
     def test_health_rejects_wrong_release_session_and_pid(self):
         import psutil

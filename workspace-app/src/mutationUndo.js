@@ -20,7 +20,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
   project(value){if(project===value)return;project=value;clear();message='';emit();},
   begin(){if(busy)throw Error('Undo is still saving. Wait before another edit.');pending++;emit();const original=project;return {project:original};},
   complete(token,action){pending=Math.max(0,pending-1);if(token.project===project)this.record(action);emit();},
-  failed(){pending=Math.max(0,pending-1);clear();message='The edit could not be confirmed. Refresh its state before further edits; session undo was cleared.';emit();},
+  failed(error){pending=Math.max(0,pending-1);clear();message=error?.saved?'The database edit was saved, but its inverse receipt was not confirmed. Refresh its targets; session undo was cleared.':'The edit could not be confirmed. Refresh its state before further edits; session undo was cleared.';emit();},
   record(action){
    if(!project||!action)return;
    if(action.kind==='unavailable'){clear();message=action.reason;emit();return;}
@@ -58,7 +58,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
     bytes=0;for(const saved of stack){saved.size=actionSize(saved.action);bytes+=saved.size;}
     while(bytes>limits.bytes)bytes-=stack.shift().size;
     message='Last edit undone.';return true;
-   }catch(error){message=`Undo was not confirmed: ${error.message} Refresh the original targets before retrying.`;return false;}
+   }catch(error){if(error.saved){clear();message=`The inverse edit was saved to the database, but recovery needs attention: ${error.message} Session undo was cleared; refresh the targets.`;}else message=`Undo was not confirmed: ${error.message} Refresh the original targets before retrying.`;return false;}
    finally{busy=false;emit();}
   },
  };

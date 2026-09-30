@@ -31,8 +31,9 @@ Projects remain in folders chosen by the user. Subsequent launches use the same
 app icon. Available updates download in the background and appear in
 **Release / Publish** as **Update** and then **Ready**. Ordinary updates should
 produce no toast, system notification, or automatically opened dialog. When the
-user quits and all workers have closed cleanly, the updater installs the prepared
-version; the next launch uses it. Active scientific work must not be interrupted
+user chooses **Restart to update** and all workers have closed cleanly, the
+updater installs the prepared version. Ordinary Quit exits the current app within
+a finite cleanup deadline and retains the current version. Active scientific work must not be interrupted
 to satisfy an update schedule.
 
 First scope assumption: Apple Silicon Macs. Intel Macs and Windows require their

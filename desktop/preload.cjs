@@ -16,7 +16,7 @@ contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   restartToUpdate: () => ipcRenderer.invoke('desktop:restart-to-update'),
   onStatus: callback => subscribe('desktop:status-changed', callback),
   onPrepareClose: callback => subscribe('desktop:prepare-close', callback),
-  acknowledgeDrafts: (requestId, result) => ipcRenderer.invoke('desktop:drafts-ack', {requestId, ok: result?.ok === true}),
+  acknowledgeDrafts: (requestId, result) => ipcRenderer.invoke('desktop:drafts-ack', {requestId, ok: result?.ok === true, ...(typeof result?.reason === 'string' ? {reason:result.reason} : {})}),
   chooseProjectFolder: () => ipcRenderer.invoke('desktop:choose-project-folder'),
   saveDraft: payload => ipcRenderer.invoke('desktop:save-draft', payload),
   loadDraft: projectId => ipcRenderer.invoke('desktop:load-draft', projectId),

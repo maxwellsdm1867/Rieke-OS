@@ -30,7 +30,7 @@ export async function persistUndo(input,request=api){
 export function useMutationUndo(projectId,onChanged){
  const changed=useRef(onChanged);changed.current=onChanged;
  useEffect(()=>{mutationUndo.project(projectId);},[projectId]);
- const run=async()=>mutationUndo.undo(async action=>{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;});
+ const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;}catch(error){if(error.saved)changed.current?.({kind:action.kind});throw error;}});
  const current=useRef(run);current.current=run;
  useEffect(()=>installUndoShortcuts({documentObject:document,bridge:desktopBridge(),run:()=>current.current(),enabled:undoEnabled}),[]);
  return {...mutationUndo.view(),enabled:undoEnabled,undo:run};

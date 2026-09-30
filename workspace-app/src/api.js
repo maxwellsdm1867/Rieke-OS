@@ -2,12 +2,14 @@ import {mutationUndo,isUndoableRequest} from './mutationUndo.js';
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
 import {cachedResourceRequest,epochResourceCache,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
 import { useCallback, useEffect, useState } from 'react';
-import {trackWrite} from './desktopLifecycle.js';
+import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
 export function api(path,options={}){
+  const write=['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase());
+  if(write){try{assertDesktopWritable();}catch(error){return Promise.reject(error);}}
   let token;
   try{if(isUndoableRequest(path,options))token=mutationUndo.begin();}catch(error){return Promise.reject(error);}
-  const operation=requestApi(path,token?{...options,headers:{...options.headers,'X-Rieke-Undo-Receipt':'1'}}:options).then(result=>{if(token)mutationUndo.complete(token,result.undo);return result;},error=>{if(token)mutationUndo.failed();throw error;});
-  return ['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase())?trackWrite(operation):operation;
+  const operation=requestApi(path,token?{...options,headers:{...options.headers,'X-Rieke-Undo-Receipt':'1'}}:options).then(result=>{if(token)mutationUndo.complete(token,result.undo);return result;},error=>{if(token)mutationUndo.failed(error);throw error;});
+  return write?trackWrite(operation):operation;
 }
 async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
@@ -15,7 +17,7 @@ async function requestApi(path, options = {}) {
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || data.message || `Request failed (${response.status})`);
+  if (!response.ok) {const error=new Error(data.error || data.message || `Request failed (${response.status})`);if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {
