@@ -2823,6 +2823,15 @@
       ]
     },
     {
+      "path": "desktop/e2e/branding-browser.e2e.cjs",
+      "occurrences": [
+        {
+          "line": 44,
+          "text": "assert.equal(await page.locator('link[rel=\"apple-touch-icon\"]').getAttribute('href'),'/rieke-os-icon.png');"
+        }
+      ]
+    },
+    {
       "path": "desktop/e2e/github-updates.e2e.cjs",
       "occurrences": [
         {
@@ -2911,7 +2920,7 @@
           "text": "const destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app');"
         },
         {
-          "line": 233,
+          "line": 235,
           "text": "app.setAboutPanelOptions({applicationName:'Disco',applicationVersion:app.getVersion(),copyright:'Data Inspection, Selection, Comparison Operations \u00b7 A Rieke Lab OS'});"
         }
       ]
@@ -4280,7 +4289,7 @@
       ]
     }
   ],
-  "after_note": "Final source scan includes Rieke Lab OS and newly merged safe-quit modules. Audit/evidence files are excluded to avoid recursively counting historical audit text.",
+  "after_note": "Final source scan after safe-quit and undo integration includes Rieke Lab OS. Audit/evidence files are excluded to avoid recursively counting historical audit text.",
   "supplementary_before": {
     "install.sh": [
       {

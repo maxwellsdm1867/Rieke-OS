@@ -1,8 +1,8 @@
 {
   "browser": "Google Chrome (isolated contexts)",
   "ports": [
-    53027,
-    53028
+    53656,
+    53657
   ],
   "claims": [
     true,
@@ -13,7 +13,7 @@
   "sessionCookieExpires": -1,
   "favicon": "/rieke-emblem.png",
   "title": "Disco \u00b7 Projects",
-  "scope": "Two isolated Chrome contexts, mock APIs and two temporary localhost ports; no real browser profile or scientific projects",
+  "scope": "Two isolated Chrome contexts, mock APIs and two temporary localhost ports after safe-quit and undo integration; no real browser profile or scientific projects",
   "icon_selection": "Rendered About controls selected Disco ball then Rieke emblem; favicon followed both",
   "default_install_icon": "apple-touch link remains /rieke-os-icon.png (disco ball)"
 }

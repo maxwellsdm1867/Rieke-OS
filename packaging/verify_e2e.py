@@ -20,7 +20,7 @@ from urllib.request import Request, urlopen
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'python'))
 from workspace_installation import initialize_workspace
-from workspace_native_database import stop_native_database
+from workspace_native_mysql import stop_native_database
 
 
 def request(base, path, data=None):

@@ -31,14 +31,14 @@ An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on Septe
 
 ## Verification and limits
 
-- Desktop regression suite after safe-quit integration: 97 passed, one skipped, including real disposable Electron tests and new profile preservation, feed fallback, asset alias, and foreign-origin rejection cases.
-- Focused Python release/update/runtime checks: 37 tests passed, one optional runtime integration skipped. After merging current main, the full Python suite passed 1,111 tests with 33 optional skips.
-- After merging current main, all 341 frontend tests and the Vite build passed. Generated `index.html` uses Disco; existing favicon URLs point to the default disco-ball assets.
+- Desktop regression suite after safe-quit and undo integration: 98 run, 97 passed, one skipped, including real disposable Electron tests and new profile preservation, feed fallback, asset alias, and foreign-origin rejection cases.
+- Focused Python release/update/runtime checks: 37 run, 36 passed, one optional runtime integration skipped. After safe-quit and undo integration, the full Python suite ran 1,120 tests: 1,087 passed and 33 optional tests skipped.
+- After merging current main, all 354 frontend tests and the Vite build passed. Generated `index.html` uses Disco; existing favicon URLs point to the default disco-ball assets.
 - [Archived source-manager evidence](disco-legacy-discovery-evidence.json) executes `python/workspace_updates.py` from reported source commit `61f9e44c98fa541d670ecb78c35b3389ee2c1b7c` with an in-memory Disco release response. That old manager returns `error` because its official release URL check requires Rieke-OS. No network, installation, or scientific project was changed in this reproduction.
 - The reported commit has no `desktop/` source tree. Its manifest source commit alone therefore does not establish the exact installed desktop updater implementation. Old desktop redirect compatibility remains unproven; the pre-bridge source updater also has a strict single-repository redirect policy.
 - Isolated real Google Chrome smoke passed across two different `127.0.0.1` ports: discovery claims returned true/false/false on sequential port navigation, a fresh browser context claimed independently, and the session cookie expiry was -1. The rendered launcher title was Disco; selecting both About icons updated the favicon. The apple-touch/default installation asset remained the disco ball. This uses mock API responses and does not qualify existing scientific projects. Reproduce with `npm --prefix desktop run test:e2e:branding` after building the frontend.
 - Real existing-project Chrome profiles, generated signed/unsigned installed artifacts, first-open installer labels, production restart/recovery behavior, sharing/receiving a project, and actual installed 0.1.0 upgrade/profile continuity have **not** been qualified by this audit.
-- `packaging/verify_workflows.py` cannot currently start: its pre-existing import of absent `workspace_native_database` raises `ModuleNotFoundError`. This unrelated workflow harness defect is recorded rather than treated as successful qualification.
+- Package qualification entrypoints were repaired to import `workspace_native_mysql.stop_native_database`; both `packaging/verify_workflows.py --help` and `packaging/verify_e2e.py --help` run successfully in the application venv. Their generated-page title assertions require Disco. This repairs the harness entrypoints and does not constitute an installed 0.1.0 upgrade qualification.
 
 ## Required order before completion
 
@@ -50,3 +50,5 @@ An authenticated read of `repos/maxwellsdm1867/disco` returned HTTP 404 on Septe
 User projects, scientific identities, and existing export artifacts must retain their original names and meaning throughout these steps.
 
 The issue #18 safe-quit implementation was merged while retaining the Disco profile/icon behavior. New closing/recovery copy and previously missed active Rieke Lab OS setup/installation/catalog titles were corrected to Disco; lab attribution remains supporting About copy.
+
+Issue #19 UndoControls, scoped history, native Cmd+Z routing, and text undo were integrated alongside the Disco icon/profile APIs. Final integration checks above include these features. Repository rename and installed 0.1.0 qualification remain pending.
