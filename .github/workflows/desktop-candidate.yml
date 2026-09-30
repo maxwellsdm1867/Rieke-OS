@@ -57,12 +57,22 @@ jobs:
         env:
           PYTHONPATH: python
           PYTHONDONTWRITEBYTECODE: '1'
+      - name: Prepare packaging filesystem retries
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs'), path = require('node:path');
+          const graceful = require.resolve('graceful-fs', {paths: [path.resolve('desktop')]});
+          fs.writeFileSync(path.join(process.env.RUNNER_TEMP, 'rieke-packaging-fs.cjs'),
+            `require(${JSON.stringify(graceful)}).gracefulify(require('node:fs'));\n`);
+          NODE
       - name: Build unsigned local qualification candidate
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         working-directory: desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run dist
+        run: |
+          # Queue EMFILE/ENFILE retries before osx-sign captures fs.open.
+          NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
       - name: Build signed and notarized candidate
         if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed
         working-directory: desktop
@@ -80,7 +90,7 @@ jobs:
           test -n "$APPLE_API_KEY"
           test -n "$APPLE_API_KEY_ID"
           test -n "$APPLE_API_ISSUER"
-          npm run dist
+          NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
           codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'
           spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'
           xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'

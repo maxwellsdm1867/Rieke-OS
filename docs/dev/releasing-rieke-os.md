@@ -84,6 +84,22 @@ python3 tools/desktop_runtime_manifest.py
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
 ```
 
+The pinned `@electron/osx-sign` walker opens runtime files concurrently before
+applying its signing exclusions. CI therefore preloads the lockfile's
+`graceful-fs` adapter into the packaging process before the walker loads. The
+adapter queues file-open retries when macOS reports `EMFILE` or `ENFILE`.
+`NODE_OPTIONS` is scoped to each packaging command; application launches and
+qualification tests use their normal filesystem implementation. The temporary
+adapter stays outside the app and source checkout. On a local host with a low
+file limit, use the same preload preparation and packaging command from
+`desktop-candidate.yml` with `RUNNER_TEMP` pointing to a temporary directory.
+
+To verify a workflow-only correction against an existing immutable release tag,
+dispatch `desktop-candidate.yml` from the corrected workflow ref and supply the
+published tag as the `tag` input. The baseline still checks out and verifies that
+exact tagged source. The candidate workflow only uploads Actions artifacts; it
+does not replace published release assets or move the tag.
+
 `desktop/distribution.json` must explicitly select the reviewed trust channel.
 The testing build has an ad-hoc structural seal; it has no Developer ID identity
 or notarization. Signed native code is finalized before runtime hashes and the
