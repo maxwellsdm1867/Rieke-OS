@@ -15,19 +15,96 @@ on:
         description: Also run native update/restore/rollback and fault-injection audits
         type: boolean
         default: false
+      candidate_run_id:
+        description: Optional existing candidate run to verify without rebuilding
+        required: false
+      check_suite:
+        description: Focused check for a saved candidate only
+        type: choice
+        default: auto
+        options: [auto, smoke, updater, database, packaging, ui]
+      compare_ref:
+        description: Optional ancestor release baseline; defaults to previous release tag
+        required: false
       qualification_ref:
-        description: Optional reviewed test-only revision; defaults to the application tag
+        description: Optional reviewed test-only revision; defaults to this workflow revision
         required: false
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: rieke-desktop-candidate-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 jobs:
-  build:
+  plan:
     if: github.repository == 'maxwellsdm1867/Rieke-OS'
+    runs-on: ubuntu-latest
+    outputs:
+      build_required: ${{ steps.plan.outputs.build_required }}
+      checks: ${{ steps.plan.outputs.checks }}
+      source_commit: ${{ steps.plan.outputs.head }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          path: candidate-source
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Select checks from changes since the previous release
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMPARE_REF: ${{ inputs.compare_ref }}
+          EXTENDED: ${{ inputs.extended_qualification }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+          CHECK_SUITE: ${{ inputs.check_suite }}
+        run: |
+          gh release list --repo maxwellsdm1867/Rieke-OS --limit 100 --json tagName,isDraft > "$RUNNER_TEMP/releases.json"
+          python3 - <<'PYTAGS'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          tags = [row['tagName'] for row in json.loads((root/'releases.json').read_text()) if not row['isDraft']]
+          (root/'published-tags.json').write_text(json.dumps(tags))
+          PYTAGS
+          args=(--repo candidate-source --published-tags "$RUNNER_TEMP/published-tags.json" --output "$RUNNER_TEMP/release-plan.json" --github-output "$GITHUB_OUTPUT")
+          if [ -n "$COMPARE_REF" ]; then args+=(--base "$COMPARE_REF"); fi
+          if [ "$EXTENDED" = true ]; then args+=(--extended); fi
+          python3 tools/desktop_release_plan.py "${args[@]}"
+          python3 - <<'PYPLAN'
+          import json, os, re
+          from pathlib import Path
+          plan = json.loads((Path(os.environ['RUNNER_TEMP'])/'release-plan.json').read_text())
+          candidate = os.environ.get('CANDIDATE_RUN', '')
+          requested_suite = os.environ.get('CHECK_SUITE') or 'auto'
+          if candidate and not re.fullmatch(r'[1-9][0-9]*', candidate): raise SystemExit('Invalid candidate run ID')
+          if requested_suite != 'auto' and not candidate: raise SystemExit('A focused check requires an existing candidate run')
+          checks = [{'suite': 'smoke', 'timeout': 8}]
+          for flag, suite, timeout in [('updater','updater',60),('database','database',20),('packaging','packaging',20),('full_ui','ui',20)]:
+              if plan[flag]: checks.append({'suite': suite, 'timeout': timeout})
+          if requested_suite != 'auto':
+              checks = [{'suite': requested_suite, 'timeout': {'smoke':8,'updater':60,'database':20,'packaging':20,'ui':20}[requested_suite]}]
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as out:
+              out.write('checks='+json.dumps({'include': checks})+'\n')
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('## Release check selection\n\n'+plan['reason']+'\n\n')
+              out.write('Build required: '+str(plan['build_required'])+'\n\n')
+              out.write('Selected checks: '+', '.join(row['suite'] for row in checks)+'\n')
+          PYPLAN
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-release-plan
+          path: ${{ runner.temp }}/release-plan.json
+          retention-days: 30
+  build:
+    needs: plan
+    if: needs.plan.outputs.build_required == 'true' && !inputs.candidate_run_id && github.repository == 'maxwellsdm1867/Rieke-OS'
     runs-on: macos-15
-    timeout-minutes: 120
+    timeout-minutes: 45
     environment: ${{ ((github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +114,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            workspace-app/package-lock.json
       - uses: astral-sh/setup-uv@v6
       - name: Verify clean canonical source and coordinated versions
         env:
@@ -115,59 +196,6 @@ jobs:
           python3 tools/desktop_release.py inventory --output desktop/dist/artifacts.json
           cp "$RUNNER_TEMP/desktop-baseline.json" desktop/dist/desktop-baseline.json
           cp desktop/build/runtime/runtime-audit.json desktop/dist/runtime-audit.json
-      - name: Exercise updater transport failures without installing
-        run: npm run test:e2e:updater --prefix desktop
-      - name: Exercise the actual packaged desktop UI and orderly lifecycle
-        run: npm run test:e2e --prefix desktop
-      - name: Exercise explicit unsigned Install and Open
-        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        run: npm run test:e2e:bootstrap --prefix desktop
-      - name: Exercise user-driven GitHub download interface
-        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        timeout-minutes: 20
-        run: npm run test:e2e:github-updates --prefix desktop
-      - name: Check out reviewed native update qualification tools
-        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.qualification_ref || inputs.tag || github.ref }}
-          path: desktop/build/qualification-source
-          persist-credentials: false
-      - name: Connect qualification tools to the frozen candidate
-        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        run: |
-          QUALIFICATION_ROOT="$GITHUB_WORKSPACE/desktop/build/qualification-source"
-          # Only the test harness may differ; its implementation helpers must match.
-          for source in desktop/*.cjs desktop/e2e/helpers.cjs desktop/package-lock.json; do
-            cmp "$source" "$QUALIFICATION_ROOT/$source"
-          done
-          ln -s "$GITHUB_WORKSPACE/desktop/dist" "$QUALIFICATION_ROOT/desktop/dist"
-          ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$QUALIFICATION_ROOT/desktop/node_modules"
-          git -C "$QUALIFICATION_ROOT" rev-parse HEAD
-      - name: Exercise native update, retained-app restore and failed-launch rollback
-        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        timeout-minutes: 60
-        working-directory: desktop/build/qualification-source
-        run: node desktop/e2e/testing-upgrade.e2e.cjs
-      - name: Verify recovery before opening projects when backend startup fails
-        if: inputs.extended_qualification
-        run: npm run test:e2e:startup-failure --prefix desktop
-      - name: Audit extracted installers and native database workflows
-        if: inputs.extended_qualification
-        run: python3 tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: desktop-e2e-evidence
-          path: |
-            docs/dev/desktop-updater-client-e2e.json
-            docs/dev/desktop-ui-e2e/
-            docs/dev/desktop-artifact-e2e.json
-            docs/dev/desktop-testing-upgrade-e2e.json
-            desktop/build/qualification-source/docs/dev/desktop-testing-upgrade-e2e.json
-            desktop/build/qualification-source/desktop/build/native-qualification-diagnostics/
-          if-no-files-found: warn
-          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always() && steps.candidate_inventory.outcome == 'success'
         with:
@@ -182,4 +210,161 @@ jobs:
             desktop/dist/runtime-audit.json
             desktop/dist/desktop-release.json
           if-no-files-found: error
+          retention-days: 30
+
+  verify:
+    name: Verify ${{ matrix.suite }}
+    needs: [plan, build]
+    if: >-
+      !cancelled() && needs.plan.result == 'success' &&
+      (needs.build.result == 'success' ||
+       (needs.build.result == 'skipped' && inputs.candidate_run_id != ''))
+    runs-on: macos-15
+    timeout-minutes: ${{ matrix.timeout }}
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.plan.outputs.checks) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.qualification_ref || github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.source_commit }}
+          path: desktop/build/candidate-source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: desktop/build/candidate-source/desktop/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+      - name: Use the candidate's pinned dependencies and implementation
+        run: |
+          for source in desktop/build/candidate-source/desktop/*.cjs; do
+            cmp "$source" "desktop/$(basename "$source")"
+          done
+          cmp desktop/e2e/helpers.cjs desktop/build/candidate-source/desktop/e2e/helpers.cjs
+          cmp desktop/package-lock.json desktop/build/candidate-source/desktop/package-lock.json
+          npm ci --prefix desktop/build/candidate-source/desktop
+          ln -s "$GITHUB_WORKSPACE/desktop/build/candidate-source/desktop/node_modules" desktop/node_modules
+      - name: Validate the saved candidate run
+        if: inputs.candidate_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id }}
+        run: |
+          gh api "repos/maxwellsdm1867/Rieke-OS/actions/runs/$CANDIDATE_RUN" > "$RUNNER_TEMP/candidate-run.json"
+          python3 - <<'PYRUN'
+          import json, os
+          from pathlib import Path
+          run = json.loads((Path(os.environ['RUNNER_TEMP'])/'candidate-run.json').read_text())
+          assert run['repository']['full_name'] == 'maxwellsdm1867/Rieke-OS'
+          assert run['path'] == '.github/workflows/desktop-candidate.yml'
+          assert run['status'] == 'completed', 'Do not consume an active candidate run'
+          PYRUN
+      - uses: actions/download-artifact@v4
+        with:
+          name: rieke-desktop-macos-arm64
+          path: desktop/dist
+          run-id: ${{ inputs.candidate_run_id || github.run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify saved candidate identity and extract the same app
+        env:
+          EXPECTED_SOURCE: ${{ needs.plan.outputs.source_commit }}
+          CANDIDATE_RUN: ${{ inputs.candidate_run_id || github.run_id }}
+          CHECK_SUITE: ${{ matrix.suite }}
+        run: |
+          uv run --no-project --python 3.11.13 python - <<'PYVERIFY'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          dist = Path('desktop/dist')
+          baseline = json.loads((dist/'desktop-baseline.json').read_text())
+          assert baseline['source_commit'] == os.environ['EXPECTED_SOURCE']
+          inventory = json.loads((dist/'artifacts.json').read_text())['artifacts']
+          for name, expected in inventory.items():
+              assert Path(name).name == name
+              file = dist/name
+              assert file.is_file() and not file.is_symlink()
+              assert file.stat().st_size == expected['size']
+              with file.open('rb') as stream:
+                  assert hashlib.file_digest(stream, 'sha256').hexdigest() == expected['sha256']
+          version = baseline['application_version']
+          archive = dist/f'Rieke-OS-{version}-arm64.zip'
+          assert archive.name in inventory
+          # Generated and checksummed by the trusted build job in this same run.
+          destination = dist/'mac-arm64'
+          destination.mkdir()
+          subprocess.run(['ditto','-x','-k',str(archive),str(destination)], check=True)
+          app = destination/'Rieke OS.app'
+          runtime = app/'Contents/Resources/runtime'
+          manifest = json.loads((runtime/'runtime-manifest.json').read_text())
+          assert manifest['source_commit'] == baseline['source_commit'] and manifest['source_dirty'] is False
+          assert manifest['application_version'] == version
+          subprocess.run(['codesign','--verify','--deep','--strict',str(app)], check=True)
+          provenance = {'format':'rieke-desktop-verification', 'source_commit':baseline['source_commit'],
+                        'harness_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+                        'candidate_run_id':os.environ['CANDIDATE_RUN'], 'suite':os.environ['CHECK_SUITE'],
+                        'artifacts':inventory}
+          output = Path('docs/dev/desktop-verification-provenance.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(provenance, indent=2)+'\n')
+          PYVERIFY
+      - name: Packaged launch, project persistence, update check and orderly quit
+        if: matrix.suite == 'smoke'
+        env:
+          RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY: '1'
+        run: node desktop/e2e/smoke.e2e.cjs
+      - name: Native updater and user-driven download checks
+        if: matrix.suite == 'updater'
+        run: |
+          npm run test:e2e:updater --prefix desktop
+          CHANNEL=$(node -p "require('./desktop/build/candidate-source/desktop/distribution.json').channel")
+          if [ "$CHANNEL" = unsigned-testing ]; then
+            node desktop/e2e/github-updates.e2e.cjs
+            node desktop/e2e/testing-upgrade.e2e.cjs
+          fi
+      - name: Real native database lifecycle and logical transfer
+        if: matrix.suite == 'database'
+        run: |
+          uv run --no-project --python 3.11.13 python - <<'PYDATABASE'
+          import json, sys, tempfile
+          from pathlib import Path
+          sys.path.insert(0, 'tools')
+          from desktop_artifact_e2e import isolated_database_probe
+          resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()
+          with tempfile.TemporaryDirectory(prefix='rieke-release-database-') as scratch:
+              result = isolated_database_probe(resources, Path(scratch))
+          output = Path('docs/dev/desktop-native-database-e2e.json')
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps({'passed': True, 'probe': result}, indent=2)+'\n')
+          PYDATABASE
+      - name: Installer, runtime and startup fault checks
+        if: matrix.suite == 'packaging'
+        run: |
+          CHANNEL=$(node -p "require('./desktop/build/candidate-source/desktop/distribution.json').channel")
+          if [ "$CHANNEL" = unsigned-testing ]; then
+            node desktop/e2e/bootstrap.e2e.cjs
+            uv run --no-project --python 3.11.13 python tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
+          fi
+          node desktop/e2e/backend-failure.e2e.cjs
+      - name: Extended packaged UI regression
+        if: matrix.suite == 'ui'
+        run: node desktop/e2e/packaged.e2e.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-evidence-${{ matrix.suite }}
+          path: |
+            docs/dev/desktop-verification-provenance.json
+            docs/dev/desktop-smoke-e2e.json
+            docs/dev/desktop-updater-client-e2e.json
+            docs/dev/desktop-ui-e2e/
+            docs/dev/desktop-artifact-e2e.json
+            docs/dev/desktop-native-database-e2e.json
+            docs/dev/desktop-testing-upgrade-e2e.json
+            desktop/build/native-qualification-diagnostics/
+          if-no-files-found: warn
           retention-days: 30

@@ -100,32 +100,51 @@ qualification tests use their normal filesystem implementation. The temporary
 adapter stays outside the app. The local commands above place the equivalent
 adapter in the ignored build directory; CI uses its runner temporary directory.
 
-To verify a workflow-only correction against an existing immutable release tag,
-dispatch `desktop-candidate.yml` from the corrected workflow ref and supply the
-published tag as the `tag` input. The baseline still checks out and verifies that
-exact tagged source. The candidate workflow only uploads Actions artifacts; it
-does not replace published release assets or move the tag.
+The desktop candidate workflow separates **plan**, **build**, and **verification**.
+It compares the candidate with the previous published ancestor release tag in
+the same channel (or an explicit ancestor `compare_ref`) and records its selected
+checks. Draft or unpublished failed candidates cannot silently advance that
+baseline. CI considers up to 100 recent published releases; no eligible baseline
+selects full qualification.
+Missing baseline information selects deeper checks conservatively. Documentation,
+tests, and workflow-only changes do not require an application build. Ordinary
+PR regression jobs skip documentation-only changes; the source-installer workflow
+runs automatically only when source installation inputs change.
 
-For a reviewed test-only correction, `qualification_ref` selects a separate
-native-update test checkout under the ignored build directory. It defaults to
-the application tag. The workflow verifies that its application implementation
-helpers and dependency lock match the tagged source, then connects the test
-checkout to the frozen candidate. Qualification receipts identify the test
-revision separately from the application's source commit. Updating a test
-deadline or diagnostics does not require moving a published tag or repackaging
-the released app. The update interface and native helper have separate bounded
-CI steps so a stuck test cannot run indefinitely.
-Once packaging and inventory succeed, CI retains the exact candidate even if a
-later qualification test fails. Such Actions artifacts remain unqualified; the
-run must pass its required checks before promotion. Keeping the failed run's
-candidate and diagnostics supports investigation without rebuilding new bytes.
+Each candidate builds once and uploads its exact DMG, ZIP, metadata and inventory
+before verification. Independent verification jobs download those same artifacts.
+If a verification job fails, use GitHub Actions **Re-run failed jobs**, which
+retains the successful build and reruns only failed verification jobs. Do not use
+**Re-run all jobs** or dispatch a new candidate build for a test-only correction.
+For a corrected test harness against an unpublished saved candidate, dispatch
+this workflow with the original `tag`, `candidate_run_id`, reviewed
+`qualification_ref`, and the affected `check_suite`. This skips packaging,
+validates the original run and artifact inventory, and records both source and
+test commits. A focused rerun supplements earlier evidence; it does not claim
+that unrun suites passed. Do not promote a partial rerun as complete production
+qualification.
 
-`desktop-published-qualification.yml` can verify a published unsigned testing
-release directly on a fresh macOS runner. Supply its immutable `tag` and the
-reviewed `qualification_ref`. It checks the archive digest and extraction bounds,
-recomputes the descriptor, verifies the complete runtime and native database,
-then exercises update/restore/rollback and startup-failure handling. It downloads
-the existing release bytes and never rebuilds or publishes an application.
+For an already published release, use `desktop-published-qualification.yml` with
+its immutable tag and a reviewed `qualification_ref`; it downloads existing
+release bytes without rebuilding or publishing.
+
+The routine job launches the packaged app in an isolated profile, creates and
+reopens a real project, checks update availability, and verifies orderly shutdown.
+It does not download and reinstall a second app on every UI-only release.
+Updater/lifecycle changes select the download and native update/restore/rollback
+checks; database changes select native lifecycle/restore checks; packaging/runtime
+changes select installer and fault checks. Backend domain changes also select
+extended UI coverage. `extended_qualification=true` selects all deeper suites for
+an application candidate. Each verification job has its own deadline and receipt.
+
+`qualification_ref` optionally selects reviewed test-only tools, defaulting to the
+workflow revision. Tests must use the candidate's exact production JavaScript,
+shared fixture helper and dependency lock; CI compares them before testing. This
+separates test provenance from application source. Keep the tested app frozen.
+A change to the test harness does not justify moving a release tag or replacing
+published assets. Failed candidates remain unqualified even though their files
+are retained for investigation. Signed production promotion still requires its
+complete reviewed evidence; routine testing does not imply that qualification.
 
 `desktop/distribution.json` must explicitly select the reviewed trust channel.
 The testing build has an ad-hoc structural seal; it has no Developer ID identity
@@ -142,34 +161,24 @@ minimum-device and clean-machine tests need independent evidence.
 
 ## Test the exact artifact bytes
 
-Routine candidate builds run source/unit checks, packaging and artifact identity,
-packaged UI/project workflows and orderly quit, explicit Install and Open, and
-update availability/download checks. Keep these as the default release loop.
-Do not rebuild the same application to repeat an already-passing check after a
-test-only or documentation change.
+Run the routine smoke check against the frozen packaged candidate, with scratch
+HOME/user data/projects. It never uses the user's installed app or research project:
 
-Native update/restore/rollback, startup fault injection and exhaustive extracted
-installer audits are an explicit second tier: dispatch the candidate workflow
-with `extended_qualification=true` when the affected code changes or a specific
-failure requires it. For frozen published bytes, use the separate manual
-`desktop-published-qualification.yml` workflow. These deeper runs are not an
-automatic prerequisite for every unsigned testing build; document any remaining
-qualification limits. Signed production promotion still requires its complete
-evidence and is not implied by passing the routine loop.
+```sh
+npm run test:e2e:smoke --prefix desktop
+```
 
-Run the routine checks against the frozen packaged candidate, with scratch
-HOME/user data/projects:
+The deeper suites are selected from the changed area or an explicit extended run.
+Keep qualification gaps visible instead of treating unrun tests as passing. A
+successful build alone is not proof of installation, startup, or data preservation.
+
+Run the affected deeper checks when requested or justified by a change:
 
 ```sh
 npm run test:e2e:updater --prefix desktop
 npm run test:e2e --prefix desktop
 npm run test:e2e:bootstrap --prefix desktop
 npm run test:e2e:github-updates --prefix desktop
-```
-
-Run the affected deeper checks when requested or justified by a change:
-
-```sh
 node desktop/e2e/testing-upgrade.e2e.cjs
 npm run test:e2e:startup-failure --prefix desktop
 python3 tools/desktop_artifact_e2e.py \
