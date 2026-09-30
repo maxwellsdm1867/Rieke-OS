@@ -150,3 +150,14 @@ test('a failed interrupted-quit receipt or old unmarked registry still permits e
  await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','stop']);
  await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
 });
+
+test('verified surviving legacy backend uses strict drain only when its new quit route is absent',async t=>{
+ for(const legacyStatus of [404,409,500]){
+  const {supervisor}=await fixture(t,sup=>response({...sup.expectedHealth(),ready:true,services:[]}));await supervisor.start();
+  let live=true;const operations=[];const previous=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));
+  supervisor.inspectProcess=async()=>live?previous.executable:null;supervisor.recoverProcess=async()=>supervisor.capability;
+  supervisor.request=async url=>{const operation=url.split('/').at(-1);operations.push(operation);if(operation==='quit')return response({error:legacyStatus===404?'Unknown API endpoint':'Accepted work or cleanup failed'},false,legacyStatus);if(operation==='stop')live=false;return response(operation==='health'?{...supervisor.expectedHealth(),ready:true}:{ready:true});};
+  if(legacyStatus===404){await supervisor.reconcilePrevious();assert.deepEqual(operations,['health','quit','drain','stop']);await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});}
+  else{await assert.rejects(supervisor.reconcilePrevious(),/Accepted work/);assert.deepEqual(operations,['health','quit']);assert.equal(live,true);assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);}
+ }
+});

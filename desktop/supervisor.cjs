@@ -183,13 +183,22 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
         headers:{'X-Rieke-Desktop-Capability':capability, 'X-Workspace-Request':'1','Content-Type':'application/json'},
         signal:AbortSignal.timeout(Math.max(1, until-Date.now())), ...(method==='POST'?{body:'{}'}:{})});
       const value = await response.json();
-      if (!response.ok || value.ready !== true && operation!=='health') throw new Error(value.error || 'Prior service cleanup is still incomplete; retry recovery');
+      if (!response.ok || value.ready !== true && operation!=='health') {
+        const error=new Error(value.error || 'Prior service cleanup is still incomplete; retry recovery');
+        error.status=response.status;throw error;
+      }
       return value;
     };
     const health = await call('health');
     if (['pid','session_id','source_commit','application_version','project_uuid','project_path'].some(key =>
       record[key] !== undefined && health[key] !== record[key])) throw new Error('Prior service health identity changed; recovery is required');
-    await call('quit', 'POST');
+    try {await call('quit', 'POST');}
+    catch(error){
+      // Only the verified legacy service's missing endpoint permits this
+      // compatibility path. Busy/error responses retain recovery evidence.
+      if(error.status!==404)throw error;
+      await call('drain', 'POST');
+    }
     await call('stop', 'POST');
     while (Date.now()<until && await this.inspectProcess(record.pid) === record.executable) await delay(50);
     if (await this.inspectProcess(record.pid) === record.executable)
