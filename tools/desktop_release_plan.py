@@ -34,6 +34,7 @@ def change_kind(path):
     name = Path(path).name
     if (path.startswith(('docs/', '.github/', 'python/tests/', 'desktop/tests/', 'desktop/test/',
                          'desktop/e2e/', 'workspace-app/tests/', 'workspace-app/test/', 'tools/tests/', 'tests/', 'test/'))
+            or path == '.gitignore'  # Tracking housekeeping; build inputs are committed files.
             or name.endswith(('.md', '.rst'))
             or path.startswith('workspace-app/src/') and ('.test.' in name or '.spec.' in name)):
         return set()

@@ -52,6 +52,7 @@ class ReleasePlanCLITests(unittest.TestCase):
         return result
 
     def test_documentation_and_tests_only_do_not_build_an_application(self):
+        self.write('.gitignore', 'docs/dev/desktop-smoke-e2e.json\n')
         self.write('docs/dev/guide.md', 'Updated release guide\n')
         self.write('python/tests/test_example.py', '# New coverage\n')
         head = self.commit()
@@ -59,7 +60,7 @@ class ReleasePlanCLITests(unittest.TestCase):
         self.assertEqual({flag: value[flag] for flag in FLAGS}, dict.fromkeys(FLAGS, False))
         self.assertEqual(value['base'], self.initial)
         self.assertEqual(value['head'], head)
-        self.assertEqual(value['changed_paths'], ['docs/dev/guide.md', 'python/tests/test_example.py'])
+        self.assertEqual(value['changed_paths'], ['.gitignore', 'docs/dev/guide.md', 'python/tests/test_example.py'])
 
 
     def test_application_changes_select_routine_or_domain_qualification(self):
