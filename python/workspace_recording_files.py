@@ -30,3 +30,11 @@ def retain_recording(project_dir, source, expected_sha256):
         output.unlink(missing_ok=True)
         destination.rmdir()
         raise
+
+
+def recording_display_name(manifest):
+    """Keep recording display identity independent of its relocatable locator."""
+    name = manifest.get('source_filename')
+    if isinstance(name, str) and name.strip() and '/' not in name and '\\' not in name:
+        return name
+    return Path(manifest.get('source_path', '')).name

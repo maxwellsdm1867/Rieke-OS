@@ -350,7 +350,8 @@ class WorkspaceService:
         after = path.stat()
         if signature != (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
             raise ValueError('Source recording changed while reading metadata')
-        summary = {'source_sha256': source['source_sha256'], 'filename': path.name,
+        from workspace_recording_files import recording_display_name
+        summary = {'source_sha256': source['source_sha256'], 'filename': recording_display_name(manifest),
             'source_path': str(path), 'imported_at': manifest.get('imported_at', manifest['validated_at']),
             'counts': manifest['counts'], 'warnings': manifest.get('warnings', []),
             'experiment_uuid': document['uuid'], 'metadata': _metadata(document, {'animals'})}

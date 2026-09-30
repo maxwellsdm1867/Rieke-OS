@@ -209,7 +209,8 @@ def snapshot_source_project(project_dir, destination):
                 if _hash(output_recording) != source['source_sha256']:
                     raise ValueError('Original recording changed; no desktop copy was published')
                 _verify_recording_dependencies(output_recording)
-                inventory.append({'source_sha256': source['source_sha256'], 'recording_ref': recording_ref,
+                from workspace_recording_files import recording_display_name
+                inventory.append({'source_sha256': source['source_sha256'], 'source_filename': recording_display_name(manifest), 'recording_ref': recording_ref,
                     'metadata_ref': metadata_ref, 'metadata_sha256': manifest['metadata_sha256']})
             # The verified cache-authority triggers are regenerated locally.
             # Their source-root DEFINER is neither portable nor an authority the
