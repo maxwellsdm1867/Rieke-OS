@@ -17,7 +17,7 @@ export function compileTagRules(mode,rules){
 }
 export function clearTagFilters(filters){const next={...filters};delete next.tag;delete next.tagged;delete next.tag_predicate;return next;}
 export function tagFilterLabel(filters={}){
-  if(filters.tag_predicate){try{const {mode,rules}=readTagRules(filters);return `${mode==='any'?'Any':'All'} of ${rules.length} tag ${rules.length===1?'rule':'rules'}`;}catch{return 'Tag filter';}}
+  if(filters.tag_predicate){try{const {mode,rules}=readTagRules(filters);return `${mode==='any'?'Any':'All'} of ${rules.length} tag ${rules.length===1?'rule':'rules'}: ${rules.map(rule=>`${rule.scope} ${rule.comparison==='is_not'?'is not':'is'} “${rule.value}”`).join('; ')}`;}catch{return 'Tag filter';}}
   return filters.tag?`Tag: ${filters.tag}`:filters.tagged?'Tagged epochs':'';
 }
 
@@ -29,4 +29,10 @@ export function predicateWithTagFilters(predicate,filters={}){
   if(filters.tag)conditions.push({field:'annotations/effective/tags',operator:'contains',value:filters.tag});
   if(filters.tagged)conditions.push({field:'annotations/effective/tags',operator:'ne',value:[]});
   return conditions.length?{all:[predicate,...conditions]}:predicate;
+}
+
+export function predicateWithProtocolFilters(predicate,filters={}){
+ const fields={cell_uuid:'cell',cell_type:'cell type',group_label:'group label'};
+ const conditions=Object.entries(filters).filter(([key,value])=>fields[key]&&value).map(([key,value])=>({field:fields[key],operator:'eq',value}));
+ return predicateWithTagFilters(conditions.length?{all:[predicate,...conditions]}:predicate,filters);
 }

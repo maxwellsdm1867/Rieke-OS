@@ -12,7 +12,7 @@ test('multiple tag rules preserve all/any, scopes, and negative membership on re
 test('clearing tags preserves other protocol filters and shows readable multi-rule scope',()=>{
  const filters={cell_type:'RGC',tag:'old',tagged:'true',tag_predicate:JSON.stringify(compileTagRules('all',[{scope:'epoch',comparison:'is',value:'keep'}]))};
  assert.deepEqual(clearTagFilters(filters),{cell_type:'RGC'});
- assert.equal(tagFilterLabel(filters),'All of 1 tag rule');
+ assert.equal(tagFilterLabel(filters),'All of 1 tag rule: epoch is “keep”');
  assert.ok(filters.tag_predicate);
  assert.throws(()=>compileTagRules('all',[{scope:'effective',comparison:'is',value:''}]));
 });
@@ -25,4 +25,13 @@ test('search local tag filters narrow the base query, and clearing restores that
  assert.equal(predicateWithTagFilters(base,clearTagFilters(filters)),base);
  assert.deepEqual(base,{all:[{field:'protocol',operator:'eq',value:'VariableHistoryNoiseCurInject'}]});
  assert.deepEqual(predicateWithTagFilters(base,{tagged:'true'}),{all:[base,{field:'annotations/effective/tags',operator:'ne',value:[]}]});
+});
+
+test('protocol handoff includes every supported current condition without changing base membership',async()=>{
+ const {predicateWithProtocolFilters}=await import('./protocolViewFilter.js');
+ const base={field:'protocol',operator:'eq',value:'Noise'};
+ const filters={cell_uuid:'cell-one',cell_type:'RGC',group_label:'Drug',tagged:'true'};
+ const result=predicateWithProtocolFilters(base,filters);
+ assert.deepEqual(result,{all:[{all:[base,{field:'cell',operator:'eq',value:'cell-one'},{field:'cell type',operator:'eq',value:'RGC'},{field:'group label',operator:'eq',value:'Drug'}]},{field:'annotations/effective/tags',operator:'ne',value:[]}]});
+ assert.deepEqual(base,{field:'protocol',operator:'eq',value:'Noise'});
 });

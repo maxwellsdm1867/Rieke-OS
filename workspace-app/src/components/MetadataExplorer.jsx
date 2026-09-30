@@ -228,7 +228,7 @@ export default function MetadataExplorer({initialEditorOpen=false,openRequest=0,
   const previousOpenRequest=useRef(openRequest);
   useEffect(()=>{if(previousOpenRequest.current!==openRequest&&!busy){previousOpenRequest.current=openRequest;editSearch();}},[openRequest,busy]);
   function editSearch(){
-    if(step!=='filter'&&baseResultPredicate){setDraft(draftOf(baseResultPredicate));setFilterSplits(resultSplits);}
+    if(step!=='filter'&&resultPredicate){setDraft(draftOf(resultPredicate));setFilterSplits(resultSplits);}
     setEditorOpen(true);
   }
   async function applyPopupSearch(nextDraft,predicate,signal){

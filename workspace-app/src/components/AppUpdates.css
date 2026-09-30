@@ -3,3 +3,5 @@
 .launcher-release-tools{display:flex;justify-content:center;margin:24px auto}.app-update-nav{width:100%}.app-update-nav.has-update{color:#583579;background:#e7dcf0;font-weight:650}.app-update-nav.has-update:hover{background:#dfd0eb}.app-update-badge{margin-left:auto;flex-shrink:0;padding:2px 6px;border-radius:5px;background:#76518e;color:#fff;font-size:9px;line-height:1.5;font-weight:650}
 
 .project-closed-notice{max-width:760px;margin:24px auto;padding:20px;border:1px solid #bfb0d0;border-radius:12px;background:#f8f4fc}.project-closed-notice code{display:block;overflow-wrap:anywhere;user-select:all}.project-closed-notice p{line-height:1.5}
+
+.app-update-discovery{position:fixed;bottom:24px;right:24px;z-index:2000;display:flex;align-items:flex-start;gap:14px;width:min(380px,calc(100vw - 48px));padding:20px;border:1px solid #bea4d1;border-radius:12px;background:#fff;color:#51336a;box-shadow:0 12px 38px #34204033}.app-update-discovery>svg{flex-shrink:0}.app-update-discovery p{font-size:13px;line-height:1.5;margin:7px 0 12px}.app-update-discovery .icon-button{margin-left:auto;flex-shrink:0}

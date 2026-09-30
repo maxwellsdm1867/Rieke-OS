@@ -452,8 +452,12 @@ def inspect_package(package_dir):
         raise ValueError('Prepared project source inventory is invalid')
     seen = set()
     for source in sources:
-        if not isinstance(source, dict) or set(source) != {'source_sha256', 'recording_ref', 'metadata_ref', 'metadata_sha256'}:
+        if not isinstance(source, dict) or set(source) - {'source_filename'} != {'source_sha256', 'recording_ref', 'metadata_ref', 'metadata_sha256'}:
             raise ValueError('Prepared project source record is invalid')
+        if 'source_filename' in source:
+            name = source['source_filename']
+            if not isinstance(name, str) or not name.strip() or '/' in name or '\\' in name or '\x00' in name:
+                raise ValueError('Prepared recording display name is invalid')
         sha = source['source_sha256']
         if not isinstance(sha, str) or not re.fullmatch('[0-9a-f]{64}', sha) or sha in seen:
             raise ValueError('Prepared project source identities are invalid or duplicated')
@@ -608,6 +612,8 @@ def restore_project(package_dir, destination):
                     mapping = mappings[source['source_sha256']]
                     if record.get('metadata_sha256') != mapping['metadata_sha256']:
                         raise ValueError('Restored metadata checksum disagrees with database')
+                    from workspace_recording_files import recording_display_name
+                    record['source_filename'] = mapping.get('source_filename') or recording_display_name(record)
                     record['source_path'] = str(target / mapping['recording_ref'])
                     record['metadata_path'] = str(target / mapping['metadata_ref'])
                     cursor.execute('UPDATE recording_workspace.source SET manifest=%s WHERE source_sha256=%s AND project_uuid=%s',
@@ -618,7 +624,7 @@ def restore_project(package_dir, destination):
                         current = _json(local_manifest)
                         if current.get('source_sha256') != source['source_sha256']:
                             raise ValueError('Imported source file identity disagrees with database')
-                        current.update(source_path=record['source_path'], metadata_path=record['metadata_path'])
+                        current.update(source_path=record['source_path'], source_filename=record['source_filename'], metadata_path=record['metadata_path'])
                         _write(local_manifest, current)
                 _update_artifact_locations(cursor, artifacts)
                 cursor.execute('UPDATE recording_workspace.project SET directory=%s WHERE project_uuid=%s', (str(target), identity))
@@ -707,7 +713,8 @@ def prepare_project(project_dir, destination):
                 if _hash(output) != source['source_sha256']:
                     raise ValueError('Recording checksum changed or a recording is missing')
                 _verify_recording_dependencies(output)
-                inventory.append({'source_sha256': source['source_sha256'], 'recording_ref': recording_ref,
+                from workspace_recording_files import recording_display_name
+                inventory.append({'source_sha256': source['source_sha256'], 'source_filename': recording_display_name(manifest), 'recording_ref': recording_ref,
                                   'metadata_ref': reference, 'metadata_sha256': manifest['metadata_sha256']})
             _dump(root, staging / 'database.sql')
             for directory, prior in before.items():

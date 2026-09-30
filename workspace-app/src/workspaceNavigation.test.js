@@ -70,3 +70,12 @@ test('reopening a protocol starts epoch browsing but history restores its tree v
  assert.equal(resolveProtocolSession({saved,restore:true}),saved);
  assert.equal(saved.inspector.designMode,true);
 });
+
+test('log tabs retain independent history identities for browser and desktop restoration',()=>{
+ for(const page of ['activity','exports']){
+  const route=makeWorkspaceRoute(page,{},`logs-${page}`);
+  assert.equal(validWorkspaceRoute(route),true);
+  assert.equal(routeAddress(route),`#/${page}`);
+  assert.deepEqual(JSON.parse(JSON.stringify(route)),route);
+ }
+});

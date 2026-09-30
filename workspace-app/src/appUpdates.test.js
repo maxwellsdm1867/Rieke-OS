@@ -45,3 +45,14 @@ test('visible status distinguishes no releases and failed checks from up to date
   assert.equal(updateLabel({state:'unavailable'}),'No release published');
   assert.equal(updateLabel({state:'error'}),'Update check unavailable');
 });
+
+test('new update discovery is deduplicated across scans, readiness and launcher transitions',async()=>{
+ const {claimUpdateDiscovery}=await import('./appUpdates.js');
+ const values=new Map(),storage={getItem:key=>values.get(key),setItem:(key,value)=>values.set(key,value)};
+ const seen=new Set(),status={state:'Available',available:'0.2.0',channel:'unsigned-testing'};
+ assert.equal(claimUpdateDiscovery(status,seen,storage),true);
+ assert.equal(claimUpdateDiscovery(status,seen,storage),false);
+ assert.equal(claimUpdateDiscovery({...status,state:'Ready'},new Set(),storage),false);
+ assert.equal(claimUpdateDiscovery({...status,available:'0.2.1'},seen,storage),true);
+ assert.equal(claimUpdateDiscovery({...status,state:'error'},seen,storage),false);
+});

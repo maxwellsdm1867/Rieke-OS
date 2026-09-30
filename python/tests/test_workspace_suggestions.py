@@ -88,6 +88,19 @@ class ImportSuggestionTests(unittest.TestCase):
         self.assertFalse(self.case.datasets.rows)
         self.assertFalse(self.case.curation.rows)
 
+    def test_import_prepares_supporting_voltage_and_reports_partial_failure_without_rollback(self):
+        qc = self.case.app.extensions['cell_qc']
+        failure = {'status': 'failed', 'cell_count': 1,
+            'failures': [{'cell_uuid': self.case.service.cell_ids[0], 'reason': 'Unreadable trace'}]}
+        with patch.object(qc, 'prepare_baselines', return_value=failure) as prepare:
+            job = self.run_import()
+        prepare.assert_called_once_with(self.source_sha)
+        self.assertEqual(job['status'], 'complete_with_warnings')
+        self.assertTrue(job['catalog_committed'])
+        self.assertEqual(job['voltage_preparation'], failure)
+        self.assertEqual(job['warnings'][0]['stage'], 'supporting_voltage_preparation')
+        self.assertEqual(len(self.case.service.rows), 3)
+
     def test_existing_cell_addition_has_zero_cell_delta_and_explicit_apply(self):
         self.run_import(lambda: self.add_recording(same_cell=True))
         suggestion = self.suggestions()['suggestions'][0]
