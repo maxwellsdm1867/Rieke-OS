@@ -81,15 +81,18 @@ npm ci --prefix desktop
 npm test --prefix desktop
 python3 tools/desktop_build_runtime.py --skip-frontend
 python3 tools/desktop_runtime_manifest.py
-ulimit -S -n 65536
 CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
 ```
 
-The packaging shell needs a soft open-file limit of 65,536. The pinned
-`@electron/osx-sign` walker opens runtime files concurrently before applying its
-signing exclusions, which can exceed the default macOS runner limit. Both CI
-packaging steps set this limit in their own shell and fail before packaging if
-the host hard limit does not permit it. No system-wide limit is changed.
+The pinned `@electron/osx-sign` walker opens runtime files concurrently before
+applying its signing exclusions. CI therefore preloads the lockfile's
+`graceful-fs` adapter into the packaging process before the walker loads. The
+adapter queues file-open retries when macOS reports `EMFILE` or `ENFILE`.
+`NODE_OPTIONS` is scoped to each packaging command; application launches and
+qualification tests use their normal filesystem implementation. The temporary
+adapter stays outside the app and source checkout. On a local host with a low
+file limit, use the same preload preparation and packaging command from
+`desktop-candidate.yml` with `RUNNER_TEMP` pointing to a temporary directory.
 
 To verify a workflow-only correction against an existing immutable release tag,
 dispatch `desktop-candidate.yml` from the corrected workflow ref and supply the
