@@ -192,6 +192,95 @@ class CellQCTests(unittest.TestCase):
         self.assertFalse(self.qc.block_baselines(self.cell)['anchors'])
         self.service.trace.assert_not_called()
 
+    def eligible_noise_block(self):
+        self.same_cell()
+        for identity in self.ids:
+            self.service.rows[identity]['protocol_name'] = 'VariableMeanNoiseCurInject'
+            self.service.rows[identity]['block_uuid'] = self.service.rows[self.ids[0]]['block_uuid']
+        return self.service.rows[self.ids[0]]['block_uuid']
+
+    def test_prepared_voltage_reuses_exact_source_data_without_reads_on_display_or_restart(self):
+        self.eligible_noise_block()
+        result = self.qc.prepare_cell_baselines(self.cell)
+        self.assertEqual(result['status'], 'estimates_for_review')
+        anchor = result['anchors'][0]
+        self.assertEqual(anchor['epoch_uuid'], self.ids[0])
+        self.assertEqual(anchor['stream_uuid'], self.streams[self.ids[0]]['uuid'])
+        self.assertEqual(anchor['recording_time_seconds'], 0.)
+        self.assertEqual(anchor['stream_units'], 'mV')
+        self.assertEqual(result['recordings'][0]['epoch_uuids'], self.ids)
+        self.assertEqual(result['interpolation']['status'], 'unavailable')
+        self.service.trace.assert_called_once()
+        self.service.trace.reset_mock()
+        restarted = CellQC(self.service)
+        self.assertEqual(restarted.prepare_cell_baselines(self.cell), result)
+        self.assertEqual(restarted.prepared_baselines(self.cell), result)
+        self.assertEqual(restarted.overview(self.cell)['resting_voltage']['supporting_measurements'], result)
+        self.assertEqual(self.case.client.get(self.base+'/block-baselines').get_json(), result)
+        self.service.trace.assert_not_called()
+        self.assertEqual(restarted.overview(self.cell)['resting_voltage']['status'], 'unavailable')
+
+    def test_changed_baseline_inputs_membership_and_file_signature_do_not_load_stale_data(self):
+        self.eligible_noise_block()
+        self.qc.prepare_cell_baselines(self.cell)
+        self.service._fingerprints[self.ids[0]] = 'c' * 64
+        self.assertEqual(self.qc.prepared_baselines(self.cell)['preparation_status'], 'not_prepared')
+        self.qc.prepare_cell_baselines(self.cell)
+        self.service.rows[self.ids[1]]['cell_uuid'] = self.service.cell_ids[1]
+        self.assertEqual(self.qc.prepared_baselines(self.cell)['preparation_status'], 'not_prepared')
+        self.same_cell()
+        self.streams[self.ids[0]]['units'] = 'pA'
+        self.assertEqual(self.qc.prepared_baselines(self.cell)['preparation_status'], 'not_prepared')
+        self.streams[self.ids[0]]['units'] = 'mV'
+        source = self.service.project_dir/'fixture.h5'
+        source.write_bytes(b'original')
+        self.qc.prepare_cell_baselines(self.cell)
+        source.write_bytes(b'changed')
+        self.assertEqual(self.qc.prepared_baselines(self.cell)['preparation_status'], 'not_prepared')
+
+    def test_baseline_processing_failure_is_persisted_and_retry_is_explicit(self):
+        self.eligible_noise_block()
+        self.service.trace.side_effect = OSError('Waveform unreadable')
+        result = self.qc.prepare_cell_baselines(self.cell)
+        self.assertEqual(result['preparation_status'], 'failed')
+        self.assertFalse(result['anchors'])
+        restarted = CellQC(self.service)
+        self.assertEqual(restarted.prepared_baselines(self.cell)['preparation_status'], 'failed')
+        self.assertIn('Waveform unreadable', restarted.prepared_baselines(self.cell)['reason'])
+        self.service.trace.side_effect = lambda *args: {'values': [-60.] * 20}
+        response = self.case.client.post(self.base+'/prepare-baselines', json={}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['preparation_status'], 'complete')
+        self.assertEqual(len(response.get_json()['anchors']), 1)
+        unknown = str(uuid.uuid4())
+        self.assertEqual(self.case.client.get('/api/cells/'+unknown+'/qc/block-baselines').status_code, 400)
+
+    def test_baseline_recordings_are_separate_and_every_block_is_prepared(self):
+        self.eligible_noise_block()
+        template = copy.deepcopy(self.service.rows[self.ids[0]])
+        for index in range(501):
+            block = str(uuid.uuid4())
+            for trial in range(2):
+                identity = str(uuid.uuid4())
+                row = {**copy.deepcopy(template), 'epoch_uuid': identity, 'block_uuid': block,
+                    'start_time': f'09/24/2026 14:{index // 60:02d}:{index % 60:02d}:00000{trial}'}
+                self.service.rows[identity] = row
+                self.service.details[identity] = copy.deepcopy(self.service.details[self.ids[0]])
+                self.service._fingerprints[identity] = 'b' * 64
+        self.service.trace.side_effect = lambda *args: {'values': [-60.] * 20}
+        result = self.qc.prepare_cell_baselines(self.cell)
+        self.assertEqual(len(result['anchors']), 502)
+        self.assertFalse(result['truncated'])
+        self.assertEqual(self.service.trace.call_count, 502)
+        self.assertEqual(result['preparation_status'], 'complete')
+        # A block copied across sources cannot gain eligibility by pooling.
+        self.service.rows[self.ids[1]]['source_sha256'] = 'd' * 64
+        self.service.manifests['d' * 64] = {'source_path': str(self.service.project_dir/'other.h5')}
+        separate = self.qc.prepare_cell_baselines(self.cell)
+        self.assertEqual(len(separate['recordings']), 2)
+        self.assertEqual(len(separate['anchors']), 501)
+        self.assertFalse(separate['recordings'][1]['anchor_epoch_uuids'])
+
     def test_condition_summary_keeps_block_group_and_contrast_separate(self):
         self.same_cell()
         self.service.details[self.ids[1]]['parameters']['contrast'] = -1
