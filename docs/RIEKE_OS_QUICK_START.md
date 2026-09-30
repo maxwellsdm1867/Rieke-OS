@@ -123,13 +123,16 @@ explicit new export.
 ## 7. Close, reopen, and update
 
 Use **Close project** before moving or copying its whole folder. Ordinary app
-Quit preserves drafts and waits for scientific services; an active import can
-defer closing. It never force-stops a writer. Reopen the installed app and select
+Quit attempts the existing draft save and service cleanup within a finite
+deadline, then exits. If recent changes or cleanup could not be confirmed, it
+retains the last saved view and operation records for recovery on relaunch. It
+never force-stops a writer. Reopen the installed app and select
 your remembered project. See [storage and recovery](STORAGE_RECOVERY.md).
 
 The unsigned testing app checks GitHub metadata at startup and about hourly.
 **Release / Publish** shows an available version; choose **Download update**, then
-**Restart to update** when ready. Ordinary Quit does not install a testing update.
+**Restart to update** when ready. Signed desktop updates download quietly and
+also require **Restart to update**. Ordinary Quit retains the current app.
 
 ## If a step fails
 
