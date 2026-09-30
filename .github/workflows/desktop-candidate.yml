@@ -11,6 +11,9 @@ on:
         description: Require Developer ID signing and notarization
         type: boolean
         default: false
+      qualification_ref:
+        description: Optional reviewed test-only revision; defaults to the application tag
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -20,6 +23,7 @@ jobs:
   build:
     if: github.repository == 'maxwellsdm1867/Rieke-OS'
     runs-on: macos-15
+    timeout-minutes: 120
     environment: ${{ ((github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed) && 'desktop-signing' || 'desktop-build' }}
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +70,7 @@ jobs:
             `require(${JSON.stringify(graceful)}).gracefulify(require('node:fs'));\n`);
           NODE
       - name: Build unsigned local qualification candidate
+        id: unsigned_package
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         working-directory: desktop
         env:
@@ -74,6 +79,7 @@ jobs:
           # Queue EMFILE/ENFILE retries before osx-sign captures fs.open.
           NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
       - name: Build signed and notarized candidate
+        id: signed_package
         if: (github.event_name == 'push' && startsWith(github.ref_name, 'v')) || inputs.signed
         working-directory: desktop
         env:
@@ -94,6 +100,17 @@ jobs:
           codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'
           spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'
           xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'
+      - name: Create exact-byte unsigned release metadata
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        run: |
+          VERSION=$(node -p "require('./desktop/package.json').version")
+          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" --output desktop/dist/desktop-release.json
+      - name: Inventory exact candidate bytes
+        id: candidate_inventory
+        run: |
+          python3 tools/desktop_release.py inventory --output desktop/dist/artifacts.json
+          cp "$RUNNER_TEMP/desktop-baseline.json" desktop/dist/desktop-baseline.json
+          cp desktop/build/runtime/runtime-audit.json desktop/dist/runtime-audit.json
       - name: Exercise updater transport failures without installing
         run: npm run test:e2e:updater --prefix desktop
       - name: Exercise the actual packaged desktop UI and orderly lifecycle
@@ -101,25 +118,37 @@ jobs:
       - name: Exercise explicit unsigned Install and Open
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         run: npm run test:e2e:bootstrap --prefix desktop
-      - name: Create exact-byte unsigned release metadata
+      - name: Exercise user-driven GitHub download interface
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        timeout-minutes: 20
+        run: npm run test:e2e:github-updates --prefix desktop
+      - name: Check out reviewed native update qualification tools
+        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.qualification_ref || inputs.tag || github.ref }}
+          path: desktop/build/qualification-source
+          persist-credentials: false
+      - name: Connect qualification tools to the frozen candidate
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         run: |
-          VERSION=$(node -p "require('./desktop/package.json').version")
-          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" --output desktop/dist/desktop-release.json
-      - name: Exercise user-driven GitHub download and native update helper
+          QUALIFICATION_ROOT="$GITHUB_WORKSPACE/desktop/build/qualification-source"
+          # Only the test harness may differ; its implementation helpers must match.
+          for source in desktop/*.cjs desktop/e2e/helpers.cjs desktop/package-lock.json; do
+            cmp "$source" "$QUALIFICATION_ROOT/$source"
+          done
+          ln -s "$GITHUB_WORKSPACE/desktop/dist" "$QUALIFICATION_ROOT/desktop/dist"
+          ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$QUALIFICATION_ROOT/desktop/node_modules"
+          git -C "$QUALIFICATION_ROOT" rev-parse HEAD
+      - name: Exercise native update, retained-app restore and failed-launch rollback
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
-        run: |
-          npm run test:e2e:github-updates --prefix desktop
-          node desktop/e2e/testing-upgrade.e2e.cjs
+        timeout-minutes: 60
+        working-directory: desktop/build/qualification-source
+        run: node desktop/e2e/testing-upgrade.e2e.cjs
       - name: Verify recovery before opening projects when backend startup fails
         run: npm run test:e2e:startup-failure --prefix desktop
       - name: Audit extracted installers and native database workflows
         run: python3 tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
-      - name: Inventory exact candidate bytes
-        run: |
-          python3 tools/desktop_release.py inventory --output desktop/dist/artifacts.json
-          cp "$RUNNER_TEMP/desktop-baseline.json" desktop/dist/desktop-baseline.json
-          cp desktop/build/runtime/runtime-audit.json desktop/dist/runtime-audit.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -129,9 +158,12 @@ jobs:
             docs/dev/desktop-ui-e2e/
             docs/dev/desktop-artifact-e2e.json
             docs/dev/desktop-testing-upgrade-e2e.json
+            desktop/build/qualification-source/docs/dev/desktop-testing-upgrade-e2e.json
+            desktop/build/qualification-source/desktop/build/native-qualification-diagnostics/
           if-no-files-found: warn
           retention-days: 30
       - uses: actions/upload-artifact@v4
+        if: always() && steps.candidate_inventory.outcome == 'success'
         with:
           name: rieke-desktop-macos-arm64
           path: |

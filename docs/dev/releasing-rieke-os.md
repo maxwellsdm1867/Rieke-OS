@@ -106,6 +106,27 @@ published tag as the `tag` input. The baseline still checks out and verifies tha
 exact tagged source. The candidate workflow only uploads Actions artifacts; it
 does not replace published release assets or move the tag.
 
+For a reviewed test-only correction, `qualification_ref` selects a separate
+native-update test checkout under the ignored build directory. It defaults to
+the application tag. The workflow verifies that its application implementation
+helpers and dependency lock match the tagged source, then connects the test
+checkout to the frozen candidate. Qualification receipts identify the test
+revision separately from the application's source commit. Updating a test
+deadline or diagnostics does not require moving a published tag or repackaging
+the released app. The update interface and native helper have separate bounded
+CI steps so a stuck test cannot run indefinitely.
+Once packaging and inventory succeed, CI retains the exact candidate even if a
+later qualification test fails. Such Actions artifacts remain unqualified; the
+run must pass its required checks before promotion. Keeping the failed run's
+candidate and diagnostics supports investigation without rebuilding new bytes.
+
+`desktop-published-qualification.yml` can verify a published unsigned testing
+release directly on a fresh macOS runner. Supply its immutable `tag` and the
+reviewed `qualification_ref`. It checks the archive digest and extraction bounds,
+recomputes the descriptor, verifies the complete runtime and native database,
+then exercises update/restore/rollback and startup-failure handling. It downloads
+the existing release bytes and never rebuilds or publishes an application.
+
 `desktop/distribution.json` must explicitly select the reviewed trust channel.
 The testing build has an ad-hoc structural seal; it has no Developer ID identity
 or notarization. Signed native code is finalized before runtime hashes and the
