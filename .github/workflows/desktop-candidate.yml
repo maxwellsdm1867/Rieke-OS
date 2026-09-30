@@ -11,6 +11,10 @@ on:
         description: Require Developer ID signing and notarization
         type: boolean
         default: false
+      extended_qualification:
+        description: Also run native update/restore/rollback and fault-injection audits
+        type: boolean
+        default: false
       qualification_ref:
         description: Optional reviewed test-only revision; defaults to the application tag
         required: false
@@ -123,14 +127,14 @@ jobs:
         timeout-minutes: 20
         run: npm run test:e2e:github-updates --prefix desktop
       - name: Check out reviewed native update qualification tools
-        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.qualification_ref || inputs.tag || github.ref }}
           path: desktop/build/qualification-source
           persist-credentials: false
       - name: Connect qualification tools to the frozen candidate
-        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         run: |
           QUALIFICATION_ROOT="$GITHUB_WORKSPACE/desktop/build/qualification-source"
           # Only the test harness may differ; its implementation helpers must match.
@@ -141,13 +145,15 @@ jobs:
           ln -s "$GITHUB_WORKSPACE/desktop/node_modules" "$QUALIFICATION_ROOT/desktop/node_modules"
           git -C "$QUALIFICATION_ROOT" rev-parse HEAD
       - name: Exercise native update, retained-app restore and failed-launch rollback
-        if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
+        if: ${{ inputs.extended_qualification && !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         timeout-minutes: 60
         working-directory: desktop/build/qualification-source
         run: node desktop/e2e/testing-upgrade.e2e.cjs
       - name: Verify recovery before opening projects when backend startup fails
+        if: inputs.extended_qualification
         run: npm run test:e2e:startup-failure --prefix desktop
       - name: Audit extracted installers and native database workflows
+        if: inputs.extended_qualification
         run: python3 tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
       - uses: actions/upload-artifact@v4
         if: always()

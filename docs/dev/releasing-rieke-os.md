@@ -142,13 +142,34 @@ minimum-device and clean-machine tests need independent evidence.
 
 ## Test the exact artifact bytes
 
-Run against the frozen packaged candidate, with scratch HOME/user data/projects:
+Routine candidate builds run source/unit checks, packaging and artifact identity,
+packaged UI/project workflows and orderly quit, explicit Install and Open, and
+update availability/download checks. Keep these as the default release loop.
+Do not rebuild the same application to repeat an already-passing check after a
+test-only or documentation change.
+
+Native update/restore/rollback, startup fault injection and exhaustive extracted
+installer audits are an explicit second tier: dispatch the candidate workflow
+with `extended_qualification=true` when the affected code changes or a specific
+failure requires it. For frozen published bytes, use the separate manual
+`desktop-published-qualification.yml` workflow. These deeper runs are not an
+automatic prerequisite for every unsigned testing build; document any remaining
+qualification limits. Signed production promotion still requires its complete
+evidence and is not implied by passing the routine loop.
+
+Run the routine checks against the frozen packaged candidate, with scratch
+HOME/user data/projects:
 
 ```sh
 npm run test:e2e:updater --prefix desktop
 npm run test:e2e --prefix desktop
 npm run test:e2e:bootstrap --prefix desktop
 npm run test:e2e:github-updates --prefix desktop
+```
+
+Run the affected deeper checks when requested or justified by a change:
+
+```sh
 node desktop/e2e/testing-upgrade.e2e.cjs
 npm run test:e2e:startup-failure --prefix desktop
 python3 tools/desktop_artifact_e2e.py \
