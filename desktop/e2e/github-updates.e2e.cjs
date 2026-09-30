@@ -24,7 +24,7 @@ async function main(){
  await run(path.join(fixture.bundle,'Contents/Resources/runtime/python/bin/python3.11'),['-B',path.resolve(__dirname,'../../tools/desktop_test_release.py'),'--app',published,'--archive',zip,'--output',descriptorPath],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
  const descriptorBytes=await fs.readFile(descriptorPath),descriptor=JSON.parse(descriptorBytes);receipt.candidate_archive_sha256=descriptor.archive.sha256;
  assert.equal(descriptor.application_version,candidateVersion);assert.equal(descriptor.archive.filename,path.basename(zip));
- const tag=`desktop-test-v${candidateVersion}`,root=`https://github.com/maxwellsdm1867/disco/releases/download/${tag}/`;
+ const tag=`desktop-test-v${candidateVersion}`,root=`https://github.com/maxwellsdm1867/Rieke-OS/releases/download/${tag}/`;
  const releases=Buffer.from(JSON.stringify([{draft:false,prerelease:true,tag_name:tag,assets:[{name:'desktop-release.json',browser_download_url:root+'desktop-release.json',size:descriptorBytes.length},{name:descriptor.archive.filename,browser_download_url:root+descriptor.archive.filename,size:descriptor.archive.size}]}]));
  server=http.createServer((request,response)=>{
   if(request.url==='/api'){counts.api++;response.writeHead(200,{'content-length':releases.length});response.end(releases);}
@@ -33,7 +33,7 @@ async function main(){
   else{response.writeHead(404);response.end();}
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base=`http://127.0.0.1:${server.address().port}`,transport=path.join(fixture.root,'github-transport.cjs');
- await fs.writeFile(transport,`'use strict';const http=require('node:http');exports.transport=(url,{kind}={})=>{const target=url==='https://api.github.com/repos/maxwellsdm1867/disco/releases?per_page=100&page=1'?'/api':url===${JSON.stringify(root+'desktop-release.json')}?'/descriptor':url===${JSON.stringify(root+descriptor.archive.filename)}?'/archive':null;if(!target)return Promise.reject(new Error('Unexpected official fixture URL'));return new Promise((resolve,reject)=>{http.get(${JSON.stringify(base)}+target,response=>resolve({statusCode:response.statusCode,headers:response.headers,body:response})).on('error',reject);});};\n`,{mode:0o600});
+ await fs.writeFile(transport,`'use strict';const http=require('node:http');exports.transport=(url,{kind}={})=>{const target=url==='https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases?per_page=100&page=1'?'/api':url===${JSON.stringify(root+'desktop-release.json')}?'/descriptor':url===${JSON.stringify(root+descriptor.archive.filename)}?'/archive':null;if(!target)return Promise.reject(new Error('Unexpected official fixture URL'));return new Promise((resolve,reject)=>{http.get(${JSON.stringify(base)}+target,response=>resolve({statusCode:response.statusCode,headers:response.headers,body:response})).on('error',reject);});};\n`,{mode:0o600});
  const runtime=path.join(fixture.bundle,'Contents/Resources/runtime'),manifestFile=path.join(runtime,'runtime-manifest.json'),manifest=JSON.parse(await fs.readFile(manifestFile));manifest.application_version=priorVersion;
  const releaseNames=Object.keys(manifest.resources).filter(name=>name.endsWith('/rieke-release.json'));
  assert.ok(releaseNames.includes('application/rieke-release.json'));

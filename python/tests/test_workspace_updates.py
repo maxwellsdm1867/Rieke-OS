@@ -288,14 +288,18 @@ if __name__ == '__main__':
     unittest.main()
 
 class BrandingMigrationTests(unittest.TestCase):
-    def test_official_feed_falls_back_only_on_canonical_404(self):
+    def test_checked_in_source_release_uses_existing_repository(self):
+        metadata = json.loads((Path(__file__).resolve().parents[2] / 'rieke-release.json').read_text())
+        self.assertEqual(metadata['repository'], 'maxwellsdm1867/Rieke-OS')
+        self.assertEqual(metadata['canonical_repository'], 'maxwellsdm1867/Rieke-OS')
+
+    def test_official_feed_uses_existing_repository_without_failure_retries(self):
+        self.assertEqual(updates.API, 'https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')
         payload = json.dumps({'tag_name':'v0.1.3'}).encode()
-        for code in (404,403,500):
-            with self.subTest(code=code), patch.object(updates,'_download',side_effect=[HTTPError(updates.API,code,'',{},None),payload]) as download:
-                if code==404:
-                    self.assertEqual(updates._official_release()['tag_name'],'v0.1.3')
-                    self.assertEqual(download.call_args_list[1].args[0],'https://api.github.com/repos/maxwellsdm1867/Rieke-OS/releases/latest')
-                else:
-                    with self.assertRaises(HTTPError):updates._official_release()
-                    self.assertEqual(download.call_count,1)
-                self.assertEqual(download.call_args_list[0].args[0],updates.API)
+        with patch.object(updates, '_download', return_value=payload) as download:
+            self.assertEqual(updates._official_release()['tag_name'], 'v0.1.3')
+            download.assert_called_once_with(updates.API)
+        for code in (404,401,403,500):
+            with self.subTest(code=code), patch.object(updates,'_download',side_effect=HTTPError(updates.API,code,'',{},None)) as download:
+                with self.assertRaises(HTTPError):updates._official_release()
+                download.assert_called_once_with(updates.API)

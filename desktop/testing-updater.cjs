@@ -5,8 +5,7 @@ const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
 const {compareVersions}=require('./updater-validation.cjs');
-const {REPOSITORY,approvedURL,validateDescriptor,verifyArchive,ensurePrivateCache,validateTestingCandidate,revalidateTestingCandidate,hashFile}=require('./testing-update-validation.cjs');
-const LEGACY_REPOSITORY='maxwellsdm1867/Rieke-OS';
+const {REPOSITORY,REPOSITORIES,approvedURL,validateDescriptor,verifyArchive,ensurePrivateCache,validateTestingCandidate,revalidateTestingCandidate,hashFile}=require('./testing-update-validation.cjs');
 const API=`https://api.github.com/repos/${REPOSITORY}/releases?per_page=100&page=1`;
 async function atomicHint(cache,value){
   const temporary=path.join(cache,`prepared-${crypto.randomUUID()}.tmp`),file=path.join(cache,'prepared.json');
@@ -61,14 +60,11 @@ async function jsonAt(transport,url,kind='asset'){
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 function assetURL(asset,tag,name){
-  const expected=[REPOSITORY,LEGACY_REPOSITORY].map(repo=>`https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(name)}`);
+  const expected=REPOSITORIES.map(repo=>`https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(name)}`);
   if(!asset||asset.name!==name||!expected.includes(asset.browser_download_url))throw new Error('Release asset is not in the official repository.');
   approvedURL(asset.browser_download_url,'asset');return asset.browser_download_url;
 }
-async function releaseList(transport){
-  try{return await jsonAt(transport,API,'api');}
-  catch(error){if(error.statusCode!==404)throw error;return jsonAt(transport,`https://api.github.com/repos/${LEGACY_REPOSITORY}/releases?per_page=100&page=1`,'api');}
-}
+async function releaseList(transport){return jsonAt(transport,API,'api');}
 function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus=()=>{},prepareQuit,authorizeQuit=()=>{},revokeQuit=()=>{},onInstallationFailure=()=>{},installedBundle,transport=httpsTransport,verifyCandidate=validateTestingCandidate,revalidateCandidate=revalidateTestingCandidate,installHelper,processIdentity,hostVersion,timers=globalThis,random=Math.random,enabled}){
   installedBundle||=path.resolve(app.getPath('exe'),'../../..');
   let status={state:'Current',installed:manifest.application_version,available:null,channel:'unsigned-testing',manual_updates:true,can_download:false,can_restart:false,developer_id_verified:false,message:'Using the installed testing version.'};
@@ -165,7 +161,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
   }
   async function start(){
     if(active||stopped)return {...status};
-    if(enabled===false||!app.isPackaged||process.platform!=='darwin'||process.arch!=='arm64'||distribution?.format!=='rieke-desktop-distribution'||distribution.version!==1||distribution.channel!=='unsigned-testing'||![REPOSITORY,'maxwellsdm1867/Rieke-OS'].includes(distribution.repository))return set('Deferred',{message:'This distribution does not enable GitHub testing updates.'});
+    if(enabled===false||!app.isPackaged||process.platform!=='darwin'||process.arch!=='arm64'||distribution?.format!=='rieke-desktop-distribution'||distribution.version!==1||distribution.channel!=='unsigned-testing'||!REPOSITORIES.includes(distribution.repository))return set('Deferred',{message:'This distribution does not enable GitHub testing updates.'});
     try{
       hostVersion||=(await runFile('/usr/bin/sw_vers',['-productVersion'])).stdout.trim();
       const cache=await ensurePrivateCache(app.getPath('userData'));

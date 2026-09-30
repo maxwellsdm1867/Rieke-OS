@@ -38,6 +38,7 @@ class DesktopReleaseTests(unittest.TestCase):
             release.validate_evidence(evidence, evidence['artifacts'], '1.0.0')
 
     def test_stable_version_and_canonical_repository_required(self):
+        self.assertEqual(release.REPOSITORY, 'maxwellsdm1867/Rieke-OS')
         for value in ('1.0.0-beta', 'v1.0.0', '01.0.0', None):
             with self.assertRaises(ValueError):
                 release.version(value)
@@ -71,9 +72,11 @@ class DesktopReleaseTests(unittest.TestCase):
                 result = release.testing_baseline('desktop-test-v0.1.3', release.REPOSITORY)
                 self.assertEqual(result['source_commit'], git('rev-parse','HEAD').decode().strip())
                 self.assertEqual(result['distribution_channel'], 'unsigned-testing')
+                self.assertEqual(result['repository'], 'maxwellsdm1867/Rieke-OS')
+                self.assertEqual(result['canonical_repository'], 'maxwellsdm1867/Rieke-OS')
                 self.assertFalse(result['production_ready'])
                 self.assertNotIn('distribution_channel', release.baseline('v0.1.3', release.REPOSITORY))
-                legacy = 'maxwellsdm1867/Rieke-OS'
+                legacy = 'maxwellsdm1867/disco'
                 git('remote','set-url','origin','https://github.com/'+legacy+'.git')
                 bridge = release.testing_baseline('desktop-test-v0.1.3', legacy)
                 self.assertEqual(bridge['repository'],legacy)

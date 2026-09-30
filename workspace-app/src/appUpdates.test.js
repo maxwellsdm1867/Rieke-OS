@@ -86,3 +86,7 @@ test('an existing origin session claim seeds the cross-port cookie without redis
  assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> '1'},documentObject),false);
  assert.equal(claimUpdateDiscovery(status,new Set(),{getItem:()=> null,setItem(){}},documentObject),false);
 });
+
+test('missing release links use the existing official repository',()=>{
+ assert.equal(updateNotice({state:'Available',available:'1.2.0'}).url,'https://github.com/maxwellsdm1867/Rieke-OS/releases');
+});
