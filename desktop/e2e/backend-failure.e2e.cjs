@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path');
 const {createHash} = require('node:crypto');
-const {createFixture, launch, run} = require('./helpers.cjs');
+const {createFixture, launch, gracefulQuit, run} = require('./helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
 (async () => {
@@ -24,7 +24,6 @@ const {verifyResources} = require('../updater-validation.cjs');
   const record = JSON.parse(await fs.readFile(path.join(fixture.userData, 'desktop-service.json'), 'utf8'));
   assert.ok(record.executable.startsWith(fixture.bundle + '/'));
   await assert.rejects(run('/bin/ps', ['-p', String(record.pid), '-o', 'comm=']));
-  assert.equal((await page.evaluate(() => window.riekeDesktop.quit())).ready, false);
   assert.equal((await fs.readdir(path.join(fixture.userData, 'backend'))).length, 0);
   const output = path.resolve(__dirname, '../../docs/dev/desktop-ui-e2e'); await fs.mkdir(output, {recursive: true});
   await page.screenshot({path: path.join(output, 'backend-startup-recovery.png')});
@@ -32,10 +31,13 @@ const {verifyResources} = require('../updater-validation.cjs');
     method: 'Separate disposable packaged clone; literal raise-before-import backend; clone-only manifest reseal',
     source_manifest_sha256: sourceManifestSha256, app_asar_sha256: appAsarSha256,
     fault_code_sha256: createHash('sha256').update(literalFailure).digest('hex'), recovery_before_projects: true,
-    backend_exited: true, no_service_or_database_start: true, unsafe_quit_deferred: true,
-    teardown: 'Only this test GUI exits after the known literal failed backend has exited; no workers or databases existed'};
+    backend_exited: true, no_service_or_database_start: true, ordinary_quit_exited: true,
+    teardown: 'Actual ordinary Quit acknowledges exit; known literal failed backend is already exited; no workers or databases existed'};
+  await gracefulQuit(application, page);
+  assert.equal(application.process().exitCode, 0);
+  const interrupted = JSON.parse(await fs.readFile(path.join(fixture.userData, 'desktop-service.json'), 'utf8'));
+  assert.equal(interrupted.quit.requested, true);
+  assert.ok(['interrupted', 'closing'].includes(interrupted.quit.state), 'Abnormal backend exit must retain recovery evidence');
   await fs.writeFile(path.join(output, 'backend-startup-failure.json'), JSON.stringify(receipt, null, 2) + '\n');
-  const exited = new Promise(resolve => application.process().once('exit', resolve));
-  await application.evaluate(({app}) => app.exit(0)); assert.equal(await exited, 0);
   console.log(JSON.stringify(receipt));
 })().catch(error => {console.error(error.message); process.exitCode = 1;});

@@ -55,7 +55,7 @@ async function main(){
   assert.ok(counts.api>0&&counts.descriptor>0);assert.equal(counts.archive,0);const status=await page.evaluate(()=>window.riekeDesktop.status());assert.equal(status.state,'Available');assert.equal(status.available,candidateVersion);assert.equal(status.channel,'unsigned-testing');assert.equal(status.manual_updates,true);return {visible_available_version:candidateVersion,automatic_metadata:true,no_archive_download:true};
  });
  await check('explicit Check and Download prepare a fully validated real ZIP and show Restart to update',async()=>{
-  await page.getByRole('button',{name:/^Release \/ Publish/}).first().click();const dialog=page.getByRole('dialog',{name:'Release / Publish',exact:true});
+  await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true});
   assert.match(await dialog.innerText(),/Unsigned testing/);assert.doesNotMatch(await dialog.innerText(),/New versions download automatically|next launch applies/);
   const before=counts.api;await dialog.getByRole('button',{name:'Check for updates',exact:true}).click();await page.waitForFunction(()=>window.riekeDesktop.status().then(s=>s.state==='Available'));assert.ok(counts.api>before);assert.equal(counts.archive,0);
   await dialog.getByRole('button',{name:'Download update',exact:true}).click();await dialog.getByRole('button',{name:'Restart to update',exact:true}).waitFor({timeout:180000});
@@ -63,13 +63,13 @@ async function main(){
   await page.screenshot({path:path.join(path.dirname(output),'github-testing-update-ready.png')});return {explicit_check:true,explicit_download:true,real_zip_validated:true,ready_version:status.available,no_install_before_restart:true};
  });
  if(process.env.RIEKE_E2E_H5)await check('Restart to update defers an actual importer while the current app remains usable',async()=>{
-  await page.keyboard.press('Escape');await fs.mkdir(fixture.projects,{recursive:true});await page.getByRole('button',{name:/Start a brand new project/}).click();const form=page.locator('.onboarding-create-form');await form.getByRole('textbox').first().fill('Testing update writer fixture');
+  await page.keyboard.press('Escape');await fs.mkdir(fixture.projects,{recursive:true});await page.getByRole('button',{name:/^Create a new project/}).click();const form=page.locator('.onboarding-create-form');await form.getByRole('textbox').first().fill('Testing update writer fixture');
   await application.evaluate(({dialog},directory)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[directory]});},fixture.projects);
   await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill('writer');await picker.getByRole('button',{name:'Use new folder',exact:true}).click();await page.getByRole('button',{name:'Create & open',exact:true}).click();await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:90000});
   const author=page.getByRole('dialog',{name:'Tag author',exact:true});if(await author.waitFor({state:'visible',timeout:3000}).then(()=>true,()=>false)){await author.getByRole('textbox').fill('Update E2E');await author.getByRole('button',{name:'Create profile',exact:true}).click();}
   const source=path.join(fixture.home,'writer.h5');await fs.copyFile(path.resolve(process.env.RIEKE_E2E_H5),source);
   const job=await page.evaluate(async source=>{const response=await fetch('/api/imports',{method:'POST',headers:{'content-type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify({source_path:source})});if(!response.ok)throw new Error(await response.text());return response.json();},source);
-  const before=await ownedControl(fixture,'health');await page.getByRole('button',{name:/^Release \/ Publish/}).first().click();const dialog=page.getByRole('dialog',{name:'Release / Publish',exact:true});
+  const before=await ownedControl(fixture,'health');await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true});
   const active=await page.evaluate(async id=>(await fetch('/api/jobs').then(r=>r.json())).jobs.find(j=>j.job_uuid===id),job.job_uuid);
   assert.ok(active&&!['complete','completed','failed','cancelled'].includes(active.status),'Importer must still be active immediately before Restart');
   await dialog.getByRole('button',{name:'Restart to update',exact:true}).click();await dialog.getByRole('alert').waitFor({timeout:120000});
