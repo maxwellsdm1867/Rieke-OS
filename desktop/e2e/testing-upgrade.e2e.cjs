@@ -3,24 +3,27 @@
 // to owned test boundaries. The source app, distribution and user app are read-only.
 const assert=require('node:assert/strict'),fs=require('node:fs/promises'),nativeFs=require('node:fs'),path=require('node:path'),http=require('node:http');
 const {spawn}=require('node:child_process'),{createHash}=require('node:crypto'),asar=require('@electron/asar');
+async function fileSha256(file){const hash=createHash('sha256');for await(const chunk of nativeFs.createReadStream(file))hash.update(chunk);return hash.digest('hex');}
 const {createFixture,launch,gracefulQuit,ownedControl,run}=require('./helpers.cjs');
 const {bundleDigest}=require('../bootstrap.cjs');
 const {verifyResources}=require('../updater-validation.cjs');
 const {waitForHelperResult,captureHelperDiagnostics}=require('./helper-result.cjs');
 const {releaseVersions}=require('./release-versions.cjs');
+const {nativePhaseSelection}=require('./native-phase-selection.cjs');
+const selection=nativePhaseSelection(process.env.RIEKE_E2E_NATIVE_PHASE);
 const output=path.resolve(__dirname,'../../docs/dev/desktop-testing-upgrade-e2e.json');
 const diagnosticOutput=path.resolve(__dirname,'../build/native-qualification-diagnostics');
 const receipt={format:'rieke-packaged-testing-native-upgrade-e2e',version:1,production_ready:false,checks:[],failures:[],
   seams:['Official GitHub HTTPS transport mapped to owned loopback server serving exact final ZIP/descriptor.',
          'Native helper macOS open boundary recorded instead of OS launch; installed app then starts with real Electron/WSGI in isolated HOME/profile.'],
-  limits:['Synthetic version-only prior app, not an authentic previously published desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true,phases:[]};
-let fixture,server,application;const requests={api:0,descriptor:0,archive:0};
+  limits:['Synthetic version-only prior app, not an authentic previously published desktop release.','Unsigned local host only; no signed update or clean-machine qualification.'],user_app_untouched:true,phases:[],requested_scope:selection.scope,requested_phases:selection.requestedPhases,full_suite:false};
+let fixture,server,application,controllerDeadline,finishingFailure=false;const requests={api:0,descriptor:0,archive:0};
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify({...receipt,requests},null,2)+'\n');}
 async function check(name,fn){const start=Date.now();try{const evidence=await fn();receipt.checks.push({name,passed:true,elapsed_ms:Date.now()-start,evidence});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
 async function preservePhaseDiagnostics(phase,observed){
  await fs.mkdir(diagnosticOutput,{recursive:true,mode:0o700});observed.uploaded_diagnostics=[];
- const selected=new Set([`${phase}-helper-lifecycle.jsonl`,`${phase}-helper-stderr.txt`,`${phase}-driver-progress.json`,`${phase}-helper-long-wait.json`,`${phase}-helper-long-wait.sample.txt`,`${phase}-helper-timeout.json`,`${phase}-helper-timeout.sample.txt`]);
+ const selected=new Set([`${phase}-helper-lifecycle.jsonl`,`${phase}-helper-stderr.txt`,`${phase}-driver-progress.json`,`${phase}-driver-commands.jsonl`,`${phase}-helper-long-wait.json`,`${phase}-helper-long-wait.sample.txt`,`${phase}-helper-timeout.json`,`${phase}-helper-timeout.sample.txt`]);
  for(const name of selected){
   const source=path.join(fixture.root,name);let stat;
   try{stat=await fs.lstat(source);}catch(error){if(error.code==='ENOENT')continue;throw error;}
@@ -39,9 +42,16 @@ const config=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
 const helper=require(path.join(config.bundle,'Contents/Resources/app.asar/testing-install.cjs'));
 fs.writeFileSync(config.helperLifecycle,JSON.stringify({phase:config.phase,pid:process.pid,event:'started',timestamp:new Date().toISOString()})+'\n',{mode:0o600});
 process.on('exit',code=>fs.appendFileSync(config.helperLifecycle,JSON.stringify({phase:config.phase,pid:process.pid,event:'exit',code,timestamp:new Date().toISOString()})+'\n',{mode:0o600}));
+let commandId=0;
+const commandLog=value=>fs.appendFileSync(config.helperLifecycle,JSON.stringify({phase:config.phase,pid:process.pid,timestamp:new Date().toISOString(),...value})+'\n',{mode:0o600});
+async function timedRun(exe,args,options){
+ const id=++commandId,started=Date.now();commandLog({event:'command-start',id,command:path.basename(exe)});
+ try{const result=await realRun(exe,args,options);commandLog({event:'command-finish',id,command:path.basename(exe),elapsed_ms:Date.now()-started,code:0});return result;}
+ catch(error){commandLog({event:'command-finish',id,command:path.basename(exe),elapsed_ms:Date.now()-started,code:error.code||null,signal:error.signal||null});throw error;}
+}
 let opens=0;
 helper.applyTestingInstall({receiptPath:process.argv[3],run:async(exe,args,options)=>{
- if(exe!=='/usr/bin/open')return realRun(exe,args,options);
+ if(exe!=='/usr/bin/open')return timedRun(exe,args,options);
  opens++;fs.appendFileSync(config.openLog,JSON.stringify({phase:config.phase,args})+'\n',{mode:0o600});
  if(config.fail_first_open&&opens===1)throw new Error('Owned test simulates macOS refusing the candidate launch');
  return {stdout:'',stderr:''};
@@ -51,6 +61,13 @@ const DRIVER=String.raw`
 'use strict';
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),{spawn}=require('node:child_process');
 const config=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+const realRun=require('node:util').promisify(require('node:child_process').execFile);
+let commandId=0;
+async function timedRun(exe,args,options){
+ const id=++commandId,started=Date.now(),record=value=>fs.appendFileSync(config.driverCommands,JSON.stringify({phase:config.phase,pid:process.pid,timestamp:new Date().toISOString(),id,command:path.basename(exe),...value})+'\n',{mode:0o600});
+ record({event:'command-start'});try{const result=await realRun(exe,args,options);record({event:'command-finish',elapsed_ms:Date.now()-started,code:0});return result;}
+ catch(error){record({event:'command-finish',elapsed_ms:Date.now()-started,code:error.code||null,signal:error.signal||null});throw error;}
+}
 const manifest=JSON.parse(fs.readFileSync(path.join(config.bundle,'Contents/Resources/runtime/runtime-manifest.json'),'utf8'));
 const packaged=path.join(config.bundle,'Contents/Resources/app.asar');
 const helper=require(path.join(packaged,'testing-install.cjs'));
@@ -75,11 +92,11 @@ const spawnHelper=(exe,args,options)=>{
  const authorizeQuit=()=>{authorized=true;};
  if(config.phase==='restore'){
   progress('PreparingRestore');
-  handoff=await helper.restoreTestingPriorBundle({app,manifest,prepareQuit:async()=>({ready:true}),authorizeQuit,spawnHelper});
+  handoff=await helper.restoreTestingPriorBundle({app,manifest,prepareQuit:async()=>({ready:true}),authorizeQuit,spawnHelper,run:timedRun});
  }else{
   coordinator=createTestingUpdateCoordinator({app,manifest,distribution:require(path.join(packaged,'distribution.json')),transport,
    publishStatus:status=>{if(statuses.at(-1)!==status.state){statuses.push(status.state);progress(status.state);}},prepareQuit:async()=>({ready:true}),authorizeQuit,
-   installHelper:async options=>{handoff=await helper.launchTestingInstall({...options,spawnHelper});return handoff;}});
+   installHelper:async options=>{handoff=await helper.launchTestingInstall({...options,spawnHelper,run:timedRun});return handoff;}});
   await coordinator.start();if(!['Available','Ready'].includes(coordinator.getStatus().state))throw new Error('Official fixture did not offer update');
   await coordinator.download();if(coordinator.getStatus().state!=='Ready')throw new Error('Real candidate validation did not become Ready');
   const result=await coordinator.installPrepared();if(!result.installing)throw new Error(result.reason||'Native install did not hand off');
@@ -107,8 +124,9 @@ async function phase(phase,config){
  const observed={phase,started_at:new Date().toISOString(),driver_started_at:new Date().toISOString(),helper_observations:[],diagnostics:[]};receipt.phases.push(observed);
  const configFile=path.join(fixture.root,phase+'.json'),driverResult=path.join(fixture.root,phase+'-driver.json');
  const driverProgress=path.join(fixture.root,phase+'-driver-progress.json'),helperLifecycle=path.join(fixture.root,phase+'-helper-lifecycle.jsonl'),helperStderr=path.join(fixture.root,phase+'-helper-stderr.txt');
- observed.diagnostic_paths={driver_progress:driverProgress,helper_lifecycle:helperLifecycle,helper_stderr:helperStderr};observed.driver_timeout_ms=15*60*1000;observed.helper_timeout_ms=15*60*1000;
- await fs.writeFile(configFile,JSON.stringify({...config,phase,driverResult,driverProgress,helperLifecycle,helperStderr,fail_first_open:phase==='rollback'}),{mode:0o600});
+ const driverCommands=path.join(fixture.root,phase+'-driver-commands.jsonl');
+ observed.diagnostic_paths={driver_commands:driverCommands,driver_progress:driverProgress,helper_lifecycle:helperLifecycle,helper_stderr:helperStderr};observed.driver_timeout_ms=15*60*1000;observed.helper_timeout_ms=15*60*1000;
+ await fs.writeFile(configFile,JSON.stringify({...config,phase,driverResult,driverProgress,driverCommands,helperLifecycle,helperStderr,fail_first_open:phase==='rollback'}),{mode:0o600});
  const log=await fs.open(path.join(fixture.root,phase+'.log'),'w');
  const child=spawn(fixture.executable,[config.driver,configFile],{cwd:fixture.root,env:{HOME:fixture.home,TMPDIR:fixture.root,PATH:'/usr/bin:/bin',LANG:'en_US.UTF-8',ELECTRON_RUN_AS_NODE:'1',PYTHONDONTWRITEBYTECODE:'1'},stdio:['ignore',log.fd,log.fd]});
  const driverStarted=Date.now();let exit,error,heartbeatAt=driverStarted;
@@ -129,7 +147,7 @@ async function phase(phase,config){
    onDiagnostics:async value=>{observed.diagnostics.push(await captureHelperDiagnostics({helperPid:driver.handoff.helperPid,wrapper:config.wrapper,configFile,directory:fixture.root,phase,reason:value.reason}));await write();}});
   observed.helper_elapsed_ms=waited.elapsed_ms;observed.helper_outcome=waited.result.state;observed.completed_at=new Date().toISOString();await write();
   return {driver,outcome:waited.result};
- }catch(error){observed.failure={message:error.message,observation:error.observation||null};observed.failed_at=new Date().toISOString();await write();throw error;}
+ }catch(error){child.unref();observed.failure={message:error.message,observation:error.observation||null};observed.failed_at=new Date().toISOString();await write();throw error;}
  finally{
   await log.close();
   try{await preservePhaseDiagnostics(phase,observed);}catch(error){observed.diagnostic_preservation_error=error.message;await write();throw error;}
@@ -144,6 +162,7 @@ async function startup(version){
  return{application_version:health.application_version,owned_wsgi_ready:true,real_electron_started:true,isolated_home_and_profile:true,orderly_shutdown:true};
 }
 async function main(){
+ controllerDeadline=setTimeout(()=>{void failController(new Error('Native qualification controller deadline reached; owned fixture retained'));},(selection.fullSuite?55:35)*60*1000);
  const harnessRoot=path.resolve(__dirname,'../..');
  receipt.qualification_harness_commit=(await run('/usr/bin/git',['rev-parse','HEAD'],{cwd:harnessRoot})).stdout.trim();
  receipt.qualification_harness_sha256=createHash('sha256').update(await fs.readFile(__filename)).digest('hex');
@@ -159,6 +178,8 @@ async function main(){
  receipt.asar_sha256=createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex');
  const descriptorBytes=await fs.readFile(path.resolve(__dirname,'../dist/desktop-release.json')),descriptor=JSON.parse(descriptorBytes);receipt.archive_sha256=descriptor.archive.sha256;
  assert.equal(descriptor.application_version,candidateVersion);assert.equal(descriptor.archive.filename,path.basename(zip));
+ assert.equal(await fileSha256(zip),receipt.archive_sha256);
+ const candidateDigest=await bundleDigest(published);receipt.candidate_bundle_sha256=candidateDigest;
  fixture=await createFixture({reuse:false});
  receipt.fixture_root=fixture.root;receipt.diagnostic_directory=path.relative(harnessRoot,diagnosticOutput);await write();
  await versionPrior(priorVersion);const priorDigest=await bundleDigest(fixture.bundle);receipt.prior_fixture_bundle_sha256=priorDigest;
@@ -172,6 +193,7 @@ async function main(){
  });await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const driver=path.join(fixture.root,'driver.cjs'),wrapper=path.join(fixture.root,'owned-open-wrapper.cjs'),openLog=path.join(fixture.root,'open.jsonl');await fs.writeFile(driver,DRIVER);await fs.writeFile(wrapper,WRAPPER);
  const config={bundle:fixture.bundle,userData:fixture.userData,driver,wrapper,openLog,base:`http://127.0.0.1:${server.address().port}`,descriptorURL:baseURL+'desktop-release.json',archiveURL:baseURL+descriptor.archive.filename};
+ if(selection.fullSuite){
  await check(`real ZIP updater validates and native helper waits current PID exit before complete ${candidateVersion} installation`,async()=>{
   const {driver,outcome}=await phase('update',config);assert.equal(outcome.state,'Installed');assert.equal(outcome.version,candidateVersion);
   assert.equal(await bundleDigest(fixture.bundle),await bundleDigest(published));assert.equal(await bundleDigest(path.join(path.dirname(fixture.bundle),'.Rieke OS.previous.app')),priorDigest);
@@ -182,15 +204,41 @@ async function main(){
   const before=requests.archive,{outcome}=await phase('restore',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);assert.equal(requests.archive,before);
   return{verified_previous_restored:true,archive_download_not_required:true,profile_preserved:true};
  });
+ }
+ const profileProbe=path.join(fixture.userData,'qualification-profile-continuity.txt');
+ const profileBytes=Buffer.from('Owned native qualification profile: '+candidateVersion+'\n');
+ await fs.writeFile(profileProbe,profileBytes,{mode:0o600});
  await check('macOS launch refusal triggers complete previous-app rollback with profile unchanged',async()=>{
-  const {outcome}=await phase('rollback',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);
+  const {outcome}=await phase('rollback',config);assert.equal(outcome.state,'Restored');assert.equal(outcome.failedCandidateRetained,true);assert.equal(outcome.version,priorVersion);assert.equal(await bundleDigest(fixture.bundle),priorDigest);
+  const cache=path.join(fixture.userData,'updates/unsigned-testing'),failed=(await fs.readdir(cache)).filter(name=>/^failed-candidate-.*\.app$/.test(name));
+  assert.equal(failed.length,1);const failedPath=path.join(cache,failed[0]),failedInfo=await fs.lstat(failedPath);
+  assert.ok(failedInfo.isDirectory()&&!failedInfo.isSymbolicLink()&&failedInfo.uid===process.getuid());assert.equal(path.dirname(await fs.realpath(failedPath)),await fs.realpath(cache));
+  assert.equal(await bundleDigest(failedPath),candidateDigest);
+  assert.deepEqual(await fs.readFile(profileProbe),profileBytes);
   return{candidate_launch_refusal_simulated_at_only_open_boundary:true,exact_previous_restored:true,failed_candidate_retained:true};
  });
  await check('restored Electron and WSGI still start and stop without dependency installation',()=>startup(priorVersion));
  const opens=(await fs.readFile(openLog,'utf8')).trim().split('\n').map(line=>JSON.parse(line));
+ assert.deepEqual(await fs.readFile(profileProbe),profileBytes);
+ assert.equal(opens.filter(entry=>entry.phase==='rollback').length,2,'Rollback records refused candidate launch followed by restored prior launch');
+ if(!selection.fullSuite)assert.ok(opens.every(entry=>entry.phase==='rollback'),'Focused replay must not perform update or restore phases');
  assert.ok(opens.every(entry=>entry.args.includes(fixture.bundle)&&entry.args.includes(`--user-data-dir=${fixture.userData}`)));receipt.open_boundary_calls=opens.length;receipt.profile_continuity_verified=true;
  assert.equal(createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/runtime/runtime-manifest.json'))).digest('hex'),receipt.runtime_manifest_sha256);
  assert.equal(createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex'),receipt.asar_sha256);
- receipt.passed=true;await write();await new Promise(resolve=>server.close(resolve));server=null;await fs.rm(fixture.root,{recursive:true,force:true});console.log('Native testing upgrade receipt: '+output);
+ assert.equal(await fileSha256(zip),receipt.archive_sha256);
+ assert.equal(await bundleDigest(published),candidateDigest);receipt.source_immutable=true;
+ receipt.full_suite=selection.fullSuite;receipt.passed=true;await write();await new Promise(resolve=>server.close(resolve));server=null;await fs.rm(fixture.root,{recursive:true,force:true});clearTimeout(controllerDeadline);console.log('Native testing upgrade receipt: '+output);
 }
-main().catch(async error=>{console.error(error.stack);receipt.failures.push({name:'native-testing-upgrade-suite',message:error.message});receipt.passed=false;await write();server?.close();if(fixture)console.error('Owned diagnostics retained: '+fixture.root);process.exitCode=1;});
+async function failController(error){
+ if(finishingFailure)return;finishingFailure=true;clearTimeout(controllerDeadline);
+ // This finalizer terminates only the test controller. Never signal an app,
+ // helper, database or writer whose ordinary closure has not been confirmed.
+ const fallback=setTimeout(()=>process.exit(1),10000);
+ console.error(error.stack);receipt.failures.push({name:'native-testing-upgrade-suite',message:error.message});receipt.passed=false;receipt.full_suite=false;
+ receipt.failure_cleanup={controller_only:true,owned_fixture_retained:!!fixture};
+ try{await write();}catch(writing){console.error('Could not persist final failure receipt: '+writing.message);}
+ server?.close();server?.closeAllConnections();
+ if(fixture)console.error('Owned diagnostics retained: '+fixture.root);
+ clearTimeout(fallback);process.exit(1);
+}
+main().catch(failController);
