@@ -1,5 +1,20 @@
 # Disco changelog
 
+## 0.1.4 - 2026-09-30
+
+Unsigned Apple Silicon testing release of **Disco**, with updates and source
+remaining in **maxwellsdm1867/Rieke-OS**. This release includes 19 merged fixes;
+issue #5's proposed three precomputed Cell QC analyses remain open and are not
+part of this release.
+
+- Cell QC opens per-epoch bath-temperature observations, uses the measured first-epoch block baseline for resting voltage, and removes unmeasured input resistance (#2–#4).
+- Simplify window/project titles; preserve original H5 names through migration and restore; contain long names; support confirmed managed-H5 deletion, propagation and clean re-import; clarify archive and restore actions (#6–#10).
+- Show retained protocol totals beside temporary matches, keep tag predicates synchronized across browsing and export, and provide consistent scrollbars and pane resize handles (#11–#12).
+- Combine Activity and Exports under Logs; expose whole-project share/export and opening in Project files; consolidate setup in the side rail and working/portable folders in one browse-first Open a project flow (#13–#14, #16–#17).
+- Rename App Updates and notify once for newly discovered versions; recover orderly Quit when the scientific page is unavailable, preserving known persistence outcomes (#15, #18).
+- Add revision-checked Cmd+Z/Ctrl+Z for saved tags and analysis inclusion with bounded session memory, original target identities and local search-selection undo. Native and mounted performance measurements are published in [the validation report](docs/dev/undo-2026-09-30/README.md) (#19).
+- Use Disco branding and the Disco ball by default, with the Rieke emblem available as an appearance Easter egg (#20–#21).
+
 ## 0.1.3 - 2026-09-30
 
 This desktop candidate uses the explicit unsigned testing channel, separate
