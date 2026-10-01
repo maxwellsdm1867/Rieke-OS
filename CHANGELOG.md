@@ -1,6 +1,6 @@
 # Disco changelog
 
-## 0.1.4 - 2026-09-30
+## 0.1.5 - 2026-09-30
 
 Unsigned Apple Silicon testing release of **Disco**, with updates and source
 remaining in **maxwellsdm1867/Rieke-OS**. This release includes 19 merged fixes;
@@ -14,6 +14,7 @@ part of this release.
 - Rename App Updates and notify once for newly discovered versions; recover orderly Quit when the scientific page is unavailable, preserving known persistence outcomes (#15, #18).
 - Add revision-checked Cmd+Z/Ctrl+Z for saved tags and analysis inclusion with bounded session memory, original target identities and local search-selection undo. Native and mounted performance measurements are published in [the validation report](docs/dev/undo-2026-09-30/README.md) (#19).
 - Use Disco branding and the Disco ball by default, with the Rieke emblem available as an appearance Easter egg (#20–#21).
+- Preserve the internal macOS bundle name required by Electron to locate the existing Rieke OS helper executables, while displaying Disco. The unpublished 0.1.4 candidate failed native startup; 0.1.5 carries its fixes and this compatibility correction.
 
 ## 0.1.3 - 2026-09-30
 
