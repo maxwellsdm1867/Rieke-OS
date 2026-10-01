@@ -13,7 +13,8 @@ The [complete reference inventory](disco-branding-reference-inventory.json) reco
 | `org.riekeos.desktop` | Stable bundle/signing/installation identity; changing it can disconnect the existing updater. |
 | Electron `Rieke OS` profile selection before `Disco` display naming | Captures the established user-data path, then restores it after setting the display name. Explicitly supplied profile paths also remain intact. Existing drafts, preferences, icon choice, and update receipts are reused. |
 | `.rieke-runtime`, `.rieke-os`, existing storage keys and `rieke-*` document formats | Existing installations/projects and scientific identities continue using their established locations/contracts. No new browser caching, database, or global save mechanism was added. |
-| `Rieke OS.app`, `Contents/MacOS/Rieke OS`, `Rieke-OS-<version>-arm64.zip` | Existing installers/updaters validate exact bundle, executable, and archive layouts. `CFBundleDisplayName`/`CFBundleName` become Disco while these paths remain migration aliases. These identity-bearing filenames remain deliberately unchanged under the application-only scope. |
+| `Rieke OS.app`, `Contents/MacOS/Rieke OS`, `Rieke-OS-<version>-arm64.zip` | Existing installers/updaters validate exact bundle, executable, and archive layouts. `CFBundleDisplayName` is Disco; internal `CFBundleName` remains `Rieke OS` to match Electron helper bundle/executable lookup. These identity-bearing filenames remain deliberately unchanged under the application-only scope. |
+| macOS `CFBundleName: Rieke OS` and `Rieke OS Helper` bundles/executables | Electron 44.5.0 derives its fallback helper executable from `CFBundleName` before JavaScript runs. This internal name must match the packaged helper paths; the user-facing `CFBundleDisplayName` and runtime app name remain Disco. |
 | Signed/testing descriptor `repository: maxwellsdm1867/Rieke-OS` and source `rieke-release.json.repository` | The repository remains Rieke-OS. Release provenance and any additive `canonical_repository` field identify that actual repository. |
 | Repository URLs | Rieke-OS is the operational default for discovery, support, downloads and publication. The existing bounded parser support for both owned repository identities does not change that default or authorize foreign repositories. |
 | Historical documentation, fixtures, earlier release evidence, scientific/MATLAB code | Recorded history and unrelated scientific names must not be rewritten as though earlier releases were called Disco. Existing documentation filenames remain compatible links. |
@@ -30,6 +31,23 @@ Hosted release workflows resolve the actual approved `GITHUB_REPOSITORY`. The cu
 The earlier migration investigation found that the proposed `maxwellsdm1867/disco` endpoint returned HTTP 404 and that the archived 0.1.0 source manager rejected a Disco release URL. These are historical compatibility findings, not pending requirements to rename the repository. Keeping the real repository avoids introducing that migration into application naming.
 
 ## Verification and limits
+
+The unpublished 0.1.4 candidate failed native startup before JavaScript ran: its
+`CFBundleName` was Disco, but its helper executables retained the `Rieke OS Helper`
+prefix. [Electron 44.5.0 helper lookup](https://github.com/electron/electron/blob/v44.5.0/shell/app/electron_main_delegate_mac.mm)
+first checks `Electron Helper`, then the application name; that
+[name is read from `CFBundleName`](https://github.com/electron/electron/blob/v44.5.0/shell/common/application_info_mac.mm).
+The exact candidate had neither `Electron Helper` nor `Disco Helper`, while
+`Rieke OS Helper` and its GPU, Plugin and Renderer variants existed. Version
+0.1.5 restores `CFBundleName: Rieke OS` and retains `CFBundleDisplayName: Disco`,
+`app.setName('Disco')`, established installation paths, and explicit profile selection.
+
+A separate isolated native Electron 44.5.0 probe called `configureBranding` before
+any user-data lookup and reached `ready` for a fresh default profile and both
+existing and initially missing `--user-data-dir` profiles. The selected paths
+remained unchanged; Electron created missing user-data directories during
+`getPath`. These probes verify profile handling, not qualification of the newly
+built 0.1.5 artifact. Its packaged startup checks remain required.
 
 - Desktop regression suite after safe-quit and undo integration: 98 run, 97 passed, one skipped, including real disposable Electron tests and new profile preservation, feed fallback, asset alias, and foreign-origin rejection cases.
 - Focused Python release/update/runtime checks: 37 run, 36 passed, one optional runtime integration skipped. After safe-quit and undo integration, the full Python suite ran 1,120 tests: 1,087 passed and 33 optional tests skipped.

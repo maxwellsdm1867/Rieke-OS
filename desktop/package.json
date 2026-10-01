@@ -1,6 +1,6 @@
 {
   "name": "disco-desktop",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "private": true,
   "description": "Disco self-contained desktop application",
   "author": "Disco contributors",
@@ -80,7 +80,7 @@
       "sign": "./sign-runtime.cjs",
       "extendInfo": {
         "CFBundleDisplayName": "Disco",
-        "CFBundleName": "Disco"
+        "CFBundleName": "Rieke OS"
       }
     },
     "dmg": {
