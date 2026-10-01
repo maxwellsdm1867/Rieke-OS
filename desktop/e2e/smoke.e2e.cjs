@@ -61,7 +61,7 @@ async function main(){
   return{app_version:version,root_ready:true,isolated_home_and_profile:true};
  });
  await check('explicit update Check returns an honest valid result',async()=>{
-  await page.getByRole('button',{name:/^Release \/ Publish/}).first().click();const dialog=page.getByRole('dialog',{name:'Release / Publish',exact:true}),button=dialog.getByRole('button',{name:'Check for updates',exact:true});
+  await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),button=dialog.getByRole('button',{name:'Check for updates',exact:true});
   await bounded(button.click({timeout:Math.min(45000,remaining())}),'Explicit update Check');
   // Poll asynchronous IPC explicitly and assert the same completed snapshot.
   const status=await bounded((async()=>{
@@ -88,7 +88,7 @@ async function main(){
  });
  const leaf='smoke-'+randomUUID().slice(0,8),projectName='Packaged smoke '+leaf,projectPath=path.join(fixture.projects,leaf);let projectUuid,firstSession;
  await check('native folder selection creates and opens a real project',async()=>{
-  await fs.mkdir(fixture.projects,{recursive:true});await page.getByRole('button',{name:/Start a brand new project/}).click();const form=page.locator('.onboarding-create-form');await form.getByRole('textbox').first().fill(projectName);
+  await fs.mkdir(fixture.projects,{recursive:true});await page.getByRole('button',{name:/^Create a new project/}).click();const form=page.locator('.onboarding-create-form');await form.getByRole('textbox').first().fill(projectName);
   await application.evaluate(({dialog},directory)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[directory]});},fixture.projects);
   await form.getByRole('button',{name:'Browse: New project folder',exact:true}).click();const picker=page.getByRole('dialog',{name:'New project folder',exact:true});
   await picker.getByRole('checkbox',{name:'Create a new folder inside this location'}).check();await picker.getByRole('textbox',{name:'New folder name',exact:true}).fill(leaf);await picker.getByRole('button',{name:'Use new folder',exact:true}).click();

@@ -15,7 +15,7 @@ function ProjectContents({creating=false}){
   </div>;
 }
 
-export default function ProjectOnboarding({registry,onSelect,onCreated,onCancel,onWorkspaceChanged,onOpenProject,onNewProject,onBusyChange,createOnly=false,modal=false,titleId,loading=false,error=null}){
+export default function ProjectOnboarding({registry,onSelect,onCreated,onCancel,onWorkspaceChanged,onOpenProject,onNewProject,onBusyChange,createOnly=false,modal=false,titleId,loading=false,error=null,appIconSource='/disco-icon.png'}){
   const [creating,setCreating]=useState(createOnly),[name,setName]=useState(''),[directory,setDirectory]=useState(''),[working,setBusy]=useState(false),[browsing,setBrowsing]=useState(false),[failure,setFailure]=useState(''),[created,setCreated]=useState(null);
   const [selectedRegistry,setSelectedRegistry]=useState(null),[rootEditing,setRootEditing]=useState(false),[rootPath,setRootPath]=useState(registry?.managed_root||''),[rootMessage,setRootMessage]=useState('');
   const busy=working||browsing;
@@ -42,7 +42,7 @@ export default function ProjectOnboarding({registry,onSelect,onCreated,onCancel,
     catch(error){setFailure(error.message);}finally{setBusy(false);}
   }
   return <section className={`project-onboarding ${createOnly?'creation-only':''} ${modal?'project-onboarding-modal':''}`} aria-label="Project setup">
-    <header><div><small>RIEKE OS</small><h1 id={titleId}>{created?'Project ready':creating?'New project':'Your projects'}</h1></div><img className="onboarding-app-icon" src="/rieke-os-icon.png" alt="Disco app icon" title="Disco" width="48" height="48"/>{onCancel&&<button className="icon-button" onClick={onCancel} disabled={busy||loading} aria-label="Close project setup"><X size={19}/></button>}</header>
+    <header><div><small>DISCO</small><h1 id={titleId}>{created?'Project ready':creating?'New project':'Your projects'}</h1></div><img className="onboarding-app-icon" src={appIconSource} alt="Disco app icon" title="Disco" width="48" height="48"/>{onCancel&&<button className="icon-button" onClick={onCancel} disabled={busy||loading} aria-label="Close project setup"><X size={19}/></button>}</header>
     {(error||failure)&&<div className="onboarding-error" role="alert">{failure||error}</div>}
     {created?<div className="onboarding-created" role="status"><span className="onboarding-ready-icon"><Check size={25} aria-hidden="true"/></span><div><strong>{created.name}</strong><span title={created.path} aria-label={`Project folder: ${created.path}`}>{shortPath(created.path)}</span></div><p role={loading?'status':undefined}>{loading?<><LoaderCircle size={15} className="spin"/> Opening project…</>:'Ready to add recordings.'}</p>{created.registry_warning&&<p className="onboarding-registry-warning">{created.registry_warning}</p>}<div className="onboarding-actions"><button disabled={loading} className="primary" onClick={()=>onSelect?.(created)}>Open project <ArrowRight size={15}/></button>{!createOnly&&<button disabled={busy||loading} onClick={()=>{if(onCancel)onCancel();else{setCreated(null);setCreating(false);setFailure('');}}}>Cancel</button>}</div></div>:creating?<form className="onboarding-create-form" onSubmit={create}>
       <label><span className="onboarding-step-label"><b aria-hidden="true">1</b> Project name</span><small>Shown in the app</small><input autoFocus required maxLength={120} value={name} disabled={busy} onChange={event=>setName(event.target.value)} placeholder="Spike response study"/></label>
