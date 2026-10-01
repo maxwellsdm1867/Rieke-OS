@@ -230,6 +230,32 @@ def expected_rejection(name, action, results):
     else:raise ValueError('Fault accepted: '+name)
 
 
+def compatibility_fault_checks(manifest_file):
+    # Prove the unmodified newer candidate is accepted first, then require each
+    # mutation's own rejection reason. An older fixture cannot satisfy a probe.
+    javascript = r'''
+const assert=require('node:assert/strict'),fs=require('node:fs');const v=require(process.argv[1]);
+const current=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
+const parts=current.application_version.split('.').map(Number);
+assert.ok(parts.length===3 && parts.every(Number.isSafeInteger));
+parts[2]++;assert.ok(Number.isSafeInteger(parts[2]));
+const newer=parts.join('.'),good={...current,source_dirty:false,application_version:newer},tests=[];
+assert.equal(v.compatibleCandidate(good,current,newer),good,'The unmodified newer candidate must be compatible');
+function reject(name,candidate,expectedVersion,reason){
+  assert.throws(()=>v.compatibleCandidate(candidate,current,expectedVersion),error=>error.message===reason,`${name} must fail for its intended reason`);
+  tests.push({case:name,rejected:true,reason,compatible_control_version:newer});
+}
+reject('dirty candidate provenance',{...good,source_dirty:true},newer,'Update has no clean source provenance.');
+reject('incompatible database',{...good,database_compatibility:current.database_compatibility+1},newer,'Update requires an unqualified database or workspace migration.');
+reject('incompatible workspace',{...good,workspace_formats:[]},newer,'Update requires an unqualified database or workspace migration.');
+reject('wrong native architecture',{...good,architecture:'x64'},newer,'Unsupported update platform.');
+reject('non-newer candidate version',{...good,application_version:current.application_version},current.application_version,'Update version is mismatched or older than the installed app.');
+process.stdout.write(JSON.stringify(tests));
+'''
+    result = execute(['node', '-e', javascript, ROOT/'desktop/updater-validation.cjs', manifest_file], text=True)
+    return json.loads(result.stdout)
+
+
 def fault_checks(directory, manifest, scratch, bundle):
     faults=[]
     expected_rejection('foreign publication repository',lambda:baseline('v'+manifest['application_version'],'untrusted/repository'),faults)
@@ -270,18 +296,13 @@ def fault_checks(directory, manifest, scratch, bundle):
             archive.read(entry.filename)
     expected_rejection('corrupted actual candidate ZIP payload', crc_check, faults)
     damaged_zip.unlink()
+    faults.extend(compatibility_fault_checks(bundle/'Contents/Resources/runtime/runtime-manifest.json'))
     javascript=r'''
-const fs=require('fs'),p=require('path');const v=require(process.argv[1]);
-const current=JSON.parse(fs.readFileSync(process.argv[2],'utf8'));
-const good={...current,source_dirty:false,application_version:'0.1.1'};const tests=[];
-function reject(name,fn){try{fn();throw new Error('accepted')}catch(e){if(e.message==='accepted')throw e;tests.push({case:name,rejected:true});}}
-reject('dirty candidate provenance',()=>v.compatibleCandidate({...good,source_dirty:true},current,'0.1.1'));
-reject('incompatible database',()=>v.compatibleCandidate({...good,database_compatibility:999},current,'0.1.1'));
-reject('incompatible workspace',()=>v.compatibleCandidate({...good,workspace_formats:[999]},current,'0.1.1'));
-reject('wrong native architecture',()=>v.compatibleCandidate({...good,architecture:'x64'},current,'0.1.1'));
-reject('older candidate version',()=>v.compatibleCandidate({...good,application_version:'0.0.9'},current,'0.0.9'));
-reject('unsupported host OS',()=>v.compatibleMacMinimum('15.0','14.2'));
-reject('runtime traversal path',()=>v.safeResource('/tmp','../escape'));
+const p=require('path');const v=require(process.argv[1]);const tests=[];
+const assert=require('node:assert/strict');
+function reject(name,fn,reason){assert.throws(fn,error=>error.message===reason);tests.push({case:name,rejected:true,reason});}
+reject('unsupported host OS',()=>v.compatibleMacMinimum('15.0','14.2'),'Update requires a newer macOS version.');
+reject('runtime traversal path',()=>v.safeResource('/tmp','../escape'),'Unsafe runtime resource path.');
 (async()=>{try{await v.signingIdentity(process.argv[3]);throw Error('unsigned app accepted')}catch(e){if(e.message==='unsigned app accepted')throw e;tests.push({case:'unsigned real app rejected by update signing gate',rejected:true});}
 const installer=require(process.argv[4]);try{await installer.installCompleteBundle({source:process.argv[3],destination:p.join(process.argv[5],'must not install','Rieke OS.app')});throw Error('unsigned install accepted')}catch(e){if(e.message==='unsigned install accepted')throw e;tests.push({case:'unsigned real app rejected by first-open signed installer',rejected:true});}
 process.stdout.write(JSON.stringify(tests));})();
