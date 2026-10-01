@@ -1,4 +1,4 @@
-> **Complete Mac desktop testing app:** [Download the current Mac testing app](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/Rieke-OS-0.1.3-arm64.dmg). Open the DMG, open the app, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **App Updates** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
+> **Complete Mac desktop testing app:** [Download the current Mac testing app](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.5/Rieke-OS-0.1.5-arm64.dmg). Open the DMG, open the app, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **App Updates** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
 
 # Disco
 
