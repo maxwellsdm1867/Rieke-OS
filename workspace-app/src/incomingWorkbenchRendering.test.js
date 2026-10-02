@@ -183,3 +183,22 @@ test('unsupported direct export format releases rejected request so fresh format
   assert.equal(saved.phase,null);assert.equal(renderer.root.findAllByType('fieldset').at(-1).props.disabled,false);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
+
+test('shared change callback and external revision refresh frozen token while preserving uncertain operation',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved,contextReads=0;
+ const root='/protocols/history/workbench/candidates/proposal',calls=[];
+ globalThis.fetch=async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');calls.push(endpoint);assert.equal(endpoint,`${root}/context`,'no global query fallback');
+  return {ok:true,status:200,json:async()=>({candidate_scope_revision:`scope-v${++contextReads}`,draft:{draft_version:3,selection_mode:'all'},protocol:null})};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const preview={mode:'all',expected_candidate_scope_revision:'original-operation-scope',expected_draft_version:1,preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'main',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:2,next_epoch_count:3,accepted_cell_count:1};
+  function Probe({external=0}){const [revision,setRevision]=React.useState(0);return React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},revision:revision+external,capabilities:{frozen_browse:true,drafts:true,additive_accept:true},session:{unconfirmed:true,preview,operation:'same-operation'},onChange:()=>setRevision(value=>value+1),onSession:value=>{saved=value;}});}
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
+  await act(async()=>renderer.root.findByType(Review).props.onChange({kind:'annotations'}));
+  assert.equal(contextReads,2);assert.ok(renderer.root.findAllByType('span').some(node=>label(node).includes('scope-v2')));
+  await act(async()=>renderer.update(React.createElement(Probe,{external:5})));
+  assert.equal(contextReads,3);assert.equal(saved.operation,'same-operation');assert.deepEqual(saved.preview,preview);assert.equal(saved.unconfirmed,true);assert.equal(calls.length,3);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});

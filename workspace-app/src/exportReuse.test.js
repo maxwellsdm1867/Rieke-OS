@@ -15,3 +15,13 @@ test('malformed candidate never falls back to a phantom protocol',()=>{
     {kind:'explorer_candidate',candidate_revision_uuid:candidate,export_intent:{name:'x',format:'bad'}},
     {export_scope:{kind:'explorer_candidate'},protocol_uuid:scope}])assert.throws(()=>exportReuseRoute(recipe));
 });
+
+test('incoming export reuse opens target protocol Workbench with exact saved proposal and intent',()=>{
+ const operation='a411db17-0ab4-42aa-872a-e6e614106041';
+ const recipe={kind:'workbench_incoming',target_protocol_uuid:scope,candidate_revision_uuid:candidate,accept_operation_uuid:operation,source_export_uuid:operation,export_intent:{name:'New additions',format:'wheeler-sqlite'}};
+ const route=exportReuseRoute(recipe);
+ assert.deepEqual(route,{page:'protocol',details:{protocol:scope,workbench:{candidate_revision_uuid:candidate,accept_operation_uuid:operation,export_intent:{name:'New additions',format:'wheeler-sqlite',source_export_uuid:operation}}}});
+ assert.equal(route.details.recipe,undefined);assert.equal(route.details.exploreRevisionId,undefined);
+ assert.throws(()=>exportReuseRoute({...recipe,target_protocol_uuid:undefined,protocol_uuid:candidate}),/Workbench destination/);
+ assert.throws(()=>exportReuseRoute({...recipe,accept_operation_uuid:'bad'}),/Workbench destination/);
+});

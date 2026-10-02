@@ -83,3 +83,23 @@ original writes were performed.
 Completed workflows archive their receipts and artifacts before a deliberate new workflow. Remaining additions stay reviewable after partial acceptance/export. Definitive acceptance rejection clears only after fresh context is loaded; uncertain operations retain their saved request identities. Independent Spec/Standards source review found and verified fixes for both lifecycle transitions.
 
 Backend counterpart: c177357 → c0ac47c → df92cb802451c7671c2bb52eb54f9c9454edfd1b. Backend owner reports 169 focused tests passing; this UI branch independently ran its 25 checks. Accepted export-context format lists are honored. MATLAB annotation/curation grouping is unsupported; JSON/SQLite preserve it. A definitive export rejection clears its uncommitted request and permits fresh context/format selection, while uncertain exports retain the exact operation/body. Native qualification remains open.
+
+## Composed reviewer fixes and cumulative scope gap
+
+Incoming export reuse now routes to `target_protocol_uuid` Workbench with the
+exact saved candidate, format/name and optional committed acceptance operation;
+it never opens the synthetic export-only protocol or global Search. History
+labels distinguish incoming additions. No export occurs on navigation.
+
+Frozen context reloads when parent revision changes (including successful shared
+tags and external source/annotation changes). The old browser token is hidden
+until fresh context loads; uncertain acceptance previews and prepared export
+requests retain their exact original bodies/operation IDs. 30 focused checks pass,
+including callback/external revision refresh and preserved uncertain state.
+
+Current df92 browser remains per-proposal `C-B`, which can include already-main
+epochs after partial acceptance. Deduplicated cumulative counts do not establish
+cumulative browsing semantics. The UI now labels that gap explicitly. Backend
+owner is implementing an approved authoritative cumulative pending snapshot
+(`prepare`) and consistent `C-B-M` readers. That subsequent slice requires its
+own tests and source integration; no client union/global fallback is supplied.
