@@ -5,7 +5,7 @@ const {EventEmitter} = require('node:events');
 const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
-const {createUpdateCoordinator} = require('../updater.cjs');
+const vm = require('node:vm');
 const {compatibleCandidate, compatibleMacMinimum, safeResource, compareVersions, verifyResources, ARCHIVE_CHECK} = require('../updater-validation.cjs');
 const manifest = {format: 'rieke-desktop-runtime', version: 1, source_dirty:false,source_commit:'a'.repeat(40),parser_commit:'b'.repeat(40),application_version: '1.0.0', platform: 'darwin', architecture: 'arm64', mysql_version: '8.4.2', workspace_formats: [1], database_compatibility: 1, resources: {'file': {sha256: 'a'.repeat(64), size: 0}}};
 test('candidate rejects migrations, downgrades, prereleases and foreign platforms', () => {
@@ -51,8 +51,38 @@ with zipfile.ZipFile(sys.argv[1],'w') as archive:
 });
 async function fixture(t, options = {}) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'rieke-updater-test-'));
-  // Receipt writes are serialized; remove after they have had a turn to settle.
-  t.after(async () => {coordinator.stop(); await new Promise(resolve => setTimeout(resolve, 30)); await fs.rm(dir, {recursive: true, force: true});});
+  const {beforeReceiptRename = async () => {}, ...coordinatorOptions} = options;
+  let queuedReceipts = 0, completedReceipts = 0;
+  const receipts = new EventEmitter();
+  // Observe the actual updater's filesystem writes without exposing its private
+  // queue or changing production stop/installation behavior. Each published
+  // status queues exactly one receipt; its final rename is the completion fence.
+  const actualRequire = require('node:module').createRequire(path.resolve(__dirname, '../updater.cjs'));
+  const physical = actualRequire('./physical-fs.cjs');
+  const observedFs = {...physical.promises, rename:async (...args) => {
+    await beforeReceiptRename();
+    await physical.promises.rename(...args);
+    completedReceipts++; receipts.emit('completed');
+  }};
+  const module = {exports:{}};
+  vm.runInNewContext(require('node:fs').readFileSync(path.resolve(__dirname, '../updater.cjs'), 'utf8'),
+    {module, process, require:name => name === './physical-fs.cjs' ? {promises:observedFs} : actualRequire(name)},
+    {filename:path.resolve(__dirname, '../updater.cjs')});
+  const {createUpdateCoordinator} = module.exports;
+  async function flushReceipts() {
+    await new Promise((resolve, reject) => {
+      const check = () => {
+        if (completedReceipts !== queuedReceipts) return;
+        clearTimeout(timer); receipts.removeListener('completed', check); resolve();
+      };
+      const timer = setTimeout(() => {
+        receipts.removeListener('completed', check);
+        reject(new Error(`Updater fixture receipts incomplete: ${completedReceipts}/${queuedReceipts}`));
+      }, 2000);
+      receipts.on('completed', check); check();
+    });
+  }
+  t.after(async () => {coordinator.stop(); await flushReceipts(); await fs.rm(dir, {recursive: true, force: true});});
   const updater = new EventEmitter();
   updater.setFeedURL = value => {updater.feed = value;};
   updater.checkForUpdates = async () => {};
@@ -63,10 +93,32 @@ async function fixture(t, options = {}) {
     verifyCandidate: async ({version}) => ({version, validated: true}),
     retainPrevious: async () => {},
     prepareQuit: async () => {drains++; return {ready: false};},
-    timers: {setTimeout: () => 1, clearTimeout: () => {}}, ...options});
+    timers: {setTimeout: () => 1, clearTimeout: () => {}}, ...coordinatorOptions,
+    publishStatus:status => {queuedReceipts++; coordinatorOptions.publishStatus?.(status);}});
   await coordinator.start();
-  return {coordinator, updater, installs: () => installs, drains: () => drains};
+  return {coordinator, updater, flushReceipts, receiptPath:path.join(dir, 'updates/status.json'),
+    installs: () => installs, drains: () => drains};
 }
+test('fixture teardown waits for the actual final receipt rename rather than elapsed time', async t => {
+  let enteredRename, releaseRename;
+  const entered = new Promise(resolve => {enteredRename = resolve;});
+  const released = new Promise(resolve => {releaseRename = resolve;});
+  t.after(() => releaseRename());
+  const {coordinator, flushReceipts, receiptPath} = await fixture(t, {
+    beforeReceiptRename:async () => {enteredRename(); await released;}, enabled:false});
+  await entered;
+  coordinator.stop();
+  let flushed = false;
+  const flushing = flushReceipts().then(() => {flushed = true;});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(flushed, false, 'Pending physical receipt rename must block teardown');
+  releaseRename(); await flushing;
+  assert.equal(flushed, true);
+  const receipt = JSON.parse(await fs.readFile(receiptPath, 'utf8'));
+  assert.equal(receipt.format, 'rieke-desktop-update-status');
+  assert.equal(receipt.state, 'Deferred');
+  assert.equal(receipt.installed, manifest.application_version);
+});
 test('source and unsigned builds have no install authority', async t => {
   const {coordinator, updater} = await fixture(t, {enabled: false});
   assert.equal(coordinator.getStatus().state, 'Deferred');
