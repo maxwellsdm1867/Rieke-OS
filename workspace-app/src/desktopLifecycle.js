@@ -1,8 +1,12 @@
 const savers=new Set(),writes=new Set();
-let closing=false;
+let closing=false,unmounting=false;
 export const desktopBridge=()=>globalThis.window?.riekeDesktop || null;
 export function registerDraftSaver(save){savers.add(save);return()=>savers.delete(save);}
-export function assertDesktopWritable(){if(closing)throw new Error('Disco is closing; new changes are paused.');}
+export function assertDesktopWritable(path){if(closing)throw new Error('Disco is closing; new changes are paused.');if(unmounting&&path!=='/projects/unmount')throw new Error('Project is unmounting; new changes are paused.');}
+export function beginProjectUnmount(){
+ if(closing||unmounting||writes.size)throw new Error('Wait for pending changes, accepts and exports to finish before unmounting.');
+ unmounting=true;return()=>{unmounting=false;};
+}
 export function trackWrite(operation){
   writes.add(operation);
   operation.then(()=>writes.delete(operation),()=>writes.delete(operation));

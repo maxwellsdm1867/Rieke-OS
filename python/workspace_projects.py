@@ -117,7 +117,9 @@ def _combined_projects(discovered, root, current=None):
                        'database_kind': saved['database_kind'], 'current': False,
                        'available': False, 'unavailable_reason': str(error)}
         by_path[path] = project
-    projects = list(by_path.values())
+    detached = {(entry['path'], entry['project_uuid']) for entry in index.get('unmounted', [])}
+    projects = [project for project in by_path.values()
+                if project['current'] or (project['path'], project['uuid']) not in detached]
     current_record = next((project for project in projects if project['current']), None)
     if current_record:
         projects = [project for project in projects if project['current']

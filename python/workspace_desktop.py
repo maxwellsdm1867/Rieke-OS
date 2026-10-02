@@ -103,6 +103,8 @@ class DesktopBoundary:
         self.stop_scheduled = False
         self.operation_lock = threading.RLock()
         self._routes()
+        if self.services:
+            self.app.extensions['project_catalog_owner'] = self.services
 
     def _busy(self):
         return (any(self.app.extensions.get(name, lambda: False)()
@@ -213,8 +215,8 @@ class DesktopBoundary:
             return jsonify(ready=True)
 
         @self.app.post(_CONTROL + 'stop')
-        def desktop_stop():
-            if not empty_control() or not self.drained or self._busy() or not self.stop_callback:
+        def desktop_stop(after_close=None):
+            if (after_close is None and not empty_control()) or not self.drained or self._busy() or not self.stop_callback:
                 return jsonify(error='All writers must acknowledge drain before stop'), 409
             try:
                 stop_database = self.app.extensions.get('desktop_stop_database')
@@ -231,9 +233,10 @@ class DesktopBoundary:
                     stage='recovery_snapshot' if backup_failed else 'database_shutdown', ready=False), 409
             # Give Waitress the response before closing its sockets. The main
             # process awaits actual child exit, not this HTTP acknowledgement.
+            result = after_close() if after_close else None
             self.stop_scheduled = True
             threading.Timer(.25, self.stop_callback).start()
-            return jsonify(ready=True, stopped=True), 202
+            return result if result is not None else (jsonify(ready=True, stopped=True), 202)
 
         @self.app.post(_CONTROL + 'open-project')
         def desktop_open():
@@ -284,14 +287,21 @@ class DesktopBoundary:
             def desktop_close_project():
                 if not empty_control():
                     return jsonify(error='Close requires an empty object'), 400
-                if not self.drain():
-                    return jsonify(error='Scientific operations are still active'), 409
-                result = desktop_stop()
-                if isinstance(result, tuple) and result[1] == 202:
-                    response = result[0]
-                    response.set_data(json.dumps({**response.get_json(), 'state': 'closed',
-                        'launcher_url': 'http://127.0.0.1:' + os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] + '/'}))
-                return result
+                return close_project()
+
+            def close_project(after_close=None):
+                with self.operation_lock:
+                    if self.stop_scheduled or self.quitting:
+                        return jsonify(error='Project close is already in progress'), 409
+                    if not self.drain():
+                        return jsonify(error='Scientific operations are still active'), 409
+                    result = desktop_stop(after_close)
+                    if after_close is None and isinstance(result, tuple) and result[1] == 202:
+                        response = result[0]
+                        response.set_data(json.dumps({**response.get_json(), 'state': 'closed',
+                            'launcher_url': 'http://127.0.0.1:' + os.environ['RIEKE_DESKTOP_LAUNCHER_PORT'] + '/'}))
+                    return result
+            self.app.extensions['close_project_for_unmount'] = close_project
 
     def __call__(self, environ, start_response):
         host = environ.get('HTTP_HOST', '')
@@ -308,7 +318,7 @@ class DesktopBoundary:
             return Response('Desktop session authorization required', status=403)(environ, start_response)
         control = environ.get('PATH_INFO', '') in {
             _CONTROL + name for name in ('health', 'drain', 'resume', 'stop', 'pause', 'quit')
-        } or environ.get('PATH_INFO') == '/api/project/close'
+        } or environ.get('PATH_INFO') == '/api/project/close' or (environ.get('PATH_INFO') == '/api/projects/unmount' and 'desktop_stop_database' in self.app.extensions)
         admitted = False
         if not control:
             with self.condition:

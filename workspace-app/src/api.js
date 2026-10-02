@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
 export function api(path,options={}){
   const write=['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase());
-  if(write){try{assertDesktopWritable();}catch(error){return Promise.reject(error);}}
+  if(write){try{assertDesktopWritable(path);}catch(error){return Promise.reject(error);}}
   let token;
   try{if(isUndoableRequest(path,options))token=mutationUndo.begin();}catch(error){return Promise.reject(error);}
   const operation=requestApi(path,token?{...options,headers:{...options.headers,'X-Rieke-Undo-Receipt':'1'}}:options).then(result=>{if(token)mutationUndo.complete(token,result.undo);return result;},error=>{if(token)mutationUndo.failed(error);throw error;});

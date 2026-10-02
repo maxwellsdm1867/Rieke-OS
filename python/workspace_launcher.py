@@ -23,6 +23,16 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         result = list_projects(current) if current else list_managed_projects(root_provider())
         return jsonify({**result, 'launcher': current is None})
 
+    @app.post('/api/projects/unmount')
+    def project_unmount():
+        from workspace_project_unmount import unmount_project
+        body = request.get_json(silent=True)
+        if (request.args or not isinstance(body, dict) or set(body) != {'path', 'project_uuid'}
+                or not all(isinstance(value, str) for value in body.values())):
+            raise ValueError('Unmount requires the exact project folder and identity')
+        inventory = list_projects(current) if current else list_managed_projects(root_provider())
+        return unmount_project(app, inventory, body, current=current)
+
     @app.post('/api/projects/order')
     def project_order():
         body = request.get_json(silent=True)

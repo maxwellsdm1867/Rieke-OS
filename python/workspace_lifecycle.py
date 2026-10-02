@@ -30,11 +30,16 @@ def register_project_lifecycle(app, *, busy, stop_database):
             return jsonify(error='Close project accepts an empty object.'), 400
         if 'shutdown_project_server' not in app.extensions:
             return jsonify(error='This server does not support managed project shutdown.'), 409
+        return close()
+
+    def close(after_close=None):
         with condition:
-            if busy():
+            if state['closing']:
+                return jsonify(error='Project close is already in progress.'), 409
+            if busy() or app.extensions.get('app_active_writers', lambda: False)():
                 return jsonify(error='Wait for the current import or project operation to finish before closing.'), 409
             state['closing'] = True
-            if not condition.wait_for(lambda: state['requests'] <= 1, timeout=30) or busy():
+            if not condition.wait_for(lambda: state['requests'] <= 1, timeout=30) or busy() or app.extensions.get('app_active_writers', lambda: False)():
                 state['closing'] = False
                 return jsonify(error='Project operations are still active. Wait for them to finish and retry.'), 409
         try:
@@ -44,8 +49,12 @@ def register_project_lifecycle(app, *, busy, stop_database):
                 state['closing'] = False
             app.logger.exception('Project database could not close cleanly')
             return jsonify(error='The database could not close cleanly. Check the project log before copying its folder.'), 500
+        result = after_close() if after_close else None
         threading.Timer(.2, app.extensions['shutdown_project_server']).start()
+        if result is not None:
+            return result
         return jsonify(state='closed', message='Project database closed cleanly. Its folder is ready to move.',
                        launcher_url=f"http://127.0.0.1:{int(os.environ.get('RIEKE_LAUNCHER_PORT', '8766'))}/"), 202
 
+    app.extensions['close_project_for_unmount'] = close
     return state

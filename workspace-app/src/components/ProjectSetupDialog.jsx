@@ -2,7 +2,7 @@ import {useEffect,useRef} from 'react';
 import {createPortal} from 'react-dom';
 import './ProjectSetupDialog.css';
 
-export default function ProjectSetupDialog({onClose,busy=false,children}){
+export default function ProjectSetupDialog({onClose,busy=false,label="Project setup",children}){
   const dialog=useRef(null),busyRef=useRef(busy),closeRef=useRef(onClose);
   busyRef.current=busy;closeRef.current=onClose;
   useEffect(()=>{
@@ -18,7 +18,7 @@ export default function ProjectSetupDialog({onClose,busy=false,children}){
     else if(event.shiftKey&&(active===first||active===dialog.current)){event.preventDefault();last.focus();}
     else if(!event.shiftKey&&active===last){event.preventDefault();first.focus();}
   }
-  return createPortal(<dialog ref={dialog} className="project-setup-dialog" aria-label="Project setup" aria-busy={busy} tabIndex={-1} onKeyDown={containTab} onCancel={event=>{event.preventDefault();if(!busyRef.current)closeRef.current?.();}}>
+  return createPortal(<dialog ref={dialog} className="project-setup-dialog" aria-label={label} aria-busy={busy} tabIndex={-1} onKeyDown={containTab} onCancel={event=>{event.preventDefault();if(!busyRef.current)closeRef.current?.();}}>
     {children}
   </dialog>,document.body);
 }

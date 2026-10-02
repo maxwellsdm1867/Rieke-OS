@@ -84,13 +84,16 @@ def _path_string(value):
 
 
 def _validate_project_index(value):
-    if (not isinstance(value, dict) or set(value) != {'format', 'version', 'projects', 'last_project_path', 'project_order'}
+    if (not isinstance(value, dict) or set(value) not in ({'format', 'version', 'projects', 'last_project_path', 'project_order'}, {'format', 'version', 'projects', 'last_project_path', 'project_order', 'unmounted'})
             or value['format'] != PROJECT_INDEX_FORMAT or type(value['version']) is not int or value['version'] != 1
             or not isinstance(value['projects'], list) or len(value['projects']) > 1000
             or not isinstance(value['project_order'], list) or len(value['project_order']) > 1000):
         raise ValueError('Local project index is invalid; preserve it and repair its configuration')
+    unmounted = value.get('unmounted', [])
+    if not isinstance(unmounted, list) or len(unmounted) > 1000:
+        raise ValueError('Local unmounted project list is invalid')
     seen = set()
-    for project in value['projects']:
+    for project in [*value['projects'], *unmounted]:
         if not isinstance(project, dict) or set(project) != {'path', 'project_uuid', 'name', 'database_kind'}:
             raise ValueError('Local project index contains an invalid project record')
         path = _path_string(project['path'])
@@ -106,7 +109,7 @@ def _validate_project_index(value):
         raise ValueError('Local project order contains duplicate folders')
     if value['last_project_path'] is not None:
         _path_string(value['last_project_path'])
-        if value['last_project_path'] not in seen:
+        if value['last_project_path'] not in {project['path'] for project in value['projects']}:
             raise ValueError('Last-open project is missing from the local project index')
     return value
 
@@ -168,6 +171,8 @@ def remember_project_path(directory, identity=None, *, set_last=False, previous_
         previous = str(previous.resolve())
 
     def update(value):
+        if 'unmounted' in value:
+            value['unmounted'] = [project for project in value['unmounted'] if project['path'] not in {entry['path'], previous}]
         value['projects'] = [project for project in value['projects'] if project['path'] not in {entry['path'], previous}]
         value['projects'].append(entry)
         if previous and previous != entry['path']:
@@ -201,3 +206,20 @@ def remember_project_result(directory, result, *, set_last=False, previous_direc
         return {**result, 'registry_warning':
                 f'Project is ready at {directory}, but its project-list entry could not be saved: {error}'}
     return result
+
+
+def unmount_project_record(record):
+    """Detach exactly one catalog identity. Never touch its project folder."""
+    entry = {'path': _path_string(record['path']), 'project_uuid': str(uuid.UUID(record['uuid'])),
+             'name': record['name'], 'database_kind': 'native-mysql' if record.get('database_kind') == 'native-mysql' else 'legacy-mysql'}
+    def update(value):
+        matches = [item for item in value['projects'] if item['path'] == entry['path']]
+        if matches and matches[0]['project_uuid'] != entry['project_uuid']:
+            raise ValueError('Project identity changed; refresh the project list before unmounting')
+        value['projects'] = [item for item in value['projects'] if item['path'] != entry['path']]
+        value['unmounted'] = [item for item in value.get('unmounted', []) if item['path'] != entry['path']] + [entry]
+        value['project_order'] = [path for path in value['project_order'] if path != entry['path']]
+        if value['last_project_path'] == entry['path']:
+            value['last_project_path'] = None
+        return value
+    return _update_project_index(update)

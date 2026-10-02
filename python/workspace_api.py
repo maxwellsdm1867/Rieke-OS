@@ -1906,7 +1906,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             read_posts.update({'group_annotation_preview', 'group_annotation_preview_release'})
             readonly = request.method == 'POST' and request.endpoint in read_posts
             desktop_control = os.environ.get('RIEKE_DESKTOP_MODE') == '1' and request.path.startswith('/api/desktop/')
-            if not readonly and not desktop_control and request.path != '/api/project/close' and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
+            if not readonly and not desktop_control and request.path not in {'/api/project/close', '/api/projects/unmount'} and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
                 try:
                     scheduler.flush()
                 except Exception:
