@@ -1,3 +1,4 @@
+import {distinctCells,recordedCellType,isUnclassifiedType} from './cellTypes.js';
 export function isTypingProtocol(protocol){
   const definition=protocol.definition||protocol;
   const name=protocol.acquisition_protocol||definition.name||'';
@@ -13,13 +14,9 @@ export function sizeLabel(bytes){if(!Number.isFinite(bytes))return '—';if(byte
 
 // Count identities, not epoch totals or cell labels reused on different dates.
 export function protocolCellTypes(cells=[]){
-  const types=new Map(),seen=new Set();
-  for(const cell of cells){
-    const id=cell.cell_uuid||cell.uuid;
-    if(id&&seen.has(id))continue;
-    if(id)seen.add(id);
-    const recordedType=String(cell.cell_type||cell.type||'').trim();
-    const type=!recordedType||/^(unclassified|unknown|not recorded)$/i.test(recordedType)?'Unclassified':recordedType;
+  const types=new Map();
+  for(const cell of distinctCells(cells)){
+    const type=recordedCellType(cell);
     const row=types.get(type)||{type,count:0,withExports:0};
     row.count++;
     if(cell.exported>0)row.withExports++;
@@ -30,5 +27,5 @@ export function protocolCellTypes(cells=[]){
 
 export function protocolCellSummary(cells=[]){
   const types=protocolCellTypes(cells);
-  return {types,matchingCells:types.reduce((sum,row)=>sum+row.count,0),cellTypes:types.filter(row=>row.type!=='Unclassified').length,unclassifiedCells:types.find(row=>row.type==='Unclassified')?.count||0};
+  return {types,matchingCells:types.reduce((sum,row)=>sum+row.count,0),cellTypes:types.filter(row=>!isUnclassifiedType(row.type)).length,unclassifiedCells:types.filter(row=>isUnclassifiedType(row.type)).reduce((sum,row)=>sum+row.count,0)};
 }

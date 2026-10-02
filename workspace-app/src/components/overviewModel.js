@@ -1,6 +1,7 @@
+import {distinctCells,recordedCellType} from '../cellTypes.js';
 // Overview quantities are derived from source cells, never by summing overlapping cohorts.
 export function overviewModel(data) {
-  const cells = data.cells || [];
+  const cells = distinctCells(data.cells);
   const dates = new Map(), types = new Map();
   for (const cell of cells) {
     const date = cell.date || 'Not recorded';
@@ -9,7 +10,7 @@ export function overviewModel(data) {
     if(typeof cell.duration_seconds!=='number'||!Number.isFinite(cell.duration_seconds)||cell.duration_seconds<0)group.duration=null;
     else if(group.duration!==null)group.duration+=cell.duration_seconds;
     dates.set(date,group);
-    const type = cell.cell_type || cell.type || 'Unclassified';
+    const type = recordedCellType(cell);
     types.set(type,(types.get(type)||0)+1);
   }
   return {

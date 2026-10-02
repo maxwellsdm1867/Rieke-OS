@@ -20,6 +20,10 @@
  --plot-background:#fff;--plot-ink:#465269;--plot-grid:#e4e9f2;--plot-axis:#8795ae;--plot-trace:#306f83;--plot-cursor:var(--accent);
  --plot-selection:#445fc621;--plot-pan:#306f8314;
  --chart-1:#445fc6;--chart-2:#367d80;--chart-3:#a37129;--chart-4:#60799e;--chart-5:#a25570;--chart-6:#657b39;
+ /* Existing retinaSRM Wong palette: fig_fit_quality.m, COL / TYPE_COL.
+    Category colors stay stable across themes; text uses theme ink roles. */
+ --cell-off-midget:#e69f00;--cell-on-midget:#d55e00;
+ --cell-off-parasol:#56b4e9;--cell-on-parasol:#0072b2;
  color-scheme:light;color:var(--ink);background:var(--background);
 }
 :root[data-theme="dark"],[data-palette="dark"]{

@@ -38,5 +38,7 @@ test('headline counts recorded types separately from unclassified cells',async()
  assert.equal(summary.matchingCells,4);
  assert.equal(summary.cellTypes,2);
  assert.equal(summary.unclassifiedCells,2);
+ assert.equal(summary.types.find(row=>row.type==='Unknown').count,1);
+ assert.equal(summary.types.find(row=>row.type==='Unclassified').count,1);
  assert.equal(protocolCellSummary([]).cellTypes,0);
 });

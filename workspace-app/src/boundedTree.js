@@ -1,3 +1,4 @@
+import {recordedCellType} from './cellTypes.js';
 // Paging changes presentation only. A selected item outside the page is shown
 // once as an additional pinned row, without replacing any page members.
 export function boundedTreePage(items,offset=0,limit=60,pinned=null){
@@ -19,7 +20,7 @@ export function inspectionTreeFocus(index,epochUuid){
 export function groupedCellPage(cells,offset=0,limit=60){
   const groups=new Map();
   for(const cell of cells){
-    const type=cell.cell_type||cell.type||'Unknown cell type';
+    const type=recordedCellType(cell);
     if(!groups.has(type))groups.set(type,[]);
     groups.get(type).push(cell);
   }
@@ -27,7 +28,7 @@ export function groupedCellPage(cells,offset=0,limit=60){
   const page=boundedTreePage(ordered,offset,limit);
   const visible=new Map();
   for(const cell of page.items){
-    const type=cell.cell_type||cell.type||'Unknown cell type';
+    const type=recordedCellType(cell);
     if(!visible.has(type))visible.set(type,{type,cells:[],total:groups.get(type).length});
     visible.get(type).cells.push(cell);
   }
