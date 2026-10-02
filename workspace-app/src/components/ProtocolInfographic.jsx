@@ -11,7 +11,7 @@ import './ProtocolInfographic.css';
 import ProtocolTagSummary from './ProtocolTagSummary.jsx';
 export default function ProtocolInfographic({data,revision,onFilter}){
   const counts=data.counts||{},model=overviewModel(data),cells=distinctCells(data.cells).sort((a,b)=>(b.epochs||0)-(a.epochs||0)),max=Math.max(1,...cells.map(cell=>cell.epochs||0)),{types,matchingCells:total,cellTypes,unclassifiedCells}=protocolCellSummary(data.cells);
-  return <section className="protocol-infographic" aria-label="Protocol dataset infographic"><header><span>{isTypingProtocol(data)?'QC & typing recordings':'Experimental dataset'}</span><small>Current query and filters</small></header>
+  return <section className="protocol-infographic" aria-label="Protocol dataset infographic"><header><span>{isTypingProtocol(data)?'QC & typing recordings':'Recordings in this protocol'}</span><small>Current query and filters</small></header>
     <div className="pi-cell-headline" aria-label="Matching cells and cell types">
       <div><span><NeuronIcon size={18}/> Matching cells</span><strong>{number(total)}</strong><small>Unique cells in this protocol</small></div>
       <div><span><Shapes size={18}/> Cell types</span><strong>{number(cellTypes)}</strong><small>{unclassifiedCells?`${number(unclassifiedCells)} ${unclassifiedCells===1?'cell has':'cells have'} unclassified or unknown recorded type`:'Distinct recorded types'}</small></div>

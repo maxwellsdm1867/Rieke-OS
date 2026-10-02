@@ -6,7 +6,7 @@ import './CellList.css';
 import MetadataTable from './MetadataTable.jsx';
 import {datedCellLabel} from '../recordingIdentity.js';
 import { AlertTriangle, LoaderCircle, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
-import { number, duration, humanize } from '../api.js';
+import { number, duration } from '../api.js';
 export function Status({loading, error, children, retry, data}) {
   if (loading && !data) return <div className="status" role="status"><LoaderCircle className="spin" size={22} aria-hidden="true"/> Loading data…</div>;
   if (error) return <div className="error" role="alert"><AlertTriangle size={20}/><div><strong>Could not load data</strong><p>{error}</p>{retry && <button onClick={retry}>Try again</button>}</div></div>;

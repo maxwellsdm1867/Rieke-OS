@@ -1,12 +1,13 @@
+import CellListSection from './CellListSection.jsx';
 import NeuronIcon from './NeuronIcon.jsx';
 import CellTypeSummary from './CellTypeSummary.jsx';
 import {distinctCells,recordedCellType} from '../cellTypes.js';
 import RecordingSize from './RecordingSize.jsx';
 import {isTypingProtocol} from '../protocolOverviewModel.js';
 import { useMemo, useRef, useState } from 'react';
-import { Activity, ArrowRight, ArrowUpRight, CalendarDays, Check, Clock3, Database, Download, FileStack, Image, Info, Layers, Link2, Plus, Search, ChevronDown, X } from 'lucide-react';
+import { Activity, ArrowRight, ArrowUpRight, CalendarDays, Check, Clock3, Database, Download, FileStack, Image, Info, Layers, Link2, Plus, Search, X } from 'lucide-react';
 import { duration, humanize, number, time } from '../api.js';
-import { Badge, CellList, Metadata } from './Common.jsx';
+import { Badge, Metadata } from './Common.jsx';
 import { overviewModel } from './overviewModel.js';
 import './Overview.css';
 
@@ -36,7 +37,7 @@ export default function Overview({data,onProtocol,onImport,onExplore,projectName
       </section></div>
       <div className="ov-inventory" aria-label="Data inventory"><div><Database size={17}/><span><strong>{number(sources.length)}</strong> {sources.length===1?'source store':'source stores'}</span></div><ArrowRight size={14}/><div><Layers size={17}/><span><strong>{number(protocols.length)}</strong> saved selections</span></div><ArrowRight size={14}/><div><Download size={17}/><span><strong>{number(counts.exported||0)}</strong> unique epochs exported</span></div><span className="ov-recorded-time"><Clock3 size={14}/>{duration(counts.duration_seconds)} recorded</span></div>
     </section>
-    <section className="section ov-cell-section" ref={cellsPanel} aria-label="Source cells in overview"><div className="section-heading"><h2><button ref={cellsToggle} className="ov-cell-toggle" aria-expanded={cellsOpen} aria-controls="overview-cell-list" onClick={()=>setCellsOpen(value=>!value)}><ChevronDown size={16} aria-hidden="true"/><NeuronIcon size={16}/> Cells <span className="ov-count">{number(cells.length)}</span><small>{cellsOpen?'Hide':'Show'} cell list</small></button></h2><div className="ov-cell-filters">{dateScope&&<Badge><CalendarDays size={12}/>{recordingDate(dateScope)}</Badge>}{typeScope&&<Badge>{typeScope}</Badge>}{(dateScope||typeScope)&&<button className="quiet" onClick={()=>{setDateScope(null);setTypeScope(null);}}><X size={13}/> Clear</button>}</div></div><div id="overview-cell-list" hidden={!cellsOpen}><CellList cells={cells} onQC={onQC}/>{!cells.length&&<div className="ov-empty">No cells match these overview filters.</div>}</div></section>
+    <CellListSection cells={cells} title="Source cells in overview" open={cellsOpen} onOpenChange={setCellsOpen} toggleRef={cellsToggle} panelRef={cellsPanel} onQC={onQC} filters={<div className="ov-cell-filters">{dateScope&&<Badge><CalendarDays size={12}/>{recordingDate(dateScope)}</Badge>}{typeScope&&<Badge>{typeScope}</Badge>}{(dateScope||typeScope)&&<button className="quiet" onClick={()=>{setDateScope(null);setTypeScope(null);}}><X size={13}/> Clear</button>}</div>}/>
     <ProtocolVolumes protocols={experiments} title="Experimental protocols" onProtocol={onProtocol}/>
     <details className="ov-qc-protocols"><summary><Activity size={15}/> QC & typing <span>{typing.length} recording types</span></summary><p>Expanding spots, single spots and split-field centering support cell typing and quality checks.</p><ProtocolVolumes protocols={typing} title="QC & typing recordings" onProtocol={onProtocol}/></details>
     <section className="ov-figures" aria-label="Future linked figures"><span className="ov-figure-icon"><Image size={25}/><Link2 size={12}/></span><div><h2>Linked figures</h2><p>A place for figures connected to protocol datasets and their source cells.</p></div><Badge>Planned</Badge></section>
