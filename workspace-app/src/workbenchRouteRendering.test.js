@@ -13,7 +13,9 @@ for(const entry of ['tab','restored session','reused Workbench route'])test(`Pro
   await h.settle();
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findAllByType('h1').length,0,'the existing Workbench tab supplies the title');
   assert.equal(h.root.findByProps({'aria-label':'Workbench'}).props['aria-selected'],true);
+  assert.equal(h.root.findByProps({'aria-label':'Protocol workspace views'}).findAllByProps({className:'protocol-view-filter'}).length,0,'Main filter is replaced by the incoming header slot');
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findAllByProps({className:'incoming-action-bar'}).length,1);
+  assert.equal(h.root.findAllByProps({className:'incoming-header-filter'}).length,1);
   assert.ok(h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending incoming recordings')));
  }finally{await h.close();}
 });

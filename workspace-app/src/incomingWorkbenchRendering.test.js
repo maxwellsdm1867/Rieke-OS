@@ -223,7 +223,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
   const props={protocolId:protocol,authority:makeQueue('queue-1',3),onSession:value=>{saved=value;}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
-  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Incoming'));
+  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>String(node.props.className||'').includes('incoming-bar-scope')));
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:{...props.authority}})));
   assert.equal(preparedCalls,1,'ordinary rerender/poll result does not prepare again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1,authority:makeQueue('queue-2',1)})));
@@ -236,7 +236,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
   assert.equal(preparedCalls,3,'history permits restoring excluded draft even when awaiting-review count is zero');
-  assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Incoming'));
+  assert.ok(renderer.root.findAllByType('span').some(node=>String(node.props.className||'').includes('incoming-bar-scope')));
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain in your draft')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
@@ -405,13 +405,32 @@ test('compact action bar keeps authoritative positive, zero and unavailable coun
   const mount=async counts=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,pendingCounts:counts}));});};
   const metrics=()=>renderer.root.findByProps({'aria-label':'Distinct pending incoming counts'}).findAllByType('strong').map(label);
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
-  await mount({pending_cell_count:2,pending_epoch_count:30});assert.deepEqual(metrics(),['2','30']);
-  await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:null,pending_epoch_count:30}})));assert.deepEqual(metrics(),['Unavailable','30']);
+  await mount({pending_cell_count:2,pending_epoch_count:30});assert.deepEqual(metrics(),['+2','+30']);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:null,pending_epoch_count:30}})));assert.deepEqual(metrics(),['Unavailable','+30']);
   await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{}})));assert.deepEqual(metrics(),['Unavailable','Unavailable']);
   await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:0,pending_epoch_count:0}})));assert.deepEqual(metrics(),['0','0']);
   assert.equal(button('Merge selected epochs').props.disabled,true);assert.equal(button('Merge all').props.disabled,true);
   const disclosure=renderer.root.findAllByType('details').find(node=>label(node).includes('Review details'));assert.equal(disclosure.props.open,undefined);
   assert.ok(label(disclosure).includes('Shared tags publish immediately'));
   await act(async()=>button('Cancel').props.onClick());assert.equal(left,1);assert.equal(calls.length,1);assert.equal(calls[0].method,'GET');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('incoming pill never calls reviewed or incomplete actor drafts unreviewed',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:null};
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>context});
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},pendingCounts:{pending_cell_count:1,pending_epoch_count:2}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,revision:0}));});
+  const pill=()=>renderer.root.findAllByType('span').find(node=>String(node.props.className||'').includes('incoming-bar-scope'));
+  assert.equal(label(pill()),'Not reviewed');
+  context={...context,draft:{...context.draft,decisions:[{epoch_uuid:'reviewed',reviewed:true}],decisions_total:1}};
+  await act(async()=>renderer.update(React.createElement(Review,{...props,revision:1})));assert.equal(label(pill()),'Pending merge');
+  context={...context,draft:{...context.draft,decisions:[],decisions_total:251,decisions_truncated:true}};
+  await act(async()=>renderer.update(React.createElement(Review,{...props,revision:2})));assert.equal(label(pill()),'Pending merge');
+  context={...context,draft:{...context.draft,decisions:[],decisions_total:0,decisions_truncated:false}};
+  await act(async()=>renderer.update(React.createElement(Review,{...props,revision:3,externalBusy:true})));assert.equal(label(pill()),'Pending merge');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

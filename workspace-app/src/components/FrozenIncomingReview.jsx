@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
+import {createPortal} from 'react-dom';
 import {api,number} from '../api.js';
 import {Activity,CheckSquare,Download,GitMerge,History,Layers,RefreshCw,Search,Square,X} from 'lucide-react';
 import NeuronIcon from './NeuronIcon.jsx';
@@ -8,8 +9,9 @@ import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null}){
   const browserRegion=useRef(null);
+  const [toolbarTarget,setToolbarTarget]=useState(null);
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
   const [unconfirmed,setUnconfirmed]=useState(session?.unconfirmed||session?.acceptPending||false),[acceptPending,setAcceptPending]=useState(false);
@@ -83,15 +85,19 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const countLabel=value=>Number.isSafeInteger(value)&&value>=0?number(value):'Unavailable';
   const cells=pendingCounts?pendingCounts.pending_cell_count:contextFresh?context?.counts?.pending_cells:null;
   const epochs=pendingCounts?pendingCounts.pending_epoch_count:contextFresh?context?.counts?.pending_epochs:null;
+  const incomingCount=value=>Number.isSafeInteger(value)&&value>0?`+${number(value)}`:countLabel(value);
+  const reviewKnown=contextFresh&&!externalBusy&&context.draft.decisions_truncated===false&&Array.isArray(context.draft.decisions)&&context.draft.decisions_total===context.draft.decisions.length;
+  const notReviewed=reviewKnown&&!context.draft.decisions.some(value=>value.reviewed);
+  const incomingStatus=epochs>0?(notReviewed?'Not reviewed':'Pending merge'):epochs===0?'No pending':'Incoming';
   // The server remains the authority for exact eligibility, including truncated
   // draft decisions. Never infer a count by summing proposals or viewer rows.
   const noReviewedSelection=contextFresh&&context.draft.selection_mode==='selected'&&context.draft.decisions_truncated===false&&Array.isArray(context.draft.decisions)&&!context.draft.decisions.some(value=>value.selected&&value.reviewed&&!value.excluded);
   function explore(){browserRegion.current?.focus();browserRegion.current?.scrollIntoView({block:'nearest'});}
   return <section className="incoming-review">
     <div className="incoming-action-bar" aria-label="Incoming review actions">
-      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className="incoming-bar-scope">Incoming</span>
-        <span><NeuronIcon size={18}/><strong>{countLabel(cells)}</strong><small>cells</small></span>
-        <span><Activity size={18} aria-hidden="true"/><strong>{countLabel(epochs)}</strong><small>epochs</small></span>
+      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className={`incoming-bar-scope ${epochs>0?'is-pending':''}`} title={epochs>0&&notReviewed?'Your current draft has no reviewed incoming epochs':'Unmerged incoming recordings; review and merge remain separate'}>{incomingStatus}</span>
+        <span><NeuronIcon size={18}/><strong>{incomingCount(cells)}</strong><small>cells</small></span>
+        <span><Activity size={18} aria-hidden="true"/><strong>{incomingCount(epochs)}</strong><small>epochs</small></span>
       </div>
       <div className="incoming-bar-actions">
         <button className="primary" disabled={!visible||!adapterReady} onClick={explore}><Search size={14} aria-hidden="true"/> Review / Explore</button>
@@ -127,6 +133,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" ref={browserRegion} tabIndex={-1} aria-label="Incoming epoch browser"><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/><Inspector readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={value=>{viewer.current=value;publish({viewer:value});}} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" ref={browserRegion} tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/>,filterTarget)}<div className="incoming-inspection-tools"><div className="incoming-browser-controls" ref={setToolbarTarget}/></div><Inspector toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={value=>{viewer.current=value;publish({viewer:value});}} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }
