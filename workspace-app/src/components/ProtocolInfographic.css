@@ -6,7 +6,7 @@
 .pi-cohort-intro>p{font-size:13px;font-weight:600;color:var(--ink-secondary)}
 .pi-cohort-intro>small{display:block;line-height:1.6;margin-top:3px}
 .pi-cohort-summary{display:grid;grid-template-columns:minmax(0,1fr) minmax(190px,.3fr);border-top:1px solid var(--border);border-bottom:1px solid var(--border);align-items:stretch}
-.pi-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface-subtle)}
+.pi-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface)}
 .pi-metrics>div{min-width:0;padding:17px 22px;display:grid;grid-template-rows:auto 40px auto;align-content:start;border-right:1px solid var(--border)}
 .pi-metrics>div:last-child{border-right:0}
 .pi-metrics>div>span{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-secondary);min-height:28px}
@@ -31,7 +31,7 @@
 .pi-pending-review>strong{display:block;font-size:26px;font-weight:550;line-height:1.3;letter-spacing:-.5px;font-variant-numeric:tabular-nums;margin:7px 0}
 .pi-pending-review p,.pi-export-history p{font-size:11px;color:var(--ink-muted);line-height:1.6}
 .pi-pending-review>button{font-size:11px;white-space:normal;margin-top:10px}
-.pi-export-history{padding:14px 16px;background:var(--surface-subtle);border:1px solid var(--border-subtle);border-radius:7px}
+.pi-export-history{padding:14px 16px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:7px}
 .pi-export-history>strong{display:block;font-size:11px;font-weight:550;color:var(--ink-secondary);margin-bottom:5px}
 @container (max-width:760px){
   .pi-cohort-summary{grid-template-columns:minmax(0,1fr)}
