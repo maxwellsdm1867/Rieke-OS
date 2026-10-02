@@ -1,7 +1,7 @@
 """Server query receipt/whole-operation rollback using disposable SQL doubles."""
 import copy
 import json
-from contextlib import nullcontext
+from contextlib import contextmanager,nullcontext
 from threading import RLock
 import unittest
 from unittest.mock import patch
@@ -205,6 +205,111 @@ class GroupTests(unittest.TestCase):
             self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
         self.assertEqual(self.case.case.records.rows,before)
         self.assertIsNone(self.receipts.rows[0]['receipt']['undone_by'])
+
+    def test_replay_after_guard_wait_returns_first_apply_and_inverse_receipts(self):
+        self.grow(20);preview=self.preview();body=self.body(preview)
+        second=AnnotationGroups(self.service,self.store,self.receipts,RLock(),nullcontext)
+        second.selections=copy.copy(self.groups.selections)
+        @contextmanager
+        def first_apply_commits_while_waiting():
+            self.groups.apply(body,'OS actor')
+            yield
+        second.registration_locks=first_apply_commits_while_waiting
+        self.assertTrue(second.apply(body,'OS actor')['replayed'])
+        self.assertEqual(len(self.receipts.rows),1)
+        undo_body={'operation_uuid':str(uuid.uuid4())}
+        @contextmanager
+        def first_inverse_commits_while_waiting():
+            self.groups.undo(body['operation_uuid'],undo_body,'OS actor')
+            yield
+        second.registration_locks=first_inverse_commits_while_waiting
+        self.assertTrue(second.undo(body['operation_uuid'],undo_body,'OS actor')['replayed'])
+        self.assertEqual(len(self.receipts.rows),2)
+
+    def test_late_forward_source_and_inverse_fingerprint_changes_roll_back_everything(self):
+        self.grow(25);preview=self.preview();body=self.body(preview)
+        original_insert=self.receipts.insert1
+        def late_source(row):
+            original_insert(row)
+            self.service._fingerprints[next(iter(self.service.rows))]='c'*64
+        with patch.object(self.receipts,'insert1',side_effect=late_source),self.assertRaises(RevisionConflict):
+            self.groups.apply(body,'OS actor')
+        self.assertEqual(self.receipts.rows,[])
+        self.assertEqual(self.case.case.records.rows,[])
+        self.assertEqual(self.case.case.case.events.rows,[])
+        self.store.on_commit.assert_not_called()
+        self.service._fingerprints={key:'b'*64 for key in self.service.rows}
+        self.groups.apply(body,'OS actor');self.store.on_commit.reset_mock()
+        before=copy.deepcopy((self.receipts.rows,self.case.case.records.rows,self.case.case.case.events.rows))
+        original_update=self.receipts.update1
+        def late_inverse(row):
+            original_update(row)
+            self.service._fingerprints[next(iter(self.service.rows))]='c'*64
+        with patch.object(self.receipts,'update1',side_effect=late_inverse),self.assertRaises(RevisionConflict):
+            self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+        self.assertEqual((self.receipts.rows,self.case.case.records.rows,self.case.case.case.events.rows),before)
+        self.store.on_commit.assert_not_called()
+
+    def test_late_physical_source_and_metadata_publication_changes_roll_back(self):
+        self.grow(5)
+        for fault in ('physical', 'metadata'):
+            with self.subTest(fault=fault):
+                preview=self.preview();body=self.body(preview)
+                original_insert=self.receipts.insert1;late=[False]
+                def insert(row):
+                    original_insert(row);late[0]=True
+                    if fault=='metadata':self.service._explore_publication='changed publication'
+                def verified(manifest):
+                    if late[0] and fault=='physical':raise RevisionConflict({'source':'changed physical file'})
+                    return ('owned source','signature')
+                with patch.object(self.receipts,'insert1',side_effect=insert), \
+                     patch.object(self.service,'_verified_source',side_effect=verified), \
+                     self.assertRaises(RevisionConflict):
+                    self.groups.apply(body,'OS actor')
+                self.assertEqual(self.receipts.rows,[])
+                self.assertEqual(self.case.case.records.rows,[])
+                self.assertEqual(self.case.case.case.events.rows,[])
+                self.store.on_commit.assert_not_called()
+                self.groups.release({'selection_uuid':preview['selection_uuid']},'OS actor')
+
+    def test_late_inverse_physical_source_and_metadata_changes_roll_back(self):
+        self.grow(5);body=self.body(self.preview());self.groups.apply(body,'OS actor')
+        self.store.on_commit.reset_mock()
+        before=copy.deepcopy((self.receipts.rows,self.case.case.records.rows,self.case.case.case.events.rows))
+        for fault in ('physical','metadata'):
+            with self.subTest(fault=fault):
+                original_update=self.receipts.update1;late=[False]
+                def update(row):
+                    original_update(row);late[0]=True
+                    if fault=='metadata':self.service._explore_publication=str(uuid.uuid4())
+                def verified(manifest):
+                    if late[0] and fault=='physical':raise RevisionConflict({'source':'changed physical file'})
+                    return ('owned source','signature')
+                with patch.object(self.receipts,'update1',side_effect=update), \
+                     patch.object(self.service,'_verified_source',side_effect=verified), \
+                     self.assertRaises(RevisionConflict):
+                    self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+                self.assertEqual((self.receipts.rows,self.case.case.records.rows,self.case.case.case.events.rows),before)
+                self.store.on_commit.assert_not_called()
+
+    def test_large_captured_guard_facts_and_inverse_retained_budget_refuse(self):
+        self.grow(4)
+        revisions=[str(index)+'x'*1000 for index in range(40)]
+        def guard_provider(protocol):
+            context={'source_revisions':revisions,'generation':self.tracker.token(protocol)}
+            return lambda:context['source_revisions']
+        self.groups.revision_guard=guard_provider
+        with patch('workspace_annotation_groups.RETAINED_BYTES',10000), \
+             patch('workspace_annotation_groups.RetainedBudget',side_effect=lambda used=0,maximum=None:RetainedBudget(used,maximum or 10000)):
+            with self.assertRaisesRegex(ValueError,'retained-memory'):
+                self.preview({'protocol_uuid':self.service.protocol_id,'splits':''})
+        self.assertEqual(self.groups.selections,{})
+        self.groups.revision_guard=None
+        preview=self.preview();body=self.body(preview);self.groups.apply(body,'OS actor')
+        before=copy.deepcopy((self.receipts.rows,self.case.case.records.rows))
+        with patch('workspace_annotation_groups.OPERATION_BYTES',256),self.assertRaisesRegex(ValueError,'retained-memory'):
+            self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+        self.assertEqual((self.receipts.rows,self.case.case.records.rows),before)
 
 
 if __name__=='__main__':unittest.main()

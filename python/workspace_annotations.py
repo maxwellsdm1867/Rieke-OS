@@ -127,9 +127,13 @@ class SharedAnnotations:
         return {'selected_profile_uuid':preferred['profile_uuid'] if preferred else None,'profiles':sorted(profiles.values(),key=lambda p:(p['display_name'].casefold(),p['profile_uuid'])),
                 'default_profile_uuid':default['profile_uuid'],'attribution':'local_profile_not_authentication'}
 
-    def _ensure_profiles(self,profiles,actor,pending=None):
+    def _ensure_profiles(self,profiles,actor,pending=None,required=None):
         if not isinstance(profiles,list) or len(profiles)>100:raise ValueError('Use at most 100 profile definitions')
-        existing={row['profile_uuid']:row for row in (self.Profile&{'project_uuid':self.project_uuid}).to_dicts()}
+        relation=self.Profile&{'project_uuid':self.project_uuid}
+        if required is not None:
+            keys=set(required)|{identity(profile.get('profile_uuid')) for profile in profiles}
+            relation=relation&[{'profile_uuid':key} for key in keys]
+        existing={row['profile_uuid']:row for row in relation.to_dicts()}
         seen=set()
         for profile in profiles:
             if not isinstance(profile,dict) or set(profile)-{'profile_uuid','display_name'}:raise ValueError('Invalid profile definition')
@@ -413,6 +417,7 @@ class SharedAnnotations:
         actor=text(actor)
         maximum=10_000 if _group_budget is not None else MAX_OPERATIONS
         if not isinstance(operations,list) or not (0 if external_receipt else 1)<=len(operations)<=maximum:raise ValueError(f'Use 1–{maximum} annotation operations')
+        if _group_budget is not None:_group_budget.reserve(len(operations)*256+4096)
         if profiles is not None and not isinstance(profiles,list):raise ValueError('Profiles must be an array')
         parsed=[];seen=set()
         for operation in operations:
@@ -438,15 +443,17 @@ class SharedAnnotations:
             if profile['profile_uuid'] in used_authors and not any(p.get('profile_uuid')==profile['profile_uuid'] for p in incoming):
                 incoming.append(profile)
         pending_profiles=[]
-        authors=self._ensure_profiles(incoming,actor,pending_profiles)
-        if _group_budget is not None:_group_budget.charge(pending_profiles)
+        authors=(self._ensure_profiles(incoming,actor,pending_profiles,required=used_authors) if _group_budget is not None
+                 else self._ensure_profiles(incoming,actor,pending_profiles))
+        if _group_budget is not None:_group_budget.charge((authors,incoming,pending_profiles))
         # The transaction only needs the explicitly targeted author sets.
         # Other targets/profiles cannot affect these optimistic revisions.
         relation=self.Annotation&{'project_uuid':self.project_uuid}
-        requested=[{'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2]} for key,_,_,_ in parsed]
         saved={}
-        for offset in range(0,len(requested),250):
-            for row in (relation&requested[offset:offset+250]).to_dicts():
+        for offset in range(0,len(parsed),250):
+            requested=[{'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2]} for key,_,_,_ in parsed[offset:offset+250]]
+            if _group_budget is not None:_group_budget.charge(requested)
+            for row in (relation&requested).to_dicts():
                 if _group_budget is not None:_group_budget.charge(row)
                 saved[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
         pending_rows=[]

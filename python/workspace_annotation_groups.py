@@ -3,11 +3,14 @@
 Resolution reuses the O(project) tree scope oracle. This is not a streaming or
 million-epoch job system. Preview IDs never leave the server; durable receipts
 provide idempotency and changed-only, query-free inverses after a restart.
+No-op operations have a durable actor/request receipt; annotation audit events
+describe changed tag sets only, as in the existing shared annotation contract.
 """
 from __future__ import annotations
 
 import copy
 import datetime as dt
+from dataclasses import fields,is_dataclass
 import getpass
 import re
 import sys
@@ -45,7 +48,12 @@ class RetainedBudget:
                 raise ValueError('This group exceeds the supported retained-memory budget; nothing was committed')
             if isinstance(current,dict):pending.extend(current.keys());pending.extend(current.values())
             elif isinstance(current,(list,tuple,set,frozenset)):pending.extend(current)
+            elif is_dataclass(current):pending.extend(getattr(current,field.name) for field in fields(current))
         return value
+
+    def reserve(self,amount):
+        self.used+=amount
+        if self.used>self.maximum:raise ValueError('This group exceeds the supported retained-memory budget; nothing was committed')
 
 
 def group_receipt_table(dj):
@@ -187,6 +195,14 @@ class AnnotationGroups:
                 key=str(uuid.uuid4())
                 entry=dict(scope=scope,context=context,profile=profile,actor=actor,targets=targets,
                     vector=vector,fences=fences,guard=guard,expires=now+PREVIEW_SECONDS,bytes=budget.used)
+                budget.charge(vector)
+                if guard:
+                    budget.charge(guard)
+                    # Native query guards retain their explicit context/token
+                    # and source-revision tuple in closure cells. Existing API
+                    # owners stay borrowed; all newly retained fact graphs count.
+                    for cell in getattr(guard,'__closure__',()) or ():
+                        budget.charge(cell.cell_contents)
                 budget.charge({key:value for key,value in entry.items() if key not in {'targets','guard','vector'}})
                 entry['bytes']=budget.used
                 if sum(item['bytes'] for item in self.selections.values())+budget.used>RETAINED_BYTES:
@@ -208,9 +224,11 @@ class AnnotationGroups:
             replay=self._receipt(operation,actor,request_sha)
             if replay:return replay
             entry=self.selections.get(selection)
-            if not entry or entry['expires']<=time.monotonic():raise ValueError('Group preview expired or the server restarted; reopen the group')
-            if entry['actor']!=actor or entry['profile']!=profile:raise RevisionConflict({'profile':'Group preview belongs to a different actor/profile'})
-            with self.registration_locks(),context_annotation_locks(self.service,entry['context']):
+            with self.registration_locks(),context_annotation_locks(self.service,entry['context'] if entry else {}):
+                replay=self._receipt(operation,actor,request_sha)
+                if replay:return replay
+                if not entry or entry['expires']<=time.monotonic():raise ValueError('Group preview expired or the server restarted; reopen the group')
+                if entry['actor']!=actor or entry['profile']!=profile:raise RevisionConflict({'profile':'Group preview belongs to a different actor/profile'})
                 if self._seals(entry['context'])!=entry['fences'] or self._vector(entry['context'])!=entry['vector']:
                     raise RevisionConflict({'scope':'Sources, annotations or binding changed; reopen the group'})
                 self._verify_sources(entry['targets'])
@@ -227,6 +245,7 @@ class AnnotationGroups:
                     if self._seals(entry['context'])!=entry['fences']:raise RevisionConflict({'scope':'Source or binding changed before save'})
                     self._verify_sources(entry['targets'])
                     result=self.annotations._apply_batch_locked(operations,actor,_group_budget=budget)
+                    budget.reserve(len(entry['targets'])*128+1024)
                     fingerprints={target:fingerprint for target,fingerprint,_ in entry['targets']}
                     inverse=[]
                     for row in result['annotations']:
@@ -238,8 +257,13 @@ class AnnotationGroups:
                         unchanged=len(operations)-result['changed'],profile_uuid=profile,tag=tag,
                         event_uuid=result['event_uuid'],inverse_targets=inverse,undone_by=None,
                         undo={'kind':'annotation_group','operation_uuid':operation,'count':len(inverse)},scope=entry['scope'])
-                    budget.charge({key:value for key,value in receipt.items() if key not in {'inverse_targets','scope'}})
+                    budget.charge(receipt)
+                    # Reserve native JSON input and its serialization, including
+                    # repeated UUID/fingerprint strings and bounded scope text.
+                    budget.reserve(len(inverse)*1024+128*1024)
                     self._save(operation,actor,profile,request_sha,receipt)
+                    if self._seals(entry['context'])!=entry['fences']:raise RevisionConflict({'scope':'Source or metadata changed during save'})
+                    self._verify_sources(entry['targets'])
                 self.annotations._after_batch_commit(result)
                 self.selections.pop(selection,None)
                 return self._public(receipt)
@@ -263,19 +287,24 @@ class AnnotationGroups:
             if not rows or rows[0]['actor']!=actor:raise ValueError('No group operation belongs to this actor')
             record=rows[0];original=record['receipt']
             if original.get('action')!='add':raise ValueError('Choose an original group tag operation to undo')
-            if original.get('undone_by'):raise RevisionConflict({'undo':'This group operation was already undone'})
             targets=original['inverse_targets'];profile=record['profile_uuid']
             context={}
             with self.registration_locks(),context_annotation_locks(self.service,context):
+                replay=self._receipt(operation,actor,request_sha)
+                if replay:return replay
+                if original.get('undone_by'):raise RevisionConflict({'undo':'This group operation was already undone'})
                 vector=self._vector(context);fences=self._seals(context)
                 self._verify_sources(targets)
-                budget=RetainedBudget(maximum=OPERATION_BYTES);budget.charge(targets);operations=[]
+                budget=RetainedBudget(maximum=OPERATION_BYTES);budget.charge(record);operations=[]
                 for target,_,revision in targets:
                     item=dict(target_kind='epoch',target_uuid=target,profile_uuid=profile,expected_revision=revision,tags_remove=[original['tag']])
                     budget.charge(item);operations.append(item)
                 with self.service.dj.conn().transaction:
+                    replay=self._receipt(operation,actor,request_sha)
+                    if replay:return replay
                     self._assert_vector(vector)
                     current=(self.Receipt&{'project_uuid':self.project,'operation_uuid':forward}).to_dicts()[0]
+                    budget.charge(current)
                     if current['receipt'].get('undone_by'):raise RevisionConflict({'undo':'This group operation was already undone'})
                     if self._seals(context)!=fences:raise RevisionConflict({'undo':'Source authority changed before inverse'})
                     self._verify_sources(targets)
@@ -286,9 +315,13 @@ class AnnotationGroups:
                         action='undo',
                         target_kind='epoch',target_count=len(targets),changed=result['changed'],unchanged=len(targets)-result['changed'],
                         profile_uuid=profile,forward_operation_uuid=forward,event_uuid=result['event_uuid'],inverse_targets=[],undone_by=None)
+                    budget.charge(receipt)
+                    budget.reserve(len(targets)*1024+128*1024)
                     self._save(operation,actor,profile,request_sha,receipt)
-                    original=copy.deepcopy(original);original['undone_by']=operation
-                    self.Receipt.update1({**record,'receipt':original})
+                    current['receipt']['undone_by']=operation
+                    self.Receipt.update1(current)
+                    if self._seals(context)!=fences:raise RevisionConflict({'undo':'Source or metadata changed during inverse'})
+                    self._verify_sources(targets)
                 self.annotations._after_batch_commit(result)
                 return self._public(receipt)
 
@@ -301,7 +334,8 @@ def register_group_annotation_routes(app,service,shared_annotations,db_lock,regi
     app.extensions['group_annotations']=groups
     def body():
         if request.content_length is not None and request.content_length>64*1024:raise ValueError('Group request exceeds 64 KiB')
-        return request.get_json()
+        try:return request.get_json()
+        except RecursionError as error:raise ValueError('Tree group JSON nesting is too deep') from error
     def actor():return getpass.getuser() or 'Local workspace user'
     @app.post('/api/annotations/group-preview')
     def group_annotation_preview():return jsonify(groups.preview(body(),actor()))
