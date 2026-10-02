@@ -64,6 +64,12 @@ class WorkbenchTests(unittest.TestCase):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
 
     def test_frozen_incoming_browse_does_not_run_recipe_or_include_main_and_context_fences_every_surface(self):
+        # A frozen reader owns its scope cache; it must not mutate live browsing.
+        live_cache = (None, {'live': object()}, {})
+        self.case.service._tree_page_scope_cache = live_cache
+        scoped = self.manager.frozen_service(self.manager.context(self.protocol, self.revision, 'actor-one'))
+        self.assertIsNone(scoped._tree_page_scope_cache)
+        self.assertIs(self.case.service._tree_page_scope_cache, live_cache)
         with patch.object(self.case.service, 'explore_preview', side_effect=AssertionError('Frozen reads must not rerun')):
             context = self.get_context()
             self.assertEqual(context['protocol']['counts']['epochs'], 1)
@@ -200,8 +206,16 @@ class WorkbenchTests(unittest.TestCase):
         context = self.get_context(root)
         saved = self.case.client.patch(root + '/draft', json=dict(expected_version=0,
             expected_candidate_scope_revision=context['candidate_scope_revision'], selection_mode='selected',
-            decisions=[dict(epoch_uuid=eligible, selected=True, reviewed=True)]), headers=self.case.headers).get_json()
+            decisions=[dict(epoch_uuid=key, selected=True, reviewed=True) for key in (eligible, self.added)]), headers=self.case.headers).get_json()
         request = dict(expected_candidate_scope_revision=saved['candidate_scope_revision'], expected_draft_version=1, mode='selected')
+        blocked = self.case.client.post(root + '/preview', json=request, headers=self.case.headers)
+        self.assertEqual(blocked.status_code, 409, blocked.get_json())
+        # Exact saved intent cannot silently lose the blocked selection. The
+        # actor must deliberately remove B before eligible A can publish.
+        saved = self.case.client.patch(root + '/draft', json=dict(expected_version=1,
+            expected_candidate_scope_revision=saved['candidate_scope_revision'],
+            decisions=[dict(epoch_uuid=self.added, selected=False)]), headers=self.case.headers).get_json()
+        request.update(expected_candidate_scope_revision=saved['candidate_scope_revision'], expected_draft_version=2)
         preview = self.case.client.post(root + '/preview', json=request, headers=self.case.headers)
         self.assertEqual(preview.status_code, 200, preview.get_json())
         request.update(**{field: preview.get_json()[field] for field in

@@ -323,7 +323,7 @@ class CurationStore:
         return {"curation": after, "event_uuid": event_uuid, **({"undo":inverse} if include_undo else {})}
 
     def record_dataset_revision(self, recipe, *, actor, expected_revisions,
-                                artifact_path, artifact_sha256):
+                                artifact_path, artifact_sha256, publication_callback=None):
         """Record a completed reference package after the caller writes it.
 
         The query snapshot and exact selection are stored unchanged. A curation
@@ -392,9 +392,12 @@ class CurationStore:
                 "curation_revisions": expected_revisions,
                 **({"export_scope":copy.deepcopy(recipe["options"]["export_scope"])}
                    if recipe.get("options",{}).get("export_scope") else {})})
-        return {"dataset_uuid": dataset_uuid, "event_uuid": event_uuid,
+            result = {"dataset_uuid": dataset_uuid, "event_uuid": event_uuid,
                 "artifact_path": str(path), "artifact_sha256": artifact_sha256,
                 "epoch_count": len(eligible)}
+            if publication_callback is not None:
+                publication_callback(result)  # Same native transaction as dataset+audit.
+        return result
 
     def _export_index(self):
         """Cache frozen memberships; poll only small identity/version columns.

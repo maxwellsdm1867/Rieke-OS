@@ -220,9 +220,14 @@ class ProtocolWorkbench:
     def selection(self, context, mode):
         if mode not in ('all', 'selected') or mode != context['selection_mode']:
             raise ValueError('Preview mode must agree with the saved draft selection_mode')
-        selected = {key for key in context['incoming'] if key not in context['ineligible'] | context['unavailable']
-                    and not self.decision(context, key)['excluded']
-                    and (mode == 'all' or all(self.decision(context, key)[field] for field in ('selected', 'reviewed')))}
+        if mode == 'all':
+            selected = {key for key in context['incoming'] if key not in context['ineligible'] | context['unavailable']
+                        and not self.decision(context, key)['excluded']}
+        else:
+            # Preserve exact saved intent. Explicitly selected blocked epochs
+            # must reject publication, never disappear from a selected preview.
+            selected = {key for key in context['incoming'] if context['decisions'].get(key, {}).get('selected')
+                        and context['decisions'][key].get('reviewed') and not context['decisions'][key].get('excluded')}
         return selected
 
     def patch(self, protocol, revision, actor, body):
@@ -399,6 +404,7 @@ class ProtocolWorkbench:
         scoped._tree_catalog_cache = {}
         scoped._epoch_page_cache = None
         scoped._tree_scope_cache = {}
+        scoped._tree_page_scope_cache = None
         scoped._registered_tree_cache = getattr(self.service, '_registered_tree_cache', None)
         def decisions(protocol, fingerprints):
             return {key: dict(included=True, reviewed=False, review_state='unreviewed',
@@ -471,7 +477,9 @@ class ProtocolWorkbench:
 def public_receipt(receipt):
     result = copy.deepcopy({key: value for key, value in receipt.items()
                            if key not in {'accepted_fingerprints', 'selected_epoch_uuids', 'accepted_epoch_uuids'}})
-    ids = receipt.get('accepted_epoch_uuids', [])
+    if 'accepted_epoch_uuids' not in receipt:
+        return result
+    ids = receipt['accepted_epoch_uuids']
     result.update(accepted_epoch_uuids=ids[:250], accepted_epoch_uuids_total=len(ids),
                   accepted_epoch_uuids_truncated=len(ids) > 250)
     return result
@@ -511,14 +519,17 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @contextlib.contextmanager
     def guarded(protocol, revision=None, filters=None):
-        with db_lock:
+        with db_lock, registration_locks():
             manager.tables  # Declare native tables before transactions/annotation locks.
             predicates = []
             if revision:
                 predicates.append(manager.proposal(protocol, revision)[2]['predicate'])
             else:
                 # Queue summaries read every candidate's annotation witness.
-                records = (suggestions.Table & dict(project_uuid=manager.project, protocol_uuid=protocol)).to_dicts()
+                restriction = dict(project_uuid=manager.project)
+                if protocol is not None:
+                    restriction['protocol_uuid'] = protocol
+                records = (suggestions.Table & restriction).to_dicts()
                 predicates.extend(history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate'] for row in records)
             for field in ('metadata_predicate', 'tag_predicate'):
                 if (filters or {}).get(field):
@@ -531,9 +542,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             definitions = {field['id']: field for field in TagPredicates(service).definitions()}
             if fields - definitions.keys():
                 raise ValueError('Unknown annotation predicate authority')
-            protocols = {protocol} | {definitions[field]['annotation_scope']['protocol_uuid'] for field in fields
+            origins = set(service.protocols) if protocol is None else {protocol}
+            protocols = origins | {definitions[field]['annotation_scope']['protocol_uuid'] for field in fields
                 if definitions[field]['annotation_scope']['kind'] == 'protocol_curation'}
-            with registration_locks(), annotation_locks(service, {'all': []}, extra_protocols=protocols):
+            with annotation_locks(service, {'all': []}, extra_protocols=protocols):
                 yield actor()
 
     def checked(protocol, revision, owner, expected):
@@ -598,8 +610,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         if request.args:
             raise ValueError('Project Workbench summary takes no options')
         counts = []
-        for protocol in service.protocols:
-            with guarded(protocol) as owner:
+        with guarded(None) as owner:
+            for protocol in service.protocols:
                 value = manager.queue(protocol, owner, 1)
                 counts.append(dict(protocol_uuid=protocol, **{key: value[key] for key in
                     ('pending_cell_count', 'pending_epoch_count', 'queue_revision')}))
@@ -714,3 +726,6 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             counts = scoped._counts(scoped.filtered_rows(protocol, filters))
             return jsonify(finish(context, dict(counts=counts, matched_count=counts['epochs'],
                 filters=filters, filters_sha256=checksum(filters), distributions_available=False)))
+
+    from workspace_workbench_exports import register_workbench_export_routes
+    register_workbench_export_routes(app, manager, app.extensions['curation_store'], db_lock, guarded, actor, body)

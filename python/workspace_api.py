@@ -1495,6 +1495,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             record = store.get_dataset_revision(dataset_uuid)
             recipe = record["recipe"]
             scope = recipe.get('options', {}).get('export_scope')
+            if scope and scope.get('kind') == 'workbench_incoming':
+                saved = explorer_history.get(scope['candidate_revision_uuid'])['recipe']
+                if (saved['content_sha256'] != scope['candidate_recipe_sha256']
+                        or recipe['query_snapshot'].get('export_scope') != scope
+                        or recipe['protocol_uuid'] != scope['export_only_scope_uuid']):
+                    raise ValueError('Saved incoming export scope failed integrity validation')
+                return jsonify(kind='workbench_incoming', target_protocol_uuid=scope['target_protocol_uuid'],
+                    candidate_revision_uuid=scope['candidate_revision_uuid'], accept_operation_uuid=scope.get('accept_operation_uuid'),
+                    export_scope=scope, export_intent={'name': recipe['options']['name'], 'format': recipe['destination']},
+                    source_export_uuid=dataset_uuid, review_required=True)
             if scope and scope.get('kind') == 'explorer_candidate':
                 from workspace_candidate_exports import candidate_scope_uuid
                 saved = explorer_history.get(scope['revision_uuid'])['recipe']
