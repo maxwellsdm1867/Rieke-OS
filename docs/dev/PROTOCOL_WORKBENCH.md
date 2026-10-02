@@ -9,7 +9,8 @@ protocol scientific approval are separate authorities.
 
 Let B be the immutable proposal baseline, C its immutable candidate, and M the
 current bound main cohort, all native epoch UUID → metadata fingerprint maps.
-Incoming membership is C − B. Publishing adds selected incoming members absent
+Incoming provenance is C − B; every inspection and publication selection uses
+only pending C − B − M. Publishing adds selected incoming members absent
 from M, retaining every M member. Identical UUID/fingerprint overlaps are no-ops;
 different fingerprints are conflicts. Acquisition Protocol ID must match the
 destination. No predicate rerun can widen the saved candidate.
@@ -35,6 +36,7 @@ All paths below have the `/api` prefix. Candidate root is
 | --- | --- |
 | GET `/protocols/{protocol}/workbench` | Historical candidate queue, stable cursor/queue revision, full distinct pending epoch/cell union, capabilities. |
 | GET `/workbench/summary` | Per-protocol pending cell/epoch counts from the same union authority. |
+| POST `/protocols/{protocol}/workbench/prepare` | Required `expected_queue_revision`, optional operation UUID; creates/reuses one immutable cumulative pending snapshot and initializes this actor's draft once. Response kind `workbench_pending_union`, canonical root without `/api`, candidate/scope/context, requested queue revision, prepare operation UUID and storage estimates. |
 | GET candidate `/context` | Compatible `protocol` DTO, `candidate_scope_revision`, draft version/decisions, incoming/pending counts and publication blockers. |
 | GET candidate `/epochs`, `/epochs/{epoch}`, `/epochs/{epoch}/trace`, `/tree`, `/tree-fields` | Required `candidate_scope_revision`; exact frozen incoming membership, current verified native metadata. Trace checks membership before native stream access. |
 | POST candidate `/tree/page` | Existing tree body + required candidate scope; no global predicate or client cohort reconstruction. |
@@ -57,6 +59,30 @@ Pending counts include unmerged blocked candidates; eligible pending counts are
 separate. An old unavailable proposal without a frozen cell identity yields
 `pending_cell_count: null` and unavailable status, never a fabricated zero.
 Counts are distinct unions, not sums of proposal counts or loaded pages.
+
+Cumulative preparation unions only original proposals; derived snapshots are
+excluded from discovery. Each saved origin recipe/hash/annotation witness is
+retained and checked independently, including during acceptance. Current main
+is the snapshot baseline. Conflicting/stale unmerged origins explicitly refuse
+preparation, rather than silently disappearing. Source-excluded members remain
+inspectable; publication applies the selected/all eligibility rules. Snapshot
+membership is shared across actors; draft initialization/carry is actor scoped.
+Same-fingerprint decisions carry from that actor's latest cumulative draft;
+every new snapshot starts in selected mode and new identities are unreviewed.
+First preparation carries existing original-proposal decisions only when their
+explicit flags agree; conflicting historical decisions require reconciliation.
+Repeated prepare never overwrites edits. An omitted operation UUID is derived
+from the canonical request and actor, allowing same-token receipt-first retry.
+Its saved response is the immutable preparation receipt; GET candidate context
+provides current draft authority after later edits. Main retains its original
+saved predicate, so later imports still discover additions using the preset.
+
+Preparing a changed authority currently stores a full union recipe because the
+existing explorer schema requires exact membership. Unchanged snapshots reuse
+that recipe across actors; ordinary reads/polls do not write new revisions.
+`storage.recipe_json_bytes` measures encoded recipe bytes (not MySQL physical
+storage overhead); `revision_count_delta` exposes whether a recipe was created.
+This cost is not qualified for million-epoch projects.
 
 ## Publication and recovery
 

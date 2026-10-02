@@ -217,16 +217,18 @@ class WorkbenchTests(unittest.TestCase):
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertFalse(context['valid_base'])
 
-    def test_noop_accept_has_acceptance_audit_event_without_rebinding(self):
+    def test_accepted_pending_scope_is_empty_and_new_empty_accept_never_rebinds(self):
         first = self.accept(self.accepted_request()).get_json()
         version = first['binding']['version']
-        request = self.accepted_request()
-        second = self.accept(request).get_json()
-        self.assertEqual(second['accepted_epoch_count'], 0)
-        self.assertEqual(second['binding']['version'], version)
-        self.assertIsNone(second['binding_event_uuid'])
-        self.assertTrue(second['event_uuid'])
-        event = next(row for row in self.case.events.rows if row['event_uuid'] == second['event_uuid'])
+        context = self.get_context()
+        self.assertEqual(context['protocol']['counts']['epochs'], 0)
+        context = self.save(context, selection_mode='all').get_json()
+        response = self.case.client.post(self.root + '/preview', json=dict(mode='all',
+            expected_candidate_scope_revision=context['candidate_scope_revision'], expected_draft_version=context['draft']['draft_version']), headers=self.case.headers)
+        self.assertEqual(response.status_code, 400, response.get_json())
+        self.assertEqual(self.case.explorer_history.protocol_binding(self.protocol)['version'], version)
+        self.assertTrue(first['event_uuid'])
+        event = next(row for row in self.case.events.rows if row['event_uuid'] == first['event_uuid'])
         self.assertEqual(event['action'], 'workbench_additions_accepted')
 
     def test_blocked_pending_counts_are_not_fabricated_empty_and_selected_eligible_addition_can_publish(self):

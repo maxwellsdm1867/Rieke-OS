@@ -162,6 +162,9 @@ class ExplorerHistory:
         if preview.get('additive_publication'):
             recipe['membership_kind'] = 'additive_union'
             recipe['additive_publication'] = copy.deepcopy(preview['additive_publication'])
+        if preview.get('pending_union_provenance'):
+            recipe['membership_kind'] = 'workbench_pending_union'
+            recipe['pending_union_provenance'] = copy.deepcopy(preview['pending_union_provenance'])
         recipe['content_sha256'] = checksum(recipe)
         # Keep the validated exact recipe separate from audit's human-readable
         # redaction pass; predicate literals must survive a restore unchanged.

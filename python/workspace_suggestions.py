@@ -149,6 +149,8 @@ class ProtocolSuggestions:
         # ISO timestamp inside each summary to select the actual latest run.
         for row in sorted(rows, key=lambda item: (item['summary']['created_at'], item['suggestion_uuid']), reverse=True):
             summary = row['summary']
+            if summary.get('kind') == 'workbench_pending_union':
+                continue
             latest.setdefault(summary['protocol_uuid'], copy.deepcopy(summary))
         scope_revision = self.service.source_scope()['revision']
         for identity, item in latest.items():

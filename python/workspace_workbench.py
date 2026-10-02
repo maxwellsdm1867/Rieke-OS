@@ -114,6 +114,29 @@ class ProtocolWorkbench:
         decisions = {row['epoch_uuid']: row for row in (self.tables[1] & key).to_dicts()}
         return header, decisions
 
+    def original_records(self, protocol):
+        return [row for row in (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
+                if row['summary'].get('kind') != 'workbench_pending_union']
+
+    def origin_recipes(self, protocol, candidate):
+        origins = []
+        for witness in candidate.get('pending_union_provenance', {}).get('origins', []):
+            summary, baseline, recipe = self.proposal(protocol, witness['candidate_revision_uuid'])
+            if (summary.get('kind') == 'workbench_pending_union' or recipe['content_sha256'] != witness['recipe_sha256']):
+                raise WorkbenchConflict('Cumulative candidate origin authority changed')
+            origins.append((summary, baseline, recipe))
+        return origins
+
+    def cumulative_draft(self, protocol, actor):
+        records = (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
+        records.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
+        for row in records:
+            if row['summary'].get('kind') == 'workbench_pending_union':
+                key = self.key(protocol, row['summary']['candidate_revision_uuid'], actor)
+                if (self.tables[0] & key).to_dicts():
+                    return self.draft(key)
+        return None
+
     def _additive_lineage(self, main, baseline, protocol, version, baseline_version):
         """A superset alone is insufficient: prove every actual parent transition."""
         seen = set()
@@ -168,10 +191,19 @@ class ProtocolWorkbench:
         annotation = TagPredicates(self.service).snapshot(fields)[1] if fields else None
         annotation_changed = (candidate.get('annotation_scope', {}).get('revision') !=
                               (annotation or {}).get('revision'))
+        origin_witnesses, origins_valid = [], True
+        for summary_origin, baseline_origin, origin in self.origin_recipes(protocol, candidate):
+            origin_fields = referenced_fields(origin['predicate'])
+            witness = TagPredicates(self.service).snapshot(origin_fields)[1] if origin_fields else None
+            annotation_changed |= origin.get('annotation_scope', {}).get('revision') != (witness or {}).get('revision')
+            origins_valid &= bool(main and self._additive_lineage(main, baseline_origin, protocol,
+                binding['version'], summary_origin['baseline_binding_version']))
+            origin_witnesses.append(dict(candidate_revision_uuid=origin['revision_uuid'], recipe_sha256=origin['content_sha256'],
+                annotation_scope_revision=(witness or {}).get('revision')))
         shared = getattr(self.service, 'shared_annotations', None)
         shared_revision = shared.snapshot()['revision'] if shared else None
         valid_base = bool(main and self._additive_lineage(main, baseline, protocol,
-            binding['version'], summary['baseline_binding_version']))
+            binding['version'], summary['baseline_binding_version'])) and origins_valid
         pending = {key: value for key, value in incoming.items() if key not in previous}
         evidence = dict(contract_version=1, project_uuid=self.project, protocol_uuid=protocol,
             actor=actor, candidate_revision_uuid=revision, candidate_recipe_sha256=candidate['content_sha256'],
@@ -181,6 +213,7 @@ class ProtocolWorkbench:
             expected_binding_version=binding['version'] if binding else 0,
             expected_query_revision=query_revision, source_scope_revision=scope['revision'],
             shared_annotations_revision=shared_revision, annotation_scope_revision=(annotation or {}).get('revision'),
+            origin_witnesses=origin_witnesses,
             draft_version=header['version'], decisions_sha256=checksum(decisions),
             selection_mode=header['selection_mode'], deferred=bool(header['deferred']),
             incoming_sha256=checksum(incoming), current_fingerprints_sha256=checksum(
@@ -221,12 +254,12 @@ class ProtocolWorkbench:
         if mode not in ('all', 'selected') or mode != context['selection_mode']:
             raise ValueError('Preview mode must agree with the saved draft selection_mode')
         if mode == 'all':
-            selected = {key for key in context['incoming'] if key not in context['ineligible'] | context['unavailable']
+            selected = {key for key in context['pending'] if key not in context['ineligible'] | context['unavailable']
                         and not self.decision(context, key)['excluded']}
         else:
             # Preserve exact saved intent. Explicitly selected blocked epochs
             # must reject publication, never disappear from a selected preview.
-            selected = {key for key in context['incoming'] if context['decisions'].get(key, {}).get('selected')
+            selected = {key for key in context['pending'] if context['decisions'].get(key, {}).get('selected')
                         and context['decisions'][key].get('reviewed') and not context['decisions'][key].get('excluded')}
         return selected
 
@@ -243,7 +276,7 @@ class ProtocolWorkbench:
             if not isinstance(item, dict) or set(item) - {'epoch_uuid', 'selected', 'reviewed', 'excluded'} or 'epoch_uuid' not in item:
                 raise ValueError('Malformed review decision')
             identity = str(uuid.UUID(item['epoch_uuid']))
-            if identity in seen or identity not in context['incoming'] or identity in context['unavailable']:
+            if identity in seen or identity not in context['pending'] or identity in context['unavailable']:
                 raise ValueError('Duplicate, changed or out-of-candidate review epoch')
             if not set(item) & {'selected', 'reviewed', 'excluded'} or any(type(value) is not bool for field, value in item.items() if field != 'epoch_uuid'):
                 raise ValueError('Review decisions must be boolean')
@@ -393,11 +426,11 @@ class ProtocolWorkbench:
             self.service._verified_source(self.service.manifests[source])
 
     def frozen_service(self, context):
-        if context['unavailable']:
+        if context['unavailable'] & context['pending'].keys():
             raise WorkbenchConflict('Frozen candidate metadata is unavailable or changed; browsing cannot reconstruct it')
         scoped = copy.copy(self.service)
         recipe = copy.copy(context['candidate'])
-        recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['incoming'].items()]
+        recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()]
         binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
         scoped.binding_provider = lambda protocol: binding if protocol == context['protocol_uuid'] else self.service.binding(protocol)
         scoped.binding_header_provider = None
@@ -409,7 +442,7 @@ class ProtocolWorkbench:
         def decisions(protocol, fingerprints):
             return {key: dict(included=True, reviewed=False, review_state='unreviewed',
                 tags=[], revision=0, metadata_fingerprint=value, approval_stale=False)
-                for key, value in fingerprints.items() if key in context['incoming']}
+                for key, value in fingerprints.items() if key in context['pending']}
         scoped.curation_provider = decisions
         return scoped
 
@@ -419,22 +452,40 @@ class ProtocolWorkbench:
         protocol = str(uuid.UUID(protocol))
         if protocol not in self.service.protocols:
             raise KeyError('Unknown protocol')
-        records = (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
+        records = self.original_records(protocol)
         records.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
         items, pending, eligible_union, cell_ids, witnesses = [], set(), set(), {}, []
+        cumulative = self.cumulative_draft(protocol, actor)
+        historical_conflict = False
+        if cumulative:
+            review_header, cumulative_decisions = cumulative
+        else:
+            from workspace_workbench_pending import draft_carry
+            try:
+                review_header, cumulative_decisions, _ = draft_carry(self, protocol, actor, self.service._fingerprints)
+            except WorkbenchConflict:
+                review_header, cumulative_decisions = {}, None
+                historical_conflict = True
+        raw_pending = {}
+        def excluded(context, key):
+            if cumulative_decisions is None:
+                return self.decision(context, key)['excluded']
+            decision = cumulative_decisions.get(key, {})
+            return decision.get('metadata_hash') == context['incoming'][key] and bool(decision.get('excluded'))
         for row in records:
             revision = row['summary']['candidate_revision_uuid']
             context = self.context(protocol, revision, actor)
+            raw_pending.update(context['pending'])
             accepted_receipts = (self.tables[2] & dict(project_uuid=self.project, protocol_uuid=protocol,
                 candidate_revision_uuid=revision)).to_dicts()
             eligible = set(context['pending']) - context['ineligible'] - context['unavailable'] - context['conflicts']
-            eligible = {key for key in eligible if not self.decision(context, key)['excluded']}
+            eligible = {key for key in eligible if not excluded(context, key)}
             blocked = not context['valid_base'] or context['annotation_changed'] or bool(context['conflicts'] or context['unavailable'] or context['blocked_main'])
             status = ('conflict' if blocked else 'source_blocked' if context['ineligible'] else
                       'accepted' if not context['pending'] and accepted_receipts else
                       'covered' if not context['pending'] else 'deferred' if context['deferred'] else
                       'pending' if context['main_revision_uuid'] == context['baseline_revision_uuid'] else 'pending_rebased')
-            unmerged = {key for key in context['pending'] if not self.decision(context, key)['excluded']}
+            unmerged = {key for key in context['pending'] if not excluded(context, key)}
             pending |= unmerged
             for key in unmerged:
                 saved_cell = row['summary'].get('incoming_cell_uuids', {}).get(key)
@@ -448,8 +499,15 @@ class ProtocolWorkbench:
                 status=status, pending_epoch_count=len(unmerged), eligible_pending_epoch_count=len(eligible) if not blocked else 0,
                 candidate_scope_revision=context['candidate_scope_revision'], draft_version=context['draft_version']))
             witnesses.append(context['candidate_scope_revision'])
+        # Initializing a draft must not create a queue-refresh/prepare feedback
+        # loop. Its initial version is neutral; actual subsequent CAS mutations
+        # and effective decisions remain queue fences. Recipe IDs are separate.
+        review_witness = dict(version_delta=max(review_header.get('version', 1) - 1, 0) if cumulative else 0,
+            deferred=bool(review_header.get('deferred')), historical_conflict=historical_conflict,
+            decisions={key: {field: saved[field] for field in ('metadata_hash', 'selected', 'reviewed', 'excluded')}
+                for key, saved in (cumulative_decisions or {}).items() if raw_pending.get(key) == saved['metadata_hash']})
         revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor,
-                                 witnesses=witnesses, items=items))
+                                 witnesses=witnesses, items=items, cumulative_review=review_witness))
         offset = 0
         if cursor:
             try:
@@ -471,7 +529,8 @@ class ProtocolWorkbench:
             eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
             queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
             capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
-                incoming_export=getattr(self, 'incoming_export', False)))
+                incoming_export=getattr(self, 'incoming_export', False),
+                cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False)))
 
 
 def public_receipt(receipt):
@@ -523,7 +582,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             manager.tables  # Declare native tables before transactions/annotation locks.
             predicates = []
             if revision:
-                predicates.append(manager.proposal(protocol, revision)[2]['predicate'])
+                candidate_recipe = manager.proposal(protocol, revision)[2]
+                predicates.append(candidate_recipe['predicate'])
+                predicates.extend(origin[2]['predicate'] for origin in manager.origin_recipes(protocol, candidate_recipe))
             else:
                 # Queue summaries read every candidate's annotation witness.
                 restriction = dict(project_uuid=manager.project)
@@ -701,7 +762,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         with guarded(protocol, revision) as owner:
             context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
             scoped = manager.frozen_service(context)
-            if epoch not in context['incoming']:
+            if epoch not in context['pending']:
                 raise ValueError('Trace epoch is outside the frozen incoming candidate')
             return jsonify(finish(context, scoped.trace(epoch, request.args.get('stream_uuid'),
                 int(request.args.get('start', 0)), int(request.args.get('count', 20000)))))
@@ -748,3 +809,5 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     from workspace_workbench_exports import register_workbench_export_routes
     register_workbench_export_routes(app, manager, app.extensions['curation_store'], db_lock, guarded, actor, body)
+    from workspace_workbench_pending import register_pending_routes
+    register_pending_routes(app, manager, db_lock, guarded, actor, body, public_context)

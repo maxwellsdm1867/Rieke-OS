@@ -114,6 +114,10 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
                 for row in selected:
                     if row.get('parent_revision_uuid'):
                         pending.add(row['parent_revision_uuid'])
+                    recipe = _column_value(row.get('recipe', {}), True)
+                    for origin in recipe.get('pending_union_provenance', {}).get('origins', []):
+                        pending.add(origin['candidate_revision_uuid'])
+                        pending.add(origin['baseline_revision_uuid'])
         else:
             rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s' + restriction,
                                     args=arguments, as_dict=True).fetchall()
