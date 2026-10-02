@@ -7,7 +7,7 @@ import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from '../resourceCache.js';
 
-export default function AnnotationTags({epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false}){
+export default function AnnotationTags({epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget}){
   const {profileUuid,profileName,openProfile,loading:profileLoading,error:profileError}=useAnnotationProfile();
   const [refreshAfter,setRefreshAfter]=useState(null);
   const [tabLocked,setTabLocked]=useState(()=>{try{return localStorage.getItem('workspace.tags.tabNavigation')!=='false';}catch{return true;}});
@@ -57,6 +57,8 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
         if(!isCurrent())return false;
         body=bulkAnnotationChange({targetUuids:selectedEpochs,profileUuid,tag,read});
       }else body=annotationChange({epoch,targetKind,profileUuid,annotations:annotationData,tag,remove});
+      if(!isCurrent())return false;
+      if(verifyTarget)await verifyTarget({signal:controller.signal});
       if(!isCurrent())return false;
       // A submitted durable mutation is never cancelled or automatically retried.
       const result=await api('/annotations',{method:'POST',body});

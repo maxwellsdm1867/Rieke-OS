@@ -15,6 +15,7 @@ import {COMMON_TREE_FIELDS,treeFieldLabel,treeFieldHint,treeFieldExamples,treeFi
 import {jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.js';
 import JointGroupingEditor from './JointGroupingEditor.jsx';
 import {useDelayedLoading} from './NavigationLoading.jsx';
+import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';
 
 const categories = ['Common', 'Parameters', 'Combinations', 'Conditions', 'Suggested', 'All'];
 const categoryLabel = category => category === 'Suggested' ? 'Recommended' : category === 'Parameters' ? 'Protocol settings' : category === 'All' ? 'All metadata' : category;
@@ -27,7 +28,7 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, readContext=null, onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
   const legacyPath=`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
@@ -40,6 +41,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
+  const groupTags=useTreeGroupTags({protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,onAnnotationsChanged,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false});
   const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.predicate,preferences:preferences.value});
   const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
     {enabled:!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
@@ -172,6 +174,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     return result;
   },[]);
   return <section className="tree-builder" aria-label="Tree builder">
+    {groupTags.dialog}
     <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);}} aria-expanded={expanded}>
       {expanded?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<GitBranch size={15}/><strong>Arrange tree</strong>
     </button><span>{order.length} / 8 levels</span></div>
@@ -195,6 +198,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
             {field?.components&&<div className="tb-joint-level">{field.components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{shortFieldLabel(fieldMap.get(key))}</span>)}</div>}
             <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:categoryLabel(field?.category) || 'Saved field'}{field?.components?' · all values match':''}</small>
           </div><div className="tb-step-actions">
+            <TreeGroupTagButton label="Tag this level" disabled={actionsDisabled||pending||!preview?.revision} count={preview?.total_epochs??preview?.count} onClick={event=>groupTags.open({path:[],count:preview?.total_epochs??preview?.count},field||{field:id},preview,event,{level:true})}/>
             {field?.components&&<button aria-label={`Separate ${field.label} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
             <button disabled={index===order.length-1} aria-label={`Move ${field?.label || id} later`} title="Move down one level" onClick={()=>move(index,1)}><ArrowDown size={13}/></button></>}
