@@ -1,6 +1,6 @@
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 
 export async function createInspectorHarness(){

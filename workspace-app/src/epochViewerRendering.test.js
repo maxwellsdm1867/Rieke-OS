@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {createElement} from 'react';
 import {renderToString} from 'react-dom/server';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import react from '@vitejs/plugin-react';
 
 let server;

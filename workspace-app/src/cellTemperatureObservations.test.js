@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 
 test('temperature opens all-epoch pages and inspects the exact source without a characterization family',async()=>{

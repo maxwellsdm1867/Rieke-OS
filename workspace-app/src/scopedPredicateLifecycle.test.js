@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 import {predicateToDraft} from './components/predicateState.js';
 const catalog={data:{fields:[{id:'parameters/x',label:'X',types:['number'],operators:['eq','gt']}],generation:{metadata:'m',typed:'t',source:'s',publication:'p',annotation:'a'}},supportsSummaries:false,reload(){}};

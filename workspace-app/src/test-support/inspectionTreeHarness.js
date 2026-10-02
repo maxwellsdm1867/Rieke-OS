@@ -1,7 +1,7 @@
 // Real mounted InspectionCellTree and hooks, with network/page I/O replaced.
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 
 export function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}

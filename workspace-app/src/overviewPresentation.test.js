@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 
 async function harness(t) {
   const beforeWindow=globalThis.window,beforeFrame=globalThis.requestAnimationFrame;
   globalThis.window={matchMedia:()=>({matches:true})};globalThis.requestAnimationFrame=callback=>callback();
-  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,cacheDir:'/tmp/rieke-arthur-proof/test-vite-cache',
+  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,
     server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
       name:'overview-no-io',enforce:'pre',resolveId(id){if(id==='./RecordingSize.jsx')return '\0recording-size';},
       load(id){if(id==='\0recording-size')return 'export default function RecordingSize(){return null;}';}

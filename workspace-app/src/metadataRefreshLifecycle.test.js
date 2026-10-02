@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 const text=node=>typeof node==='string'?node:node?.children?.map(text).join(' ')||'';
 test('metadata refresh remains a metadata operation and ignores legacy MATLAB mask proposals',async()=>{

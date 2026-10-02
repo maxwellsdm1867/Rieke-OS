@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {createElement} from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {renderToString} from 'react-dom/server';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import react from '@vitejs/plugin-react';
 let server;
 before(async()=>{server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,plugins:[react()],server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});});

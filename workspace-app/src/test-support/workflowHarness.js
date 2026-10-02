@@ -2,7 +2,7 @@
 // Browser layout/trace drawing and unrelated screens are deliberately omitted.
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';

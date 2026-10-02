@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 
 const testing = {state:'Current',installed:'0.1.3',channel:'unsigned-testing',manual_updates:true};
