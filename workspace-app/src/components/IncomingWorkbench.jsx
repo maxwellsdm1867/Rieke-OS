@@ -15,7 +15,7 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
   const [selected,setSelected]=useState(saved.selected||[]),[active,setActive]=useState(initialCandidateId||saved.active||null);
   const [exports,setExports]=useState(saved.exports||{}),[dialog,setDialog]=useState(null);
   const drafts=useRef(saved.drafts||{}),snapshot=useRef(null);
-  const items=cumulative?queue.data.candidates.filter(item=>item.pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
+  const items=cumulative?queue.data.candidates.filter(item=>!['accepted','covered'].includes(item.status)||item.pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
   const worklist=cumulative?items.filter(item=>selected.includes(reviewKey(item))):reviewWorklist({suggestions:items},selected);
   const current=items.find(item=>item.candidate_revision_uuid===active)||(cumulative&&active?{candidate_revision_uuid:active,protocol_uuid:protocolId}:null);
   snapshot.current={selected,active,exports,drafts:drafts.current};
