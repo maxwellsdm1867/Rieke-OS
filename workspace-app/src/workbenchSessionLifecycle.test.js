@@ -1,0 +1,65 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import React,{act} from 'react';
+import {createRoot} from 'react-dom/client';
+import {fileURLToPath} from 'node:url';
+import {createServer} from './test-support/isolatedVite.js';
+const {JSDOM}=await import(process.env.RIEKE_TEST_DOM_MODULE||'jsdom');
+const protocolId='session-protocol',candidateId='session-candidate',base=`/protocols/${protocolId}/workbench`,candidateRoot=`${base}/candidates/${candidateId}`;
+const cells=[{cell_uuid:'cell-one',epochs:2,label:'Cell one',date:'2026-10-02'}];
+const epochs=[1,2].map(index=>({epoch_uuid:`epoch-${index}`,cell_uuid:'cell-one',streams:[],curation:{included:true,tags:[]}}));
+const context=()=>({candidate_revision_uuid:candidateId,candidate_scope_revision:'scope-one',candidate_recipe_sha256:'recipe-one',expected_binding_version:1,protocol:{definition:{protocol_uuid:protocolId},query_revision:'scope-one',expected_binding_version:1,cells},draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1}});
+const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:candidateId,root:candidateRoot,candidate_scope_revision:'scope-one',queue_revision:'queue-one',context:context()};
+const queue={data:{queue_revision:'queue-one',pending_epoch_count:2,pending_cell_count:1,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false};
+async function harness(){
+ const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'}),calls=[],errors=[];
+ const key=`__workbenchSession${Math.random().toString(36).slice(2)}`,fixture={renders:0,viewer:null};globalThis[key]=fixture;
+ const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true,fetch:async(input,options={})=>{
+  const url=new URL(input,'http://localhost'),path=url.pathname.replace(/^\/api/,'');calls.push({path,method:options.method||'GET'});let value;
+  if(path===base+'/prepare')value=prepared;
+  else if(path===candidateRoot+'/context')value=context();
+  else if(path===candidateRoot+'/epochs')value={epochs,cells,total:2,offset:0,limit:60,query_revision:'scope-one',expected_binding_version:1};
+  else if(path.startsWith(candidateRoot+'/epochs/'))value=epochs.find(epoch=>epoch.epoch_uuid===path.split('/').at(-1));
+  else if(path==='/metadata/fields')value={fields:[]};
+  else throw Error(`Unexpected request ${path}`);
+  return {ok:true,status:200,json:async()=>value};
+ }};
+ const old=new Map(Object.keys(globals).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));for(const [key,value] of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
+ const originalError=console.error;console.error=(...args)=>errors.push(args.map(String).join(' '));
+ // Mount the actual Inspector and its resource/session effects; omit only
+ // visual children that require browser layout or canvas.
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{
+  name:'session-view-presentation',enforce:'pre',resolveId(source,importer){
+   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./NavigationLoading.jsx','./Common.jsx'].includes(source))return `\0session-${source}`;
+   if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='./ProtocolViewFilter.jsx')return '\0session-null';
+  },load(id){
+   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session');}`;
+   if(id==='\0session-./TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
+   if(id.startsWith('\0session-'))return 'export default function(){return null;}';
+  }
+ }]});
+ const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+ const container=document.getElementById('root');let mounted=createRoot(container),saved={},publications=0;
+ class Boundary extends React.Component{state={error:null};static getDerivedStateFromError(error){return {error};}render(){return this.state.error?React.createElement('p',{'data-loop-error':true},this.state.error.message):this.props.children;}}
+ // Bound the broken implementation so regression runs fail rather than hang.
+ function Shell(props){return React.createElement(Review,{protocolId,projectId:'project-one',queue,revision:0,session:saved,onSession:value=>{publications++;if(publications>80)throw Error('Session publication loop exceeded 80 updates');saved=value;},...props});}
+ const render=props=>act(async()=>mounted.render(React.createElement(React.StrictMode,null,React.createElement(Boundary,null,React.createElement(Shell,props)))));
+ return {container,calls,errors,fixture,get saved(){return saved;},get publications(){return publications;},render,async settle(){await act(async()=>{await new Promise(resolve=>setTimeout(resolve,120));});},async remount(){await act(async()=>mounted.unmount());mounted=createRoot(container);await render();},async close(){await act(async()=>mounted.unmount());await server.close();console.error=originalError;dom.window.close();delete globalThis[key];for(const [key,value] of old)value?Object.defineProperty(globalThis,key,value):delete globalThis[key];}};
+}
+
+test('real Inspector session effects settle inside cumulative Workbench and preserve navigation through refresh/remount',async()=>{
+ const h=await harness();try{
+  await h.render();await h.settle();
+  assert.equal(h.container.querySelector('[data-loop-error]')?.textContent||null,null,'Viewer session publication must not feed an endless parent update');
+  assert.ok(h.container.querySelector('[data-real-inspector]'));
+  assert.ok(h.publications<20,`Initial view published ${h.publications} times`);
+  const initial=h.publications;await h.settle();assert.equal(h.publications,initial,'idle viewer must stop publishing');
+  await act(async()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();
+  assert.equal(h.saved.drafts[candidateId].viewer.focused,'epoch-2');
+  for(let revision=1;revision<=3;revision++){await h.render({revision});await h.settle();assert.equal(h.saved.drafts[candidateId].viewer.focused,'epoch-2');assert.equal(h.container.querySelector('[data-loop-error]')?.textContent||null,null);const count=h.publications;await h.settle();assert.equal(h.publications,count);}
+  await h.remount();await h.settle();assert.equal(h.saved.drafts[candidateId].viewer.focused,'epoch-2');
+  assert.equal(h.calls.filter(call=>call.path===base+'/prepare').length,1);
+  assert.deepEqual(h.calls.filter(call=>call.method!=='GET').map(call=>call.path),[base+'/prepare'],'browsing must not save a draft or accept/export');
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
