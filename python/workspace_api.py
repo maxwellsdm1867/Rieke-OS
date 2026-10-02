@@ -453,6 +453,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if isinstance(error, DesktopProjectCompatibilityError):
                 return jsonify(error=str(error), code=error.code, requires_migration=True,
                                migration_endpoint='/api/projects/migrate-source'), 409
+        from workspace_frontend import ProjectHandoffUnavailable
+        if isinstance(error, ProjectHandoffUnavailable):
+            return jsonify(error=str(error), code='project_handoff_unavailable'), 409
         from workspace_shared_tag_index import SharedTagsChanged
         if isinstance(error, (RevisionConflict, StaleWorkspace, SharedTagsChanged)):
             return jsonify(error=str(error), code="stale_workspace"), 409

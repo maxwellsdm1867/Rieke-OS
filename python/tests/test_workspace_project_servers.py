@@ -23,6 +23,8 @@ class ProjectServerTests(unittest.TestCase):
         bootstrap = patch('workspace_project_database.ensure_project_database')
         bootstrap.start()
         self.addCleanup(bootstrap.stop)
+        frontend = patch('workspace_project_servers.require_project_page')
+        frontend.start(); self.addCleanup(frontend.stop)
         self.identity = str(uuid.uuid4())
         (self.path / 'project.json').write_text(json.dumps({'format': 'recording-project', 'version': 1,
             'project_uuid': self.identity, 'name': 'Project'}))
@@ -97,6 +99,20 @@ class ProjectServerTests(unittest.TestCase):
             result = open_project(self.path, self.identity, self.path)
             self.assertEqual(result['project_uuid'], self.identity)
             spawn.assert_not_called()
+
+    def test_healthy_api_with_broken_project_page_is_not_reused_or_restarted(self):
+        from workspace_frontend import ProjectHandoffUnavailable
+        from workspace_startup_registry import read_project_index
+        before = read_project_index()
+        write_server_record(self.path, self.identity, 8877)
+        health = {'status': 'ready', 'project_uuid': self.identity, 'project_path': str(self.path.resolve())}
+        with patch('workspace_project_servers.urlopen', return_value=io.StringIO(json.dumps(health))), \
+                patch('workspace_project_servers.require_project_page', side_effect=ProjectHandoffUnavailable('selected project service cannot load')), \
+                patch('workspace_project_servers.subprocess.Popen') as spawn:
+            with self.assertRaisesRegex(ProjectHandoffUnavailable, 'cannot load'):
+                open_project(self.path, self.identity, self.path)
+            spawn.assert_not_called()
+        self.assertEqual(read_project_index(), before)
 
     def test_explicit_folder_wins_over_same_identity_native_copy(self):
         copy = self.path.parent / 'copy'

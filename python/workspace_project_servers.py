@@ -13,6 +13,7 @@ from urllib.request import urlopen
 from recording_workspace import write_json
 from workspace_projects import list_projects, list_managed_projects
 from workspace_startup_registry import remember_project_result
+from workspace_frontend import ProjectHandoffUnavailable, require_project_page
 
 
 def server_record(project_dir):
@@ -63,7 +64,12 @@ def ready_url(project_dir, identity):
                 if (record.get('app_release') != version or value.get('app_release') != version
                         or record.get('project_path') != str(Path(project_dir).resolve())):
                     raise RuntimeError('A project service from a different release or folder is still active. Close it before reopening.')
+            require_project_page(port, project_dir, identity)
             return url + '/'
+    except ProjectHandoffUnavailable:
+        # The service exists but is incompatible/unusable. Do not mistake this
+        # for a free port and launch a second owner against its native database.
+        raise
     except (OSError, ValueError):
         pass
     return None

@@ -172,6 +172,9 @@ def create_launcher(root, retinanalysis_dir, *, application_dir=None):
     def error(error):
         if isinstance(error,HTTPException):
             return jsonify(error=error.description),error.code
+        from workspace_frontend import ProjectHandoffUnavailable
+        if isinstance(error, ProjectHandoffUnavailable):
+            return jsonify(error=str(error), code='project_handoff_unavailable'), 409
         if os.environ.get('RIEKE_DESKTOP_MODE') == '1':
             from workspace_desktop import DesktopProjectCompatibilityError
             if isinstance(error, DesktopProjectCompatibilityError):
