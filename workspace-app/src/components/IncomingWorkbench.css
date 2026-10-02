@@ -69,15 +69,11 @@
 
 .incoming-bar-scope.is-pending{color:var(--warning-ink);background:var(--warning-soft);border-color:var(--warning-border)}
 
-.incoming-inspection-tools{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px 12px;padding:4px 0 8px;min-width:0}
-.incoming-browser-controls{margin-left:auto;min-width:0}
-.incoming-browser-controls>.compact-inspector-toolbar{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px;padding:0;border:0;min-height:0;position:relative;z-index:40}
-.incoming-browser-controls .spacer{display:none}
 
 /* Match the shared Inspector's full-height pane layout inside the review wrappers. */
 .incoming-workbench{height:100%;min-height:0;max-width:100%;overflow:auto}
 .incoming-cumulative,.incoming-review,.incoming-browser{display:flex;flex-direction:column;flex:1;min-height:0;min-width:0;max-width:100%}
-.incoming-cumulative>:not(.incoming-review),.incoming-review>:not(.incoming-browser),.incoming-browser>.incoming-inspection-tools{flex-shrink:0}
+.incoming-cumulative>:not(.incoming-review),.incoming-review>:not(.incoming-browser){flex-shrink:0}
 .incoming-browser>.inspector{flex:1;height:auto;min-height:240px;width:100%;max-width:100%}
 .incoming-action-bar,.incoming-selection-tools{max-width:100%;box-sizing:border-box}
 .incoming-bar-actions>button{max-width:100%;white-space:normal}
@@ -89,3 +85,16 @@
 .incoming-header-filter .protocol-view-filter-panel{top:calc(100% + 4px);right:14px;width:min(560px,calc(100% - 28px));max-width:calc(100% - 28px)}
 
 .app-shell:has(.incoming-workbench){min-width:0}
+
+/* Incoming adds one row; all Inspector controls and panes keep their Main layout. */
+.incoming-workbench:has(.incoming-review),.incoming-workbench:has(.incoming-cumulative){padding:0;gap:0}
+.incoming-review>.incoming-action-bar,.incoming-cumulative>.incoming-action-bar{position:relative;min-height:44px;padding:6px 14px;gap:6px 12px;border-top:0}
+.incoming-action-bar .incoming-bar-metrics{gap:14px}
+.incoming-action-bar .incoming-bar-metrics strong{font-size:24px}
+.incoming-action-bar .incoming-review-details{position:static;flex-shrink:0}
+.incoming-action-bar .incoming-review-details>summary{padding:6px;white-space:nowrap}
+.incoming-action-bar .incoming-review-details>div{position:absolute;right:14px;top:calc(100% + 6px);z-index:60;width:min(560px,calc(100% - 28px));max-height:calc(100vh - 180px);overflow:auto;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 8px 28px color-mix(in srgb,var(--shadow-base) 15%,transparent)}
+.incoming-action-bar .incoming-selection-tools{padding:0 0 8px}
+
+.incoming-review .incoming-bar-actions{gap:4px}
+.incoming-review .incoming-bar-actions>button{padding-inline:8px}
