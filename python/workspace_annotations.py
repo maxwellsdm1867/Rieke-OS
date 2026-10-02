@@ -5,6 +5,7 @@ never copied rows. Profiles are local attribution, not authenticated accounts.
 """
 from __future__ import annotations
 import contextlib
+import contextvars
 import copy
 import datetime as dt
 import getpass
@@ -12,6 +13,7 @@ import hashlib
 import json
 import re
 import time
+import threading
 import uuid
 from collections import Counter
 from workspace_author_preferences import selected_author, author_profiles, remember_author
@@ -80,6 +82,8 @@ class SharedAnnotations:
             _,_,self.Event,_=workspace_tables(self.dj)
         else: self.Profile,self.Annotation,self.Event=tables
         self._vocabulary=None
+        self._batch_lock=contextvars.ContextVar("annotation_batch_lock",default=None)
+        self._batch_transaction=contextvars.ContextVar("annotation_batch_transaction",default=None)
 
     @property
     def default_profile(self):
@@ -93,8 +97,13 @@ class SharedAnnotations:
         name=hashlib.sha256((self.project_uuid+'shared-annotations').encode()).hexdigest()
         if connection.query(f"SELECT GET_LOCK('{name}', 10)").fetchone()[0]!=1:
             raise RuntimeError('Another shared annotation update is running; retry shortly')
+        lease={'connection':connection,'native':getattr(connection,'_conn',None),
+               'thread':threading.get_ident(),'active':True}
+        reset=self._batch_lock.set(lease)
         try: yield
         finally:
+            lease['active']=False
+            self._batch_lock.reset(reset)
             with contextlib.suppress(Exception):connection.query(f"SELECT RELEASE_LOCK('{name}')")
 
     def _event(self,action,actor,payload):
@@ -360,7 +369,47 @@ class SharedAnnotations:
         result['targets']=self.read_targets(kind,ids)
         return result
 
-    def apply_batch(self,operations,actor,profiles=None,audit_context=None,external_receipt=None,include_undo=False):
+    def _require_batch_lock(self):
+        connection=self.dj.conn()
+        lease=self._batch_lock.get()
+        if (lease is None or not lease['active'] or lease['connection'] is not connection
+                or lease['native'] is not getattr(connection,'_conn',None)
+                or lease['thread']!=threading.get_ident()):
+            raise RuntimeError('Acquire the shared annotation guard before a batch transaction')
+        return connection
+
+    @contextlib.contextmanager
+    def _public_batch_transaction(self):
+        # Public APIs own this transaction. Private callers instead hold their
+        # native outer transaction so a ledger and annotations commit together.
+        connection=self._require_batch_lock()
+        with connection.transaction:
+            lease={'connection':connection,'thread':threading.get_ident(),'active':True}
+            reset=self._batch_transaction.set(lease)
+            try:yield
+            finally:
+                lease['active']=False
+                self._batch_transaction.reset(reset)
+
+    def _apply_batch_locked(self,operations,actor,profiles=None,audit_context=None,
+                            external_receipt=None,include_undo=False):
+        """Mutate inside an already guarded transaction; never commit or notify.
+
+        Private native callers acquire DB/registration/shared/sorted protocol
+        guards before starting their outer transaction. They record their ledger
+        in that same transaction, and call _after_batch_commit only after success.
+        This primitive preserves explicit-target eligibility and API limits; it
+        is not complete-group or source/generation authorization.
+        """
+        connection=self._require_batch_lock()
+        active=getattr(connection,'in_transaction',None)
+        lease=self._batch_transaction.get()
+        # Old transactional doubles do not expose in_transaction. Only the
+        # public wrapper's live context may prove their transaction lifetime.
+        public=(lease is not None and lease['active'] and lease['connection'] is connection
+                and lease['thread']==threading.get_ident())
+        if active is not True and not (active is None and public):
+            raise RuntimeError('Annotation batch requires an active native transaction')
         actor=text(actor)
         if not isinstance(operations,list) or not (0 if external_receipt else 1)<=len(operations)<=MAX_OPERATIONS:raise ValueError('Use 1–2000 annotation operations')
         if profiles is not None and not isinstance(profiles,list):raise ValueError('Profiles must be an array')
@@ -376,59 +425,73 @@ class SharedAnnotations:
             if key in seen:raise ValueError('Duplicate target/author operation')
             seen.add(key);parsed.append((key,revision,add,remove))
         before=[];after=[];changed=0;event=None
-        with self.lock(),self.dj.conn().transaction:
-            incoming=list(profiles or [])
-            if any(not isinstance(p,dict) for p in incoming):raise ValueError('Invalid profile definition')
-            default=self.default_profile
-            if any(key[2]==default['profile_uuid'] for key,_,_,_ in parsed) and not any(p.get('profile_uuid')==default['profile_uuid'] for p in incoming):
-                incoming.append({k:default[k] for k in ('profile_uuid','display_name')})
-            used_authors={key[2] for key,_,_,_ in parsed}
-            for profile in author_profiles():
-                if profile['profile_uuid'] in used_authors and not any(p.get('profile_uuid')==profile['profile_uuid'] for p in incoming):
-                    incoming.append(profile)
-            pending_profiles=[]
-            authors=self._ensure_profiles(incoming,actor,pending_profiles)
-            # The transaction only needs the explicitly targeted author sets.
-            # Other targets/profiles cannot affect these optimistic revisions.
-            relation=self.Annotation&{'project_uuid':self.project_uuid}
-            requested=[{'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2]} for key,_,_,_ in parsed]
-            saved={}
-            for offset in range(0,len(requested),250):
-                for row in (relation&requested[offset:offset+250]).to_dicts():
-                    saved[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
-            for key,expected,add,remove in parsed:
-                if key[2] not in authors:raise ValueError('Select an existing local annotation profile')
-                old=saved.get(key);revision=old['revision'] if old else 0
-                if revision!=expected:raise RevisionConflict({'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2],'revision':revision})
-                previous=tags(old['tags']) if old else []
-                current=sorted((set(previous)|set(add))-set(remove))
-                if len(current)>100:raise ValueError('A target/author may have at most 100 current tags')
-                if set(previous)==set(current):continue
-                row={'project_uuid':self.project_uuid,'target_kind':key[0],'target_uuid':key[1],
-                     'profile_uuid':key[2],'tags':current,'author_name':authors[key[2]]['display_name'],
-                     'revision':revision+1,'updated_at':dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)}
-                before.append({**{k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name')},'revision':revision,'tags':previous})
-                after.append({k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')})
-                if old:self.Annotation.update1(row)
-                else:self.Annotation.insert1(row)
-                changed+=1
-            if changed:
-                used_authors={row['profile_uuid'] for row in after}
-                for profile in pending_profiles:
-                    if profile['profile_uuid'] in used_authors:self.Profile.insert1(profile)
-                event=self._event('shared_annotations_updated',actor,{'before':before,'after':after,
-                    'target_count':changed,'attribution':'client_selected_local_profile',
-                    **({'exchange':audit_context} if audit_context else {})})
-            if external_receipt is not None:
-                # Receipt and additions commit together, even for an all-unchanged message.
-                event=self._event('external_annotation_received',actor,{'receipt':external_receipt})
+        incoming=list(profiles or [])
+        if any(not isinstance(p,dict) for p in incoming):raise ValueError('Invalid profile definition')
+        default=self.default_profile
+        if any(key[2]==default['profile_uuid'] for key,_,_,_ in parsed) and not any(p.get('profile_uuid')==default['profile_uuid'] for p in incoming):
+            incoming.append({k:default[k] for k in ('profile_uuid','display_name')})
+        used_authors={key[2] for key,_,_,_ in parsed}
+        for profile in author_profiles():
+            if profile['profile_uuid'] in used_authors and not any(p.get('profile_uuid')==profile['profile_uuid'] for p in incoming):
+                incoming.append(profile)
+        pending_profiles=[]
+        authors=self._ensure_profiles(incoming,actor,pending_profiles)
+        # The transaction only needs the explicitly targeted author sets.
+        # Other targets/profiles cannot affect these optimistic revisions.
+        relation=self.Annotation&{'project_uuid':self.project_uuid}
+        requested=[{'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2]} for key,_,_,_ in parsed]
+        saved={}
+        for offset in range(0,len(requested),250):
+            for row in (relation&requested[offset:offset+250]).to_dicts():
+                saved[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
+        pending_rows=[]
+        for key,expected,add,remove in parsed:
+            if key[2] not in authors:raise ValueError('Select an existing local annotation profile')
+            old=saved.get(key);revision=old['revision'] if old else 0
+            if revision!=expected:raise RevisionConflict({'target_kind':key[0],'target_uuid':key[1],'profile_uuid':key[2],'revision':revision})
+            previous=tags(old['tags']) if old else []
+            current=sorted((set(previous)|set(add))-set(remove))
+            if len(current)>100:raise ValueError('A target/author may have at most 100 current tags')
+            if set(previous)==set(current):continue
+            row={'project_uuid':self.project_uuid,'target_kind':key[0],'target_uuid':key[1],
+                 'profile_uuid':key[2],'tags':current,'author_name':authors[key[2]]['display_name'],
+                 'revision':revision+1,'updated_at':dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)}
+            before.append({**{k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name')},'revision':revision,'tags':previous})
+            after.append({k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')})
+            pending_rows.append((old,row))
+        # Validate every target/profile and tag limit before the first write.
+        for old,row in pending_rows:
+            if old:self.Annotation.update1(row)
+            else:self.Annotation.insert1(row)
+        changed=len(pending_rows)
         if changed:
-            self._vocabulary=None
-            on_commit=getattr(self,'on_commit',None)
-            if on_commit is not None:on_commit()
+            used_authors={row['profile_uuid'] for row in after}
+            for profile in pending_profiles:
+                if profile['profile_uuid'] in used_authors:self.Profile.insert1(profile)
+            event=self._event('shared_annotations_updated',actor,{'before':before,'after':after,
+                'target_count':changed,'attribution':'client_selected_local_profile',
+                **({'exchange':audit_context} if audit_context else {})})
+        if external_receipt is not None:
+            # Receipt and additions commit together, even for an all-unchanged message.
+            event=self._event('external_annotation_received',actor,{'receipt':external_receipt})
         from workspace_undo import annotation_inverse
         return {'changed':changed,'event_uuid':event,'annotations':after,
             **({'undo':annotation_inverse(before,after)} if include_undo else {})}
+
+    def _after_batch_commit(self,result):
+        """Invalidate readers only after the caller's outer transaction succeeds."""
+        if getattr(self.dj.conn(),'in_transaction',False):
+            raise RuntimeError('Annotation notifications must follow the committed transaction')
+        if result['changed']:
+            self._vocabulary=None
+            on_commit=getattr(self,'on_commit',None)
+            if on_commit is not None:on_commit()
+
+    def apply_batch(self,operations,actor,profiles=None,audit_context=None,external_receipt=None,include_undo=False):
+        with self.lock(),self._public_batch_transaction():
+            result=self._apply_batch_locked(operations,actor,profiles,audit_context,external_receipt,include_undo)
+        self._after_batch_commit(result)
+        return result
 
     def suggestions(self,query='',limit=30):
         if not isinstance(query,str) or len(query)>255 or type(limit) is not int or not 1<=limit<=100:raise ValueError('Use a tag prefix up to 255 characters and limit 1–100')
