@@ -1,0 +1,11 @@
+test_all_native_predicates_structural_pages_and_exact_errors (__main__.IntegratedServiceTruth.test_all_native_predicates_structural_pages_and_exact_errors) ... ok
+test_annotation_native_fallback_equal_membership_and_protocol_curation_ownership (__main__.IntegratedServiceTruth.test_annotation_native_fallback_equal_membership_and_protocol_curation_ownership) ... ok
+test_complete_registry_requested_and_full_facets_and_detail (__main__.IntegratedServiceTruth.test_complete_registry_requested_and_full_facets_and_detail) ... ok
+test_cursor_query_publication_source_and_tamper_faults (__main__.IntegratedServiceTruth.test_cursor_query_publication_source_and_tamper_faults) ... ok
+test_excluded_source_and_frozen_protocol_binding_context (__main__.IntegratedServiceTruth.test_excluded_source_and_frozen_protocol_binding_context) ... ok
+test_pending_ready_cancel_read_failure_and_stale_generation_fences (__main__.IntegratedServiceTruth.test_pending_ready_cancel_read_failure_and_stale_generation_fences) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 23.658s
+
+OK

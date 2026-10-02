@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "tested_implementation_commit": "9913b76b271e0de845c5b7a935efadde1917dab0",
+  "canonical_base": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "focus": {
+    "tests": 130,
+    "subtests": 892
+  },
+  "compatibility": {
+    "tests": 154,
+    "subtests": 113
+  },
+  "independent_harness_tests": 21,
+  "typed_fixture": {
+    "checks": 22253,
+    "fields": 164,
+    "predicate_scenarios": 2023
+  },
+  "integrated_service_tests": 6,
+  "frontend_tests": 374,
+  "frontend_build": "passed; existing >500kB chunk advisory",
+  "docker_used": false,
+  "heavy_benchmark_rerun": false,
+  "rendered_native_e2e": false,
+  "native_mysql_opt_in_run": false,
+  "original_local_receipt_sha256": {
+    "rieke-migration-python.log": "76fb8c8b53f91b034141bb08a75eb769f5d3471b48f038a0cc72d2f0825521a9",
+    "rieke-migration-aggregate-python.log": "b653dcb100da709d28ecb0839b2eab16112a4b31440f8e0bd1eaf7501838c2db",
+    "rieke-migration-qualification.log": "ac338519cecd0f6978d29ed25f6c68e6d6a6bea829ce4953be90c32183204f97",
+    "rieke-migration-node-final.log": "79032c07c0ee6f45e9a002b325e42fbb12765c4f896de8204d10250da1bd13ec",
+    "rieke-migration-build-final.log": "5d1c56dede48dea79ffbc2c81169a56fb75892cab5820671493ba3d1eec5abbb",
+    "rieke-migration-integrated-service.json": "9aac99e0e8d0588b0848ccc5f1d40f37078d62cb4217d234b394bb21bc104130",
+    "rieke-migration-integrated-service.log": "a9ac4088a3fd1229ac48af87a94d423c5769d3e9f0f2d3cdcf4400cf42e76499",
+    "rieke-migration-typed.json": "89cdf361c7483d8e3e311a46049fc55ea9809769e5423d91efed78b13fc24a72"
+  },
+  "public_receipt_sha256": {
+    "rieke-migration-aggregate-python.log": "b653dcb100da709d28ecb0839b2eab16112a4b31440f8e0bd1eaf7501838c2db",
+    "rieke-migration-build-final.log": "5d1c56dede48dea79ffbc2c81169a56fb75892cab5820671493ba3d1eec5abbb",
+    "rieke-migration-integrated-service.json": "ce73504cdffcafd841a23bcad786119ef6605a86c98065fbb0f17eac91111c2f",
+    "rieke-migration-integrated-service.log": "a9ac4088a3fd1229ac48af87a94d423c5769d3e9f0f2d3cdcf4400cf42e76499",
+    "rieke-migration-node-final.log": "386fbbeb1e5d4088c623f5bb4bf0537763376d2535924ebc44cb781ba235c3d8",
+    "rieke-migration-python.log": "76fb8c8b53f91b034141bb08a75eb769f5d3471b48f038a0cc72d2f0825521a9",
+    "rieke-migration-qualification.log": "ac338519cecd0f6978d29ed25f6c68e6d6a6bea829ce4953be90c32183204f97",
+    "rieke-migration-typed.json": "89cdf361c7483d8e3e311a46049fc55ea9809769e5423d91efed78b13fc24a72"
+  },
+  "limitations": [
+    "Original million timings target e6c996a, not this reconciled commit.",
+    "Six private MAT fixtures and acquired H5/database corpora remain external.",
+    "Source-authority replay and full rendered native scientific E2E remain open.",
+    "Saved project rename/path update blocked by absent project update tool and failed supported UI initialization.",
+    "Archived historical changes.patch retains whitespace required for unified-diff context; active code passes diff --check.",
+    "Final publishing commit adds these verification documents only; application and qualification source remains exactly that of the tested implementation commit."
+  ]
+}

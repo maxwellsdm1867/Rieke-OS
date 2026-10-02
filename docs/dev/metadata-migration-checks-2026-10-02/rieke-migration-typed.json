@@ -1,0 +1,911 @@
+{
+  "status": "passed",
+  "corpus": "small hand-authored native fixture",
+  "truth_sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72",
+  "fields": 164,
+  "checks": 22253,
+  "page_walks": [
+    {
+      "scope": null,
+      "fields": 164,
+      "pages": 4,
+      "ordered_ids_sha256": "eff1eb1fa1a2b55de2dd103e552564f7046e2b76c659a01596ea5443dcacbe65"
+    },
+    {
+      "scope": null,
+      "fields": 2,
+      "pages": 4,
+      "ordered_ids_sha256": "eff1eb1fa1a2b55de2dd103e552564f7046e2b76c659a01596ea5443dcacbe65"
+    },
+    {
+      "scope": null,
+      "fields": 0,
+      "pages": 4,
+      "ordered_ids_sha256": "eff1eb1fa1a2b55de2dd103e552564f7046e2b76c659a01596ea5443dcacbe65"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064"
+      },
+      "fields": 164,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064"
+      },
+      "fields": 2,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064"
+      },
+      "fields": 0,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": {
+        "block": "00000000-0000-0000-0000-0000000000c8"
+      },
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "10c53fe88d1bef1acd1b226af2c50d2e46ac3902b263e55f8c6b65cb73a13fad"
+    },
+    {
+      "scope": {
+        "block": "00000000-0000-0000-0000-0000000000c8"
+      },
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "10c53fe88d1bef1acd1b226af2c50d2e46ac3902b263e55f8c6b65cb73a13fad"
+    },
+    {
+      "scope": {
+        "block": "00000000-0000-0000-0000-0000000000c8"
+      },
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "10c53fe88d1bef1acd1b226af2c50d2e46ac3902b263e55f8c6b65cb73a13fad"
+    },
+    {
+      "scope": {
+        "group": "00000000-0000-0000-0000-00000000012c"
+      },
+      "fields": 164,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": {
+        "group": "00000000-0000-0000-0000-00000000012c"
+      },
+      "fields": 2,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": {
+        "group": "00000000-0000-0000-0000-00000000012c"
+      },
+      "fields": 0,
+      "pages": 2,
+      "ordered_ids_sha256": "e8bf07e30801e2741e0bf4ceb8e83e65f092faaf80ea93c0bdd0782d6c304533"
+    },
+    {
+      "scope": [],
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": [],
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": [],
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": [
+        "00000000-0000-0000-0000-000000000003",
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000003",
+        "foreign"
+      ],
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    },
+    {
+      "scope": [
+        "00000000-0000-0000-0000-000000000003",
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000003",
+        "foreign"
+      ],
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    },
+    {
+      "scope": [
+        "00000000-0000-0000-0000-000000000003",
+        "00000000-0000-0000-0000-000000000001",
+        "00000000-0000-0000-0000-000000000003",
+        "foreign"
+      ],
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    },
+    {
+      "scope": {
+        "block": "empty-block"
+      },
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "block": "empty-block"
+      },
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "block": "empty-block"
+      },
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 164,
+      "pages": 3,
+      "ordered_ids_sha256": "9c60c687b7f8be37f904c436b825c90028acc67d6141be8f983e0ade8ee59378"
+    },
+    {
+      "scope": {
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 2,
+      "pages": 3,
+      "ordered_ids_sha256": "9c60c687b7f8be37f904c436b825c90028acc67d6141be8f983e0ade8ee59378"
+    },
+    {
+      "scope": {
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 0,
+      "pages": 3,
+      "ordered_ids_sha256": "9c60c687b7f8be37f904c436b825c90028acc67d6141be8f983e0ade8ee59378"
+    },
+    {
+      "scope": {
+        "sources": []
+      },
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "sources": []
+      },
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "sources": []
+      },
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064",
+        "sources": [
+          "source-B"
+        ]
+      },
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064",
+        "sources": [
+          "source-B"
+        ]
+      },
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "cell": "00000000-0000-0000-0000-000000000064",
+        "sources": [
+          "source-B"
+        ]
+      },
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "scope": {
+        "epoch_ids": [
+          "00000000-0000-0000-0000-000000000003",
+          "00000000-0000-0000-0000-000000000001",
+          "00000000-0000-0000-0000-000000000003",
+          "foreign"
+        ],
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 164,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    },
+    {
+      "scope": {
+        "epoch_ids": [
+          "00000000-0000-0000-0000-000000000003",
+          "00000000-0000-0000-0000-000000000001",
+          "00000000-0000-0000-0000-000000000003",
+          "foreign"
+        ],
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 2,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    },
+    {
+      "scope": {
+        "epoch_ids": [
+          "00000000-0000-0000-0000-000000000003",
+          "00000000-0000-0000-0000-000000000001",
+          "00000000-0000-0000-0000-000000000003",
+          "foreign"
+        ],
+        "sources": [
+          "source-A"
+        ]
+      },
+      "fields": 0,
+      "pages": 1,
+      "ordered_ids_sha256": "c32d3e680d7985ad20f463ddd4a0967a0064f64dcaf5b8c57ed1bf21b415ca0e"
+    }
+  ],
+  "integrated_service": false,
+  "real_million": false,
+  "timings_certify_ui_slo": false,
+  "validation_rejections": 24,
+  "dto_detail_and_cursor_checked": true,
+  "predicate_scenarios": 2023,
+  "membership_sha256": "eff1eb1fa1a2b55de2dd103e552564f7046e2b76c659a01596ea5443dcacbe65",
+  "adapter": "typed",
+  "implementation_commit": "9913b76b271e0de845c5b7a935efadde1917dab0",
+  "runtime": {
+    "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+    "sqlite": "3.50.4",
+    "platform": "macOS-14.2-arm64-arm-64bit"
+  },
+  "source_hashes": {
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_api.py": "ae91aa322ab0a1f1894c861f59d51e58aaafc19e36ed4751ba08aec80ed34a82",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_service.py": "29ee50ca535b333c87115543d5c26d5efb9fe220f1d1ff646aa2ebcb8ad807aa",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_typed_lifecycle.py": "40881d1b557e07f80040cca047be1dd5c9ec05d54a69b47645236b023c0dc7ad",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_explore_queries.py": "5de8d99113f0c2428f2150d6338720dc1d8ffba47ccc6ef1f6b092fa42932268",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_typed_query.py": "583da462362365c09de437a6b4706ab84a0707010dd7bcaa798b4425fb1e9dea",
+    "python/workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001"
+  },
+  "wall_seconds": 8.814250834053382,
+  "harness_sha256": {
+    "million_controls.py": "8793b2d13f54026932739a8b01be731c2f0728c8dd116f5b503c989e80f60e4e",
+    "run.py": "84aea5c4d57dbb6dece62baa6e1746d218a9ff5c559a3113d15bee9fab9d2b71",
+    "million_storage.py": "5e65e60aa6aaa7ce41b6f1f0ae6a52758c209ea8c982b3995f8ace935d096d76",
+    "core_adapter.py": "b76bb30eaa41a32c2bb7a414f3f4e05dd469afb909b38968aaa6055f0cdd06ac",
+    "checks.py": "1743687926a2f275d495d568fea360f6b5b8a786a5aa415f995761f7fd8de9dd",
+    "replay_gate.py": "7b3ccf602733c1ae3017dd6c01024d60d658ab257bcb18d8838d8e0abed59d9e",
+    "integrated_service.py": "e84b83b5d3784cb1b6f5487dd0a60dd16451b6c1cc8a4c1c00c6b5264db75a8d",
+    "__init__.py": "ffc1ce83f00dca4743a61f245edd638902aa55b82cc4e9b2191e2ed40aaa7927",
+    "native.py": "19559a0ea085b0c924f83cf0b3ba6ed04b80e82a6868f71efbfa06348c6280d2",
+    "million_report.py": "051ad31a2c662918c867864fc7f962fdfd88cb3a71bb3aa560b06d9a13653cab",
+    "truth.py": "e364fabbc2d7fef4a4587931940371230f2fcd738e986c2d5abe17c1da89cf8b",
+    "test_qualification.py": "8e3168e634fe99246fa95670cf8886357a09b1d745066bea89858b80a3c464de",
+    "timing.py": "dd263febabfe2f0672db3de276552bcd785337c16f8d13ab7c6809d144764596",
+    "core_faults.py": "7f50f9e4d5a2afa2fac739d754f5fe68af76911e95089b2dcd561ef976114052",
+    "million_worker.py": "5648ab1fc92116dc8b8d7b493bff40982965b02c14460a0295c550c0b8a1aa30",
+    "test_annotations.py": "a82f7cd88c8b46a63c4e7b88784d8b51e894a0e0024c3126ad77cac724ec146c",
+    "million_provenance.py": "e93639a3aa45216e65e85851239f35e13bebe9f6e8cccc1de46bf9b6a0345ac3",
+    "storage.py": "d753e164c5de9a18b9525e00f0ab0fbeaf9abf7040da220d9062d48d24939b1a",
+    "million_batch.py": "ca19bf43146e240cfb7b78a601c77c01ad08a4481d7dff540885781e64299cfd",
+    "million_build.py": "781c25c84cc9240abee606c6ff635ddf270ee4ad10ac53761edd1326ec4bfbea",
+    "service_checks.py": "0d28cc20a255dbc54a21bbfd8595fbd9970e97804354947e5c7cbfc96add8c4d"
+  },
+  "storage": {
+    "physical": {
+      "assets": [
+        {
+          "path": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-qualification-f9pzg05q/.reclaim.lock",
+          "role": "seal-or-build-receipt",
+          "generation": "qualification-v1",
+          "file_bytes": 0,
+          "allocated_bytes": 0,
+          "counted": true,
+          "inode": 248322012,
+          "device": 16777233
+        },
+        {
+          "path": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-qualification-f9pzg05q/native.sqlite",
+          "role": "base-metadata",
+          "generation": "qualification-v1",
+          "file_bytes": 262144,
+          "allocated_bytes": 262144,
+          "counted": true,
+          "inode": 248322014,
+          "device": 16777233
+        },
+        {
+          "path": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-qualification-f9pzg05q/native.sqlite.sha256.json",
+          "role": "seal-or-build-receipt",
+          "generation": "qualification-v1",
+          "file_bytes": 146,
+          "allocated_bytes": 4096,
+          "counted": true,
+          "inode": 248322027,
+          "device": 16777233
+        },
+        {
+          "path": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-qualification-f9pzg05q/typed.sqlite",
+          "role": "incremental-index",
+          "generation": "qualification-v1",
+          "file_bytes": 114688,
+          "allocated_bytes": 114688,
+          "counted": true,
+          "inode": 248322028,
+          "device": 16777233
+        },
+        {
+          "path": "/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/rieke-qualification-f9pzg05q/typed.sqlite.sha256.json",
+          "role": "seal-or-build-receipt",
+          "generation": "qualification-v1",
+          "file_bytes": 147,
+          "allocated_bytes": 4096,
+          "counted": true,
+          "inode": 248322051,
+          "device": 16777233
+        }
+      ],
+      "total_file_bytes": 377125,
+      "total_allocated_bytes": 385024
+    },
+    "normalized": {
+      "epochs": 12,
+      "epoch_field_links": 357,
+      "total_metadata_file_bytes": 377125,
+      "base_metadata_file_bytes": 262144,
+      "incremental_index_file_bytes": 114688,
+      "total_bytes_per_epoch": 31427.083333333332,
+      "added_bytes_per_epoch": 9557.333333333334,
+      "total_bytes_per_epoch_field_link": 1056.3725490196077,
+      "added_bytes_per_epoch_field_link": 321.2549019607843,
+      "added_index_over_base_metadata": 0.4375,
+      "raw_ratios": [
+        {
+          "numerator_bytes": 377125,
+          "denominator_bytes": null,
+          "denominator": "actual distinct accessible H5 files; same dataset scope required",
+          "projected": false,
+          "ratio": null
+        },
+        {
+          "numerator_bytes": 377125,
+          "denominator_bytes": null,
+          "denominator": "lineage-weighted equivalent H5 projection",
+          "projected": true,
+          "ratio": null
+        },
+        {
+          "numerator_bytes": 377125,
+          "denominator_bytes": null,
+          "denominator": "lineage-weighted compressed response payload projection",
+          "projected": true,
+          "ratio": null
+        }
+      ],
+      "canonical_project_metadata_bytes": null
+    },
+    "components": {
+      "native.sqlite": {
+        "size_definition": "file length, allocated disk and SQLite used pages are separate",
+        "file_bytes": 262144,
+        "allocated_bytes": 262144,
+        "page_size": 4096,
+        "page_count": 64,
+        "freelist_pages": 0,
+        "freelist_bytes": 0,
+        "components": [
+          {
+            "name": "epoch_values",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2592,
+            "unused_page_bytes": 425,
+            "pages": 1
+          },
+          {
+            "name": "epochs",
+            "used_page_bytes": 20480,
+            "payload_bytes": 12045,
+            "unused_page_bytes": 8310,
+            "pages": 5
+          },
+          {
+            "name": "epochs_source",
+            "used_page_bytes": 4096,
+            "payload_bytes": 143,
+            "unused_page_bytes": 3909,
+            "pages": 1
+          },
+          {
+            "name": "field_values",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2638,
+            "unused_page_bytes": 512,
+            "pages": 1
+          },
+          {
+            "name": "fields",
+            "used_page_bytes": 28672,
+            "payload_bytes": 20707,
+            "unused_page_bytes": 7027,
+            "pages": 7
+          },
+          {
+            "name": "meta",
+            "used_page_bytes": 151552,
+            "payload_bytes": 144272,
+            "unused_page_bytes": 7073,
+            "pages": 37
+          },
+          {
+            "name": "metadata_objects",
+            "used_page_bytes": 4096,
+            "payload_bytes": 0,
+            "unused_page_bytes": 4088,
+            "pages": 1
+          },
+          {
+            "name": "sources",
+            "used_page_bytes": 4096,
+            "payload_bytes": 106,
+            "unused_page_bytes": 3974,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_autoindex_epochs_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 479,
+            "unused_page_bytes": 3573,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_autoindex_field_values_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2936,
+            "unused_page_bytes": 513,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_autoindex_fields_1",
+            "used_page_bytes": 12288,
+            "payload_bytes": 3860,
+            "unused_page_bytes": 7904,
+            "pages": 3
+          },
+          {
+            "name": "sqlite_autoindex_meta_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 83,
+            "unused_page_bytes": 3987,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_autoindex_metadata_objects_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 0,
+            "unused_page_bytes": 4088,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_autoindex_sources_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 23,
+            "unused_page_bytes": 4059,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_schema",
+            "used_page_bytes": 4096,
+            "payload_bytes": 1698,
+            "unused_page_bytes": 2225,
+            "pages": 1
+          },
+          {
+            "name": "values_reverse",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2592,
+            "unused_page_bytes": 425,
+            "pages": 1
+          }
+        ],
+        "schema": [
+          {
+            "name": "epoch_values",
+            "kind": "table",
+            "rows": 357
+          },
+          {
+            "name": "epochs",
+            "kind": "table",
+            "rows": 12
+          },
+          {
+            "name": "epochs_source",
+            "kind": "index"
+          },
+          {
+            "name": "field_values",
+            "kind": "table",
+            "rows": 213
+          },
+          {
+            "name": "fields",
+            "kind": "table",
+            "rows": 164
+          },
+          {
+            "name": "meta",
+            "kind": "table",
+            "rows": 6
+          },
+          {
+            "name": "metadata_objects",
+            "kind": "table",
+            "rows": 0
+          },
+          {
+            "name": "sources",
+            "kind": "table",
+            "rows": 2
+          },
+          {
+            "name": "values_reverse",
+            "kind": "index"
+          }
+        ],
+        "dbstat_used_page_bytes": 262144
+      },
+      "typed.sqlite": {
+        "size_definition": "file length, allocated disk and SQLite used pages are separate",
+        "file_bytes": 114688,
+        "allocated_bytes": 114688,
+        "page_size": 4096,
+        "page_count": 28,
+        "freelist_pages": 0,
+        "freelist_bytes": 0,
+        "components": [
+          {
+            "name": "sqlite_autoindex_typed_receipt_1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 151,
+            "unused_page_bytes": 3910,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_schema",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2145,
+            "unused_page_bytes": 1777,
+            "pages": 1
+          },
+          {
+            "name": "sqlite_stat1",
+            "used_page_bytes": 4096,
+            "payload_bytes": 465,
+            "unused_page_bytes": 3575,
+            "pages": 1
+          },
+          {
+            "name": "typed_block_children",
+            "used_page_bytes": 4096,
+            "payload_bytes": 502,
+            "unused_page_bytes": 3550,
+            "pages": 1
+          },
+          {
+            "name": "typed_cell_children",
+            "used_page_bytes": 4096,
+            "payload_bytes": 502,
+            "unused_page_bytes": 3550,
+            "pages": 1
+          },
+          {
+            "name": "typed_chronology",
+            "used_page_bytes": 4096,
+            "payload_bytes": 719,
+            "unused_page_bytes": 3333,
+            "pages": 1
+          },
+          {
+            "name": "typed_core",
+            "used_page_bytes": 4096,
+            "payload_bytes": 2925,
+            "unused_page_bytes": 1103,
+            "pages": 1
+          },
+          {
+            "name": "typed_equality",
+            "used_page_bytes": 12288,
+            "payload_bytes": 7056,
+            "unused_page_bytes": 4560,
+            "pages": 3
+          },
+          {
+            "name": "typed_group_children",
+            "used_page_bytes": 4096,
+            "payload_bytes": 502,
+            "unused_page_bytes": 3550,
+            "pages": 1
+          },
+          {
+            "name": "typed_kind",
+            "used_page_bytes": 4096,
+            "payload_bytes": 3171,
+            "unused_page_bytes": 278,
+            "pages": 1
+          },
+          {
+            "name": "typed_numeric",
+            "used_page_bytes": 12288,
+            "payload_bytes": 3571,
+            "unused_page_bytes": 8046,
+            "pages": 3
+          },
+          {
+            "name": "typed_protocol_children",
+            "used_page_bytes": 4096,
+            "payload_bytes": 254,
+            "unused_page_bytes": 3798,
+            "pages": 1
+          },
+          {
+            "name": "typed_receipt",
+            "used_page_bytes": 8192,
+            "payload_bytes": 4822,
+            "unused_page_bytes": 3316,
+            "pages": 2
+          },
+          {
+            "name": "typed_sort_rank",
+            "used_page_bytes": 4096,
+            "payload_bytes": 58,
+            "unused_page_bytes": 3994,
+            "pages": 1
+          },
+          {
+            "name": "typed_text",
+            "used_page_bytes": 12288,
+            "payload_bytes": 4375,
+            "unused_page_bytes": 7242,
+            "pages": 3
+          },
+          {
+            "name": "typed_uuid",
+            "used_page_bytes": 4096,
+            "payload_bytes": 479,
+            "unused_page_bytes": 3573,
+            "pages": 1
+          },
+          {
+            "name": "typed_values",
+            "used_page_bytes": 20480,
+            "payload_bytes": 12452,
+            "unused_page_bytes": 6998,
+            "pages": 5
+          }
+        ],
+        "schema": [
+          {
+            "name": "typed_block_children",
+            "kind": "index"
+          },
+          {
+            "name": "typed_cell_children",
+            "kind": "index"
+          },
+          {
+            "name": "typed_chronology",
+            "kind": "index"
+          },
+          {
+            "name": "typed_core",
+            "kind": "table",
+            "rows": 12
+          },
+          {
+            "name": "typed_equality",
+            "kind": "index"
+          },
+          {
+            "name": "typed_group_children",
+            "kind": "index"
+          },
+          {
+            "name": "typed_kind",
+            "kind": "index"
+          },
+          {
+            "name": "typed_numeric",
+            "kind": "index"
+          },
+          {
+            "name": "typed_protocol_children",
+            "kind": "index"
+          },
+          {
+            "name": "typed_receipt",
+            "kind": "table",
+            "rows": 9
+          },
+          {
+            "name": "typed_sort_rank",
+            "kind": "index"
+          },
+          {
+            "name": "typed_text",
+            "kind": "index"
+          },
+          {
+            "name": "typed_uuid",
+            "kind": "index"
+          },
+          {
+            "name": "typed_values",
+            "kind": "table",
+            "rows": 213
+          }
+        ],
+        "dbstat_used_page_bytes": 114688
+      }
+    },
+    "growth": {
+      "status": "unrun"
+    },
+    "incremental_import": {
+      "status": "unrun"
+    },
+    "rebuild_highwater": {
+      "status": "unrun"
+    }
+  },
+  "core_faults": {
+    "status": "passed",
+    "checks": [
+      "wrong-metadata-generation",
+      "wrong-project",
+      "source-change-before-query",
+      "source-change-before-verified-clone",
+      "source-change-during-preview-before-publication",
+      "sidecar-seal-change",
+      "cancellation-refused-and-recovered"
+    ],
+    "corpus": "12-epoch disposable native fixture",
+    "source_policy_authority": false,
+    "annotation_generation": false,
+    "integrated_service": false,
+    "real_million": false
+  }
+}
