@@ -1,5 +1,6 @@
 """Cumulative pending authority and persistent resume on disposable SQL doubles."""
 import copy
+import contextlib
 import json
 import unittest
 import uuid
@@ -11,6 +12,91 @@ from test_workspace_workbench import WorkbenchTests
 class CumulativePendingTests(unittest.TestCase):
     setUp = WorkbenchTests.setUp
     get_context = WorkbenchTests.get_context
+
+    def native_transaction_receipts(self):
+        from workspace_state_generation import GenerationToken
+        from workspace_recipes import checksum
+        connection=self.case.connection
+        original_transaction=type(connection).transaction.fget
+        original_state=self.manager.state
+        connection.in_transaction=False
+        @contextlib.contextmanager
+        def transaction():
+            with original_transaction(connection):
+                connection.in_transaction=True
+                try:yield
+                finally:connection.in_transaction=False
+        transaction_patch=patch.object(type(connection),'transaction',property(lambda _:transaction()))
+        transaction_patch.start();self.addCleanup(transaction_patch.stop)
+        owner=self
+        class NativeReceipts:
+            def __init__(self):self.locked_checks=0;self.generation=1;self.tx_token_attempts=0
+            def value(self, protocol=None):
+                return GenerationToken('native-fixture-authority',owner.manager.project,'shared-epoch',self.generation,
+                    protocol,'protocol-epoch' if protocol else None,self.generation if protocol else None)
+            def token(self,protocol=None):
+                if connection.in_transaction:
+                    self.tx_token_attempts+=1
+                    return None
+                return self.value(protocol)
+            def assert_current_locked(self,token):
+                self.locked_checks+=1
+                owner.assertTrue(connection.in_transaction)
+                if token!=self.value(token.protocol_uuid):
+                    from workspace_curation import RevisionConflict
+                    raise RevisionConflict({'generation':'native fixture changed'})
+        tracker=NativeReceipts()
+        self.case.service._explore_state_generation=tracker
+        def state(protocol):
+            result,curation,legacy=original_state(protocol)
+            return result,curation,legacy if connection.in_transaction else 'protocol-state-v3:'+legacy
+        def capture_guard(protocol):
+            owner.assertFalse(connection.in_transaction)
+            legacy=original_state(protocol)[2]
+            metadata=checksum(owner.case.service._fingerprints)
+            def guard():
+                owner.assertTrue(connection.in_transaction)
+                if original_state(protocol)[2]!=legacy or checksum(owner.case.service._fingerprints)!=metadata:
+                    from workspace_curation import RevisionConflict
+                    raise RevisionConflict({'query_revision':'changed under native guard'})
+                return 'protocol-state-v3:'+legacy
+            return guard
+        self.manager.state=state
+        self.manager.revision_guard=capture_guard
+        return tracker
+
+    def test_native_transaction_refusal_prepare_context_accept_and_receipt_retry(self):
+        tracker=self.native_transaction_receipts()
+        before=self.queue()['queue_revision']
+        prepared,request=self.prepare(dict(expected_queue_revision=before))
+        self.assertTrue(prepared['context']['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertEqual(prepared['context']['generation'],self.get_context('/api'+prepared['root'])['generation'])
+        self.assertEqual(self.queue()['queue_revision'],before)
+        self.assertEqual(tracker.tx_token_attempts,0)
+        self.assertGreater(tracker.locked_checks,0)
+        prepared=self.patch_draft(prepared,[dict(epoch_uuid=self.added,selected=True,reviewed=True)])
+        receipt=self.accept_selected(prepared)
+        self.assertEqual(receipt['accepted_epoch_uuids'],[self.added])
+        self.assertTrue(receipt['expected_query_revision'].startswith('protocol-state-v3:'))
+        self.assertEqual(tracker.tx_token_attempts,0)
+        with patch.object(self.case.service,'refresh',side_effect=AssertionError('Receipt precedes native refresh')):
+            retry,_=self.prepare(request)
+        self.assertEqual(retry['prepare_operation_uuid'],prepared['prepare_operation_uuid'])
+
+    def test_native_locked_generation_change_during_prepare_refuses_and_rolls_back(self):
+        tracker=self.native_transaction_receipts()
+        request=dict(expected_queue_revision=self.queue()['queue_revision'])
+        before=copy.deepcopy([table.rows for table in self.case.connection.tables])
+        create=self.manager.history.create
+        def race(*args,**kwargs):
+            result=create(*args,**kwargs)
+            tracker.generation+=1
+            return result
+        with patch.object(self.manager.history,'create',side_effect=race):
+            response=self.case.client.post(self.case.base+'/workbench/prepare',json=request,headers=self.case.headers)
+        self.assertEqual(response.status_code,409,response.get_json())
+        self.assertEqual([table.rows for table in self.case.connection.tables],before)
+        self.assertEqual(tracker.tx_token_attempts,0)
 
     def queue(self):
         response = self.case.client.get(self.case.base + '/workbench')
@@ -209,8 +295,8 @@ class CumulativePendingTests(unittest.TestCase):
         import workspace_workbench_pending as pending
         original = pending.snapshot_authority
         calls = [0]
-        def changing(*args):
-            result = original(*args)
+        def changing(*args, **kwargs):
+            result = original(*args, **kwargs)
             calls[0] += 1
             if calls[0] == 2:
                 result['sha256'] = 'changed-source-authority'

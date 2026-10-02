@@ -74,6 +74,50 @@ class ProtocolStateTests(unittest.TestCase):
         self.assertEqual(first['expected_binding_version'],0)
         self.assertEqual(fallback['expected_binding_version'],0)
 
+    def test_baseline_freeze_retains_native_revision_across_transaction_boundary(self):
+        tracker=self.native_generation()
+        original=self.case.connection.transaction
+        @contextlib.contextmanager
+        def native_transaction():
+            with original:
+                tracker.in_transaction=True
+                try:yield
+                finally:tracker.in_transaction=False
+        captured=[]
+        def guard(protocol):
+            self.assertFalse(tracker.in_transaction)
+            context=self.reader.native_context(protocol)
+            self.assertTrue(context['query_revision'].startswith('protocol-state-v3:'))
+            captured.append(context)
+            return lambda:self.reader.assert_context_locked(protocol,context)
+        with patch.object(type(self.case.connection),'transaction',property(lambda _:native_transaction())):
+            baselines=self.case.protocol_suggestions.freeze_baselines('fixture',
+                self.reader.materialized_state,revision_guard=guard)
+        self.assertEqual(len(baselines),1)
+        self.assertEqual(baselines[0]['binding_version'],1)
+        self.assertEqual(tracker.locked_checks,1)
+        self.assertEqual(len(captured),1)
+        self.assertEqual({row['uuid'] for row in baselines[0]['recipe']['epochs']},set(self.ids))
+        self.assertFalse(self.case.curation.rows)
+
+    def test_baseline_freeze_rejects_real_generation_change_without_partial_publication(self):
+        from workspace_curation import RevisionConflict
+        tracker=self.native_generation()
+        def guard(protocol):
+            context=self.reader.native_context(protocol)
+            def verify():
+                self.fixture.records.rows.append({'project_uuid':self.service.project['project_uuid'],
+                    'target_kind':'epoch','target_uuid':self.ids[0],'profile_uuid':str(uuid.uuid4()),
+                    'tags':['changed after baseline read'],'revision':1})
+                return self.reader.assert_context_locked(protocol,context)
+            return verify
+        with self.assertRaises(RevisionConflict):
+            self.case.protocol_suggestions.freeze_baselines('fixture',self.reader.materialized_state,
+                revision_guard=guard)
+        self.assertEqual(tracker.locked_checks,1)
+        self.assertFalse(self.case.protocol_bindings.rows)
+        self.assertFalse(self.case.explorer_revisions.rows)
+
     def test_native_page_fences_once_and_reads_selected_curation_once(self):
         tracker=self.native_generation()
         self.page()  # Establish the exact source proof before counting hot reads.

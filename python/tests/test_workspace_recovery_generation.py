@@ -11,6 +11,39 @@ import test_workspace_state_generation as fixtures
 NativeConnection=fixtures.NativeConnection
 from workspace_recovery_generation import RecoveryTracker, CLOCK, FEED, recovery_trigger_manifest
 import workspace_native_mysql as native
+import workspace_recovery_generation as generation
+
+
+class RecoveryKeyCapacityTests(unittest.TestCase):
+    def connection(self, actor_length=255):
+        fields=[('project_uuid',36),('protocol_uuid',36),('candidate_revision_uuid',36),('actor',actor_length),('epoch_uuid',36)]
+        rows=[dict(TABLE_NAME='workbench_decision',COLUMN_NAME=name,COLUMN_TYPE=f'varchar({size})',
+            DATA_TYPE='varchar',CHARACTER_MAXIMUM_LENGTH=size,IS_NULLABLE='NO') for name,size in fields]
+        class Result:
+            def __init__(self, value):self.value=value
+            def fetchall(self):return self.value
+        class Connection:
+            def query(self,sql,*args,**kwargs):
+                if 'information_schema.TABLES' in sql:return Result([dict(TABLE_NAME='workbench_decision',ENGINE='InnoDB')])
+                if 'information_schema.COLUMNS' in sql:return Result(rows)
+                return Result([dict(TABLE_NAME='workbench_decision',COLUMN_NAME=name) for name,_ in fields])
+        return Connection()
+
+    def test_full_workbench_unicode_actor_keys_fit_versioned_exact_capacity(self):
+        specs=generation.table_specs(self.connection())
+        self.assertEqual(specs['workbench_decision']['primary_keys'],
+            ['project_uuid','protocol_uuid','candidate_revision_uuid','actor','epoch_uuid'])
+        self.assertEqual(generation.FEED_KEY_BYTES,4096)
+        actor=('\x00\x01🚀"\\é'*43)[:255]
+        encoded=json.dumps([str(uuid.uuid4()),str(uuid.uuid4()),str(uuid.uuid4()),actor,str(uuid.uuid4())],
+            ensure_ascii=False).encode()
+        self.assertGreater(len(encoded),1024)
+        self.assertLessEqual(len(encoded),generation.FEED_KEY_BYTES)
+        self.assertEqual(json.loads(encoded)[3],actor)
+
+    def test_larger_unqualified_key_schema_still_fails_closed(self):
+        with self.assertRaisesRegex(ValueError,'exact bounded feed key'):
+            generation.table_specs(self.connection(actor_length=1000))
 
 
 @unittest.skipUnless(os.environ.get('RIEKE_TEST_NATIVE_MYSQL')=='1','opt-in native recovery authority proof')
@@ -56,6 +89,114 @@ class RecoveryGenerationTests(unittest.TestCase):
             finally:
                 self.connection.query('ALTER TABLE recording_workspace.curation DROP COLUMN optional_note')
                 self.tracker.bootstrap()
+
+    def test_known_v1_ring_migrates_losslessly_and_invalidates_prior_watermark(self):
+        self.insert()
+        before,rows=self.capture()
+        retained=self.connection.query(f'SELECT project_uuid,slot,table_id,key_bytes,generation,deleted '
+            f'FROM recording_workspace.{FEED} WHERE project_uuid=%s',(self.project,)).fetchall()
+        # This class owns a freshly created disposable server. Deliberately
+        # recreate only the known earlier owned column width for migration.
+        self.connection.query(f'ALTER TABLE recording_workspace.{FEED} MODIFY COLUMN key_bytes varbinary(1024) NOT NULL')
+        self.tracker.bootstrap()
+        self.assertTrue(self.tracker.ready,self.tracker.reason)
+        column=self.connection.query('SELECT COLUMN_TYPE FROM information_schema.COLUMNS '
+            'WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s AND COLUMN_NAME=%s',
+            ('recording_workspace',FEED,'key_bytes')).fetchone()[0]
+        self.assertEqual(column,'varbinary(4096)')
+        self.assertEqual(self.connection.query(f'SELECT project_uuid,slot,table_id,key_bytes,generation,deleted '
+            f'FROM recording_workspace.{FEED} WHERE project_uuid=%s',(self.project,)).fetchall(),retained)
+        migrated,current=self.capture(before.watermark)
+        self.assertFalse(migrated.complete)
+        self.assertEqual(migrated.watermark['version'],2)
+        self.assertNotEqual(migrated.watermark['authority'],before.watermark['authority'])
+        self.assertEqual(current,rows)
+
+    def test_workbench_exact_unicode_keys_native_feed_delta_rollback_and_rebootstrap(self):
+        self.connection.query('CREATE TABLE recording_workspace.workbench_draft ('
+            'project_uuid varchar(36) NOT NULL,protocol_uuid varchar(36) NOT NULL,candidate_revision_uuid varchar(36) NOT NULL,'
+            'actor varchar(255) NOT NULL,version int unsigned NOT NULL,'
+            'PRIMARY KEY(project_uuid,protocol_uuid,candidate_revision_uuid,actor)) ENGINE=InnoDB')
+        self.connection.query('CREATE TABLE recording_workspace.workbench_decision ('
+            'project_uuid varchar(36) NOT NULL,protocol_uuid varchar(36) NOT NULL,candidate_revision_uuid varchar(36) NOT NULL,'
+            'actor varchar(255) NOT NULL,epoch_uuid varchar(36) NOT NULL,reviewed bool NOT NULL,'
+            'PRIMARY KEY(project_uuid,protocol_uuid,candidate_revision_uuid,actor,epoch_uuid),'
+            'FOREIGN KEY(project_uuid,protocol_uuid,candidate_revision_uuid,actor) REFERENCES '
+            'recording_workspace.workbench_draft(project_uuid,protocol_uuid,candidate_revision_uuid,actor)) ENGINE=InnoDB')
+        try:
+            specs=generation.table_specs(self.connection)
+            self.assertEqual(len(specs['workbench_decision']['primary_keys']),5)
+            self.tracker.bootstrap();self.assertTrue(self.tracker.ready,self.tracker.reason)
+            baseline,_=self.capture()
+            candidate=str(uuid.uuid4());actor=('\x00\x01🚀"\\é'*43)[:255]
+            draft=(self.project,self.protocol,candidate,actor)
+            decision=(*draft,self.epoch)
+            self.connection.query('INSERT INTO recording_workspace.workbench_draft VALUES (%s,%s,%s,%s,1)',draft)
+            self.connection.query('INSERT INTO recording_workspace.workbench_decision VALUES (%s,%s,%s,%s,%s,1)',decision)
+            plan,_=self.capture(baseline.watermark)
+            self.assertTrue(plan.complete)
+            self.assertEqual(plan.keys['workbench_draft'],[draft])
+            self.assertEqual(plan.keys['workbench_decision'],[decision])
+            raw=self.connection.query(f'SELECT key_bytes FROM recording_workspace.{FEED} '
+                'WHERE project_uuid=%s AND table_id=%s ORDER BY generation DESC LIMIT 1',
+                (self.project,generation.TABLE_IDS['workbench_decision'])).fetchone()[0]
+            self.assertGreater(len(raw),1024)
+            self.assertEqual(json.loads(raw),list(decision))
+            with self.assertRaisesRegex(RuntimeError,'rollback'):
+                with self.connection.transaction:
+                    self.connection.query('UPDATE recording_workspace.workbench_decision SET reviewed=0 WHERE project_uuid=%s',(self.project,))
+                    raise RuntimeError('rollback')
+            unchanged,_=self.capture(plan.watermark)
+            self.assertFalse(any(unchanged.keys.values()))
+            restarted=RecoveryTracker(self.connection,self.project).bootstrap()
+            self.assertTrue(restarted.ready,restarted.reason)
+            with restarted.capture(unchanged.watermark) as continued:
+                self.assertTrue(continued.complete)
+                continued.verify()
+            annotation=fixtures.bootstrap(self.connection,self.project)
+            self.assertTrue(annotation.ready,annotation.reason)
+            self.assertIsNotNone(annotation.token(self.protocol),annotation.reason)
+        finally:
+            for table in ('workbench_decision','workbench_draft'):
+                for suffix in ('ai','au','ad'):
+                    self.connection.query(f'DROP TRIGGER IF EXISTS recording_workspace.{generation.PREFIX}{table}_{suffix}')
+                self.connection.query(f'DROP TABLE recording_workspace.{table}')
+            self.tracker.bootstrap()
+
+    def test_native_v3_baseline_freeze_uses_locked_scope_proof_inside_mysql_transaction(self):
+        # Exact reader/ExplorerHistory publication with fixture recording rows;
+        # generation, metadata locks and the transaction boundary are native.
+        # The real H5 importer resume is separately owned by serialized E2E.
+        from test_workspace_protocol_state import ProtocolStateTests
+        fixture=ProtocolStateTests()
+        fixture.setUp()
+        try:
+            fixture.service.dj.conn=lambda:self.connection
+            tracker=fixtures.bootstrap(self.connection,fixture.service.project['project_uuid'])
+            self.assertTrue(tracker.ready,tracker.reason)
+            fixture.store.state_generation=tracker
+            fixture.reader.shared.state_generation=tracker
+            before=fixture.reader.materialized_state(fixture.protocol)[2]
+            self.assertTrue(before.startswith('protocol-state-v3:'))
+            captures=[]
+            def guard(protocol):
+                self.assertFalse(self.connection.in_transaction)
+                context=fixture.reader.native_context(protocol)
+                self.assertEqual(context['query_revision'],before)
+                def verify():
+                    self.assertTrue(self.connection.in_transaction)
+                    self.assertIsNone(tracker.token(protocol))
+                    captures.append(True)
+                    return fixture.reader.assert_context_locked(protocol,context)
+                return verify
+            baselines=fixture.case.protocol_suggestions.freeze_baselines('native-fixture',
+                fixture.reader.materialized_state,revision_guard=guard)
+            self.assertEqual(len(baselines),1)
+            self.assertEqual(baselines[0]['binding_version'],1)
+            self.assertEqual(captures,[True])
+            self.assertEqual({row['uuid'] for row in baselines[0]['recipe']['epochs']},set(fixture.ids))
+        finally:
+            fixture.doCleanups()
 
     def test_exact_keys_key_moves_rollback_and_retention_floor(self):
         initial,_=self.capture();self.assertFalse(initial.complete)

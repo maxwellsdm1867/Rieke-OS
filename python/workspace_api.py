@@ -1620,7 +1620,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             write_json(job_file, job)
             with db_lock, data_stores.registration_locks():
                 service.refresh()
-                baselines = protocol_suggestions.freeze_baselines(os.environ.get('USER', 'local-user'), state)
+                baselines = protocol_suggestions.freeze_baselines(os.environ.get('USER', 'local-user'), state,
+                    revision_guard=revision_guard)
             job['protocol_baselines'] = [{key: baseline[key] for key in
                 ('protocol_uuid', 'revision_uuid', 'binding_version')} for baseline in baselines]
             job.update(status='validating')

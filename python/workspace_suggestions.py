@@ -40,7 +40,7 @@ class ProtocolSuggestions:
             self._table = suggestion_table(self.service.dj)
         return self._table
 
-    def freeze_baselines(self, actor, state):
+    def freeze_baselines(self, actor, state, *, revision_guard=None):
         """Caller holds project/database guards, before launching the importer.
 
         Starter files are live acquisition queries. Convert only their current
@@ -60,6 +60,13 @@ class ProtocolSuggestions:
                 known = {field['id'] for field in self.service.tree_fields(identity)['fields']}
                 splits = ','.join(grouping) if all(field in known for field in grouping) else 'date,cell,block'
                 result, _, revision = state(identity)
+                # Capture the native v3 context before create_and_bind starts
+                # its transaction. Reading state again inside that transaction
+                # deliberately falls back to the legacy checksum and is not a
+                # comparable revision. The guard validates the captured native
+                # generation and metadata under the publication locks instead.
+                current_revision = (revision_guard(identity) if revision_guard is not None
+                    else (lambda key=identity: state(key)[2]))
                 members = copy.deepcopy(result['epochs'])
                 preview = {'predicate': predicate, 'splits': splits,
                     'membership': members, 'matched_count': len(members), 'total_source': len(self.service.rows),
@@ -70,7 +77,7 @@ class ProtocolSuggestions:
                 self.history.create_and_bind(preview, self.service.sources,
                     self.service.project_dir / 'catalog.json', actor,
                     protocol_uuid=identity, expected_version=0, expected_query_revision=revision,
-                    current_query_revision=lambda key=identity: state(key)[2],
+                    current_query_revision=current_revision,
                     diff=empty_diff, previous_count=len(members),
                     diff_summary=summarize_diff(self.service.rows, fingerprints, fingerprints),
                     name=definition['name'], reason='pre_import_baseline_freeze')

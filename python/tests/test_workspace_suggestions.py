@@ -153,6 +153,22 @@ class ImportSuggestionTests(unittest.TestCase):
         self.assertFalse(self.case.explorer_revisions.rows)
         self.assertEqual(len(self.case.service.rows), 2)
 
+    def test_import_supplies_native_revision_guard_to_baseline_freeze(self):
+        reader=self.case.app.extensions['protocol_state_reader']
+        protocol=self.case.service.protocol_id
+        context={'query_revision':'captured native revision'}
+        # Exercise the actual importer wiring; materialized state remains the
+        # canonical fixture oracle while its locked guard returns that receipt.
+        baseline=reader.materialized_state(protocol)
+        revision=baseline[2]
+        with patch.object(reader,'materialized_state',return_value=baseline), \
+             patch.object(reader,'native_context',return_value=context) as capture, \
+             patch.object(reader,'assert_context_locked',return_value=revision) as locked:
+            job=self.run_import()
+        self.assertEqual(job['status'],'complete')
+        capture.assert_called_once_with(protocol)
+        locked.assert_called_once_with(protocol,context)
+
     def test_duplicate_does_not_create_any_baseline_or_suggestion(self):
         self.source.write_bytes(self.preflight.bytes)
         with patch('workspace_api.subprocess.run', side_effect=AssertionError('No duplicate parse')):

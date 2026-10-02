@@ -25,6 +25,12 @@ INSTANCE='app_recovery_instance'
 ANCHOR_LOCK='rieke_recovery_instance_v1'
 RECOVERY_WINDOW=20000
 TRIM_INTERVAL=1000
+# v2 keeps the fixed-slot ring and the complete JSON primary key. Workbench
+# actor identities are varchar(255); their exact Unicode composite keys do not
+# fit the original 1024-byte feed. The ring PK is (project_uuid, slot), so this
+# lossless expansion does not introduce a larger indexed key.
+FEED_KEY_BYTES=4096
+CONTRACT_VERSION=2
 TABLE_NAMES=('annotation_profile','shared_annotation','curation','protocol_workspace',
     'data_store_state','protocol_tree_layout','search_preset','search_preset_version',
     'protocol_binding','explorer_revision','dataset_revision','search_query_last_run','source',
@@ -67,7 +73,7 @@ def table_specs(connection):
                 maximum+=4+6*int(field['CHARACTER_MAXIMUM_LENGTH'])
             elif field['DATA_TYPE'] in {'tinyint','smallint','mediumint','int','bigint'}:maximum+=33
             else:raise ValueError('Unsupported recovery primary-key type')
-        if maximum>1024:raise ValueError('Recovery primary key exceeds the exact bounded feed key')
+        if maximum>FEED_KEY_BYTES:raise ValueError('Recovery primary key exceeds the exact bounded feed key')
         result[table]={'primary_keys':primary,'columns':[row['COLUMN_NAME'] for row in fields],
             'json_columns':[row['COLUMN_NAME'] for row in fields if row['DATA_TYPE']=='json'],
             'signature':[(row['COLUMN_NAME'],row['COLUMN_TYPE'],row['IS_NULLABLE']) for row in fields]}
@@ -184,7 +190,7 @@ class RecoveryGenerationAuthority:
         if self._schema_ddl==ddl:return
         expected={CLOCK:[('project_uuid','varchar(36)'),('scope_epoch','char(36)'),
             ('generation','bigint unsigned'),('retained_after','bigint unsigned')],
-            FEED:[('project_uuid','varchar(36)'),('slot','smallint unsigned'),('table_id','smallint unsigned'),('key_bytes','varbinary(1024)'),
+            FEED:[('project_uuid','varchar(36)'),('slot','smallint unsigned'),('table_id','smallint unsigned'),('key_bytes',f'varbinary({FEED_KEY_BYTES})'),
                 ('generation','bigint unsigned'),('deleted','tinyint unsigned')],
             INSTANCE:[('singleton','tinyint unsigned'),('instance_epoch','char(36)'),('owner_connection_id','bigint unsigned')]}
         rows=self._rows('SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE FROM information_schema.COLUMNS '
@@ -229,7 +235,8 @@ class RecoveryGenerationAuthority:
         self.observer._active_ddl_guard();after=self.observer._ddl()
         if before!=after:raise ValueError('DDL changed during recovery attestation')
         instance=self._instance()
-        payload={'contract':'rieke-recovery-v1','server':{key:server[key] for key in ('server_uuid','version')},'instance':instance,
+        payload={'contract':f'rieke-recovery-v{CONTRACT_VERSION}','feed_key_bytes':FEED_KEY_BYTES,
+            'server':{key:server[key] for key in ('server_uuid','version')},'instance':instance,
             'tables':tables,'schema':self.specs,'ddl':after,'triggers':found}
         return hashlib.sha256(json.dumps(payload,sort_keys=True,default=str).encode()).hexdigest()
 
@@ -264,6 +271,7 @@ class RecoveryGenerationAuthority:
                 legacy=[('project_uuid','varchar(36)'),('table_id','smallint unsigned'),('key_bytes','varbinary(1024)'),
                     ('generation','bigint unsigned'),('deleted','tinyint unsigned')]
                 ring=[legacy[0],('slot','smallint unsigned'),*legacy[1:]]
+                expanded_ring=[(name,f'varbinary({FEED_KEY_BYTES})' if name=='key_bytes' else kind) for name,kind in ring]
                 if any(row['IS_NULLABLE']!='NO' for row in columns):raise ValueError('Recovery feed schema is incompatible')
                 if actual==legacy and [row['COLUMN_NAME'] for row in primary]==['project_uuid','table_id','key_bytes']:
                     # Only this discardable hint table and exactly known owned
@@ -271,7 +279,14 @@ class RecoveryGenerationAuthority:
                     for name in present:self.connection.query(f'DROP TRIGGER `{SCHEMA}`.`{name}`',reconnect=False)
                     self.connection.query(f'DROP TABLE `{SCHEMA}`.`{FEED}`',reconnect=False)
                     existing_tables.remove(FEED);present={};old_triggers=[];self._needs_full=True
-                elif actual!=ring or [row['COLUMN_NAME'] for row in primary]!=['project_uuid','slot']:
+                elif actual==ring and [row['COLUMN_NAME'] for row in primary]==['project_uuid','slot']:
+                    # Migrate only the exactly known owned v1 ring. ALTER keeps
+                    # all hints and canonical authored rows. Changed authority
+                    # invalidates old watermarks; require full reconciliation.
+                    self.connection.query(f'ALTER TABLE `{SCHEMA}`.`{FEED}` '
+                        f'MODIFY COLUMN key_bytes varbinary({FEED_KEY_BYTES}) NOT NULL',reconnect=False)
+                    self._schema_ddl=None;self._needs_full=True
+                elif actual!=expanded_ring or [row['COLUMN_NAME'] for row in primary]!=['project_uuid','slot']:
                     raise ValueError('Recovery feed schema is incompatible')
             for name in old_triggers:
                 self.connection.query(f'DROP TRIGGER `{SCHEMA}`.`{name}`',reconnect=False)
@@ -283,7 +298,7 @@ class RecoveryGenerationAuthority:
                     PRIMARY KEY(project_uuid)) ENGINE=InnoDB''',reconnect=False)
             if FEED not in existing_tables:
                 self.connection.query(f'''CREATE TABLE IF NOT EXISTS `{SCHEMA}`.`{FEED}` (
-                    project_uuid varchar(36) NOT NULL,slot smallint unsigned NOT NULL,table_id smallint unsigned NOT NULL,key_bytes varbinary(1024) NOT NULL,
+                    project_uuid varchar(36) NOT NULL,slot smallint unsigned NOT NULL,table_id smallint unsigned NOT NULL,key_bytes varbinary({FEED_KEY_BYTES}) NOT NULL,
                     generation bigint unsigned NOT NULL,deleted tinyint unsigned NOT NULL,
                     PRIMARY KEY(project_uuid,slot)) ENGINE=InnoDB''',reconnect=False)
             if INSTANCE not in existing_tables:
@@ -316,7 +331,7 @@ class RecoveryGenerationAuthority:
         try:
             before=self._contract();clock=self._clock(create=True)
             if self._contract()!=before:raise ValueError('Recovery authority changed while reading watermark')
-            return {'format':'rieke-recovery-watermark','version':1,'project_uuid':self.project_uuid,
+            return {'format':'rieke-recovery-watermark','version':CONTRACT_VERSION,'project_uuid':self.project_uuid,
                 'authority':before,'scope_epoch':clock['scope_epoch'],'generation':clock['generation']}
         except Exception as error:
             self.reason=str(error);self._private_epoch=str(uuid.uuid4());self._schema_ddl=None;self._needs_full=True
@@ -356,7 +371,7 @@ class RecoveryGenerationAuthority:
                 clock=self._clock(lock=True)
                 for table in (*self.specs,CLOCK,FEED,INSTANCE):self._rows(f'SELECT 1 FROM `{SCHEMA}`.{_name(table)} LIMIT 0')
                 authority=self._contract()
-                watermark={'format':'rieke-recovery-watermark','version':1,'project_uuid':self.project_uuid,
+                watermark={'format':'rieke-recovery-watermark','version':CONTRACT_VERSION,'project_uuid':self.project_uuid,
                     'authority':authority,'scope_epoch':clock['scope_epoch'],'generation':clock['generation']}
                 complete=not self._needs_full and self._continues(prior_watermark,watermark,clock['retained_after'])
                 keys={table:[] for table in self.specs}

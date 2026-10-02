@@ -12,14 +12,15 @@ from workspace_tag_predicates import TagPredicates, referenced_fields
 from workspace_workbench import WorkbenchConflict
 
 
-def snapshot_authority(manager, protocol, actor):
+def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
     binding = manager.history.protocol_binding(protocol)
     if not binding:
         raise WorkbenchConflict('Cumulative review requires an immutable main baseline')
     main = binding['recipe']
     pending, origins = {}, []
     for row in sorted(manager.original_records(protocol), key=lambda row: row['summary']['candidate_revision_uuid']):
-        context = manager.context(protocol, row['summary']['candidate_revision_uuid'], actor)
+        context = manager.context(protocol, row['summary']['candidate_revision_uuid'], actor,
+            query_revision_guard=query_revision_guard)
         if not context['pending']:
             continue
         if (not context['valid_base'] or context['annotation_changed'] or context['base_conflicts']
@@ -40,7 +41,8 @@ def snapshot_authority(manager, protocol, actor):
     shared = getattr(manager.service, 'shared_annotations', None)
     authority = dict(protocol_uuid=protocol, main_revision_uuid=main['revision_uuid'],
         main_recipe_sha256=main['content_sha256'], binding_version=binding['version'],
-        query_revision=manager.state(protocol)[2], origins=origins, pending_sha256=checksum(pending),
+        query_revision=query_revision_guard() if query_revision_guard is not None else manager.state(protocol)[2],
+        origins=origins, pending_sha256=checksum(pending),
         source_scope_revision=scope['revision'], annotation_scope_revision=(annotation or {}).get('revision'),
         shared_annotations_revision=shared.snapshot()['revision'] if shared else None,
         current_fingerprints_sha256=checksum({key: manager.service._fingerprints.get(key) for key in pending.keys() | main_members.keys()}))
@@ -103,6 +105,7 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
             table = manager.suggestions.Table
             records = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
             old_header, old_decisions, carried_from = draft_carry(manager, protocol, owner, snapshot['pending'])
+            transaction_authority = manager.transaction_authority(protocol)
             with manager.service.dj.conn().transaction:
                 existing = manager.receipt(operation, owner, request_hash)
                 if existing:
@@ -153,9 +156,11 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                             manager.tables[1].insert1(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
                                 **{field: bool(saved[field]) for field in ('selected', 'reviewed', 'excluded')}))
                             carried_count += 1
-                if snapshot_authority(manager, protocol, owner)['sha256'] != snapshot['sha256']:
+                if snapshot_authority(manager, protocol, owner,
+                        query_revision_guard=transaction_authority[0])['sha256'] != snapshot['sha256']:
                     raise WorkbenchConflict('Cumulative source, annotation or main authority changed during preparation')
-                context = public_context(manager.context(protocol, revision, owner))
+                context = public_context(manager.context(protocol, revision, owner,
+                    query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority)
                 result = dict(contract_version=1, kind='workbench_pending_union', candidate_revision_uuid=revision,
                     root='/protocols/' + protocol + '/workbench/candidates/' + revision,
                     candidate_scope_revision=context['candidate_scope_revision'], context=context,

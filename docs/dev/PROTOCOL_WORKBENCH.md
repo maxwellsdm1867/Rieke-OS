@@ -113,6 +113,20 @@ Legacy snapshots deliberately restore empty review tables. Recovery retains
 required candidate/baseline/receipt/additive ancestor closure in SQL batches of
 250, with no total 250-root cap; missing dependencies fail explicitly.
 
+Native baseline freeze and Workbench preparation/acceptance capture the v3 query
+receipt before their transaction, then validate it with the existing locked
+generation/metadata guard. Preparation's context read also validates captured
+shared and referenced protocol generations under those locks; the ordinary
+native token reader still refuses transaction-time reads. No legacy revision is
+substituted for a captured native receipt.
+
+Recovery feed contract v2 expands the exact key column to `varbinary(4096)` for
+complete Workbench Unicode actor keys. Bootstrap migrates only the known owned
+1024-byte ring with `ALTER`, preserving existing hints and authored rows. Prior
+watermarks require full reconciliation. The ring still has 20,000 slots (up to
+about 80 MiB of key bytes at the new maximum, excluding SQL overhead). Larger or
+unknown schemas fail closed; actor identities and watch tables are not truncated.
+
 ## Qualification limits
 
 SQL-double/file-fixture tests and independent source review qualify implementation

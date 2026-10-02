@@ -165,12 +165,70 @@ class ProtocolWorkbench:
             version -= 1
         return main['content_sha256'] == baseline['content_sha256'] and version == baseline_version
 
-    def context(self, protocol, revision, actor):
+    def transaction_authority(self, protocol):
+        """Capture native receipts before SQL, then attest them under its locks.
+
+        Native token() intentionally refuses an active transaction. Frozen
+        publication checks must validate its captured receipts with the locked
+        authority, rather than substituting a legacy revision or missing token.
+        """
+        query_guard = self.revision_guard(protocol)
+        tracker = getattr(self.service, '_explore_state_generation', None)
+        tokens = {}
+        read_context = dict(predicate={'all': []}, protocol_uuid=protocol, filters={})
+        read_witness = None
+        if tracker is not None:
+            from workspace_explore_queries import generation as read_generation
+            # Establish the service's publication identity before creating any
+            # shallow read adapter, and capture the complete outside-SQL proof.
+            read_witness = read_generation(self.service, read_context)
+            from workspace_tag_predicates import referenced_fields
+            predicates = [self.history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate']
+                for row in self.original_records(protocol)]
+            binding = self.history.protocol_binding(protocol)
+            if binding:
+                predicates.append(binding['recipe']['predicate'])
+            fields = set().union(*(referenced_fields(predicate) for predicate in predicates))
+            protocols = {protocol} | {field.split('/')[1] for field in fields if field.startswith('curation/')}
+            for origin in [None, *sorted(protocols)]:
+                token = tracker.token(origin)
+                if token is None:
+                    raise WorkbenchConflict('Native annotation authority is unavailable before publication')
+                tokens[origin] = token
+        def guard():
+            for token in tokens.values():
+                tracker.assert_current_locked(token)
+            return query_guard()
+        def generation(context):
+            from workspace_explore_queries import generation as read_generation
+            if tracker is None:
+                return read_generation(self.service, context)
+            guard()
+            class LockedReceipts:
+                def token(self, origin=None):
+                    if origin not in tokens:
+                        raise WorkbenchConflict('Uncaptured annotation authority requested during publication')
+                    return tokens[origin]
+            scoped = copy.copy(self.service)
+            scoped._explore_state_generation = LockedReceipts()
+            # Only the service-local adapter uses captured, locked-attested
+            # tokens. The native tracker and its transaction refusal stay intact.
+            current = read_generation(scoped, context)
+            if context != read_context or current != read_witness:
+                raise WorkbenchConflict('Frozen read authority changed during publication')
+            return current
+        return guard, generation
+
+    def context(self, protocol, revision, actor, *, query_revision_guard=None):
         key = self.key(protocol, revision, actor)
         summary, baseline, candidate = self.proposal(protocol, revision)
         header, decisions = self.draft(key)
         binding = self.history.protocol_binding(protocol)
-        result, _, query_revision = self.state(protocol)
+        if query_revision_guard is None:
+            result, _, query_revision = self.state(protocol)
+        else:
+            query_revision = query_revision_guard()
+            result = self.service.query_result(protocol) if binding is None else None
         main = binding['recipe'] if binding else None
         previous = _members(main) if main else _members(result)
         base, proposed = _members(baseline), _members(candidate)
@@ -347,7 +405,7 @@ class ProtocolWorkbench:
                 or body['expected_binding_version'] != preview['expected_binding_version']
                 or body['expected_query_revision'] != preview['expected_query_revision']):
             raise WorkbenchConflict('Additive preview changed; compare again before accepting')
-        guard = self.revision_guard(protocol)
+        guard, _ = self.transaction_authority(protocol)
         self.verify_sources(context, selected | context['previous'].keys())
         union = {**context['previous'], **{key: context['incoming'][key] for key in accepted}}
         main = context['main']
@@ -370,7 +428,8 @@ class ProtocolWorkbench:
             again = self.receipt(body['operation_uuid'], actor, request_hash)
             if again:
                 return again
-            self.check_scope(self.context(protocol, revision, actor), context['candidate_scope_revision'])
+            self.check_scope(self.context(protocol, revision, actor, query_revision_guard=guard),
+                context['candidate_scope_revision'])
             if accepted:
                 record = self.history.create(frozen, self.service.sources, self.service.project_dir / 'catalog.json', actor,
                     name=main['name'], parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
@@ -613,7 +672,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         from workspace_explore_queries import generation, StaleQuery
         context['_read_context'] = dict(predicate={'all': []}, protocol_uuid=context['protocol_uuid'], filters=filters or {})
         try:
-            context['_read_generation'] = generation(service, context['_read_context'])
+            context['_read_generation'] = (context['_transaction_authority'][1](context['_read_context'])
+                if '_transaction_authority' in context else generation(service, context['_read_context']))
         except StaleQuery as error:
             raise WorkbenchConflict(str(error)) from error
         return context
@@ -627,13 +687,16 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         if '_read_generation' in context:
             from workspace_explore_queries import generation, StaleQuery
             try:
-                current = generation(service, context['_read_context'])
+                current = (context['_transaction_authority'][1](context['_read_context'])
+                    if '_transaction_authority' in context else generation(service, context['_read_context']))
             except StaleQuery as error:
                 raise WorkbenchConflict(str(error)) from error
             if current != context['_read_generation']:
                 raise WorkbenchConflict('Metadata or filter annotation authority changed during the frozen read')
             value['generation'] = current
-        manager.check_scope(manager.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor']),
+        guard = context.get('_transaction_authority', (None,))[0]
+        manager.check_scope(manager.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'],
+                            query_revision_guard=guard),
                             context['candidate_scope_revision'])
         value.update(candidate_scope_revision=context['candidate_scope_revision'],
             query_revision=context['candidate_scope_revision'], expected_binding_version=context['expected_binding_version'])
@@ -647,7 +710,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if annotations:
                 row['annotations'] = annotations[row['epoch_uuid']]
 
-    def public_context(context, filters=None):
+    def public_context(context, filters=None, *, transaction_authority=None):
+        if transaction_authority is not None:
+            context['_transaction_authority'] = transaction_authority
         start_read(context, filters)
         scoped = manager.frozen_service(context)
         protocol = copy.deepcopy(scoped.protocol(context['protocol_uuid'], filters))
