@@ -17,6 +17,7 @@ export function compileTagRules(mode,rules){
 }
 export function clearTagFilters(filters){const next={...filters};delete next.tag;delete next.tagged;delete next.tag_predicate;return next;}
 export function tagFilterLabel(filters={}){
+  if(filters.metadata_predicate){const tags={...filters};delete tags.metadata_predicate;return ['Metadata conditions',tagFilterLabel(tags)].filter(Boolean).join(' + ');}
   if(filters.tag_predicate){try{const {mode,rules}=readTagRules(filters);return `${mode==='any'?'Any':'All'} of ${rules.length} tag ${rules.length===1?'rule':'rules'}: ${rules.map(rule=>`${rule.scope} ${rule.comparison==='is_not'?'is not':'is'} “${rule.value}”`).join('; ')}`;}catch{return 'Tag filter';}}
   return filters.tag?`Tag: ${filters.tag}`:filters.tagged?'Tagged epochs':'';
 }
@@ -34,5 +35,6 @@ export function predicateWithTagFilters(predicate,filters={}){
 export function predicateWithProtocolFilters(predicate,filters={}){
  const fields={cell_uuid:'cell',cell_type:'cell type',group_label:'group label'};
  const conditions=Object.entries(filters).filter(([key,value])=>fields[key]&&value).map(([key,value])=>({field:fields[key],operator:'eq',value}));
+ if(filters.metadata_predicate)conditions.push(JSON.parse(filters.metadata_predicate));
  return predicateWithTagFilters(conditions.length?{all:[predicate,...conditions]}:predicate,filters);
 }

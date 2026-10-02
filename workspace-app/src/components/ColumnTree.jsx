@@ -15,9 +15,9 @@ import AnnotationIndicator from './AnnotationIndicator.jsx';
 
 // Preserve the column interaction while loading at most one 60-row page per level.
 export default function ColumnTree(props){
-  const {protocolId,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
+  const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
   const groupTags=useTreeGroupTags(props);
-  const scopeKey=JSON.stringify({protocolId,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
   const callbacks=useRef(props);callbacks.current=props;
   const saved=useRef(initialNavigation),initialScope=useRef(scopeKey),restored=useRef(false);
   const [state,setState]=useState({columns:[],loading:true,error:null});
@@ -50,7 +50,7 @@ export default function ColumnTree(props){
     // cannot act on the previous revision. Commit the replacement atomically.
     setState(old=>({columns:old.columns,loading:true,error:null}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey);
-    const fetchPage=(pagePath,pageOffset,pageRevision,pageAnchor=null)=>api('/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:pageAnchor,reset:reset&&!pageRevision,currentRevision:pageRevision})});
+    const fetchPage=(pagePath,pageOffset,pageRevision,pageAnchor=null)=>api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:pageAnchor,reset:reset&&!pageRevision,currentRevision:pageRevision})});
     try{
       const page=await fetchPage(path,offset,revisionOverride||(!reset?prior.at(-1)?.revision:null),anchor);
       // Restore ancestors against the SAME revision, never a fresh membership.

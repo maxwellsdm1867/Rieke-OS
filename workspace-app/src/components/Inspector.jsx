@@ -14,6 +14,9 @@ import AnnotationTags from './AnnotationTags.jsx';
 import TagExchangeControls from './TagExchangeControls.jsx';
 import './Inspector.css';
 
+import {frozenReadPath,frozenReadQuery} from '../frozenReadContext.js';
+export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContext===true;
+
 import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../useAnnotationReceipts.js';
@@ -24,7 +27,7 @@ import Trace from './TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision}) {
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
   const requestedCellFocus=filters?.cell_uuid&&filters.cell_uuid!==cellScope?null:(cellScope || null);
   const [focusCell,setFocusCell]=useState(initialNavigation&&Object.hasOwn(initialNavigation,'focusCell')?initialNavigation.focusCell:requestedCellFocus);
@@ -48,15 +51,18 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const changeSplits=useCallback(fields=>{setSplits(fields.join(','));setDesignPath([]);setDesignNavigation(null);},[]);
   const [collapseRequest,setCollapseRequest]=useState(0);
   const [treeOpen,setTreeOpen]=useState(initialNavigation?.treeOpen ?? true),[treeMode,setTreeMode]=useState(initialNavigation?.treeMode ?? false);
-  const {protocol:protocolSearch,navigation:search}=inspectionSearches(filters,focusCell);
+  const queries=inspectionSearches(filters,focusCell);
+  const protocolSearch=frozenReadQuery(readContext,queries.protocol),search=frozenReadQuery(readContext,queries.navigation);
+  const readRoot=readContext?.root||`/protocols/${id}`;
+  function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);}
   const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,scope:JSON.stringify([id,protocolSearch,focusCell,pendingNavigation?.anchorUuid??null]),filters});
   const pageRevision=annotationState.authorityRevision;
-  const rowsPath=`/protocols/${id}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=60${focusCell?'':'&include_cells=true'}`;
+  const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=60${focusCell?'':'&include_cells=true'}`;
   const loadedRows=useResource(rowsPath,pageRevision);
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
   // cell counts. A focused navigation page needs a separate all-cell receipt.
-  const cellRows=useResource(focusCell?`/protocols/${id}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true`:null,pageRevision);
+  const cellRows=useResource(focusCell?`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true`:null,pageRevision);
   const cellPage=focusCell?cellRows:rows;
   const queryRevision=rows.data?.query_revision,bindingVersion=rows.data?.expected_binding_version;
   const pageReady=!annotationState.dirty&&!rows.loading&&!rows.error&&typeof queryRevision==='string'&&!!queryRevision&&Number.isSafeInteger(bindingVersion)&&bindingVersion>=0;
@@ -80,12 +86,12 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const changePane=(key,value)=>setPaneWidths(old=>({...old,[key]:value}));
   const savePane=(key,value)=>{setPaneWidths(old=>{const next={...old,[key]:value};try{localStorage.setItem('workspace.inspector.paneWidths',JSON.stringify(next));}catch{}return next;});};
   useEffect(()=>{const element=layoutRef.current;if(!element)return;const observer=new ResizeObserver(entries=>setLayoutWidth(entries[0].contentRect.width));observer.observe(element);return()=>observer.disconnect();},[]);
-  const epoch=useEpochResource(focused?`/epochs/${focused}?protocol_uuid=${id}`:null,annotationState.epochRevision,80);
-  const focusedEpoch=useMemo(()=>epoch.data?.epoch_uuid===focused?annotationState.apply(epoch.data):null,[epoch.data,focused,annotationState.apply]);
+  const epoch=useResource(focused?(readContext?frozenReadPath(readContext,id,`/epochs/${focused}`):`/epochs/${focused}?protocol_uuid=${id}`):null,annotationState.epochRevision,80,{cache:!readContext,warmEpoch:!readContext});
+  const focusedEpoch=useMemo(()=>(!readContext&&!filters?.metadata_predicate||pageReady&&rows.data?.epochs?.some(row=>row.epoch_uuid===focused))&&epoch.data?.epoch_uuid===focused?annotationState.apply(epoch.data):null,[readContext,filters?.metadata_predicate,pageReady,rows.data,epoch.data,focused,annotationState.apply]);
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
-  useEpochPrefetch(!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?[rows.data.epochs[neighborIndex+1],rows.data.epochs[neighborIndex-1]].filter(Boolean).map(row=>`/epochs/${row.epoch_uuid}?protocol_uuid=${id}`):[],annotationState.epochRevision);
+  useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?[rows.data.epochs[neighborIndex+1],rows.data.epochs[neighborIndex-1]].filter(Boolean).map(row=>readContext?frozenReadPath(readContext,id,`/epochs/${row.epoch_uuid}`):`/epochs/${row.epoch_uuid}?protocol_uuid=${id}`):[],annotationState.epochRevision);
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
-  const scopeIdentity=JSON.stringify([id,requestedCellFocus,protocolSearch,initialEpochUuid]);
+  const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,protocolSearch,initialEpochUuid]);
   const curationIdentity=JSON.stringify([id,protocolSearch,focusCell,protocol.query_revision,protocol.expected_binding_version??0,queryRevision,bindingVersion,revision,focused,targets]);
   const curationGeneration=useRef(0),curationRequest=useRef(null),mounted=useRef(false),committedCurationIdentity=useRef(null);
   const changedCallback=useRef(onChange);changedCallback.current=onChange;
@@ -101,7 +107,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   function selectOverviewTargets(update){
     // This overview spans every matching cell, including when entered from a cell shortcut.
     if(focusCell){navigationIntent.current=null;anchorSteps.current=0;setFocusCell(null);setOffset(0);setPendingNavigation(null);}
-    setTargets(update);
+    selectTargets(update);
   }
   function focusTreeEpoch(uuid,epochInfo){setCellTagRequest(null);toggleMetadata(true);
     if(busy)return;
@@ -143,7 +149,11 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     const isCurrent=()=>mounted.current&&generation===curationGeneration.current&&committedCurationIdentity.current===curationIdentity;
     setBusy(true);setError('');setOperationMessage('Saving curation changes…');
     try {
-      await saveCurationSelection({request:api,protocolId:id,queryRevision,
+      if(readContext){
+        if(!onReviewDecision)throw Error('Candidate review decisions are unavailable.');
+        if(Object.keys(changes).some(key=>!['included','review_state'].includes(key)))throw Error('Candidate protocol curation tags are unavailable; use shared tags.');
+        await onReviewDecision({epoch_uuids:uuids,changes:{...('included' in changes?{included:changes.included}:{}),...('review_state' in changes?{reviewed:changes.review_state==='approved'}:{})},query_revision:queryRevision,bindingVersion});
+      }else await saveCurationSelection({request:api,protocolId:id,queryRevision,
         bindingVersion,epochUuids:uuids,changes,
         selectionScope:{filters:filters||{},cell_uuid:epochUuid?null:focusCell},
         signal:controller.signal,isCurrent});
@@ -155,7 +165,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     }
   }
   async function saveMask() {
-    if(busy)return;
+    if(busy||readContext)return;
     setBusy(true);setError('');setMaskMessage('');setOperationMessage('Saving protocol selection mask…');
     try {
       const mask=await api(`/protocols/${id}/masks/export`);
@@ -226,12 +236,12 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     if(onChange)onChange({kind:'annotations',protocolId:id,...(safe?{origin:annotationOrigin,confirmed}:{})});
     else{epoch.reload();loadedRows.reload();}
   };
-  const tagEntry=focusedEpoch&&<AnnotationTags reconcileReceipt={!!onChange} refreshWithEpoch={!!onChange} epoch={focusedEpoch} revision={revision} disabled={busy||epoch.loading||!!pendingNavigation} onChange={annotationChanged} onFilter={onTagFilter} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={navigateAndTag} selectedEpochs={targets} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={focusedEpoch} disabled={busy} onChanged={annotationChanged}/>}><EpochTags value={tag} onValue={setTag} onAdd={value=>curate({tags_add:[value]})} onRemove={value=>curate({tags_remove:[value]},'focused')} selectedTags={focusedEpoch.curation?.tags||[]} busy={busy||!pageReady} scope={`dataset · ${actionScope}`} revision={revision}/></AnnotationTags>;
+  const tagEntry=focusedEpoch&&<AnnotationTags reconcileReceipt={!!onChange} refreshWithEpoch={!!onChange} epoch={focusedEpoch} revision={revision} disabled={busy||((readContext||filters?.metadata_predicate)&&!pageReady)||epoch.loading||!!pendingNavigation} onChange={annotationChanged} onFilter={onTagFilter} focusRequest={tagFocus} targetScope={cellTagRequest?'cell':targets.length?'selected':'epoch'} epochFocusRequest={epochTagFocus} onNavigateEpoch={navigateAndTag} selectedEpochs={targets} tools={!cellTagRequest&&!targets.length&&<TagExchangeControls epoch={focusedEpoch} disabled={busy} onChanged={annotationChanged}/>}>{!readContext&&<EpochTags value={tag} onValue={setTag} onAdd={value=>curate({tags_add:[value]})} onRemove={value=>curate({tags_remove:[value]},'focused')} selectedTags={focusedEpoch.curation?.tags||[]} busy={busy||!pageReady} scope={`dataset · ${actionScope}`} revision={revision}/> }</AnnotationTags>;
   return <EpochViewer hideFilterControl viewFilters={filters} onViewFilters={onFilterChange} filterRevision={revision} filterDisabled={busy} className={designMode?'tree-design':'epoch-inspector-mode'} ariaLabel={designMode?'Tree overview workspace':'Epoch inspection workspace. Tab next epoch, Shift+Tab previous epoch; W/S also navigate.'} onKeyDown={epochKeys}
     toolbar={{portalTarget:toolbarTarget,treeControlsInPane:true,designMode:designMode,onBrowse:()=>{setDesignMode(false);setTreeMode(false);setTreeOpen(true);},onDesign:()=>{setDesignMode(true);setTreeOpen(true);setTreeMode(true);},onTags:openTagsForSelection,metadataOpen:metadataOpen,onToggleMetadata:()=>toggleMetadata(!metadataOpen),actions:[
         {label:treeOpen?(designMode?'Hide tree editor':'Hide epoch list'):(designMode?'Show tree editor':'Show epoch list'),icon:GitBranch,run:()=>setTreeOpen(value=>!value)},
-        !designMode&&{label:'Import mask file…',icon:FileJson,run:()=>setMasksOpen(true),disabled:busy},
-        !designMode&&onImport&&{label:'Add data store',icon:Upload,run:onImport,disabled:busy},
+        !readContext&&!designMode&&{label:'Import mask file…',icon:FileJson,run:()=>(!readContext&&setMasksOpen(true)),disabled:busy},
+        !readContext&&!designMode&&onImport&&{label:'Add data store',icon:Upload,run:onImport,disabled:busy},
       ]}} toolbarChildren={<>
       {focusCell&&<button className="inspection-focus-chip" disabled={busy} onClick={clearCellFocus} title="Clear cell focus and navigate all matching cells">{datedCellLabel(protocol.cells?.find(cell=>cell.cell_uuid===focusCell)||focusedEpoch||{},true)} <X size={12}/></button>}
     </>} before={<>
@@ -252,11 +262,11 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     {error&&<div className="inspector-operation-error" role="alert">{error}<button className="icon-button" onClick={()=>setError('')} aria-label="Dismiss operation error"><X size={14}/></button></div>}
 </>}
     layout={{layoutRef,sizes:paneSizes,treeOpen,metadataOpen,onResize:changePane,onResizeCommit:savePane}} designMode={designMode}
-    builder={{projectId,protocolId:id,summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,filters:filters,splits:splits,revision:pageRevision,design:true,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:setTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:()=>{setDesignMode(true);setTreeOpen(true);setTreeMode(true);},designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,filters,splits,revision:pageRevision,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:setTreeStatus},listRef:epochListRef,listKey:`${id}:${protocolSearch}`,listProps:{cells:viewCells||[],source:{kind:'protocol',protocolId:id,query:protocolSearch,queryRevision},revision:pageRevision,inclusionForEpoch:annotationState.apply,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!cellsReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
+    builder={{projectId,protocolId:id,readContext,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:setTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:()=>{setDesignMode(true);setTreeOpen(true);setTreeMode(true);},designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationChanged,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:setTreeStatus},listRef:epochListRef,listKey:`${readRoot}:${protocolSearch}`,listProps:{cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision},revision:pageRevision,inclusionForEpoch:annotationState.apply,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!cellsReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
     resource={{scope:id,...epoch,loading:!epoch.error&&(!!pendingNavigation||(!!focused&&(epoch.loading||!focusedEpoch))),retry:epoch.reload}}
     epoch={focusedEpoch} targets={targets} navigation={{position:focusedPageIndex<0?-1:offset+focusedPageIndex,total:rows.data?.total||0,loading:!!pendingNavigation||rows.loading,disabled:busy,onMove:moveEpoch}}
-    traceRevision={annotationState.epochRevision} inclusion={{disabled:busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={busy} onQC={onQC} tags={tagEntry}
-    detailExtras={focusedEpoch&&<>        {busy&&<p className="curation-progress" role="status">{operationMessage}</p>}
+    readContext={readContext} traceRevision={annotationState.epochRevision} inclusion={{disabled:busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={busy} onQC={onQC} tags={tagEntry}
+    detailExtras={focusedEpoch&&!readContext&&<>        {busy&&<p className="curation-progress" role="status">{operationMessage}</p>}
         <div className="tags"><span>Dataset-only tags:</span>
           {(focusedEpoch.curation?.tags||[]).map(t=><button key={t} disabled={busy} aria-label={`Remove tag ${t} from focused epoch only`} title="Remove from focused epoch only" onClick={()=>curate({tags_remove:[t]},'focused')}>{t}<X size={13}/></button>)}
           {!focusedEpoch.curation?.tags?.length&&<span>No tags</span>}
@@ -267,7 +277,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
           <button disabled={busy} onClick={()=>curate({review_state:!targets.length&&focusedEpoch.curation?.review_state==='approved'?'unreviewed':'approved'})}><Eye size={14}/>
             {targets.length?`Mark ${actionScope} reviewed`:focusedEpoch.curation?.review_state==='approved'?'Clear focused epoch review marker':'Mark focused epoch reviewed'}
           </button>
-        </details></>} metadata={{selectionCell:cellTagRequest,selectedEpochs:targets,onClearSelection:()=>setTargets([]),catalog:metadataCatalog,onClose:()=>toggleMetadata(false),connections:focusedEpoch&&<EpochConnections epoch={focusedEpoch} protocolName={humanize(protocol.definition?.name)}/>}}/>;
+        </details></>} metadata={{selectionCell:cellTagRequest,selectedEpochs:targets,onClearSelection:()=>selectTargets([]),catalog:metadataCatalog,onClose:()=>toggleMetadata(false),connections:focusedEpoch&&<EpochConnections epoch={focusedEpoch} protocolName={humanize(protocol.definition?.name)}/>}}/>;
 }
 
 export default function Inspector(props){return <NavigationLoadingProvider><InspectorContent {...props}/></NavigationLoadingProvider>;}

@@ -54,4 +54,4 @@ export function applyAnnotationReceipts(epoch,store){
   annotations.effective_tags=[...(annotations.cell_tags||[]),...(annotations.epoch_tags||[])];
   return {...epoch,annotations};
 }
-export function annotationFilterNeedsRefresh(filters={}){return ['tag','tagged','tag_predicate'].some(key=>Object.hasOwn(filters,key));}
+export function annotationFilterNeedsRefresh(filters={}){if(filters.metadata_predicate){try{const walk=node=>!!node?.field?.startsWith('annotations/')||!!node?.field?.startsWith('curation/')||!!node?.not&&walk(node.not)||(node?.all||node?.any||[]).some(walk);if(walk(JSON.parse(filters.metadata_predicate)))return true;}catch{return true;}}return ['tag','tagged','tag_predicate'].some(key=>Object.hasOwn(filters,key));}

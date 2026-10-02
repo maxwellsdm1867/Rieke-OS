@@ -28,7 +28,7 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, readContext=null, onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
   const legacyPath=`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
@@ -42,9 +42,9 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
   const groupTags=useTreeGroupTags({protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,onAnnotationsChanged,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false});
-  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.predicate,preferences:preferences.value});
+  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.filters?.metadata_predicate?{all:[summaryContext.predicate||{all:[]},JSON.parse(summaryContext.filters.metadata_predicate)]}:summaryContext?.predicate,preferences:preferences.value});
   const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
-    {enabled:!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
+    {enabled:summaryEnabled&&!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
   const fields = useMemo(()=>{
     const recorded=fieldsWithSummaries(definitions,summaries).map(field=>({...field,label:treeFieldLabel(field)}));
     for(const id of order)if(!recorded.some(field=>field.id===id)){

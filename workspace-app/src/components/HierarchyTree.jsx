@@ -12,9 +12,9 @@ import './HierarchyTree.css';
 
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){
-  const {protocolId,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
+  const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
   const groupTags=useTreeGroupTags(props);
-  const scopeKey=JSON.stringify({protocolId,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
   const callbacks=useRef(props);callbacks.current=props;
   const [state,setState]=useState(blank),current=useRef(state),controller=useRef(null),serial=useRef(0),scroll=useRef(null),container=useRef(null);
   const firstScope=useRef(scopeKey),saved=useRef(initialNavigation),initialized=useRef(false),restoreTop=useRef(null),restoreLeft=useRef(null),scrollFrame=useRef(null);
@@ -26,7 +26,7 @@ export default function HierarchyTree(props){
     const scope=JSON.parse(scopeKey),root=current.current.pages.find(page=>!page.path.length);
     let pinned=scope.expectedRevision||restore?.revision||(!reset?root?.revision:null);
     async function fetchPage(pagePath,pageOffset=0,focus=null){
-      const result=await api('/tree-pages',{method:'POST',signal:request.signal,
+      const result=await api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,
         body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:focus,reset:!pinned,currentRevision:pinned})});
       if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
       pinned=result.revision;return result;

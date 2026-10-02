@@ -1,3 +1,4 @@
+import {frozenReadPath,frozenReadQuery} from './frozenReadContext.js';
 // Membership stays source-specific; the browser above this adapter is shared.
 export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,includeCells=false}={}){
   if(source.kind==='protocol'){
@@ -6,7 +7,7 @@ export function epochPageRequest(source,{offset=0,cellUuid=null,anchorUuid=null,
     query.set('limit',60);
     if(includeCells)query.set('include_cells','true');
     if(anchorUuid)query.set('anchor_uuid',anchorUuid);else query.set('offset',offset);
-    return {path:`/protocols/${source.protocolId}/epochs?${query}`,options:{}};
+    return {path:frozenReadPath(source.readContext,source.protocolId,'/epochs',query.toString()),options:{}};
   }
   if(source.kind!=='predicate')throw new Error('Unknown epoch browser source');
   return {path:'/explore/epochs',options:{method:'POST',body:{predicate:source.predicate,splits:source.splits,
