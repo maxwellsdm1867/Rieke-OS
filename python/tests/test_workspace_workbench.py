@@ -115,6 +115,30 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409, response.get_json())
         self.assertNotIn('counts', response.get_json())
 
+    def test_frozen_tree_leaf_has_saved_proposal_decision_without_scientific_curation(self):
+        context = self.get_context()
+        context = self.save(context, [dict(epoch_uuid=self.added, reviewed=True, excluded=True)]).get_json()
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], splits='cell')
+        branches = self.case.client.post(self.root + '/tree/page', json=body, headers=self.case.headers)
+        self.assertEqual(branches.status_code, 200, branches.get_json())
+        branch = branches.get_json()['branches'][0]
+        page = self.case.client.post(self.root + '/tree/page', json={**body, 'path': [branch['key']],
+            'revision': branches.get_json()['revision']}, headers=self.case.headers)
+        self.assertEqual(page.status_code, 200, page.get_json())
+        self.assertEqual(page.get_json()['kind'], 'epochs')
+        leaf = page.get_json()['epochs'][0]
+        self.assertEqual(leaf['epoch_uuid'], self.added)
+        self.assertEqual(leaf['review_decision'], dict(selected=False, reviewed=True, excluded=True))
+        self.assertNotIn('curation', leaf)  # Structural tree DTO stays structural.
+        detail = self.case.client.get(self.root + '/epochs/' + self.added, query_string={
+            'candidate_scope_revision': context['candidate_scope_revision']})
+        self.assertEqual(detail.status_code, 200, detail.get_json())
+        self.assertEqual(detail.get_json()['review_decision'], leaf['review_decision'])
+        self.assertTrue(detail.get_json()['curation']['included'])
+        self.assertFalse(detail.get_json()['curation']['reviewed'])
+        self.assertEqual(detail.get_json()['curation']['revision'], 0)
+        self.assertFalse(self.case.curation.rows)
+
     def test_scoped_predicate_dependency_intersects_only_frozen_incoming_across_read_surfaces(self):
         if not hasattr(self.case.service, 'validate_metadata_filters'):
             self.skipTest('Compose the protocol-scoped-predicate commits to qualify this adapter')

@@ -794,6 +794,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 page = TreePages(manager.frozen_service(context)).page(dict(protocol_uuid=protocol, **value))
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
+            if page.get('epochs'):
+                row_decisions(context, page['epochs'])
             return jsonify(finish(context, page))
 
     @app.post(candidate + '/summary')
