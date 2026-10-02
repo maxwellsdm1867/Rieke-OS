@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
 
-test('Protocol Workbench tab mounts the real incoming workspace through the App route',async()=>{
+for(const entry of ['tab','restored session','reused Workbench route'])test(`Protocol ${entry} mounts the real incoming workspace through the App route`,async()=>{
  const h=await createWorkflowHarness();
  h.fixture.respond=(url,options,fallback)=>url.pathname.endsWith('/protocols/protocol-A/workbench')?{contract_version:1,queue_revision:'queue-1',pending_epoch_count:0,pending_cell_count:0,candidates:[],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}}:fallback();
  try{
-  await h.mount(h.Protocol,{id:'protocol-A',projectId:'project',revision:0,session:{tab:'inspect'}});
+  await h.mount(h.Protocol,{id:'protocol-A',projectId:'project',revision:0,...(entry==='reused Workbench route'?{initialWorkbench:{}}:{session:{tab:entry==='tab'?'inspect':'workbench'}})});
   await h.waitFor(()=>h.root.findAllByProps({'aria-label':'Workbench'}).length>0);
-  await h.act(()=>h.root.findByProps({'aria-label':'Workbench'}).props.onClick());
+  if(entry==='tab')await h.act(()=>h.root.findByProps({'aria-label':'Workbench'}).props.onClick());
   await h.waitFor(()=>h.fixture.requests.some(r=>r.path==='/protocols/protocol-A/workbench?limit=20'));
   await h.settle();
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findByType('h1').children.join(''),'Needs review');
