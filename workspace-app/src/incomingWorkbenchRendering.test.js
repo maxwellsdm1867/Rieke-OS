@@ -367,3 +367,30 @@ test('actual queue hook retains Inspector through old-token loading, delayed que
   assert.equal(replacement.props.readContext.candidate_scope_revision,'scope-new-union');assert.equal(replacement.props.revision,'1:1');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
+
+test('candidate cohort identity survives draft saves while authority tokens refresh and membership changes reset it',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer;
+ const root='/protocols/history/workbench/candidates/proposal',bodies=[];
+ let context={candidate_revision_uuid:'proposal',candidate_recipe_sha256:'a'.repeat(64),expected_binding_version:3,candidate_scope_revision:'scope-one',protocol:{definition:{protocol_uuid:'history'}},draft:{draft_version:1,selection_mode:'selected'},counts:{pending_epochs:1}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method==='PATCH'){assert.equal(path,`/api${root}/draft`);bodies.push(JSON.parse(options.body));context={...context,candidate_scope_revision:'scope-two',draft:{...context.draft,draft_version:2}};}
+  else assert.equal(path,`/api${root}/context`);
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Frozen}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},revision:0,preserveBrowser:true,capabilities:{frozen_browse:true,drafts:true,additive_accept:true}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Frozen,props));});
+  const inspector=()=>renderer.root.findAll(node=>node.type?.name==='Inspector')[0];
+  const original=inspector().props.readContext.cohort_key;assert.equal(original,JSON.stringify([root,'a'.repeat(64),3]));
+  await act(async()=>inspector().props.onReviewDecision({epoch_uuids:['epoch'],changes:{reviewed:true}}));
+  assert.equal(inspector().props.readContext.cohort_key,original);assert.equal(inspector().props.readContext.candidate_scope_revision,'scope-two');
+  assert.equal(bodies[0].expected_candidate_scope_revision,'scope-one');assert.equal(bodies[0].expected_version,1);assert.equal(bodies[0].cohort_key,undefined,'intent identity never becomes mutation authority');
+  context={...context,expected_binding_version:4,candidate_scope_revision:'scope-three'};
+  await act(async()=>renderer.update(React.createElement(Frozen,{...props,revision:1})));
+  assert.notEqual(inspector().props.readContext.cohort_key,original);
+  context={...context,candidate_recipe_sha256:undefined,candidate_scope_revision:'scope-four'};
+  await act(async()=>renderer.update(React.createElement(Frozen,{...props,revision:2})));
+  assert.equal(inspector().props.readContext.cohort_key,undefined,'missing immutable evidence must not manufacture a stable cohort');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});

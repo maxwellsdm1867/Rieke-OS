@@ -186,3 +186,12 @@ new preparation. The previous implementation fails the first-entry regression
 with the reported permanent interrupted message. All 40 focused checks pass.
 Inspector and filter probes isolate the lifecycle boundary; these tests do not
 claim native or full Inspector resource/browser qualification.
+
+Candidate read contexts also carry optional `cohort_key` for browser intent:
+`JSON.stringify([root, candidate_recipe_sha256, expected_binding_version])`.
+It is omitted when immutable evidence is missing. Draft saves keep that identity
+while every read and mutation still uses the newly fenced scope token. Main
+binding, candidate root or recipe changes create a different intent identity.
+The scoped Inspector adapter owns focus/tree continuity and fresh-membership
+validation; the key is never sent as read or write authority. The mounted
+pass-through regression brings the focused total to 41 passing checks.
