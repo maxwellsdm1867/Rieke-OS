@@ -13,7 +13,7 @@ explains retention/remount, and defaults keyboard focus to Cancel.
 
 Active unmount refuses pending renderer writes/uploads and drains admitted API
 requests through the existing clean-close lifecycle. Background import and
-transfer writers block closure. It flushes existing draft savers and preserves
+transfer writers block closure. Unsubmitted tag text, source-change reasons and modified export options must be resolved first. It flushes existing draft savers and preserves
 the workspace navigation/session snapshot in this browser before close. That
 snapshot restores once when this browser revisits the same project origin;
 private mode, cleared browser storage or a changed origin cannot carry that view.
@@ -22,7 +22,7 @@ Scientific state remains in the project independently of browser drafts.
 
 New renderer mutations are fenced during active unmount. No accepted operation
 is aborted, no database process is killed, and no close success is fabricated.
-Catalog detachment follows successful owned database shutdown. A catalog save
+Catalog detachment follows successful owned database shutdown. Unverified shutdown or transport uncertainty keeps writes paused, preserves recovery view state and offers an explicit retry; it never presents Cancel as a resumed service. Confirmed refusals invalidate the attempted snapshot. A catalog save
 failure after shutdown reports **closed, still mounted** and returns the user to
 the chooser to retry. Inactive running/owned services must be opened and unmounted
 through their own lifecycle. Legacy active servers without managed clean close

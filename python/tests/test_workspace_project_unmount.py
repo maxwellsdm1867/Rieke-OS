@@ -95,7 +95,9 @@ class UnmountTests(unittest.TestCase):
     def test_failed_close_keeps_mounted_and_registry_failure_is_honest(self):
         self.stop.side_effect=ValueError('Ownership not proven')
         client=self.app(current=True).test_client()
-        self.assertEqual(client.post('/api/projects/unmount',json=self.body).status_code,500)
+        failure=client.post('/api/projects/unmount',json=self.body)
+        self.assertEqual(failure.status_code,500);self.assertTrue(failure.json['close_unconfirmed'])
+        self.assertEqual(client.get('/api/projects').status_code,503)
         self.assertEqual(len(list_managed_projects(self.path.parent)['projects']),2)
         self.stop.side_effect=None
         with patch('workspace_project_unmount.unmount_project_record',side_effect=OSError('disk full')):
@@ -143,6 +145,24 @@ class UnmountTests(unittest.TestCase):
         self.assertEqual(response.status_code,200,response.json);self.stop.assert_called_once()
         self.assertTrue(response.json['closed']);self.assertTrue(self.shutdown.wait(1))
         self.assertEqual(len(list_managed_projects(self.path.parent)['projects']),1)
+
+    def test_desktop_unverified_stop_stays_paused_and_retry_can_finish(self):
+        from workspace_desktop import DesktopBoundary
+        from werkzeug.test import Client
+        from werkzeug.wrappers import Response
+        app=Flask('desktop-failure');register_project_routes(app,retinanalysis_dir=self.root,project_dir=self.path)
+        self.stop.side_effect=ValueError('shutdown ownership not yet verified')
+        app.extensions['desktop_stop_database']=self.stop;app.extensions['shutdown_project_server']=self.shutdown.set
+        boundary=DesktopBoundary(app,port=9998,capability='u'*48,identity={},deadline=.01);boundary.stop_callback=self.shutdown.set
+        client=Client(boundary,Response)
+        options=dict(base_url='http://127.0.0.1:9998',json=self.body,headers={'X-Rieke-Desktop-Session':boundary.renderer_session},environ_overrides={'REMOTE_ADDR':'127.0.0.1'})
+        result=client.post('/api/projects/unmount',**options)
+        self.assertEqual(result.status_code,409);self.assertTrue(result.json['close_unconfirmed'])
+        self.assertTrue(boundary.draining);self.assertFalse(boundary.stop_scheduled)
+        self.assertEqual(len(list_managed_projects(self.path.parent)['projects']),2)
+        self.stop.side_effect=None
+        self.assertEqual(client.post('/api/projects/unmount',**options).status_code,200)
+        self.assertTrue(self.shutdown.wait(1));self.assertEqual(self.stop.call_count,2)
 
     def test_copied_native_identity_only_detaches_selected_folder(self):
         # Native folder copies may deliberately share scientific UUIDs.

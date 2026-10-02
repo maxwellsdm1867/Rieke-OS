@@ -1,3 +1,4 @@
+import {useUnmountGuard} from '../useUnmountGuard.js';
 import EpochViewer from './EpochViewer.jsx';
 import SelectionMaskDialog from './SelectionMaskDialog.jsx';
 import {NavigationLoadingProvider} from './NavigationLoading.jsx';
@@ -36,6 +37,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const [cellTagRequest,setCellTagRequest]=useState(null);
   const [tagFocus,setTagFocus]=useState(0),[epochTagFocus,setEpochTagFocus]=useState(0);
   const [tag,setTag]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  useUnmountGuard(!!tag.trim(),'Save or clear the unfinished epoch tag before unmounting.');
   const [operationMessage,setOperationMessage]=useState(''),[maskMessage,setMaskMessage]=useState('');
   const maskInput=useRef(null);
   const [pendingNavigation,setPendingNavigation]=useState(null);

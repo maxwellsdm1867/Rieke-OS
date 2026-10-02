@@ -217,7 +217,8 @@ class DesktopBoundary:
         @self.app.post(_CONTROL + 'stop')
         def desktop_stop(after_close=None):
             if (after_close is None and not empty_control()) or not self.drained or self._busy() or not self.stop_callback:
-                return jsonify(error='All writers must acknowledge drain before stop'), 409
+                return jsonify(error='All writers must acknowledge drain before stop',
+                    **({'close_unconfirmed': True, 'launcher_url': 'http://127.0.0.1:' + os.environ.get('RIEKE_DESKTOP_LAUNCHER_PORT', '8766') + '/'} if after_close else {})), 409
             try:
                 stop_database = self.app.extensions.get('desktop_stop_database')
                 if stop_database:
@@ -230,7 +231,8 @@ class DesktopBoundary:
                 backup_failed = getattr(error, 'desktop_shutdown_stage', None) == 'recovery_snapshot'
                 return jsonify(error='Accepted changes remain committed to the database, but recovery snapshot preparation failed.' if backup_failed
                     else 'Database shutdown could not be verified; existing data and recovery evidence are retained.',
-                    stage='recovery_snapshot' if backup_failed else 'database_shutdown', ready=False), 409
+                    stage='recovery_snapshot' if backup_failed else 'database_shutdown', ready=False,
+                    **({'close_unconfirmed': True, 'launcher_url': 'http://127.0.0.1:' + os.environ.get('RIEKE_DESKTOP_LAUNCHER_PORT', '8766') + '/'} if after_close else {})), 409
             # Give Waitress the response before closing its sockets. The main
             # process awaits actual child exit, not this HTTP acknowledgement.
             result = after_close() if after_close else None

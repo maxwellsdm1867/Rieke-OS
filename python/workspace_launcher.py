@@ -21,7 +21,8 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
     @app.get('/api/projects')
     def project_inventory():
         result = list_projects(current) if current else list_managed_projects(root_provider())
-        return jsonify({**result, 'launcher': current is None})
+        from workspace_project_unmount import launcher_url
+        return jsonify({**result, 'launcher': current is None, 'launcher_url': launcher_url()})
 
     @app.post('/api/projects/unmount')
     def project_unmount():

@@ -1,3 +1,4 @@
+import {useUnmountGuard} from '../useUnmountGuard.js';
 import {useEffect,useRef,useState} from 'react';
 import {Database,Download,FileCode,LoaderCircle} from 'lucide-react';
 import {api,number} from '../api.js';
@@ -10,6 +11,7 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
   const [name,setName]=useState(defaultName),[format,setFormat]=useState(candidateFormat(defaultFormat));
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[completed,setCompleted]=useState(null);
   useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
+  useUnmountGuard(!completed&&(name!==defaultName||format!==candidateFormat(defaultFormat)),'Finish or reset the export options before unmounting.');
   const inFlight=useRef(false),currentRevision=useRef(null);
   const revision=candidate?.revision_uuid,recipe=candidate?.recipe;
   currentRevision.current=revision;

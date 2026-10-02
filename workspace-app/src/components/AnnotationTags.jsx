@@ -1,3 +1,4 @@
+import {useUnmountGuard} from '../useUnmountGuard.js';
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {MessageCircle,Plus,X,Search,ChevronDown,UserRound,CornerDownRight} from 'lucide-react';
 import {api,useResource,number} from '../api.js';
@@ -14,6 +15,7 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
   const handledEpochFocus=useRef(0),restoreInput=useRef(false);
   function toggleTabLock(checked){setTabLocked(checked);try{localStorage.setItem('workspace.tags.tabNavigation',String(checked));}catch{}input.current?.focus();}
   const [manualScope,setScope]=useState('epoch'),[value,setValue]=useState(''),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+  useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
   const scope=targetScope||manualScope;
   const selectedCount=groupMutation?.count??selectedEpochs.length;
   const composerDirty=useRef(false);

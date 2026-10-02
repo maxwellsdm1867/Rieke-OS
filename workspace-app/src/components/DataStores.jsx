@@ -1,3 +1,4 @@
+import {useUnmountGuard} from '../useUnmountGuard.js';
 import H5Inbox from './H5Inbox.jsx';
 import {useDeferredValue,useEffect,useMemo,useRef,useState} from 'react';
 import {Archive,ArrowLeft,ArrowRight,Check,ChevronRight,Database,FileClock,FileUp,FolderOpen,HardDrive,History,Link2,LockKeyhole,MoreHorizontal,RefreshCw,Search,ShieldCheck,UnlockKeyhole,Trash2,X} from 'lucide-react';
@@ -101,6 +102,7 @@ export default function DataStores({importing=false,revision=0,onChange,onImport
   const [tab,setTab]=useState(saved?.tab||'active'),[search,setSearch]=useState(saved?.search||''),[offset,setOffset]=useState(saved?.offset||0),[selected,setSelected]=useState(saved?.selected||null),[version,setVersion]=useState(0);
   const [propagationSource,setPropagationSource]=useState(null),[changedSource,setChangedSource]=useState(null);
   const [pending,setPending]=useState(null),[busy,setBusy]=useState(false),[reason,setReason]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(saved?.wasBusy?'A source action was in progress when you left. Check its activity before retrying.':'');
+  useUnmountGuard(!!pending,'Finish or cancel the data store change before unmounting.');
   const query=useDeferredValue(search.trim().toLowerCase());
   const inventory=useResource('/data-stores',`${revision}:${version}`);
   const sources=inventory.data?.data_stores || [];

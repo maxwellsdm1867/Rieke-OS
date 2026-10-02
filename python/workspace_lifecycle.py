@@ -6,12 +6,12 @@ from flask import g, jsonify, request
 
 def register_project_lifecycle(app, *, busy, stop_database):
     condition = threading.Condition()
-    state = {'closing': False, 'requests': 0}
+    state = {'closing': False, 'requests': 0, 'unmount_failed': False}
 
     @app.before_request
     def admit_request():
         with condition:
-            if state['closing']:
+            if state['closing'] and not (state['unmount_failed'] and request.path == '/api/projects/unmount'):
                 return jsonify(error='This project is closing. Reopen it from the project chooser.'), 503
             state['requests'] += 1
             g.rieke_admitted = True
@@ -34,11 +34,12 @@ def register_project_lifecycle(app, *, busy, stop_database):
 
     def close(after_close=None):
         with condition:
-            if state['closing']:
+            if state['closing'] and not (after_close and state['unmount_failed']):
                 return jsonify(error='Project close is already in progress.'), 409
             if busy() or app.extensions.get('app_active_writers', lambda: False)():
                 return jsonify(error='Wait for the current import or project operation to finish before closing.'), 409
             state['closing'] = True
+            state['unmount_failed'] = False
             if not condition.wait_for(lambda: state['requests'] <= 1, timeout=30) or busy() or app.extensions.get('app_active_writers', lambda: False)():
                 state['closing'] = False
                 return jsonify(error='Project operations are still active. Wait for them to finish and retry.'), 409
@@ -46,8 +47,12 @@ def register_project_lifecycle(app, *, busy, stop_database):
             stop_database()
         except Exception:
             with condition:
-                state['closing'] = False
+                state['closing'] = bool(after_close)
+                state['unmount_failed'] = bool(after_close)
             app.logger.exception('Project database could not close cleanly')
+            if after_close:
+                from workspace_project_unmount import launcher_url
+                return jsonify(close_unconfirmed=True, launcher_url=launcher_url(), error='Project close could not be verified. The project remains mounted and changes are paused. Retry unmount after checking the project log.'), 500
             return jsonify(error='The database could not close cleanly. Check the project log before copying its folder.'), 500
         result = after_close() if after_close else None
         threading.Timer(.2, app.extensions['shutdown_project_server']).start()

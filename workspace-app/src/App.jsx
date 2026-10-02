@@ -15,7 +15,7 @@ import BrowseFilesButton from './components/BrowseFilesButton.jsx';
 import ProjectClosedNotice from './components/ProjectClosedNotice.jsx';
 import AppUpdates from './components/AppUpdates.jsx';
 import {flushDesktopDrafts} from './desktopLifecycle.js';
-import {saveUnmountView,readUnmountView} from './projectUnmount.js';
+import {saveUnmountView,readUnmountView,clearUnmountView} from './projectUnmount.js';
 import ProjectUnmountDialog from './components/ProjectUnmountDialog.jsx';
 import {useDesktopDraft} from './useDesktopDraft.js';
 import DesktopDraftRecovery from './components/DesktopDraftRecovery.jsx';
@@ -182,15 +182,15 @@ export default function App(){
   function importCompleted(jobUuid){changed();if(jobUuid)pendingImportReview.current=jobUuid;}
   const suggestions=activeProtocolSuggestions(suggestionsResource.data),importJobs=useImportMonitor(structureRevision,importCompleted,!!transfer,projectReady);
   const importQueue=useImportQueue(importJobs,setTransfer,changed);
-  const desktopDraft=useDesktopDraft({projectId:registry.data?(registry.data.current_project_uuid||'launcher'):null,busy:!!transfer||importQueue.busy,
-    snapshot:()=>({route,sessions:[...sessions.current],protocolSessions:[...protocolSessions.current],lastExplorerSession:lastExplorerSession.current,lastStoresSession:lastStoresSession.current}),
-    restore:value=>{
-      if(!value||typeof value!=='object')return;
-      const pairs=entries=>Array.isArray(entries)&&entries.every(pair=>Array.isArray(pair)&&pair.length===2&&typeof pair[0]==='string')?entries:[];
-      sessions.current=new Map(pairs(value.sessions));protocolSessions.current=new Map(pairs(value.protocolSessions));
-      lastExplorerSession.current=value.lastExplorerSession||null;lastStoresSession.current=value.lastStoresSession||null;
-      navigation.restore(value.route);draftRestored(count=>count+1);
-    }});
+  function snapshotWorkspace(){return {route,sessions:[...sessions.current],protocolSessions:[...protocolSessions.current],lastExplorerSession:lastExplorerSession.current,lastStoresSession:lastStoresSession.current};}
+  function restoreWorkspace(value){
+    if(!value||typeof value!=='object')throw new Error('The saved workspace view is invalid.');
+    const pairs=entries=>Array.isArray(entries)&&entries.every(pair=>Array.isArray(pair)&&pair.length===2&&typeof pair[0]==='string')?entries:[];
+    sessions.current=new Map(pairs(value.sessions));protocolSessions.current=new Map(pairs(value.protocolSessions));
+    lastExplorerSession.current=value.lastExplorerSession||null;lastStoresSession.current=value.lastStoresSession||null;
+    navigation.restore(value.route);draftRestored(count=>count+1);
+  }
+  const desktopDraft=useDesktopDraft({projectId:registry.data?(registry.data.current_project_uuid||'launcher'):null,busy:!!transfer||importQueue.busy,snapshot:snapshotWorkspace,restore:restoreWorkspace});
   useEffect(()=>{if(!importQueue.busy&&pendingImportReview.current){setReviewImportJob(pendingImportReview.current);pendingImportReview.current=null;}},[importQueue.busy,revision]);
   const [projectSetup,setProjectSetup]=useState(false);
   const [unmountTarget,setUnmountTarget]=useState(null);
@@ -200,16 +200,14 @@ export default function App(){
     if(!mountedRecord||restoredUnmountView.current===mountedRecord.path)return;
     restoredUnmountView.current=mountedRecord.path;
     try{const saved=readUnmountView(mountedRecord);if(saved){
-      sessions.current=new Map(saved.sessions||[]);protocolSessions.current=new Map(saved.protocolSessions||[]);
-      lastExplorerSession.current=saved.lastExplorerSession||null;lastStoresSession.current=saved.lastStoresSession||null;
-      navigation.restore(saved.route);draftRestored(count=>count+1);
+      restoreWorkspace(saved);clearUnmountView(mountedRecord);
     }}catch(error){setProjectError(error.message);}
   },[mountedRecord?.path]);
 
   const [projectSetupBusy,setProjectSetupBusy]=useState(false);
   useEffect(()=>{if(transfer?.phase==='accepted'&&importJobs.data?.jobs?.some(job=>job.job_uuid===transfer.job_uuid))setTransfer(null);},[transfer,importJobs.data]);
   const [openingProject,setOpeningProject]=useState(null),[projectError,setProjectError]=useState('');
-  const unmountDialog=unmountTarget&&<ProjectUnmountDialog project={unmountTarget} pending={transfer?.phase==='uploading'||importQueue.active||!!openingProject||projectSetupBusy} onClose={()=>setUnmountTarget(null)} saveView={()=>saveUnmountView(unmountTarget,{route,sessions:[...sessions.current],protocolSessions:[...protocolSessions.current],lastExplorerSession:lastExplorerSession.current,lastStoresSession:lastStoresSession.current})} onUnmount={result=>{if(result.closed||result.state==='closed'){window.location.replace(localProjectUrl(result.launcher_url,window.location.href));}else{setUnmountTarget(null);registry.reload();}}}/>;
+  const unmountDialog=unmountTarget&&<ProjectUnmountDialog launcherUrl={registry.data?.launcher_url} project={unmountTarget} pending={transfer?.phase==='uploading'||importQueue.active||!!openingProject||projectSetupBusy} onClose={()=>setUnmountTarget(null)} saveView={()=>{saveUnmountView(unmountTarget,snapshotWorkspace());return()=>clearUnmountView(unmountTarget);}} onUnmount={result=>{if(result.closed||result.state==='closed'||result.close_unconfirmed){window.location.replace(localProjectUrl(result.launcher_url,window.location.href));}else{setUnmountTarget(null);registry.reload();}}}/>;
   function setPage(next){if(next!==page)navigation.go(next);}
   function toggle(){setHidden(x=>{localStorage.setItem('workspace.sidebar.hidden',String(!x));return !x;});}
   function navigate(id,recipe=null){if(page==='protocol'&&protocol===id&&!recipe)return;navigation.go('protocol',{protocol:id,...(recipe?{recipe}: {})});}
