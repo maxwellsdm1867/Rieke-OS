@@ -6,7 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const {EventEmitter} = require('node:events');
 const {ServiceSupervisor} = require('../supervisor.cjs');
-async function fixture(t, request, {bind = true} = {}) {
+// Successful protocol checks include durable filesystem writes; their budget
+// must not assume a quiet host. Deadline-negative cases opt into a short budget.
+async function fixture(t, request, {bind = true, startupTimeout = 1000} = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rieke-supervisor-test-')); t.after(() => fs.rm(root, {recursive: true, force: true}));
   const runtime = path.join(root, 'runtime');
   await fs.mkdir(path.join(runtime, 'python', 'bin'), {recursive: true});
@@ -17,7 +19,7 @@ async function fixture(t, request, {bind = true} = {}) {
     application_version: '0.1.0', source_commit: 'test-source', workspace_formats: [1], database_compatibility: 1};
   await fs.writeFile(path.join(runtime, 'runtime-manifest.json'), JSON.stringify(manifest));
   const child = new EventEmitter(); child.pid = 123456789; child.stdout = new EventEmitter(); child.stdout.resume = () => {}; let spawned;
-  const supervisor = new ServiceSupervisor({resourcesPath: root, userData: path.join(root, 'state'), appVersion: '0.1.0', startupTimeout: 5, drainTimeout: 5,
+  const supervisor = new ServiceSupervisor({resourcesPath: root, userData: path.join(root, 'state'), appVersion: '0.1.0', startupTimeout, drainTimeout: 5,
     spawnProcess: (...args) => {
       spawned = args;
       if (bind) process.nextTick(() => child.stdout.emit('data', Buffer.from('RIEKE_DESKTOP_BOUND=' + JSON.stringify({pid: child.pid, session_id: supervisor.sessionId,
@@ -37,7 +39,7 @@ test('readiness validates owned process/release/session; launch never relies on 
 });
 test('occupied port receives zero capability requests without private owned bind handshake', async t => {
   let requests = 0;
-  const {supervisor, child} = await fixture(t, () => { requests++; return response({ready: true, pid: 99, session_id: 'foreign'}); }, {bind: false});
+  const {supervisor, child} = await fixture(t, () => { requests++; return response({ready: true, pid: 99, session_id: 'foreign'}); }, {bind: false, startupTimeout: 5});
   let killed = false; child.kill = () => { killed = true; };
   await assert.rejects(supervisor.start(), /deadline/); assert.equal(supervisor.ready, false); assert.equal(killed, false); assert.equal(requests, 0);
 });
@@ -93,8 +95,8 @@ test('project authorization uses root validated process proof and never sends co
 test('explicit quit waits for clean receipts and process exit, then removes ownership evidence',async t=>{
  const routes=[];
  const {supervisor,child}=await fixture(t,(sup,worker,url)=>{routes.push(url);if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});});
- await supervisor.start();const result=await supervisor.quit({timeout:100,drafts:{ready:true}});
- assert.equal(result.ready,true);assert.equal(supervisor.exited,true);assert.ok(routes.some(url=>url.endsWith('/quit')));assert.ok(!routes.some(url=>url.endsWith('/resume')));
+ await supervisor.start();const result=await supervisor.quit({timeout:1000,drafts:{ready:true}});
+ assert.equal(result.ready,true,JSON.stringify(result));assert.equal(supervisor.exited,true);assert.ok(routes.some(url=>url.endsWith('/quit')));assert.ok(!routes.some(url=>url.endsWith('/resume')));
  await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
  child.kill=()=>assert.fail('Quit never kills accepted writers');
 });
