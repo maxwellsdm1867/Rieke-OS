@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "application_source": "1e9e8833c736b24c29470acfb3214c4fbab64f9a",
+  "recovery_test_source": "c3c32a9a39023d969cff08500cc59b2f952725f9",
+  "production_bytes_equal": true,
+  "phases": {
+    "setup": {
+      "application_source_commit": "1e9e8833c736b24c29470acfb3214c4fbab64f9a",
+      "qualification_harness_head": "152ca45b82e8b4eed69069863512514350e794d0",
+      "native_http": true,
+      "mocked_routes": false,
+      "performance_claim": false,
+      "browser_certified": false,
+      "status": "passed",
+      "cases": [
+        {
+          "id": "NW03-saved-preset-exact-native-frozen-baseline",
+          "passed": true,
+          "epochs": 359
+        },
+        {
+          "id": "NW04-new-import-24",
+          "passed": true,
+          "distinct_new_acquisition": true,
+          "import_status": "complete",
+          "annotation_preparation_status": "ready",
+          "warnings_present": false
+        },
+        {
+          "id": "NW05-main-unchanged-pending-union-24",
+          "passed": true,
+          "main_epochs": 359,
+          "pending_epochs": 268,
+          "pending_cells": 3
+        },
+        {
+          "id": "NW04-new-import-30",
+          "passed": true,
+          "distinct_new_acquisition": true,
+          "import_status": "complete",
+          "annotation_preparation_status": "ready",
+          "warnings_present": false
+        },
+        {
+          "id": "NW05-main-unchanged-pending-union-30",
+          "passed": true,
+          "main_epochs": 359,
+          "pending_epochs": 763,
+          "pending_cells": 8
+        },
+        {
+          "id": "NW06-third-action-exact-duplicate-deduplicated",
+          "passed": true,
+          "new_acquisition": false,
+          "catalog_committed": false
+        },
+        {
+          "id": "NW07-prepare-stable-queue-and-receipt-reuse",
+          "passed": true,
+          "origin_count": 2,
+          "pending_epochs": 763
+        },
+        {
+          "id": "NW08-only-cumulative-unmerged-UUIDs",
+          "passed": true,
+          "epochs": 763,
+          "baseline_excluded": true
+        }
+      ],
+      "private_receipt_sha256": "6bad56496b9bee8c74d099cd90c8bb7d38678705847f480fc6a54410e9f378c3"
+    },
+    "inspect": {
+      "application_source_commit": "1e9e8833c736b24c29470acfb3214c4fbab64f9a",
+      "qualification_harness_head": "152ca45b82e8b4eed69069863512514350e794d0",
+      "native_http": true,
+      "mocked_routes": false,
+      "performance_claim": false,
+      "browser_certified": false,
+      "status": "passed",
+      "cases": [
+        {
+          "id": "NW09-scope-rows-after-reopen",
+          "passed": true,
+          "epochs": 763
+        },
+        {
+          "id": "NW10-complete-scoped-native-detail-identity",
+          "passed": true,
+          "parameter_count": 24
+        },
+        {
+          "id": "NW11-scoped-trace-exact-raw-H5",
+          "passed": true,
+          "samples": 32
+        },
+        {
+          "id": "NW12-Main-detail-refuses-incoming-scope",
+          "passed": true
+        }
+      ],
+      "private_receipt_sha256": "9e75aa3b35160a1e60e9a4fbe2e01491bc18dc9733dc570ccfc77bc64c040597"
+    },
+    "accept": {
+      "application_source_commit": "1e9e8833c736b24c29470acfb3214c4fbab64f9a",
+      "qualification_harness_head": "152ca45b82e8b4eed69069863512514350e794d0",
+      "native_http": true,
+      "mocked_routes": false,
+      "performance_claim": false,
+      "browser_certified": false,
+      "status": "passed",
+      "cases": [
+        {
+          "id": "NW18-proposal-review-is-separate-from-scientific-curation",
+          "passed": true
+        },
+        {
+          "id": "NW13-partial-native-accept-exact-union",
+          "passed": true,
+          "accepted": 10,
+          "main_epochs": 369
+        },
+        {
+          "id": "NW14-old-scope-stale-after-accept",
+          "passed": true
+        },
+        {
+          "id": "NW15-accepted-UUIDs-removed-from-incoming",
+          "passed": true,
+          "remaining": 753
+        },
+        {
+          "id": "NW16-same-operation-retry-exact-receipt",
+          "passed": true
+        },
+        {
+          "id": "NW17-defer-persists-native-draft",
+          "passed": true
+        }
+      ],
+      "private_receipt_sha256": "b9add1ac3ccf317161a162b5435393ebfcb3c24ddab3a04c4c4cc9ddbb95c91a"
+    },
+    "export": {
+      "application_source_commit": "1e9e8833c736b24c29470acfb3214c4fbab64f9a",
+      "qualification_harness_head": "152ca45b82e8b4eed69069863512514350e794d0",
+      "native_http": true,
+      "mocked_routes": false,
+      "performance_claim": false,
+      "browser_certified": false,
+      "status": "passed",
+      "cases": [
+        {
+          "id": "NW19-accepted-delta-native-export-exact-UUIDs",
+          "passed": true,
+          "epochs": 10,
+          "format": "reference-json"
+        },
+        {
+          "id": "NW20-export-download-hash-and-full-source-details",
+          "passed": true,
+          "bytes": 3268255
+        },
+        {
+          "id": "NW21-export-preserves-Main-membership",
+          "passed": true,
+          "main_epochs": 369
+        },
+        {
+          "id": "NW22-export-same-operation-retry",
+          "passed": true
+        }
+      ],
+      "private_receipt_sha256": "f0a79d852aaa0dddbd3f0141f0c8e0804e00a6fc4ed67fecefadd4c4315cf382"
+    },
+    "retry": {
+      "application_source_commit": "c3c32a9a39023d969cff08500cc59b2f952725f9",
+      "qualification_harness_head": "0f6d95eb3077520d874349e06668ee8566003692",
+      "native_http": true,
+      "mocked_routes": false,
+      "performance_claim": false,
+      "browser_certified": false,
+      "status": "passed",
+      "cases": [
+        {
+          "id": "NW23-accept-receipt-durable-same-operation-retry",
+          "passed": true
+        },
+        {
+          "id": "NW24-export-receipt-durable-same-operation-retry",
+          "passed": true
+        },
+        {
+          "id": "NW25-deferred-draft-durable-read",
+          "passed": true
+        }
+      ],
+      "private_receipt_sha256": "f2fa34d29bb9bac3653f1ba5a402291e505b59a89e91be4cd0402c5df0cf0014"
+    }
+  },
+  "phase_checks": 25,
+  "native_recovery_optins": {
+    "passed": 3,
+    "seconds": 5.803,
+    "log_sha256": "9a48fc521b205fe9b0c8b9d586fba0e1399c4ea0f4664e935f8fc5154c055dc6",
+    "cases": [
+      "known1024ring_to4096_lossless_watermark_invalidation",
+      "supportedUnicode_exact_gt1024_key_delta_rollback_rebootstrap",
+      "v3_baseline_locked_scope_inside_transaction"
+    ]
+  },
+  "source_schema_charset": "utf8mb3",
+  "astral_actor_supported": false,
+  "new_acquisitions": 2,
+  "third_import_action": "exact_duplicate_of_second_addition",
+  "fixture_epochs": 2781,
+  "main_before": 359,
+  "incoming_before": 763,
+  "accepted": 10,
+  "main_after": 369,
+  "incoming_after": 753,
+  "raw_trace_samples": 32,
+  "browser_certified": false,
+  "performance_claim": false,
+  "unrun": [
+    "final actual-browser cumulative review/accept/export",
+    "server whole-group1857 tag/filter/undo on forthcoming reviewed target",
+    "receipt retry with source physically unavailable",
+    "accept fault-injection rollback",
+    "million-scale new Workbench storage/latency",
+    "MATLAB numerical reconstruction (waived for preview)"
+  ]
+}

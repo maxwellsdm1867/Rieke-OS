@@ -1,0 +1,294 @@
+{
+  "source_head": "c3c32a9a39023d969cff08500cc59b2f952725f9",
+  "native": true,
+  "mocked_routes": false,
+  "background_load": "iCloud synchronization and ordinary manual playground polling; diagnostic only",
+  "performance_claim": false,
+  "timing_label": "observed click-to-ready under disclosed background; warm native server, first/repeat UI action",
+  "samples": [
+    {
+      "case": "cell_type_protocol",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 225,
+          "decoded_bytes": 20753
+        }
+      ],
+      "click_to_ready_ms": 197.58170800000016,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 189,
+      "expected_cells": 3,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "cell_type_protocol",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 225,
+          "decoded_bytes": 20753
+        }
+      ],
+      "click_to_ready_ms": 177.6076250000001,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 189,
+      "expected_cells": 3,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "numeric_spot",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 230,
+          "decoded_bytes": 20768
+        }
+      ],
+      "click_to_ready_ms": 110.19858400000066,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 1122,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "numeric_spot",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 230,
+          "decoded_bytes": 20768
+        }
+      ],
+      "click_to_ready_ms": 122.30216699999983,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 1122,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "compound_history_noise",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 309,
+          "decoded_bytes": 20917
+        }
+      ],
+      "click_to_ready_ms": 110.88208300000042,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 71,
+      "expected_cells": 4,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "compound_history_noise",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 309,
+          "decoded_bytes": 20917
+        }
+      ],
+      "click_to_ready_ms": 104.18925000000036,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 71,
+      "expected_cells": 4,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "array_canvas",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 127,
+          "decoded_bytes": 20562
+        }
+      ],
+      "click_to_ready_ms": 116.68904199999997,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2781,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "array_canvas",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 127,
+          "decoded_bytes": 20562
+        }
+      ],
+      "click_to_ready_ms": 100.07704199999898,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2781,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "missing_history",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 112,
+          "decoded_bytes": 20532
+        }
+      ],
+      "click_to_ready_ms": 124.17270800000006,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2472,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "missing_history",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 112,
+          "decoded_bytes": 20532
+        }
+      ],
+      "click_to_ready_ms": 103.22708299999977,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2472,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "recorded_null",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 108,
+          "decoded_bytes": 20524
+        }
+      ],
+      "click_to_ready_ms": 112.34966700000041,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2781,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "recorded_null",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 108,
+          "decoded_bytes": 20524
+        }
+      ],
+      "click_to_ready_ms": 113.89995900000031,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 2781,
+      "expected_cells": 13,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "empty_numeric",
+      "repeat": 0,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 136,
+          "decoded_bytes": 20567
+        }
+      ],
+      "click_to_ready_ms": 119.236917000002,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 0,
+      "expected_cells": 0,
+      "exact_native_uuid_set_separately_verified": true
+    },
+    {
+      "case": "empty_numeric",
+      "repeat": 1,
+      "network": [
+        {
+          "route": "/api/explore/run",
+          "method": "POST",
+          "status": 200,
+          "request_bytes": 136,
+          "decoded_bytes": 20567
+        }
+      ],
+      "click_to_ready_ms": 114.40641600000163,
+      "long_tasks": [],
+      "exact_native_count": true,
+      "expected_epochs": 0,
+      "expected_cells": 0,
+      "exact_native_uuid_set_separately_verified": true
+    }
+  ],
+  "status": "passed",
+  "not_qualified": [
+    "global View matching epoch chained paint",
+    "frozen pinned context",
+    "cumulative incoming context",
+    "tag mutation/undo/inheritance",
+    "rapid A/B/A",
+    "next60 sibling cells"
+  ],
+  "harness_sha256": "6078ca40c1410a61a59801aa27b43c6c660dd78d46e54928aadc48d08fafce02",
+  "independent_oracle_sha256": "0347ce88c579def4b09819f9edfeb2088f32686c89fc1a85fec297fe16bca536",
+  "private_receipt_sha256": "7e83c33ca45f2ac20ab4bcf92a058ed262fb083f791b1171965a2e5e6ffeac11",
+  "initial_harness_refusals_retained": [
+    "fresh private author onboarding intercepted click (0 samples)",
+    "field catalog not ready before default-condition clearing (0 samples)",
+    "Escape on numeric value cancelled native dialog (2 samples)"
+  ],
+  "setup_corrections": "Supported UI modal close, wait for builder, options-control close; no force click, storage injection, fetch substitution or production edits."
+}
