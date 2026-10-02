@@ -21,11 +21,14 @@ async function requestApi(path, options = {}) {
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {
-  const cached=options.cache===true,warmEpoch=options.warmEpoch===true;
+  const cached=options.cache===true,warmEpoch=options.warmEpoch===true,paused=options.paused===true;
   const [state, setState] = useState({data: null, loading: true, error: null});
   const [nonce, setNonce] = useState(0);
   const reload = useCallback(() => {if(cached)epochResourceCache.invalidate(path,{related:warmEpoch});setNonce(n => n + 1);}, [path,cached,warmEpoch]);
   useEffect(() => {
+    // A draft write invalidates its read token before the replacement receipt
+    // arrives. Cancel delayed/in-flight reads while retaining inert content.
+    if(paused)return;
     if (!path) {setState({data: null, loading: false, error: null}); return;}
     const complete=cached&&warmEpoch?peekEpochWithTrace(path,revision):undefined;
     if(complete!==undefined){setState({data:complete,loading:false,error:null,path,revision,nonce});return;}
@@ -34,12 +37,12 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     return startResourceRequest({path,delayMs,request,
       onData:data=>setState({data,loading:false,error:null,path,revision,nonce}),
       onError:error=>setState({data:null,loading:false,error:error.message,path,revision,nonce})});
-  }, [path, revision, nonce, delayMs,cached,warmEpoch]);
+  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
   // retain delayed I/O and the exact path/revision/reload publication fences.
   const hit=cached&&path?(warmEpoch?peekEpochWithTrace(path,revision):epochResourceCache.peek(path,revision)):undefined;
   const visible=visibleResourceState({state,path,revision,nonce,hit});
-  return {...visible, reload};
+  return {...visible,loading:paused&&!!path||visible.loading,reload};
 }
 export function useEpochResource(path,revision=0,delayMs=80){return useResource(path,revision,delayMs,{cache:true,warmEpoch:true});}
 export function prefetchResources(paths,revision=0,{delayMs=180}={}){return prefetchEpochMetadata(paths,{request:api,revision,delayMs});}

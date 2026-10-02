@@ -7,6 +7,26 @@ import {fileURLToPath} from 'node:url';
 
 const metadata=uuid=>({epoch_uuid:uuid,streams:[{kind:'responses',uuid:`stream-${uuid}`,sample_count:3}]});
 const trace=uuid=>({epoch_uuid:uuid,stream_uuid:`stream-${uuid}`,start:0,count:3,sample_rate:10000,values:[-1,null,2]});
+
+test('draft pause cancels old-scope delayed reads and resumes only with the new receipt',async t=>{
+ const previousFetch=globalThis.fetch,requests=[];
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {useResource}=await server.ssrLoadModule('/src/api.js');
+ let renderer,current,finish;globalThis.fetch=async(path,options)=>{requests.push({path,signal:options.signal});if(path.includes('in-flight'))await new Promise(resolve=>{finish=resolve;});return new Response(JSON.stringify({epoch_uuid:'a'}),{status:200});};
+ t.mock.timers.enable({apis:['setTimeout']});
+ function Probe({token,paused=false}){current=useResource(`/protocols/p/workbench/candidates/c/epochs/a?candidate_scope_revision=${token}`,token,80,{paused});return null;}
+ const render=async props=>act(async()=>{const element=React.createElement(Probe,props);if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);});
+ const tick=async ms=>act(async()=>{t.mock.timers.tick(ms);for(let i=0;i<10;i++)await Promise.resolve();});
+ try{
+  await render({token:'old'});await tick(40);await render({token:'old',paused:true});await tick(100);assert.equal(requests.length,0,'old timer must never start during the draft write');
+  await render({token:'new',paused:true});await tick(100);assert.equal(requests.length,0);
+  await render({token:'new'});await tick(80);assert.equal(requests.length,1);assert.match(requests[0].path,/revision=new$/);assert.equal(current.loading,false);
+  await render({token:'new',paused:true});assert.equal(current.data.epoch_uuid,'a');assert.equal(current.loading,true,'committed content is retained but inert');
+  await render({token:'in-flight'});await tick(80);const obsolete=requests.at(-1);await render({token:'in-flight',paused:true});assert.equal(obsolete.signal.aborted,true);
+  await act(async()=>finish());assert.equal(current.data,null,'aborted completion cannot publish');
+  await render({token:'newest'});await tick(80);assert.match(requests.at(-1).path,/revision=newest$/);assert.equal(current.loading,false);
+ }finally{await act(async()=>renderer?.unmount());t.mock.timers.reset();globalThis.fetch=previousFetch;await server.close();}
+});
 async function harness(t){
  const previousFetch=globalThis.fetch,requests=[],renders=[];
  let respond=path=>{const uuid=new URL(path,'http://fixture').pathname.split('/')[2];return path.includes('/trace?')?trace(uuid):metadata(uuid);};

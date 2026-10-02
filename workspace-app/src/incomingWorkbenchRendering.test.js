@@ -11,6 +11,51 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
+test('visible draft actions save exact selection separately from review, exclusion and Main',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method){assert.equal(options.method,'PATCH');assert.ok(String(path).endsWith('/draft'));const body=JSON.parse(options.body);calls.push(body);assert.equal(body.expected_version,context.draft.draft_version);assert.equal(body.expected_candidate_scope_revision,'scope');const decisions=[...context.draft.decisions];for(const next of body.decisions){const index=decisions.findIndex(value=>value.epoch_uuid===next.epoch_uuid),value={selected:false,reviewed:false,excluded:false,...decisions[index],...next};if(index<0)decisions.push(value);else decisions[index]=value;}context={...context,draft:{...context.draft,draft_version:context.draft.draft_version+1,decisions,decisions_total:decisions.length}};}
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
+  const merge=()=>renderer.root.findAllByType('button').find(node=>label(node)==='Merge selected epochs');
+  await act(async()=>inspector().props.draftSelection.onSave(['a','b'],true));
+  assert.deepEqual(calls[0].decisions,[{epoch_uuid:'a',selected:true},{epoch_uuid:'b',selected:true}]);assert.equal(inspector().props.draftSelection.savedCount,2);assert.equal(merge().props.disabled,true);
+  await act(async()=>inspector().props.draftSelection.onReview(['a']));
+  assert.deepEqual(calls[1].decisions,[{epoch_uuid:'a',reviewed:true}]);assert.equal(merge().props.disabled,false);
+  await act(async()=>inspector().props.draftSelection.onSave(['a'],false));
+  assert.deepEqual(calls[2].decisions,[{epoch_uuid:'a',selected:false}]);assert.equal(inspector().props.draftSelection.savedCount,1);assert.equal(context.draft.decisions[0].reviewed,true);assert.equal(context.draft.decisions[0].excluded,false);
+  assert.equal(calls.length,3);await act(async()=>renderer.unmount());
+ }finally{globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('batched draft saves keep browser reads on the paused committed scope until the final receipt',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer,release,operation,patches=0;
+ let context={candidate_scope_revision:'scope-0',draft:{draft_version:0,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:501,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method==='PATCH'){
+   const body=JSON.parse(options.body);assert.equal(body.expected_version,patches);assert.equal(body.expected_candidate_scope_revision,`scope-${patches}`);
+   patches++;if(patches===2)await new Promise(resolve=>{release=resolve;});
+   context={...context,candidate_scope_revision:`scope-${patches}`,draft:{...context.draft,draft_version:patches,decisions:[...context.draft.decisions,...body.decisions]}};
+   context.draft.decisions_total=context.draft.decisions.length;
+  }
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true}}));});
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');const mounted=inspector();
+  await act(async()=>{operation=inspector().props.draftSelection.onSave(Array.from({length:501},(_,i)=>`epoch-${i}`),true);});
+  assert.equal(patches,2);assert.equal(inspector(),mounted);assert.equal(inspector().props.readPaused,true);assert.equal(inspector().props.readContext.candidate_scope_revision,'scope-0','intermediate batch scopes must not start descendant reads');
+  await act(async()=>{release();await operation;});assert.equal(patches,3);assert.equal(inspector().props.readPaused,false);assert.equal(inspector().props.readContext.candidate_scope_revision,'scope-3');assert.equal(inspector().props.draftSelection.savedCount,501);
+  await act(async()=>renderer.unmount());
+ }finally{globalThis.fetch=oldFetch;await server.close();}
+});
+
 test('actual Workbench renders authoritative queue and session worklist controls',async()=>{
  const server=await create();
  try{

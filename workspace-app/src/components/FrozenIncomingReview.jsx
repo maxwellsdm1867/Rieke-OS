@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../api.js';
-import {Activity,CheckSquare,Download,GitMerge,History,Layers,RefreshCw,Square,X} from 'lucide-react';
+import {Activity,Download,GitMerge,History,Layers,RefreshCw,X} from 'lucide-react';
 import NeuronIcon from './NeuronIcon.jsx';
 import {mergeIntentMatches} from '../incomingMergeIntent.js';
 import Inspector,* as InspectorCapabilities from './Inspector.jsx';
@@ -20,8 +20,10 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const [exportState,setExportState]=useState(session?.exportState||(exportIntent?{format:exportIntent.format,name:exportIntent.name}:{})),[exportDialog,setExportDialog]=useState(null);
   const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedRevision=useRef(revision),displayed=useRef(null);
   const contextFresh=context!==null&&loadedRevision.current===revision;
-  if(contextFresh&&!externalBusy)displayed.current={context,revision};
-  const visible=contextFresh&&!externalBusy?{context,revision}:externalBusy||preserveBrowser?displayed.current:null;
+  // A multi-batch draft save advances authority between batches. Keep the
+  // browser on its inert committed view until the complete save settles.
+  if(contextFresh&&!busy&&!externalBusy)displayed.current={context,revision};
+  const visible=contextFresh&&!busy&&!externalBusy?{context,revision}:busy||externalBusy||preserveBrowser?displayed.current:null;
   selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,operation:operation.current,receipt,preview,unconfirmed,acceptPending,viewer:viewer.current,exportState};
   const publish=useCallback(value=>{onSession?.({...snapshot.current,...value});},[onSession]);
   // Inspector publishes from an effect. Keep its callback stable when the
@@ -53,7 +55,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     finally{inFlight.current=false;setBusy(false);}
   }
   function select(next){selected.current=next;setHighlighted(next);publish({selected:next});}
-  async function saveHighlights(value){return save(selected.current.map(epoch_uuid=>({epoch_uuid,selected:value})),{selectionMode:'selected'});}
+  async function saveSelection(ids,value){return save(ids.map(epoch_uuid=>({epoch_uuid,selected:value})),{selectionMode:'selected'});}
   async function decide({epoch_uuids,changes}){
     const decisions=epoch_uuids.map(epoch_uuid=>({epoch_uuid,...(typeof changes.reviewed==='boolean'?{reviewed:changes.reviewed}:changes.review_state==='approved'?{reviewed:true}:changes.review_state==='unreviewed'?{reviewed:false}:{}),...(typeof changes.included==='boolean'?{excluded:!changes.included}:{})}));
     return save(decisions);
@@ -125,8 +127,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
         <button disabled={busy||externalBusy||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!capabilities.incoming_export||!capabilities.additive_accept} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
         <button disabled={busy||externalBusy} title="Leave review; saved draft and pending operations remain available" onClick={onDefer}><X size={14} aria-hidden="true"/> Cancel</button>
       <details className="incoming-review-details"><summary>Review details</summary><div><div className="incoming-selection-tools">
-      <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(true)}><CheckSquare size={14} aria-hidden="true"/> Save highlighted as selected</button>
-      <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(false)}><Square size={14} aria-hidden="true"/> Clear highlighted selections</button>
       {onRefresh&&<button className="incoming-utility" disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button>}
       {onHistory&&<button className="incoming-utility" onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button>}
       </div>
@@ -150,6 +150,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/>,filterTarget)}<Inspector toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/>,filterTarget)}<Inspector readPaused={busy||externalBusy||!contextFresh} draftSelection={{disabled:busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!!receipt,savedCount:reviewKnown?context.draft.decisions.filter(value=>value.selected).length:null,onSave:saveSelection,onReview:ids=>decide({epoch_uuids:ids,changes:{reviewed:true}})}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }
