@@ -113,7 +113,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
   const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,presentationScope,initialEpochUuid]);
   const attemptedFocusLocator=useRef(null);
-  const focusLocatorKey=JSON.stringify([readRoot,protocolSearch,pageRevision,focused]);
+  const focusLocatorKey=JSON.stringify([readRoot,search,pageRevision,focused]);
   useEffect(()=>{
     if(!preserveCandidateView||!pageReady||pendingNavigation||!focused)return;
     if(rows.data.epochs.some(row=>row.epoch_uuid===focused)){attemptedFocusLocator.current=focusLocatorKey;return;}

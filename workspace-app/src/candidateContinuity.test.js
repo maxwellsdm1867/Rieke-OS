@@ -8,13 +8,21 @@ function props(token='token-A',revision=0,route=root,binding=2){return {
  protocol:{definition:{protocol_uuid:'protocol-A'},query_revision:token,expected_binding_version:binding,cells:[]},projectId:'project',filters:{},revision,
  readContext:{root:route,candidate_scope_revision:token,cohort_key:cohort(route,binding)},initialEpochUuid:'epoch-8',onChange(){},onReviewDecision:async()=>{}
 };}
-function attach(h,{missing=false,failure=false}={}){
+function attach(h,{missing=false,failure=false,shifted=false}={}){
  h.fixture.respond=(url,options,fallback)=>{
   const match=url.pathname.match(/^\/api\/protocols\/protocol-A\/workbench\/candidates\/[^/]+(.*)$/);
   if(!match)return fallback();
   const token=url.searchParams.get('candidate_scope_revision');assert.ok(token);
   url.pathname=match[1].startsWith('/epochs/epoch-')?'/api'+match[1]:'/api/protocols/protocol-A'+match[1];
-  const value=fallback();
+  let value=fallback();
+  if(shifted&&token==='token-B'&&value.epochs){
+   const limit=Number(url.searchParams.get('limit')||60),requested=Number(url.searchParams.get('offset')||0),anchor=url.searchParams.get('anchor_uuid');
+   url.searchParams.delete('anchor_uuid');url.searchParams.set('offset','0');url.searchParams.set('limit',String(h.fixture.total));
+   const full=fallback(),ordered=full.epochs.filter(row=>row.epoch_uuid!=='epoch-8');
+   ordered.splice(90,0,full.epochs.find(row=>row.epoch_uuid==='epoch-8'));
+   const offset=anchor?Math.floor(ordered.findIndex(row=>row.epoch_uuid===anchor)/60)*60:requested;
+   value={...full,limit,offset,epochs:ordered.slice(offset,offset+limit)};
+  }
   const epoch=record=>({...record,review_decision:{selected:true,reviewed:token==='token-B',excluded:false}});
   if(value.epochs){
    if(missing&&token==='token-B'&&url.searchParams.has('anchor_uuid'))return failure?{failure:404,error:'Epoch is outside this frozen filtered scope'}:{...value,query_revision:token,epochs:[]};
@@ -99,4 +107,31 @@ test('restored focus absent from refreshed scope locates once then clears on mis
    assert.ok(h.root.findAllByProps({role:'alert'}).length);assert.equal(h.viewer.detailExtras,null);
   }finally{await h.close();}
  }
+});
+
+
+test('focused UUID shifted to another refreshed page is located once without retargeting or mutation',async()=>{
+ const h=await createWorkflowHarness({total:100});attach(h,{shifted:true});const mutations=[];
+ try{
+  const Inspector=await h.component('Inspector'),initial={...props(),onReviewDecision:async body=>mutations.push(body)};
+  await h.mount(Inspector,initial);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8'&&!h.viewer.treePane.listProps.disabled);
+  await h.render(Inspector,{...initial,...props('token-B',1)});
+  await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8'&&h.viewer.navigation.position===90&&!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.viewer.epoch.review_decision.reviewed,true);assert.equal(h.viewer.treePane.listProps.source.queryRevision,'token-B');
+  assert.equal(h.fixture.requests.filter(record=>record.path.includes('anchor_uuid=epoch-8')).length,1);assert.deepEqual(mutations,[]);
+ }finally{await h.close();}
+});
+
+test('clearing focused cell revalidates same-token UUID outside the first all-cell page once',async()=>{
+ const h=await createWorkflowHarness({total:650});attach(h);const mutations=[];
+ try{
+  const Inspector=await h.component('Inspector'),initial={...props(),initialEpochUuid:'epoch-508',initialNavigation:{focusCell:'cell-1'},onReviewDecision:async body=>mutations.push(body)};
+  await h.mount(Inspector,initial);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-508'&&!h.viewer.treePane.listProps.disabled);
+  const chip=h.viewer.toolbarChildren.props.children;assert.equal(chip.props.className,'inspection-focus-chip');
+  await h.act(()=>chip.props.onClick());
+  await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-508'&&h.viewer.navigation.position===508&&!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.fixture.requests.filter(record=>record.path.includes('anchor_uuid=epoch-508')).length,1);
+  assert.ok(h.fixture.requests.filter(record=>record.path.includes('anchor_uuid=epoch-508')).every(record=>!record.path.includes('cell_uuid=')));
+  assert.deepEqual(mutations,[]);
+ }finally{await h.close();}
 });
