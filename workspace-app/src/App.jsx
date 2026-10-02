@@ -31,6 +31,7 @@ import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Circ
 import { api, useResource, number, duration, humanize, time, eligibleExportCount } from './api.js';
 import { Badge, Empty, Metadata, Stats, Status, SourceEligibilityNotice } from './components/Common.jsx';
 import Inspector from './components/Inspector.jsx';
+import IncomingWorkbench from './components/IncomingWorkbench.jsx';
 import ProjectFiles from './components/ProjectFiles.jsx';
 import DataStores from './components/DataStores.jsx';
 import ImportHistory, {IMPORT_TERMINAL} from './components/ImportHistory.jsx';
