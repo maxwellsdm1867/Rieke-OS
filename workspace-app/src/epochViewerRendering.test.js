@@ -8,7 +8,7 @@ import react from '@vitejs/plugin-react';
 
 let server;
 before(async()=>{
- server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,plugins:[react()],server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error'});
+ server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,plugins:[react()],server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
 });
 after(async()=>{await server?.close();});
 function render(Component,props){
