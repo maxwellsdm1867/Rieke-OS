@@ -1,0 +1,50 @@
+{
+  "source_commit": "dfc0382444e6f5825678fc7f0cad5ba88c512f7c",
+  "native": true,
+  "performance_claim": false,
+  "structural_fixture": true,
+  "cases": [
+    {
+      "name": "startup_declares_three_workbench_tables",
+      "passed": true
+    },
+    {
+      "name": "real_decision_foreign_key_to_draft",
+      "passed": true
+    },
+    {
+      "name": "orphan_decision_is_refused_by_mysql",
+      "passed": true,
+      "error_type": "IntegrityError"
+    },
+    {
+      "name": "actual_legacy_12_restore_into_16_table_schema",
+      "passed": true
+    },
+    {
+      "name": "populated_draft_decision_actual_fk_restore",
+      "passed": true
+    },
+    {
+      "name": "recovery_more_than_250_roots_and_parent_chain",
+      "passed": true,
+      "roots": 280,
+      "parent_chain_nodes": 281,
+      "captured_revision_count": 580
+    },
+    {
+      "name": "missing_ancestor_explicit_refusal",
+      "passed": true
+    },
+    {
+      "name": "original_authored_state_restored",
+      "passed": true
+    },
+    {
+      "name": "real_source_and_membership_counts_preserved",
+      "passed": true
+    }
+  ],
+  "status": "passed",
+  "native_shutdown_clean": true
+}

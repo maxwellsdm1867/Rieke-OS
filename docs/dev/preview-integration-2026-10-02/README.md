@@ -20,3 +20,7 @@ The MAIN overview must use its own unfiltered frozen-cohort protocol resource; b
 MATLAB numerical comparisons are unrun and waived by the user for this demo. Actual JSON/SQLite/MAT artifact fidelity and lazy H5 trace evidence are tracked separately by the E2E owner. Test doubles, mounted fixtures and synthetic browser evidence do not prove native persistence or latency.
 
 No Docker, original-project migration, main merge, public release or automatic update installation is part of this integration.
+
+## Pinned native recovery checkpoint
+
+`native-recovery-dfc0382.json` is the native qualification owner's byte-identical sanitized receipt for `dfc0382444e6f5825678fc7f0cad5ba88c512f7c` (SHA256 `64567988d1f52367f39a1816e8a7c91fd81d67bf0ce1cada117727a15c9f8896`). Nine gates passed on a disposable, cleanly stopped native MySQL project: startup DDL, actual decision foreign keys/orphan rejection, legacy 12-table restore into 16 tables, populated restore, 280 structural roots plus a 281-node parent chain, missing-ancestor rejection, and retained authored state/source membership. Generated recovery revisions are structural fixtures, not imported acquisitions or scientific publications. This receipt does not qualify later cumulative Workbench, native UI, export/crash retry, navigation or the final package. No numeric performance claim is made.
