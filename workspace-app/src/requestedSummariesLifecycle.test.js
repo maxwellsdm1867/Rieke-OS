@@ -9,7 +9,7 @@ const generation={metadata:'M',source:'S',annotation:'A',publication:'P'};
 const definitions=[{id:'date',label:'Date',category:'Recording',types:['string'],operators:['eq'],path:'date'},...Array.from({length:151},(_,i)=>({id:`parameters/field${i}`,label:`Field ${i}`,category:'Parameters',path:`parameters.field${i}`,types:['number'],operators:['eq','gt']}))];
 const registry={fields:definitions,tree_fields:definitions,generation,summary_available:false};
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
-async function harness(){
+async function harness({explorerShell=false}={}){
  const requests=[],memory=new Map(),old={fetch:globalThis.fetch,window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage};
  globalThis.localStorage={getItem:key=>memory.get(key)||null,setItem:(key,value)=>memory.set(key,value)};
  globalThis.window={innerWidth:1200,innerHeight:800,addEventListener(){},removeEventListener(){}};
@@ -22,14 +22,14 @@ async function harness(){
   return {status:'pending',request_id:path.split('/').at(-1),generation};
  };
  globalThis.fetch=async(url,options)=>{const path=url.replace(/^\/api/,'');requests.push({path,options,body:options.body?JSON.parse(options.body):undefined});const response=await respond(path,options);return new Response(JSON.stringify(response?.data??response),{status:response?.httpStatus??200});};
- const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'summary-test-portals',enforce:'pre',resolveId(id,importer){if(id==='../useProjectPreference.js'&&importer?.endsWith('/components/PredicateDialog.jsx'))return '\0summary-project-preference';if(id==='react-dom')return '\0summary-portals';},load(id){if(id==='\0summary-project-preference')return 'export const useProjectPreference=()=>({value:{}});';if(id==='\0summary-portals')return 'export const createPortal=children=>children;';}}]});
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'summary-test-portals',enforce:'pre',resolveId(id,importer){if(explorerShell&&id==='./EpochViewer.jsx'&&importer?.endsWith('/components/MetadataExplorer.jsx'))return '\0summary-explorer-viewer';if(id==='../useProjectPreference.js'&&(importer?.endsWith('/components/PredicateDialog.jsx')||explorerShell&&importer?.endsWith('/components/MetadataExplorer.jsx')))return '\0summary-project-preference';if(id==='virtual:summary-portals')return '\0summary-portals';},transform(source,id){if(id.endsWith('/TreeBuilder.jsx'))return source.replace("from 'react-dom'","from 'virtual:summary-portals'");},load(id){if(id==='\0summary-explorer-viewer')return 'import React from "react";export default props=>React.createElement("explorer-viewer",props);';if(id==='\0summary-project-preference')return 'export const useProjectPreference=()=>({value:{},update:async()=>{}});';if(id==='\0summary-portals')return 'export const createPortal=children=>children;';}}]});
  const {default:TreeBuilder}=await server.ssrLoadModule('/src/components/TreeBuilder.jsx');
  const {useRequestedSummaries}=await server.ssrLoadModule('/src/useRequestedSummaries.js');
  const {useFieldRegistry}=await server.ssrLoadModule('/src/useFieldRegistry.js');
  const {useProtocolSummaryPreferences}=await server.ssrLoadModule('/src/useProtocolSummaryPreferences.js');
  const {default:PredicateDialog}=await server.ssrLoadModule('/src/components/PredicateDialog.jsx');
  // Compile the explorer/App source too; the mounted tree exercises the shared builder.
- await server.ssrLoadModule('/src/components/MetadataExplorer.jsx');
+ const {default:MetadataExplorer}=await server.ssrLoadModule('/src/components/MetadataExplorer.jsx');
  await server.ssrLoadModule('/src/App.jsx');
  let root,probe;
  function Probe({kind,request,revision,project,protocol,view,enabled=true}){
@@ -38,7 +38,7 @@ async function harness(){
   const preferences=useProtocolSummaryPreferences(project,protocol,view);
   probe={summary,fields,preferences};return React.createElement('probe',{status:summary.status});
  }
- const h={requests,memory,TreeBuilder,PredicateDialog,Probe,set respond(value){respond=value;},get probe(){return probe;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:()=>({showModal(){},close(){},focus(){},getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
+ const h={requests,memory,TreeBuilder,PredicateDialog,MetadataExplorer,Probe,set respond(value){respond=value;},get probe(){return probe;},get root(){return root.root;},async render(Component,props){await act(async()=>{const element=React.createElement(Component,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:()=>({showModal(){},close(){},focus(){},getBoundingClientRect:()=>({left:50,top:100,bottom:120,width:300}),contains:()=>false})});});},async act(callback){await act(callback);},async settle(ms=0){await act(async()=>{if(ms)await new Promise(resolve=>setTimeout(resolve,ms));for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>root?.unmount());await server.close();Object.assign(globalThis,old);},button(label){return root.root.findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.includes(label)));},text(){return JSON.stringify(root.toJSON());}};
  return h;
 }
 
@@ -73,17 +73,21 @@ test('mounted protocol/view preferences retain missing pinned fields and isolate
   await h.render(h.Probe,{kind:'preferences',project:'P1',protocol:'A',view:'tree'});assert.deepEqual(h.probe.preferences.value.fields,['parameters/field150','history1']);
  }finally{await h.close();}
 });
-test('mounted tree remains editable while pending, keeps saved missing axes, and exposes full registry/full-summary operations',async()=>{
+test('mounted tree remains editable while pending, keeps saved missing axes and full discovery without all-field summary fan-out',async()=>{
  const h=await harness(),changes=[];
  try{
-  const axes=['date','parameters/field150','history1'];const props={projectId:'P1',protocolId:'A',value:axes,onChange:value=>changes.push(value),preview:{count:7},loading:false};
+  const axes=['date','parameters/field150','history1'],summaryContext={predicate:{all:[]},protocol_uuid:'A',filters:{cell_uuid:'cell-A',tag:'scoped-tag'}};const props={projectId:'P1',protocolId:'A',summaryContext,value:axes,onChange:value=>changes.push(value),preview:{count:7},loading:false};
   await h.render(h.TreeBuilder,props);await h.settle();
-  const submit=h.requests.find(item=>item.path==='/explore/summaries');assert.deepEqual(submit.body.summary_fields,['date','parameters/field150']);assert.equal(submit.body.protocol_uuid,'A');assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
+  const submit=h.requests.find(item=>item.path==='/explore/summaries');assert.deepEqual(submit.body.summary_fields,['date','parameters/field150']);assert.equal(submit.body.protocol_uuid,'A');assert.deepEqual(submit.body.filters,summaryContext.filters);assert.deepEqual(submit.body.predicate,summaryContext.predicate);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
   assert.match(h.text(),/pending/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
   assert.equal(h.button('Add a split').props.disabled,false);
   const chooser=h.root.findByProps({'aria-label':'Add preferred summary'});assert.equal(chooser.findAllByType('option').length,153);
   assert.ok(chooser.findAllByType('option').some(option=>option.props.value==='parameters/field150'));
-  await h.act(()=>h.button('Summarize all metadata fields').props.onClick());const last=h.requests.filter(item=>item.path==='/explore/summaries').at(-1);assert.equal(last.body.summary_fields.length,152);
+  assert.equal(h.button('Summarize all metadata fields'),undefined);
+  const advanced=h.root.findByProps({className:'tb-advanced-catalog'});assert.ok(!advanced.props.open);
+  const before=h.requests.length;await h.act(()=>h.button('Add a split').props.onClick());
+  assert.equal(h.requests.slice(before).some(item=>item.path.includes('/tree-fields')),false);
+  assert.ok(h.requests.filter(item=>item.path==='/explore/summaries').every(item=>item.body.summary_fields.length===2));
   await h.act(()=>h.button('Load full catalog and suggestions').props.onClick());assert.ok(h.requests.some(item=>item.path==='/protocols/A/tree-fields'));
  }finally{await h.close();}
 });
@@ -99,5 +103,46 @@ test('mounted predicate editor requests active typed fields without blocking edi
   const value=()=>h.root.findByProps({'aria-label':'Condition value'});
   await h.act(()=>value().props.onChange({target:{value:'2'}}));submits=h.requests.filter(item=>item.path==='/explore/summaries');assert.equal(submits.at(-1).body.predicate.all[0].value,2);assert.equal(h.root.findByType('fieldset').props.disabled,false);
   const count=submits.length;await h.act(()=>value().props.onChange({target:{value:'-'}}));assert.equal(h.requests.filter(item=>item.path==='/explore/summaries').length,count);assert.match(h.text(),/complete numeric value/);assert.equal(h.root.findByType('fieldset').props.disabled,false);
+ }finally{await h.close();}
+});
+
+
+test('explicit predicate preview preserves exact cell/epoch counts without computing the full catalog',async()=>{
+ const h=await harness();
+ try{
+  const draft={kind:'group',id:'g',mode:'all',negated:false,children:[{kind:'condition',id:'c',field:'parameters/field150',operator:'eq',valueType:'number',valueText:'1',negated:false}]};
+  h.respond=(path)=>path==='/explore/run'?{last_run:{cell_count:2,epoch_count:17,ran_at:'2026-10-01T12:00:00Z'}}:path==='/explore/summaries'?{status:'pending',request_id:'preview-facet',generation}:{status:'cancelled',generation};
+  h.memory.set(summaryPreferenceKey('P1','A','filter'),JSON.stringify({version:1,fields:['parameters/field149']}));
+  await h.render(h.PredicateDialog,{draft,catalog:{data:registry,supportsSummaries:true,reload(){}},projectId:'P1',protocolId:'A',onClose(){},onSearch(){}});
+  await h.act(()=>h.button('Preview matches').props.onClick());
+  assert.deepEqual(h.requests.find(item=>item.path==='/explore/run').body,{predicate:{all:[{field:'parameters/field150',operator:'eq',value:1}]},splits:'',catalog_summary:false});
+  assert.deepEqual(h.requests.filter(item=>item.path==='/explore/summaries').at(-1).body.summary_fields,['parameters/field150','parameters/field149']);
+  const counts=h.root.findByProps({className:'predicate-preview'}).findAllByType('b').map(node=>node.children.join(''));
+  assert.deepEqual(counts,['2','17']);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
+ }finally{await h.close();}
+});
+
+test('advanced explorer catalog is explicit and scope/layout changes immediately resume lightweight previews',async()=>{
+ const h=await harness({explorerShell:true});
+ try{
+  const predicate={all:[]},preview={catalog_summary:false,matched_count:17,tree_revision:'T',catalog:{fields:definitions},tree:{count:17,levels:[],split_order:['date']}};
+  const applied={revision_uuid:'R',recipe:{predicate,splits:'date'},preview,previewGeneration:0,previewRevision:0};
+  const props={projectId:'P1',initialProtocolId:'A',session:{applied,step:'tree',resultsFromDraft:false,splits:'date',filterSplits:'date'}};
+  h.respond=(path)=>path==='/explore/field-registry'?registry:path==='/explore/preview'?preview:path.startsWith('/search-presets')?{presets:[]}:path.startsWith('/explore/revisions')?{revisions:[]}:{status:'cancelled',generation};
+  await h.render(h.MetadataExplorer,props);await h.settle();
+  const builder=()=>h.root.findByType('explorer-viewer').props.builder;
+  assert.equal(builder().projectId,'P1');assert.equal(builder().protocolId,'A');assert.deepEqual(builder().summaryContext,{predicate});
+  assert.equal(h.requests.some(item=>item.path==='/explore/preview'&&item.body.catalog_summary),false);
+  await h.act(()=>builder().onFullCatalog());await h.settle();
+  assert.equal(h.requests.filter(item=>item.path==='/explore/preview').at(-1).body.catalog_summary,true);
+  let start=h.requests.length;await h.act(()=>builder().onChange(['date','parameters/field150']));await h.settle();
+  assert.ok(h.requests.slice(start).some(item=>item.path==='/explore/preview'));
+  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
+  await h.act(()=>builder().onFullCatalog());await h.settle();start=h.requests.length;
+  await h.render(h.MetadataExplorer,{...props,revision:1});await h.settle();
+  assert.ok(h.requests.slice(start).some(item=>item.path==='/explore/preview'));
+  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
+  start=h.requests.length;await h.render(h.MetadataExplorer,props);await h.settle();
+  assert.ok(h.requests.slice(start).filter(item=>item.path==='/explore/preview').every(item=>item.body.catalog_summary===false));
  }finally{await h.close();}
 });

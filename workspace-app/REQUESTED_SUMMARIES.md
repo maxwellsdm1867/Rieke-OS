@@ -23,9 +23,20 @@ with the service job on 2026-10-01. No Python/API files are changed here.
 - Navigation and field editing remain usable while summaries run. Missing
   summaries and truncated distinct counts are unavailable, rather than zero.
   Recorded nulls, arrays, numeric values, and text retain their source types.
-- Full summaries and the existing complete catalog/derived suggestions are
-  separate explicit actions. Automatic requests revert to selected fields on
-  scope changes. Missing saved axes/preferences remain intact.
+- Normal tree/filter views request active axes/conditions and explicitly pinned
+  field summaries. The normal all-fields-summary action has been removed.
+  Complete registry discovery, raw details, export and reconstruction remain
+  available regardless of summary selection. Missing saved axes/preferences
+  remain intact.
+- Predicate-dialog **Preview matches** explicitly sends `catalog_summary:false`
+  to the existing `/explore/run` route. Its authoritative `last_run.cell_count`
+  and `epoch_count` remain the displayed preview counts; epoch facet buckets
+  never substitute for unique-cell counts.
+- Existing complete catalog/derived suggestions remain an explicit action under
+  the closed **Advanced layout suggestions** disclosure. Opening that disclosure
+  or browsing the chooser does not fetch distributions. Only its load button
+  computes the full catalog. Changes to the scope/layout/generation resume
+  lightweight previews before request effects run.
 - New preferences are local to this browser/device, under
   `workspace.summary-preferences.v1:<JSON [project UUID, protocol UUID, view]>`,
   with payload `{version:1,fields:[exact IDs]}`. Tree and filter views are distinct.
@@ -40,12 +51,12 @@ with the service job on 2026-10-01. No Python/API files are changed here.
 
 ## Focused verification
 
-71 frontend tests passed with Node v24.13.0: `requestedSummaries`,
+The earlier integration passed 71 frontend tests with Node v24.13.0: `requestedSummaries`,
 `requestedSummariesLifecycle`, `predicateEditor`, `predicateState`,
 `predicateValueSuggestions`, `treeFieldPresentation`, `treeLayoutPersistence`,
 `epochViewerArchitecture`, `workflowResponsiveness`, `epochViewerRendering`, and
 `pagedTreeLifecycle` (`node --test --test-concurrency=1`, each `.test.js`).
-The 19 new tests include real mounted React hooks/components with mocked network
+Its 19 new tests include real mounted React hooks/components with mocked network
 receipts, exact adapter payloads, source changes/late completion/cancellation,
 new and missing fields, typed facets, preference isolation, legacy fallback,
 and a responsive predicate editor. JSX for MetadataExplorer/App is loaded by the
@@ -58,6 +69,34 @@ database/app access, active-app changes, external experiments, or scale benchmar
 were run. Six tracked MAT fixtures are absent from the approved snapshot
 (`.snapshot/manifest.json`); frontend fixtures do not exercise those MATLAB,
 waveform, stimulus reconstruction, or native-source fidelity gates.
+
+The focused current-workflow revision passes **74 tests** with the same Node and
+local dependency copy: the eleven files above plus `protocolSelectionSummary`.
+Two additional mounted cases verify lightweight explicit preview with independent
+cell/epoch counts and advanced-catalog opt-in clearing on layout/generation
+changes. The tree case now verifies absent all-fields control, complete discovery,
+preserved frozen filters/missing axes and no catalog fetch when opening its chooser.
+Run with `node --test --test-concurrency=1 src/{requestedSummaries,requestedSummariesLifecycle,predicateEditor,predicateState,predicateValueSuggestions,treeFieldPresentation,treeLayoutPersistence,epochViewerArchitecture,workflowResponsiveness,epochViewerRendering,pagedTreeLifecycle,protocolSelectionSummary}.test.js`.
+Existing mounted fixtures emit sandbox-denied HMR-listen warnings; all 74 checks
+pass without a running HTTP service. No native timing or package build ran here.
+
+## Current workflow versus legacy diagnostics
+
+For current-workflow comparisons, apply this same frontend patch to both backend
+arms. Measure explicit filter preview with `catalog_summary:false`, count receipt,
+active/pinned exact typed summaries, and relevant tree splitters separately from
+rendered completion. Keep the exact scientific predicate, native membership,
+source/frozen protocol context and field requests equal between arms.
+
+The backend all-fields summary request and complete-catalog routes remain
+compatible diagnostics. Label retained all-140-field measurements **legacy
+full-distribution diagnostic**; they no longer represent a normal UI button.
+Advanced catalog/layout suggestion timing is a separate opt-in workload. The
+reduced requested-field workflow is a product change, not an equal-output
+engine speedup. No native timing, unique-cell category aggregation or UI SLO is
+established by the frontend mock tests. Existing infographic counts retain their
+native count DTOs; any future category counts must provide distinct-cell counts
+under the same authoritative scope rather than use epoch facet bucket counts.
 
 ## Remaining row-path seam
 

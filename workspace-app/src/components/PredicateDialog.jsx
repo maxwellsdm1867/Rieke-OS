@@ -30,7 +30,7 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   async function previewMatches(){
     if(busy||previewBusy||compiled.error||!catalog.data)return;
     const controller=new AbortController();request.current=controller;setPreviewBusy(true);setError('');
-    try{const result=await api('/explore/run',{method:'POST',body:{predicate:compiled.predicate,splits:''},signal:controller.signal});if(!controller.signal.aborted)setPreview({run:result.last_run,predicate:compiled.predicate});}
+    try{const result=await api('/explore/run',{method:'POST',body:{predicate:compiled.predicate,splits:'',catalog_summary:false},signal:controller.signal});if(!controller.signal.aborted)setPreview({run:result.last_run,predicate:compiled.predicate});}
     catch(error){if(!controller.signal.aborted)setError(error.message);}
     finally{if(!controller.signal.aborted)setPreviewBusy(false);}
   }

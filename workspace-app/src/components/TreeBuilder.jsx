@@ -32,15 +32,15 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const legacyPath=`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
   const catalogScopeKey=JSON.stringify([legacyPath,revision]);
-  const [fullCatalogKey,setFullCatalogKey]=useState(null),[allSummaryKey,setAllSummaryKey]=useState(null);
+  const [fullCatalogKey,setFullCatalogKey]=useState(null);
   const fullCatalog=fullCatalogKey===catalogScopeKey;
+  useEffect(()=>{if(fullCatalogKey!==null&&fullCatalogKey!==catalogScopeKey)setFullCatalogKey(null);},[fullCatalogKey,catalogScopeKey]);
   const fetchedCatalog=useResource(!catalogData&&fullCatalog?legacyPath:null,revision);
   const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog?fetchedCatalog:registry;
   const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
-  const summaryScopeKey=JSON.stringify([context,revision]);
-  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.predicate,preferences:preferences.value,all:allSummaryKey===summaryScopeKey});
+  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.predicate,preferences:preferences.value});
   const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
     {enabled:!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
   const fields = useMemo(()=>{
@@ -230,8 +230,11 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     <SummaryStatus state={{...summaries,retry:()=>{registry.reload();summaries.retry();}}}/>
     {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
     <div className="tb-summary-controls">
-      <button type="button" disabled={!registry.supportsSummaries||!registry.data?.generation} onClick={()=>{setAllSummaryKey(summaryScopeKey);summaries.retry();}}>Summarize all metadata fields</button>
-      <button type="button" onClick={()=>{if(onFullCatalog)onFullCatalog();else setFullCatalogKey(catalogScopeKey);}}>Load full catalog and suggestions</button>
+      <details className="tb-advanced-catalog">
+        <summary>Advanced layout suggestions</summary>
+        <p className="tb-note">Compute summaries across all available fields to suggest a layout for this view.</p>
+        <button type="button" onClick={()=>{if(onFullCatalog)onFullCatalog();else setFullCatalogKey(catalogScopeKey);}}>Load full catalog and suggestions</button>
+      </details>
       <SummaryPreferences fields={definitions} preferences={preferences}/>
     </div>
     {open&&position&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}

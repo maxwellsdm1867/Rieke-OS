@@ -42,3 +42,5 @@
 .tb-summary-controls details {font-size:12px;}
 .tb-summary-controls details > div {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;}
 .tb-summary-controls label {display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+
+.tb-advanced-catalog > summary { cursor: pointer; font-size: 12px; color: var(--ink-muted); }

@@ -57,7 +57,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   const viewRevision=annotationHold?.revision??revision;
   const [generation,setGeneration]=useState(0),[historyVersion,setHistoryVersion]=useState(0),[historyOffset,setHistoryOffset]=useState(saved?.historyOffset || 0);
   const [draftPreview,setDraftPreview]=useState({data:null,loading:false,error:null,key:null});
-  const [fullCatalog,setFullCatalog]=useState(false);
+  const [fullCatalogKey,setFullCatalogKey]=useState(null);
   const [tree,setTree]=useState({data:null,loading:false,error:null});
   const [busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(saved?.wasBusy?'A request was in progress when you left. Check Candidate history before saving again.':saved?'Workspace draft restored. No save or protocol update was replayed.':'');
   const draftController=useRef(null),treeController=useRef(null);
@@ -75,6 +75,12 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
     try{return {predicate:compilePredicate(draft,catalog.data?.fields || null),error:null};}
     catch(error){return {predicate:null,error:error.message};}
   },[draft,catalog.data]);
+  // Advanced suggestions apply only to the explicitly requested view. A changed
+  // scope/layout/generation resumes lightweight previews before effects run.
+  const fullCatalogScopeKey=predicateIdentity({projectId,predicate:resultsFromDraft?compiled.predicate:applied?.recipe.predicate,
+    revision_uuid:applied?.revision_uuid,viewFilters,splits,filterSplits,viewRevision,generation,focused,step});
+  const fullCatalog=fullCatalogKey===fullCatalogScopeKey;
+  useEffect(()=>{if(fullCatalogKey!==null&&fullCatalogKey!==fullCatalogScopeKey)setFullCatalogKey(null);},[fullCatalogKey,fullCatalogScopeKey]);
   const draftKey=predicateIdentity({predicate:compiled.predicate,splits:filterSplits});
   const changedFilter=!!applied&&predicateIdentity(compiled.predicate)!==predicateIdentity(applied.recipe.predicate);
   const changedTree=!!applied&&splits.split(',').map(x=>x.trim()).join(',')!==applied.recipe.splits.split(',').map(x=>x.trim()).join(',');
@@ -191,7 +197,6 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   // Definitions and bounded tree navigation remain usable while summaries run.
   // Complete derived suggestions are an explicit full-catalog operation.
   const displayTree=availableTree;
-  useEffect(()=>setFullCatalog(false),[applied?.revision_uuid,filteredKey]);
 
   useEffect(()=>{const node=layoutRef.current;if(!node)return;const observer=new ResizeObserver(entries=>setLayoutWidth(entries[0].contentRect.width));observer.observe(node);return()=>observer.disconnect();},[step,focused,initialCandidateLoading,!!displayTree.data,displayTree.loading,!!displayTree.error]);
   useEffect(()=>{
@@ -302,7 +307,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
       <Status {...displayTree} retry={()=>setGeneration(value=>value+1)}>{displayTree.data&&applied&&<EpochViewer designMode className="tree-design explorer-design-viewer" ariaLabel="Tree overview workspace"
         toolbar={{portalTarget:epochToolbarTarget,designMode:true,onBrowse:showEpochResults,onExport:openResultsExport,exportDisabled,actions:resultActions}}
         layout={{layoutRef,className:'mx-layout',sizes:pane,treeOpen:true,metadataOpen:false,onResize:(name,value)=>{if(name==='tree')setGroupingWidth(value);},onResizeCommit:(name,value)=>{if(name==='tree')try{localStorage.setItem('workspace.explorer.groupingWidth',String(value));}catch{}}}}
-        builder={{projectId,protocolId:initialProtocolId,summaryContext:{predicate:resultPredicate},onFullCatalog:()=>setFullCatalog(true),revision:`${viewRevision}:${generation}`,catalogData:fullCatalog?displayTree.data.catalog:{...displayTree.data.catalog,fields:catalog.data?.tree_fields||catalog.data?.fields||displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree,loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
+        builder={{projectId,protocolId:initialProtocolId,summaryContext:{predicate:resultPredicate},onFullCatalog:()=>setFullCatalogKey(fullCatalogScopeKey),revision:`${viewRevision}:${generation}`,catalogData:fullCatalog?displayTree.data.catalog:{...displayTree.data.catalog,fields:catalog.data?.tree_fields||catalog.data?.fields||displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree,loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
         columnTree={{inclusionForEpoch:epoch=>searchEpochInclusion(epoch,excludedEpochs),onToggleInclusion:toggleInclusion,actionsDisabled:busy,predicate:resultPredicate,...treePreviewScope(displayTree.data),revision:`${viewRevision}:${generation}`,initialNavigation:treeNavigation,onNavigationChange:setTreeNavigation,onRefreshPreview:()=>setGeneration(value=>value+1),onMetadata:setPagedInfo,onStatus:setPagedStatus,selected:matchingNavigation?.focused,onSelectEpoch:uuid=>setMatchingNavigation({revision:displayTree.data.tree_revision,focused:uuid})}}/>}</Status>
 
     </>}

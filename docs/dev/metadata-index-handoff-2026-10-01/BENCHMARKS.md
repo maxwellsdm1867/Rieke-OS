@@ -11,6 +11,24 @@ recordings with an explicit physical/projected denominator.
 
 The strongest current result is an **all-140-field SQLite candidate with bounded pages, structural-scope queries and requested summaries**. Reducing the indexed field set to 28 did not improve speed convincingly. This is a prototype decision: the running app has not received the million-row or priority-model changes. The reports below represent different workloads and cannot be combined into one end-to-end speedup.
 
+## Current requested-summary UI workload
+
+The current frontend removes the normal **Summarize all metadata fields** action.
+Predicate-dialog **Preview matches** explicitly uses the existing `/explore/run`
+contract with `catalog_summary:false`; native cell/epoch count receipts and
+active/pinned field summaries remain available. Complete registry discovery,
+raw detail, exports and reconstruction do not depend on distribution requests.
+Complete catalogs and derived layout suggestions remain an explicit advanced
+operation, scoped to the requested view.
+
+Apply the same revised UI to both native comparison arms. Record exact predicate,
+source/frozen-protocol scope, requested fields, count receipt and rendered
+completion. Historical all-140-field summary/catalog measurements remain
+**legacy full-distribution diagnostics**, not ordinary current UI actions.
+Advanced layout suggestion measurements are separately opt-in. Fewer requested
+facets are a workflow change; retain equal-output paired engine comparisons and
+do not transfer diagnostic timings to current-workflow latency claims.
+
 ## Original nine-action baseline and continuity
 
 Historical measurements used 100,000 **synthetic** epochs, production-built React components, genuine Flask/native MySQL routes and the sealed SQLite metadata index. A component shell was used, not full installed-App/Electron startup. The initial browser actions had three samples; later browser comparisons had five. Tagging and filter preview below are API measurements, not browser paint.
