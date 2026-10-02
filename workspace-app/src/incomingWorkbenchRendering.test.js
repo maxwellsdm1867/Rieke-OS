@@ -6,7 +6,7 @@ import React from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from './test-support/isolatedVite.js';
-const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('');
+const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('').trim();
 const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
@@ -19,13 +19,13 @@ test('actual Workbench renders authoritative queue and session worklist controls
   const props={protocolId:'history',suggestions:[item,{...item,protocol_uuid:'other',protocol_name:'Other'}],projectId:'project',authority:null};
   const html=renderToStaticMarkup(React.createElement(Workbench,props));
   for(const text of ['Needs review','candidate-immutable','base-immutable','incoming.h5','Earlier unmerged updates'])assert.ok(html.includes(text),text);
-  assert.doesNotMatch(html,/>Other</);assert.match(html,/disabled=""[^>]*>Accept &amp; export/);
+  assert.doesNotMatch(html,/>Other</);assert.match(html,/disabled=""[^>]*>Merge &amp; export/);
   const cumulative={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{...item,pending_epoch_count:20},{...item,candidate_revision_uuid:'second-proposal',pending_epoch_count:20}]};
   const cumulativeHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:cumulative}));
-  assert.match(cumulativeHtml,/2.*distinct cells/);assert.match(cumulativeHtml,/30.*incoming epochs/);assert.match(cumulativeHtml,/second-proposal/);assert.doesNotMatch(cumulativeHtml,/Earlier unmerged updates/);
+  assert.match(cumulativeHtml,/2<\/strong>.*cells/);assert.match(cumulativeHtml,/30<\/strong>.*epochs/);assert.match(cumulativeHtml,/second-proposal/);assert.doesNotMatch(cumulativeHtml,/Earlier unmerged updates/);
   const blockedHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:0,pending_epoch_count:0,candidates:[{...item,status:'conflict',pending_epoch_count:0},{...item,candidate_revision_uuid:'blocked-source',status:'source_blocked',pending_epoch_count:0}]}}));
   assert.match(blockedHtml,/Conflict requires review/);assert.match(blockedHtml,/Source unavailable/);assert.match(blockedHtml,/blocked-source/);assert.doesNotMatch(blockedHtml,/No current incoming proposals/);
-  const unknownHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:null}}));assert.match(unknownHtml,/Distinct cell count unavailable/);assert.doesNotMatch(unknownHtml,/0 distinct cells/);
+  const unknownHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:null}}));assert.match(unknownHtml,/Cells unavailable/);assert.doesNotMatch(unknownHtml,/0 distinct cells/);
   let renderer,saved;
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,{...props,onSession:value=>{saved=value;}}));});
   await act(async()=>renderer.root.findByType('input').props.onChange());
@@ -67,12 +67,12 @@ test('mounted additive review preserves an uncertain acceptance operation and re
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},protocolId:'history',item:{candidate_revision_uuid:'proposal'},onSession:value=>{saved=value;},onChange:()=>changed++}));});
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('No global query is substituted')));
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
-  await act(async()=>button('Preview accept all').props.onClick());
+  await act(async()=>button('Merge all').props.onClick());
   assert.ok(renderer.root.findAllByType('dt').some(node=>label(node)==='Existing main epochs retained'));
   await act(async()=>button('Add these additions to main').props.onClick());
   assert.equal(saved.unconfirmed,true);assert.ok(saved.operation);assert.equal(saved.preview.mode,'all');
-  assert.equal(button('Preview selected additions').props.disabled,true);
-  assert.equal(button('Preview accept all').props.disabled,true);
+  assert.equal(button('Merge selected epochs').props.disabled,true);
+  assert.equal(button('Merge all').props.disabled,true);
   const operation=saved.operation;
   await act(async()=>renderer.unmount());
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},protocolId:'history',item:{candidate_revision_uuid:'proposal'},session:saved,onSession:value=>{saved=value;},onChange:()=>changed++}));});
@@ -146,8 +146,8 @@ test('completed independent export can proceed to review and fresh accept/export
   const completed={workflow:'export',prepared:{path:'/old',body:{}},exported:{dataset_uuid:'old-dataset',download_url:'/old-download',epoch_count:2},exportOperation:'old-export'};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},capabilities:{drafts:true,additive_accept:true,incoming_export:true},session:{exportState:completed},onSession:value=>{saved=value;}}));});
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
-  assert.equal(button('Preview accept all').props.disabled,false);
-  await act(async()=>button('Accept & export').props.onClick());
+  assert.equal(button('Merge all').props.disabled,false);
+  await act(async()=>button('Merge & export').props.onClick());
   assert.equal(saved.exportState.prepared,undefined);assert.equal(saved.exportState.completed[0].exported.dataset_uuid,'old-dataset');
   assert.equal(renderer.root.findByType('form').props.children.at(-1).props.children,'Preview additions');
   assert.equal(renderer.root.findByType('a').props.href,'/old-download');
@@ -202,7 +202,7 @@ test('shared change callback and external revision refresh frozen token while pr
   function Probe({external=0}){const [revision,setRevision]=React.useState(0);return React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},revision:revision+external,capabilities:{frozen_browse:true,drafts:true,additive_accept:true},session:{unconfirmed:true,preview,operation:'same-operation'},onChange:()=>setRevision(value=>value+1),onSession:value=>{saved=value;}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   await act(async()=>renderer.root.findByType(Review).props.onChange({kind:'annotations'}));
-  assert.equal(contextReads,2);assert.ok(renderer.root.findAllByType('span').some(node=>label(node).includes('scope-v2')));
+  assert.equal(contextReads,2);assert.ok(renderer.root.findAllByType('code').some(node=>label(node).includes('scope-v2')));
   await act(async()=>renderer.update(React.createElement(Probe,{external:5})));
   assert.equal(contextReads,3);assert.equal(saved.operation,'same-operation');assert.deepEqual(saved.preview,preview);assert.equal(saved.unconfirmed,true);assert.equal(calls.length,3);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
@@ -223,12 +223,12 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
   const props={protocolId:protocol,authority:makeQueue('queue-1',3),onSession:value=>{saved=value;}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
-  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('strong').some(node=>label(node)==='Unmerged incoming recordings'));
+  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Unmerged incoming'));
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:{...props.authority}})));
   assert.equal(preparedCalls,1,'ordinary rerender/poll result does not prepare again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1,authority:makeQueue('queue-2',1)})));
   assert.equal(preparedCalls,2);assert.equal(saved.cumulative.prepared.candidate_revision_uuid,'union-queue-2');
-  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('1 unmerged incoming epochs remain')));
+  assert.ok(renderer.root.findAll(node=>node.props['aria-label']==='Distinct pending incoming counts').some(node=>label(node).includes('1epochs')));
   const historyButton=renderer.root.findAllByType('button').find(node=>label(node)==='Proposal history');
   await act(async()=>historyButton.props.onClick());
   assert.ok(renderer.root.findAllByType('code').some(node=>label(node)==='original-a'));assert.equal(preparedCalls,2);
@@ -236,8 +236,8 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
   assert.equal(preparedCalls,3,'history permits restoring excluded draft even when awaiting-review count is zero');
-  assert.ok(renderer.root.findAllByType('strong').some(node=>label(node)==='Unmerged incoming recordings'));
-  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain available')));
+  assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Unmerged incoming'));
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain in your draft')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -309,7 +309,7 @@ test('new queue preparation preserves the mounted Inspector and fences an open e
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Cumulative,props));});
   const original=renderer.root.findByType(Frozen);
   const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);
-  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Export new selection').props.onClick());
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Export').props.onClick());
   const openDialog=renderer.root.findByType('dialog');
   assert.equal(contexts,2,'the open export dialog loads its own fresh context');
   await act(async()=>renderer.update(React.createElement(Cumulative,{...props,revision:1,queue:queue('new-queue')})));
@@ -321,7 +321,7 @@ test('new queue preparation preserves the mounted Inspector and fences an open e
   assert.equal(renderer.root.findByType(Frozen),original,'old browser is preserved while preparing');
   assert.equal(contexts,3,'revision refresh obtains fresh context without remounting the visible frozen tree');
   assert.equal(original.props.externalBusy,true);
-  const compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');
+  const compare=renderer.root.findAllByType('button').find(node=>label(node)==='Merge selected epochs');
   assert.equal(compare.props.disabled,true);
   await act(async()=>compare.props.onClick());assert.equal(prepares,1);
   await act(async()=>release());
@@ -357,11 +357,11 @@ test('actual queue hook retains Inspector through old-token loading, delayed que
   assert.equal(reads,2);assert.equal(prepares,1,'old token is retained while queue GET is pending');
   assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector);
   assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,'0:1');
-  let compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');assert.equal(compare.props.disabled,true);
+  let compare=renderer.root.findAllByType('button').find(node=>label(node)==='Merge selected epochs');assert.equal(compare.props.disabled,true);
   await act(async()=>compare.props.onClick());
   await act(async()=>releaseQueue());
   assert.equal(prepares,2);assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector);
-  compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');assert.equal(compare.props.disabled,true);
+  compare=renderer.root.findAllByType('button').find(node=>label(node)==='Merge selected epochs');assert.equal(compare.props.disabled,true);
   await act(async()=>releasePrepare());
   const replacement=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.notEqual(replacement,inspector);
   assert.equal(replacement.props.readContext.candidate_scope_revision,'scope-new-union');assert.equal(replacement.props.revision,'1:1');
@@ -392,5 +392,26 @@ test('candidate cohort identity survives draft saves while authority tokens refr
   context={...context,candidate_recipe_sha256:undefined,candidate_scope_revision:'scope-four'};
   await act(async()=>renderer.update(React.createElement(Frozen,{...props,revision:2})));
   assert.equal(inspector().props.readContext.cohort_key,undefined,'missing immutable evidence must not manufacture a stable cohort');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('compact action bar keeps authoritative positive, zero and unavailable counts and Cancel only leaves review',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,left=0;
+ const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_truncated:false},counts:{pending_epochs:0,pending_cells:0},protocol:null};
+ globalThis.fetch=async(path,options={})=>{calls.push({path:String(path),method:options.method||'GET'});return {ok:true,status:200,json:async()=>context};};
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},scopeKind:'cumulative_pending',capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true},onDefer:()=>left++};
+  const mount=async counts=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,pendingCounts:counts}));});};
+  const metrics=()=>renderer.root.findByProps({'aria-label':'Distinct pending incoming counts'}).findAllByType('strong').map(label);
+  const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  await mount({pending_cell_count:2,pending_epoch_count:30});assert.deepEqual(metrics(),['2','30']);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:null,pending_epoch_count:30}})));assert.deepEqual(metrics(),['Unavailable','30']);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{}})));assert.deepEqual(metrics(),['Unavailable','Unavailable']);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:0,pending_epoch_count:0}})));assert.deepEqual(metrics(),['0','0']);
+  assert.equal(button('Merge selected epochs').props.disabled,true);assert.equal(button('Merge all').props.disabled,true);
+  const disclosure=renderer.root.findAllByType('details').find(node=>label(node).includes('Review details'));assert.equal(disclosure.props.open,undefined);
+  assert.ok(label(disclosure).includes('Shared tags publish immediately'));
+  await act(async()=>button('Cancel').props.onClick());assert.equal(left,1);assert.equal(calls.length,1);assert.equal(calls[0].method,'GET');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

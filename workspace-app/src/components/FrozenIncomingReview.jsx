@@ -1,12 +1,15 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {api,number} from '../api.js';
+import {Activity,CheckSquare,Download,GitMerge,Layers,Search,Square,X} from 'lucide-react';
+import NeuronIcon from './NeuronIcon.jsx';
 import Inspector,* as InspectorCapabilities from './Inspector.jsx';
 import ProtocolViewFilter from './ProtocolViewFilter.jsx';
 import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null}){
+  const browserRegion=useRef(null);
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
   const [unconfirmed,setUnconfirmed]=useState(session?.unconfirmed||session?.acceptPending||false),[acceptPending,setAcceptPending]=useState(false);
@@ -77,16 +80,42 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const exportLocked=unconfirmed||!!exportState.pending||!exportState.exported&&(!!exportState.acceptOperation||!!exportState.prepared);
   function openExport(accept){if(exportState.exported||exportState.phase==='rejected')setExportState(nextWorkbenchWorkflow(exportState));setExportDialog(accept);}
   function reviewRemaining(){const next=nextWorkbenchWorkflow({...exportState,receipt});setExportState(next);setReceipt(null);setPreview(null);operation.current=null;publish({receipt:null,preview:null,operation:null,exportState:next});setNonce(value=>value+1);}
-  return <section>
-    <div className="incoming-review-context"><strong>{scopeKind==='cumulative_pending'?'Unmerged incoming recordings':'Frozen proposal additions'}</strong><code>{item.candidate_revision_uuid.slice(0,8)}</code><button disabled={busy||externalBusy} onClick={onDefer}>Back to queue</button><button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh} onClick={defer}>Defer & return to queue</button>{onNext&&<button disabled={busy||externalBusy||unconfirmed} onClick={onNext}>Next proposal</button>}
-      {scopeKind==='cumulative_pending'?<p>Review the deduplicated unmerged recordings accumulated for this protocol. Existing main recordings stay separate; original proposals remain in history.</p>:<p>This browser shows one proposal snapshot. Overlapping proposals may repeat epochs. The queue count deduplicates unmerged epochs; proposal history is separate from cumulative review.</p>}
-      {contextFresh&&context?.counts&&<p>{scopeKind==='cumulative_pending'?`${number(context.counts.pending_epochs)} unmerged incoming epochs remain.`:<>{number(context.counts.incoming_epochs)} proposal additions · {number(context.counts.pending_epochs)} absent from main · {number(context.counts.already_present_epochs)} already in main.</>}</p>}
-      {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
-      <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Adding to main preserves its existing epochs and curation; opening this view does not mark anything reviewed.</p>
+  const countLabel=value=>Number.isSafeInteger(value)&&value>=0?number(value):'Unavailable';
+  const cells=pendingCounts?pendingCounts.pending_cell_count:contextFresh?context?.counts?.pending_cells:null;
+  const epochs=pendingCounts?pendingCounts.pending_epoch_count:contextFresh?context?.counts?.pending_epochs:null;
+  // The server remains the authority for exact eligibility, including truncated
+  // draft decisions. Never infer a count by summing proposals or viewer rows.
+  const noReviewedSelection=contextFresh&&context.draft.selection_mode==='selected'&&context.draft.decisions_truncated===false&&Array.isArray(context.draft.decisions)&&!context.draft.decisions.some(value=>value.selected&&value.reviewed&&!value.excluded);
+  function explore(){browserRegion.current?.focus();browserRegion.current?.scrollIntoView({block:'nearest'});}
+  return <section className="incoming-review">
+    <div className="incoming-action-bar" aria-label="Incoming review actions">
+      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}>
+        <span><NeuronIcon size={18}/><strong>{countLabel(cells)}</strong><small>cells</small></span>
+        <span><Activity size={18} aria-hidden="true"/><strong>{countLabel(epochs)}</strong><small>epochs</small></span>
+      </div>
+      <div className="incoming-bar-actions">
+        <button className="primary" disabled={!visible||!adapterReady} onClick={explore}><Search size={14} aria-hidden="true"/> Review / Explore</button>
+        <button disabled={busy||externalBusy||exportLocked||!capabilities.additive_accept||!contextFresh||!!receipt||noReviewedSelection} title="Preview saved selected and reviewed additions before merging to main" onClick={()=>compare('selected')}><GitMerge size={14} aria-hidden="true"/> Merge selected epochs</button>
+        <button disabled={busy||externalBusy||exportLocked||!capabilities.additive_accept||!contextFresh||!!receipt||context?.counts?.pending_epochs===0} title="Preview all eligible incoming additions, keeping draft exclusions" onClick={()=>compare('all')}><Layers size={14} aria-hidden="true"/> Merge all</button>
+        <button disabled={busy||externalBusy||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!capabilities.incoming_export} title={capabilities.incoming_export?(receipt?'Export accepted additions':'Export exact incoming additions'):'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}><Download size={14} aria-hidden="true"/> {receipt?'Export accepted':'Export'}</button>
+        <button disabled={busy||externalBusy||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!capabilities.incoming_export||!capabilities.additive_accept} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
+        <button disabled={busy||externalBusy} title="Leave review; saved draft and pending operations remain available" onClick={onDefer}><X size={14} aria-hidden="true"/> Cancel</button>
+      </div>
+    </div>
+    <div className="incoming-selection-tools">
+      <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(true)}><CheckSquare size={14} aria-hidden="true"/> Save highlighted as selected</button>
+      <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(false)}><Square size={14} aria-hidden="true"/> Clear highlighted selections</button>
+      <details className="incoming-review-details"><summary>Review details</summary><div>
+        <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
+        <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>
+        <p>Merge selected uses saved selected and reviewed epochs. Merge all deliberately approves eligible incoming additions and retains draft exclusions. Both show exact counts before confirmation. Cancel leaves the draft pending and does not roll back a submitted operation.</p>
+        {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
+        {contextFresh&&<p>Draft version {context.draft.draft_version} · scope <code>{context.candidate_scope_revision.slice(0,12)}</code> · proposal <code>{item.candidate_revision_uuid.slice(0,8)}</code></p>}
+        {scopeKind!=='cumulative_pending'&&contextFresh&&context?.counts&&<p>{countLabel(context.counts.incoming_epochs)} proposal additions · {countLabel(context.counts.already_present_epochs)} already in main.</p>}
+        <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh} onClick={defer}>Defer & return to queue</button>
+        {onNext&&<button disabled={busy||externalBusy||unconfirmed} onClick={onNext}>Next proposal</button>}
+      </div></details>
       {context?.draft.deferred&&<button disabled={busy||externalBusy||exportLocked||!capabilities.drafts} onClick={()=>save([],{deferred:false})}>Resume deferred review</button>}
-      {contextFresh&&<span>Draft version {context.draft.draft_version} · scope {context.candidate_scope_revision.slice(0,12)}</span>}
-      <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(true)}>Save highlighted as selected</button><button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(false)}>Clear highlighted selections</button>
-      <button disabled={busy||externalBusy||exportLocked||!capabilities.additive_accept||!contextFresh||!!receipt} onClick={()=>compare('selected')}>Preview selected additions</button><button disabled={busy||externalBusy||exportLocked||!capabilities.additive_accept||!contextFresh||!!receipt} onClick={()=>compare('all')}>Preview accept all</button><button disabled={busy||externalBusy||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!capabilities.incoming_export} title={capabilities.incoming_export?'Export exact incoming additions':'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}>{receipt?'Export accepted additions':'Export new selection'}</button><button disabled={busy||externalBusy||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!capabilities.incoming_export||!capabilities.additive_accept} onClick={()=>openExport(true)}>Accept & export</button>
     </div>
     {exportLocked&&!unconfirmed&&!exportState.exported&&<p role="status">A saved export workflow is awaiting a receipt. Reopen Export to resume it before changing this draft.</p>}
     {error&&<div className="error" role="alert">{error}<button disabled={busy||externalBusy} onClick={()=>setNonce(value=>value+1)}>Refresh draft</button></div>}
@@ -96,6 +125,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/><Inspector readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={value=>{viewer.current=value;publish({viewer:value});}} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" ref={browserRegion} tabIndex={-1} aria-label="Incoming epoch browser"><ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked} onChange={setFilters}/><Inspector readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={value=>{viewer.current=value;publish({viewer:value});}} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }

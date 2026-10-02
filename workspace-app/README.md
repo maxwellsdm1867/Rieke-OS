@@ -7,6 +7,9 @@ separate and contains example data.
 For workspace initialization, launching from your research folder, and the file
 layout, see the [Disco quick start](../docs/RIEKE_OS_QUICK_START.md).
 
+For compact metrics, action bars, disclosures, and accessible navigation, follow
+the [scientific dashboard UI guide](../docs/design/scientific-dashboard-ui.md).
+
 ## Fresh-clone setup
 
 Use the dedicated Disco development source:

@@ -1,5 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {api} from '../api.js';
+import {api,number} from '../api.js';
+import {Activity,History} from 'lucide-react';
+import NeuronIcon from './NeuronIcon.jsx';
 import {requireWorkbenchContext,workbenchCandidateRoot,workbenchRoot} from '../workbenchAuthority.js';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
@@ -37,15 +39,16 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   },[protocolId,queue.data?.queue_revision,queue.data?.pending_epoch_count,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision]);
   const authorityChanged=!!queue.data?.queue_revision&&prepared?.queue_revision!==queue.data.queue_revision;
   const remember=useCallback(value=>{drafts.current={...drafts.current,[prepared.candidate_revision_uuid]:value};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);},[prepared?.candidate_revision_uuid,onSession]);
-  return <section>
-    <div className="incoming-worklist"><strong>Cumulative unmerged recordings</strong><button onClick={onHistory}>Proposal history</button></div>
+  return <section className="incoming-cumulative">
+    <div className="incoming-cumulative-heading"><span>Unmerged incoming</span><button onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button></div>
+    {!prepared&&<div className="incoming-bar-metrics" aria-label="Distinct pending incoming counts"><span><NeuronIcon size={18}/><strong>{Number.isSafeInteger(queue.data?.pending_cell_count)?number(queue.data.pending_cell_count):'Unavailable'}</strong><small>cells</small></span><span><Activity size={18} aria-hidden="true"/><strong>{Number.isSafeInteger(queue.data?.pending_epoch_count)?number(queue.data.pending_epoch_count):'Unavailable'}</strong><small>epochs</small></span></div>}
     {recovering&&prepared?.queue_revision!==queue.data?.queue_revision&&<p role="status">The pending set changed. Recover the saved operation before preparing the updated incoming set.</p>}
     {busy&&<p role="status">Preparing the cumulative unmerged snapshot…</p>}
     {error&&<p role="alert">{error}<button onClick={()=>setNonce(value=>value+1)}>Retry cumulative preparation</button></p>}
     {receiptExport&&<WorkbenchExportDialog protocolId={protocolId} item={{candidate_revision_uuid:receiptExport}} acceptReceipt={drafts.current[receiptExport].receipt} state={drafts.current[receiptExport].exportState||{}} onState={value=>{drafts.current={...drafts.current,[receiptExport]:{...drafts.current[receiptExport],exportState:value}};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);}} onClose={()=>setReceiptExport(null)} onChanged={reviewProps.onChange}/>}
     {Object.entries(drafts.current).filter(([key])=>key!==prepared?.candidate_revision_uuid).map(([key,value])=><div key={key}>{value.unconfirmed||value.acceptPending?<p role="status">An earlier acceptance needs receipt recovery. <button disabled={!scopes.current[key]} onClick={()=>setPrepared(scopes.current[key])}>Recover earlier acceptance</button></p>:value.receipt&&!value.exportState?.exported?<p>Earlier acceptance saved · {value.receipt.event_uuid} <button onClick={()=>setReceiptExport(key)}>Export accepted additions</button></p>:null}</div>)}
-    {queue.data?.pending_epoch_count===0&&!recovering&&<p role="status">No incoming recordings currently await review. Saved exclusions remain available in the cumulative draft.</p>}
-    {prepared?<FrozenIncomingReview {...reviewProps} preserveBrowser externalBusy={busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data.capabilities} session={draft} onSession={remember}/>:!busy&&!error&&queue.data.pending_epoch_count>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
+    {queue.data?.pending_epoch_count===0&&!recovering&&<p role="status">No pending incoming recordings. Saved exclusions remain in your draft.</p>}
+    {prepared?<FrozenIncomingReview {...reviewProps} preserveBrowser pendingCounts={queue.data} externalBusy={busy||!!(queue.loading||queue.error||authorityChanged)&&!recovering} key={prepared.candidate_revision_uuid} protocolId={protocolId} item={{candidate_revision_uuid:prepared.candidate_revision_uuid,protocol_uuid:protocolId}} scopeKind="cumulative_pending" capabilities={queue.data.capabilities} session={draft} onSession={remember}/>:!busy&&!error&&queue.data.pending_epoch_count>0&&<p role="status">Waiting for the authoritative pending queue.</p>}
     {Object.entries(drafts.current).filter(([key])=>key!==prepared?.candidate_revision_uuid).flatMap(([key,value])=>[...(value.exportState?.completed||[]),...(value.receipt||value.exportState?.exported?[{receipt:value.receipt,exported:value.exportState?.exported}]:[])]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download incoming export'}</a>}</p>)}
   </section>;
 }
