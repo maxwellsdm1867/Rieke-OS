@@ -12,13 +12,13 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
   const accepting=state.workflow?state.workflow==='accept-export':accept;
   const [context,setContext]=useState(null),[loadError,setLoadError]=useState(''),[busy,setBusy]=useState(false);
   const [format,setFormat]=useState(state.format||'wheeler-sqlite'),[name,setName]=useState(state.name||''),[mode,setMode]=useState(state.mode||'selected');
-  const committed=state.receipt||acceptReceipt,locked=busy||!!state.prepared||!!state.acceptOperation;
+  const committed=state.receipt||acceptReceipt,locked=busy||!!state.prepared||!!state.acceptOperation&&!committed;
   function publish(patch){saved.current={...saved.current,...patch};onState(saved.current);}
   useEffect(()=>{const el=dialog.current;el?.showModal?.();return()=>el?.close?.();},[]);
   useEffect(()=>{
     if(committed||state.prepared||state.preview)return;
     const controller=new AbortController();
-    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){setContext(requireWorkbenchContext(value));if(saved.current.phase==='rejected')publish({phase:null,error:''});}}).catch(error=>{if(!controller.signal.aborted)setLoadError(error.message);});
+    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){setContext(requireWorkbenchContext(value));if(saved.current.phase==='rejected')publish({phase:null,error:`Fresh proposal loaded. ${saved.current.error||''}`});}}).catch(error=>{if(!controller.signal.aborted)setLoadError(error.message);});
     return()=>controller.abort();
   },[root,!!committed,!!state.prepared,!!state.preview]);
   async function submit(event){
@@ -44,6 +44,8 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
     }catch(error){
       if(phase==='accepting'&&acceptanceFailureKind(error)==='rejected'){
         publish({phase:'rejected',acceptOperation:null,preview:null,error:`Acceptance rejected. Reopen to refresh the proposal. ${error.message}`});setContext(null);
+      }else if(phase==='exporting'&&saved.current.prepared&&acceptanceFailureKind(error)==='rejected'){
+        publish({receipt,prepared:null,exportOperation:null,preview:null,phase:receipt?'export-rejected':'rejected',error:`Export was rejected. ${receipt?'Choose a supported format or retry with fresh export context. Acceptance remains saved.':'Reopen to refresh the proposal.'} ${error.message}`});if(!receipt)setContext(null);
       }else publish({receipt,phase:phase==='accepting'?'acceptance-unconfirmed':receipt?'export-failed':saved.current.prepared?'export-unconfirmed':'failed',error:error.message});
     }finally{inFlight.current=false;setBusy(false);}
   }

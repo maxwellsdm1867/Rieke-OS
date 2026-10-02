@@ -13,6 +13,7 @@ test('accepted export uses acceptance receipt context, with no accept or binding
  assert.equal(prepared.path,'/protocols/protocol/workbench/receipts/accept-op/exports');
  assert.deepEqual(prepared.body,{expected_export_scope_revision:'accepted-frozen',format:'matlab-mat',operation_uuid:'export-op'});
  await assert.rejects(()=>acceptedExportRequest('protocol',{operation_uuid:'accept-op'},{},async()=>({export_scope_revision:'x',accepted_epoch_count:0,accept_operation_uuid:'accept-op'})),/no complete export context/);
+ await assert.rejects(()=>acceptedExportRequest('protocol',{operation_uuid:'accept-op'},{format:'matlab-mat'},async()=>({export_scope_revision:'x',accepted_epoch_count:2,accept_operation_uuid:'accept-op',formats:['reference-json','wheeler-sqlite']})),/does not support the chosen/);
 });
 test('lost export response retries identical request and requires complete authoritative artifact receipt',async()=>{
  const prepared=candidateExportRequest('/candidate',preview,{format:'wheeler-sqlite',operationUuid:'export-op'}),calls=[];let attempts=0;

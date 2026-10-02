@@ -14,6 +14,7 @@ export async function acceptedExportRequest(protocol,receipt,{format,name,operat
   const root=`${workbenchRoot(protocol)}/receipts/${encodeURIComponent(receipt.operation_uuid)}`;
   const context=await request(`${root}/export-context`);
   if(typeof context.export_scope_revision!=='string'||!context.export_scope_revision||context.accept_operation_uuid!==receipt.operation_uuid||!Number.isSafeInteger(context.accepted_epoch_count)||context.accepted_epoch_count<=0)throw new Error('The accepted additions have no complete export context. Main acceptance remains saved.');
+  if(Array.isArray(context.formats)&&!context.formats.includes(format))throw new Error('This selection does not support the chosen export format. Choose SQLite or Reference JSON. Main acceptance remains saved.');
   return {path:`${root}/exports`,expectedEpochCount:context.accepted_epoch_count,body:{expected_export_scope_revision:context.export_scope_revision,format,...(name?{name}:{}),operation_uuid:operationUuid}};
 }
 export async function submitWorkbenchExport(prepared,request){

@@ -157,7 +157,29 @@ test('definitively rejected acceptance refreshes on reopen and permits a fresh a
   const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
-  assert.equal(saved.phase,null);assert.equal(saved.error,'');
+  assert.equal(saved.phase,null);assert.match(saved.error,/Fresh proposal loaded/);
   assert.equal(renderer.root.findAllByType('button').find(node=>label(node)==='Accept & export').props.disabled,false);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('unsupported direct export format releases rejected request so fresh format can be chosen',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved={};
+ const root='/protocols/history/workbench/candidates/proposal';
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;
+  let status=200,value={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected'}};
+  if(endpoint===`${root}/preview`)value={selected_epoch_count:2,accepted_epoch_count:2,already_present_epoch_count:0,retained_epoch_count:3,next_epoch_count:5,accepted_cell_count:1,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'main'};
+  if(endpoint===`${root}/exports`){assert.equal(body.format,'matlab-mat');status=400;value={error:'MATLAB cannot preserve annotation grouping'};}
+  return {ok:status===200,status,json:async()=>value};
+ };
+ try{
+  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},state,onState:value=>{saved=value;setState(value);}});}
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
+  await act(async()=>renderer.root.findAllByType('input').find(node=>node.props.value==='matlab-mat').props.onChange());
+  await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.phase,null);assert.match(saved.error,/MATLAB cannot preserve/);assert.equal(saved.prepared,null);assert.equal(saved.exportOperation,null);
+  await act(async()=>renderer.unmount());await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
+  assert.equal(saved.phase,null);assert.equal(renderer.root.findAllByType('fieldset').at(-1).props.disabled,false);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
