@@ -53,3 +53,11 @@
   .import-compare-cards{grid-template-columns:1fr}
   .ds-heading-actions{justify-content:flex-start}
 }
+
+/* Keep the saved match visual primary; merge preview uses current queue authority. */
+.protocol-match-summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:start;margin-top:14px}
+.protocol-match-summary>.protocol-diff{margin:0;min-width:0;background:var(--surface,#fff);border:1px solid var(--border,#e2e8e4);border-radius:10px;padding:16px}
+.protocol-match-actions{display:flex;flex-direction:column;gap:9px;align-items:stretch;max-width:220px;padding-top:4px}
+.protocol-match-actions button{justify-content:center;white-space:nowrap}
+.protocol-match-actions small{font-size:11px;line-height:1.5;color:var(--muted,#68746d);max-width:210px;margin:3px 2px}
+@media(max-width:1050px){.protocol-match-summary{grid-template-columns:minmax(0,1fr)}.protocol-match-actions{max-width:none;flex-direction:row;flex-wrap:wrap;align-items:center;padding:0}.protocol-match-actions small{max-width:260px}}

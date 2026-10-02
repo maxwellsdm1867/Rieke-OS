@@ -19,6 +19,14 @@ export default function useWorkspaceNavigation(){
     window.history.pushState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
     furthest.current=next.index;current.current=next;setLocation(next);
   },[]);
+  const consumeMergeIntent=useCallback(requestId=>{
+    const previous=current.current;
+    if(previous.route.workbench?.merge_intent?.request_uuid!==requestId)return false;
+    const {merge_intent,...workbench}=previous.route.workbench;
+    const next={...previous,route:{...previous.route,workbench}};
+    window.history.replaceState({...window.history.state,riekeWorkspace:next},'',routeAddress(next.route));
+    current.current=next;setLocation(next);return true;
+  },[]);
   const restore=useCallback(route=>{
     if(!validWorkspaceRoute(route))return;
     const next={route,index:0};
@@ -26,5 +34,5 @@ export default function useWorkspaceNavigation(){
     window.history.replaceState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
     setLocation(next);
   },[]);
-  return {route:location.route,go,restore,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>window.history.back(),forward:()=>window.history.forward()};
+  return {route:location.route,go,restore,consumeMergeIntent,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>window.history.back(),forward:()=>window.history.forward()};
 }

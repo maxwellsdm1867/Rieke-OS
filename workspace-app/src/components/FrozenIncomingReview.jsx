@@ -3,13 +3,14 @@ import {createPortal} from 'react-dom';
 import {api,number} from '../api.js';
 import {Activity,CheckSquare,Download,GitMerge,History,Layers,RefreshCw,Search,Square,X} from 'lucide-react';
 import NeuronIcon from './NeuronIcon.jsx';
+import {mergeIntentMatches} from '../incomingMergeIntent.js';
 import Inspector,* as InspectorCapabilities from './Inspector.jsx';
 import ProtocolViewFilter from './ProtocolViewFilter.jsx';
 import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled}){
   const browserRegion=useRef(null);
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
@@ -79,6 +80,23 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       ?{cohort_key:JSON.stringify([root,visible.context.candidate_recipe_sha256,visible.context.expected_binding_version])}:{})}:null;
   const adapterReady=capabilities.frozen_browse===true&&InspectorCapabilities.FROZEN_CANDIDATE_INSPECTOR_SUPPORTED===true&&!!protocol;
   const exportLocked=unconfirmed||!!exportState.pending||!exportState.exported&&(!!exportState.acceptOperation||!!exportState.prepared);
+  const handledMergeRequests=useRef(new Set());
+  useEffect(()=>{
+    if(!mergeRequest||handledMergeRequests.current.has(mergeRequest.request_uuid))return;
+    if(!mergeIntentMatches(mergeRequest,projectId,protocolId)||scopeKind!=='cumulative_pending'){
+      handledMergeRequests.current.add(mergeRequest.request_uuid);onMergeRequestHandled?.('The merge request does not match this cumulative workspace.');return;
+    }
+    if(externalBusy||busy||!contextFresh&&!error)return;
+    handledMergeRequests.current.add(mergeRequest.request_uuid);
+    if(error||!contextFresh||!capabilities.additive_accept){onMergeRequestHandled?.('Refresh the incoming draft before requesting a merge preview.');return;}
+    if(exportLocked||acceptPending||receipt||preview){onMergeRequestHandled?.('A saved operation or preview is already open. Resolve or cancel it before requesting another merge.');return;}
+    if(!Number.isSafeInteger(context.counts?.pending_epochs)||context.counts.pending_epochs<=0){onMergeRequestHandled?.('No confirmed pending additions are available for a merge preview.');return;}
+    onMergeRequestHandled?.();void compare('all');
+  },[mergeRequest,projectId,protocolId,scopeKind,externalBusy,busy,contextFresh,context,error,exportLocked,acceptPending,receipt,preview,capabilities.additive_accept,onMergeRequestHandled]);
+  function cancelPreview(){
+    if(inFlight.current||unconfirmed||acceptPending||exportLocked)return;
+    setPreview(null);operation.current=null;publish({preview:null,operation:null});
+  }
   function openExport(accept){if(exportState.exported||exportState.phase==='rejected')setExportState(nextWorkbenchWorkflow(exportState));setExportDialog(accept);}
   function reviewRemaining(){const next=nextWorkbenchWorkflow({...exportState,receipt});setExportState(next);setReceipt(null);setPreview(null);operation.current=null;publish({receipt:null,preview:null,operation:null,exportState:next});setNonce(value=>value+1);}
   const countLabel=value=>Number.isSafeInteger(value)&&value>=0?number(value):'Unavailable';
@@ -113,7 +131,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       </div>
         <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
         <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>
-        <p>Merge selected uses saved selected and reviewed epochs. Merge all deliberately approves eligible incoming additions and retains draft exclusions. Both show exact counts before confirmation. Cancel leaves the draft pending and does not roll back a submitted operation.</p>
+        <p>Merge selected uses saved selected and reviewed epochs. Merge all includes eligible incoming additions and retains draft exclusions. Both show exact counts before confirmation. Cancel leaves the draft pending and does not roll back a submitted operation.</p>
         {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
         {contextFresh&&<p>Draft version {context.draft.draft_version} · scope <code>{context.candidate_scope_revision.slice(0,12)}</code> · proposal <code>{item.candidate_revision_uuid.slice(0,8)}</code></p>}
         {scopeKind!=='cumulative_pending'&&contextFresh&&context?.counts&&<p>{countLabel(context.counts.incoming_epochs)} proposal additions · {countLabel(context.counts.already_present_epochs)} already in main.</p>}
@@ -126,7 +144,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {exportLocked&&!unconfirmed&&!exportState.exported&&<p role="status">A saved export workflow is awaiting a receipt. Reopen Export to resume it before changing this draft.</p>}
     {error&&<div className="error" role="alert">{error}<button disabled={busy||externalBusy} onClick={()=>setNonce(value=>value+1)}>Refresh draft</button></div>}
     {!contextFresh&&!error&&<p role="status">Loading frozen proposal…</p>}
-    {preview&&<section className="incoming-proposal" aria-label="Additive acceptance preview"><h2>{preview.mode==='all'?'All eligible incoming additions':'Selected incoming additions'}</h2><p>Existing main epochs stay included. Explicit draft exclusions stay excluded.</p><dl>{workbenchPreviewCounts(preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl><button disabled={busy||externalBusy||!contextFresh&&!unconfirmed||(!exportState.exported&&(!!exportState.prepared||!!exportState.acceptOperation))||!capabilities.additive_accept||!!receipt} className="primary" onClick={accept}>{busy?'Accepting…':unconfirmed?'Recover acceptance receipt':'Add these additions to main'}</button></section>}
+    {preview&&<section className="incoming-proposal" aria-label="Additive acceptance preview"><h2>{preview.mode==='all'?'All eligible incoming additions':'Selected incoming additions'}</h2><p>Existing main epochs stay included. Explicit draft exclusions stay excluded.</p><dl>{workbenchPreviewCounts(preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl><button disabled={busy||externalBusy||!contextFresh&&!unconfirmed||(!exportState.exported&&(!!exportState.prepared||!!exportState.acceptOperation))||!capabilities.additive_accept||!!receipt||!unconfirmed&&preview.accepted_epoch_count===0} className="primary" onClick={accept}>{busy?'Accepting…':unconfirmed?'Recover acceptance receipt':'Add these additions to main'}</button>{!unconfirmed&&<button disabled={busy||acceptPending||exportLocked} onClick={cancelPreview}>Cancel merge preview</button>}{preview.accepted_epoch_count===0&&!unconfirmed&&<p role="status">No eligible new epochs in this preview. Main is unchanged.</p>}</section>}
     {receipt&&<p role="status">Acceptance saved · binding version {receipt.binding.version} · receipt {receipt.event_uuid}.{!exportState.exported&&' No export artifact has been confirmed.'}</p>}
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
