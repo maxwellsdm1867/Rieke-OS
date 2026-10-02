@@ -9,7 +9,80 @@ const runFile = require('node:util').promisify(require('node:child_process').exe
 const REQUIRED = ['workspace_typed_index.py', 'workspace_typed_query.py',
   'workspace_typed_lifecycle.py', 'workspace_explore_queries.py'];
 const sha = bytes => createHash('sha256').update(bytes).digest('hex');
-async function verifyPackagedSource({bundle, source, commit, run = runFile}) {
+async function regularFiles(directory) {
+  const files = [];
+  async function visit(relative) {
+    const file = path.join(directory, relative), stat = await fs.lstat(file);
+    assert.ok(!stat.isSymbolicLink(), 'Renderer tree contains a symlink: ' + file);
+    if (stat.isDirectory()) {
+      for (const name of (await fs.readdir(file)).sort()) await visit(path.join(relative, name));
+    } else {
+      assert.ok(stat.isFile(), 'Renderer tree contains a non-file: ' + file);
+      files.push(relative.split(path.sep).join('/'));
+    }
+  }
+  await visit('');
+  return files.sort();
+}
+async function rendererProvenance({runtime, source, renderer, manifest, commit, run}) {
+  // The build owner must freshly build renderer from this clean commit first.
+  // These checks bind that retained output to the final bundle and record its
+  // source inputs; they do not reconstruct the compilation from source bytes.
+  const packagedRoot = path.join(runtime, 'frontend');
+  const builtFiles = await regularFiles(renderer), packagedFiles = await regularFiles(packagedRoot);
+  assert.ok(builtFiles.includes('index.html'), 'Built renderer omits index.html');
+  assert.ok(builtFiles.some(name => name.endsWith('.js')), 'Built renderer omits JavaScript');
+  assert.ok(builtFiles.some(name => name.endsWith('.css')), 'Built renderer omits CSS');
+  assert.deepEqual(packagedFiles, builtFiles, 'Packaged renderer inventory differs from final build');
+  const manifestFiles = Object.keys(manifest.resources).filter(name => name.startsWith('frontend/'))
+    .map(name => name.slice('frontend/'.length)).sort();
+  assert.deepEqual(manifestFiles, builtFiles, 'Renderer manifest inventory differs from final build');
+  const builtHashes = {}, packagedHashes = {};
+  for (const name of builtFiles) {
+    const built = await fs.readFile(path.join(renderer, name));
+    const packaged = await fs.readFile(path.join(packagedRoot, name));
+    builtHashes[name] = sha(built); packagedHashes[name] = sha(packaged);
+    assert.equal(packagedHashes[name], builtHashes[name], 'Stale packaged renderer asset: ' + name);
+    const entry = manifest.resources['frontend/' + name];
+    assert.equal(entry.sha256, packagedHashes[name], 'Renderer manifest hash differs: ' + name);
+    assert.equal(entry.size, packaged.length, 'Renderer manifest size differs: ' + name);
+  }
+  // Match the application's relocatable static-route link as well as the
+  // physical resource tree. Never follow a replacement link outside the bundle.
+  const route = path.join(runtime, 'application/workspace-app/dist');
+  assert.equal(await fs.readlink(route), '../../frontend', 'Renderer route is redirected');
+  assert.equal(manifest.resources['application/workspace-app/dist']?.symlink, '../../frontend');
+  assert.equal(await fs.realpath(route), await fs.realpath(packagedRoot));
+  const index = await fs.readFile(path.join(packagedRoot, 'index.html'), 'utf8');
+  const scripts = [...index.matchAll(/<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi)].map(match => match[1]);
+  assert.ok(scripts.length > 0, 'Built renderer has no script entrypoint');
+  for (const url of scripts) {
+    assert.ok(!/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(url), 'Renderer script depends on an external server: ' + url);
+    const local = new URL(url, 'http://packaged.invalid/');
+    const name = decodeURIComponent(local.pathname).replace(/^\//, '');
+    assert.ok(name.startsWith('assets/') && name.endsWith('.js') && packagedFiles.includes(name),
+      'Renderer script is not a bundled production asset: ' + url);
+  }
+  const {stdout} = await run('git', ['-C', source, 'ls-files', '--cached', '-z', '--', 'workspace-app']);
+  const tracked = stdout.split('\0').filter(Boolean).sort(), sourceHashes = {};
+  for (const required of ['index.html', 'package.json', 'package-lock.json', 'vite.config.js']) {
+    assert.ok(tracked.includes('workspace-app/' + required), 'Renderer source inventory omits ' + required);
+  }
+  assert.ok(tracked.some(name => name.startsWith('workspace-app/src/')), 'Renderer source inventory omits src');
+  for (const name of tracked) {
+    assert.ok(name.startsWith('workspace-app/') && !name.split('/').includes('..') && !name.includes('\\'));
+    const file = path.join(source, name);
+    assert.ok((await fs.lstat(file)).isFile(), 'Renderer source must be a regular tracked file: ' + name);
+    assert.equal(await fs.realpath(file), path.join(await fs.realpath(source), name), 'Renderer source is redirected: ' + name);
+    sourceHashes[name] = sha(await fs.readFile(file));
+  }
+  return {source_commit:commit, build_output:path.relative(source, renderer),
+    source_file_hashes:sourceHashes, source_inventory_sha256:sha(JSON.stringify(sourceHashes)),
+    built_asset_hashes:builtHashes, packaged_asset_hashes:packagedHashes,
+    asset_inventory_sha256:sha(JSON.stringify(packagedHashes)), script_entrypoints:scripts,
+    static_route:'application/workspace-app/dist -> ../../frontend'};
+}
+async function verifyPackagedSource({bundle, source, commit, renderer = path.join(source, 'desktop/build/renderer'), run = runFile}) {
   assert.match(commit, /^[a-f0-9]{40}$/);
   assert.equal((await run('git', ['-C', source, 'rev-parse', 'HEAD'])).stdout.trim(), commit);
   assert.equal((await run('git', ['-C', source, 'status', '--porcelain'])).stdout.trim(), '', 'Qualification source must be clean');
@@ -31,7 +104,8 @@ async function verifyPackagedSource({bundle, source, commit, run = runFile}) {
   }
   return {source_commit:commit, application_version:manifest.application_version,
     runtime_manifest_sha256:sha(raw), asar_sha256:sha(await fs.readFile(path.join(bundle, 'Contents/Resources/app.asar'))),
-    python_module_hashes:hashes};
+    python_module_hashes:hashes,
+    renderer:await rendererProvenance({runtime, source, renderer, manifest, commit, run})};
 }
 async function assertTypedPublication({page, project, bundle, run = runFile}) {
   // field_registry unconditionally reads the typed owner when generation.typed
