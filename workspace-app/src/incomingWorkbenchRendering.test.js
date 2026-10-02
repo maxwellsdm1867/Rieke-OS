@@ -18,7 +18,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
   const item={protocol_uuid:'history',protocol_name:'VariableHistoryNoiseCurInject',candidate_revision_uuid:'candidate-immutable',baseline_revision_uuid:'base-immutable',status:'pending',created_at:'2026-10-02T01:00:00Z',source_filename:'incoming.h5',diff_counts:{added:12,removed:0,changed:2},next_count:50};
   const props={protocolId:'history',suggestions:[item,{...item,protocol_uuid:'other',protocol_name:'Other'}],projectId:'project',authority:null};
   const html=renderToStaticMarkup(React.createElement(Workbench,props));
-  for(const text of ['Needs review','candidate-immutable','base-immutable','incoming.h5','Earlier unmerged updates'])assert.ok(html.includes(text),text);
+  for(const text of ['Incoming proposals','candidate-immutable','base-immutable','incoming.h5','Earlier unmerged updates'])assert.ok(html.includes(text),text);
   assert.doesNotMatch(html,/>Other</);assert.match(html,/disabled=""[^>]*>Merge &amp; export/);
   const cumulative={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{...item,pending_epoch_count:20},{...item,candidate_revision_uuid:'second-proposal',pending_epoch_count:20}]};
   const cumulativeHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:cumulative}));
@@ -223,7 +223,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
   const props={protocolId:protocol,authority:makeQueue('queue-1',3),onSession:value=>{saved=value;}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
-  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Unmerged incoming'));
+  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Incoming'));
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:{...props.authority}})));
   assert.equal(preparedCalls,1,'ordinary rerender/poll result does not prepare again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1,authority:makeQueue('queue-2',1)})));
@@ -236,7 +236,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
   await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
   assert.equal(preparedCalls,3,'history permits restoring excluded draft even when awaiting-review count is zero');
-  assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Unmerged incoming'));
+  assert.ok(renderer.root.findAllByType('span').some(node=>label(node)==='Incoming'));
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain in your draft')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {api,number} from '../api.js';
-import {Activity,CheckSquare,Download,GitMerge,Layers,Search,Square,X} from 'lucide-react';
+import {Activity,CheckSquare,Download,GitMerge,History,Layers,RefreshCw,Search,Square,X} from 'lucide-react';
 import NeuronIcon from './NeuronIcon.jsx';
 import Inspector,* as InspectorCapabilities from './Inspector.jsx';
 import ProtocolViewFilter from './ProtocolViewFilter.jsx';
@@ -8,7 +8,7 @@ import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false}){
   const browserRegion=useRef(null);
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
@@ -89,7 +89,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   function explore(){browserRegion.current?.focus();browserRegion.current?.scrollIntoView({block:'nearest'});}
   return <section className="incoming-review">
     <div className="incoming-action-bar" aria-label="Incoming review actions">
-      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}>
+      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className="incoming-bar-scope">Incoming</span>
         <span><NeuronIcon size={18}/><strong>{countLabel(cells)}</strong><small>cells</small></span>
         <span><Activity size={18} aria-hidden="true"/><strong>{countLabel(epochs)}</strong><small>epochs</small></span>
       </div>
@@ -105,6 +105,8 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     <div className="incoming-selection-tools">
       <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(true)}><CheckSquare size={14} aria-hidden="true"/> Save highlighted as selected</button>
       <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh||!selected.current.length} onClick={()=>saveHighlights(false)}><Square size={14} aria-hidden="true"/> Clear highlighted selections</button>
+      {onRefresh&&<button className="incoming-utility" disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button>}
+      {onHistory&&<button className="incoming-utility" onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button>}
       <details className="incoming-review-details"><summary>Review details</summary><div>
         <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
         <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>

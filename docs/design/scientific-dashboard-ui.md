@@ -21,8 +21,8 @@ Routine explanations belong in a native disclosure: count deduplication, draft b
 
 The earlier Needs review view stacked a page introduction, deduplication paragraph, cumulative heading, snapshot explanation, draft explanation, version line, and action rows above the inspector. The replacement uses:
 
-1. A compact branch identity and utility row.
-2. Distinct pending cell/epoch counts alongside Review / Explore, Merge selected epochs, Merge all, Export, Merge & export, and Cancel.
+1. The existing Workbench tab supplies the workspace title; do not repeat it above the data.
+2. One incoming band combines a small scope badge and distinct pending cell/epoch counts alongside Review / Explore, Merge selected epochs, Merge all, Export, Merge & export, and Cancel.
 3. Small selection controls and a Review details disclosure, followed immediately by the existing browser.
 
 Merge labels map only to the existing additive acceptance route and its exact preview/confirmation. Main and incoming remain separate. Cancel leaves the draft pending; it cannot undo a submitted operation. Review decisions, shared tags, frozen cohorts, receipt recovery, and export idempotency retain their existing semantics.
