@@ -161,6 +161,49 @@ class StaleTreePage(ValueError):
     pass
 
 
+def validate_tree_path(path, depth=None):
+    if (not isinstance(path, list) or len(path) > 8
+            or any(not isinstance(key,str) or not re.fullmatch('[0-9a-f]{64}',key) for key in path)):
+        raise ValueError('Tree path must contain at most eight opaque branch keys')
+    if depth is not None and len(path) > depth:
+        raise ValueError('Tree path exceeds the selected grouping depth')
+    return tuple(path)
+
+
+class TreePath:
+    """Exact structural matching on one projected row, without scope resolution.
+
+    The caller supplies validated definitions and already eligible/scoped values.
+    This helper never evaluates protocol membership, filters or source authority;
+    navigation and a future streaming capture must retain those separate fences.
+    """
+    def __init__(self, order, definitions, path=None):
+        self.order=tuple(order)
+        self.path=validate_tree_path([] if path is None else path,len(self.order))
+        self.components={}
+        fields=set()
+        for field in self.order:
+            if field not in definitions:
+                raise ValueError('Tree path contains an unknown recorded field')
+            parts=definitions[field].get('components')
+            if parts and (not isinstance(parts,list) or any(part not in definitions for part in parts)):
+                raise ValueError('Joint grouping contains an unknown recorded field')
+            self.components[field]=tuple(parts) if parts else ()
+            fields.update(parts or [field])
+        self.fields=frozenset(fields)
+
+    def datum(self, current, field):
+        parts=self.components[field]
+        return (True,joint_value(current,parts)) if parts else (field in current,current.get(field))
+
+    def key(self, current, field):
+        present,value=self.datum(current,field)
+        return checksum({'field':field,'present':present,**({'value':value} if present else {})})
+
+    def matches(self, current):
+        return all(self.key(current,field)==key for field,key in zip(self.order,self.path))
+
+
 def _uuid(value):
     if not isinstance(value, str):
         raise ValueError('Expected an epoch or protocol UUID')
@@ -358,8 +401,7 @@ class TreePages:
         if type(limit) is not int or not 1 <= limit <= 100 or type(offset) is not int or not 0 <= offset <= 10_000_000:
             raise ValueError('Tree pages require limit 1–100 and a nonnegative bounded offset')
         path = body.get('path', [])
-        if not isinstance(path, list) or len(path) > 8 or any(not isinstance(key,str) or not re.fullmatch('[0-9a-f]{64}',key) for key in path):
-            raise ValueError('Tree path must contain at most eight opaque branch keys')
+        validate_tree_path(path)
         expected = body.get('revision')
         if expected is not None and (not isinstance(expected,str) or not re.fullmatch('[0-9a-f]{64}',expected)):
             raise ValueError('Malformed tree revision')
@@ -371,8 +413,7 @@ class TreePages:
         rows, catalog, values, definitions, order, revision = self._scope(body)
         if expected is not None and expected != revision:
             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
-        if len(path) > len(order):
-            raise ValueError('Tree path exceeds the selected grouping depth')
+        structural_path = TreePath(order,definitions,path)
         if isinstance(values, _NavigationValues):
             if values.summary is None:
                 values.summary = _summary(rows)
@@ -385,13 +426,10 @@ class TreePages:
                   for field in order]
 
         def datum(row, field):
-            current = values[row['epoch_uuid']]
-            parts = definitions[field].get('components')
-            return (True, joint_value(current, parts)) if parts else (field in current, current.get(field))
+            return structural_path.datum(values[row['epoch_uuid']],field)
 
         def key_for(row, field):
-            present, value = datum(row, field)
-            return checksum({'field':field, 'present':present, **({'value':value} if present else {})})
+            return structural_path.key(values[row['epoch_uuid']],field)
 
         def groups(current, depth):
             field = order[depth]
