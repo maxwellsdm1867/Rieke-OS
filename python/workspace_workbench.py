@@ -548,12 +548,30 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             with annotation_locks(service, {'all': []}, extra_protocols=protocols):
                 yield actor()
 
-    def checked(protocol, revision, owner, expected):
-        context = manager.context(protocol, revision, owner)
-        manager.check_scope(context, expected)
+    def start_read(context, filters=None):
+        from workspace_explore_queries import generation, StaleQuery
+        context['_read_context'] = dict(predicate={'all': []}, protocol_uuid=context['protocol_uuid'], filters=filters or {})
+        try:
+            context['_read_generation'] = generation(service, context['_read_context'])
+        except StaleQuery as error:
+            raise WorkbenchConflict(str(error)) from error
         return context
 
+    def checked(protocol, revision, owner, expected, filters=None):
+        context = manager.context(protocol, revision, owner)
+        manager.check_scope(context, expected)
+        return start_read(context, filters)
+
     def finish(context, value):
+        if '_read_generation' in context:
+            from workspace_explore_queries import generation, StaleQuery
+            try:
+                current = generation(service, context['_read_context'])
+            except StaleQuery as error:
+                raise WorkbenchConflict(str(error)) from error
+            if current != context['_read_generation']:
+                raise WorkbenchConflict('Metadata or filter annotation authority changed during the frozen read')
+            value['generation'] = current
         manager.check_scope(manager.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor']),
                             context['candidate_scope_revision'])
         value.update(candidate_scope_revision=context['candidate_scope_revision'],
@@ -569,6 +587,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 row['annotations'] = annotations[row['epoch_uuid']]
 
     def public_context(context, filters=None):
+        start_read(context, filters)
         scoped = manager.frozen_service(context)
         protocol = copy.deepcopy(scoped.protocol(context['protocol_uuid'], filters))
         protocol.update(query_revision=context['candidate_scope_revision'],
@@ -657,7 +676,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def workbench_epochs(protocol, revision):
         filters = query_filters({'candidate_scope_revision', 'offset', 'limit', 'anchor_uuid', 'include_cells'})
         with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
+            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'), filters)
             include = request.args.get('include_cells', 'false')
             if include not in ('true', 'false'):
                 raise ValueError('include_cells must be true or false')
@@ -691,7 +710,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def workbench_tree(protocol, revision):
         filters = query_filters({'candidate_scope_revision', 'splits'})
         with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
+            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'), filters)
             value = manager.frozen_service(context).tree(protocol, filters, request.args.get('splits', context['candidate']['splits']))
             return jsonify(finish(context, value))
 
@@ -699,7 +718,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     def workbench_fields(protocol, revision):
         filters = query_filters({'candidate_scope_revision', 'splits'})
         with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'))
+            context = checked(protocol, revision, owner, request.args.get('candidate_scope_revision'), filters)
             value = manager.frozen_service(context).tree_fields(protocol, filters, splits=request.args.get('splits'))
             return jsonify(finish(context, copy.deepcopy(value)))
 
@@ -709,7 +728,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         expected = value.pop('candidate_scope_revision')
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, expected)
+            context = checked(protocol, revision, owner, expected, filters)
             try:
                 page = TreePages(manager.frozen_service(context)).page(dict(protocol_uuid=protocol, **value))
             except StaleTreePage as error:
@@ -721,7 +740,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         value = body({'candidate_scope_revision'}, {'filters'})
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
-            context = checked(protocol, revision, owner, value['candidate_scope_revision'])
+            context = checked(protocol, revision, owner, value['candidate_scope_revision'], filters)
             scoped = manager.frozen_service(context)
             counts = scoped._counts(scoped.filtered_rows(protocol, filters))
             return jsonify(finish(context, dict(counts=counts, matched_count=counts['epochs'],

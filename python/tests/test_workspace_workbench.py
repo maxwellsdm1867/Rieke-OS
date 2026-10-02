@@ -96,6 +96,48 @@ class WorkbenchTests(unittest.TestCase):
                 trace = self.case.client.get(self.root + '/epochs/' + self.fixture.before_ids[0] + '/trace', query_string={'candidate_scope_revision': token, 'stream_uuid': str(uuid.uuid4())})
                 self.assertEqual(trace.status_code, 400)
 
+    def test_candidate_summary_echoes_generation_and_rejects_a_changed_filter_authority(self):
+        context = self.get_context()
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], filters={'cell_uuid': self.added})
+        response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['filters'], body['filters'])
+        self.assertTrue(response.get_json()['generation'])
+        witness = ['before']
+        original = type(self.case.service).filtered_rows
+        def mutate_during_calculation(scoped, *args, **kwargs):
+            rows = original(scoped, *args, **kwargs)
+            witness[0] = 'after'
+            return rows
+        with patch('workspace_explore_queries.generation', side_effect=lambda *args: {'annotation': witness[0]}), \
+                patch.object(type(self.case.service), 'filtered_rows', mutate_during_calculation):
+            response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertNotIn('counts', response.get_json())
+
+    def test_scoped_predicate_dependency_intersects_only_frozen_incoming_across_read_surfaces(self):
+        if not hasattr(self.case.service, 'validate_metadata_filters'):
+            self.skipTest('Compose the protocol-scoped-predicate commits to qualify this adapter')
+        token = self.get_context()['candidate_scope_revision']
+        for predicate, count in (({'field': 'parameters/example', 'operator': 'eq', 'value': 0}, 1),
+                                 ({'field': 'parameters/example', 'operator': 'eq', 'value': 1}, 0)):
+            filters = {'metadata_predicate': json.dumps(predicate)}
+            page = self.case.client.get(self.root + '/epochs', query_string=dict(candidate_scope_revision=token, **filters))
+            self.assertEqual(page.status_code, 200, page.get_json())
+            self.assertEqual(page.get_json()['total'], count)
+            self.assertTrue(all(row['epoch_uuid'] == self.added for row in page.get_json()['epochs']))
+            summary = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters=filters), headers=self.case.headers)
+            self.assertEqual(summary.status_code, 200, summary.get_json())
+            self.assertEqual(summary.get_json()['matched_count'], count)
+            self.assertEqual(json.loads(summary.get_json()['filters']['metadata_predicate']), predicate)
+            self.assertEqual(summary.get_json()['candidate_scope_revision'], token)
+            tree = self.case.client.post(self.root + '/tree/page', json=dict(candidate_scope_revision=token, filters=filters, splits='cell'), headers=self.case.headers)
+            self.assertEqual(tree.status_code, 200, tree.get_json())
+            self.assertEqual(tree.get_json()['total_epochs'], count)
+        foreign = {'field': 'curation/00000000-0000-4000-8000-000000000000/tags', 'operator': 'contains', 'value': 'QC'}
+        response = self.case.client.post(self.root + '/summary', json=dict(candidate_scope_revision=token, filters={'metadata_predicate': json.dumps(foreign)}), headers=self.case.headers)
+        self.assertEqual(response.status_code, 400, response.get_json())
+
     def test_draft_cas_atomic_validation_actor_isolation_and_epoch_fingerprint_invalidation(self):
         context = self.get_context()
         saved = self.save(context, [dict(epoch_uuid=self.added, selected=True, reviewed=True)])
@@ -298,6 +340,48 @@ class WorkbenchTests(unittest.TestCase):
         with patch.object(self.case.service, 'match_predicate', side_effect=AssertionError('Never remap Workbench authorities')):
             compact_queries(state, self.case.service)
         self.assertEqual(state, before)
+
+    def test_recovery_closure_crosses_multiple_250_batches_and_missing_parent_refuses(self):
+        from workspace_state_snapshot import capture
+        project = self.case.service.project['project_uuid']
+        baseline = str(uuid.uuid4())
+        recipes = {baseline: dict(revision_uuid=baseline, project_uuid=project, parent_revision_uuid=None)}
+        suggestions = []
+        for _ in range(261):
+            parent, candidate = str(uuid.uuid4()), str(uuid.uuid4())
+            recipes[parent] = dict(revision_uuid=parent, project_uuid=project, parent_revision_uuid=baseline)
+            recipes[candidate] = dict(revision_uuid=candidate, project_uuid=project, parent_revision_uuid=parent)
+            suggestions.append(dict(project_uuid=project, summary=dict(candidate_revision_uuid=candidate, baseline_revision_uuid=baseline)))
+        orphan = str(uuid.uuid4())
+        recipes[orphan] = dict(revision_uuid=orphan, project_uuid=project, parent_revision_uuid=None)
+        class ClosureConnection:
+            def __init__(self): self.batches = []; self.answer = []
+            def query(self, sql, args=None, as_dict=False):
+                if 'information_schema.tables' in sql:
+                    self.answer = [('protocol_suggestion',), ('explorer_revision',)]
+                elif sql.startswith('SHOW COLUMNS'):
+                    self.answer = [('summary', 'json')]
+                elif '`protocol_suggestion`' in sql:
+                    self.answer = suggestions
+                elif '`explorer_revision`' in sql:
+                    identities = args[1:]
+                    self.batches.append(len(identities))
+                    self.answer = [recipes[key] for key in identities if key in recipes]
+                else:
+                    raise AssertionError(sql)
+                return self
+            def fetchall(self): return self.answer
+        connection = ClosureConnection()
+        from pathlib import Path
+        (Path(self.case.service.project_dir) / 'project.json').write_text(json.dumps(self.case.service.project))
+        state = capture(self.case.service.project_dir, connection)
+        self.assertEqual(len(state['tables']['explorer_revision']), 523)
+        self.assertNotIn(orphan, {row['revision_uuid'] for row in state['tables']['explorer_revision']})
+        self.assertGreater(len(connection.batches), 2)
+        self.assertLessEqual(max(connection.batches), 250)
+        recipes.pop(next(row['parent_revision_uuid'] for row in recipes.values() if row['parent_revision_uuid'] not in (baseline, None)))
+        with self.assertRaisesRegex(ValueError, 'dependency is unavailable'):
+            capture(self.case.service.project_dir, ClosureConnection())
 
     def test_recovery_dependency_order_and_old_recovery_header_remain_supported(self):
         from workspace_state_snapshot import restore_table_order, LEGACY_TABLES
