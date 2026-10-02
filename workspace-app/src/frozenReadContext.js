@@ -20,3 +20,12 @@ export function candidatePreviewReceipt(result,request){
  if(!Number.isSafeInteger(count)||count<0)throw Error('Candidate counts unavailable.');
  return count;
 }
+
+// Presentation continuity is never a read or write receipt. Without an explicit
+// frozen-cohort key, a token change resets the view as before.
+export function frozenPresentationScope(context,protocolId,query=''){
+ const params=new URLSearchParams(query);
+ const cohort=typeof context?.cohort_key==='string'&&context.cohort_key?context.cohort_key:null;
+ if(cohort)params.delete('candidate_scope_revision');
+ return JSON.stringify([context?.root||`/protocols/${protocolId}`,protocolId,params.toString(),cohort]);
+}

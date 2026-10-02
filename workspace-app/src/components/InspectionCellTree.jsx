@@ -1,3 +1,5 @@
+import {frozenPresentationScope} from '../frozenReadContext.js';
+import StableContent from './StableContent.jsx';
 import {epochIncluded} from '../incomingReviewDecision.js';
 import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import EpochInclusionToggle from './EpochInclusionToggle.jsx';
@@ -13,7 +15,7 @@ import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch}){
   const [offset,setOffset]=useState(0);
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]));
-  return <Status {...page} retry={page.reload}>
+  const content=<>
     {(page.data?.epochs||[]).map((record,index)=>{const epoch=inclusionForEpoch?inclusionForEpoch(record):record;return <div key={epoch.epoch_uuid} className={`epoch-row cell-tree-epoch ${focused===epoch.epoch_uuid?'active':''} ${targets.includes(epoch.epoch_uuid)?'bulk-selected':''} ${epochIncluded(epoch,!!source.readContext)===false?'analysis-excluded':''}`}>
       <button disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={targets.includes(epoch.epoch_uuid)||(!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
         <strong>{offset+index+1}</strong>
@@ -25,7 +27,9 @@ function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disab
       {onToggleInclusion&&<EpochInclusionToggle incoming={!!source.readContext} epoch={epoch} label={`${datedCellLabel(cell,true)} epoch ${offset+index+1}`} disabled={disabled||page.loading} onToggle={onToggleInclusion}/>}
     </div>;})}
     {page.data&&<div className="pagination"><button aria-label={`Previous epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||!offset} onClick={()=>setOffset(Math.max(0,offset-60))}>Previous</button><span>{page.data.total?offset+1:0}–{Math.min(offset+60,page.data.total)} of {number(page.data.total)}</span><button aria-label={`Next epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||offset+60>=page.data.total} onClick={()=>setOffset(offset+60)}>Next</button></div>}
-  </Status>;
+  </>;
+  if(source.readContext?.cohort_key)return <StableContent loading={page.loading} error={page.error} data={page.data} scope={JSON.stringify([frozenPresentationScope(source.readContext,source.protocolId,source.query),cell.cell_uuid,offset])} retry={page.reload} label="Refreshing incoming epoch list">{content}</StableContent>;
+  return <Status {...page} retry={page.reload}>{content}</Status>;
 }
 function CellBranch({cell,dateOpen,onSelectCell,selectedCell,collapseRequest,...props}){
   const [open,setOpen]=useState(false);

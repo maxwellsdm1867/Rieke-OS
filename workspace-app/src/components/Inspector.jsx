@@ -15,7 +15,7 @@ import AnnotationTags from './AnnotationTags.jsx';
 import TagExchangeControls from './TagExchangeControls.jsx';
 import './Inspector.css';
 
-import {frozenReadPath,frozenReadQuery} from '../frozenReadContext.js';
+import {frozenReadPath,frozenReadQuery,frozenPresentationScope} from '../frozenReadContext.js';
 export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContext===true;
 
 import {inspectionSearches} from '../inspectionScope.js';
@@ -63,6 +63,8 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const queries=inspectionSearches(filters,focusCell);
   const protocolSearch=frozenReadQuery(readContext,queries.protocol),search=frozenReadQuery(readContext,queries.navigation);
   const readRoot=readContext?.root||`/protocols/${id}`;
+  const presentationScope=frozenPresentationScope(readContext,id,protocolSearch);
+  const preserveCandidateView=typeof readContext?.cohort_key==='string'&&!!readContext.cohort_key;
   function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);}
   const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
   const pageRevision=annotationState.authorityRevision;
@@ -81,17 +83,17 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const committedNavigationReadKey=useRef(null);
   useLayoutEffect(()=>{committedNavigationReadKey.current=navigationReadKey;},[navigationReadKey]);
   const freshCells=cellsReady&&Array.isArray(cellPage.data?.cells)?cellPage.data.cells:null;
-  useLayoutEffect(()=>{if(freshCells)confirmedCells.current={scope:cellScopeKey,key:navigationReadKey,cells:freshCells,queryRevision,bindingVersion};},[cellScopeKey,navigationReadKey,freshCells,queryRevision,bindingVersion]);
+  useLayoutEffect(()=>{if(freshCells)confirmedCells.current={scope:cellScopeKey,presentationScope,key:navigationReadKey,cells:freshCells,queryRevision,bindingVersion};},[cellScopeKey,presentationScope,navigationReadKey,freshCells,queryRevision,bindingVersion]);
   // Keep expanded branches mounted during same-scope refresh, while their
   // controls remain disabled until both authority receipts agree again.
-  const viewCells=freshCells||(confirmedCells.current?.scope===cellScopeKey?confirmedCells.current.cells:[]);
+  const viewCells=freshCells||(confirmedCells.current?.presentationScope===presentationScope?confirmedCells.current.cells:[]);
   const cellRevisionError=pageReady&&!cellPage.loading&&cellPage.data&&!cellsReady;
   // A navigation request does not change the membership of already loaded cell
   // pages. Retain their read authority only inside this exact committed scope.
   // Save, range-selection and inclusion controls still require cellsReady.
   const navigatingSameScope=!!pendingNavigation&&rows.loading&&!rows.error&&!annotationState.dirty&&confirmedCells.current?.key===navigationReadKey;
   const navigationReady=cellsReady||navigatingSameScope;
-  const listQueryRevision=navigatingSameScope?confirmedCells.current.queryRevision:queryRevision;
+  const listQueryRevision=navigatingSameScope?confirmedCells.current.queryRevision:(queryRevision??(preserveCandidateView&&protocol.query_revision===readContext.candidate_scope_revision?protocol.query_revision:undefined));
 
   const [treePage,setTreePage]=useState(null);
   const [treeStatus,setTreeStatus]=useState({loading:true,error:null});
@@ -109,8 +111,28 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const neighborIndex=rows.data?.epochs?.findIndex(row=>row.epoch_uuid===focused)??-1;
   useEpochPrefetch(!readContext&&!annotationState.dirty&&!epoch.loading&&!rows.loading&&neighborIndex>=0?[rows.data.epochs[neighborIndex+1],rows.data.epochs[neighborIndex-1]].filter(Boolean).map(row=>readContext?frozenReadPath(readContext,id,`/epochs/${row.epoch_uuid}`):`/epochs/${row.epoch_uuid}?protocol_uuid=${id}`):[],annotationState.epochRevision);
   const metadataCatalog=useResource(metadataOpen&&!designMode?'/metadata/fields':null,structureRevision);
-  const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,protocolSearch,initialEpochUuid]);
-  const curationIdentity=JSON.stringify([id,protocolSearch,focusCell,protocol.query_revision,protocol.expected_binding_version??0,queryRevision,bindingVersion,revision,focused,targets]);
+  const scopeIdentity=JSON.stringify([readRoot,id,requestedCellFocus,presentationScope,initialEpochUuid]);
+  const attemptedFocusLocator=useRef(null);
+  const focusLocatorKey=JSON.stringify([readRoot,protocolSearch,pageRevision,focused]);
+  useEffect(()=>{
+    if(!preserveCandidateView||!pageReady||pendingNavigation||!focused)return;
+    if(rows.data.epochs.some(row=>row.epoch_uuid===focused)){attemptedFocusLocator.current=focusLocatorKey;return;}
+    if(attemptedFocusLocator.current===focusLocatorKey)return;
+    attemptedFocusLocator.current=focusLocatorKey;
+    navigationIntent.current=null;anchorSteps.current=0;setPendingNavigation({anchorUuid:focused,direction:0});
+  },[preserveCandidateView,pageReady,pendingNavigation,focused,rows.data,focusLocatorKey]);
+  const readAuthority=JSON.stringify([readRoot,protocolSearch,pageRevision]);
+  const previousReadAuthority=useRef({readAuthority,presentationScope});
+  useEffect(()=>{
+    const previous=previousReadAuthority.current;
+    previousReadAuthority.current={readAuthority,presentationScope};
+    if(!preserveCandidateView||previous.readAuthority===readAuthority||previous.presentationScope!==presentationScope)return;
+    // Keep the UUID focus intent, but discard ordinals and temporary selection
+    // authority from the previous receipt. Fresh pages revalidate the UUID.
+    navigationIntent.current=null;anchorSteps.current=0;setPendingNavigation(null);
+    setTargets([]);onSelectionChange?.([]);
+  },[readAuthority,presentationScope,preserveCandidateView,onSelectionChange]);
+  const curationIdentity=JSON.stringify([readRoot,id,protocolSearch,focusCell,protocol.query_revision,protocol.expected_binding_version??0,queryRevision,bindingVersion,revision,focused,targets]);
   const curationGeneration=useRef(0),curationRequest=useRef(null),mounted=useRef(false),committedCurationIdentity=useRef(null);
   const changedCallback=useRef(onChange);changedCallback.current=onChange;
   useLayoutEffect(()=>{
@@ -137,13 +159,13 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useEffect(()=>{navigationIntent.current=null;anchorSteps.current=0;},[id,search,revision]);
   useEffect(()=>{
     if(!pendingNavigation)return;
-    if(rows.error){navigationIntent.current=null;anchorSteps.current=0;setError(rows.error);setPendingNavigation(null);return;}
+    if(rows.error){if(preserveCandidateView&&pendingNavigation.anchorUuid===focused&&attemptedFocusLocator.current===focusLocatorKey)setFocused(null);navigationIntent.current=null;anchorSteps.current=0;setError(rows.error);setPendingNavigation(null);return;}
     if(rows.loading||!rows.data)return;
     const page=rows.data;
     let target=navigationIntent.current;
     if(pendingNavigation.anchorUuid){
       const index=page.epochs.findIndex(row=>row.epoch_uuid===pendingNavigation.anchorUuid);
-      if(index<0){setError('The selected epoch is no longer in this query. Refresh the dataset.');setPendingNavigation(null);return;}
+      if(index<0){if(preserveCandidateView&&pendingNavigation.anchorUuid===focused&&attemptedFocusLocator.current===focusLocatorKey)setFocused(null);navigationIntent.current=null;anchorSteps.current=0;setError('The selected epoch is no longer in this query. Refresh the dataset.');setPendingNavigation(null);return;}
       target=epochIntentAt(page.offset+index+(pendingNavigation.direction||0)+anchorSteps.current,page.total);
       anchorSteps.current=0;
     }else if(!target){
@@ -155,7 +177,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     const uuid=epochAtIntent(page,target);
     if(uuid){setFocused(uuid);setOffset(page.offset);setPendingNavigation(null);}
     else{setOffset(target.offset);setPendingNavigation({offset:target.offset,targetIndex:target.index});}
-  },[pendingNavigation,rows.data,rows.loading,rows.error]);
+  },[pendingNavigation,rows.data,rows.loading,rows.error,preserveCandidateView,focused,focusLocatorKey]);
   // Persist grouping only after the server has successfully built that tree.
   useEffect(()=>{if(previousExternalSplit.current===externalSplitKey&&tree.data&&!tree.loading&&!tree.error&&tree.data.split_order?.join(',')===splits)onSplitChange?.(tree.data.split_order);},[tree.data,tree.loading,tree.error,splits,onSplitChange,externalSplitKey]);
   useEffect(()=>{if(previousExternalSplit.current!==externalSplitKey){previousExternalSplit.current=externalSplitKey;if(splits!==externalSplitKey){setSplits(externalSplitKey);setDesignPath([]);setDesignNavigation(null);}}},[externalSplitKey,splits]);
@@ -164,6 +186,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     const uuids=epochUuid?[epochUuid]:resolveCurationTargets(focused,targets,scope);
     if(!uuids.length)return;
     if(!pageReady){setError('Refresh this dataset before saving.');return;}
+    if(readContext&&committedCurationIdentity.current!==curationIdentity){setError('Selection or dataset changed. Refresh before saving.');return;}
     const controller=new AbortController(),generation=curationGeneration.current;
     curationRequest.current=controller;
     const isCurrent=()=>mounted.current&&generation===curationGeneration.current&&committedCurationIdentity.current===curationIdentity;
@@ -282,7 +305,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
     {error&&<div className="inspector-operation-error" role="alert">{error}<button className="icon-button" onClick={()=>setError('')} aria-label="Dismiss operation error"><X size={14}/></button></div>}
 </>}
     layout={{layoutRef,sizes:paneSizes,treeOpen,metadataOpen,onResize:changePane,onResizeCommit:savePane}} designMode={designMode}
-    builder={{projectId,protocolId:id,readContext,actionsDisabled:busy||!cellsReady,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:setTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:()=>{setDesignMode(true);setTreeOpen(true);setTreeMode(true);},designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationChanged,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:setTreeStatus},listRef:epochListRef,listKey:`${readRoot}:${protocolSearch}`,listProps:{cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision},revision:pageRevision,inclusionForEpoch:annotationState.apply,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!cellsReady,navigationDisabled:busy||!navigationReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
+    builder={{projectId,protocolId:id,readContext,actionsDisabled:busy||!cellsReady,onAnnotationsChanged:annotationChanged,summaryEnabled:!readContext,catalogPath:readRoot+'/tree-fields',summaryContext:{predicate:{all:[]},protocol_uuid:id,filters},queryString:protocolSearch,revision:pageRevision,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:tree.data,loading:tree.loading,error:tree.error}} columnTree={{onAnnotationsChanged:annotationChanged,collapseRequest:collapseRequest,externalCollapseControl:true,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},presentation:"columns",protocolId:id,readContext,filters:filters,splits:splits,revision:pageRevision,design:true,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onMetadata:receiveTree,onStatus:setTreeStatus,onSelectEpoch:focusTreeEpoch}} treePane={{treeMode:treeMode,onTreeMode:value=>{setTreeMode(value);if(value)changePane('tree',Math.max(420,paneSizes.tree));},onDesign:()=>{setDesignMode(true);setTreeOpen(true);setTreeMode(true);},designDisabled:busy,collapseRequest:collapseRequest,onCollapse:()=>setCollapseRequest(value=>value+1),treeProps:{onAnnotationsChanged:annotationChanged,actionsDisabled:busy||!cellsReady,inclusionForEpoch:annotationState.apply,onToggleInclusion:(item,included)=>curate({included},'focused',item.epoch_uuid),cells:viewCells,selectedEpochs:targets,setSelectedEpochs:selectOverviewTargets,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cellUuid,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setDesignMode(false);setCellTagRequest((protocol.cells||[]).find(cell=>cell.cell_uuid===cellUuid)||{cell_uuid:cellUuid,label:epoch.cell_label,date:epoch.date,cell_type:epoch.cell_type});},protocolId:id,readContext,filters,splits,revision:pageRevision,selected:focused,initialNavigation:designNavigation,onNavigationChange:setDesignNavigation,onSelectEpoch:focusTreeEpoch,onMetadata:receiveTree,onStatus:setTreeStatus},listRef:epochListRef,listKey:presentationScope,listProps:{cells:viewCells||[],source:{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision},revision:pageRevision,inclusionForEpoch:annotationState.apply,focused:cellTagRequest?null:focused,onFocus:focusTreeEpoch,selectedCell:cellTagRequest?.cell_uuid,onSelectCell:(cell,epoch)=>{focusTreeEpoch(epoch.epoch_uuid,epoch);setTargets([]);toggleMetadata(true);setCellTagRequest(cell);},targets,setTargets:selectOverviewTargets,disabled:busy||!cellsReady,navigationDisabled:busy||!navigationReady,onToggleInclusion:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}}}
     resource={{scope:id,...epoch,loading:!epoch.error&&(!!pendingNavigation||(!!focused&&(epoch.loading||!focusedEpoch))),retry:epoch.reload}}
     epoch={focusedEpoch} targets={targets} navigation={{position:focusedPageIndex<0?-1:offset+focusedPageIndex,total:rows.data?.total||0,loading:!!pendingNavigation||rows.loading,disabled:busy,onMove:moveEpoch}}
     readContext={readContext} traceRevision={annotationState.epochRevision} inclusion={{incoming:!!readContext,disabled:busy||!pageReady,scope:'pinned dataset',onToggle:(epoch,included)=>curate({included},'focused',epoch.epoch_uuid)}} detailDisabled={busy} onQC={onQC} tags={tagEntry}
