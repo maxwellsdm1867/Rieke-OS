@@ -69,39 +69,44 @@ class CellQC:
     def _params(self, row):
         return self.service.details[row['epoch_uuid']].get('parameters', {})
 
-    def _metadata_values(self, rows, fields):
-        measurements, seen = [], set()
-        for row in rows:
-            metadata = self.service.details[row['epoch_uuid']].get('metadata', {})
-            for scope in ('cell', 'group', 'block', 'epoch'):
-                source = metadata.get(scope, {})
-                entity = source.get('uuid') or row.get(scope + '_uuid') or row['epoch_uuid']
-                for category in ('properties', 'parameters', 'attributes'):
-                    values = (self.service.details[row['epoch_uuid']].get(category, {}) if scope == 'epoch'
-                              else source.get(category, {}))
-                    for name in fields & values.keys():
-                        raw = values[name]
-                        value = raw.get('quantity') if isinstance(raw, dict) else raw
-                        units = raw.get('units') if isinstance(raw, dict) else values.get(name + 'Units')
-                        key = (scope, entity, category, name, checksum(raw))
-                        if key in seen:
-                            continue
-                        seen.add(key)
-                        measurements.append({'field': f'{scope}.{category}.{name}', 'scope': scope,
-                            'entity_uuid': entity, 'epoch_uuid': row['epoch_uuid'],
-                            'value': value, 'units': units, 'numeric': number(value),
-                            'source_sha256': row['source_sha256']})
+    def _metadata_values(self, row, detail, fields, seen):
+        measurements = []
+        metadata = detail.get('metadata', {})
+        for scope in ('cell', 'group', 'block', 'epoch'):
+            source = metadata.get(scope, {})
+            entity = source.get('uuid') or row.get(scope + '_uuid') or row['epoch_uuid']
+            for category in ('properties', 'parameters', 'attributes'):
+                values = detail.get(category, {}) if scope == 'epoch' else source.get(category, {})
+                for name in fields & values.keys():
+                    raw = values[name]
+                    value = raw.get('quantity') if isinstance(raw, dict) else raw
+                    units = raw.get('units') if isinstance(raw, dict) else values.get(name + 'Units')
+                    key = (scope, entity, category, name, checksum(raw))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    measurements.append({'field': f'{scope}.{category}.{name}', 'scope': scope,
+                        'entity_uuid': entity, 'epoch_uuid': row['epoch_uuid'],
+                        'value': value, 'units': units, 'numeric': number(value),
+                        'source_sha256': row['source_sha256']})
         return measurements
 
     def overview(self, cell_uuid):
         rows = self.rows(cell_uuid)
         cell = self.service.cells[str(uuid.UUID(cell_uuid))]
-        observations = [self._temperature(row, index + 1) for index, row in enumerate(rows)]
+        observations, measured, compensation = [], [], []
+        seen_resistance, seen_compensation = set(), set()
+        for index, row in enumerate(rows):
+            # The disk-backed mapping validates and deep-copies each lookup.
+            # Read once per epoch in this request, then discard the detail;
+            # no summary or metadata survives to a subsequent request.
+            detail = self.service.details[row['epoch_uuid']]
+            observations.append(self._temperature(row, index + 1, detail=detail))
+            measured.extend(self._metadata_values(row, detail, RESISTANCE_FIELDS, seen_resistance))
+            compensation.extend(self._metadata_values(row, detail, {'seriesResistanceCompensation'}, seen_compensation))
         points = [item for item in observations if item['status'] == 'recorded']
         recorded_units = {item['units'] for item in points}
         same_units = len(recorded_units) == 1
-        measured = self._metadata_values(rows, RESISTANCE_FIELDS)
-        compensation = self._metadata_values(rows, {'seriesResistanceCompensation'})
         has_resistance = any(item['numeric'] for item in measured)
         baseline = self.prepared_baselines(cell_uuid, rows=rows)
         block_count = len({r['block_uuid'] for r in rows if family(r) == 'current_noise'})
@@ -138,8 +143,8 @@ class CellQC:
                 {'id': 'spike_rate_receptive_field', 'status': 'unvalidated_adapter', 'reason': 'RetinAnalysis ExpandingSpotsPipeline.get_stim_nspikes/plot_rf exists, but spike detector and acquisition/clamp configuration need validation before automatic QC use.'},
                 {'id': 'baseline_drift_interpolant', 'status': 'unavailable', 'reason': RESTING_REASON}]}
 
-    def _temperature(self, row, order):
-        properties = self.service.details[row['epoch_uuid']].get('properties', {})
+    def _temperature(self, row, order, *, detail=None):
+        properties = (self.service.details[row['epoch_uuid']] if detail is None else detail).get('properties', {})
         raw = properties.get('bathTemperature')
         value = raw.get('quantity') if isinstance(raw, dict) else raw
         units = raw.get('units') if isinstance(raw, dict) else properties.get('bathTemperatureUnits')

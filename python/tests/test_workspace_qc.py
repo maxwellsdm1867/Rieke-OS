@@ -3,6 +3,8 @@ import copy
 import unittest
 from unittest.mock import Mock
 import uuid
+from collections import Counter
+from collections.abc import Mapping
 
 import test_workspace_api as api_tests
 from workspace_qc import CellQC
@@ -40,6 +42,47 @@ class CellQCTests(unittest.TestCase):
     def same_cell(self):
         self.service.rows[self.ids[1]]['cell_uuid'] = self.cell
         self.service.rows[self.ids[1]]['cell_label'] = 'Cell1'
+
+    def test_overview_reads_each_detail_once_and_rechecks_changes_on_next_request(self):
+        self.same_cell()
+        backing = self.service.details
+        reads = Counter()
+
+        class CountedDetails(Mapping):
+            def __iter__(self): return iter(backing)
+            def __len__(self): return len(backing)
+            def __getitem__(self, key):
+                reads[key] += 1
+                return copy.deepcopy(backing[key])
+
+        for index, identity in enumerate(self.ids):
+            backing[identity]['properties'] = {'bathTemperature': {'quantity': 29. + index, 'units': 'degC'}}
+            backing[identity]['metadata']['cell'] = {'uuid': self.cell, 'properties': {
+                'inputResistance': {'quantity': 120., 'units': 'MOhm'},
+                'seriesResistanceCompensation': 0}}
+        self.service.details = CountedDetails()
+        first = self.qc.overview(self.cell)
+        self.assertEqual(reads, Counter({identity: 1 for identity in self.ids}))
+        self.assertEqual(first['temperature']['range'], {'min': 29., 'max': 30.})
+        self.assertEqual(len(first['resistance']['measurements']), 1, 'Shared cell metadata is deduplicated across epochs')
+        self.assertEqual(first['resistance']['measurements'][0]['value'], 120.)
+        self.assertEqual(first['resistance']['compensation_settings'][0]['value'], 0)
+
+        # Metadata mutation between requests must be observed; this optimization
+        # must not become a persistent summary or detail cache.
+        for identity in self.ids:
+            backing[identity]['properties']['bathTemperature'] = True
+            backing[identity]['metadata']['cell']['properties']['inputResistance'] = None
+            backing[identity]['metadata']['cell']['properties']['seriesResistanceCompensation'] = 50
+        reads.clear()
+        second = self.qc.overview(self.cell)
+        self.assertEqual(reads, Counter({identity: 1 for identity in self.ids}))
+        self.assertEqual(second['temperature']['status'], 'unavailable')
+        self.assertIsNone(second['temperature']['range'])
+        self.assertEqual(second['resistance']['status'], 'unavailable')
+        self.assertIsNone(second['resistance']['measurements'][0]['value'])
+        self.assertEqual(second['resistance']['compensation_settings'][0]['value'], 50)
+        self.service.trace.assert_not_called()
 
     def test_metadata_and_cross_protocol_epochs_are_lazy_and_cell_uuid_scoped(self):
         self.same_cell()
