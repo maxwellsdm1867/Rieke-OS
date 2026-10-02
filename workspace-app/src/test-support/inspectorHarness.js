@@ -5,7 +5,7 @@ import {fileURLToPath} from 'node:url';
 
 export async function createInspectorHarness(){
   const key=`__inspectorTest${Math.random().toString(36).slice(2)}`;
-  const fixture={api:()=>{throw Error('Unexpected API request');},epoch:{epoch_uuid:'epoch-A',cell_uuid:'cell-A',curation:{tags:[],included:true,review_state:'unreviewed'}}};
+  const fixture={resources:[],api:()=>{throw Error('Unexpected API request');},epoch:{epoch_uuid:'epoch-A',cell_uuid:'cell-A',curation:{tags:[],included:true,review_state:'unreviewed'}}};
   globalThis[key]=fixture;
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'inspector-fixtures',enforce:'pre',
@@ -21,7 +21,7 @@ export async function createInspectorHarness(){
         export const api=(...args)=>fixture.api(...args);
         export {resolveCurationTargets,number,humanize} from '/src/api.js';
         export const useEpochPrefetch=()=>{};
-        export const useResource=path=>({path,loading:false,error:null,reload:()=>{},data:path?.includes('/epochs?')?{offset:0,total:1,epochs:[fixture.epoch],cells:fixture.protocol.cells||[],query_revision:fixture.protocol.query_revision,expected_binding_version:fixture.protocol.expected_binding_version??0,...fixture.page}:path?.includes('/epochs/')?fixture.epoch:{fields:[]}});
+        export const useResource=(path,revision)=>{fixture.resources.push({path,revision});return fixture.resource?.(path,revision)||({path,loading:false,error:null,reload:()=>{},data:path?.includes('/epochs?')?{offset:0,total:1,epochs:[fixture.epoch],cells:fixture.protocol.cells||[],query_revision:fixture.protocol.query_revision,expected_binding_version:fixture.protocol.expected_binding_version??0,...fixture.page}:path?.includes('/epochs/')?fixture.epoch:{fields:[]}});};
         export const useEpochResource=path=>({path,loading:false,error:null,reload:()=>{},data:path?fixture.epoch:null});`;
       if(id==='\0inspector-loading')return 'export const NavigationLoadingProvider=({children})=>children;';
       if(id==='\0inspector-common')return "export const SourceEligibilityNotice='source-notice',Badge='badge';";

@@ -9,12 +9,12 @@ import {Status} from './Common.jsx';
 import './InspectionCellTree.css';
 import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 
-function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disabled,onToggleInclusion,inclusionForEpoch}){
+function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch}){
   const [offset,setOffset]=useState(0);
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]));
   return <Status {...page} retry={page.reload}>
     {(page.data?.epochs||[]).map((record,index)=>{const epoch=inclusionForEpoch?inclusionForEpoch(record):record;return <div key={epoch.epoch_uuid} className={`epoch-row cell-tree-epoch ${focused===epoch.epoch_uuid?'active':''} ${targets.includes(epoch.epoch_uuid)?'bulk-selected':''} ${epoch.curation?.included===false?'analysis-excluded':''}`}>
-      <button disabled={disabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={targets.includes(epoch.epoch_uuid)||(!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
+      <button disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={targets.includes(epoch.epoch_uuid)||(!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
         <strong>{offset+index+1}</strong>
         <time>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</time>
         <span className="epoch-short-protocol" title={humanize(epoch.protocol_name?.split('.').at(-1))}>{humanize(epoch.protocol_name?.split('.').at(-1))||'—'}</span>
@@ -23,7 +23,7 @@ function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disab
       </button>
       {onToggleInclusion&&<EpochInclusionToggle epoch={epoch} label={`${datedCellLabel(cell,true)} epoch ${offset+index+1}`} disabled={disabled||page.loading} onToggle={onToggleInclusion}/>}
     </div>;})}
-    {page.data&&<div className="pagination"><button aria-label={`Previous epochs for ${datedCellLabel(cell,true)}`} disabled={disabled||page.loading||!offset} onClick={()=>setOffset(Math.max(0,offset-60))}>Previous</button><span>{page.data.total?offset+1:0}–{Math.min(offset+60,page.data.total)} of {number(page.data.total)}</span><button aria-label={`Next epochs for ${datedCellLabel(cell,true)}`} disabled={disabled||page.loading||offset+60>=page.data.total} onClick={()=>setOffset(offset+60)}>Next</button></div>}
+    {page.data&&<div className="pagination"><button aria-label={`Previous epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||!offset} onClick={()=>setOffset(Math.max(0,offset-60))}>Previous</button><span>{page.data.total?offset+1:0}–{Math.min(offset+60,page.data.total)} of {number(page.data.total)}</span><button aria-label={`Next epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||offset+60>=page.data.total} onClick={()=>setOffset(offset+60)}>Next</button></div>}
   </Status>;
 }
 function CellBranch({cell,dateOpen,onSelectCell,selectedCell,collapseRequest,...props}){
@@ -42,12 +42,12 @@ function DateBranch({group,collapseRequest,...props}){
     {group.cells.map(cell=><CellBranch collapseRequest={collapseRequest} key={cell.cell_uuid} cell={cell} dateOpen={open} {...props}/>)}
   </details>;
 }
-export default function InspectionCellTree({cells,targets,setTargets,disabled,onFocus,onSelectCell,...props}){
+export default function InspectionCellTree({cells,targets,setTargets,disabled,navigationDisabled=disabled,onFocus,onSelectCell,...props}){
   const dates=useMemo(()=>inspectionDates(cells),[cells]);
   const ordered=useMemo(()=>dates.flatMap(group=>group.cells),[dates]);
   const anchor=useRef(null),request=useRef(null),generation=useRef(0),committedScope=useRef(null),callbacks=useRef(null);
   const [selecting,setSelecting]=useState(false),[error,setError]=useState('');
-  const scope=JSON.stringify({source:props.source,revision:props.revision,disabled:!!disabled,
+  const scope=JSON.stringify({source:props.source,revision:props.revision,disabled:!!disabled,navigationDisabled:!!navigationDisabled,
     cells:ordered.map(cell=>[cell.cell_uuid,cell.epochs])});
   useLayoutEffect(()=>{callbacks.current={targets,setTargets,onFocus,onSelectCell};});
   useLayoutEffect(()=>{
@@ -57,7 +57,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,on
   },[scope]);
 
   async function selectCell(cell){
-    if(disabled||committedScope.current!==scope)return;
+    if(navigationDisabled||committedScope.current!==scope)return;
     anchor.current=null;setError('');setSelecting(true);
     request.current?.abort();const controller=new AbortController();request.current=controller;
     const token=generation.current,isCurrent=()=>token===generation.current&&request.current===controller&&!controller.signal.aborted;
@@ -74,8 +74,9 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,on
     finally{if(isCurrent())setSelecting(false);}
   }
   async function select(event,target,epoch,page){
-    if(disabled||committedScope.current!==scope)return;
+    if(navigationDisabled||committedScope.current!==scope)return;
     const shift=event.shiftKey,multiple=event.metaKey||event.ctrlKey;
+    if(disabled&&(shift||multiple))return;
     request.current?.abort();request.current=null;setSelecting(false);setError('');
     const token=generation.current;let controller;
     const isCurrent=()=>token===generation.current&&(!controller||(request.current===controller&&!controller.signal.aborted));
@@ -103,5 +104,5 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,on
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
-  return <div className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} targets={targets} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting}/>)}</div>;
+  return <div className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} targets={targets} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
 }
