@@ -112,7 +112,14 @@ test('unavailable project date metrics and inventory counts never display fabric
 
 
 test('missing membership summaries are unavailable while an authoritative empty array is genuinely empty',async t=>{
- const h=await harness(t);await h.render(h.ProtocolInfographic,{data:{binding:{revision_uuid:'main'},counts:{epochs:8}}});
+ const h=await harness(t);
+ for(const cells of [undefined,null,{},'missing']){
+ await h.render(h.ProtocolInfographic,{data:{binding:{revision_uuid:'main'},cells,counts:{epochs:8}}});
+ assert.match(h.root.findByProps({className:'pi-cell-coverage'}).children.join(''),/unavailable/);
+ await h.render(h.Overview,{data:{cells,counts:{}}});
+ assert.equal(h.root.findByProps({className:'ov-metric-ribbon'}).findAllByType('strong')[0].children.join(''),'Unavailable');
+ }
+ await h.render(h.ProtocolInfographic,{data:{binding:{revision_uuid:'main'},counts:{epochs:8}}});
  assert.match(h.root.findByProps({className:'pi-cell-coverage'}).children.join(''),/unavailable/);
  const missing=h.root.findByProps({className:'pi-metrics'}).findAllByType('strong').map(node=>node.children.join(''));
  assert.deepEqual(missing.slice(0,2),['Unavailable','Unavailable']);assert.equal(h.root.findAllByProps({className:'cell-type-group'}).length,0);

@@ -18,7 +18,7 @@ function recordingDate(date){if(date==='Not recorded')return date;const parsed=n
 export default function Overview({data,onProtocol,onImport,onExplore,projectName,onQC}){
   const sourceCells=useMemo(()=>aggregateCellTypes(data.cells).flatMap(type=>type.cells),[data.cells]);
   const model=useMemo(()=>overviewModel({...data,cells:sourceCells}),[data,sourceCells]);
-  const completeCellSummary=Array.isArray(data.cells)&&data.cells.every(cell=>cell.cell_uuid||cell.uuid);
+  const completeCellSummary=Array.isArray(data.cells)&&data.cells.every(cell=>cell?.cell_uuid||cell?.uuid);
   const [dateScope,setDateScope]=useState(null),[typeScope,setTypeScope]=useState(null);
   const cellsPanel=useRef(null),cellsToggle=useRef(null);
   const [cellsOpen,setCellsOpen]=useState(false);

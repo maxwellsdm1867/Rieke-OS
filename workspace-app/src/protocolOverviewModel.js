@@ -21,7 +21,7 @@ export const validRecordedDuration=value=>typeof value==='number'&&Number.isFini
 // A missing field poisons only that metric, rather than presenting a partial sum.
 export function aggregateCellTypes(cells=[]){
   const groups=new Map();
-  for(const cell of distinctCells(cells)){
+  for(const cell of distinctCells(Array.isArray(cells)?cells.filter(cell=>cell&&typeof cell==='object'):[])){
     if(!(cell.cell_uuid||cell.uuid))continue;
     const type=recordedCellType(cell);
     const group=groups.get(type)||{type,count:0,cells:[],epochs:0,duration_seconds:0,exported:0,included:0,reviewed:0,withExports:0};

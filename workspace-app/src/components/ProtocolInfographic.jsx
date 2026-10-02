@@ -12,7 +12,7 @@ const countLabel=value=>validCellCount(value)?number(value):'Unavailable';
 const durationLabel=value=>validRecordedDuration(value)?duration(value):'Unavailable';
 
 export default function ProtocolInfographic({data,revision,onFilter,onInspect,onQC,pendingReviewCells=null,onWorkbench}){
-  const counts=data.counts||{},hasCellSummary=Array.isArray(data.cells),omitted=hasCellSummary?data.cells.filter(cell=>!(cell.cell_uuid||cell.uuid)).length:0,completeCellSummary=hasCellSummary&&!omitted,types=aggregateCellTypes(data.cells),cells=types.flatMap(type=>type.cells),model=overviewModel({cells}),total=completeCellSummary?cells.length:null;
+  const counts=data.counts||{},hasCellSummary=Array.isArray(data.cells),omitted=hasCellSummary?data.cells.filter(cell=>!(cell?.cell_uuid||cell?.uuid)).length:0,completeCellSummary=hasCellSummary&&!omitted,types=aggregateCellTypes(data.cells),cells=types.flatMap(type=>type.cells),model=overviewModel({cells}),total=completeCellSummary?cells.length:null;
   // The caller supplies the unfiltered protocol DTO. Retain a truthful fallback
   // if this component is ever used with an explicitly filtered or unbound DTO.
   const filtered=Object.keys(data.filters||{}).length>0;
@@ -33,6 +33,6 @@ export default function ProtocolInfographic({data,revision,onFilter,onInspect,on
       <section className="pi-dates" aria-label="Recording dates"><h3><CalendarDays size={14}/> Recording dates</h3><div className="pi-date-list">{model.dates.slice(0,8).map(date=><div key={date.date}><span>{date.date}</span><strong>{number(date.cells)} cells</strong><small>{countLabel(date.epochs)} epochs</small></div>)}</div>{model.dates.length>8&&<small>{number(model.dates.length-8)} more dates</small>}{!model.dates.length&&<p>{completeCellSummary?'No recording dates in this scope.':'Recording date coverage unavailable.'}</p>}<div className="pi-source-size"><span><Database size={14}/> Linked source size</span><RecordingSize sourceIds={data.source_sha256s} revision={revision}/><small>Whole H5 files · shared across protocols</small></div></section>
       <div className="pi-review-context"><section className="pi-export-history" aria-label="Saved export history"><strong>Saved export history</strong><p>Current cohort epochs appearing in saved exports, counted once. Inclusion and review marks above describe the current cohort.</p></section></div>
     </div>
-    <ProtocolTagSummary protocol={data} onFilter={onFilter}/>
+    <ProtocolTagSummary protocol={{...data,cells}} onFilter={onFilter}/>
   </section>;
 }
