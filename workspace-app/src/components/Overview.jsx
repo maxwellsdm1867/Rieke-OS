@@ -7,13 +7,13 @@ import { Badge, CellList, Metadata } from './Common.jsx';
 import { overviewModel } from './overviewModel.js';
 import './Overview.css';
 
-const colors=['#75608e','#4c8b8c','#c38c50','#7087ae','#aa6f89','#7d9063'];
+const colors=Array.from({length:6},(_,index)=>`var(--chart-${index+1})`);
 function recordingDate(date){if(date==='Not recorded')return date;const parsed=new Date(date+'T12:00:00');return Number.isNaN(parsed.getTime())?date:parsed.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'});}
 function CellTypes({model,selected,onSelect}){
   const circumference=2*Math.PI*44;let offset=0;
   return <section className="ov-types"><div className="ov-section-title"><h2><Users size={16}/> Cell types</h2><span>{model.types.length} {model.types.length===1?'type':'types'}</span></div>
     <div className="ov-types-body"><svg viewBox="0 0 120 120" role="img" aria-label={`${model.totalCells} source cells: ${model.types.map(x=>`${humanize(x.type)} ${x.count}`).join(', ')}`}>
-      <circle cx="60" cy="60" r="44" fill="none" stroke="#eee9f2" strokeWidth="10"/>
+      <circle cx="60" cy="60" r="44" fill="none" stroke="var(--plot-grid)" strokeWidth="10"/>
       {model.types.map((item,index)=>{const length=model.totalCells?item.count/model.totalCells*circumference:0;const start=offset;offset+=length;return <circle key={item.type} cx="60" cy="60" r="44" fill="none" stroke={colors[index%colors.length]} strokeWidth="10" strokeDasharray={`${length} ${circumference-length}`} strokeDashoffset={-start} transform="rotate(-90 60 60)"/>;})}
       <text x="60" y="60" textAnchor="middle" className="ov-donut-number">{number(model.totalCells)}</text><text x="60" y="77" textAnchor="middle" className="ov-donut-label">cells</text>
     </svg><div className="ov-type-legend">{model.types.map((item,index)=><button key={item.type} aria-pressed={selected===item.type} title="Filter the cell list below" onClick={()=>onSelect(selected===item.type?null:item.type)}><i style={{background:colors[index%colors.length]}}/><span>{humanize(item.type)}</span><strong>{number(item.count)}</strong></button>)}{!model.types.length&&<p>No cells imported</p>}</div></div>

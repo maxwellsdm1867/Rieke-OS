@@ -28,7 +28,8 @@ test('explicit export reuse chooses its saved scope, while back retains edited e
   const recipe={filters:{group_label:'drug'},format:'epictree-mat',split_order:['cell'],name:'Reused'};
   const saved={tab:'export',filters:{group_label:'wash'},format:'wheeler-sqlite',exportName:'Edited'};
   assert.equal(resolveProtocolSession({saved,recipe}).format,'epictree-mat');
-  assert.deepEqual(resolveProtocolSession({saved,recipe}).filters,{group_label:'drug'});
+  assert.deepEqual(resolveProtocolSession({saved,recipe}).exportFilters,{group_label:'drug'});
+  assert.deepEqual(resolveProtocolSession({saved,recipe}).filters,{group_label:'wash'});
   assert.equal(resolveProtocolSession({saved,recipe,restore:true}),saved);
 });
 

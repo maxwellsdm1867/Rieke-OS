@@ -9,14 +9,14 @@ async function ready(h){await h.waitFor(()=>{try{return !!input(h)&&!input(h).pr
 async function save(h,value){await h.act(()=>input(h).props.onChange({target:{value}}));await h.act(()=>input(h).parent.props.onSubmit({preventDefault(){}}));await ready(h);}
 const text=node=>node.children.filter(value=>typeof value==='string').join('').trim();
 async function filterRules(h,logic,rules){
-  await h.act(()=>h.root.findByProps({'aria-controls':'protocol-view-filter-panel'}).props.onClick());
-  await h.act(()=>h.root.findByProps({id:'protocol-view-filter-panel'}).findAllByType('select')[0].props.onChange({target:{value:'rules'}}));
+  await h.act(()=>h.root.findByProps({className:'protocol-view-filter'}).findByType('button').props.onClick());
+  await h.act(()=>h.root.findByProps({className:'protocol-view-filter-panel'}).findAllByType('select')[0].props.onChange({target:{value:'rules'}}));
   await h.act(()=>h.root.findByProps({'aria-label':'Match tag rules'}).props.onChange({target:{value:logic}}));
   for(let index=0;index<rules.length;index++){
     if(index&&!h.root.findAllByProps({'aria-label':`Tag scope ${index+1}`}).length)await h.act(()=>h.root.findAllByType('button').find(node=>text(node)==='Add tag rule').props.onClick());
     await h.act(()=>{h.root.findByProps({'aria-label':`Tag scope ${index+1}`}).props.onChange({target:{value:rules[index].scope}});h.root.findByProps({'aria-label':`Tag value ${index+1}`}).props.onChange({target:{value:rules[index].value}});});
   }
-  await h.act(()=>h.root.findByProps({id:'protocol-view-filter-panel'}).props.onSubmit({preventDefault(){}}));
+  await h.act(()=>h.root.findByProps({className:'protocol-view-filter-panel'}).props.onSubmit({preventDefault(){}}));
   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
 }
 

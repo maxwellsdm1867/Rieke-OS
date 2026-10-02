@@ -1,0 +1,78 @@
+/* Single source of truth for application colors.
+   appearanceThemes.js changes <html data-theme="light|dark|fred">; System
+   resolves to light/dark. Components consume semantic var(--role) values.
+   Theme thumbnails scope this SAME palette with data-palette, so previews,
+   canvas plots and browser chrome cannot drift from the workspace.
+   Define new colors here; never put palette literals or fallbacks in components.
+   Light supplies shared defaults; Dark and Fred override the relevant roles. */
+:root,[data-palette]{
+ --background:#f5f7fb;--surface:#fff;--surface-subtle:#f0f3f9;--surface-hover:#e9eef8;
+ --sidebar:#eef1f8;--rail:#253353;--rail-ink:#e4eafe;--rail-active:#40537d;
+ --ink:#202a3c;--ink-secondary:#465269;--ink-muted:#5f697b;--muted:var(--ink-muted);
+ --border:#d6dde9;--border-subtle:#e5e9f1;--border-strong:#7888a3;
+ --accent:#445fc6;--accent-hover:#354ca8;--accent-soft:#e5ebff;--on-accent:#fff;--focus:#385bcc;
+ --success-ink:#276348;--success-soft:#e8f3ec;--success-border:#adceb8;
+ --warning-ink:#825713;--warning-soft:#fff2d7;--warning-border:#ddc083;
+ --error-ink:#ac3d47;--error-soft:#fbecef;--error-border:#ddaeb5;
+ --info-ink:#2c627c;--info-soft:#e8f2f8;--info-border:#aecbdc;
+ --shadow-base:#172134;--shadow:#17213430;--backdrop:#111a305e;
+ --scroll-thumb:#9ba9c3;--scroll-thumb-active:#667b9d;
+ --plot-background:#fff;--plot-ink:#465269;--plot-grid:#e4e9f2;--plot-axis:#8795ae;--plot-trace:#306f83;--plot-cursor:var(--accent);
+ --plot-selection:#445fc621;--plot-pan:#306f8314;
+ --chart-1:#445fc6;--chart-2:#367d80;--chart-3:#a37129;--chart-4:#60799e;--chart-5:#a25570;--chart-6:#657b39;
+ color-scheme:light;color:var(--ink);background:var(--background);
+}
+:root[data-theme="dark"],[data-palette="dark"]{
+ --background:#111522;--surface:#191f2d;--surface-subtle:#222a3b;--surface-hover:#293348;
+ --sidebar:#151b29;--rail:#0d1220;--rail-ink:#ced8f0;--rail-active:#2b3657;
+ --ink:#edf1fa;--ink-secondary:#c5cedf;--ink-muted:#9ca8bf;
+ --border:#364156;--border-subtle:#2c3548;--border-strong:#7785a0;
+ --accent:#a5b6ff;--accent-hover:#bdc9ff;--accent-soft:#2b3657;--on-accent:#111522;--focus:#bac8ff;
+ --success-ink:#94d5ad;--success-soft:#173b2d;--success-border:#446951;
+ --warning-ink:#f0ca7b;--warning-soft:#42351f;--warning-border:#7b673e;
+ --error-ink:#f3a4aa;--error-soft:#432630;--error-border:#895361;
+ --info-ink:#9fcee9;--info-soft:#20394d;--info-border:#4b718b;
+ --shadow-base:#000;--shadow:#0007;--backdrop:#050810a6;
+ --scroll-thumb:#596780;--scroll-thumb-active:#8897b3;
+ --plot-background:#171e2b;--plot-ink:#c5cedf;--plot-grid:#303c50;--plot-axis:#7f91ad;--plot-trace:#7bc9d8;--plot-cursor:var(--accent);
+ --plot-selection:#a5b6ff30;--plot-pan:#7bc9d822;
+ --chart-1:#a5b6ff;--chart-2:#7bc9c5;--chart-3:#dfb16f;--chart-4:#92b4de;--chart-5:#d997b4;--chart-6:#b1c68b;
+ color-scheme:dark;
+}
+:root[data-theme="fred"],[data-palette="fred"]{
+ --background:#f8f6fa;--surface:#fff;--surface-subtle:#f3eff6;--surface-hover:#ece5f1;
+ --sidebar:#f1ecf5;--rail:#35283f;--rail-ink:#ede3f3;--rail-active:#5c456b;
+ --ink:#302737;--ink-secondary:#554a60;--ink-muted:#6a5f71;
+ --border:#ded5e5;--border-subtle:#ece5f0;--border-strong:#907a9f;
+ --accent:#73548a;--accent-hover:#5f4276;--accent-soft:#ebe1f2;--on-accent:#fff;--focus:#80549e;
+ --scroll-thumb:#a492b0;--scroll-thumb-active:#796487;
+ --plot-selection:#73548a21;
+ --chart-1:#73548a;--chart-2:#4c8b8c;--chart-3:#ac773a;--chart-4:#7087ae;--chart-5:#aa6f89;--chart-6:#7d9063;
+ --plot-ink:#554a60;--plot-grid:#ece5f0;--plot-axis:#9c8aa7;
+ color-scheme:light;
+}
+dialog{color:var(--ink);background:var(--surface)}
+html,body,#root{background:var(--background);color:var(--ink)}
+.app-shell .rail{background:var(--rail);color:var(--rail-ink)}
+.rail button,.rail .avatar{color:var(--rail-ink)}
+.rail button.rail-active{background:var(--rail-active)}
+.rail .avatar{border-color:color-mix(in srgb,var(--rail-ink) 35%,var(--rail))}
+.sidebar{background:var(--sidebar)}
+.main-shell,.project-launcher{background:var(--background)}
+.app-header,.app-footer{background:var(--surface);border-color:var(--border)}
+.nav-item:hover{background:var(--surface-hover)}
+.nav-item.active,.sidebar-primary-actions .nav-item.active{background:var(--accent-soft);color:var(--accent)}
+.sidebar-main{--scroll-thumb:var(--border-strong);--scroll-thumb-active:var(--ink-muted)}
+.project-rail-list{--scroll-thumb:color-mix(in srgb,var(--rail-ink) 50%,var(--rail));--scroll-thumb-active:var(--rail-ink)}
+:root[data-theme] .primary{color:var(--on-accent);background:var(--accent);border-color:var(--accent)}
+:root[data-theme] .primary:not(:disabled):hover{color:var(--on-accent);background:var(--accent-hover);border-color:var(--accent-hover)}
+:root[data-theme] input,:root[data-theme] select,:root[data-theme] textarea{color:var(--ink);background-color:var(--surface);border-color:var(--border-strong)}
+input::placeholder,textarea::placeholder{color:var(--ink-muted);opacity:1}
+:root[data-theme] button:disabled,:root[data-theme] input:disabled,:root[data-theme] select:disabled{opacity:1;color:var(--ink-muted);background-color:var(--surface-subtle);border-color:var(--border);cursor:not-allowed}
+.tv-plot{background:var(--plot-background)}
+.tv-status{background:color-mix(in srgb,var(--plot-background) 94%,transparent)}
+.tv-status.tv-loading{background:color-mix(in srgb,var(--plot-background) 35%,transparent)}
+.qc-trend svg,.qc-condition-summary svg{background:var(--plot-background)}
+.qc-trend svg text,.qc-condition-summary svg text,.trace text{fill:var(--plot-ink)}
+.rail :focus-visible{outline-color:var(--rail-ink)}
+@media(prefers-reduced-motion:reduce){.theme-option{transition:none}}

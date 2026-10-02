@@ -260,7 +260,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
         <div className="tags"><span>Dataset-only tags:</span>
           {(focusedEpoch.curation?.tags||[]).map(t=><button key={t} disabled={busy} aria-label={`Remove tag ${t} from focused epoch only`} title="Remove from focused epoch only" onClick={()=>curate({tags_remove:[t]},'focused')}>{t}<X size={13}/></button>)}
           {!focusedEpoch.curation?.tags?.length&&<span>No tags</span>}
-          {focusedEpoch.curation?.included===false&&<Badge kind="warning">Excluded from analysis · recording retained</Badge>}
+          {focusedEpoch.curation?.included===false&&<Badge kind="warning">Excluded from export · still visible</Badge>}
         </div>
         <details className="optional-review"><summary>Optional review marker · {focusedEpoch.curation?.review_state==='approved'?'Reviewed':'Not marked'}</summary>
           <p>Use this marker if it helps your workflow. Included epochs can be exported without it; “reviewed only” is an optional export filter.</p>

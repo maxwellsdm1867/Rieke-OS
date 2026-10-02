@@ -1,0 +1,30 @@
+{
+  "kind": "production-live-source-visual-fixture",
+  "scientific_e2e": false,
+  "native_measurement": false,
+  "production_mock_import": false,
+  "checks": [
+    "lower-left palette above profile",
+    "four rendered theme choices",
+    "dark data-store controls and App Updates",
+    "saved theme survives App reload",
+    "Fred emblem and Light disco icon",
+    "System reacts to device scheme changes",
+    "theme cards support radio keyboard navigation",
+    "failed save restores prior theme"
+  ],
+  "unexpected_requests": [],
+  "screenshots": [
+    "dark-theme-picker.png",
+    "dark-data-stores.png",
+    "fred-theme-picker.png"
+  ],
+  "dark_colors": {
+    "background": "#111522",
+    "ink": "#edf1fa",
+    "accent": "#a5b6ff",
+    "main": "rgb(17, 21, 34)"
+  },
+  "status": "passed",
+  "preference_writes": 5
+}

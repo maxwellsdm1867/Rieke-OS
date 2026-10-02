@@ -1,0 +1,12 @@
+✔ Disco preserves established and explicitly selected Electron profiles (0.420958ms)
+✔ testing feed uses the existing repository once for success and server failures (1.905709ms)
+✔ release assets and redirect policy accept both owned names and reject other repositories (0.25925ms)
+✔ macOS visible and helper names agree while installation identity stays compatible (0.752167ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 46.17275

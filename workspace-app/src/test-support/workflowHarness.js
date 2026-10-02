@@ -96,7 +96,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
     }catch(error){record.aborted=error.name==='AbortError';throw error;}
     finally{record.completed=performance.now();fixture.pending.delete(record);}
   };
-  const generic=`export default 'workflow-child'; export const ProjectRail='project-rail',ImportSuggestions='import-suggestions',ExportDestination='export-destination';export const IMPORT_TERMINAL=new Set();`;
+  const generic=`export default 'workflow-child'; export const ProjectRail='project-rail',ImportSuggestions='import-suggestions',ExportDestination='export-destination',AppearanceButton='appearance-button';export const IMPORT_TERMINAL=new Set();`;
   const server=await createServer({root:rootPath,configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'mounted-workflow',enforce:'pre',
     resolveId(id,importer){

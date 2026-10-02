@@ -29,3 +29,12 @@ test('release assets and redirect policy accept both owned names and reject othe
  }
  for(const repo of ['foreign','disco-other'])assert.throws(()=>assetURL({name:'release.zip',browser_download_url:`https://github.com/maxwellsdm1867/${repo}/releases/download/v1.2.3/release.zip`},'v1.2.3','release.zip'));
 });
+
+test('macOS visible and helper names agree while installation identity stays compatible',()=>{
+ const {build}=require('../package.json');
+ assert.equal(build.productName,'Disco');
+ assert.equal(build.mac.extendInfo.CFBundleName,build.productName);
+ assert.equal(build.mac.extendInfo.CFBundleDisplayName,'Disco');
+ assert.equal(build.mac.executableName,'Rieke OS');
+ assert.equal(build.appId,'org.riekeos.desktop');
+});

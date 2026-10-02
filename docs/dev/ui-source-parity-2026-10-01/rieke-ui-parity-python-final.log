@@ -1,0 +1,55 @@
+................................s..... [  3%]
+....................................................................... [  9%]
+....................................................................................... [ 16%]
+................................................... [ 20%]
+.................................... [ 23%]
+..................................s.......... [ 27%]
+....................................................... [ 31%]
+.................................................... [ 36%]
+....................................... [ 39%]
+............................................................................................. [ 47%]
+........................................ [ 50%]
+........................s......s....ss.......sssssssss.s....................................ssss. [ 58%]
+............................................ [ 62%]
+................................................................ [ 67%]
+...........................................sssss............. [ 72%]
+.............................................................. [ 77%]
+..............................................sss..............................................sssss. [ 86%]
+............................................. [ 90%]
+........................................ [ 93%]
+..............................................................................  [100%]
+=========================== short test summary info ============================
+SKIPPED [1] python/tests/test_desktop_runtime_packaging.py:29: Pinned parser source not provisioned
+SKIPPED [1] python/tests/test_workspace_datastore_deletion.py:198: opt-in private MySQL acquisition cascade integration
+SKIPPED [1] python/tests/test_workspace_native_crash.py:21: opt-in disposable native MySQL SIGKILL recovery
+SKIPPED [1] python/tests/test_workspace_native_mysql.py:257: opt-in private native MySQL test
+SKIPPED [1] python/tests/test_workspace_native_mysql.py:236: opt-in private native MySQL test
+SKIPPED [1] python/tests/test_workspace_native_mysql.py:196: opt-in private native MySQL test
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:96: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:331: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:233: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:113: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:317: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:192: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:168: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:213: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_integration.py:247: opt-in disposable native tag integration
+SKIPPED [1] python/tests/test_workspace_native_tag_lookup.py:27: opt-in private native tag lookup
+SKIPPED [1] python/tests/test_workspace_portability.py:598: opt-in disposable native MySQL integration
+SKIPPED [1] python/tests/test_workspace_portability.py:471: opt-in disposable native MySQL integration
+SKIPPED [1] python/tests/test_workspace_portability.py:539: opt-in disposable native MySQL integration
+SKIPPED [1] python/tests/test_workspace_portability_app.py:104: opt-in production API/native MySQL integration
+SKIPPED [1] python/tests/test_workspace_recovery_generation.py:42: opt-in native recovery authority proof
+SKIPPED [1] python/tests/test_workspace_recovery_generation.py:107: opt-in native recovery authority proof
+SKIPPED [1] python/tests/test_workspace_recovery_generation.py:60: opt-in native recovery authority proof
+SKIPPED [1] python/tests/test_workspace_recovery_generation.py:151: opt-in native recovery authority proof
+SKIPPED [1] python/tests/test_workspace_recovery_generation.py:86: opt-in native recovery authority proof
+SKIPPED [1] python/tests/test_workspace_source_identity.py:211: Pinned RetinAnalysis parser is not installed
+SKIPPED [1] python/tests/test_workspace_source_identity.py:253: Pinned RetinAnalysis parser is not installed
+SKIPPED [1] python/tests/test_workspace_source_identity.py:245: Pinned RetinAnalysis parser is not installed
+SKIPPED [1] python/tests/test_workspace_state_generation.py:236: opt-in isolated native authority proof
+SKIPPED [1] python/tests/test_workspace_state_generation.py:180: opt-in isolated native authority proof
+SKIPPED [1] python/tests/test_workspace_state_generation.py:163: opt-in isolated native authority proof
+SKIPPED [1] python/tests/test_workspace_state_generation.py:205: opt-in isolated native authority proof
+SKIPPED [1] python/tests/test_workspace_state_generation.py:267: opt-in isolated native authority proof
+1166 passed, 33 skipped, 3624 subtests passed in 38.24s

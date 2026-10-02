@@ -1,0 +1,69 @@
+{
+  "status": "passed",
+  "frontend_tests": 379,
+  "full_backend_tests": 1166,
+  "backend_subtests": 3624,
+  "backend_skipped": 33,
+  "skip_reasons": {
+    "opt_in_native_mysql_or_native_authority": 29,
+    "pinned_parser_not_provisioned": 4
+  },
+  "native_mysql_opt_in": false,
+  "docker_used": false,
+  "native_benchmark_run": false,
+  "desktop_package_built": false,
+  "frontend_build": "passed; existing chunk-size advisory",
+  "branding_unit_tests": 4,
+  "live_source_render": {
+    "kind": "production-live-source-visual-fixture",
+    "scientific_e2e": false,
+    "native_measurement": false,
+    "production_mock_import": false,
+    "checks": [
+      "lower-left palette above profile",
+      "four rendered theme choices",
+      "dark data-store controls and App Updates",
+      "saved theme survives App reload",
+      "Fred emblem and Light disco icon",
+      "System reacts to device scheme changes",
+      "theme cards support radio keyboard navigation",
+      "failed save restores prior theme"
+    ],
+    "unexpected_requests": [],
+    "screenshots": [
+      "dark-theme-picker.png",
+      "dark-data-stores.png",
+      "fred-theme-picker.png"
+    ],
+    "dark_colors": {
+      "background": "#111522",
+      "ink": "#edf1fa",
+      "accent": "#a5b6ff",
+      "main": "rgb(17, 21, 34)"
+    },
+    "status": "passed",
+    "preference_writes": 5
+  },
+  "restricted_attempts": [
+    {
+      "failed": 40,
+      "cause": "36 real-home project creation locks plus4 loopback fixture binds blocked"
+    },
+    {
+      "failed": 4,
+      "cause": "loopback fixture binds blocked after preference isolation"
+    }
+  ],
+  "final_environment": "isolated RIEKE_PREFERENCES_DIR; permitted fixture loopback sockets; no real-home preference writes",
+  "published_receipt_sha256": {
+    "README.md": "447608379d8e434b1493e27dec03536dbb18d43531684f487b8696f79cd3cb91",
+    "dark-data-stores.png": "64ff595c14cd68e45d437f0654156aab75f4908490668bcec5345480d14826f8",
+    "dark-theme-picker.png": "98551656c7c440a9bf22a9e0e23451ca09606773eb0c5ca21cbce5d1a859eefb",
+    "fred-theme-picker.png": "fb46f68d14ab0647d406ea40c704c26ac89ee0c296ae7eb0add0265bc71750a7",
+    "receipt.json": "dda7b96fa77bfe91e33c61ce32dba0aafa83a8e2e71a460bc2994f46799f5dfa",
+    "rieke-ui-parity-branding.log": "ccae27482da3b979e76eaf521b277c601dc76ee2a690508cf6778dc7415bef49",
+    "rieke-ui-parity-build-final.log": "f6dd3cdef51da1963c39524d94203efd624e9bd77bb55571920fc9caf94b0770",
+    "rieke-ui-parity-node-final.log": "12ec89710d7c4c19c3b3368d5489f89c3534d953be9cd5d3267eaf19fb5721cb",
+    "rieke-ui-parity-python-final.log": "81aca69ceed52295a5da1b671e96a1b36ef16ecfc190b73f179ecbab00828c26"
+  }
+}

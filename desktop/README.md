@@ -179,3 +179,13 @@ It does not ship EpicTreeGUI, MATLAB GUI/plotting source, launchers, or interact
 MATLAB masks. MAT data export runs with bundled Python/SciPy; no MATLAB install
 is required. Source and artifact audits enforce this boundary. See
 [architecture](../docs/RIEKE_OS_ARCHITECTURE.md).
+
+### macOS product name and update compatibility
+
+The visible product name, `CFBundleName`, and `CFBundleDisplayName` are `Disco`.
+Electron's helper executables follow the product name (`Disco Helper`), which
+must agree with `CFBundleName` for Chromium child processes to launch.
+`mac.executableName` deliberately remains `Rieke OS`, preserving the existing
+on-disk app/executable paths, archive layout, updater checks, and recovery paths.
+`branding.cjs` also preserves the existing Electron profile. Do not change only
+`CFBundleName` without aligning the product/helper name.

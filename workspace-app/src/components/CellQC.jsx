@@ -23,9 +23,9 @@ function Trend({points=[],valueKey='value',label,units}){
   const pad=Math.max((max-min)*.12,Math.max(Math.abs(min),Math.abs(max))*.001,Number.EPSILON),low=min-pad,high=max+pad;
   const xy=data.map((p,i)=>[58+(data.length===1?.5:i/(data.length-1))*470,20+(high-p[valueKey])/(high-low)*104]);
   return <svg viewBox="0 0 550 166" className="qc-trend" role="img" aria-label={`${label}. ${data.length} observations, range ${display(min)} to ${display(max)} ${units||''}.`}>
-    {[low,(low+high)/2,high].map(v=><g key={v}><line x1="58" x2="528" y1={20+(high-v)/(high-low)*104} y2={20+(high-v)/(high-low)*104} stroke="#ece7f0"/><text x="49" y={24+(high-v)/(high-low)*104} textAnchor="end">{display(v)}</text></g>)}
-    <polyline points={xy.map(p=>p.join(',')).join(' ')} fill="none" stroke="#397b86" strokeWidth="1.7"/>
-    {xy.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="2.6" fill="#397b86"><title>{data[i].start_time} · {display(data[i][valueKey])} {units||''}</title></circle>)}
+    {[low,(low+high)/2,high].map(v=><g key={v}><line x1="58" x2="528" y1={20+(high-v)/(high-low)*104} y2={20+(high-v)/(high-low)*104} stroke="var(--plot-grid)"/><text x="49" y={24+(high-v)/(high-low)*104} textAnchor="end">{display(v)}</text></g>)}
+    <polyline points={xy.map(p=>p.join(',')).join(' ')} fill="none" stroke="var(--plot-trace)" strokeWidth="1.7"/>
+    {xy.map(([x,y],i)=><circle key={i} cx={x} cy={y} r="2.6" fill="var(--plot-trace)"><title>{data[i].start_time} · {display(data[i][valueKey])} {units||''}</title></circle>)}
     <text x="58" y="147">First observation</text><text x="528" y="147" textAnchor="end">Last shown observation</text>
     <text transform="translate(13,74) rotate(-90)" textAnchor="middle">{units||'Recorded value'}</text>
   </svg>;
@@ -78,8 +78,8 @@ function ConditionSummary({cellUuid,family,epoch,revision,onSelect}){
   if(!['expanding_spots','split_field','single_spot','current_step'].includes(family))return null;
   return <section className="qc-condition-summary"><header><h3>Condition comparison</h3><button onClick={()=>setOpen(!open)} aria-expanded={open}>{open?'Hide comparison':'Compare conditions in this block'}</button></header>{open&&<Status {...resource} retry={resource.reload}>{data&&<>
     {points.length&&units.length===1?<svg viewBox="0 0 560 212" role="img" aria-label={`Recorded stimulus-window mean response by ${xField||'condition order'}, ${points.length} conditions. Includes spikes, not firing rate.`}>
-      {[ymin,(ymin+ymax)/2,ymax].filter((v,i,a)=>a.indexOf(v)===i).map(v=><g key={v}><line x1="65" x2="525" y1={y(v)} y2={y(v)} stroke="#eae5ef"/><text x="55" y={y(v)+4} textAnchor="end">{display(v)}</text></g>)}
-      {points.map((p,i)=><circle key={p.condition_id} cx={x(xs[i])} cy={y(ys[i])} r="5" fill="#397b86"><title>{conditionLabel(p)} · {display(p.response_mean)} {p.units} · {p.used_epoch_count}/{p.epoch_count} trials</title></circle>)}
+      {[ymin,(ymin+ymax)/2,ymax].filter((v,i,a)=>a.indexOf(v)===i).map(v=><g key={v}><line x1="65" x2="525" y1={y(v)} y2={y(v)} stroke="var(--plot-grid)"/><text x="55" y={y(v)+4} textAnchor="end">{display(v)}</text></g>)}
+      {points.map((p,i)=><circle key={p.condition_id} cx={x(xs[i])} cy={y(ys[i])} r="5" fill="var(--plot-trace)"><title>{conditionLabel(p)} · {display(p.response_mean)} {p.units} · {p.used_epoch_count}/{p.epoch_count} trials</title></circle>)}
       {[xmin,xmax].filter((v,i,a)=>a.indexOf(v)===i).map(v=><text key={v} x={x(v)} y="181" textAnchor="middle">{display(v)}</text>)}
       <text x="295" y="204" textAnchor="middle">{xField?`${parameterLabel(xField)} (recorded value)`:'Condition order'}</text><text transform="translate(15,90) rotate(-90)" textAnchor="middle">Mean response ({units[0]})</text>
     </svg>:<p className="qc-muted">{units.length>1?'Different response units cannot share one axis.':'No complete stimulus windows available for this block.'}</p>}

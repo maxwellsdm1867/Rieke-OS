@@ -313,7 +313,7 @@ class SummaryJobs:
                 finally:
                     reader_context.__exit__(None, None, None)
                 self._fence(job)
-                if len(json.dumps(result, ensure_ascii=False)) > MAX_RESULT_BYTES:
+                if len(json.dumps(result, ensure_ascii=False).encode('utf-8')) > MAX_RESULT_BYTES:
                     raise ValueError('Requested summaries exceed the response budget; request fewer fields')
                 with self.lock:
                     if job['status'] == 'pending':

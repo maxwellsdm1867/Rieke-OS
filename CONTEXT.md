@@ -91,3 +91,16 @@ _Avoid_: Assuming every linked measurement or figure is a separate protocol
 **Linked figure**:
 A visualization associated with a protocol workspace, cell, dataset or analysis, retaining the source/input context needed to interpret it.
 _Avoid_: Treating a receptive-field figure as automatically defining a protocol
+
+
+**Browsing filter**:
+A temporary restriction on which recordings are visible within a protocol workspace. It does not mark recordings for export or change the protocol's saved recording set.
+_Avoid_: Export selection, saved protocol rule
+
+**Export selection**:
+The recordings chosen for one export, using export-specific filters and inclusion marks, with review required only when explicitly selected. An export selection does not hide recordings from the workspace.
+_Avoid_: Current display focus, checked bulk-action targets
+
+**Protocol rule**:
+The saved criteria that define which project recordings belong in a protocol workspace. Browsing and export filters narrow that scope for their respective tasks.
+_Avoid_: Temporary view filter

@@ -13,27 +13,28 @@ function paintTrace(canvas,data){
   const extent=finiteExtent(data.values),range=timeRange(data.start,data.values.length,data.sample_rate);
   if(!extent||!range)return null;
   const left=82,right=21,top=25,bottom=57,w=Math.max(1,rect.width-left-right),h=Math.max(1,rect.height-top-bottom);
-  const ink=getComputedStyle(canvas).getPropertyValue('--ink-secondary').trim() || '#62566d';
+  const style=getComputedStyle(canvas),color=name=>style.getPropertyValue(name).trim();
+  const ink=color('--plot-ink'),grid=color('--plot-grid'),axis=color('--plot-axis'),trace=color('--plot-trace');
   const x=index=>left+(data.values.length>1?index/(data.values.length-1):.5)*w;
   const y=value=>top+(extent.max-value)/(extent.max-extent.min)*h;
   ctx.font='12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';ctx.lineWidth=1;
   for(const value of ticks(extent.min,extent.max,5)){
-    const at=y(value);ctx.strokeStyle='#e9e5ed';ctx.beginPath();ctx.moveTo(left,at);ctx.lineTo(left+w,at);ctx.stroke();
+    const at=y(value);ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(left,at);ctx.lineTo(left+w,at);ctx.stroke();
     ctx.fillStyle=ink;ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(formatTick(value,extent.max-extent.min),left-10,at);
   }
   const xticks=range.span>0?ticks(range.first,range.last,Math.max(3,Math.min(7,Math.floor(w/110)))):[range.first];
   for(const value of xticks){
     const at=range.span>0?left+(value-range.first)/range.span*w:left+w/2;
-    ctx.strokeStyle='#eeeaf2';ctx.beginPath();ctx.moveTo(at,top);ctx.lineTo(at,top+h);ctx.stroke();
+    ctx.strokeStyle=grid;ctx.beginPath();ctx.moveTo(at,top);ctx.lineTo(at,top+h);ctx.stroke();
     ctx.fillStyle=ink;ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText(formatTick(value,range.span || 1/data.sample_rate),at,top+h+10);
   }
-  ctx.strokeStyle='#93869d';ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,top+h);ctx.lineTo(left+w,top+h);ctx.stroke();
+  ctx.strokeStyle=axis;ctx.beginPath();ctx.moveTo(left,top);ctx.lineTo(left,top+h);ctx.lineTo(left+w,top+h);ctx.stroke();
   ctx.fillStyle=ink;ctx.font='13px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';ctx.fillText('Time from stream start (s)',left+w/2,rect.height-4);
   ctx.save();ctx.translate(16,top+h/2);ctx.rotate(-Math.PI/2);ctx.textBaseline='top';ctx.fillText(data.units?`Response (${data.units})`:'Response (unit not recorded)',0,0);ctx.restore();
-  ctx.save();ctx.beginPath();ctx.rect(left-1,top-1,w+2,h+2);ctx.clip();ctx.strokeStyle='#306f83';ctx.lineWidth=1.1;ctx.beginPath();let runLength=0,runStart=0;const isolated=[];
+  ctx.save();ctx.beginPath();ctx.rect(left-1,top-1,w+2,h+2);ctx.clip();ctx.strokeStyle=trace;ctx.lineWidth=1.1;ctx.beginPath();let runLength=0,runStart=0;const isolated=[];
   data.values.forEach((value,index)=>{if(typeof value!=='number'||!Number.isFinite(value)){if(runLength===1)isolated.push(runStart);runLength=0;return;}if(runLength)ctx.lineTo(x(index),y(value));else{ctx.moveTo(x(index),y(value));runStart=index;}runLength++;});ctx.stroke();
   if(runLength===1)isolated.push(runStart);
-  ctx.fillStyle='#306f83';ctx.beginPath();for(const index of isolated){ctx.moveTo(x(index)+2.5,y(data.values[index]));ctx.arc(x(index),y(data.values[index]),2.5,0,Math.PI*2);}ctx.fill();
+  ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();for(const index of isolated){ctx.moveTo(x(index)+2.5,y(data.values[index]));ctx.arc(x(index),y(data.values[index]),2.5,0,Math.PI*2);}ctx.fill();
   ctx.restore();
   return {left,top,w,h,width:rect.width,height:rect.height,ratio,extent,range,x,y,data};
 }
@@ -82,16 +83,16 @@ function TraceViewer({epoch,revision}){
     ctx.setTransform(g.ratio,0,0,g.ratio,0,0);
     if(drag.current){
       const a=drag.current.origin,b=drag.current.current;
-      ctx.fillStyle=mode==='zoom'?'rgba(103,68,125,.13)':'rgba(48,111,131,.08)';
+      ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue(mode==='zoom'?'--plot-selection':'--plot-pan').trim();
       ctx.fillRect(g.left+Math.min(a,b),g.top,Math.max(1,Math.abs(b-a)),g.h);
-      ctx.strokeStyle='#79568d';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+      ctx.strokeStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-cursor').trim();ctx.lineWidth=1;ctx.setLineDash([4,3]);
       for(const at of [a,b]){ctx.beginPath();ctx.moveTo(g.left+at,g.top);ctx.lineTo(g.left+at,g.top+g.h);ctx.stroke();}ctx.setLineDash([]);
     }
     if(cursor.current==null)return;
     const index=Math.max(0,Math.min(d.count-1,cursor.current)),value=d.values[index],x=g.x(index),finite=typeof value==='number'&&Number.isFinite(value);
-    ctx.strokeStyle='#756080';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.top+g.h);
+    ctx.strokeStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-cursor').trim();ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(x,g.top);ctx.lineTo(x,g.top+g.h);
     if(finite){const y=g.y(value);ctx.moveTo(g.left,y);ctx.lineTo(g.left+g.w,y);}ctx.stroke();ctx.setLineDash([]);
-    if(finite){ctx.fillStyle='#306f83';ctx.beginPath();ctx.arc(x,g.y(value),3,0,Math.PI*2);ctx.fill();}
+    if(finite){ctx.fillStyle=getComputedStyle(ctx.canvas).getPropertyValue('--plot-trace').trim();ctx.beginPath();ctx.arc(x,g.y(value),3,0,Math.PI*2);ctx.fill();}
     const absolute=d.start+index,time=absolute/d.sample_rate;
     if(readout.current)readout.current.textContent=`Sample ${number(absolute)} · ${String(time)} s · ${finite?String(value):'Missing sample'}${finite&&d.units?` ${d.units}`:''}`;
     if(cursorInput.current&&document.activeElement!==cursorInput.current)cursorInput.current.value=String(absolute);
@@ -112,8 +113,8 @@ function TraceViewer({epoch,revision}){
       scheduleOverlay();
     };
     const resize=()=>{cancelAnimationFrame(resizedFrame);resizedFrame=requestAnimationFrame(draw);};
-    draw();const observer=new ResizeObserver(resize);observer.observe(base.current);window.addEventListener('resize',resize);
-    return()=>{observer.disconnect();window.removeEventListener('resize',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
+    draw();const observer=new ResizeObserver(resize);observer.observe(base.current);window.addEventListener('resize',resize);window.addEventListener('disco:appearance',resize);
+    return()=>{observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
   },[data,valid,pending]);
   function local(event){const rect=overlay.current.getBoundingClientRect(),g=geometry.current;return g?{x:Math.max(0,Math.min(g.w,event.clientX-rect.left-g.left)),inside:event.clientX-rect.left>=g.left&&event.clientX-rect.left<=g.left+g.w&&event.clientY-rect.top>=g.top&&event.clientY-rect.top<=g.top+g.h}:null;}
   function pointerMove(event){const at=local(event);if(!at||!dataRef.current)return;if(drag.current)drag.current.current=at.x;if(at.inside||drag.current)cursor.current=sampleAtPixel(at.x,geometry.current.w,dataRef.current.count);scheduleOverlay();}

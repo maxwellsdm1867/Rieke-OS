@@ -2,15 +2,15 @@ const fs=require('node:fs'),http=require('node:http'),path=require('node:path'),
 const {chromium}=require('playwright');
 const root=path.resolve(__dirname,'../..'),dist=path.join(root,'workspace-app/dist');
 const types={'.js':'text/javascript','.css':'text/css','.png':'image/png','.html':'text/html'};
-function server(){let icon='rieke';return http.createServer((request,response)=>{
+function server(){let icon='rieke',theme='fred';return http.createServer((request,response)=>{
  const route=new URL(request.url,'http://127.0.0.1').pathname;
  if(route==='/appUpdates.js'){response.setHeader('Content-Type','text/javascript');response.end(fs.readFileSync(path.join(root,'workspace-app/src/appUpdates.js')));return;}
  if(route.startsWith('/api/')){
   response.setHeader('Content-Type','application/json');
   if(route==='/api/projects')response.end(JSON.stringify({launcher:true,projects:[],managed_root:'/temporary'}));
   else if(route==='/api/app/appearance'){
-   if(request.method==='POST'){let body='';request.on('data',chunk=>{body+=chunk;});request.on('end',()=>{icon=JSON.parse(body).icon;response.end(JSON.stringify({icon}));});}
-   else response.end(JSON.stringify({icon}));
+   if(request.method==='POST'){let body='';request.on('data',chunk=>{body+=chunk;});request.on('end',()=>{const value=JSON.parse(body);theme=value.theme||(value.icon==='rieke'?'fred':'light');icon=theme==='fred'?'rieke':'disco';response.end(JSON.stringify({icon,theme}));});}
+   else response.end(JSON.stringify({icon,theme}));
   }
   else if(route==='/api/app/version')response.end(JSON.stringify({installed:'0.1.3',state:'current'}));
   else response.end('{}');return;
@@ -35,11 +35,10 @@ function server(){let icon='rieke';return http.createServer((request,response)=>
   assert.equal(await next.evaluate(async status=>{const{claimUpdateDiscovery}=await import('/appUpdates.js');return claimUpdateDiscovery(status,new Set());},status),true);
   await page.goto(origins[0]);await page.waitForFunction(()=>document.querySelector('link[rel="icon"]')?.getAttribute('href')==='/rieke-emblem.png');
   assert.match(await page.title(),/Disco/);
-  await page.getByRole('button',{name:'About Disco'}).click();
-  await page.getByText('A little lab tradition',{exact:true}).click();
-  await page.getByRole('button',{name:'Disco ball',exact:true}).click();
+  await page.getByRole('button',{name:'Appearance',exact:true}).first().click();
+  await page.getByRole('dialog',{name:'Appearance',exact:true}).locator('label').filter({has:page.getByRole('radio',{name:/^Light/})}).click();
   await page.waitForFunction(()=>document.querySelector('link[rel="icon"]')?.getAttribute('href')==='/disco-icon.png');
-  await page.getByRole('button',{name:'Rieke emblem',exact:true}).click();
+  await page.getByRole('dialog',{name:'Appearance',exact:true}).locator('label').filter({has:page.getByRole('radio',{name:/^Fred/})}).click();
   await page.waitForFunction(()=>document.querySelector('link[rel="icon"]')?.getAttribute('href')==='/rieke-emblem.png');
   assert.equal(await page.locator('link[rel="apple-touch-icon"]').getAttribute('href'),'/rieke-os-icon.png');
   const cookie=(await context.cookies()).find(cookie=>cookie.name==='rieke_update_discovery');assert.equal(cookie.expires,-1);

@@ -54,7 +54,7 @@ def build_descriptor(bundle,archive):
     if manifest.get('format')!='rieke-desktop-runtime' or manifest.get('version')!=1 or manifest.get('platform')!='darwin' or manifest.get('architecture')!='arm64':raise ValueError('Unsupported desktop runtime')
     app_info=bundle/'Contents/Info.plist';app_info_bytes=app_info.read_bytes();plist=plistlib.loads(app_info_bytes)
     if plist.get('CFBundleIdentifier')!='org.riekeos.desktop' or plist.get('CFBundleShortVersionString')!=version:raise ValueError('App identity or version differs')
-    if plist.get('CFBundleDisplayName')!='Disco':raise ValueError('App display name differs from Disco')
+    if plist.get('CFBundleDisplayName')!='Disco' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from Disco')
     helper_executable,helper_info=electron_helper(bundle,plist)
     if archive.name!=f'Rieke-OS-{version}-arm64.zip':raise ValueError('Archive name differs from version')
     asar=hashes(bundle/'Contents/Resources/app.asar')[0]

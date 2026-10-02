@@ -76,18 +76,31 @@ def appearance_preferences():
     if path.is_symlink():
         raise ValueError('Appearance preference cannot be a symbolic link')
     if not path.exists():
-        return {'icon': 'disco'}
+        return {'icon': 'disco', 'theme': 'light'}
     if path.stat().st_size > 4096:
         raise ValueError('Appearance preference is unexpectedly large')
     value = json.loads(path.read_text())
-    if value.get('format') != 'disco-appearance' or value.get('version') != 1 or value.get('icon') not in {'disco', 'rieke'}:
+    if (not isinstance(value, dict) or value.get('format') != 'disco-appearance'
+            or value.get('version') != 1 or value.get('icon') not in ('disco', 'rieke')):
         raise ValueError('Appearance preference is invalid')
-    return {'icon': value['icon']}
+    # Existing icon-only preferences keep the classic emblem and purple palette.
+    theme = value.get('theme', 'fred' if value['icon'] == 'rieke' else 'light')
+    theme = 'light' if theme == 'bright' else theme
+    if theme not in ('system', 'light', 'dark', 'fred'):
+        raise ValueError('Appearance preference is invalid')
+    return {'icon': value['icon'], 'theme': theme}
 
 
-def remember_appearance(icon):
-    if icon not in {'disco', 'rieke'}:
+def remember_appearance(icon=None, *, theme=None):
+    if icon is not None and icon not in ('disco', 'rieke'):
         raise ValueError('Choose a supported application icon')
+    theme = 'light' if theme == 'bright' else theme
+    if theme is not None and theme not in ('system', 'light', 'dark', 'fred'):
+        raise ValueError('Choose System, Light, Dark, or Fred')
+    if icon is None and theme is None:
+        raise ValueError('Choose an application appearance')
+    if theme is not None and icon is not None and icon != ('rieke' if theme == 'fred' else 'disco'):
+        raise ValueError('The Fred theme uses the Rieke emblem; System, Light, and Dark use the disco ball')
     path = preference_path().with_name('appearance.json')
     path.parent.mkdir(parents=True, exist_ok=True)
     lock_path = path.with_suffix('.lock')
@@ -95,5 +108,9 @@ def remember_appearance(icon):
         raise ValueError('Appearance preference cannot be a symbolic link')
     with lock_path.open('a') as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        write_json(path, {'format': 'disco-appearance', 'version': 1, 'icon': icon})
-    return {'icon': icon}
+        if theme is None:
+            previous = appearance_preferences()
+            theme = 'fred' if icon == 'rieke' else (previous['theme'] if previous['theme'] != 'fred' else 'light')
+        icon = 'rieke' if theme == 'fred' else 'disco'
+        write_json(path, {'format': 'disco-appearance', 'version': 1, 'icon': icon, 'theme': theme})
+    return {'icon': icon, 'theme': theme}

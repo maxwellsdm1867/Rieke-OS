@@ -1,10 +1,10 @@
 /* Keep scroll tracks on their pane surface, with a visible, usable thumb. */
-:root{--scroll-thumb:#9a8ca5;--scroll-thumb-active:#74617f;--scroll-track:transparent}
+:root{--scroll-track:transparent}
 *{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
 ::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:var(--scroll-track)}
 ::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid transparent;background-clip:padding-box;border-radius:8px;min-height:28px}
 ::-webkit-scrollbar-thumb:hover,::-webkit-scrollbar-thumb:active{background-color:var(--scroll-thumb-active)}
-.sidebar-main{--scroll-thumb:#9e8dab;--scroll-thumb-active:#705c7e}
-.project-rail-list{--scroll-thumb:#b9a6c6;--scroll-thumb-active:#e1d4eb}
+.sidebar-main{--scroll-thumb:var(--border-strong);--scroll-thumb-active:var(--ink-muted)}
+.project-rail-list{--scroll-thumb:color-mix(in srgb,var(--rail-ink) 50%,var(--rail));--scroll-thumb-active:var(--rail-ink)}
 @media(forced-colors:active){*{scrollbar-color:auto}::-webkit-scrollbar-thumb{background:ButtonText}.pane-divider>span{border-color:ButtonText!important}}

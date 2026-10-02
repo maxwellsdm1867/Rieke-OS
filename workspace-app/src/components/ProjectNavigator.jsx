@@ -10,7 +10,7 @@ function initials(name){
  const words=String(name||'').trim().split(/[\s_-]+/).filter(Boolean);
  return words.length>1?words.slice(0,3).map(word=>Array.from(word)[0]).join('').toUpperCase():Array.from(words[0]||'?').slice(0,3).join('').toUpperCase();
 }
-export function projectColor(){return {background:'hsl(274 35% 89%)',color:'hsl(274 30% 30%)'};}
+export function projectColor(){return {background:'var(--accent-soft)',color:'var(--accent)'};}
 function currentProject(projects,identity){return projects.find(project=>project.current)||projects.find(project=>project.uuid===identity);}
 export function ProjectRail({projects=[],currentProjectUuid,onSelect,onAddProject,onReorder,loading=false,disabled=false}){
  const [order,setOrder]=useState(null),[saving,setSaving]=useState(false),[error,setError]=useState('');

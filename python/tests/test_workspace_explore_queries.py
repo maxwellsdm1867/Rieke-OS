@@ -33,6 +33,23 @@ class RequestedSummaryTests(unittest.TestCase):
         body = {'predicate': {'all': []}, 'summary_fields': ['parameters/example'], **changes}
         return self.client.post('/api/explore/summaries', json=body, headers=self.fixture.headers)
 
+    def test_multibyte_summary_cannot_publish_above_encoded_response_budget(self):
+        self.jobs.autostart = False
+        # Same character count: ASCII fits, three-byte Unicode must be refused.
+        for character, expected_status in [('a', 'ready'), ('雪', 'failed')]:
+            with self.subTest(character=character):
+                result = {'matched_count': 1, 'summaries': {'parameters/example': {
+                    'values': [{'value': character * (1024 * 1024), 'type': 'string', 'count': 1}],
+                    'present_count': 1, 'missing_count': 0, 'values_truncated': False}}}
+                with patch.object(self.jobs, '_calculate', return_value=result):
+                    submitted = self.submit().get_json()
+                    self.jobs.drive_worker()
+                response = self.jobs.poll(submitted['request_id'])
+                self.assertEqual(response['status'], expected_status)
+                if expected_status == 'failed':
+                    self.assertNotIn('result', response)
+                    self.assertIn('response budget', response['error'])
+
     def test_registry_complete_types_and_tree_definitions_without_distributions(self):
         response = self.client.get('/api/explore/field-registry')
         self.assertEqual(response.status_code, 200, response.get_json())

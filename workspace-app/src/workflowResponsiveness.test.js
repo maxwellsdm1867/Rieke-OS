@@ -77,7 +77,7 @@ test('mounted curation uses fresh page authority after tags while the hidden des
   }finally{await h.close();}
 });
 
-test('mounted filtered export waits for its exact summary without unmounting Inspector',async()=>{
+test('export filters are independent, can copy browsing filters, and wait for their exact summary',async()=>{
   const h=await createWorkflowHarness(),pending=deferred();
   try{
     await h.mount();await ready(h);await h.act(()=>h.viewer.onViewFilters(filter('B')));
@@ -87,12 +87,23 @@ test('mounted filtered export waits for its exact summary without unmounting Ins
       return fallback();
     };
     await h.act(()=>h.root.findByProps({'aria-label':'Export'}).props.onClick());
+    assert.equal(requested,undefined,'Opening export must not copy browsing filters implicitly');
+    const copy=h.root.findByType('workflow-dialog').findAllByType('button').find(node=>node.children.includes('Copy browsing filters'));
+    await h.act(()=>copy.props.onClick());
     assert.ok(requested?.searchParams.get('tag_predicate').includes('B'));
+    assert.deepEqual(h.viewer.viewFilters,filter('B'),'Choosing export filters must not alter browsing');
     const button=()=>h.root.findByType('workflow-dialog').findAllByType('button').find(node=>node.children.some(child=>typeof child==='string'&&child.startsWith('Save & export')));
     assert.equal(button().props.disabled,true);
     assert.equal(h.fixture.mounts,before);assert.equal(h.fixture.unmounts,0);
     await h.act(()=>pending.resolve({definition:{name:'Test'},query_revision:'query-0',expected_binding_version:2,counts:{epochs:250,cells:1,included:250},cells:[],source_eligibility:{}}));
     assert.equal(button().props.disabled,false);assert.equal(h.fixture.mounts,before);
+    h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocols/protocol-A/exports'&&options.method==='POST'?{format:'wheeler-sqlite',dataset_uuid:'saved',event_uuid:'event',download_url:'/api/exports/saved/download',epoch_count:250}:fallback();
+    await h.act(()=>h.root.findByProps({purpose:'export'}).props.onChange(filter('A')));
+    assert.deepEqual(h.viewer.viewFilters,filter('B'));
+    await h.act(()=>button().props.onClick());
+    const write=h.fixture.requests.findLast(row=>row.path==='/protocols/protocol-A/exports'&&row.method==='POST');
+    assert.deepEqual(write.body.filters,filter('A'),'Saved export uses the export-only filter');
+    assert.deepEqual(h.viewer.viewFilters,filter('B'),'Saving an export leaves the browser on its current filter');
   }finally{await h.close();}
 });
 

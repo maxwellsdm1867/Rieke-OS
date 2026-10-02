@@ -12,7 +12,7 @@ export function makeWorkspaceRoute(page,details={},key){
 }
 export function resolveProtocolSession({saved,recipe,inspection,restore=false}){
   if(restore&&saved)return saved;
-  if(recipe)return {filters:recipe.filters || {},tab:'export',policy:recipe.review_policy || 'include_unreviewed',exportName:recipe.name || '',format:recipe.format,splitOrder:recipe.split_order};
+  if(recipe)return {filters:saved?.filters || {},exportFilters:recipe.filters || {},tab:'export',policy:recipe.review_policy || 'include_unreviewed',exportName:recipe.name || '',format:recipe.format,splitOrder:recipe.split_order};
   if(inspection)return {...saved,filters:{},tab:'inspect',scope:inspection.cell_uuid || null,initialEpoch:inspection.epoch_uuid || null,inspector:{focused:inspection.epoch_uuid || null,focusCell:inspection.cell_uuid || null,offset:0}};
   return saved?{...saved,inspector:saved.inspector?{...saved.inspector,designMode:false,treeMode:false,treeOpen:true}:null}:{};
 }

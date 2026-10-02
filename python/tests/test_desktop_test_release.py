@@ -12,7 +12,7 @@ spec=importlib.util.spec_from_file_location('desktop_test_release',Path(__file__
 module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class TestUnsignedReleaseDescriptor(unittest.TestCase):
-    def fixture(self, root, helper_name='Rieke OS Helper', internal_name='Rieke OS'):
+    def fixture(self, root, helper_name='Disco Helper', internal_name='Disco'):
         app=root/'Rieke OS.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)
         manifest={'format':'rieke-desktop-runtime','version':1,'application_version':'0.1.3','platform':'darwin','architecture':'arm64','workspace_formats':[1],'database_compatibility':1,'mysql_version':'8.4.2','minimum_macos_version':'14.0','source_commit':'a'*40,'source_dirty':True}
         (runtime/'runtime-manifest.json').write_text(json.dumps(manifest))
@@ -55,7 +55,7 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
 
     def test_mismatched_internal_name_rejects_the_confirmed_unlaunchable_package(self):
         with tempfile.TemporaryDirectory() as tmp:
-            app,archive,_,_=self.fixture(Path(tmp),internal_name='Disco')
+            app,archive,_,_=self.fixture(Path(tmp),helper_name='Rieke OS Helper',internal_name='Disco')
             with self.assertRaisesRegex(ValueError,'helper executable is missing'):
                 module.build_descriptor(app,archive)
 
@@ -65,16 +65,17 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
                 app,archive,helper,executable=self.fixture(Path(tmp))
                 if fault=='missing':executable.unlink()
                 elif fault=='nonexecutable':executable.chmod(0o644)
-                elif fault=='executable':self.update_plist(helper/'Info.plist',{'CFBundleExecutable':'Disco Helper'})
+                elif fault=='executable':self.update_plist(helper/'Info.plist',{'CFBundleExecutable':'Wrong Helper'})
                 else:self.update_plist(helper/'Info.plist',{'CFBundleIdentifier':'foreign.helper'})
                 with self.assertRaisesRegex(ValueError,'Electron helper'):
                     module.build_descriptor(app,archive)
 
     def test_visible_app_name_and_archived_helper_identity_are_bound(self):
-        for fault in ['display','main_info','helper_info','helper_bytes']:
+        for fault in ['display','bundle_name','main_info','helper_info','helper_bytes']:
             with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
                 app,archive,helper,executable=self.fixture(Path(tmp))
                 if fault=='display':self.update_plist(app/'Contents/Info.plist',{'CFBundleDisplayName':'Rieke OS'})
+                elif fault=='bundle_name':self.update_plist(app/'Contents/Info.plist',{'CFBundleName':'Rieke OS'})
                 elif fault=='main_info':self.update_plist(app/'Contents/Info.plist',{'CFBundleVersion':'other'})
                 elif fault=='helper_info':self.update_plist(helper/'Info.plist',{'CFBundleVersion':'other'})
                 else:executable.write_bytes(b'changed helper after archive')

@@ -28,7 +28,7 @@
   },
   "build": {
     "appId": "org.riekeos.desktop",
-    "productName": "Rieke OS",
+    "productName": "Disco",
     "artifactName": "Rieke-OS-${version}-${arch}.${ext}",
     "asar": true,
     "directories": {
@@ -80,8 +80,9 @@
       "sign": "./sign-runtime.cjs",
       "extendInfo": {
         "CFBundleDisplayName": "Disco",
-        "CFBundleName": "Rieke OS"
-      }
+        "CFBundleName": "Disco"
+      },
+      "executableName": "Rieke OS"
     },
     "dmg": {
       "sign": false,
