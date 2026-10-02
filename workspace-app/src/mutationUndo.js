@@ -24,8 +24,9 @@ export function createUndoHistory(limits=UNDO_LIMITS){
   record(action){
    if(!project||!action)return;
    if(action.kind==='unavailable'){clear();message=action.reason;emit();return;}
-   if(!['annotations','curation','search-inclusion'].includes(action.kind))return;
-   if(action.kind!=='search-inclusion'&&!actionRows(action).length)return;
+   if(!['annotations','annotation_group','curation','search-inclusion'].includes(action.kind))return;
+   if(action.kind==='annotation_group'&&(!Number.isSafeInteger(action.count)||action.count<1||typeof action.operation_uuid!=='string'||typeof action.profile_uuid!=='string'))return;
+   if(!['search-inclusion','annotation_group'].includes(action.kind)&&!actionRows(action).length)return;
    if(actionRows(action).length>1000){clear();message='This gesture is too large for session undo.';emit();return;}
    const size=actionSize(action);
    if(size>limits.bytes){clear();message='This gesture exceeds session undo memory limits.';emit();return;}
@@ -58,7 +59,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
     bytes=0;for(const saved of stack){saved.size=actionSize(saved.action);bytes+=saved.size;}
     while(bytes>limits.bytes)bytes-=stack.shift().size;
     message='Last edit undone.';return true;
-   }catch(error){if(error.saved){clear();message=`The inverse edit was saved to the database, but recovery needs attention: ${error.message} Session undo was cleared; refresh the targets.`;}else message=`Undo was not confirmed: ${error.message} Refresh the original targets before retrying.`;return false;}
+   }catch(error){if(error.saved&&entry.action.kind==='annotation_group'){message=`The inverse SQL commit needs recovery confirmation: ${error.message} Retry Undo to replay the same operation.`;}else if(error.saved){clear();message=`The inverse edit was saved to the database, but recovery needs attention: ${error.message} Session undo was cleared; refresh the targets.`;}else message=`Undo was not confirmed: ${error.message} Refresh the original targets before retrying.`;return false;}
    finally{busy=false;emit();}
   },
  };

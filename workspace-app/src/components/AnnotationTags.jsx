@@ -7,7 +7,7 @@ import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from '../resourceCache.js';
 
-export default function AnnotationTags({epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget}){
+export default function AnnotationTags({epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget,groupMutation}){
   const {profileUuid,profileName,openProfile,loading:profileLoading,error:profileError}=useAnnotationProfile();
   const [refreshAfter,setRefreshAfter]=useState(null);
   const [tabLocked,setTabLocked]=useState(()=>{try{return localStorage.getItem('workspace.tags.tabNavigation')!=='false';}catch{return true;}});
@@ -15,12 +15,13 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
   function toggleTabLock(checked){setTabLocked(checked);try{localStorage.setItem('workspace.tags.tabNavigation',String(checked));}catch{}input.current?.focus();}
   const [manualScope,setScope]=useState('epoch'),[value,setValue]=useState(''),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   const scope=targetScope||manualScope;
+  const selectedCount=groupMutation?.count??selectedEpochs.length;
   const composerDirty=useRef(false);
   const input=useRef(null),handledFocus=useRef(0),listId=useId(),identity=epoch?.epoch_uuid,currentIdentity=useRef(identity);currentIdentity.current=identity;
   const refreshPending=refreshAfter?.identity===identity&&refreshAfter.annotations===epoch?.annotations;
   const remoteNeeded=!epoch?.annotations||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending);
   const awaitingEpoch=refreshWithEpoch&&!refreshAfter?.force&&refreshPending;
-  const scopeIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,revision,selectedEpochs]);
+  const scopeIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,revision,selectedEpochs,groupMutation?.selectionUuid]);
   const committedScope=useRef(null),generation=useRef(0),mounted=useRef(false),mutation=useRef(null);
   const navigationIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,selectedEpochs]),committedNavigation=useRef(navigationIdentity);
   useLayoutEffect(()=>{committedNavigation.current=navigationIdentity;},[navigationIdentity]);
@@ -43,7 +44,7 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
     else if(restoreInput.current){restoreInput.current=false;input.current?.focus();}
   },[epochFocusRequest,editingLocked,profileLoading]);
   useEffect(()=>setActive(-1),[query]);
-  useEffect(()=>{if(scope==='selected'&&!selectedEpochs.length)setScope('epoch');},[scope,selectedEpochs.length]);
+  useEffect(()=>{if(scope==='selected'&&!selectedCount)setScope('epoch');},[scope,selectedCount]);
   async function mutate(tag,targetKind=scope,remove=false){
     if(locked||mutation.current||committedScope.current!==scopeIdentity)return false;
     const controller=new AbortController(),token=generation.current;
@@ -51,6 +52,13 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
     const isCurrent=()=>mounted.current&&generation.current===token&&committedScope.current===scopeIdentity;
     restoreInput.current=true;setBusy(true);setError('');setMessage('');
     try{
+      if(groupMutation&&targetKind==='selected'){
+        // Server receipt owns frozen identities/revisions. Durable submit has
+        // no cancellation signal; dismissal only closes the presentation.
+        const result=await groupMutation.save({tag,profileUuid});
+        if(isCurrent()){composerDirty.current=false;setValue('');setQuery('');setOpen(false);}
+        onChange?.(result,null);return true;
+      }
       let body;
       if(targetKind==='selected'){
         const read=await api('/annotations/read',{method:'POST',signal:controller.signal,body:{target_kind:'epoch',target_uuids:[...new Set(selectedEpochs)]}});
@@ -106,12 +114,12 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
   return <section className="annotation-tags" aria-label="Shared cell and epoch tags" onKeyDown={tagKeys}><header><MessageCircle size={14}/><strong>Tags</strong><button type="button" className="annotation-author" onClick={openProfile} disabled={busy}><UserRound size={12}/>{profileName||'Choose profile'}</button>{tools}</header>
     {onNavigateEpoch&&scope==='epoch'&&<label className="tag-tab-lock"><input type="checkbox" checked={tabLocked} onChange={event=>toggleTabLock(event.target.checked)}/> Tab → next epoch <small>Shift+Tab back · drafts save before moving</small></label>}
     {!profileUuid&&!profileLoading&&<p className="annotation-scope-note">Enter a tag below. Choose an author when you save it.</p>}
-    {!targetScope&&<div className="annotation-scope" role="group" aria-label="Annotation target"><button disabled={disabled||busy} aria-pressed={scope==='epoch'} onClick={()=>setScope('epoch')}>This epoch</button><button disabled={disabled||busy} aria-pressed={scope==='cell'} onClick={()=>setScope('cell')}>Whole cell</button>{selectedEpochs.length>0&&<button disabled={disabled||busy||selectedEpochs.length>1000} aria-pressed={scope==='selected'} onClick={()=>setScope('selected')}>{number(selectedEpochs.length)} selected</button>}</div>}
-    {scope==='selected'&&!targetScope&&<p className="annotation-scope-note">Tags apply to all {number(selectedEpochs.length)} selected epochs.</p>}
+    {!targetScope&&<div className="annotation-scope" role="group" aria-label="Annotation target"><button disabled={disabled||busy} aria-pressed={scope==='epoch'} onClick={()=>setScope('epoch')}>This epoch</button><button disabled={disabled||busy} aria-pressed={scope==='cell'} onClick={()=>setScope('cell')}>Whole cell</button>{selectedEpochs.length>0&&<button disabled={disabled||busy||selectedEpochs.length>1000} aria-pressed={scope==='selected'} onClick={()=>setScope('selected')}>{number(selectedCount)} selected</button>}</div>}
+    {scope==='selected'&&!targetScope&&<p className="annotation-scope-note">Tags apply to all {number(selectedCount)} selected epochs.</p>}
     {scope==='cell'&&<p className="annotation-scope-note">Tags apply to {Number.isFinite(annotationData?.cell_epoch_count)?number(annotationData.cell_epoch_count):'all'} epochs in this cell.</p>}
-    <div className="annotation-composer" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setOpen(false);}}><form onSubmit={submitTag}><input ref={input} data-saved-undo={value===''&&!composerDirty.current?'true':undefined} role="combobox" aria-label={`Tag ${scope==='selected'?`${number(selectedEpochs.length)} selected epochs`:scope==='cell'?'cell':'this epoch'}`} aria-expanded={open} aria-controls={open?listId:undefined} aria-autocomplete="list" aria-activedescendant={open&&items[active]?`${listId}-${active}`:undefined} value={value} maxLength={255} placeholder={scope==='selected'?'Tag selected epochs…':scope==='cell'?'Add a cell tag…':'Add an epoch tag…'} disabled={editingLocked} onFocus={()=>setOpen(true)} onChange={event=>{composerDirty.current=true;setMessage('');setValue(event.target.value);setQuery(event.target.value.trim());setActive(-1);setOpen(true);}} onKeyDown={event=>{if(event.key==='Escape')setOpen(false);if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);setActive(index=>Math.max(0,Math.min(items.length-1,index+(event.key==='ArrowDown'?1:-1))));}if(event.key==='Enter'&&open&&items[active]){event.preventDefault();const tag=items[active].tag;choose(tag);if(profileUuid)mutate(tag);else openProfile?.();}}}/><button type="submit" disabled={editingLocked||profileLoading} className="primary" aria-label={`Add ${scope} tag`} title={!profileUuid?'Choose an author and add this tag':'Save this tag'}><Plus size={14}/><span>{scope==='selected'?`Tag ${number(selectedEpochs.length)} epochs`:'Add tag'}</span></button></form>
+    <div className="annotation-composer" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setOpen(false);}}><form onSubmit={submitTag}><input ref={input} data-saved-undo={value===''&&!composerDirty.current?'true':undefined} role="combobox" aria-label={`Tag ${scope==='selected'?`${number(selectedCount)} selected epochs`:scope==='cell'?'cell':'this epoch'}`} aria-expanded={open} aria-controls={open?listId:undefined} aria-autocomplete="list" aria-activedescendant={open&&items[active]?`${listId}-${active}`:undefined} value={value} maxLength={255} placeholder={scope==='selected'?'Tag selected epochs…':scope==='cell'?'Add a cell tag…':'Add an epoch tag…'} disabled={editingLocked} onFocus={()=>setOpen(true)} onChange={event=>{composerDirty.current=true;setMessage('');setValue(event.target.value);setQuery(event.target.value.trim());setActive(-1);setOpen(true);}} onKeyDown={event=>{if(event.key==='Escape')setOpen(false);if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);setActive(index=>Math.max(0,Math.min(items.length-1,index+(event.key==='ArrowDown'?1:-1))));}if(event.key==='Enter'&&open&&items[active]){event.preventDefault();const tag=items[active].tag;choose(tag);if(profileUuid)mutate(tag);else openProfile?.();}}}/><button type="submit" disabled={editingLocked||profileLoading} className="primary" aria-label={`Add ${scope} tag`} title={!profileUuid?'Choose an author and add this tag':'Save this tag'}><Plus size={14}/><span>{scope==='selected'?`Tag ${number(selectedCount)} epochs`:'Add tag'}</span></button></form>
     {open&&<div className="annotation-options" id={listId} role="listbox" aria-label="Saved shared tags">{suggestions.loading?<small>Finding tags…</small>:suggestions.error?<small>Suggestions unavailable; typed tags can still be saved.</small>:items.length?items.map((item,index)=><button id={`${listId}-${index}`} key={item.tag} role="option" aria-selected={index===active} disabled={editingLocked} onClick={()=>choose(item.tag)}><strong>{item.tag}</strong><small>{(item.authors||[]).map(author=>author.display_name).join(', ')}</small></button>):<small>Type a tag, then click Add tag or press Enter.</small>}</div>}</div>
-    {(profileError||annotations.error||error)&&<p className="annotation-error" role="alert">{error||annotations.error||profileError}<button disabled={busy} onClick={()=>{setRefreshAfter({identity,annotations:epoch?.annotations,force:true});annotations.reload();}}>Refresh tags</button></p>}
+    {(profileError||annotations.error||error)&&<p className="annotation-error" role="alert">{error||annotations.error||profileError}{!groupMutation&&<button disabled={busy} onClick={()=>{setRefreshAfter({identity,annotations:epoch?.annotations,force:true});annotations.reload();}}>Refresh tags</button>}</p>}
     {remoteNeeded&&annotations.loading&&!annotationData?<small role="status">Loading annotations…</small>:<>{scope==='epoch'&&<div className="annotation-group"><span>Direct epoch tags</span><div>{chips(groups.epoch,'epoch')}{!groups.epoch.length&&<small>None</small>}</div></div>}{scope!=='selected'&&<div className="annotation-group"><span>{scope==='cell'?'Cell tags':'Inherited from cell'} {!targetScope&&<button disabled={disabled||busy} onClick={()=>{setScope('cell');input.current?.focus();}}>Edit cell tags</button>}</span><div>{chips(groups.cell,'cell')}{!groups.cell.length&&<small>None</small>}</div></div>}</>}
     {message&&<small className="annotation-result" role="status">{message}</small>}
     {children&&scope==='epoch'&&<details className="annotation-legacy"><summary><ChevronDown size={12}/> Dataset-only tags</summary><p>These existing tags belong to this protocol’s selection; they are separate from shared cell and epoch annotations.</p>{children}</details>}

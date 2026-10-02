@@ -37,3 +37,34 @@ test('successful group verification retains exact initial IDs and native per-act
     const write=h.fixture.requests.find(row=>row.path==='/annotations');assert.deepEqual(write.body.target_uuids,['epoch-0','epoch-1']);assert.deepEqual(write.body.expected_revisions,{'epoch-0':0,'epoch-1':0});assert.equal(write.body.profile_uuid,'author');assert.equal(confirmed.targets.length,2);
   }finally{await h.close();}
 });
+
+test('query group composer submits compact server operation for all 1857 without explicit-target reads',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  const Tags=await h.component('AnnotationTags');const submitted=[];let changed;
+  const groupMutation={selectionUuid:'selection',count:1857,profileUuid:'author',save:async body=>{submitted.push(body);return {changed:1857};}};
+  await h.mount(Tags,{...props,selectedEpochs:[],groupMutation,onChange:(result,confirmed)=>{changed={result,confirmed};}});
+  const input=()=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag 1,857 selected epochs');
+  await h.waitFor(()=>input()&&!input().props.disabled);
+  await h.act(()=>input().props.onChange({target:{value:'group tag'}}));
+  await h.act(()=>input().parent.props.onSubmit({preventDefault(){}}));await h.waitFor(()=>changed);
+  assert.deepEqual(submitted,[{tag:'group tag',profileUuid:'author'}]);assert.equal(changed.confirmed,null);
+  assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations/read'||row.path==='/annotations').length,0);
+ }finally{await h.close();}
+});
+
+
+test('dismissed query composer still publishes a submitted durable receipt',async()=>{
+ const h=await createWorkflowHarness();
+ try{
+  const Tags=await h.component('AnnotationTags');await h.component('TreeGroupTags');let release,changed;
+  const groupMutation={selectionUuid:'selection',count:1857,profileUuid:'author',save:()=>new Promise(resolve=>{release=resolve;})};
+  await h.mount(Tags,{...props,selectedEpochs:[],groupMutation,onChange:result=>{changed=result;}});
+  const input=()=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag 1,857 selected epochs');
+  await h.waitFor(()=>input()&&!input().props.disabled);
+  await h.act(()=>input().props.onChange({target:{value:'submitted'}}));
+  await h.act(()=>input().parent.props.onSubmit({preventDefault(){}}));await h.waitFor(()=>release);
+  await h.render(()=>null,{});await h.act(()=>release({changed:1857}));
+  assert.equal(changed.changed,1857);
+ }finally{await h.close();}
+});

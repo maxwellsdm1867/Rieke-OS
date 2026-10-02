@@ -2,11 +2,19 @@ import {epochResourceCache} from './resourceCache.js';
 import {useEffect,useRef} from 'react';
 import {api} from './api.js';
 import {mutationUndo,shouldUndoData,undoEnabled,expandUndoAction} from './mutationUndo.js';
+import {confirmGroupReceipt} from './treeGroupQueryTags.js';
 import {desktopBridge} from './desktopLifecycle.js';
 
 export async function persistUndo(input,request=api){
  const action=expandUndoAction(input);
  const options={method:'POST',undoOperation:true};
+ if(action.kind==='annotation_group'){
+  // Keep this UUID in session history for recovery-unconfirmed retries.
+  action.inverse_operation_uuid ||= crypto.randomUUID();
+  const result=confirmGroupReceipt(await request(`/annotations/group/${action.operation_uuid}/undo`,{...options,body:{operation_uuid:action.inverse_operation_uuid}}),{action:'undo',operationUuid:action.inverse_operation_uuid,profileUuid:action.profile_uuid,count:action.count,forward:action.operation_uuid});
+  epochResourceCache.invalidate();
+  return {revisions:{},kind:'annotations'};
+ }
  if(action.kind==='annotations'){
   const operations=action.operations.map(({before_revision,...row})=>row);
   const result=await request('/annotations/undo',{...options,body:{operations}});
@@ -30,7 +38,7 @@ export async function persistUndo(input,request=api){
 export function useMutationUndo(projectId,onChanged){
  const changed=useRef(onChanged);changed.current=onChanged;
  useEffect(()=>{mutationUndo.project(projectId);},[projectId]);
- const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;}catch(error){if(error.saved)changed.current?.({kind:action.kind});throw error;}});
+ const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;}catch(error){if(error.saved)changed.current?.({kind:action.kind==='annotation_group'?'annotations':action.kind});throw error;}});
  const current=useRef(run);current.current=run;
  useEffect(()=>installUndoShortcuts({documentObject:document,bridge:desktopBridge(),run:()=>current.current(),enabled:undoEnabled}),[]);
  return {...mutationUndo.view(),enabled:undoEnabled,undo:run};
