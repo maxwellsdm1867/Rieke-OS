@@ -116,11 +116,19 @@ def generation(service, context=None):
     header_provider = getattr(service, 'binding_header_provider', None)
     binding_header = (header_provider(context['protocol_uuid']) if header_provider else
                       service.binding(context['protocol_uuid'])) if context.get('protocol_uuid') else None
+    # Native headers also contain bound_at datetimes/audit columns. Only
+    # immutable binding identity and monotonic version confer read authority.
+    binding_authority = ({
+        'project_uuid': binding_header.get('project_uuid', service.project['project_uuid']),
+        'protocol_uuid': binding_header.get('protocol_uuid', context.get('protocol_uuid')),
+        'revision_uuid': binding_header.get('revision_uuid'),
+        'version': binding_header.get('version'),
+    } if binding_header is not None else None)
     return {'metadata': index.generation if index else checksum(service._fingerprints),
             'typed': typed.generation_token if typed else None,
             'source': service.source_scope()['revision'], 'annotation': annotation,
             'publication': publication,
-            'binding': checksum(binding_header) if context.get('protocol_uuid') else None}
+            'binding': checksum(binding_authority) if context.get('protocol_uuid') else None}
 
 
 def typed_policy(service):

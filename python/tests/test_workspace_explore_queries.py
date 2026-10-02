@@ -33,6 +33,52 @@ class RequestedSummaryTests(unittest.TestCase):
         body = {'predicate': {'all': []}, 'summary_fields': ['parameters/example'], **changes}
         return self.client.post('/api/explore/summaries', json=body, headers=self.fixture.headers)
 
+    def test_native_bound_datetime_header_has_stable_identity_witness(self):
+        import datetime
+        import uuid
+        row = {'project_uuid': self.service.project['project_uuid'],
+               'protocol_uuid': self.service.protocol_id, 'revision_uuid': str(uuid.uuid4()),
+               'version': 1, 'bound_at': datetime.datetime(2026, 10, 1, 12, 30)}
+        self.fixture.protocol_bindings.insert1(row)
+        context = {'protocol_uuid': self.service.protocol_id}
+        before = queries.generation(self.service, context)
+        saved = self.fixture.protocol_bindings.rows[0]
+        saved.update(bound_at=datetime.datetime(2026, 10, 2), actor='audit-only')
+        self.assertEqual(before, queries.generation(self.service, context))
+        for key, value in [('version', 2), ('revision_uuid', str(uuid.uuid4()))]:
+            previous = queries.generation(self.service, context)
+            saved[key] = value
+            self.assertNotEqual(previous['binding'], queries.generation(self.service, context)['binding'])
+
+    def test_bound_datetime_summary_acknowledgement_polls_with_same_witness(self):
+        import datetime
+        import uuid
+        self.fixture.protocol_bindings.insert1({
+            'project_uuid': self.service.project['project_uuid'],
+            'protocol_uuid': self.service.protocol_id, 'revision_uuid': str(uuid.uuid4()),
+            'version': 1, 'bound_at': datetime.datetime(2026, 10, 1)})
+        self.jobs.autostart = False
+        with patch.object(self.jobs, '_calculate', return_value={'matched_count': 0, 'summaries': {}}), patch('workspace_explore_queries.typed_scope', return_value=(None, None)):
+            response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=[])
+            self.assertEqual(response.status_code, 202, response.get_json())
+            ack = response.get_json()
+            self.jobs.drive_worker()
+        ready = self.jobs.poll(ack['request_id'])
+        self.assertEqual(ready['status'], 'ready', ready)
+        self.assertEqual(ready['generation'], ack['generation'])
+
+    def test_full_binding_fallback_omits_recipe_and_audit_from_witness(self):
+        import datetime
+        binding = {'project_uuid': self.service.project['project_uuid'],
+                   'protocol_uuid': self.service.protocol_id, 'revision_uuid': 'revision',
+                   'version': 3, 'bound_at': datetime.datetime(2026, 10, 1),
+                   'recipe': {'unrelated': datetime.datetime(2026, 10, 1)}}
+        with patch.object(self.service, 'binding_header_provider', None), patch.object(self.service, 'binding', return_value=binding):
+            before = queries.generation(self.service, {'protocol_uuid': self.service.protocol_id})
+            binding['bound_at'] = datetime.datetime(2026, 10, 2)
+            binding['recipe'] = {'other': object()}
+            self.assertEqual(before, queries.generation(self.service, {'protocol_uuid': self.service.protocol_id}))
+
     def test_multibyte_summary_cannot_publish_above_encoded_response_budget(self):
         self.jobs.autostart = False
         # Same character count: ASCII fits, three-byte Unicode must be refused.
