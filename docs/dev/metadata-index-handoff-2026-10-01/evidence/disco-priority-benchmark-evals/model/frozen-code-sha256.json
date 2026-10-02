@@ -1,0 +1,12 @@
+{
+  "priority_sidecar.py": "832d58a6835dbdedcbbd54becc093c0249f4c244f11362e8ace57e1b2b0a3ff3",
+  "build_priority.py": "858395c51fbe4eef0ec610d6ca13859b32a4cc25fa2cd5d6cdd2cf597bd0f1d4",
+  "smoke.py": "f90a48b2a38e7b50bea28579ef8276be39518583cc478ffc1d61416c5042f3e7",
+  "README.md": "1c095a7399ff11369773f38271c76c243290e57b8b5d2d848e42a4b8dace3adb",
+  "inputs": {
+    "/private/tmp/disco-real-million-20261001/typed/typed_sidecar.py": "c69ea13dc742674808050fc958d3bec62f3f7608cb64bc5bd5b8908177d84039",
+    "/private/tmp/disco-real-million-20261001/typed/typed_bounded.py": "36cc3f5bf74385c8bc3cf8af8431275eca17f791964213283c18fcc32b5813f2",
+    "/private/tmp/disco-real-million-20261001/typed/typed_real_previous.py": "75658088b3bce59653c6d0ae3a0ae37c33301332c96e73aa5d65a84e204d5a67",
+    "/private/tmp/disco-priority-benchmark-20261001/hot-fields.json": "a39fc186c2eca7228804659ffba7c0b5761776f8d5011fe28ad95e0c9b16ff50"
+  }
+}

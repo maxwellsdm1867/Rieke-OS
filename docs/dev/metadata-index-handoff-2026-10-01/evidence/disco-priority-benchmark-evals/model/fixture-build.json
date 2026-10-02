@@ -1,0 +1,26 @@
+{
+  "all_passed": true,
+  "target": "/private/tmp/disco-priority-benchmark-20261001/model/fixture-priority.sqlite",
+  "wall_seconds": 0.022460750013124198,
+  "timings": {
+    "selected_dictionary_copy_seconds": 0.0009439580026082695,
+    "indexes_and_analyze_seconds": 0.00033887499012053013,
+    "quick_check_and_sizes_seconds": 0.018059541995171458
+  },
+  "added_bytes": 40960,
+  "hot_fields": [
+    "protocol",
+    "parameters/currentSpotSize"
+  ],
+  "typed_dictionary_rows": 18,
+  "field_rows": {
+    "9": 5,
+    "80": 13
+  },
+  "shared_core_storage_bytes": 4280320,
+  "shared_core_build": "reused proved previous core; excluded from incremental build timing",
+  "full_typed_sidecar_bytes": 8065024,
+  "max_rss_bytes": 23773184,
+  "source_identity_unchanged": true,
+  "core_identity_unchanged": true
+}

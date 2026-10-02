@@ -1,0 +1,7 @@
+{"arm": "baseline", "error": "TimeoutError('45s sample cap')"}
+{"arm": "candidate", "label": "largest_protocol", "mode": "facets", "sample": 0, "ms": 4470.469874970149}
+{"arm": "candidate", "label": "largest_protocol", "mode": "facets", "sample": 1, "ms": 3241.780290962197}
+{"arm": "candidate", "label": "largest_protocol", "mode": "facets", "sample": 2, "ms": 3277.464291022625}
+{"arm": "candidate", "label": "largest_protocol", "mode": "facets", "sample": 3, "ms": 3382.641958014574}
+{"arm": "candidate", "label": "largest_protocol", "mode": "facets", "sample": 4, "ms": 3339.993834029883}
+{"case": "largest_protocol", "mode": "facets", "status": "incomplete"}

@@ -1,0 +1,790 @@
+{
+  "pid": 30313,
+  "status": "complete",
+  "results": [
+    {
+      "label": "global_page",
+      "count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            54.37754199374467,
+            18.882042029872537,
+            18.027834012173116,
+            19.878833962138742,
+            18.244582985062152
+          ],
+          "sha256": "4ae44d2191996255179e232c3e9e980c458bf4e36ce066546b1fb58f4151fab6",
+          "payload_bytes": 195710,
+          "first_ms": 54.37754199374467,
+          "warm_median_ms": 18.563312507467344,
+          "max_ms": 54.37754199374467
+        },
+        "priority": {
+          "samples_ms": [
+            22.886374965310097,
+            19.241834001149982,
+            18.480083032045513,
+            18.185541033744812,
+            18.093916994985193
+          ],
+          "sha256": "4ae44d2191996255179e232c3e9e980c458bf4e36ce066546b1fb58f4151fab6",
+          "payload_bytes": 195710,
+          "materializations": [],
+          "first_ms": 22.886374965310097,
+          "warm_median_ms": 18.332812032895163,
+          "max_ms": 22.886374965310097
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cell_page_two_facets",
+      "count": 687,
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [
+        "parameters/currentSpotSize",
+        "parameters/useRandomSeed"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            16.103334026411176,
+            3.754958976060152,
+            4.104374966118485,
+            3.9822080289013684,
+            4.120833007618785
+          ],
+          "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+          "payload_bytes": 194791,
+          "first_ms": 16.103334026411176,
+          "warm_median_ms": 4.043291497509927,
+          "max_ms": 16.103334026411176
+        },
+        "priority": {
+          "samples_ms": [
+            4.582458001095802,
+            3.8655420066788793,
+            3.8398330216296017,
+            4.629582981579006,
+            3.951165999751538
+          ],
+          "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+          "payload_bytes": 194791,
+          "materializations": [],
+          "first_ms": 4.582458001095802,
+          "warm_median_ms": 3.9083540032152086,
+          "max_ms": 4.629582981579006
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "saved_expanding_spot_layout",
+      "count": 668034,
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "facet_fields": [
+        "parameters/currentSpotSize"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            3846.378583984915,
+            3128.9689170080237,
+            3050.389499985613,
+            2921.5154999983497,
+            3269.124041951727
+          ],
+          "sha256": "94b7a13036f6c207d1b08104ebc4380a78999a5d2c6346de8ffbada2e95002cb",
+          "payload_bytes": 194554,
+          "first_ms": 3846.378583984915,
+          "warm_median_ms": 3089.6792084968183,
+          "max_ms": 3846.378583984915
+        },
+        "priority": {
+          "samples_ms": [
+            2979.3082079850137,
+            3205.5340000079013,
+            2912.0326249976642,
+            3256.8983340170234,
+            2967.9219580139033
+          ],
+          "sha256": "94b7a13036f6c207d1b08104ebc4380a78999a5d2c6346de8ffbada2e95002cb",
+          "payload_bytes": 194554,
+          "materializations": [],
+          "first_ms": 2979.3082079850137,
+          "warm_median_ms": 3086.7279790109023,
+          "max_ms": 3256.8983340170234
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "saved_history_filter",
+      "count": 31592,
+      "predicate": {
+        "field": "parameters/history1",
+        "operator": "eq",
+        "value": [
+          0,
+          675
+        ]
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject"
+      },
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            68.8548749894835,
+            48.3874169876799,
+            45.34591600531712,
+            45.36462499527261,
+            44.41995901288465
+          ],
+          "sha256": "89cfda51647a3062b28d815c731b0017d0da7287da205a184d9c5f203dfbe37e",
+          "payload_bytes": 138712,
+          "first_ms": 68.8548749894835,
+          "warm_median_ms": 45.355270500294864,
+          "max_ms": 68.8548749894835
+        },
+        "priority": {
+          "samples_ms": [
+            50.604790973011404,
+            60.07424998097122,
+            44.92429195670411,
+            43.999334040563554,
+            43.66191697772592
+          ],
+          "sha256": "89cfda51647a3062b28d815c731b0017d0da7287da205a184d9c5f203dfbe37e",
+          "payload_bytes": 138712,
+          "materializations": [],
+          "first_ms": 50.604790973011404,
+          "warm_median_ms": 44.46181299863383,
+          "max_ms": 60.07424998097122
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "saved_frequency_filter",
+      "count": 97030,
+      "predicate": {
+        "field": "parameters/frequencyCutoff",
+        "operator": "eq",
+        "value": 100
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject"
+      },
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            719.9955830001272,
+            300.73845805600286,
+            306.3085830071941,
+            286.7455829982646,
+            304.2525830096565
+          ],
+          "sha256": "10d259ab9b8c9570ae01e01480c1904e2ad3c055a2c0d8ed12d507bdbe377439",
+          "payload_bytes": 137752,
+          "first_ms": 719.9955830001272,
+          "warm_median_ms": 302.4955205328297,
+          "max_ms": 719.9955830001272
+        },
+        "priority": {
+          "samples_ms": [
+            311.0922919586301,
+            335.6178749818355,
+            296.5808750013821,
+            290.23141600191593,
+            302.5247909827158
+          ],
+          "sha256": "10d259ab9b8c9570ae01e01480c1904e2ad3c055a2c0d8ed12d507bdbe377439",
+          "payload_bytes": 137752,
+          "materializations": [],
+          "first_ms": 311.0922919586301,
+          "warm_median_ms": 299.55283299204893,
+          "max_ms": 335.6178749818355
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "mean_SD_filter",
+      "count": 50310,
+      "predicate": {
+        "all": [
+          {
+            "field": "parameters/currentMean",
+            "operator": "eq",
+            "value": 0
+          },
+          {
+            "field": "parameters/currentSD",
+            "operator": "eq",
+            "value": 750
+          }
+        ]
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject"
+      },
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            429.37891697511077,
+            333.8627089979127,
+            334.041541966144,
+            343.60291698249057,
+            331.9745420012623
+          ],
+          "sha256": "0f6502a9817ce2dd31444ff3814f70d4c3be9ec694e5b52b178652c32d2f42e6",
+          "payload_bytes": 137752,
+          "first_ms": 429.37891697511077,
+          "warm_median_ms": 333.95212548202835,
+          "max_ms": 429.37891697511077
+        },
+        "priority": {
+          "samples_ms": [
+            329.110957973171,
+            332.68608403159305,
+            339.62066599633545,
+            330.8575419941917,
+            325.5957500077784
+          ],
+          "sha256": "0f6502a9817ce2dd31444ff3814f70d4c3be9ec694e5b52b178652c32d2f42e6",
+          "payload_bytes": 137752,
+          "materializations": [],
+          "first_ms": 329.110957973171,
+          "warm_median_ms": 331.7718130128924,
+          "max_ms": 339.62066599633545
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "NDF_filter",
+      "count": 687,
+      "predicate": {
+        "field": "parameters/NDF",
+        "operator": "eq",
+        "value": 4
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [
+        "parameters/NDF"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1661.8720410042442,
+            1648.70412502205,
+            1647.3127499921247,
+            1680.8758749975823,
+            1629.520665970631
+          ],
+          "sha256": "34ea831d0f43218463de96041147f9bef77170063cacd2f1a7d01565aff82b91",
+          "payload_bytes": 194088,
+          "first_ms": 1661.8720410042442,
+          "warm_median_ms": 1648.0084375070874,
+          "max_ms": 1680.8758749975823
+        },
+        "priority": {
+          "samples_ms": [
+            1668.803750013467,
+            1661.2095840391703,
+            1662.9512090003118,
+            1654.6535000088625,
+            1638.3794999564998
+          ],
+          "sha256": "34ea831d0f43218463de96041147f9bef77170063cacd2f1a7d01565aff82b91",
+          "payload_bytes": 194088,
+          "materializations": [],
+          "first_ms": 1668.803750013467,
+          "warm_median_ms": 1657.9315420240164,
+          "max_ms": 1668.803750013467
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "light_path_filter",
+      "count": 687,
+      "predicate": {
+        "field": "parameters/lightPath",
+        "operator": "eq",
+        "value": "above"
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            691.7897500097752,
+            682.1375419967808,
+            675.7239170256071,
+            680.014832993038,
+            676.7201669863425
+          ],
+          "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+          "payload_bytes": 193954,
+          "first_ms": 691.7897500097752,
+          "warm_median_ms": 678.3674999896903,
+          "max_ms": 691.7897500097752
+        },
+        "priority": {
+          "samples_ms": [
+            685.6112499954179,
+            678.3657920313999,
+            671.7656250111759,
+            692.65224999981,
+            692.7439169958234
+          ],
+          "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+          "payload_bytes": 193954,
+          "materializations": [],
+          "first_ms": 685.6112499954179,
+          "warm_median_ms": 685.509021015605,
+          "max_ms": 692.7439169958234
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "bath_temperature_filter",
+      "count": 113030,
+      "predicate": {
+        "field": "properties/bathTemperature",
+        "operator": "eq",
+        "value": 31.5
+      },
+      "scope": null,
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            192.59833300020546,
+            163.79704198334366,
+            166.96437500650063,
+            167.30445803841576,
+            174.7929590055719
+          ],
+          "sha256": "d89c261e8e44452f0738f3a9649c59c1d9f94eb297b94638ee292e9f944300e2",
+          "payload_bytes": 193853,
+          "first_ms": 192.59833300020546,
+          "warm_median_ms": 167.1344165224582,
+          "max_ms": 192.59833300020546
+        },
+        "priority": {
+          "samples_ms": [
+            168.11462497571483,
+            163.53554103989154,
+            168.11108303954825,
+            166.91662499215454,
+            173.79683296894655
+          ],
+          "sha256": "d89c261e8e44452f0738f3a9649c59c1d9f94eb297b94638ee292e9f944300e2",
+          "payload_bytes": 193853,
+          "materializations": [],
+          "first_ms": 168.11462497571483,
+          "warm_median_ms": 167.5138540158514,
+          "max_ms": 173.79683296894655
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_canvas_query",
+      "count": 687,
+      "predicate": {
+        "field": "parameters/canvasSize",
+        "operator": "eq",
+        "value": [
+          800,
+          600
+        ]
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [
+        "parameters/canvasSize"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1648.292833007872,
+            1657.6789999962784,
+            1661.61758400267,
+            1651.9045000313781,
+            1644.6889590006322
+          ],
+          "sha256": "3fa98ac10981d60ca9444b3f65a7ae750ba4897f04363a2fe5e50dfa4865d4e0",
+          "payload_bytes": 194104,
+          "first_ms": 1648.292833007872,
+          "warm_median_ms": 1654.7917500138283,
+          "max_ms": 1661.61758400267
+        },
+        "priority": {
+          "samples_ms": [
+            2146.921375009697,
+            2038.4807500522584,
+            2054.387708019931,
+            2067.9942090064287,
+            2057.0978749892674
+          ],
+          "sha256": "3fa98ac10981d60ca9444b3f65a7ae750ba4897f04363a2fe5e50dfa4865d4e0",
+          "payload_bytes": 194104,
+          "materializations": [
+            {
+              "field": "parameters/canvasSize",
+              "rows": 1,
+              "seconds": 0.002999250020366162
+            }
+          ],
+          "first_ms": 2146.921375009697,
+          "warm_median_ms": 2055.742791504599,
+          "max_ms": 2146.921375009697
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_generator_query",
+      "count": 110931,
+      "predicate": {
+        "field": "parameters/stimulusGenerator",
+        "operator": "eq",
+        "value": "edu.washington.riekelab.chris.stimuli.VariableHistoryNoiseGenerator"
+      },
+      "scope": null,
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            174.2532500065863,
+            147.02037500683218,
+            146.57904201885685,
+            144.70799994887784,
+            143.4292090125382
+          ],
+          "sha256": "e8fdeb63ad5c146bf7be04e471896e49cf09852b9d71ad12caaf95730221de51",
+          "payload_bytes": 138713,
+          "first_ms": 174.2532500065863,
+          "warm_median_ms": 145.64352098386735,
+          "max_ms": 174.2532500065863
+        },
+        "priority": {
+          "samples_ms": [
+            173.7070829840377,
+            168.4976660180837,
+            175.3520000493154,
+            182.10500001441687,
+            166.09520802740008
+          ],
+          "sha256": "e8fdeb63ad5c146bf7be04e471896e49cf09852b9d71ad12caaf95730221de51",
+          "payload_bytes": 138713,
+          "materializations": [
+            {
+              "field": "parameters/stimulusGenerator",
+              "rows": 1,
+              "seconds": 0.00040966697270050645
+            }
+          ],
+          "first_ms": 173.7070829840377,
+          "warm_median_ms": 171.92483303369954,
+          "max_ms": 182.10500001441687
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_trial_count_query",
+      "count": 52,
+      "predicate": {
+        "field": "parameters/numberOfTrials",
+        "operator": "eq",
+        "value": 1
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            77.7265410288237,
+            72.50145799480379,
+            74.22079204116017,
+            72.64595903689042,
+            72.48083298327401
+          ],
+          "sha256": "6d1f9d9f82eea2f850f517db1121b84f69bf2f204495824270c76a3c2ecbec71",
+          "payload_bytes": 120167,
+          "first_ms": 77.7265410288237,
+          "warm_median_ms": 72.5737085158471,
+          "max_ms": 77.7265410288237
+        },
+        "priority": {
+          "samples_ms": [
+            95.03425000002608,
+            93.19766703993082,
+            102.92754101101309,
+            95.86216596653685,
+            94.24374997615814
+          ],
+          "sha256": "6d1f9d9f82eea2f850f517db1121b84f69bf2f204495824270c76a3c2ecbec71",
+          "payload_bytes": 120167,
+          "materializations": [
+            {
+              "field": "parameters/numberOfTrials",
+              "rows": 1,
+              "seconds": 4.916702164337039e-05
+            }
+          ],
+          "first_ms": 95.03425000002608,
+          "warm_median_ms": 95.0529579713475,
+          "max_ms": 102.92754101101309
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_seed_query",
+      "count": 53900,
+      "predicate": {
+        "field": "parameters/seed",
+        "operator": "eq",
+        "value": 0
+      },
+      "scope": null,
+      "facet_fields": [],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            91.05016599642113,
+            64.07974998001009,
+            63.65158298285678,
+            65.97054202575237,
+            65.68533298559487
+          ],
+          "sha256": "2d016ed022282e26c149c5dbeecbb2a2a4ebec0f4ea0ddeb6f89c504199b0cb9",
+          "payload_bytes": 137752,
+          "first_ms": 91.05016599642113,
+          "warm_median_ms": 64.88254148280248,
+          "max_ms": 91.05016599642113
+        },
+        "priority": {
+          "samples_ms": [
+            138.7942080036737,
+            121.9633329892531,
+            122.01429100241512,
+            122.88616696605459,
+            123.29029099782929
+          ],
+          "sha256": "2d016ed022282e26c149c5dbeecbb2a2a4ebec0f4ea0ddeb6f89c504199b0cb9",
+          "payload_bytes": 137752,
+          "materializations": [
+            {
+              "field": "parameters/seed",
+              "rows": 391,
+              "seconds": 0.003999500011559576
+            }
+          ],
+          "first_ms": 138.7942080036737,
+          "warm_median_ms": 122.45022898423485,
+          "max_ms": 138.7942080036737
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_rig_query",
+      "count": 687,
+      "predicate": {
+        "field": "metadata/experiment/properties/rig",
+        "operator": "eq",
+        "value": "F (old slice)"
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "facet_fields": [
+        "metadata/experiment/properties/rig"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1660.060207999777,
+            1647.0923339948058,
+            1626.123042020481,
+            1665.9673330141231,
+            1664.113416976761
+          ],
+          "sha256": "6ca01470007f8a43e4dd8ac8bdcc6f089544c3ec465448c74c5ba8d051c9d43e",
+          "payload_bytes": 194120,
+          "first_ms": 1660.060207999777,
+          "warm_median_ms": 1655.6028754857834,
+          "max_ms": 1665.9673330141231
+        },
+        "priority": {
+          "samples_ms": [
+            2035.9388329670765,
+            2059.5890000113286,
+            2038.4047079714946,
+            2050.507790991105,
+            2073.4570419881493
+          ],
+          "sha256": "6ca01470007f8a43e4dd8ac8bdcc6f089544c3ec465448c74c5ba8d051c9d43e",
+          "payload_bytes": 194120,
+          "materializations": [
+            {
+              "field": "metadata/experiment/properties/rig",
+              "rows": 1,
+              "seconds": 0.0008945000008679926
+            }
+          ],
+          "first_ms": 2035.9388329670765,
+          "warm_median_ms": 2055.048395501217,
+          "max_ms": 2073.4570419881493
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "global_two_facets",
+      "count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "facet_fields": [
+        "parameters/currentSpotSize",
+        "parameters/useRandomSeed"
+      ],
+      "status": "passed",
+      "arms": {
+        "full": {
+          "samples_ms": [
+            3193.9064170001075,
+            3181.191791954916,
+            3162.1537499595433,
+            3206.6841250052676,
+            3223.3937080018222
+          ],
+          "sha256": "6583ed532ad447932ffae42d3a836964a960823eb49a8303729d4cb97b702da6",
+          "payload_bytes": 196616,
+          "first_ms": 3193.9064170001075,
+          "warm_median_ms": 3193.9379584800918,
+          "max_ms": 3223.3937080018222
+        },
+        "priority": {
+          "samples_ms": [
+            3134.37825004803,
+            3153.3782920450903,
+            3161.1177080194466,
+            3309.4103329931386,
+            3137.6697500236332
+          ],
+          "sha256": "6583ed532ad447932ffae42d3a836964a960823eb49a8303729d4cb97b702da6",
+          "payload_bytes": 196616,
+          "materializations": [],
+          "first_ms": 3134.37825004803,
+          "warm_median_ms": 3157.2480000322685,
+          "max_ms": 3309.4103329931386
+        }
+      },
+      "same_payload": true
+    }
+  ],
+  "caps": {
+    "total_seconds": 180,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "source_stats": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      248000770,
+      7195836416,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite": [
+      248008954,
+      1107034112,
+      1790881285641308926
+    ]
+  },
+  "setup_seconds": 0.007935292029287666,
+  "all_same_payload": true,
+  "materializations": [
+    {
+      "field": "parameters/canvasSize",
+      "rows": 1,
+      "seconds": 0.002999250020366162
+    },
+    {
+      "field": "parameters/stimulusGenerator",
+      "rows": 1,
+      "seconds": 0.00040966697270050645
+    },
+    {
+      "field": "parameters/numberOfTrials",
+      "rows": 1,
+      "seconds": 4.916702164337039e-05
+    },
+    {
+      "field": "parameters/seed",
+      "rows": 391,
+      "seconds": 0.003999500011559576
+    },
+    {
+      "field": "metadata/experiment/properties/rig",
+      "rows": 1,
+      "seconds": 0.0008945000008679926
+    }
+  ],
+  "wall_seconds": 136.9069568749983,
+  "peak_rss_bytes": 243892224,
+  "source_stats_after": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      248000770,
+      7195836416,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite": [
+      248008954,
+      1107034112,
+      1790881285641308926
+    ]
+  },
+  "source_stats_unchanged": true
+}

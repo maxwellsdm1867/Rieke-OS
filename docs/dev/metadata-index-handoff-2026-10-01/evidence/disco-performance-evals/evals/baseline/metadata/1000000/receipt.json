@@ -1,0 +1,1074 @@
+{
+  "epochs": 1000000,
+  "source_head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "started_utc": "2026-10-01T06:29:46.670986+00:00",
+  "python": "3.11.13",
+  "platform": "macOS-14.2-arm64-arm-64bit",
+  "scope": "Synthetic metadata: actual current WorkspaceService, sealed SQLite index and production Flask routes. API saved-curation/database hooks use existing transactional test SQL doubles with empty tables; no MySQL latency, H5 source I/O, waveforms, dense annotations or user files.",
+  "phases": [
+    {
+      "name": "synthetic_model_generation",
+      "seconds": 76.83467129198834,
+      "rss_mib": 672.171875
+    }
+  ],
+  "operations": [],
+  "status": "resource_guard_stopped",
+  "resource_samples": [
+    {
+      "elapsed_seconds": 2.01777304202551,
+      "rss_mib": 80.3125,
+      "rusage_maxrss_mib": 80.3125,
+      "available_mib": 3312.828125,
+      "disk_free_gib": 15.032169342041016
+    },
+    {
+      "elapsed_seconds": 4.083476083003916,
+      "rss_mib": 111.71875,
+      "rusage_maxrss_mib": 111.71875,
+      "available_mib": 3304.046875,
+      "disk_free_gib": 15.031269073486328
+    },
+    {
+      "elapsed_seconds": 6.151819583028555,
+      "rss_mib": 140.84375,
+      "rusage_maxrss_mib": 140.84375,
+      "available_mib": 3305.125,
+      "disk_free_gib": 15.031269073486328
+    },
+    {
+      "elapsed_seconds": 8.222544125048444,
+      "rss_mib": 173.40625,
+      "rusage_maxrss_mib": 173.40625,
+      "available_mib": 3289.265625,
+      "disk_free_gib": 15.031303405761719
+    },
+    {
+      "elapsed_seconds": 10.29805058304919,
+      "rss_mib": 203.078125,
+      "rusage_maxrss_mib": 203.078125,
+      "available_mib": 3285.328125,
+      "disk_free_gib": 15.031303405761719
+    },
+    {
+      "elapsed_seconds": 12.36159150005551,
+      "rss_mib": 217.28125,
+      "rusage_maxrss_mib": 218.765625,
+      "available_mib": 3282.046875,
+      "disk_free_gib": 15.031295776367188
+    },
+    {
+      "elapsed_seconds": 14.426118792034686,
+      "rss_mib": 254.1875,
+      "rusage_maxrss_mib": 254.1875,
+      "available_mib": 3270.890625,
+      "disk_free_gib": 15.031295776367188
+    },
+    {
+      "elapsed_seconds": 16.485152167035267,
+      "rss_mib": 283.0,
+      "rusage_maxrss_mib": 283.0,
+      "available_mib": 3265.375,
+      "disk_free_gib": 15.03125
+    },
+    {
+      "elapsed_seconds": 18.568390875007026,
+      "rss_mib": 308.59375,
+      "rusage_maxrss_mib": 308.59375,
+      "available_mib": 3234.921875,
+      "disk_free_gib": 15.030147552490234
+    },
+    {
+      "elapsed_seconds": 20.635216875001788,
+      "rss_mib": 337.21875,
+      "rusage_maxrss_mib": 337.21875,
+      "available_mib": 3214.296875,
+      "disk_free_gib": 15.03012466430664
+    },
+    {
+      "elapsed_seconds": 22.697865917056333,
+      "rss_mib": 366.703125,
+      "rusage_maxrss_mib": 366.703125,
+      "available_mib": 3175.234375,
+      "disk_free_gib": 15.03012466430664
+    },
+    {
+      "elapsed_seconds": 24.754516083048657,
+      "rss_mib": 394.09375,
+      "rusage_maxrss_mib": 394.09375,
+      "available_mib": 3184.765625,
+      "disk_free_gib": 15.030059814453125
+    },
+    {
+      "elapsed_seconds": 26.83277633303078,
+      "rss_mib": 438.578125,
+      "rusage_maxrss_mib": 438.578125,
+      "available_mib": 3185.3125,
+      "disk_free_gib": 15.030010223388672
+    },
+    {
+      "elapsed_seconds": 28.89528604201041,
+      "rss_mib": 467.71875,
+      "rusage_maxrss_mib": 467.71875,
+      "available_mib": 3149.953125,
+      "disk_free_gib": 15.02981185913086
+    },
+    {
+      "elapsed_seconds": 30.959694042045157,
+      "rss_mib": 494.90625,
+      "rusage_maxrss_mib": 494.921875,
+      "available_mib": 3133.96875,
+      "disk_free_gib": 15.029838562011719
+    },
+    {
+      "elapsed_seconds": 33.035184458014555,
+      "rss_mib": 523.734375,
+      "rusage_maxrss_mib": 523.734375,
+      "available_mib": 3116.359375,
+      "disk_free_gib": 15.02984619140625
+    },
+    {
+      "elapsed_seconds": 35.10128937504487,
+      "rss_mib": 552.3125,
+      "rusage_maxrss_mib": 552.3125,
+      "available_mib": 3093.875,
+      "disk_free_gib": 15.029457092285156
+    },
+    {
+      "elapsed_seconds": 37.16668883303646,
+      "rss_mib": 555.3125,
+      "rusage_maxrss_mib": 563.328125,
+      "available_mib": 3074.015625,
+      "disk_free_gib": 15.029457092285156
+    },
+    {
+      "elapsed_seconds": 39.239677000034135,
+      "rss_mib": 600.484375,
+      "rusage_maxrss_mib": 600.484375,
+      "available_mib": 3149.234375,
+      "disk_free_gib": 15.02945327758789
+    },
+    {
+      "elapsed_seconds": 41.31572066701483,
+      "rss_mib": 629.984375,
+      "rusage_maxrss_mib": 629.984375,
+      "available_mib": 3107.921875,
+      "disk_free_gib": 15.02945327758789
+    },
+    {
+      "elapsed_seconds": 43.393709625001065,
+      "rss_mib": 659.0625,
+      "rusage_maxrss_mib": 659.0625,
+      "available_mib": 3062.765625,
+      "disk_free_gib": 15.029483795166016
+    },
+    {
+      "elapsed_seconds": 45.46490987500874,
+      "rss_mib": 680.09375,
+      "rusage_maxrss_mib": 680.09375,
+      "available_mib": 2984.40625,
+      "disk_free_gib": 15.032470703125
+    },
+    {
+      "elapsed_seconds": 47.53762125002686,
+      "rss_mib": 634.15625,
+      "rusage_maxrss_mib": 682.0625,
+      "available_mib": 2993.03125,
+      "disk_free_gib": 15.032474517822266
+    },
+    {
+      "elapsed_seconds": 49.60747412504861,
+      "rss_mib": 645.0,
+      "rusage_maxrss_mib": 682.0625,
+      "available_mib": 2936.21875,
+      "disk_free_gib": 15.032516479492188
+    },
+    {
+      "elapsed_seconds": 51.85122691700235,
+      "rss_mib": 763.46875,
+      "rusage_maxrss_mib": 763.46875,
+      "available_mib": 2916.6875,
+      "disk_free_gib": 15.032279968261719
+    },
+    {
+      "elapsed_seconds": 53.931522167054936,
+      "rss_mib": 702.1875,
+      "rusage_maxrss_mib": 766.640625,
+      "available_mib": 2838.875,
+      "disk_free_gib": 15.030265808105469
+    },
+    {
+      "elapsed_seconds": 55.99268712505,
+      "rss_mib": 536.96875,
+      "rusage_maxrss_mib": 766.640625,
+      "available_mib": 2784.890625,
+      "disk_free_gib": 15.030193328857422
+    },
+    {
+      "elapsed_seconds": 58.06469562504208,
+      "rss_mib": 511.59375,
+      "rusage_maxrss_mib": 766.640625,
+      "available_mib": 2696.734375,
+      "disk_free_gib": 15.030231475830078
+    },
+    {
+      "elapsed_seconds": 60.13642241701018,
+      "rss_mib": 410.8125,
+      "rusage_maxrss_mib": 766.640625,
+      "available_mib": 2718.015625,
+      "disk_free_gib": 15.030200958251953
+    },
+    {
+      "elapsed_seconds": 62.20312970801024,
+      "rss_mib": 399.0,
+      "rusage_maxrss_mib": 766.640625,
+      "available_mib": 2710.078125,
+      "disk_free_gib": 15.030017852783203
+    },
+    {
+      "elapsed_seconds": 64.26476816704962,
+      "rss_mib": 937.203125,
+      "rusage_maxrss_mib": 937.25,
+      "available_mib": 2724.28125,
+      "disk_free_gib": 15.012775421142578
+    },
+    {
+      "elapsed_seconds": 66.3343684580177,
+      "rss_mib": 966.21875,
+      "rusage_maxrss_mib": 966.21875,
+      "available_mib": 2727.578125,
+      "disk_free_gib": 15.012813568115234
+    },
+    {
+      "elapsed_seconds": 68.41036087501561,
+      "rss_mib": 973.171875,
+      "rusage_maxrss_mib": 982.453125,
+      "available_mib": 2714.984375,
+      "disk_free_gib": 15.012813568115234
+    },
+    {
+      "elapsed_seconds": 70.49536712502595,
+      "rss_mib": 983.6875,
+      "rusage_maxrss_mib": 983.6875,
+      "available_mib": 2704.796875,
+      "disk_free_gib": 15.012706756591797
+    },
+    {
+      "elapsed_seconds": 72.56018079200294,
+      "rss_mib": 988.828125,
+      "rusage_maxrss_mib": 991.4375,
+      "available_mib": 2686.421875,
+      "disk_free_gib": 15.012706756591797
+    },
+    {
+      "elapsed_seconds": 74.62582104204921,
+      "rss_mib": 843.578125,
+      "rusage_maxrss_mib": 994.859375,
+      "available_mib": 2670.203125,
+      "disk_free_gib": 15.027835845947266
+    },
+    {
+      "elapsed_seconds": 76.72222591703758,
+      "rss_mib": 651.03125,
+      "rusage_maxrss_mib": 994.859375,
+      "available_mib": 2638.015625,
+      "disk_free_gib": 15.028656005859375
+    },
+    {
+      "elapsed_seconds": 78.7805196250556,
+      "rss_mib": 674.765625,
+      "rusage_maxrss_mib": 994.859375,
+      "available_mib": 2609.6875,
+      "disk_free_gib": 15.020767211914062
+    },
+    {
+      "elapsed_seconds": 80.78723545803223,
+      "rss_mib": 598.5625,
+      "rusage_maxrss_mib": 994.859375,
+      "available_mib": 2580.328125,
+      "disk_free_gib": 15.020702362060547
+    },
+    {
+      "elapsed_seconds": 82.79857450001873,
+      "rss_mib": 563.875,
+      "rusage_maxrss_mib": 994.859375,
+      "available_mib": 2582.75,
+      "disk_free_gib": 14.949851989746094
+    },
+    {
+      "elapsed_seconds": 84.80090245802421,
+      "rss_mib": 1201.21875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2570.765625,
+      "disk_free_gib": 14.949859619140625
+    },
+    {
+      "elapsed_seconds": 86.8121326250257,
+      "rss_mib": 1199.453125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2566.21875,
+      "disk_free_gib": 14.949893951416016
+    },
+    {
+      "elapsed_seconds": 88.82284991705092,
+      "rss_mib": 1185.3125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2527.625,
+      "disk_free_gib": 14.887393951416016
+    },
+    {
+      "elapsed_seconds": 90.82782558305189,
+      "rss_mib": 833.28125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2527.421875,
+      "disk_free_gib": 14.887386322021484
+    },
+    {
+      "elapsed_seconds": 92.83363554201787,
+      "rss_mib": 700.78125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2520.09375,
+      "disk_free_gib": 14.887386322021484
+    },
+    {
+      "elapsed_seconds": 94.84313362505054,
+      "rss_mib": 511.125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2533.515625,
+      "disk_free_gib": 14.839244842529297
+    },
+    {
+      "elapsed_seconds": 96.85467591701308,
+      "rss_mib": 210.9375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2529.0625,
+      "disk_free_gib": 14.839248657226562
+    },
+    {
+      "elapsed_seconds": 98.85936625004979,
+      "rss_mib": 137.140625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2537.75,
+      "disk_free_gib": 14.839282989501953
+    },
+    {
+      "elapsed_seconds": 100.86258350004209,
+      "rss_mib": 152.71875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2554.28125,
+      "disk_free_gib": 14.776782989501953
+    },
+    {
+      "elapsed_seconds": 102.86846962501295,
+      "rss_mib": 162.71875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2555.15625,
+      "disk_free_gib": 14.776782989501953
+    },
+    {
+      "elapsed_seconds": 104.87786616705125,
+      "rss_mib": 173.25,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2558.0625,
+      "disk_free_gib": 14.776782989501953
+    },
+    {
+      "elapsed_seconds": 106.88807587500196,
+      "rss_mib": 185.734375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2552.578125,
+      "disk_free_gib": 14.714244842529297
+    },
+    {
+      "elapsed_seconds": 108.89453104202403,
+      "rss_mib": 172.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2521.328125,
+      "disk_free_gib": 14.714302062988281
+    },
+    {
+      "elapsed_seconds": 110.90613887505606,
+      "rss_mib": 166.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2543.375,
+      "disk_free_gib": 14.714275360107422
+    },
+    {
+      "elapsed_seconds": 112.91324687504675,
+      "rss_mib": 169.015625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2503.84375,
+      "disk_free_gib": 14.655353546142578
+    },
+    {
+      "elapsed_seconds": 114.91714529204182,
+      "rss_mib": 138.703125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2534.546875,
+      "disk_free_gib": 14.65530014038086
+    },
+    {
+      "elapsed_seconds": 116.9235313750105,
+      "rss_mib": 138.234375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2544.796875,
+      "disk_free_gib": 14.603893280029297
+    },
+    {
+      "elapsed_seconds": 118.93029625003692,
+      "rss_mib": 133.390625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2645.984375,
+      "disk_free_gib": 14.603858947753906
+    },
+    {
+      "elapsed_seconds": 120.9329132080311,
+      "rss_mib": 126.828125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2597.8125,
+      "disk_free_gib": 14.603851318359375
+    },
+    {
+      "elapsed_seconds": 122.94017812504899,
+      "rss_mib": 139.859375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2590.03125,
+      "disk_free_gib": 14.557010650634766
+    },
+    {
+      "elapsed_seconds": 124.94984750001458,
+      "rss_mib": 118.671875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2504.84375,
+      "disk_free_gib": 14.541053771972656
+    },
+    {
+      "elapsed_seconds": 126.95241458300734,
+      "rss_mib": 115.140625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2513.953125,
+      "disk_free_gib": 14.541053771972656
+    },
+    {
+      "elapsed_seconds": 128.95704320800724,
+      "rss_mib": 108.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2543.703125,
+      "disk_free_gib": 14.525409698486328
+    },
+    {
+      "elapsed_seconds": 130.9611324580037,
+      "rss_mib": 112.03125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2525.234375,
+      "disk_free_gib": 14.501434326171875
+    },
+    {
+      "elapsed_seconds": 132.96262837504037,
+      "rss_mib": 125.390625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2546.109375,
+      "disk_free_gib": 14.470230102539062
+    },
+    {
+      "elapsed_seconds": 134.96620233304566,
+      "rss_mib": 138.03125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2559.671875,
+      "disk_free_gib": 14.446731567382812
+    },
+    {
+      "elapsed_seconds": 136.97229266702197,
+      "rss_mib": 136.171875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2556.109375,
+      "disk_free_gib": 14.399848937988281
+    },
+    {
+      "elapsed_seconds": 138.97710220800946,
+      "rss_mib": 120.203125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2521.546875,
+      "disk_free_gib": 14.399097442626953
+    },
+    {
+      "elapsed_seconds": 140.98329150001518,
+      "rss_mib": 127.03125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2536.625,
+      "disk_free_gib": 14.324775695800781
+    },
+    {
+      "elapsed_seconds": 142.98698633303866,
+      "rss_mib": 128.75,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2567.40625,
+      "disk_free_gib": 14.293521881103516
+    },
+    {
+      "elapsed_seconds": 144.99145075003617,
+      "rss_mib": 92.625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2577.21875,
+      "disk_free_gib": 14.253963470458984
+    },
+    {
+      "elapsed_seconds": 146.9949012500001,
+      "rss_mib": 72.5625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2506.0625,
+      "disk_free_gib": 14.203170776367188
+    },
+    {
+      "elapsed_seconds": 149.00154837500304,
+      "rss_mib": 96.890625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2564.203125,
+      "disk_free_gib": 14.163715362548828
+    },
+    {
+      "elapsed_seconds": 151.0075936250505,
+      "rss_mib": 125.46875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2561.171875,
+      "disk_free_gib": 14.109874725341797
+    },
+    {
+      "elapsed_seconds": 153.01034850004362,
+      "rss_mib": 143.328125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2535.21875,
+      "disk_free_gib": 14.058845520019531
+    },
+    {
+      "elapsed_seconds": 155.01668637502007,
+      "rss_mib": 151.375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2516.671875,
+      "disk_free_gib": 13.960002899169922
+    },
+    {
+      "elapsed_seconds": 157.02286704204744,
+      "rss_mib": 160.984375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2523.765625,
+      "disk_free_gib": 13.920948028564453
+    },
+    {
+      "elapsed_seconds": 159.027893917053,
+      "rss_mib": 173.703125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2520.40625,
+      "disk_free_gib": 13.870067596435547
+    },
+    {
+      "elapsed_seconds": 161.02969320805278,
+      "rss_mib": 186.640625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2553.484375,
+      "disk_free_gib": 13.805309295654297
+    },
+    {
+      "elapsed_seconds": 163.03650166705484,
+      "rss_mib": 1192.0,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2644.234375,
+      "disk_free_gib": 13.79330825805664
+    },
+    {
+      "elapsed_seconds": 165.0416492500226,
+      "rss_mib": 609.828125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2497.125,
+      "disk_free_gib": 13.722877502441406
+    },
+    {
+      "elapsed_seconds": 167.04367304203333,
+      "rss_mib": 130.75,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2523.5625,
+      "disk_free_gib": 13.48758316040039
+    },
+    {
+      "elapsed_seconds": 169.0515476250439,
+      "rss_mib": 73.890625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2502.265625,
+      "disk_free_gib": 13.428962707519531
+    },
+    {
+      "elapsed_seconds": 171.05485500005307,
+      "rss_mib": 91.21875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2611.484375,
+      "disk_free_gib": 13.350528717041016
+    },
+    {
+      "elapsed_seconds": 173.06039758300176,
+      "rss_mib": 94.890625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2579.359375,
+      "disk_free_gib": 13.004791259765625
+    },
+    {
+      "elapsed_seconds": 175.0698740420048,
+      "rss_mib": 100.78125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2640.421875,
+      "disk_free_gib": 12.708763122558594
+    },
+    {
+      "elapsed_seconds": 177.07561941700988,
+      "rss_mib": 90.171875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2577.546875,
+      "disk_free_gib": 12.51218032836914
+    },
+    {
+      "elapsed_seconds": 179.08252275001723,
+      "rss_mib": 86.046875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2674.640625,
+      "disk_free_gib": 12.185688018798828
+    },
+    {
+      "elapsed_seconds": 181.08815783302998,
+      "rss_mib": 88.90625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2645.171875,
+      "disk_free_gib": 11.87167739868164
+    },
+    {
+      "elapsed_seconds": 183.09288329200353,
+      "rss_mib": 99.578125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2651.71875,
+      "disk_free_gib": 11.874866485595703
+    },
+    {
+      "elapsed_seconds": 185.0971278330544,
+      "rss_mib": 111.296875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2599.03125,
+      "disk_free_gib": 11.863704681396484
+    },
+    {
+      "elapsed_seconds": 187.10060783301014,
+      "rss_mib": 126.40625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2556.796875,
+      "disk_free_gib": 11.861186981201172
+    },
+    {
+      "elapsed_seconds": 189.1063110830146,
+      "rss_mib": 138.578125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2576.921875,
+      "disk_free_gib": 11.851394653320312
+    },
+    {
+      "elapsed_seconds": 191.11043295805575,
+      "rss_mib": 119.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2607.75,
+      "disk_free_gib": 11.840702056884766
+    },
+    {
+      "elapsed_seconds": 193.11661887500668,
+      "rss_mib": 137.796875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2654.453125,
+      "disk_free_gib": 11.831916809082031
+    },
+    {
+      "elapsed_seconds": 195.12287208304042,
+      "rss_mib": 153.90625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2733.5,
+      "disk_free_gib": 11.824134826660156
+    },
+    {
+      "elapsed_seconds": 197.12724012503168,
+      "rss_mib": 152.625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2699.34375,
+      "disk_free_gib": 11.818206787109375
+    },
+    {
+      "elapsed_seconds": 199.13379433302907,
+      "rss_mib": 121.9375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2569.890625,
+      "disk_free_gib": 11.80954360961914
+    },
+    {
+      "elapsed_seconds": 201.13821916701272,
+      "rss_mib": 85.46875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2511.578125,
+      "disk_free_gib": 11.793701171875
+    },
+    {
+      "elapsed_seconds": 203.14439954201225,
+      "rss_mib": 63.78125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2472.9375,
+      "disk_free_gib": 11.72964096069336
+    },
+    {
+      "elapsed_seconds": 205.1527637920226,
+      "rss_mib": 53.6875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2557.140625,
+      "disk_free_gib": 10.788501739501953
+    },
+    {
+      "elapsed_seconds": 207.156158125028,
+      "rss_mib": 69.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2560.515625,
+      "disk_free_gib": 10.788078308105469
+    },
+    {
+      "elapsed_seconds": 209.1636036670534,
+      "rss_mib": 88.203125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2501.015625,
+      "disk_free_gib": 10.819679260253906
+    },
+    {
+      "elapsed_seconds": 211.332123625034,
+      "rss_mib": 85.5,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2461.765625,
+      "disk_free_gib": 10.819580078125
+    },
+    {
+      "elapsed_seconds": 216.77714195800945,
+      "rss_mib": 67.578125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2488.734375,
+      "disk_free_gib": 10.930671691894531
+    },
+    {
+      "elapsed_seconds": 220.4840059170383,
+      "rss_mib": 76.125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2582.0625,
+      "disk_free_gib": 11.34945297241211
+    },
+    {
+      "elapsed_seconds": 223.18462941702455,
+      "rss_mib": 86.890625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2444.75,
+      "disk_free_gib": 11.569297790527344
+    },
+    {
+      "elapsed_seconds": 225.37459237501025,
+      "rss_mib": 68.765625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2472.015625,
+      "disk_free_gib": 11.587810516357422
+    },
+    {
+      "elapsed_seconds": 230.18168479204178,
+      "rss_mib": 42.03125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2474.09375,
+      "disk_free_gib": 11.78952407836914
+    },
+    {
+      "elapsed_seconds": 234.86101091705495,
+      "rss_mib": 61.015625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2633.59375,
+      "disk_free_gib": 12.491004943847656
+    },
+    {
+      "elapsed_seconds": 237.43811158300377,
+      "rss_mib": 65.015625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2450.65625,
+      "disk_free_gib": 12.980548858642578
+    },
+    {
+      "elapsed_seconds": 240.05638745805481,
+      "rss_mib": 56.40625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2624.375,
+      "disk_free_gib": 13.128791809082031
+    },
+    {
+      "elapsed_seconds": 242.70880337501876,
+      "rss_mib": 81.75,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2552.5625,
+      "disk_free_gib": 13.459381103515625
+    },
+    {
+      "elapsed_seconds": 244.92203508300008,
+      "rss_mib": 68.25,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2644.390625,
+      "disk_free_gib": 13.603214263916016
+    },
+    {
+      "elapsed_seconds": 246.9289135830477,
+      "rss_mib": 55.09375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2458.484375,
+      "disk_free_gib": 13.874340057373047
+    },
+    {
+      "elapsed_seconds": 248.93411841703346,
+      "rss_mib": 72.078125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2541.890625,
+      "disk_free_gib": 13.877517700195312
+    },
+    {
+      "elapsed_seconds": 250.938329000026,
+      "rss_mib": 79.125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2560.703125,
+      "disk_free_gib": 13.877567291259766
+    },
+    {
+      "elapsed_seconds": 252.94386375002796,
+      "rss_mib": 91.640625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2569.828125,
+      "disk_free_gib": 13.861305236816406
+    },
+    {
+      "elapsed_seconds": 254.95048204204068,
+      "rss_mib": 70.59375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2567.4375,
+      "disk_free_gib": 13.860027313232422
+    },
+    {
+      "elapsed_seconds": 256.9548482920509,
+      "rss_mib": 77.203125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2595.40625,
+      "disk_free_gib": 13.84634780883789
+    },
+    {
+      "elapsed_seconds": 258.96142008301103,
+      "rss_mib": 93.5,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2565.6875,
+      "disk_free_gib": 13.845436096191406
+    },
+    {
+      "elapsed_seconds": 260.96718825004064,
+      "rss_mib": 90.40625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2547.515625,
+      "disk_free_gib": 13.827922821044922
+    },
+    {
+      "elapsed_seconds": 262.96945554204285,
+      "rss_mib": 94.75,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2537.65625,
+      "disk_free_gib": 13.827861785888672
+    },
+    {
+      "elapsed_seconds": 264.9720812080195,
+      "rss_mib": 102.453125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2611.609375,
+      "disk_free_gib": 13.82785415649414
+    },
+    {
+      "elapsed_seconds": 266.9761107500526,
+      "rss_mib": 107.578125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2659.140625,
+      "disk_free_gib": 13.82778549194336
+    },
+    {
+      "elapsed_seconds": 268.9840351670282,
+      "rss_mib": 105.828125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2616.890625,
+      "disk_free_gib": 13.812152862548828
+    },
+    {
+      "elapsed_seconds": 270.9867996670073,
+      "rss_mib": 110.734375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2510.3125,
+      "disk_free_gib": 13.81216049194336
+    },
+    {
+      "elapsed_seconds": 272.99389483302366,
+      "rss_mib": 100.59375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2510.71875,
+      "disk_free_gib": 13.796314239501953
+    },
+    {
+      "elapsed_seconds": 274.99810308305314,
+      "rss_mib": 78.953125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2545.640625,
+      "disk_free_gib": 13.794719696044922
+    },
+    {
+      "elapsed_seconds": 277.00484833301743,
+      "rss_mib": 70.3125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2564.671875,
+      "disk_free_gib": 13.787418365478516
+    },
+    {
+      "elapsed_seconds": 279.00900295801694,
+      "rss_mib": 84.578125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2507.234375,
+      "disk_free_gib": 13.770984649658203
+    },
+    {
+      "elapsed_seconds": 281.0160190000315,
+      "rss_mib": 95.53125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2491.03125,
+      "disk_free_gib": 13.76839828491211
+    },
+    {
+      "elapsed_seconds": 283.02127220801776,
+      "rss_mib": 106.078125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2502.84375,
+      "disk_free_gib": 13.755352020263672
+    },
+    {
+      "elapsed_seconds": 285.02295633300673,
+      "rss_mib": 96.75,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2537.109375,
+      "disk_free_gib": 13.754364013671875
+    },
+    {
+      "elapsed_seconds": 287.03031879203627,
+      "rss_mib": 92.859375,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2467.03125,
+      "disk_free_gib": 13.754280090332031
+    },
+    {
+      "elapsed_seconds": 289.03374079201603,
+      "rss_mib": 100.5625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2528.125,
+      "disk_free_gib": 13.73843002319336
+    },
+    {
+      "elapsed_seconds": 291.0363260830054,
+      "rss_mib": 103.46875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2594.3125,
+      "disk_free_gib": 13.519424438476562
+    },
+    {
+      "elapsed_seconds": 293.0437057920499,
+      "rss_mib": 91.703125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2502.125,
+      "disk_free_gib": 13.457466125488281
+    },
+    {
+      "elapsed_seconds": 295.04526079201605,
+      "rss_mib": 85.015625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2515.71875,
+      "disk_free_gib": 13.441932678222656
+    },
+    {
+      "elapsed_seconds": 297.05212750000646,
+      "rss_mib": 109.328125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2567.265625,
+      "disk_free_gib": 13.442771911621094
+    },
+    {
+      "elapsed_seconds": 299.0584653330152,
+      "rss_mib": 128.21875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2617.890625,
+      "disk_free_gib": 13.442707061767578
+    },
+    {
+      "elapsed_seconds": 301.06329862505663,
+      "rss_mib": 129.46875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2462.171875,
+      "disk_free_gib": 13.44268798828125
+    },
+    {
+      "elapsed_seconds": 303.06595870800084,
+      "rss_mib": 117.546875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2501.5,
+      "disk_free_gib": 13.404804229736328
+    },
+    {
+      "elapsed_seconds": 305.0707682080101,
+      "rss_mib": 119.53125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2574.296875,
+      "disk_free_gib": 13.404682159423828
+    },
+    {
+      "elapsed_seconds": 307.07624262501486,
+      "rss_mib": 122.71875,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2727.703125,
+      "disk_free_gib": 13.404682159423828
+    },
+    {
+      "elapsed_seconds": 309.08137016702676,
+      "rss_mib": 120.8125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2778.5625,
+      "disk_free_gib": 13.3863525390625
+    },
+    {
+      "elapsed_seconds": 311.0831476250314,
+      "rss_mib": 126.125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2769.640625,
+      "disk_free_gib": 13.386348724365234
+    },
+    {
+      "elapsed_seconds": 313.0860787080019,
+      "rss_mib": 104.78125,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2697.671875,
+      "disk_free_gib": 13.386417388916016
+    },
+    {
+      "elapsed_seconds": 315.092422583024,
+      "rss_mib": 128.65625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2703.25,
+      "disk_free_gib": 13.386421203613281
+    },
+    {
+      "elapsed_seconds": 317.0992241250351,
+      "rss_mib": 158.515625,
+      "rusage_maxrss_mib": 1212.875,
+      "available_mib": 2689.421875,
+      "disk_free_gib": 13.38641357421875
+    }
+  ],
+  "index_existed_before_run": false,
+  "stop_reason": "index build exceeded 240 seconds",
+  "stop_phase": "index_build",
+  "interpretation": "Declared experimental index-build timeout, not an intrinsic dataset limit or measured query failure. No sealed index or API action timings. Partial synthetic files retained for evidence; no user files or research catalog used.",
+  "rss_method": "psutil resident-set samples every two seconds; macOS compression and paging mean RSS is not total Python heap or allocated footprint. One-million additionally records getrusage maximum RSS."
+}

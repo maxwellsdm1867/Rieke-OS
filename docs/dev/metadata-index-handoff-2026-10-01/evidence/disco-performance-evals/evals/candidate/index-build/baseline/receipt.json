@@ -1,0 +1,29 @@
+{
+  "scope": "One fresh synthetic metadata-index build; no API, MySQL, H5 or user data.",
+  "source_root": "/private/tmp/rieke-os-issues-20260930/repo",
+  "epochs": 100000,
+  "head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "source_hashes": {
+    "python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd"
+  },
+  "single_observation": true,
+  "checks": [
+    {
+      "name": "counts_and_boundary_details",
+      "passed": true
+    },
+    {
+      "name": "sealed_reopen",
+      "passed": true
+    }
+  ],
+  "model_seconds": 7.53201025002636,
+  "build_seconds": 27.130171458004043,
+  "index_bytes": 185298944,
+  "catalog_sha256": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f",
+  "reopen_seconds": 0.6889686670037918,
+  "passed": true,
+  "seconds": 35.352920625009574,
+  "peak_rss_bytes": 487309312
+}

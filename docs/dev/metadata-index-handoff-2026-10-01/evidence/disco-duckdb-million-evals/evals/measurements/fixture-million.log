@@ -1,0 +1,11 @@
+{"stage": "generated_100000", "seconds": 16.385246583027765}
+{"stage": "generated_200000", "seconds": 24.849847458011936}
+{"stage": "generated_300000", "seconds": 33.228784875012934}
+{"stage": "generated_400000", "seconds": 41.55497250001645}
+{"stage": "generated_500000", "seconds": 49.877009582996834}
+{"stage": "generated_600000", "seconds": 58.22705920803128}
+{"stage": "generated_700000", "seconds": 66.96929279202595}
+{"stage": "generated_800000", "seconds": 75.93003787501948}
+{"stage": "generated_900000", "seconds": 84.8754316670238}
+{"stage": "generated_1000000", "seconds": 93.48225879197707}
+{"passed": true, "seconds": 93.48670091701206, "peak_mib": 20.265625}

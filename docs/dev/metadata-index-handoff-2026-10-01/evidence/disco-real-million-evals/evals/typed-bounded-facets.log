@@ -1,0 +1,5 @@
+{"event": "case_complete", "arm": "typed", "mode": "facets", "label": "largest_cell", "count": 687, "median_ms": 4.129082983126864, "peak_rss_bytes": 28327936}
+{"event": "case_complete", "arm": "typed", "mode": "facets", "label": "largest_block", "count": 601, "median_ms": 3.774479031562805, "peak_rss_bytes": 30048256}
+{"event": "case_complete", "arm": "typed", "mode": "facets", "label": "largest_protocol", "count": 668034, "median_ms": 3193.65562548046, "peak_rss_bytes": 157237248}
+{"event": "case_complete", "arm": "typed", "mode": "facets", "label": "global", "count": 1000000, "median_ms": 3180.1510205259547, "peak_rss_bytes": 193609728}
+{"event": "worker_end", "arm": "typed", "mode": "facets", "status": "complete", "seconds": 27.233104875020217, "peak_rss_bytes": 193609728}

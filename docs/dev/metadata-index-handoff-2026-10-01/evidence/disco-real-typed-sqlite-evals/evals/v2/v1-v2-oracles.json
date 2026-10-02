@@ -1,0 +1,127 @@
+{
+  "all_hashes_equal": true,
+  "scenarios": [
+    {
+      "label": "global",
+      "count": 2781,
+      "payload_sha256": "d65d47deb339e621c00ca042612841b85631729f4c074312c5219c2df66ab19f",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "largest_protocol",
+      "count": 1857,
+      "payload_sha256": "99e2af51f14171e5dc4893dc500c36daede88678ff670d4e92c36a7e9c25afbf",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "largest_cell",
+      "count": 687,
+      "payload_sha256": "3f542c5d3e6de1a21185337e111153b887511e6e88d649dd8794d2e8971a2dca",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "largest_block",
+      "count": 601,
+      "payload_sha256": "4593838468d604de32ac3941584875659c5b8d1994319b093582953af6caf5cc",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "number_eq",
+      "count": 1820,
+      "payload_sha256": "3f94f25928ed819cd9ec9d05231b0bd2549260457ec5cfc64df7e9efc6cbccf4",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "numeric_order",
+      "count": 1820,
+      "payload_sha256": "3f94f25928ed819cd9ec9d05231b0bd2549260457ec5cfc64df7e9efc6cbccf4",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "string_eq",
+      "count": 1249,
+      "payload_sha256": "26919d81e174659403379169f924a1cd199c09bacc0c0d62b878e88f39ee8c83",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "text_contains",
+      "count": 1249,
+      "payload_sha256": "26919d81e174659403379169f924a1cd199c09bacc0c0d62b878e88f39ee8c83",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "array_eq",
+      "count": 1857,
+      "payload_sha256": "055c0fd295c709713a3191993a33eb01d832a59405a9eba245be720f19e2f471",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "array_contains",
+      "count": 1857,
+      "payload_sha256": "055c0fd295c709713a3191993a33eb01d832a59405a9eba245be720f19e2f471",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "null_eq",
+      "count": 849,
+      "payload_sha256": "1771f3c06ce4f63f860a35c52ae872ea9ec768dc8e1ffdd0ae4efe5a9c1c9b18",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "missing",
+      "count": 924,
+      "payload_sha256": "55af2e832852b3a067bde7085d58587e6ec625eeeff6eb8c671eed468a81db5d",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "exists",
+      "count": 1857,
+      "payload_sha256": "6058acbbd9a6b576e6c253d4652e709a18d2f15494ec59a82432c528d7b4ef78",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "recorded_null",
+      "count": 849,
+      "payload_sha256": "1771f3c06ce4f63f860a35c52ae872ea9ec768dc8e1ffdd0ae4efe5a9c1c9b18",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "compound_all",
+      "count": 1156,
+      "payload_sha256": "94c2f3d8ae05d525e0fe49b6ed1d525faa30c436f9247bebae25ebfd66adf17a",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "compound_any",
+      "count": 1913,
+      "payload_sha256": "b1ca813cb5bd3d2b0abbc5ed773a2cc5299afc448185226c47b3bba7c4be2825",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "compound_not",
+      "count": 868,
+      "payload_sha256": "ad38b59aac2f7a672876d4577f937f397659405d2bcf29bcc29d3710c01f9078",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "mixed_types",
+      "count": 690,
+      "payload_sha256": "caf7262a08713f20a7be9ff07e0a67251f34cc49cef1144c2f51847ec1e2c5fe",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "empty_result",
+      "count": 0,
+      "payload_sha256": "76c274c91e4072792311a97f4868accb91bace0cbb8aeead4e1fab8bb097d833",
+      "all_old_new_hashes_equal": true
+    },
+    {
+      "label": "explicit_all_registered_eligible",
+      "count": 2781,
+      "payload_sha256": "d65d47deb339e621c00ca042612841b85631729f4c074312c5219c2df66ab19f",
+      "all_old_new_hashes_equal": true
+    }
+  ],
+  "page_walks_equal": true,
+  "original_inputs_equal": true
+}

@@ -1,0 +1,19 @@
+{
+  "all_passed": true,
+  "total": 687,
+  "fields": 141,
+  "first_ms": 269.9913749820553,
+  "warm_median_ms": 133.92943749204278,
+  "samples_ms": [
+    269.9913749820553,
+    131.31137494929135,
+    132.67008302500471,
+    135.18879195908085,
+    141.37008297257125
+  ],
+  "sha256": "91de9dc08d48919e361e2e1da1cdd7c842a1dc43af02861ba8608faf34b419b6",
+  "source_code_sha256": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+  "source_code_path": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+  "peak_rss_bytes": 51740672,
+  "policy": "Previously tried batched catalog method only, bound to verified current reader; current values/detail methods unchanged. Same 687-epoch selection and 141-field complete output."
+}

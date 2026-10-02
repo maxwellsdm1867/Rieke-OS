@@ -1,0 +1,314 @@
+{
+  "README.md": {
+    "bytes": 895,
+    "sha256": "a89e3fb69f6730c87c49c6f7df3656360056da07c15aedd47b58c23e76926119"
+  },
+  "disco-duckdb-million-evals.bundle": {
+    "bytes": 6598318,
+    "sha256": "6a1f1167d165720612905996265937a9575429e1935b20217c984fe85ed8b5d0"
+  },
+  "evals/EXPERIMENT.md": {
+    "bytes": 4713,
+    "sha256": "61a185a9f986ff3d0a3f20f92ce644e2fd3dd204957b77bb26baf0c9959c6833"
+  },
+  "evals/QUALIFICATION.json": {
+    "bytes": 448,
+    "sha256": "a984369345c3301cf89484268179cc448c2bfa4d3ca07454d8cce57b02939360"
+  },
+  "evals/README.md": {
+    "bytes": 2233,
+    "sha256": "2824e4e67b0bbfb2a4ab9c5d2ca8a81449de49dae64cec501ccd8e1f1559610a"
+  },
+  "evals/RESULTS.md": {
+    "bytes": 8264,
+    "sha256": "a7e7442970e45c72f393bcb87ed1d91de8431ab39bd1f9e7c7660e7357478729"
+  },
+  "evals/SCORECARD.md": {
+    "bytes": 5049,
+    "sha256": "47c2115857789dedb1fbb3caceaee4a7ce9b5d495b4a3ca6079813d415b3b431"
+  },
+  "evals/SHA256.json": {
+    "bytes": 10660,
+    "sha256": "fd7697c69929200f2ddc34f0e096daa813dff8c034e11c73ffd5d2cef37b907d"
+  },
+  "evals/adjust_sqlite.py": {
+    "bytes": 3783,
+    "sha256": "7d18407aa478310492e04e80c46279d5aeb1e82ea715c66d820daeeb7b9bb06c"
+  },
+  "evals/browser/README.md": {
+    "bytes": 5005,
+    "sha256": "5e81312b625c943bf9083fee9bf5403a884478dc76eeacc58d0e65c175f55a67"
+  },
+  "evals/browser/attempts/sqlite-missing-catalog-id/bridge-checks.json": {
+    "bytes": 746,
+    "sha256": "b30bdfc44ee14df409f5dbf343b759c47acc8adc890afe31cd759d8d5f1cf348"
+  },
+  "evals/browser/attempts/sqlite-missing-catalog-id/browser.json": {
+    "bytes": 113964,
+    "sha256": "fb3b92868d31e4762147604ec6749319a8c4f919ef59bb402f98d548ac1be0ca"
+  },
+  "evals/browser/attempts/sqlite-missing-catalog-id/browser.log": {
+    "bytes": 1095,
+    "sha256": "31cd89b5c1e6c7bc806fa867a8b2ca7e8614ba9f9373a6870fc745b1da508577"
+  },
+  "evals/browser/attempts/sqlite-missing-catalog-id/config.json": {
+    "bytes": 1009,
+    "sha256": "9636ccb12f4f9bb9ee482df49b000a76a982b4ea8a8af04a93c3924d5a58722d"
+  },
+  "evals/browser/attempts/sqlite-missing-catalog-id/ready.json": {
+    "bytes": 129,
+    "sha256": "2a243e00b6ea1340f7474e9716322b833ad14daf19aa7c579c9080c619315d51"
+  },
+  "evals/browser/bench.jsx": {
+    "bytes": 1512,
+    "sha256": "31d3f0189c5efa5cbdaabaa9b90c86ef340c0fad3f60271410bef2d8009f76ec"
+  },
+  "evals/browser/bridge.py": {
+    "bytes": 11081,
+    "sha256": "3f3866b87d81557e0502e88e0584be98bbcfc37ca7f90d930a107b96b3d6c9f2"
+  },
+  "evals/browser/duckdb/bridge-checks.json": {
+    "bytes": 6638,
+    "sha256": "a7979f7889b7865ae08f03d15a43f8acf134de48b38d6d5e15f24237554354e6"
+  },
+  "evals/browser/duckdb/browser.json": {
+    "bytes": 708479,
+    "sha256": "6d83c87bfdf0616fe3c23ffc750ce7911115cbe7693e0da98e3b1d4f78f58b99"
+  },
+  "evals/browser/duckdb/browser.log": {
+    "bytes": 7441,
+    "sha256": "119f3b42ced522e5866bb356f1e80942464b0eef66b05c89701b45c87d74c596"
+  },
+  "evals/browser/duckdb/browser.png": {
+    "bytes": 76197,
+    "sha256": "d748062932359a6ff89d7fdbe2f6c787c9deb9fde47b98e8e5302f6f18567024"
+  },
+  "evals/browser/duckdb/config.json": {
+    "bytes": 857,
+    "sha256": "2c51685a3429ebad5b5869f3c8330e45b6d2dc862b808f02c3490e6ed29ae103"
+  },
+  "evals/browser/duckdb/ready.json": {
+    "bytes": 135,
+    "sha256": "64a332e54e2cbff461d396d02cfee032ee6a0f95e3db2a6c7dc40f227db60434"
+  },
+  "evals/browser/frozen-scorecard.json": {
+    "bytes": 9008,
+    "sha256": "75e49fdfe03e1d89ba59e6e2773075fd628af2171fe82cecc6a29407f2f37fcd"
+  },
+  "evals/browser/index.html": {
+    "bytes": 190,
+    "sha256": "08168c090c02f8d60c5cd52745eafa6f53fb33e580d8d9e135ed2ace6a502d35"
+  },
+  "evals/browser/prepare_browser.py": {
+    "bytes": 1847,
+    "sha256": "ee8a567090e82d660be164e7449959e1c23db3f4401c45093ef80b7f868dfa83"
+  },
+  "evals/browser/receipt-manifest.json": {
+    "bytes": 3531,
+    "sha256": "8bc1a17d758f72c9cc149d450bdfa0148a1b70cf8919d8027522e4ac1ca2ee4b"
+  },
+  "evals/browser/run-browser.mjs": {
+    "bytes": 11163,
+    "sha256": "7e4efa7e8ee3cae0156bdaaef470bc6f5aa0b95f158e3e8747414b45ddc6dc16"
+  },
+  "evals/browser/scorecard.json": {
+    "bytes": 21669,
+    "sha256": "61ed848bb5c497a305d007374c10de1308ace07109e2120156b23de49395269b"
+  },
+  "evals/browser/sqlite/bridge-checks.json": {
+    "bytes": 6638,
+    "sha256": "a7979f7889b7865ae08f03d15a43f8acf134de48b38d6d5e15f24237554354e6"
+  },
+  "evals/browser/sqlite/browser.json": {
+    "bytes": 708353,
+    "sha256": "f8ef80b204fe31ca914a011035348e362c55eddfd33357f2a8d911098cfad9e2"
+  },
+  "evals/browser/sqlite/browser.log": {
+    "bytes": 7403,
+    "sha256": "25481ed4fbdd9dcedc4016ad9bfb1419c7e226ba7894d5b9dabf2f329222b172"
+  },
+  "evals/browser/sqlite/browser.png": {
+    "bytes": 76197,
+    "sha256": "d748062932359a6ff89d7fdbe2f6c787c9deb9fde47b98e8e5302f6f18567024"
+  },
+  "evals/browser/sqlite/config.json": {
+    "bytes": 857,
+    "sha256": "ea88ceee07ab0d599137fd720121216699b3da2e916d87858f314325ece23155"
+  },
+  "evals/browser/sqlite/ready.json": {
+    "bytes": 135,
+    "sha256": "94ee585531ba5a37cc519673fcd426dbe2222550771ed60bf7b69901115c739e"
+  },
+  "evals/browser/test_bridge.py": {
+    "bytes": 2697,
+    "sha256": "7b7e4803199081aadd47b0b46166d69c42801ce5b0acde0c75da357e5816e304"
+  },
+  "evals/evaluate.py": {
+    "bytes": 6811,
+    "sha256": "92856ee916fb5a59f11b576dc8cebba6b6ddbfa097d9fb31b2cce2e95fc2336a"
+  },
+  "evals/guard.py": {
+    "bytes": 2436,
+    "sha256": "813bb65658a8b015aba5c566912c37fb95af0b04e4b9b7e86427fadfef4e040d"
+  },
+  "evals/measurements/attempts/sqlite-adjustment-supervisor-error.json": {
+    "bytes": 402,
+    "sha256": "db1d0e6ed545e58887e04a25a5440921861064a3aa5b401a42e747edeb3599b7"
+  },
+  "evals/measurements/catalog-100k/guard.json": {
+    "bytes": 7788,
+    "sha256": "2bff1170335ea323020bb3d99a7b9f23944a875983a3dcc7df1c003c3e728353"
+  },
+  "evals/measurements/catalog-100k/receipt-duckdb_eav-catalog.json": {
+    "bytes": 10501,
+    "sha256": "ea4db2f035f0702f85c5182a533ee0745c5276dda1de305d0a6edf7a7f8a5d04"
+  },
+  "evals/measurements/catalog-100k/receipt-sqlite_eav-catalog.json": {
+    "bytes": 10501,
+    "sha256": "ea4db2f035f0702f85c5182a533ee0745c5276dda1de305d0a6edf7a7f8a5d04"
+  },
+  "evals/measurements/catalog-100k/receipt.json": {
+    "bytes": 7227,
+    "sha256": "c80af4ead72b94e63b35235902c24124ed717aaccb24be0722231a884699716b"
+  },
+  "evals/measurements/catalog-100k/worker.log": {
+    "bytes": 257,
+    "sha256": "243f1e0317b86fdfe9edbaf17cee5c626ca9da416d76a129094b86cdfe423017"
+  },
+  "evals/measurements/catalog-million/guard.json": {
+    "bytes": 14438,
+    "sha256": "62b3d0931db5edb2b3e30d334fdb24a07619281a809ab85e53f35ce0c0cbc298"
+  },
+  "evals/measurements/catalog-million/receipt-duckdb_derived_eav-catalog.json": {
+    "bytes": 10537,
+    "sha256": "e1c75d3f97361c9ec4905341c7cc6b6ff1bf0b07348267dab57fe7598eb9242f"
+  },
+  "evals/measurements/catalog-million/receipt.json": {
+    "bytes": 10773,
+    "sha256": "0988dbfc35c15a9ee0372a0c179fddc2eb36d566e2bc6f8b72d4ca8dd8370422"
+  },
+  "evals/measurements/catalog-million/worker.log": {
+    "bytes": 219,
+    "sha256": "e4238366ca9e55ded3975b5fb552387dcecf7dd0779f70eb333f0847af745d39"
+  },
+  "evals/measurements/duckdb-million/receipt.json": {
+    "bytes": 8032,
+    "sha256": "d3de22070c31081992befc5273f5dee0bac630ddd0de71940c42bcbc6b78ca01"
+  },
+  "evals/measurements/duckdb-million.log": {
+    "bytes": 749,
+    "sha256": "808cd2c9c98570b726e0737ea156fc8515a6f4971dc2245013a7421fc071d556"
+  },
+  "evals/measurements/fixture-million/receipt.json": {
+    "bytes": 2779,
+    "sha256": "42f11ee292e5ff9873cea431206edbf4d4789d045c9f9ea1f9c8b570358d6d45"
+  },
+  "evals/measurements/fixture-million.log": {
+    "bytes": 674,
+    "sha256": "153052fef0869b53d2dc33a77f30b1c4475a7887dd15ab81d78f826b99f564fc"
+  },
+  "evals/measurements/sqlite-adjustment-final/queries/receipt.json": {
+    "bytes": 8081,
+    "sha256": "d8465173e71e8cf49aaab520c63d5d665c571ff962dd6caa7e5cda11bb341465"
+  },
+  "evals/measurements/sqlite-adjustment-final/query.log": {
+    "bytes": 713,
+    "sha256": "c4de9ca5816077ad77b45de44430eee5220b76738209ef9e2937045e6f3d1c85"
+  },
+  "evals/measurements/sqlite-adjustment-final/receipt.json": {
+    "bytes": 7711,
+    "sha256": "79eed0658d4234ad3345d878a83302b21018ceb8a1e103bff598afc6bc452c86"
+  },
+  "evals/measurements/sqlite-adjustment-final-guard/guard.json": {
+    "bytes": 8655,
+    "sha256": "93e376ed6483848af7bb6b79ece8f0f5027ae43c7d2f54ccab2b304d8cdb4eea"
+  },
+  "evals/measurements/sqlite-adjustment-final-guard/worker.log": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "evals/measurements/sqlite-million/receipt.json": {
+    "bytes": 8013,
+    "sha256": "a43f55679c4b6982b1f57b01acf9b7e75f9465262c6208542974c043c919da1f"
+  },
+  "evals/measurements/sqlite-million.log": {
+    "bytes": 757,
+    "sha256": "11e83b7ec03ae9d23481cb31cd603bd8fcac2ce8f60cb1edf0f6b8af53e0dd12"
+  },
+  "evals/measurements/sqlite-normalized/receipt.json": {
+    "bytes": 8001,
+    "sha256": "a85c605cccf9ad9ac00a4a56c10eb7f7eb2dee04d3e6d8d4964639eacc02aef4"
+  },
+  "evals/measurements/sqlite-normalized.log": {
+    "bytes": 710,
+    "sha256": "d4becdf79f65a19f197bdfa8924ed499440b2c86d4b7535a868cb793b487d26f"
+  },
+  "evals/measurements/tagging-million.log": {
+    "bytes": 1469,
+    "sha256": "8a48c83881a68734309a9df911076373b2e1085229ae5ecbe04e20bc3a0ec353"
+  },
+  "evals/readmodel/EAV-RESULTS.md": {
+    "bytes": 3155,
+    "sha256": "23d7d0877036cf7c0bd85f2ffcc17803b90e04a3e4bca5e76dbf7d8a05174408"
+  },
+  "evals/readmodel/README.md": {
+    "bytes": 8512,
+    "sha256": "d25df5234c889cac9fa4484114169e4dc8234818af797fff9f3823584cc7ac0c"
+  },
+  "evals/readmodel/eav_duck.py": {
+    "bytes": 12687,
+    "sha256": "4d1460221b0c0eec163c265faea7513cab64874aa5c19fd3df33fed3842eac08"
+  },
+  "evals/readmodel/evaluate_catalog.py": {
+    "bytes": 10153,
+    "sha256": "9b43d3b5d3177fc541b3f0a7a27a55153f33ca050fa2c7a4e3fd5baab6eecdb8"
+  },
+  "evals/readmodel/projection.py": {
+    "bytes": 18125,
+    "sha256": "dc31cd70e39e8193f0bd100a51d8f084aa17b61b290dd74e4153cf1f768d9357"
+  },
+  "evals/readmodel/test_eav_duck.py": {
+    "bytes": 3062,
+    "sha256": "ee87da6f118f8054267c23bd7cc53819fc8d4e95e902458a01123ffe089f2c9d"
+  },
+  "evals/readmodel/test_projection.py": {
+    "bytes": 6629,
+    "sha256": "200673d23eeb8519742324834a9c9dd75abafc865c17b7f2ad70fa63b8f972a0"
+  },
+  "evals/tagging/README.md": {
+    "bytes": 4577,
+    "sha256": "9bd2f98d896d2d66112dc37812da71a9bee91c4776728de6ede985221635f46a"
+  },
+  "evals/tagging/RESULTS.md": {
+    "bytes": 5939,
+    "sha256": "13fad014f98fd576dc3f24b46481a011760f70e81c23bab9e73e264454bef511"
+  },
+  "evals/tagging/benchmark.log": {
+    "bytes": 1469,
+    "sha256": "8a48c83881a68734309a9df911076373b2e1085229ae5ecbe04e20bc3a0ec353"
+  },
+  "evals/tagging/benchmark.py": {
+    "bytes": 23752,
+    "sha256": "19f928568cbed3ab7f9222c5b389cfb8263ad05ddbb9be7d355649bbde3a0249"
+  },
+  "evals/tagging/receipt.json": {
+    "bytes": 76328,
+    "sha256": "de27d794f7fc054ee52257d3b2e574c1866fde5abaabf2bc849d0faefe0a79f2"
+  },
+  "evals/tagging/test_harness.py": {
+    "bytes": 1898,
+    "sha256": "d6465156042bb6c09b4787fdc0e12737f574be73aa64ccac5741e7b8cd54106d"
+  },
+  "evals/test_guard.py": {
+    "bytes": 2060,
+    "sha256": "7c9e83b43739bb48d1c65020e76cef5f87d61120ae09bff3b907f17782b7245b"
+  },
+  "evals/verify_results.py": {
+    "bytes": 2617,
+    "sha256": "89983fb0319d51cf2f6e97a1a67b34e05314474331231508e76313075cd4b86b"
+  },
+  "experiment.patch": {
+    "bytes": 2061022,
+    "sha256": "c6ecf3f2026e96a15ae877deef424bf832f1e72301a40297c03387e01ce3cf25"
+  }
+}

@@ -11,6 +11,7 @@ import {useProjectPreference} from '../useProjectPreference.js';
 import ExportSelectionDialog from './ExportSelectionDialog.jsx';
 import PredicateDialog from './PredicateDialog.jsx';
 import {predicateIdentity} from '../predicateIdentity.js';
+import {useFieldRegistry} from '../useFieldRegistry.js';
 import MatchingEpochs from './MatchingEpochs.jsx';
 import InspectorActions from './InspectorActions.jsx';
 import {explorerFocusState} from '../explorerScope.js';
@@ -56,6 +57,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   const viewRevision=annotationHold?.revision??revision;
   const [generation,setGeneration]=useState(0),[historyVersion,setHistoryVersion]=useState(0),[historyOffset,setHistoryOffset]=useState(saved?.historyOffset || 0);
   const [draftPreview,setDraftPreview]=useState({data:null,loading:false,error:null,key:null});
+  const [fullCatalog,setFullCatalog]=useState(false);
   const [tree,setTree]=useState({data:null,loading:false,error:null});
   const [busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(saved?.wasBusy?'A request was in progress when you left. Check Candidate history before saving again.':saved?'Workspace draft restored. No save or protocol update was replayed.':'');
   const draftController=useRef(null),treeController=useRef(null);
@@ -65,7 +67,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   const pane=inspectorPaneSizes(layoutWidth,{tree:groupingWidth},true,false);
   useEffect(()=>setPagedInfo(null),[splits,applied?.revision_uuid,generation]);
   // Tag vocabulary should refresh even while the currently browsed membership is held.
-  const catalog=useResource('/explore/predicate-fields',`${revision}:${generation}`);
+  const catalog=useFieldRegistry(`${revision}:${generation}`);
   useEffect(()=>{if(editorOpen)catalog.reload();},[editorOpen,openRequest]);
   const history=useResource(`/explore/revisions?offset=${historyOffset}&limit=20`,historyVersion);
   const epoch=useResource(focused?`/epochs/${focused}`:null,`${revision}:${generation}`);
@@ -103,14 +105,14 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   useEffect(()=>()=>{draftController.current?.abort();treeController.current?.abort();},[]);
   useEffect(()=>{
     if(!applied)return;
-    if(!focused&&applied.preview&&(step!=='tree'||applied.preview.catalog_summary!==false)&&splits===applied.recipe.splits&&generation===applied.previewGeneration&&viewRevision===applied.previewRevision){setTree({data:applied.preview,loading:false,error:null});return;}
+    if(!focused&&applied.preview&&(!fullCatalog||applied.preview.catalog_summary!==false)&&splits===applied.recipe.splits&&generation===applied.previewGeneration&&viewRevision===applied.previewRevision){setTree({data:applied.preview,loading:false,error:null});return;}
     const controller=new AbortController();treeController.current?.abort();treeController.current=controller;
     setTree(previous=>({...previous,loading:true,error:null}));
-    api('/explore/preview',{method:'POST',body:{predicate:applied.recipe.predicate,splits,summary_only:true,catalog_summary:step==='tree',baseline_revision_uuid:applied.revision_uuid,...(focused?{focused_uuid:focused}:{})},signal:controller.signal})
+    api('/explore/preview',{method:'POST',body:{predicate:applied.recipe.predicate,splits,summary_only:true,catalog_summary:step==='tree'&&fullCatalog,baseline_revision_uuid:applied.revision_uuid,...(focused?{focused_uuid:focused}:{})},signal:controller.signal})
       .then(data=>{if(!controller.signal.aborted)setTree({data:{...data,_focusedUuid:focused},loading:false,error:null});})
       .catch(error=>{if(!controller.signal.aborted)setTree(previous=>({...previous,loading:false,error:error.message}));});
     return()=>controller.abort();
-  },[applied,splits,viewRevision,generation,focused,step]);
+  },[applied,splits,viewRevision,generation,focused,step,fullCatalog]);
   useEffect(()=>{if(focusVerified&&tree.data.focused_in_scope===false)setFocused(null);},[focusVerified,tree.data]);
   const changeSplits=useCallback(fields=>{const text=fields.join(',');setSplits(text);setFilterSplits(text);setPath([]);setTreeNavigation(null);setFocused(null);},[]);
   async function previewDraft(predicate=compiled.predicate,grouping=filterSplits,baseline=restored?.revision_uuid,openResults=false){
@@ -126,7 +128,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
     if(!predicate||busy)return;
     setBusy(true);setBusyAction('save');setError('');setNotice('');
     try{
-      const body={predicate,splits:kind==='filter'?filterSplits:splits,name:name.trim() || 'Metadata selection',summary_only:true,catalog_summary:nextStep==='tree'};
+      const body={predicate,splits:kind==='filter'?filterSplits:splits,name:name.trim() || 'Metadata selection',summary_only:true,catalog_summary:nextStep==='tree'&&fullCatalog};
       const parent=kind==='filter'?(restored?.revision_uuid || applied?.revision_uuid):applied?.revision_uuid;
       if(parent)body.parent_revision_uuid=parent;
       const result=await api('/explore/revisions',{method:'POST',body});
@@ -186,21 +188,21 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
   const resultLoading=hasViewFilter?filteredPreview.loading||!currentFilteredPreview&&!filteredPreview.error:(resultsFromDraft?draftPreview.loading:tree.loading);
   const resultError=hasViewFilter&&filteredPreview.key===filteredKey?filteredPreview.error:(resultsFromDraft?draftPreview.error:tree.error);
   const availableTree=hasViewFilter?{data:currentFilteredPreview,loading:resultLoading,error:resultError}:tree;
-  // Search previews intentionally omit scoped field statistics. Wait for the
-  // design preview before mounting a builder that displays those statistics.
-  const displayTree=step==='tree'&&availableTree.data?.catalog_summary===false
-    ?{...availableTree,data:null,loading:!availableTree.error}:availableTree;
+  // Definitions and bounded tree navigation remain usable while summaries run.
+  // Complete derived suggestions are an explicit full-catalog operation.
+  const displayTree=availableTree;
+  useEffect(()=>setFullCatalog(false),[applied?.revision_uuid,filteredKey]);
 
   useEffect(()=>{const node=layoutRef.current;if(!node)return;const observer=new ResizeObserver(entries=>setLayoutWidth(entries[0].contentRect.width));observer.observe(node);return()=>observer.disconnect();},[step,focused,initialCandidateLoading,!!displayTree.data,displayTree.loading,!!displayTree.error]);
   useEffect(()=>{
     if(!hasViewFilter||!resultPredicate||step==='filter'||!baseResultPreview)return;
     const controller=new AbortController();
     setFilteredPreview({data:null,loading:true,error:null,key:filteredKey});
-    api('/explore/preview',{method:'POST',body:{predicate:resultPredicate,splits:resultSplits,summary_only:true,catalog_summary:step==='tree'},signal:controller.signal})
+    api('/explore/preview',{method:'POST',body:{predicate:resultPredicate,splits:resultSplits,summary_only:true,catalog_summary:step==='tree'&&fullCatalog},signal:controller.signal})
       .then(data=>{if(!controller.signal.aborted)setFilteredPreview({data,loading:false,error:null,key:filteredKey});})
       .catch(error=>{if(!controller.signal.aborted)setFilteredPreview({data:null,loading:false,error:error.message,key:filteredKey});});
     return()=>controller.abort();
-  },[hasViewFilter,filteredKey,step,!!baseResultPreview]);
+  },[hasViewFilter,filteredKey,step,!!baseResultPreview,fullCatalog]);
   function changeViewFilters(next){setViewFilters(next);setMatchingNavigation(null);setTreeNavigation(null);setPagedInfo(null);setDestination(null);setExportCandidate(null);}
 
   useEffect(()=>{if(step==='results'&&resultsFromDraft&&!currentDraftPreview&&!draftPreview.loading&&draftPreview.key!==draftKey&&compiled.predicate)previewDraft();},[step,resultsFromDraft,draftKey,currentDraftPreview,draftPreview.loading,draftPreview.key]);
@@ -272,7 +274,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
       ];
   return <div className={`inspector metadata-explorer predicate-explorer ${focused?'explorer-inspecting':step==='tree'?'tree-design':''}`}>
     {presetDialog&&<QueryPresetDialog {...presetDialog} onClose={()=>setPresetDialog(null)} onSaved={savedQueryPreset} onRefresh={projectPresets.reload}/>}
-    {editorOpen&&<PredicateDialog title={step==='filter'?'Search predicate':'Change search criteria'} submitLabel={step==='filter'?'View matching epochs':'Update matching epochs'} previousRun={activePreset?.last_run??resultPreview?.last_run} previousPredicate={activePreset?.last_run?activePreset.predicate:baseResultPredicate} protocols={protocols} projectId={projectId} draft={draft} catalog={catalog} onSearch={applyPopupSearch} onClose={()=>setEditorOpen(false)}/>}
+    {editorOpen&&<PredicateDialog title={step==='filter'?'Search predicate':'Change search criteria'} submitLabel={step==='filter'?'View matching epochs':'Update matching epochs'} previousRun={activePreset?.last_run??resultPreview?.last_run} previousPredicate={activePreset?.last_run?activePreset.predicate:baseResultPredicate} protocols={protocols} projectId={projectId} protocolId={initialProtocolId} draft={draft} catalog={catalog} onSearch={applyPopupSearch} onClose={()=>setEditorOpen(false)}/>}
     {step==='filter'?(<header className="mx-heading"><div><div className="eyebrow">SOURCE RECORDINGS</div><h1>{focused?'Inspect selected epoch':step==='results'?'Epoch browser':step==='tree'?'Tree view · advanced':'Search presets'}</h1></div>
       <div className="mx-header-actions">
         {step==='tree'&&<button disabled={busy} onClick={showEpochResults}><ArrowLeft size={15}/> Back to epochs</button>}
@@ -300,7 +302,7 @@ export default function MetadataExplorer({undoScopeId=null,initialEditorOpen=fal
       <Status {...displayTree} retry={()=>setGeneration(value=>value+1)}>{displayTree.data&&applied&&<EpochViewer designMode className="tree-design explorer-design-viewer" ariaLabel="Tree overview workspace"
         toolbar={{portalTarget:epochToolbarTarget,designMode:true,onBrowse:showEpochResults,onExport:openResultsExport,exportDisabled,actions:resultActions}}
         layout={{layoutRef,className:'mx-layout',sizes:pane,treeOpen:true,metadataOpen:false,onResize:(name,value)=>{if(name==='tree')setGroupingWidth(value);},onResizeCommit:(name,value)=>{if(name==='tree')try{localStorage.setItem('workspace.explorer.groupingWidth',String(value));}catch{}}}}
-        builder={{catalogData:displayTree.data.catalog,value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree,loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
+        builder={{projectId,protocolId:initialProtocolId,summaryContext:{predicate:resultPredicate},onFullCatalog:()=>setFullCatalog(true),revision:`${viewRevision}:${generation}`,catalogData:fullCatalog?displayTree.data.catalog:{...displayTree.data.catalog,fields:catalog.data?.tree_fields||catalog.data?.fields||displayTree.data.catalog.fields},value:splits.split(',').filter(Boolean),onChange:changeSplits,preview:pagedInfo&&pagedInfo.split_order?.join(',')===splits?{...displayTree.data.tree,...pagedInfo,count:displayTree.data.matched_count}:displayTree.data.tree,loading:displayTree.loading||pagedStatus.loading,error:displayTree.error||pagedStatus.error}}
         columnTree={{inclusionForEpoch:epoch=>searchEpochInclusion(epoch,excludedEpochs),onToggleInclusion:toggleInclusion,actionsDisabled:busy,predicate:resultPredicate,...treePreviewScope(displayTree.data),revision:`${viewRevision}:${generation}`,initialNavigation:treeNavigation,onNavigationChange:setTreeNavigation,onRefreshPreview:()=>setGeneration(value=>value+1),onMetadata:setPagedInfo,onStatus:setPagedStatus,selected:matchingNavigation?.focused,onSelectEpoch:uuid=>setMatchingNavigation({revision:displayTree.data.tree_revision,focused:uuid})}}/>}</Status>
 
     </>}

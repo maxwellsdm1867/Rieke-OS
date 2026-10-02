@@ -1,0 +1,25 @@
+{
+  "started": "2026-10-01T07:42:50.126365+00:00",
+  "family": "tags",
+  "source_root": "/private/tmp/disco-performance-evals-20261001",
+  "cap_seconds": 300,
+  "argv": [
+    "/private/tmp/disco-performance-evals-20261001/docs/dev/scale-audit-2026-09-29/benchmark_native_tag_sequence.py",
+    "--output",
+    "/private/tmp/disco-performance-runs-20261001/candidate-tags-10k/tags.json",
+    "--source-root",
+    "/private/tmp/disco-performance-evals-20261001",
+    "--mysql-runtime-root",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/mysql",
+    "--epochs",
+    "10000",
+    "--samples",
+    "10"
+  ],
+  "existing_harness_sha256": "26d058c7a3b9c5f67071e38d70df66a566b37cef7b543656b0bcb521c04df133",
+  "wrapper_sha256": "10cd48e4b96dbb3588c21bbdfb6b23cacc7326323261024e7961f0a4f7507d8f",
+  "exit_code": 0,
+  "seconds": 23.963495709002018,
+  "peak_rss_bytes": 235978752,
+  "receipt_exists": true
+}

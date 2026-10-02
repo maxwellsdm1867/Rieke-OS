@@ -35,3 +35,10 @@
 .joint-chip button{border:0;background:transparent;color:inherit;padding:0;min-height:0}.tb-joint-level .joint-chip{font-size:9px}
 
 .tb-add-split{width:100%;justify-content:flex-start;margin:10px 0 12px;padding:10px 12px!important;background:var(--surface-subtle);color:var(--accent);border:1px dashed #bcabc8;font-weight:600}.tb-add-split>svg:last-child{margin-left:auto}.tb-popup-search{margin:0 12px 10px;flex-shrink:0}.tb-popup-title>button{padding:3px;border:0;background:transparent}.tb-chooser-layout{margin:5px 12px 9px;font-size:12px;flex-shrink:0}.tb-popup .tb-options{min-height:70px}.tb-popup .tb-categories{flex-shrink:0}
+
+.metadata-summary-status {display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 12px;font-size:12px;color:var(--muted, #64748b);}
+.metadata-summary-status button, .tb-summary-controls button {font-size:12px;}
+.tb-summary-controls {display:flex;flex-direction:column;gap:8px;padding:0 12px 12px;}
+.tb-summary-controls details {font-size:12px;}
+.tb-summary-controls details > div {display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px;}
+.tb-summary-controls label {display:flex;flex-direction:column;gap:4px;margin-top:8px;}

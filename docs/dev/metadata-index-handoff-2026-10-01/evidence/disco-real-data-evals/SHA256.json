@@ -1,0 +1,70 @@
+{
+  "QUALIFICATION.json": {
+    "bytes": 773,
+    "sha256": "907097425daad864ce12f3cad4f64cb2155e457e313a084a6f187384157d7181"
+  },
+  "REAL-DATA-BASELINE.md": {
+    "bytes": 4634,
+    "sha256": "318fe3a9979dc271666a80dc556c0ac9c388d0bfb198e5246598f9fd36237bf6"
+  },
+  "engines/REPORT.md": {
+    "bytes": 5272,
+    "sha256": "d5618240bf1155daab3998c9de76073b4ce40cd245f386caa00df47edb81b28a"
+  },
+  "engines/compare_real.py": {
+    "bytes": 14899,
+    "sha256": "c9d2471e42f71b5a0b22b82ffb4394469b77a88ae23980d4206a275cf332b4bf"
+  },
+  "engines/complex-dto-receipt.json": {
+    "bytes": 4265,
+    "sha256": "e2899228e3d7550fc89bc121f0e3563cd0b191295557b2c1011b0e7e06b6cfb1"
+  },
+  "engines/receipt.json": {
+    "bytes": 17540,
+    "sha256": "0f6863284289f551646918c17b78f5726d5d6a3119c841e84bd1e2848196b52a"
+  },
+  "engines/validate_complex_dto.py": {
+    "bytes": 5835,
+    "sha256": "d94ff79620ca2cfc4546ec95cf0aed6d0ecdde2c757470efd57df86b3d58cf93"
+  },
+  "native/REPORT.md": {
+    "bytes": 5429,
+    "sha256": "8b55d532eb4ad022af9205e7dd32192433a6759f9ed09f0e30664bf73381d29d"
+  },
+  "native/block-reconciliation.json": {
+    "bytes": 1612,
+    "sha256": "b77a42dc8d778ed11df07ea9eb3c51e91e5b3af37bc33201b9268b199b3f3139"
+  },
+  "native/inspect_native.py": {
+    "bytes": 8055,
+    "sha256": "ec835bee228bb513614852c67d0c12160ddfef11b8e1d738c40ee0f915f58fce"
+  },
+  "native/reconcile_blocks.py": {
+    "bytes": 2801,
+    "sha256": "2b6619a084ef7c05099d47bb849057b1b293fe07c8937eeef366c4514b97cbd2"
+  },
+  "native/schema-profile.json": {
+    "bytes": 104003,
+    "sha256": "e7f47a4dade3df26864088f606e0e89ba7a1383080fd3c28e45d4dea6a4fd44b"
+  },
+  "profile/REAL_METADATA_PROFILE.md": {
+    "bytes": 4382,
+    "sha256": "a61da5fe0ddd2b7d52453bb1f269b38a4411d9251070b8d315e48067b13f6010"
+  },
+  "profile/profile_real_metadata.py": {
+    "bytes": 13771,
+    "sha256": "c369e18e2ec63d1196fe70668ed931f785ffff06cc0672133bd3e6a27cd09b68"
+  },
+  "profile/real-metadata-profile.json": {
+    "bytes": 280302,
+    "sha256": "e4675b0b3212f62ce24d3c9e75f6a604a3ca108ce30af478ce4edff23aeb9644"
+  },
+  "profile/real-metadata-storage.json": {
+    "bytes": 3466,
+    "sha256": "d055931595af4733ccb95ee9a7e63ea558f88ae2214ddaf7120c41fc20a0780f"
+  },
+  "profile/real_projection_loader.py": {
+    "bytes": 2521,
+    "sha256": "386e78e4c8947e85f3e53f0c55a03db583e2769866bc984f6a626541ec1c1ef8"
+  }
+}

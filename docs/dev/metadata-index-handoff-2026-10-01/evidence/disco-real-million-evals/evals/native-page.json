@@ -1,0 +1,207 @@
+{
+  "pid": 91180,
+  "candidate_version": "previous",
+  "arm": "native",
+  "mode": "page",
+  "results": [
+    {
+      "label": "largest_block",
+      "expected_count": 601,
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "status": "passed",
+      "samples_ms": [
+        14052.184499974828,
+        14083.873124967795
+      ],
+      "sha256": "c48260deed218f2fa3a82ec08f0289edace8d3cc1f39a02daa44b8befb054c11",
+      "count": 601,
+      "payload_bytes": 193901,
+      "cursor": 661891,
+      "first_ms": 14052.184499974828,
+      "warm_median_ms": 14083.873124967795,
+      "max_ms": 14083.873124967795,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "compound_all",
+      "expected_count": 416035,
+      "predicate": {
+        "all": [
+          {
+            "field": "metadata/block/parameters/spotIntensity",
+            "operator": "eq",
+            "value": 0.8
+          },
+          {
+            "field": "metadata/cell/label",
+            "operator": "eq",
+            "value": "Cell1"
+          }
+        ]
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        15003.438209008891,
+        14966.389250010252
+      ],
+      "sha256": "ec901c43f8e4246920d2fabbb785b92bc5be972de30edc234fb28b8e76741246",
+      "count": 416035,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 15003.438209008891,
+      "warm_median_ms": 14966.389250010252,
+      "max_ms": 15003.438209008891,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "array_eq",
+      "expected_count": 668034,
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "eq",
+        "value": [
+          40.0,
+          80.0,
+          120.0,
+          160.0,
+          180.0,
+          200.0,
+          220.0,
+          240.0,
+          280.0,
+          320.0,
+          460.0,
+          600.0,
+          720.0
+        ]
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        14552.659875014797,
+        14890.636708994862
+      ],
+      "sha256": "db2afd5a5536ea225f2db9c59c8d45f03e4db48c35bfac3fadf5c5a9b5a9f918",
+      "count": 668034,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 14552.659875014797,
+      "warm_median_ms": 14890.636708994862,
+      "max_ms": 14890.636708994862,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "number_eq",
+      "expected_count": 654751,
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "eq",
+        "value": 0.8
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        14650.064458022825,
+        14399.038583040237
+      ],
+      "sha256": "5e7f863dacb33d71a97dc756946b2bdca0377e427df37149a9f72a52c2fb4d8e",
+      "count": 654751,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 14650.064458022825,
+      "warm_median_ms": 14399.038583040237,
+      "max_ms": 14650.064458022825,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "missing",
+      "expected_count": 331966,
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "missing"
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        15401.55374997994,
+        15297.85695800092
+      ],
+      "sha256": "4c56b7fba6735fa61125d0968b16466d9cb3c737fad2f9a9ea701826406ccc9c",
+      "count": 331966,
+      "payload_bytes": 195709,
+      "cursor": 60,
+      "first_ms": 15401.55374997994,
+      "warm_median_ms": 15297.85695800092,
+      "max_ms": 15401.55374997994,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_protocol",
+      "expected_count": 668034,
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "status": "passed",
+      "samples_ms": [
+        15263.0182079738,
+        14936.641999986023
+      ],
+      "sha256": "db2afd5a5536ea225f2db9c59c8d45f03e4db48c35bfac3fadf5c5a9b5a9f918",
+      "count": 668034,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 15263.0182079738,
+      "warm_median_ms": 14936.641999986023,
+      "max_ms": 15263.0182079738,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "global",
+      "expected_count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        12490.95975002274,
+        13215.855749964248
+      ],
+      "sha256": "4ae44d2191996255179e232c3e9e980c458bf4e36ce066546b1fb58f4151fab6",
+      "count": 1000000,
+      "payload_bytes": 195710,
+      "cursor": 60,
+      "first_ms": 12490.95975002274,
+      "warm_median_ms": 13215.855749964248,
+      "max_ms": 13215.855749964248,
+      "row_dto_oracle_passed": true
+    }
+  ],
+  "status": "complete",
+  "caps": {
+    "process_seconds": 360,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "input_stat": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "open_policy": "Warm verified reader reconstructed from prior successful full production open and unchanged file stat; production match/values/catalog methods unchanged",
+  "native_open_seconds": 0.000551207980606705,
+  "rank_cache_seconds": 6.020681207999587,
+  "rank_cache_epochs": 1000000,
+  "setup_seconds": 6.026358749950305,
+  "peak_rss_bytes": 456982528,
+  "wall_seconds": 209.28890099999262,
+  "input_stat_after": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "source_stat_unchanged": true
+}

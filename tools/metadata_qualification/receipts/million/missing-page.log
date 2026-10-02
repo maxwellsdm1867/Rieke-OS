@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "missing", "mode": "page", "sample": 0, "ms": 14405.017415992916}
+{"arm": "candidate", "label": "missing", "mode": "page", "sample": 0, "ms": 2466.4400829933584}
+{"arm": "candidate", "label": "missing", "mode": "page", "sample": 1, "ms": 2817.963499983307}
+{"arm": "baseline", "label": "missing", "mode": "page", "sample": 1, "ms": 15285.973375022877}
+{"arm": "baseline", "label": "missing", "mode": "page", "sample": 2, "ms": 14194.410957978107}
+{"arm": "candidate", "label": "missing", "mode": "page", "sample": 2, "ms": 2282.7516249963082}
+{"arm": "candidate", "label": "missing", "mode": "page", "sample": 3, "ms": 2325.6009169854224}
+{"arm": "baseline", "label": "missing", "mode": "page", "sample": 3, "ms": 14119.460584013723}
+{"arm": "baseline", "label": "missing", "mode": "page", "sample": 4, "ms": 14533.536292030476}
+{"arm": "candidate", "label": "missing", "mode": "page", "sample": 4, "ms": 2333.0824580043554}
+{"case": "missing", "mode": "page", "status": "passed"}

@@ -1,0 +1,7 @@
+{"arm": "baseline", "error": "TimeoutError('45s sample cap')"}
+{"arm": "candidate", "label": "global", "mode": "facets", "sample": 0, "ms": 4484.058375004679}
+{"arm": "candidate", "label": "global", "mode": "facets", "sample": 1, "ms": 3239.1760000027716}
+{"arm": "candidate", "label": "global", "mode": "facets", "sample": 2, "ms": 3286.2002920010127}
+{"arm": "candidate", "label": "global", "mode": "facets", "sample": 3, "ms": 3304.180749983061}
+{"arm": "candidate", "label": "global", "mode": "facets", "sample": 4, "ms": 3328.2801249879412}
+{"case": "global", "mode": "facets", "status": "incomplete"}

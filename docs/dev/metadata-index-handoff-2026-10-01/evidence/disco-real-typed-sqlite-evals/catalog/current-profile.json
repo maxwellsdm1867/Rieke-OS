@@ -1,0 +1,1218 @@
+{
+  "arm": "current",
+  "phase": "profile",
+  "source_root": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI",
+  "original_database": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+  "worker_database": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/inputs/current/real.sqlite",
+  "database_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "schema_sha256": "b5a66ee94802b29dc6c11504dc2f7e801aa0c9974ed79773d1d835779048ef02",
+  "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+  "sqlite": "3.50.4",
+  "known_fields_count": 141,
+  "known_fields_sha256": "89f77b8f6ed64f1b003305adb1786f62893549edc45f93c640e16df9f02f7ca4",
+  "sources": {
+    "workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+  },
+  "scopes": [
+    {
+      "label": "global",
+      "field": null,
+      "epochs": 2781,
+      "membership_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+      "selection": "all",
+      "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+      "top_cumulative": [
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 291,
+          "function": "catalog",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 7.452650000000001,
+          "cumulative_ms": 832.9870840000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 305,
+          "calls": 305,
+          "self_ms": 443.700755,
+          "cumulative_ms": 443.700755
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 444,
+          "function": "items",
+          "primitive_calls": 19474,
+          "calls": 19474,
+          "self_ms": 83.8977,
+          "cumulative_ms": 173.10793800000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 520,
+          "function": "_suggest",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 1.3678810000000001,
+          "cumulative_ms": 165.779583
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 536,
+          "function": "<genexpr>",
+          "primitive_calls": 16692,
+          "calls": 16692,
+          "self_ms": 5.539785,
+          "cumulative_ms": 163.827843
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 474,
+          "function": "values",
+          "primitive_calls": 16692,
+          "calls": 16692,
+          "self_ms": 3.156114,
+          "cumulative_ms": 150.907375
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 299,
+          "function": "<setcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 104.65754100000001,
+          "cumulative_ms": 104.65754100000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+          "line": 299,
+          "function": "loads",
+          "primitive_calls": 26977,
+          "calls": 26977,
+          "self_ms": 12.594874,
+          "cumulative_ms": 70.550143
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+          "line": 332,
+          "function": "decode",
+          "primitive_calls": 26977,
+          "calls": 26977,
+          "self_ms": 21.119051,
+          "cumulative_ms": 54.507394
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.next>",
+          "primitive_calls": 16,
+          "calls": 16,
+          "self_ms": 0.012375,
+          "cumulative_ms": 43.478083
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 235,
+          "function": "_connect",
+          "primitive_calls": 16,
+          "calls": 16,
+          "self_ms": 0.06407800000000001,
+          "cumulative_ms": 43.46570800000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/contextlib.py",
+          "line": 132,
+          "function": "__enter__",
+          "primitive_calls": 8,
+          "calls": 8,
+          "self_ms": 0.008542000000000001,
+          "cumulative_ms": 42.288917000000005
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'executemany' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 14,
+          "calls": 14,
+          "self_ms": 37.780917,
+          "cumulative_ms": 37.780917
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 295,
+          "function": "<listcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 6.1456420000000005,
+          "cumulative_ms": 27.989209000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+          "line": 343,
+          "function": "raw_decode",
+          "primitive_calls": 26977,
+          "calls": 26977,
+          "self_ms": 23.100979000000002,
+          "cumulative_ms": 23.100979000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 311,
+          "function": "<listcomp>",
+          "primitive_calls": 140,
+          "calls": 140,
+          "self_ms": 2.41633,
+          "cumulative_ms": 22.407238000000003
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 185,
+          "function": "value_key",
+          "primitive_calls": 17556,
+          "calls": 17556,
+          "self_ms": 9.062477000000001,
+          "cumulative_ms": 21.933345
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 465,
+          "function": "finish",
+          "primitive_calls": 19467,
+          "calls": 19467,
+          "self_ms": 10.54361,
+          "cumulative_ms": 17.798029
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+          "line": 183,
+          "function": "dumps",
+          "primitive_calls": 4509,
+          "calls": 4509,
+          "self_ms": 2.610573,
+          "cumulative_ms": 12.549330000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 131,
+          "function": "_joint_summary",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.016832,
+          "cumulative_ms": 11.789542
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.sorted>",
+          "primitive_calls": 282,
+          "calls": 282,
+          "self_ms": 1.974029,
+          "cumulative_ms": 11.450382
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 133,
+          "function": "<dictcomp>",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.7798590000000001,
+          "cumulative_ms": 9.638875
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 202,
+          "function": "value_order",
+          "primitive_calls": 10924,
+          "calls": 10924,
+          "self_ms": 3.9637230000000008,
+          "cumulative_ms": 9.237615000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+          "line": 183,
+          "function": "encode",
+          "primitive_calls": 4509,
+          "calls": 4509,
+          "self_ms": 2.5091180000000004,
+          "cumulative_ms": 8.74807
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'match' of 're.Pattern' objects>",
+          "primitive_calls": 53954,
+          "calls": 53954,
+          "self_ms": 6.984238,
+          "cumulative_ms": 6.984238
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "primitive_calls": 4418,
+          "calls": 4418,
+          "self_ms": 5.635655000000001,
+          "cumulative_ms": 5.635655000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.sum>",
+          "primitive_calls": 564,
+          "calls": 564,
+          "self_ms": 1.1756920000000002,
+          "cumulative_ms": 5.1141950000000005
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 314,
+          "function": "<dictcomp>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_ms": 2.7638650000000005,
+          "cumulative_ms": 4.035209000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 179,
+          "function": "_scalar_value_key",
+          "primitive_calls": 1468,
+          "calls": 1468,
+          "self_ms": 0.352463,
+          "cumulative_ms": 3.7226120000000003
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 467,
+          "function": "<dictcomp>",
+          "primitive_calls": 19467,
+          "calls": 19467,
+          "self_ms": 3.3068950000000004,
+          "cumulative_ms": 3.3068950000000004
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'startswith' of 'str' objects>",
+          "primitive_calls": 27730,
+          "calls": 27730,
+          "self_ms": 2.292363,
+          "cumulative_ms": 2.292363
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "primitive_calls": 54905,
+          "calls": 54905,
+          "self_ms": 2.263209,
+          "cumulative_ms": 2.263209
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'end' of 're.Match' objects>",
+          "primitive_calls": 53954,
+          "calls": 53954,
+          "self_ms": 2.1992540000000003,
+          "cumulative_ms": 2.1992540000000003
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 97,
+          "function": "joint_value",
+          "primitive_calls": 2781,
+          "calls": 2781,
+          "self_ms": 0.7653660000000001,
+          "cumulative_ms": 2.123568
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "primitive_calls": 25498,
+          "calls": 25498,
+          "self_ms": 2.1052470000000003,
+          "cumulative_ms": 2.1052470000000003
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 408,
+          "function": "protocol_family",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.0014990000000000001,
+          "cumulative_ms": 2.0952080000000004
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 409,
+          "function": "<setcomp>",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 1.2398660000000001,
+          "cumulative_ms": 2.0935420000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "primitive_calls": 39219,
+          "calls": 39219,
+          "self_ms": 1.836194,
+          "cumulative_ms": 1.836194
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "primitive_calls": 39115,
+          "calls": 39115,
+          "self_ms": 1.6139610000000002,
+          "cumulative_ms": 1.6139610000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 98,
+          "function": "<listcomp>",
+          "primitive_calls": 2781,
+          "calls": 2781,
+          "self_ms": 1.358202,
+          "cumulative_ms": 1.358202
+        }
+      ],
+      "sql_by_category": {
+        "scope_create": {
+          "statements": 15,
+          "trace_statements": 15,
+          "execute_ms": 2.248125907499343,
+          "fetch_ms": 0.0
+        },
+        "scope_population": {
+          "statements": 8,
+          "trace_statements": 19468,
+          "execute_ms": 58.702251059003174,
+          "fetch_ms": 0.0
+        },
+        "other": {
+          "statements": 0,
+          "trace_statements": 8,
+          "execute_ms": 0.0,
+          "fetch_ms": 0.0
+        },
+        "row_json": {
+          "statements": 1,
+          "trace_statements": 1,
+          "execute_ms": 0.02091703936457634,
+          "fetch_ms": 5.59947406873107
+        },
+        "present_fields": {
+          "statements": 1,
+          "trace_statements": 1,
+          "execute_ms": 0.043584033846855164,
+          "fetch_ms": 98.2577046379447
+        },
+        "field_statistics": {
+          "statements": 140,
+          "trace_statements": 140,
+          "execute_ms": 151.4740840648301,
+          "fetch_ms": 6.180667318403721
+        },
+        "field_definitions": {
+          "statements": 7,
+          "trace_statements": 10,
+          "execute_ms": 0.18433301011100411,
+          "fetch_ms": 0.0
+        },
+        "suggestion_or_joint_values": {
+          "statements": 7,
+          "trace_statements": 7,
+          "execute_ms": 0.48808305291458964,
+          "fetch_ms": 61.7591452319175
+        },
+        "within_cell_variation": {
+          "statements": 140,
+          "trace_statements": 140,
+          "execute_ms": 279.00704531930387,
+          "fetch_ms": 0.38512167520821095
+        }
+      },
+      "query_plans": {
+        "row_json": [
+          [
+            4,
+            0,
+            216,
+            "SCAN scope"
+          ],
+          [
+            6,
+            0,
+            45,
+            "SEARCH epochs USING INTEGER PRIMARY KEY (rowid=?)"
+          ]
+        ],
+        "present_fields": [
+          [
+            5,
+            0,
+            214,
+            "SCAN epoch_values USING COVERING INDEX values_reverse"
+          ],
+          [
+            7,
+            0,
+            45,
+            "SEARCH scope USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            12,
+            0,
+            45,
+            "SEARCH fields USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            21,
+            0,
+            0,
+            "USE TEMP B-TREE FOR DISTINCT"
+          ]
+        ],
+        "field_statistics": [
+          [
+            10,
+            0,
+            45,
+            "SEARCH f USING COVERING INDEX sqlite_autoindex_fields_1 (field_id=?)"
+          ],
+          [
+            16,
+            0,
+            55,
+            "SEARCH ev USING COVERING INDEX values_reverse (field_no=?)"
+          ],
+          [
+            20,
+            0,
+            45,
+            "SEARCH s USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            25,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            28,
+            0,
+            0,
+            "USE TEMP B-TREE FOR GROUP BY"
+          ],
+          [
+            70,
+            0,
+            0,
+            "USE TEMP B-TREE FOR ORDER BY"
+          ]
+        ],
+        "suggestion_or_joint_values": [
+          [
+            7,
+            0,
+            216,
+            "SCAN s"
+          ],
+          [
+            9,
+            0,
+            45,
+            "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            12,
+            0,
+            55,
+            "SEARCH ev USING PRIMARY KEY (epoch_id=? AND field_no=?) LEFT-JOIN"
+          ],
+          [
+            17,
+            0,
+            0,
+            "USING ROWID SEARCH ON TABLE wanted FOR IN-OPERATOR"
+          ],
+          [
+            26,
+            0,
+            45,
+            "SEARCH f USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+          ],
+          [
+            31,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+          ],
+          [
+            62,
+            0,
+            0,
+            "USE TEMP B-TREE FOR LAST TERM OF ORDER BY"
+          ]
+        ],
+        "within_cell_variation": [
+          [
+            11,
+            0,
+            45,
+            "SEARCH f USING COVERING INDEX sqlite_autoindex_fields_1 (field_id=?)"
+          ],
+          [
+            17,
+            0,
+            55,
+            "SEARCH ev USING COVERING INDEX values_reverse (field_no=?)"
+          ],
+          [
+            21,
+            0,
+            45,
+            "SEARCH s USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            26,
+            0,
+            45,
+            "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            32,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            37,
+            0,
+            0,
+            "USE TEMP B-TREE FOR GROUP BY"
+          ],
+          [
+            74,
+            0,
+            0,
+            "USE TEMP B-TREE FOR count(DISTINCT)"
+          ]
+        ]
+      },
+      "profile_file": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/current-global.prof"
+    },
+    {
+      "label": "largest_protocol",
+      "field": "protocol",
+      "epochs": 1857,
+      "membership_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+      "selection": "observed equality",
+      "output_sha256": "e64765d6fc245793152365c2452b711e8ba33dcd674023d6f1548590b8bd0724",
+      "top_cumulative": [
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 291,
+          "function": "catalog",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 5.991447000000001,
+          "cumulative_ms": 543.416542
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 307,
+          "calls": 307,
+          "self_ms": 262.802743,
+          "cumulative_ms": 262.802743
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 520,
+          "function": "_suggest",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 1.061552,
+          "cumulative_ms": 125.66570800000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 444,
+          "function": "items",
+          "primitive_calls": 14864,
+          "calls": 14864,
+          "self_ms": 54.46369,
+          "cumulative_ms": 124.59811400000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 536,
+          "function": "<genexpr>",
+          "primitive_calls": 13006,
+          "calls": 13006,
+          "self_ms": 4.743021,
+          "cumulative_ms": 124.230821
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 474,
+          "function": "values",
+          "primitive_calls": 13006,
+          "calls": 13006,
+          "self_ms": 2.46166,
+          "cumulative_ms": 113.180814
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 299,
+          "function": "<setcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 76.24837500000001,
+          "cumulative_ms": 76.24837500000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+          "line": 299,
+          "function": "loads",
+          "primitive_calls": 20676,
+          "calls": 20676,
+          "self_ms": 9.636223000000001,
+          "cumulative_ms": 52.172744
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+          "line": 332,
+          "function": "decode",
+          "primitive_calls": 20676,
+          "calls": 20676,
+          "self_ms": 16.238222999999998,
+          "cumulative_ms": 39.967712000000006
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.next>",
+          "primitive_calls": 19,
+          "calls": 19,
+          "self_ms": 0.010037,
+          "cumulative_ms": 33.037123
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 235,
+          "function": "_connect",
+          "primitive_calls": 18,
+          "calls": 18,
+          "self_ms": 0.057420000000000006,
+          "cumulative_ms": 33.027086000000004
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/contextlib.py",
+          "line": 132,
+          "function": "__enter__",
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_ms": 0.009294000000000002,
+          "cumulative_ms": 31.954834
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'executemany' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 17,
+          "calls": 17,
+          "self_ms": 29.011999,
+          "cumulative_ms": 29.011999
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 295,
+          "function": "<listcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_ms": 4.102502,
+          "cumulative_ms": 18.942042000000004
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 185,
+          "function": "value_key",
+          "primitive_calls": 16938,
+          "calls": 16938,
+          "self_ms": 7.574447000000001,
+          "cumulative_ms": 18.34254
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+          "line": 343,
+          "function": "raw_decode",
+          "primitive_calls": 20676,
+          "calls": 20676,
+          "self_ms": 15.968946,
+          "cumulative_ms": 15.968946
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 465,
+          "function": "finish",
+          "primitive_calls": 14856,
+          "calls": 14856,
+          "self_ms": 7.862291000000001,
+          "cumulative_ms": 13.178098
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 311,
+          "function": "<listcomp>",
+          "primitive_calls": 140,
+          "calls": 140,
+          "self_ms": 1.314785,
+          "cumulative_ms": 12.206292000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+          "line": 183,
+          "function": "dumps",
+          "primitive_calls": 3788,
+          "calls": 3788,
+          "self_ms": 2.217136,
+          "cumulative_ms": 10.9029
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+          "line": 183,
+          "function": "encode",
+          "primitive_calls": 3788,
+          "calls": 3788,
+          "self_ms": 2.1243480000000003,
+          "cumulative_ms": 7.662027
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 131,
+          "function": "_joint_summary",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.012336,
+          "cumulative_ms": 7.108541000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 133,
+          "function": "<dictcomp>",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.402106,
+          "cumulative_ms": 6.069667000000001
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'match' of 're.Pattern' objects>",
+          "primitive_calls": 41352,
+          "calls": 41352,
+          "self_ms": 5.221112,
+          "cumulative_ms": 5.221112
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "primitive_calls": 3747,
+          "calls": 3747,
+          "self_ms": 5.030119,
+          "cumulative_ms": 5.030119
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.sorted>",
+          "primitive_calls": 282,
+          "calls": 282,
+          "self_ms": 1.3281920000000003,
+          "cumulative_ms": 3.693215
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.sum>",
+          "primitive_calls": 564,
+          "calls": 564,
+          "self_ms": 0.914924,
+          "cumulative_ms": 3.5612800000000004
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 314,
+          "function": "<dictcomp>",
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_ms": 2.063529,
+          "cumulative_ms": 3.132833
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+          "line": 467,
+          "function": "<dictcomp>",
+          "primitive_calls": 14856,
+          "calls": 14856,
+          "self_ms": 2.662583,
+          "cumulative_ms": 2.662583
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 202,
+          "function": "value_order",
+          "primitive_calls": 5820,
+          "calls": 5820,
+          "self_ms": 1.8215480000000002,
+          "cumulative_ms": 2.361357
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'startswith' of 'str' objects>",
+          "primitive_calls": 21402,
+          "calls": 21402,
+          "self_ms": 1.703862,
+          "cumulative_ms": 1.703862
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'end' of 're.Match' objects>",
+          "primitive_calls": 41352,
+          "calls": 41352,
+          "self_ms": 1.6943040000000003,
+          "cumulative_ms": 1.6943040000000003
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'get' of 'dict' objects>",
+          "primitive_calls": 18787,
+          "calls": 18787,
+          "self_ms": 1.6664020000000002,
+          "cumulative_ms": 1.6664020000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.isinstance>",
+          "primitive_calls": 39801,
+          "calls": 39801,
+          "self_ms": 1.6576730000000002,
+          "cumulative_ms": 1.6576730000000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'items' of 'dict' objects>",
+          "primitive_calls": 29997,
+          "calls": 29997,
+          "self_ms": 1.3865990000000001,
+          "cumulative_ms": 1.3865990000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 97,
+          "function": "joint_value",
+          "primitive_calls": 1857,
+          "calls": 1857,
+          "self_ms": 0.452514,
+          "cumulative_ms": 1.278737
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.len>",
+          "primitive_calls": 30820,
+          "calls": 30820,
+          "self_ms": 1.2592130000000001,
+          "cumulative_ms": 1.2592130000000001
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/contextlib.py",
+          "line": 141,
+          "function": "__exit__",
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_ms": 0.016751,
+          "cumulative_ms": 1.1080010000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 408,
+          "function": "protocol_family",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.0025410000000000003,
+          "cumulative_ms": 1.0927090000000002
+        },
+        {
+          "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py",
+          "line": 409,
+          "function": "<setcomp>",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_ms": 0.664292,
+          "cumulative_ms": 1.0895839999999999
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method _sqlite3.connect>",
+          "primitive_calls": 9,
+          "calls": 9,
+          "self_ms": 0.947461,
+          "cumulative_ms": 1.046502
+        }
+      ],
+      "sql_by_category": {
+        "scope_create": {
+          "statements": 17,
+          "trace_statements": 17,
+          "execute_ms": 2.08358489908278,
+          "fetch_ms": 0.0
+        },
+        "scope_population": {
+          "statements": 9,
+          "trace_statements": 16713,
+          "execute_ms": 48.392750963103026,
+          "fetch_ms": 0.0
+        },
+        "other": {
+          "statements": 0,
+          "trace_statements": 9,
+          "execute_ms": 0.0,
+          "fetch_ms": 0.0
+        },
+        "row_json": {
+          "statements": 1,
+          "trace_statements": 1,
+          "execute_ms": 0.021000043489038944,
+          "fetch_ms": 3.778618120122701
+        },
+        "present_fields": {
+          "statements": 1,
+          "trace_statements": 1,
+          "execute_ms": 0.043459003791213036,
+          "fetch_ms": 74.56562301376835
+        },
+        "field_statistics": {
+          "statements": 140,
+          "trace_statements": 140,
+          "execute_ms": 108.28212049091235,
+          "fetch_ms": 3.1159877544268966
+        },
+        "field_definitions": {
+          "statements": 8,
+          "trace_statements": 11,
+          "execute_ms": 0.17508206656202674,
+          "fetch_ms": 0.0
+        },
+        "suggestion_or_joint_values": {
+          "statements": 8,
+          "trace_statements": 8,
+          "execute_ms": 0.5165840266272426,
+          "fetch_ms": 47.294598480220884
+        },
+        "within_cell_variation": {
+          "statements": 140,
+          "trace_statements": 140,
+          "execute_ms": 167.46157204033807,
+          "fetch_ms": 0.08495012298226357
+        }
+      },
+      "query_plans": {
+        "row_json": [
+          [
+            4,
+            0,
+            216,
+            "SCAN scope"
+          ],
+          [
+            6,
+            0,
+            45,
+            "SEARCH epochs USING INTEGER PRIMARY KEY (rowid=?)"
+          ]
+        ],
+        "present_fields": [
+          [
+            5,
+            0,
+            214,
+            "SCAN epoch_values USING COVERING INDEX values_reverse"
+          ],
+          [
+            7,
+            0,
+            45,
+            "SEARCH scope USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            12,
+            0,
+            45,
+            "SEARCH fields USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            21,
+            0,
+            0,
+            "USE TEMP B-TREE FOR DISTINCT"
+          ]
+        ],
+        "field_statistics": [
+          [
+            10,
+            0,
+            45,
+            "SEARCH f USING COVERING INDEX sqlite_autoindex_fields_1 (field_id=?)"
+          ],
+          [
+            16,
+            0,
+            55,
+            "SEARCH ev USING COVERING INDEX values_reverse (field_no=?)"
+          ],
+          [
+            20,
+            0,
+            45,
+            "SEARCH s USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            25,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            28,
+            0,
+            0,
+            "USE TEMP B-TREE FOR GROUP BY"
+          ],
+          [
+            70,
+            0,
+            0,
+            "USE TEMP B-TREE FOR ORDER BY"
+          ]
+        ],
+        "suggestion_or_joint_values": [
+          [
+            7,
+            0,
+            216,
+            "SCAN s"
+          ],
+          [
+            9,
+            0,
+            45,
+            "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            12,
+            0,
+            55,
+            "SEARCH ev USING PRIMARY KEY (epoch_id=? AND field_no=?) LEFT-JOIN"
+          ],
+          [
+            17,
+            0,
+            0,
+            "USING ROWID SEARCH ON TABLE wanted FOR IN-OPERATOR"
+          ],
+          [
+            26,
+            0,
+            45,
+            "SEARCH f USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+          ],
+          [
+            31,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN"
+          ],
+          [
+            62,
+            0,
+            0,
+            "USE TEMP B-TREE FOR LAST TERM OF ORDER BY"
+          ]
+        ],
+        "within_cell_variation": [
+          [
+            11,
+            0,
+            45,
+            "SEARCH f USING COVERING INDEX sqlite_autoindex_fields_1 (field_id=?)"
+          ],
+          [
+            17,
+            0,
+            55,
+            "SEARCH ev USING COVERING INDEX values_reverse (field_no=?)"
+          ],
+          [
+            21,
+            0,
+            45,
+            "SEARCH s USING COVERING INDEX sqlite_autoindex_scope_1 (epoch_id=?)"
+          ],
+          [
+            26,
+            0,
+            45,
+            "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            32,
+            0,
+            45,
+            "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+          ],
+          [
+            37,
+            0,
+            0,
+            "USE TEMP B-TREE FOR GROUP BY"
+          ],
+          [
+            74,
+            0,
+            0,
+            "USE TEMP B-TREE FOR count(DISTINCT)"
+          ]
+        ]
+      },
+      "profile_file": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/current-largest_protocol.prof"
+    }
+  ],
+  "limitations": [
+    "Actual 2781 epochs only; not a million-epoch qualification",
+    "Full catalog plus JSON only; not full API preview or app",
+    "Explicit identical known_fields and global cache bypass; scope extraction/open excluded",
+    "Exact sealed database cloned per worker before timing; normal production lifecycle preserved"
+  ],
+  "database_unchanged": true,
+  "process_peak_rss_mib": 65.53125
+}

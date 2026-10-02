@@ -1,0 +1,117 @@
+{
+  "family": "trace",
+  "baseline": "docs/dev/performance-evals-2026-10-01/baseline/trace/trace.json",
+  "candidate": "/private/tmp/disco-performance-runs-20261001/candidate-trace/trace.json",
+  "correctness_passed": true,
+  "policy": "Median regression requires both >20% and >20ms by default; setup/first timings are descriptive single observations.",
+  "measurements": [
+    {
+      "name": "trace_256mib_first_integrity_window",
+      "baseline": {
+        "median_ms": 144.36341600958258,
+        "first_ms": 144.36341600958258,
+        "max_ms": 144.36341600958258,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 133.80937499459833,
+        "first_ms": 133.80937499459833,
+        "max_ms": 133.80937499459833,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -10.55404101498425,
+      "speedup": 1.0788737038448188,
+      "regression_threshold_ms": 28.872683201916516,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -10.55404101498425,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "trace_256mib_warm_window",
+      "baseline": {
+        "median_ms": 2.3325830115936697,
+        "first_ms": 2.0919169764965773,
+        "max_ms": 2.5661660474725068,
+        "warm_median_ms": 2.394103998085484,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 1.7759579932317138,
+        "first_ms": 2.235499967355281,
+        "max_ms": 2.235499967355281,
+        "warm_median_ms": 1.7114164947997779,
+        "n": 5
+      },
+      "delta_ms": -0.5566250183619559,
+      "speedup": 1.3134224010271012,
+      "regression_threshold_ms": 1.0,
+      "status": "within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": false,
+      "first_use_delta_ms": 0.14358299085870385,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "trace_32mib_first_integrity_window",
+      "baseline": {
+        "median_ms": 21.73920802306384,
+        "first_ms": 21.73920802306384,
+        "max_ms": 21.73920802306384,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 22.443375026341528,
+        "first_ms": 22.443375026341528,
+        "max_ms": 22.443375026341528,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": 0.7041670032776892,
+      "speedup": 0.9686247276779354,
+      "regression_threshold_ms": 4.347841604612768,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": 0.7041670032776892,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "trace_32mib_warm_window",
+      "baseline": {
+        "median_ms": 1.852167013566941,
+        "first_ms": 2.0029579754918814,
+        "max_ms": 2.0029579754918814,
+        "warm_median_ms": 1.8356670043431222,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 1.7467089928686619,
+        "first_ms": 2.0570409833453596,
+        "max_ms": 2.0570409833453596,
+        "warm_median_ms": 1.7439795192331076,
+        "n": 5
+      },
+      "delta_ms": -0.10545802069827914,
+      "speedup": 1.0603752663602442,
+      "regression_threshold_ms": 1.0,
+      "status": "within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": false,
+      "first_use_delta_ms": 0.05408300785347819,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    }
+  ],
+  "regressions": [],
+  "descriptive_slowdowns": [],
+  "missing_measurements": [],
+  "passed": true
+}

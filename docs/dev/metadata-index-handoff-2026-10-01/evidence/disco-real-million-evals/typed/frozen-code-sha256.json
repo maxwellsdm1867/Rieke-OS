@@ -1,0 +1,22 @@
+{
+  "typed_sidecar.py": {
+    "sha256": "c69ea13dc742674808050fc958d3bec62f3f7608cb64bc5bd5b8908177d84039",
+    "bytes": 13258
+  },
+  "typed_real_previous.py": {
+    "sha256": "75658088b3bce59653c6d0ae3a0ae37c33301332c96e73aa5d65a84e204d5a67",
+    "bytes": 21949
+  },
+  "build_sidecar.py": {
+    "sha256": "967088440d38e687362c23fa2a2541df27e846c68c2429a9bdfee467600a9725",
+    "bytes": 978
+  },
+  "smoke_sidecar.py": {
+    "sha256": "2887c35cabac49b2d4f02e089612f22dde5d74851d6e6aa64e94213c0d0ac4bd",
+    "bytes": 4753
+  },
+  "README.md": {
+    "sha256": "23cc52271fa44e18831e4fdb3c2178af386eb5b179013d647b4b52b90c0c1bfe",
+    "bytes": 2902
+  }
+}

@@ -1,0 +1,1260 @@
+{
+  "all_passed": true,
+  "fields": 140,
+  "cases": [
+    {
+      "field": "block",
+      "outcome": "value"
+    },
+    {
+      "field": "block time",
+      "outcome": "value"
+    },
+    {
+      "field": "cell",
+      "outcome": "value"
+    },
+    {
+      "field": "cell type",
+      "outcome": "value"
+    },
+    {
+      "field": "date",
+      "outcome": "value"
+    },
+    {
+      "field": "epoch",
+      "outcome": "value"
+    },
+    {
+      "field": "group",
+      "outcome": "value"
+    },
+    {
+      "field": "group label",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/end_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/amp",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/backgroundIntensity",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/contrast",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/controlMode",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/currentMean",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/currentSD",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/frequencyCutoff",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/history1",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/history2",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/interpulseInterval",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/maskDiameter",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/numberOfAverages",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/numberOfFilters",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/numberOfTrials",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/onlineAnalysis",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/preTime",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/randomizeOrder",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/repeatsPerTrial",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/rotation",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/sampleRate",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/segmentTime",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/shuffleSequence",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/splitField",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/spotDiameter",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/spotIntensity",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/spotSizes",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/stimTime",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/tailTime",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/target",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/temporalFrequency",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/parameters/useRandomSeed",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/properties/frameTimesMs",
+      "outcome": "error"
+    },
+    {
+      "field": "metadata/block/protocolID",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/block/start_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/cell/label",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/cell/notes",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/cell/properties/type",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/cell/start_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/epoch/end_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/epoch/label",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/epoch/protocolID",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/epoch/start_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/attributes/purpose",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/label",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/notes",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/properties/experimenter",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/properties/institution",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/properties/lab",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/properties/project",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/properties/rig",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/experiment/start_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/end_time",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/label",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/notes",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/properties/externalSolutionAdditions",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/properties/internalSolutionAdditions",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/properties/pipetteSolution",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/properties/recordingTechnique",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/properties/seriesResistanceCompensation",
+      "outcome": "value"
+    },
+    {
+      "field": "metadata/group/start_time",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/NDF",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/amp",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/backgroundIntensity",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/blockRepeatCount",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/canvasSize",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/centerOffset",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/contrast",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/controlMode",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/currentMean",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/currentSD",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/currentSpotSize",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/firstHistoryID",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/frequencyCutoff",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/gain",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history1",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history1Mean",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history1SD",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history1Seed",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history2",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history2Mean",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history2SD",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/history2Seed",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/historyNoiseVersion",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/interpulseInterval",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/isControl",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/lightPath",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/maskDiameter",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/microdisplayBrightness",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/microdisplayBrightnessValue",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/micronsPerPixel",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/monitorRefreshRate",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/ndfs",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/numberOfAverages",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/numberOfFilters",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/numberOfTrials",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/numberOfTrialsInRun",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/onlineAnalysis",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/preTime",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/prerender",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/randomizeOrder",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/repeatsPerTrial",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/rotation",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/sampleRate",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/samplesPerBlock",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/samplesPerSegment",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/seed",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/segmentTime",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/sequenceShuffleSeed",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/shuffleSequence",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/splitField",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/spotDiameter",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/spotIntensity",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/spotSizes",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/stdv",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/stimTime",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/stimulusGenerator",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/stimulusGeneratorVersion",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/stimulusSampleRate",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/tailTime",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/target",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/targetMean",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/targetSD",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/targetSeed",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/temporalFrequency",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/totalDurationMs",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/trialNumber",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/trueCanvasSize",
+      "outcome": "value"
+    },
+    {
+      "field": "parameters/useRandomSeed",
+      "outcome": "value"
+    },
+    {
+      "field": "properties/bathTemperature",
+      "outcome": "value"
+    },
+    {
+      "field": "properties/frameTimesMs",
+      "outcome": "value"
+    },
+    {
+      "field": "protocol",
+      "outcome": "value"
+    }
+  ],
+  "all140_facet_payload_equal": true,
+  "wall_seconds": 1.5094295419985428,
+  "materializations": [
+    {
+      "field": "block",
+      "rows": 330,
+      "seconds": 0.003014415968209505
+    },
+    {
+      "field": "block time",
+      "rows": 165,
+      "seconds": 0.0018752090400084853
+    },
+    {
+      "field": "cell",
+      "rows": 26,
+      "seconds": 0.0004867909592576325
+    },
+    {
+      "field": "cell type",
+      "rows": 2,
+      "seconds": 0.00010241701966151595
+    },
+    {
+      "field": "date",
+      "rows": 3,
+      "seconds": 0.0001659159897826612
+    },
+    {
+      "field": "epoch",
+      "rows": 5562,
+      "seconds": 0.06742020801175386
+    },
+    {
+      "field": "group",
+      "rows": 48,
+      "seconds": 0.001260999997612089
+    },
+    {
+      "field": "group label",
+      "rows": 5,
+      "seconds": 0.00027070799842476845
+    },
+    {
+      "field": "metadata/block/end_time",
+      "rows": 165,
+      "seconds": 0.0021148749510757625
+    },
+    {
+      "field": "metadata/block/parameters/amp",
+      "rows": 1,
+      "seconds": 0.000193667015992105
+    },
+    {
+      "field": "metadata/block/parameters/backgroundIntensity",
+      "rows": 2,
+      "seconds": 0.00021041597938165069
+    },
+    {
+      "field": "metadata/block/parameters/contrast",
+      "rows": 3,
+      "seconds": 0.0001669999910518527
+    },
+    {
+      "field": "metadata/block/parameters/controlMode",
+      "rows": 2,
+      "seconds": 0.0002055829972960055
+    },
+    {
+      "field": "metadata/block/parameters/currentMean",
+      "rows": 2,
+      "seconds": 0.00012075004633516073
+    },
+    {
+      "field": "metadata/block/parameters/currentSD",
+      "rows": 10,
+      "seconds": 0.00024491699878126383
+    },
+    {
+      "field": "metadata/block/parameters/frequencyCutoff",
+      "rows": 4,
+      "seconds": 0.0001337499707005918
+    },
+    {
+      "field": "metadata/block/parameters/history1",
+      "rows": 15,
+      "seconds": 0.00045520899584516883
+    },
+    {
+      "field": "metadata/block/parameters/history2",
+      "rows": 3,
+      "seconds": 0.0001782500185072422
+    },
+    {
+      "field": "metadata/block/parameters/interpulseInterval",
+      "rows": 1,
+      "seconds": 8.512497879564762e-05
+    },
+    {
+      "field": "metadata/block/parameters/maskDiameter",
+      "rows": 1,
+      "seconds": 8.07089963927865e-05
+    },
+    {
+      "field": "metadata/block/parameters/numberOfAverages",
+      "rows": 5,
+      "seconds": 0.0001544589758850634
+    },
+    {
+      "field": "metadata/block/parameters/numberOfFilters",
+      "rows": 1,
+      "seconds": 0.00015508400974795222
+    },
+    {
+      "field": "metadata/block/parameters/numberOfTrials",
+      "rows": 2,
+      "seconds": 0.00019045802764594555
+    },
+    {
+      "field": "metadata/block/parameters/onlineAnalysis",
+      "rows": 1,
+      "seconds": 0.00017549999756738544
+    },
+    {
+      "field": "metadata/block/parameters/preTime",
+      "rows": 1,
+      "seconds": 0.0001485829707235098
+    },
+    {
+      "field": "metadata/block/parameters/randomizeOrder",
+      "rows": 1,
+      "seconds": 0.0002833749749697745
+    },
+    {
+      "field": "metadata/block/parameters/repeatsPerTrial",
+      "rows": 1,
+      "seconds": 0.00018962501781061292
+    },
+    {
+      "field": "metadata/block/parameters/rotation",
+      "rows": 2,
+      "seconds": 0.00022158300271257758
+    },
+    {
+      "field": "metadata/block/parameters/sampleRate",
+      "rows": 1,
+      "seconds": 0.0002073749783448875
+    },
+    {
+      "field": "metadata/block/parameters/segmentTime",
+      "rows": 2,
+      "seconds": 0.00017287494847550988
+    },
+    {
+      "field": "metadata/block/parameters/shuffleSequence",
+      "rows": 1,
+      "seconds": 9.058299474418163e-05
+    },
+    {
+      "field": "metadata/block/parameters/splitField",
+      "rows": 1,
+      "seconds": 0.00011554197408258915
+    },
+    {
+      "field": "metadata/block/parameters/spotDiameter",
+      "rows": 1,
+      "seconds": 8.454197086393833e-05
+    },
+    {
+      "field": "metadata/block/parameters/spotIntensity",
+      "rows": 3,
+      "seconds": 0.00019037502352148294
+    },
+    {
+      "field": "metadata/block/parameters/spotSizes",
+      "rows": 1,
+      "seconds": 0.00023691699607297778
+    },
+    {
+      "field": "metadata/block/parameters/stimTime",
+      "rows": 3,
+      "seconds": 0.00020474998746067286
+    },
+    {
+      "field": "metadata/block/parameters/tailTime",
+      "rows": 1,
+      "seconds": 0.00013266701716929674
+    },
+    {
+      "field": "metadata/block/parameters/target",
+      "rows": 8,
+      "seconds": 0.00037116598105058074
+    },
+    {
+      "field": "metadata/block/parameters/temporalFrequency",
+      "rows": 1,
+      "seconds": 8.741696365177631e-05
+    },
+    {
+      "field": "metadata/block/parameters/useRandomSeed",
+      "rows": 2,
+      "seconds": 0.00011920899851247668
+    },
+    {
+      "field": "metadata/block/protocolID",
+      "rows": 5,
+      "seconds": 0.0002119590062648058
+    },
+    {
+      "field": "metadata/block/start_time",
+      "rows": 165,
+      "seconds": 0.002585084002930671
+    },
+    {
+      "field": "metadata/cell/label",
+      "rows": 5,
+      "seconds": 0.00018470798386260867
+    },
+    {
+      "field": "metadata/cell/notes",
+      "rows": 1,
+      "seconds": 0.00014804204693064094
+    },
+    {
+      "field": "metadata/cell/properties/type",
+      "rows": 2,
+      "seconds": 0.00015237496700137854
+    },
+    {
+      "field": "metadata/cell/start_time",
+      "rows": 13,
+      "seconds": 0.0004600000102072954
+    },
+    {
+      "field": "metadata/epoch/end_time",
+      "rows": 2781,
+      "seconds": 0.034151375002693385
+    },
+    {
+      "field": "metadata/epoch/label",
+      "rows": 1,
+      "seconds": 0.00015724997501820326
+    },
+    {
+      "field": "metadata/epoch/protocolID",
+      "rows": 1,
+      "seconds": 0.0001598329981788993
+    },
+    {
+      "field": "metadata/epoch/start_time",
+      "rows": 2781,
+      "seconds": 0.032073333975858986
+    },
+    {
+      "field": "metadata/experiment/attributes/purpose",
+      "rows": 2,
+      "seconds": 0.00016329099889844656
+    },
+    {
+      "field": "metadata/experiment/label",
+      "rows": 3,
+      "seconds": 0.0003107909578830004
+    },
+    {
+      "field": "metadata/experiment/notes",
+      "rows": 1,
+      "seconds": 0.0002055000513792038
+    },
+    {
+      "field": "metadata/experiment/properties/experimenter",
+      "rows": 2,
+      "seconds": 0.00022724998416379094
+    },
+    {
+      "field": "metadata/experiment/properties/institution",
+      "rows": 1,
+      "seconds": 0.00018345803255215287
+    },
+    {
+      "field": "metadata/experiment/properties/lab",
+      "rows": 1,
+      "seconds": 0.00015383301069959998
+    },
+    {
+      "field": "metadata/experiment/properties/project",
+      "rows": 1,
+      "seconds": 0.00015141599578782916
+    },
+    {
+      "field": "metadata/experiment/properties/rig",
+      "rows": 1,
+      "seconds": 0.00016741600120440125
+    },
+    {
+      "field": "metadata/experiment/start_time",
+      "rows": 3,
+      "seconds": 0.00028841698076575994
+    },
+    {
+      "field": "metadata/group/end_time",
+      "rows": 24,
+      "seconds": 0.0008958340040408075
+    },
+    {
+      "field": "metadata/group/label",
+      "rows": 5,
+      "seconds": 0.0003387919859960675
+    },
+    {
+      "field": "metadata/group/notes",
+      "rows": 1,
+      "seconds": 0.00017120898701250553
+    },
+    {
+      "field": "metadata/group/properties/externalSolutionAdditions",
+      "rows": 1,
+      "seconds": 0.00017958303214982152
+    },
+    {
+      "field": "metadata/group/properties/internalSolutionAdditions",
+      "rows": 1,
+      "seconds": 0.0001633749925531447
+    },
+    {
+      "field": "metadata/group/properties/pipetteSolution",
+      "rows": 1,
+      "seconds": 0.00017141597345471382
+    },
+    {
+      "field": "metadata/group/properties/recordingTechnique",
+      "rows": 1,
+      "seconds": 0.00015962496399879456
+    },
+    {
+      "field": "metadata/group/properties/seriesResistanceCompensation",
+      "rows": 1,
+      "seconds": 0.00017795903841033578
+    },
+    {
+      "field": "metadata/group/start_time",
+      "rows": 24,
+      "seconds": 0.0007577090291306376
+    },
+    {
+      "field": "parameters/NDF",
+      "rows": 1,
+      "seconds": 0.000212125014513731
+    },
+    {
+      "field": "parameters/amp",
+      "rows": 1,
+      "seconds": 0.00017625000327825546
+    },
+    {
+      "field": "parameters/backgroundIntensity",
+      "rows": 2,
+      "seconds": 0.0002187499776482582
+    },
+    {
+      "field": "parameters/blockRepeatCount",
+      "rows": 2,
+      "seconds": 0.00013004103675484657
+    },
+    {
+      "field": "parameters/canvasSize",
+      "rows": 1,
+      "seconds": 0.0007453329744748771
+    },
+    {
+      "field": "parameters/centerOffset",
+      "rows": 14,
+      "seconds": 0.0006355000077746809
+    },
+    {
+      "field": "parameters/contrast",
+      "rows": 3,
+      "seconds": 0.00019362499006092548
+    },
+    {
+      "field": "parameters/controlMode",
+      "rows": 2,
+      "seconds": 0.00011504103895276785
+    },
+    {
+      "field": "parameters/currentMean",
+      "rows": 2,
+      "seconds": 0.0001289999927394092
+    },
+    {
+      "field": "parameters/currentSD",
+      "rows": 10,
+      "seconds": 0.0003415830433368683
+    },
+    {
+      "field": "parameters/firstHistoryID",
+      "rows": 1,
+      "seconds": 0.00018579099560156465
+    },
+    {
+      "field": "parameters/frequencyCutoff",
+      "rows": 4,
+      "seconds": 0.00018533301772549748
+    },
+    {
+      "field": "parameters/gain",
+      "rows": 1,
+      "seconds": 0.00016033300198614597
+    },
+    {
+      "field": "parameters/history1",
+      "rows": 15,
+      "seconds": 0.0008335000020451844
+    },
+    {
+      "field": "parameters/history1Mean",
+      "rows": 6,
+      "seconds": 0.00025174999609589577
+    },
+    {
+      "field": "parameters/history1SD",
+      "rows": 8,
+      "seconds": 0.0002840419765561819
+    },
+    {
+      "field": "parameters/history1Seed",
+      "rows": 292,
+      "seconds": 0.004117375006899238
+    },
+    {
+      "field": "parameters/history2",
+      "rows": 3,
+      "seconds": 0.00019945896929129958
+    },
+    {
+      "field": "parameters/history2Mean",
+      "rows": 1,
+      "seconds": 0.0001805420033633709
+    },
+    {
+      "field": "parameters/history2SD",
+      "rows": 3,
+      "seconds": 0.00012970896204933524
+    },
+    {
+      "field": "parameters/history2Seed",
+      "rows": 292,
+      "seconds": 0.003854541981127113
+    },
+    {
+      "field": "parameters/historyNoiseVersion",
+      "rows": 1,
+      "seconds": 8.970801718533039e-05
+    },
+    {
+      "field": "parameters/interpulseInterval",
+      "rows": 1,
+      "seconds": 9.07920184545219e-05
+    },
+    {
+      "field": "parameters/isControl",
+      "rows": 2,
+      "seconds": 0.00013929198030382395
+    },
+    {
+      "field": "parameters/lightPath",
+      "rows": 1,
+      "seconds": 0.00015725003322586417
+    },
+    {
+      "field": "parameters/maskDiameter",
+      "rows": 1,
+      "seconds": 0.00018250005086883903
+    },
+    {
+      "field": "parameters/microdisplayBrightness",
+      "rows": 1,
+      "seconds": 0.00017120799748227
+    },
+    {
+      "field": "parameters/microdisplayBrightnessValue",
+      "rows": 1,
+      "seconds": 0.0001650839694775641
+    },
+    {
+      "field": "parameters/micronsPerPixel",
+      "rows": 1,
+      "seconds": 0.00017374998424202204
+    },
+    {
+      "field": "parameters/monitorRefreshRate",
+      "rows": 1,
+      "seconds": 0.0002478749956935644
+    },
+    {
+      "field": "parameters/ndfs",
+      "rows": 1,
+      "seconds": 0.00039383297553285956
+    },
+    {
+      "field": "parameters/numberOfAverages",
+      "rows": 5,
+      "seconds": 0.00028954196022823453
+    },
+    {
+      "field": "parameters/numberOfFilters",
+      "rows": 1,
+      "seconds": 0.00014258298324421048
+    },
+    {
+      "field": "parameters/numberOfTrials",
+      "rows": 1,
+      "seconds": 0.00015783397248014808
+    },
+    {
+      "field": "parameters/numberOfTrialsInRun",
+      "rows": 2,
+      "seconds": 0.00011337501928210258
+    },
+    {
+      "field": "parameters/onlineAnalysis",
+      "rows": 1,
+      "seconds": 0.00021304201800376177
+    },
+    {
+      "field": "parameters/preTime",
+      "rows": 1,
+      "seconds": 0.00019408302614465356
+    },
+    {
+      "field": "parameters/prerender",
+      "rows": 1,
+      "seconds": 0.0002092079957947135
+    },
+    {
+      "field": "parameters/randomizeOrder",
+      "rows": 1,
+      "seconds": 0.00014958297833800316
+    },
+    {
+      "field": "parameters/repeatsPerTrial",
+      "rows": 2,
+      "seconds": 0.00019362499006092548
+    },
+    {
+      "field": "parameters/rotation",
+      "rows": 2,
+      "seconds": 0.00020354200387373567
+    },
+    {
+      "field": "parameters/sampleRate",
+      "rows": 1,
+      "seconds": 0.0001384580391459167
+    },
+    {
+      "field": "parameters/samplesPerBlock",
+      "rows": 3,
+      "seconds": 0.0002044169814325869
+    },
+    {
+      "field": "parameters/samplesPerSegment",
+      "rows": 2,
+      "seconds": 0.00012870796490460634
+    },
+    {
+      "field": "parameters/seed",
+      "rows": 391,
+      "seconds": 0.004653625015635043
+    },
+    {
+      "field": "parameters/segmentTime",
+      "rows": 2,
+      "seconds": 0.00012158299796283245
+    },
+    {
+      "field": "parameters/sequenceShuffleSeed",
+      "rows": 1,
+      "seconds": 8.933304343372583e-05
+    },
+    {
+      "field": "parameters/shuffleSequence",
+      "rows": 1,
+      "seconds": 0.0001105829724110663
+    },
+    {
+      "field": "parameters/splitField",
+      "rows": 1,
+      "seconds": 0.00011254200944676995
+    },
+    {
+      "field": "parameters/spotDiameter",
+      "rows": 1,
+      "seconds": 8.379202336072922e-05
+    },
+    {
+      "field": "parameters/spotIntensity",
+      "rows": 3,
+      "seconds": 0.0001332079991698265
+    },
+    {
+      "field": "parameters/spotSizes",
+      "rows": 1,
+      "seconds": 0.0001640410046093166
+    },
+    {
+      "field": "parameters/stdv",
+      "rows": 10,
+      "seconds": 0.0003622090443968773
+    },
+    {
+      "field": "parameters/stimTime",
+      "rows": 3,
+      "seconds": 0.0001200000406242907
+    },
+    {
+      "field": "parameters/stimulusGenerator",
+      "rows": 1,
+      "seconds": 9.170797420665622e-05
+    },
+    {
+      "field": "parameters/stimulusGeneratorVersion",
+      "rows": 1,
+      "seconds": 8.72919918037951e-05
+    },
+    {
+      "field": "parameters/stimulusSampleRate",
+      "rows": 1,
+      "seconds": 9.991700062528253e-05
+    },
+    {
+      "field": "parameters/tailTime",
+      "rows": 1,
+      "seconds": 0.00012629199773073196
+    },
+    {
+      "field": "parameters/target",
+      "rows": 8,
+      "seconds": 0.00037391699152067304
+    },
+    {
+      "field": "parameters/targetMean",
+      "rows": 1,
+      "seconds": 0.00011912500485777855
+    },
+    {
+      "field": "parameters/targetSD",
+      "rows": 8,
+      "seconds": 0.00031358300475403666
+    },
+    {
+      "field": "parameters/targetSeed",
+      "rows": 309,
+      "seconds": 0.003752916003577411
+    },
+    {
+      "field": "parameters/temporalFrequency",
+      "rows": 1,
+      "seconds": 0.00011637498391792178
+    },
+    {
+      "field": "parameters/totalDurationMs",
+      "rows": 3,
+      "seconds": 0.00012262503150850534
+    },
+    {
+      "field": "parameters/trialNumber",
+      "rows": 5,
+      "seconds": 0.00013220799155533314
+    },
+    {
+      "field": "parameters/trueCanvasSize",
+      "rows": 1,
+      "seconds": 9.958300506696105e-05
+    },
+    {
+      "field": "parameters/useRandomSeed",
+      "rows": 3,
+      "seconds": 0.00018104101764038205
+    },
+    {
+      "field": "properties/bathTemperature",
+      "rows": 36,
+      "seconds": 0.0009368750033900142
+    },
+    {
+      "field": "properties/frameTimesMs",
+      "rows": 1,
+      "seconds": 0.00011279195314273238
+    },
+    {
+      "field": "metadata/block/properties/frameTimesMs",
+      "rows": 11,
+      "seconds": 0.0016087500262074172
+    }
+  ]
+}

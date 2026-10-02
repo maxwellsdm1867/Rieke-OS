@@ -1,0 +1,10 @@
+test_context_witnesses_can_enrich_registry_without_hiding_true_staleness (test_qualification.ServiceSeamCheckerTests.test_context_witnesses_can_enrich_registry_without_hiding_true_staleness) ... ok
+test_cursor_refusal_checker_fails_adapter_that_accepts_stale_cursor (test_qualification.ServiceSeamCheckerTests.test_cursor_refusal_checker_fails_adapter_that_accepts_stale_cursor) ... ok
+test_empty_branch_checker_rejects_loss_or_wrong_parent (test_qualification.ServiceSeamCheckerTests.test_empty_branch_checker_rejects_loss_or_wrong_parent) ... ok
+test_registry_checker_rejects_distribution_and_missing_fields (test_qualification.ServiceSeamCheckerTests.test_registry_checker_rejects_distribution_and_missing_fields) ... ok
+test_summary_states_reject_zero_imputation_stale_identity_and_unready_result (test_qualification.ServiceSeamCheckerTests.test_summary_states_reject_zero_imputation_stale_identity_and_unready_result) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+OK

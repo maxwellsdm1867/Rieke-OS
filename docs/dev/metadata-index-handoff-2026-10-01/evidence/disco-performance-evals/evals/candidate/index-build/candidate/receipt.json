@@ -1,0 +1,29 @@
+{
+  "scope": "One fresh synthetic metadata-index build; no API, MySQL, H5 or user data.",
+  "source_root": "/private/tmp/disco-performance-evals-20261001",
+  "epochs": 100000,
+  "head": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "source_hashes": {
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd"
+  },
+  "single_observation": true,
+  "checks": [
+    {
+      "name": "counts_and_boundary_details",
+      "passed": true
+    },
+    {
+      "name": "sealed_reopen",
+      "passed": true
+    }
+  ],
+  "model_seconds": 7.573066250013653,
+  "build_seconds": 24.098113999993075,
+  "index_bytes": 185298944,
+  "catalog_sha256": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f",
+  "reopen_seconds": 0.5359033329878002,
+  "passed": true,
+  "seconds": 32.20866633404512,
+  "peak_rss_bytes": 478445568
+}

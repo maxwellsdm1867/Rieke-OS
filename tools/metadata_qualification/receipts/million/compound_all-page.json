@@ -1,0 +1,155 @@
+{
+  "status": "passed",
+  "case": {
+    "label": "compound_all",
+    "predicate": {
+      "all": [
+        {
+          "field": "metadata/block/parameters/spotIntensity",
+          "operator": "eq",
+          "value": 0.8
+        },
+        {
+          "field": "metadata/cell/label",
+          "operator": "eq",
+          "value": "Cell1"
+        }
+      ]
+    },
+    "scope": null,
+    "expected_count": 416035
+  },
+  "mode": "page",
+  "facet_fields": [],
+  "pid": 41603,
+  "baseline_commit": "f03577e650ce5f604e9585f5bee983ef01bccad3",
+  "target_commit": "e6c996a10afa819bb944135e58a593867d344a76",
+  "caps": {
+    "sample_seconds": 45,
+    "max_rss_bytes": 1073741824,
+    "free_disk_bytes": 4294967296,
+    "min_available_ram_bytes": 805306368
+  },
+  "arms": {
+    "baseline": {
+      "samples_ms": [
+        14320.011541014537,
+        14380.113874969538,
+        14266.176083008759,
+        14446.643040981144,
+        14210.550540999975
+      ],
+      "status": "passed",
+      "sha256": "ec901c43f8e4246920d2fabbb785b92bc5be972de30edc234fb28b8e76741246",
+      "payload_bytes": 193851,
+      "first_ms": 14320.011541014537,
+      "warm_median_ms": 14323.144978989149,
+      "max_ms": 14446.643040981144,
+      "p95_ms": null,
+      "p99_ms": null
+    },
+    "candidate": {
+      "samples_ms": [
+        1639.6967089967802,
+        1642.2023749910295,
+        1946.9725409871899,
+        1665.1487920316868,
+        1913.6802079738118
+      ],
+      "status": "passed",
+      "sha256": "ec901c43f8e4246920d2fabbb785b92bc5be972de30edc234fb28b8e76741246",
+      "payload_bytes": 193851,
+      "first_ms": 1639.6967089967802,
+      "warm_median_ms": 1789.4145000027493,
+      "max_ms": 1946.9725409871899,
+      "p95_ms": null,
+      "p99_ms": null
+    }
+  },
+  "input_signature": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      16777233,
+      248000770,
+      7195836416,
+      1790880924862763867,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+      16777233,
+      247920613,
+      20787200,
+      1790870383902409025,
+      1790870383902451900
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+      16777233,
+      248270732,
+      1107034112,
+      1790902879165610511,
+      1790902879165610511
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite.sha256.json": [
+      16777233,
+      248271426,
+      223,
+      1790902879737530621,
+      1790902879737530621
+    ]
+  },
+  "source_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "replay_sha256": "7e03e05e97885505f227e1b0938b34f303229db90ddcdd1f7e40f40d6b55e2b6",
+  "metadata_generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+  "operation": "exact count + first60 chronological native DTOs + requested facets + JSON serialization",
+  "ui_timing": false,
+  "legacy_matching_epochs": "unchanged unbounded path; not measured here",
+  "samples_are_cold_start": false,
+  "runtime": {
+    "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+    "sqlite": "3.50.4",
+    "platform": "macOS-14.2-arm64-arm-64bit"
+  },
+  "last_available_ram_bytes": 3278045184,
+  "native_open_policy": "Warm reader initialized only after full SHA/count/generation proof; unchanged production match/values methods, compact proven UUID/rank cache, no lease writes to retained corpus; eager app/startup excluded",
+  "expected_payload_sha256": "ec901c43f8e4246920d2fabbb785b92bc5be972de30edc234fb28b8e76741246",
+  "expected_count": 416035,
+  "ordered_membership_sha256": "4bfb8dd740334b6545e9802de6257a1ba21090fafb0f0a9da704e47db060ad9d",
+  "all_members_source_checked": true,
+  "independent_full_chronology_mapping": true,
+  "setup_seconds": 6.609155582962558,
+  "current_arm": "candidate",
+  "current_sample": 4,
+  "same_payload_pair": true,
+  "wall_seconds": 87.0622390829958,
+  "peak_rss_bytes": 607911936,
+  "input_signature_after": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      16777233,
+      248000770,
+      7195836416,
+      1790880924862763867,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+      16777233,
+      247920613,
+      20787200,
+      1790870383902409025,
+      1790870383902451900
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+      16777233,
+      248270732,
+      1107034112,
+      1790902879165610511,
+      1790902879165610511
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite.sha256.json": [
+      16777233,
+      248271426,
+      223,
+      1790902879737530621,
+      1790902879737530621
+    ]
+  },
+  "source_generations_unchanged": true
+}

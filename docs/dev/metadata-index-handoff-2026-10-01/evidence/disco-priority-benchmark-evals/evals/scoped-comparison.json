@@ -1,0 +1,303 @@
+{
+  "status": "complete",
+  "source_stats": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      248000770,
+      7195836416,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite": [
+      248008954,
+      1107034112,
+      1790881285641308926
+    ]
+  },
+  "results": [
+    {
+      "label": "cell_page_two_facets",
+      "count": 687,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            17.133957997430116,
+            4.431375011336058,
+            4.093499970622361,
+            4.94029198307544,
+            4.0080000180751085
+          ],
+          "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+          "warm_median_ms": 4.2624374909792095
+        },
+        "scoped": {
+          "samples_ms": [
+            4.583250032737851,
+            3.908082959242165,
+            4.271125013474375,
+            4.161917022429407,
+            3.921207971870899
+          ],
+          "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+          "warm_median_ms": 4.041562497150153
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "saved_history_filter",
+      "count": 31592,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            455.061792046763,
+            40.5932089779526,
+            39.28650001762435,
+            39.63645803742111,
+            39.64270796859637
+          ],
+          "sha256": "89cfda51647a3062b28d815c731b0017d0da7287da205a184d9c5f203dfbe37e",
+          "warm_median_ms": 39.63958300300874
+        },
+        "scoped": {
+          "samples_ms": [
+            60.10250002145767,
+            41.10224999021739,
+            40.24433298036456,
+            40.97470798296854,
+            40.718458010815084
+          ],
+          "sha256": "89cfda51647a3062b28d815c731b0017d0da7287da205a184d9c5f203dfbe37e",
+          "warm_median_ms": 40.84658299689181
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "NDF_filter",
+      "count": 687,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1833.6340830428526,
+            1598.3169169630855,
+            1641.999792016577,
+            1607.4370419955812,
+            1650.339791958686
+          ],
+          "sha256": "34ea831d0f43218463de96041147f9bef77170063cacd2f1a7d01565aff82b91",
+          "warm_median_ms": 1624.718417006079
+        },
+        "scoped": {
+          "samples_ms": [
+            5.939791968557984,
+            5.362208001315594,
+            5.938249989412725,
+            5.632125015836209,
+            5.999624961987138
+          ],
+          "sha256": "34ea831d0f43218463de96041147f9bef77170063cacd2f1a7d01565aff82b91",
+          "warm_median_ms": 5.785187502624467
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "light_path_filter",
+      "count": 687,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            681.4382919692434,
+            679.1641250019893,
+            705.4709590156563,
+            669.7837500250898,
+            689.7110419813544
+          ],
+          "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+          "warm_median_ms": 684.4375834916718
+        },
+        "scoped": {
+          "samples_ms": [
+            2.6193750090897083,
+            2.4577919975854456,
+            2.8544579981826246,
+            2.7767919818870723,
+            3.0085420003160834
+          ],
+          "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+          "warm_median_ms": 2.8156249900348485
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_canvas_query",
+      "count": 687,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1664.978458022233,
+            1658.7272090255283,
+            1612.098874989897,
+            1610.4081249795854,
+            1617.349500011187
+          ],
+          "sha256": "3fa98ac10981d60ca9444b3f65a7ae750ba4897f04363a2fe5e50dfa4865d4e0",
+          "warm_median_ms": 1614.724187500542
+        },
+        "scoped": {
+          "samples_ms": [
+            6.071624986361712,
+            5.5911249946802855,
+            6.90816598944366,
+            6.101417005993426,
+            5.723249982111156
+          ],
+          "sha256": "3fa98ac10981d60ca9444b3f65a7ae750ba4897f04363a2fe5e50dfa4865d4e0",
+          "warm_median_ms": 5.912333494052291
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_trial_count_query",
+      "count": 52,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            78.40816699899733,
+            72.61837495025247,
+            72.0648750429973,
+            75.64512494718656,
+            72.01945799170062
+          ],
+          "sha256": "6d1f9d9f82eea2f850f517db1121b84f69bf2f204495824270c76a3c2ecbec71",
+          "warm_median_ms": 72.34162499662489
+        },
+        "scoped": {
+          "samples_ms": [
+            2.645250002387911,
+            2.2527919500134885,
+            2.4457909748889506,
+            2.471167012117803,
+            2.5412910035811365
+          ],
+          "sha256": "6d1f9d9f82eea2f850f517db1121b84f69bf2f204495824270c76a3c2ecbec71",
+          "warm_median_ms": 2.458478993503377
+        }
+      },
+      "same_payload": true
+    },
+    {
+      "label": "cold_rig_query",
+      "count": 687,
+      "arms": {
+        "full": {
+          "samples_ms": [
+            1636.9764589471743,
+            1611.4213750115596,
+            1638.1285829702392,
+            1627.850542019587,
+            1635.9303329954855
+          ],
+          "sha256": "6ca01470007f8a43e4dd8ac8bdcc6f089544c3ec465448c74c5ba8d051c9d43e",
+          "warm_median_ms": 1631.8904375075363
+        },
+        "scoped": {
+          "samples_ms": [
+            5.8788329479284585,
+            5.57637499878183,
+            5.674541986081749,
+            5.437833024188876,
+            5.716125015169382
+          ],
+          "sha256": "6ca01470007f8a43e4dd8ac8bdcc6f089544c3ec465448c74c5ba8d051c9d43e",
+          "warm_median_ms": 5.62545849243179
+        }
+      },
+      "same_payload": true
+    }
+  ],
+  "requested_summaries": {
+    "scope": {
+      "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+    },
+    "count": 687,
+    "arms": {
+      "all140": {
+        "facet_count": 140,
+        "samples_ms": [
+          180.53891597082838,
+          167.10025002248585,
+          168.72508300002664,
+          167.50362503807992,
+          167.41304198512807
+        ],
+        "warm_median_ms": 167.458333511604,
+        "sha256": "eaf7b1de0c43bd9d5efcb0843f83bdace2378006a706358d047b56e89d5d4040"
+      },
+      "selected4": {
+        "facet_count": 4,
+        "samples_ms": [
+          6.688249995931983,
+          6.646584020927548,
+          6.621958047617227,
+          6.535749998874962,
+          6.566666008438915
+        ],
+        "warm_median_ms": 6.594312028028071,
+        "sha256": "9da4070dd566679fb5943de169d14ea94b116d9fc20188f0f0db69e802d6598c"
+      },
+      "rows_only": {
+        "facet_count": 0,
+        "samples_ms": [
+          1.4192499802447855,
+          1.567667000927031,
+          1.608167018275708,
+          1.5002500149421394,
+          1.4353329897858202
+        ],
+        "warm_median_ms": 1.5339585079345852,
+        "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102"
+      }
+    },
+    "different_requested_work": true,
+    "same_count_rows_cursor": true,
+    "selected_facets_equal_full": true
+  },
+  "summary_payload_keys": {
+    "all140": [
+      "count",
+      "rows",
+      "cursor",
+      "facets"
+    ],
+    "selected4": [
+      "count",
+      "rows",
+      "cursor",
+      "facets"
+    ],
+    "rows_only": [
+      "count",
+      "rows",
+      "cursor",
+      "facets"
+    ]
+  },
+  "source_stats_after": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      248000770,
+      7195836416,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite": [
+      248008954,
+      1107034112,
+      1790881285641308926
+    ]
+  },
+  "source_stats_unchanged": true,
+  "completion_phase_wall_seconds": 0.8992216660408303,
+  "completion_phase_peak_rss_bytes": 32686080,
+  "paired_timed_samples_seconds": 29.4483614176861
+}

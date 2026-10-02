@@ -1,0 +1,372 @@
+{
+  "pid": 90212,
+  "candidate_version": "bounded",
+  "arm": "typed",
+  "mode": "page",
+  "results": [
+    {
+      "label": "largest_cell",
+      "expected_count": 687,
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "status": "passed",
+      "samples_ms": [
+        4.602125030942261,
+        1.6112499870359898,
+        1.4809170388616621,
+        1.5566250076517463,
+        1.6442909836769104
+      ],
+      "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+      "count": 687,
+      "payload_bytes": 193954,
+      "cursor": 412915,
+      "first_ms": 4.602125030942261,
+      "warm_median_ms": 1.583937497343868,
+      "max_ms": 4.602125030942261,
+      "next_page_sha256": "95882fd36bf7b3b9714293b177c17c6017fa45be6d13334c74fc87990e96f826",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_block",
+      "expected_count": 601,
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "status": "passed",
+      "samples_ms": [
+        3.7475830176845193,
+        1.4453339972533286,
+        2.0002920064143836,
+        1.6271669883280993,
+        1.5711670275777578
+      ],
+      "sha256": "c48260deed218f2fa3a82ec08f0289edace8d3cc1f39a02daa44b8befb054c11",
+      "count": 601,
+      "payload_bytes": 193901,
+      "cursor": 661891,
+      "first_ms": 3.7475830176845193,
+      "warm_median_ms": 1.5991670079529285,
+      "max_ms": 3.7475830176845193,
+      "next_page_sha256": "c88eff205e562430ce5e79119b8087d872e1b513cdf652afb0c63b0b502bfa27",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "compound_all",
+      "expected_count": 416035,
+      "predicate": {
+        "all": [
+          {
+            "field": "metadata/block/parameters/spotIntensity",
+            "operator": "eq",
+            "value": 0.8
+          },
+          {
+            "field": "metadata/cell/label",
+            "operator": "eq",
+            "value": "Cell1"
+          }
+        ]
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        2353.8410830078647,
+        1665.0202909950167,
+        1637.140000006184,
+        1866.5267080068588,
+        1755.666957993526
+      ],
+      "sha256": "ec901c43f8e4246920d2fabbb785b92bc5be972de30edc234fb28b8e76741246",
+      "count": 416035,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 2353.8410830078647,
+      "warm_median_ms": 1710.3436244942714,
+      "max_ms": 2353.8410830078647,
+      "next_page_sha256": "9cc9c8c647b4f8a13fc2f71ff7d31c156ecf2e043f18ee256c3a4ab3f4c7a4c1",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "array_eq",
+      "expected_count": 668034,
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "eq",
+        "value": [
+          40.0,
+          80.0,
+          120.0,
+          160.0,
+          180.0,
+          200.0,
+          220.0,
+          240.0,
+          280.0,
+          320.0,
+          460.0,
+          600.0,
+          720.0
+        ]
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        838.6965420213528,
+        886.4542079973035,
+        843.6816670000553,
+        1095.6611250294372,
+        842.2929169610143
+      ],
+      "sha256": "db2afd5a5536ea225f2db9c59c8d45f03e4db48c35bfac3fadf5c5a9b5a9f918",
+      "count": 668034,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 838.6965420213528,
+      "warm_median_ms": 865.0679374986794,
+      "max_ms": 1095.6611250294372,
+      "next_page_sha256": "ba3756f8f32826143da91564ceb496e24205a18a5ea311308085d940637b31b4",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "array_contains",
+      "expected_count": 668034,
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "contains",
+        "value": 40.0
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        871.3713749893941,
+        847.5014169816859,
+        857.2062919847667,
+        841.1345409695059,
+        839.9014999740757
+      ],
+      "sha256": "db2afd5a5536ea225f2db9c59c8d45f03e4db48c35bfac3fadf5c5a9b5a9f918",
+      "count": 668034,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 871.3713749893941,
+      "warm_median_ms": 844.3179789755959,
+      "max_ms": 871.3713749893941,
+      "next_page_sha256": "ba3756f8f32826143da91564ceb496e24205a18a5ea311308085d940637b31b4",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "number_eq",
+      "expected_count": 654751,
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "eq",
+        "value": 0.8
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        829.3628329993226,
+        829.6250000130385,
+        834.4148750184104,
+        1131.5551250008866,
+        832.3235419811681
+      ],
+      "sha256": "5e7f863dacb33d71a97dc756946b2bdca0377e427df37149a9f72a52c2fb4d8e",
+      "count": 654751,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 829.3628329993226,
+      "warm_median_ms": 833.3692084997892,
+      "max_ms": 1131.5551250008866,
+      "next_page_sha256": "fa49087c8de593d2965198e97073581c3959cf1abcb9e914feb6fccf6f1701a9",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "recorded_null",
+      "expected_count": 305041,
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "is_null"
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        737.4146659858525,
+        451.12383301602677,
+        439.8090419708751,
+        441.97612500283867,
+        444.3619590019807
+      ],
+      "sha256": "104c25c6a25905fd3858169bd75e6fa2e77210a639d1f2e419c744095d5cef42",
+      "count": 305041,
+      "payload_bytes": 138713,
+      "cursor": 191891,
+      "first_ms": 737.4146659858525,
+      "warm_median_ms": 443.1690420024097,
+      "max_ms": 737.4146659858525,
+      "next_page_sha256": "264d1dc5776221a8b339969789ce7d7a2e964efdaacaa5d73f98cc8fb70a980c",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "missing",
+      "expected_count": 331966,
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "missing"
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        2280.2711249678396,
+        2274.856083036866,
+        2273.5455840011127,
+        2300.373165984638,
+        2252.002833993174
+      ],
+      "sha256": "4c56b7fba6735fa61125d0968b16466d9cb3c737fad2f9a9ea701826406ccc9c",
+      "count": 331966,
+      "payload_bytes": 195709,
+      "cursor": 60,
+      "first_ms": 2280.2711249678396,
+      "warm_median_ms": 2274.2008335189894,
+      "max_ms": 2300.373165984638,
+      "next_page_sha256": "eef6cdca259748b64ee4caf8e898c52c4e0db5e0c1f24bb708369820d6e5ad1a",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "mixed_types",
+      "expected_count": 248194,
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "eq",
+        "value": "current injt differenrt history "
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        366.2784170010127,
+        330.9367499896325,
+        308.07050003204495,
+        324.48329200269654,
+        308.432666992303
+      ],
+      "sha256": "e80274bf8f8f9cf318b05ad517447f7274a948d3b4f6bcf53da65a91f1d310c1",
+      "count": 248194,
+      "payload_bytes": 195709,
+      "cursor": 60,
+      "first_ms": 366.2784170010127,
+      "warm_median_ms": 316.45797949749976,
+      "max_ms": 366.2784170010127,
+      "next_page_sha256": "4d3310dc490aef41cd958f12529008ea73a69ff9e541a0f42ebae0cd8b82aad6",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "compound_any",
+      "expected_count": 688138,
+      "predicate": {
+        "any": [
+          {
+            "field": "metadata/block/parameters/spotIntensity",
+            "operator": "eq",
+            "value": 0.8
+          },
+          {
+            "field": "metadata/cell/label",
+            "operator": "eq",
+            "value": "Cell1"
+          }
+        ]
+      },
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        1476.816458045505,
+        1510.1051250239834,
+        1520.6683340365998,
+        1485.1250000065193,
+        1477.8810839634389
+      ],
+      "sha256": "d558350f1cb4d7b84f68d3c646706fe42d4b6e731ed97273a0073875383a918a",
+      "count": 688138,
+      "payload_bytes": 195709,
+      "cursor": 60,
+      "first_ms": 1476.816458045505,
+      "warm_median_ms": 1497.6150625152513,
+      "max_ms": 1520.6683340365998,
+      "next_page_sha256": "e9b7a05c729008bc25a98cc5ae35c9a2e3dbc2acb92b262110e9cadf0a05e30d",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_protocol",
+      "expected_count": 668034,
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "status": "passed",
+      "samples_ms": [
+        74.33066703379154,
+        55.263624992221594,
+        55.407917010597885,
+        54.27999998209998,
+        54.484541004057974
+      ],
+      "sha256": "db2afd5a5536ea225f2db9c59c8d45f03e4db48c35bfac3fadf5c5a9b5a9f918",
+      "count": 668034,
+      "payload_bytes": 193851,
+      "cursor": 1496,
+      "first_ms": 74.33066703379154,
+      "warm_median_ms": 54.874082998139784,
+      "max_ms": 74.33066703379154,
+      "next_page_sha256": "ba3756f8f32826143da91564ceb496e24205a18a5ea311308085d940637b31b4",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "global",
+      "expected_count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        22.347541991621256,
+        18.1200000224635,
+        18.38566700462252,
+        19.205541990231723,
+        17.80733303166926
+      ],
+      "sha256": "4ae44d2191996255179e232c3e9e980c458bf4e36ce066546b1fb58f4151fab6",
+      "count": 1000000,
+      "payload_bytes": 195710,
+      "cursor": 60,
+      "first_ms": 22.347541991621256,
+      "warm_median_ms": 18.25283351354301,
+      "max_ms": 22.347541991621256,
+      "next_page_sha256": "0437e9da900a81533d6c375e4cd641e9e78236445d0c2a0e48c5a761c9cc4967",
+      "row_dto_oracle_passed": true
+    }
+  ],
+  "status": "complete",
+  "caps": {
+    "process_seconds": 360,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "input_stat": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "setup_seconds": 0.004330166964791715,
+  "peak_rss_bytes": 144998400,
+  "wall_seconds": 54.952951499959454,
+  "input_stat_after": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "source_stat_unchanged": true
+}

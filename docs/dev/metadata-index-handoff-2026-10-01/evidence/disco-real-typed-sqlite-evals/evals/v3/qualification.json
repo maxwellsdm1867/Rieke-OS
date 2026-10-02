@@ -1,0 +1,27 @@
+{
+  "attempt": "v3",
+  "historical_output_comparisons": [
+    {
+      "against": "v1",
+      "scenarios": 20,
+      "all_membership_count_payload_facet_cursor_hashes_equal": true,
+      "all_original_input_hashes_equal": true,
+      "all_page_walks_equal": true
+    },
+    {
+      "against": "v2",
+      "scenarios": 20,
+      "all_membership_count_payload_facet_cursor_hashes_equal": true,
+      "all_original_input_hashes_equal": true,
+      "all_page_walks_equal": true
+    }
+  ],
+  "all_actual_final_code_hashes_before_after_stable": true,
+  "code_hashes": {
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "/private/tmp/disco-real-typed-sqlite-20261001/model/typed_real.py": "75658088b3bce59653c6d0ae3a0ae37c33301332c96e73aa5d65a84e204d5a67",
+    "/private/tmp/disco-real-typed-sqlite-20261001/evals/compare_preview.py": "0e10432c1097cef586f50a031af4944f8d7348396219c94891264353afd8d964"
+  }
+}

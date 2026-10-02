@@ -1,0 +1,139 @@
+{
+  "status": "complete",
+  "all_oracles_passed": true,
+  "scopes": [
+    {
+      "label": "global",
+      "epochs": 2781,
+      "earlier_unanalyzed_current_warm_median_ms": 684.9266454810277,
+      "analyze-only": {
+        "samples_ms": [
+          656.7429160350002,
+          656.8654999719001,
+          639.2175829969347,
+          629.5385830453597,
+          642.3056250205263
+        ],
+        "warm_median_ms": 642.3056250205263,
+        "warm_min_ms": 629.5385830453597,
+        "warm_max_ms": 656.8654999719001,
+        "field_count": 141,
+        "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+        "exact_original_catalog_parity": true
+      },
+      "typed-current-catalog": {
+        "samples_ms": [
+          667.3939999891445,
+          692.5142499967478,
+          734.2349580139853,
+          1107.7215420082211,
+          877.3610829957761
+        ],
+        "warm_median_ms": 734.2349580139853,
+        "warm_min_ms": 667.3939999891445,
+        "warm_max_ms": 1107.7215420082211,
+        "field_count": 141,
+        "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+        "exact_original_catalog_parity": true
+      },
+      "typed_relative_to_analyze_only": 1.1431239730938385
+    },
+    {
+      "label": "largest_cell",
+      "epochs": 687,
+      "earlier_unanalyzed_current_warm_median_ms": 233.8947500102222,
+      "analyze-only": {
+        "samples_ms": [
+          254.49124997248873,
+          258.0339999985881,
+          267.3120829858817,
+          260.3877499932423,
+          258.0831670202315
+        ],
+        "warm_median_ms": 258.0831670202315,
+        "warm_min_ms": 254.49124997248873,
+        "warm_max_ms": 267.3120829858817,
+        "field_count": 141,
+        "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+        "exact_original_catalog_parity": true
+      },
+      "typed-current-catalog": {
+        "samples_ms": [
+          308.4017080254853,
+          280.5664589977823,
+          275.76925000175834,
+          290.446792030707,
+          285.3483749786392
+        ],
+        "warm_median_ms": 285.3483749786392,
+        "warm_min_ms": 275.76925000175834,
+        "warm_max_ms": 308.4017080254853,
+        "field_count": 141,
+        "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+        "exact_original_catalog_parity": true
+      },
+      "typed_relative_to_analyze_only": 1.1056450456386036
+    }
+  ],
+  "original_tables": {
+    "meta": {
+      "rows": 6,
+      "sha256": "82ba345b4b92350a77452006874608374ff80342c0327ac9a30fd3653a92892a"
+    },
+    "epochs": {
+      "rows": 2781,
+      "sha256": "13b74a28dd5db0665cb9ffead86992b953685bc133c20612b68a7be8ecd9da2b"
+    },
+    "fields": {
+      "rows": 140,
+      "sha256": "3a60d72d0c2c650d05302ddc6e192db181feeebd81f335b6162c52e591ec0a12"
+    },
+    "field_values": {
+      "rows": 10756,
+      "sha256": "958fb743bbc49d75c3ef33cf0348d8c9043c99365aebf35032d938f5837a4075"
+    },
+    "epoch_values": {
+      "rows": 214451,
+      "sha256": "c82110ecd68eaf12a82e443d3b8fa380331738d8828a601cfe8acca39a7b3b2f"
+    },
+    "sources": {
+      "rows": 3,
+      "sha256": "da4bc9c1180bc9797b7ade63734b938c7f919b69703a01bac8fd846a55243052"
+    },
+    "metadata_objects": {
+      "rows": 202,
+      "sha256": "1e75249508ef335b51a16b0ebadd2e93f8ab427dc8e62c9e40231336f8f9ded0"
+    }
+  },
+  "source_hashes": {
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/private/tmp/disco-real-typed-sqlite-20261001/model/real-typed.sqlite": "84167c9c7b6ae416997a0b05a10db3e81fdb51674f4c984570e54d411738a834",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+  },
+  "arms": {
+    "analyze-only": {
+      "receipt": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/extra-analyze-only.json",
+      "owned_sha256": "34aeee8b79e24ac441b61ccea02f128e414ac19fee2e2412e73c25e26fe7ce40",
+      "sqlite_stat1_rows": 9,
+      "sqlite_stat1_sha256": "b4282b63821492a13097ad6a549ce6ba2e715aa26ec873987173eb8573594ff9",
+      "process_peak_rss_mib": 81.125
+    },
+    "typed-current-catalog": {
+      "receipt": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/extra-typed-current-catalog.json",
+      "owned_sha256": "84167c9c7b6ae416997a0b05a10db3e81fdb51674f4c984570e54d411738a834",
+      "sqlite_stat1_rows": 21,
+      "sqlite_stat1_sha256": "875c9a0b75f16d1a3b6a5aeca832fc56590dce77f617454e6f22cb73688489a7",
+      "process_peak_rss_mib": 70.84375
+    }
+  },
+  "conclusion": "Adding the typed auxiliary tables does not accelerate unmodified current full catalog computation. ANALYZE-only also leaves global and largest-cell full catalogs far above 100ms. The fast typed bounded filtering/page operation does not fix the existing all-field preview computation unless the application adopts a different catalog query/response path.",
+  "sampling": "Attribution arms: independent serial processes; one excluded warmup and five measured warm repeats per scope; JSON encoding included. Earlier unanalyzed baseline reports four warm repeats after its first measured call, so its latency comparison is contextual rather than a balanced randomized trial.",
+  "limitations": [
+    "Only 2781 actual epochs; no million-epoch qualification",
+    "Full catalog plus JSON only, not full API preview endpoint or app",
+    "Five serial warm samples; performance differences among analyzed full-catalog arms are descriptive; no statistical engine-ranking claim",
+    "Full catalog output hashes, all seven original table counts/content hashes and source/module pre/post SHA equality checked"
+  ]
+}

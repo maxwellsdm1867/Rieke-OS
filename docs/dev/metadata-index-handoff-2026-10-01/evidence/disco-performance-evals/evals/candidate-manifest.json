@@ -1,0 +1,137 @@
+{
+  "source_head": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "files": [
+    {
+      "path": "candidate/native-metadata-100k.json",
+      "sha256": "7f29e14b4e51f108ff5489e080811225243ec2898eceb509d2f764466cf4b40e",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-native/native-metadata-100k.json"
+    },
+    {
+      "path": "candidate/browser-100k.json",
+      "sha256": "27c2b7754d19e6a236378deea37f568d74eef61843ed2b3ec1536b8cc45496b5",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-browser.json"
+    },
+    {
+      "path": "candidate/lightweight-preview.json",
+      "sha256": "4728f9884d158a7c80ff0db6baa7089dc13019a61f7f7068455f25b3a97cb6de",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-lightweight-preview.json"
+    },
+    {
+      "path": "candidate/comparison-native.json",
+      "sha256": "9cafe3acc8322363a2c7295aefe689acc8fbfc5d85c197c736276b82e84326b4",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/comparison-native.json"
+    },
+    {
+      "path": "candidate/comparison-browser.json",
+      "sha256": "ab34ea335ece42875f136fa91d5eb71faa3b7b2887814f2174bb904720def187",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/comparison-browser.json"
+    },
+    {
+      "path": "candidate/native-runner.py",
+      "sha256": "9ca093ba51cde2864a9646ab541aa5f52b09317502e88f6ab95cf03ae83710c9"
+    },
+    {
+      "path": "candidate/browser-runner.mjs",
+      "sha256": "87b09a08d7341c5667ceae1062403161f969823e8ef9e9db4d4a67c91364b09a"
+    },
+    {
+      "path": "candidate/diagnostic-preview-runner.py",
+      "sha256": "3d466d30e3b0fac42814c72543f5af23701364e518cd91636e4798986ad05ff6",
+      "scope": "Exact candidate-only post-browser lightweight diagnostic runner"
+    },
+    {
+      "path": "candidate/tags-10k-tags.json",
+      "sha256": "ec7948eb248ea0fad96c1803350fd1f6b8dba399e5071624861cc5929358f6b2",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-10k/tags.json"
+    },
+    {
+      "path": "candidate/tags-10k-runner.json",
+      "sha256": "d068e7b8ab10180ca0834e0389665a37fcd9a2939f8130992bf5fb3935581ed9",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-10k/runner.json"
+    },
+    {
+      "path": "candidate/tags-10k-comparison.json",
+      "sha256": "de7f3dbcb61ec3b78f5248b22f66535f0bbff63dd2b815147f80191f4fd7943a",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-10k/comparison.json"
+    },
+    {
+      "path": "candidate/tags-100k-tags.json",
+      "sha256": "095365fc2a36c9e4a829f23c6a7dc2b1bf84bab9dc708a434611233578365f58",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-100k/tags.json"
+    },
+    {
+      "path": "candidate/tags-100k-runner.json",
+      "sha256": "03883f80c345c6003aadb8a54afa308d44424a95535778dc056140e201409869",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-100k/runner.json"
+    },
+    {
+      "path": "candidate/tags-100k-comparison.json",
+      "sha256": "30e68da501d8ad6a2f48d4a881a74c19860492fb64430e20e71587a3454d7d9f",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-tags-100k/comparison.json"
+    },
+    {
+      "path": "candidate/trace-trace.json",
+      "sha256": "d7c22197112c112a6a2657e49dc18ca525e27f1c47238d601794de1470eee530",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-trace/trace.json"
+    },
+    {
+      "path": "candidate/trace-runner.json",
+      "sha256": "d2496c56112bfb54fb445de8ccf20bf87e9cc69e90f8f19a4389720ddfc3deff",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-trace/runner.json"
+    },
+    {
+      "path": "candidate/trace-comparison.json",
+      "sha256": "d72c5c8c4eebda8a0e6c171b4ecabe42edafb524306ed14ff174a913c2d42401",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-trace/comparison.json"
+    },
+    {
+      "path": "candidate/baseline-paired-lightweight-preview.json",
+      "sha256": "94a79cfe154d9c8fc14590181623cb0bf8b4941849e4ff6213b78af23c0e3ce5",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/baseline-lightweight-paired/lightweight-preview.json"
+    },
+    {
+      "path": "candidate/baseline-paired-native-native-metadata-100k.json",
+      "sha256": "09bec49fc01731ec77bffeb53040d0adacc08a0b9bf7f43fe15e5ea8c3c82690",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/baseline-lightweight-paired/native/native-metadata-100k.json"
+    },
+    {
+      "path": "candidate/baseline-paired-native.log",
+      "sha256": "fb6efb506ad1aa196adc61db4aa6388a6dd15eda490f9837cdf0eee7afeb2991",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/baseline-lightweight-paired/native.log"
+    },
+    {
+      "path": "candidate/candidate-paired-lightweight-preview.json",
+      "sha256": "71f17985c4a42d7405746c4328483e73f6216071821cd072faa675fe84ce9812",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-lightweight-paired/lightweight-preview.json"
+    },
+    {
+      "path": "candidate/candidate-paired-native-native-metadata-100k.json",
+      "sha256": "2bfef2584e01bbfe094a20347b449f024d7152fe27b37f8c0c919de19d8f9dc5",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-lightweight-paired/native/native-metadata-100k.json"
+    },
+    {
+      "path": "candidate/candidate-paired-native.log",
+      "sha256": "b2fb7176886c6d507394557ff985e99761eba39b5c94e7f8d71fe4db06f951e9",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/candidate-lightweight-paired/native.log"
+    },
+    {
+      "path": "candidate/comparison-lightweight-paired.json",
+      "sha256": "1e02af3e495ef287a44620849bd87672f03ecc31f917a1aa2ad9c464014527d8"
+    },
+    {
+      "path": "candidate/index-build/baseline/receipt.json",
+      "sha256": "4861a63d8977ae1644b107d647911e21bb06e217e540988e686a00a3994db4c1",
+      "scope": "Final fresh-index/integrated-check receipt"
+    },
+    {
+      "path": "candidate/index-build/candidate/receipt.json",
+      "sha256": "b979011bf2bc547aea9ce660749f3400ab036914573d02c7708e5d871de5d216",
+      "scope": "Final fresh-index/integrated-check receipt"
+    },
+    {
+      "path": "candidate/integration-tests.log",
+      "sha256": "15677903df7838d712c5d3622541924052b8de4512063bc852aa84198240f06a",
+      "scope": "Final fresh-index/integrated-check receipt"
+    }
+  ]
+}

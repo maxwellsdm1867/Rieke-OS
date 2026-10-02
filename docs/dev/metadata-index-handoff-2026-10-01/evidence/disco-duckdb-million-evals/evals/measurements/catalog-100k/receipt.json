@@ -1,0 +1,257 @@
+{
+  "epochs": 100000,
+  "status": "passed",
+  "phases": {
+    "build": {
+      "tables": {
+        "meta": {
+          "rows": 6,
+          "seconds": 0.01958829100476578
+        },
+        "epochs": {
+          "rows": 100000,
+          "seconds": 1.2063809580286033
+        },
+        "fields": {
+          "rows": 16,
+          "seconds": 0.002992750029079616
+        },
+        "field_values": {
+          "rows": 307018,
+          "seconds": 0.4163709169952199
+        },
+        "epoch_values": {
+          "rows": 1600000,
+          "seconds": 1.7092423329595476
+        },
+        "sources": {
+          "rows": 10,
+          "seconds": 0.0016720839776098728
+        }
+      },
+      "seconds": 3.472781707998365,
+      "bytes": 73674752
+    },
+    "reopen_seconds": 0.014179792022332549
+  },
+  "operations": [
+    {
+      "name": "sqlite_eav",
+      "samples_seconds": [
+        2.117747957992833,
+        1.4490267079672776,
+        1.3865148750483058,
+        1.3878200419712812,
+        1.3790262500406243,
+        1.3602330839494243,
+        1.3449192919651978,
+        1.4221911669592373,
+        1.367511291988194,
+        1.3932710419758223
+      ],
+      "first_seconds": 2.117747957992833,
+      "median_seconds": 1.3871674585097935,
+      "warm_median_seconds": 1.3865148750483058,
+      "maximum_seconds": 2.117747957992833,
+      "catalog_sha256": "5403306490374815a47f309e927396b2612b1732dd1ac392b399eb53df83d1c2",
+      "response_json_bytes": 7355,
+      "independent_oracle_passed": true,
+      "exact_sqlite_control_hash_passed": true
+    },
+    {
+      "name": "duckdb_eav",
+      "samples_seconds": [
+        0.3364665000117384,
+        0.3472441249759868,
+        0.3183259590296075,
+        0.3354837500373833,
+        0.31619587499881163,
+        0.3194435419864021,
+        0.2997001250041649,
+        0.32624074997147545,
+        0.319000874995254,
+        0.3156715420191176
+      ],
+      "first_seconds": 0.3364665000117384,
+      "median_seconds": 0.31922220849082805,
+      "warm_median_seconds": 0.319000874995254,
+      "maximum_seconds": 0.3472441249759868,
+      "catalog_sha256": "5403306490374815a47f309e927396b2612b1732dd1ac392b399eb53df83d1c2",
+      "response_json_bytes": 7355,
+      "independent_oracle_passed": true,
+      "exact_sqlite_control_hash_passed": true
+    }
+  ],
+  "resources": [
+    {
+      "elapsed_seconds": 9.495799895375967e-05,
+      "rss_mib": 85.765625,
+      "available_mib": 2637.0,
+      "free_disk_gib": 21.34579849243164
+    },
+    {
+      "elapsed_seconds": 1.0045025830040686,
+      "rss_mib": 233.53125,
+      "available_mib": 2514.8125,
+      "free_disk_gib": 21.315597534179688
+    },
+    {
+      "elapsed_seconds": 2.010649874981027,
+      "rss_mib": 442.9375,
+      "available_mib": 2495.09375,
+      "free_disk_gib": 21.27108383178711
+    },
+    {
+      "elapsed_seconds": 3.016417665989138,
+      "rss_mib": 340.96875,
+      "available_mib": 2556.953125,
+      "free_disk_gib": 21.264705657958984
+    },
+    {
+      "elapsed_seconds": 4.020812582981307,
+      "rss_mib": 281.921875,
+      "available_mib": 2543.5625,
+      "free_disk_gib": 21.275909423828125
+    },
+    {
+      "elapsed_seconds": 5.093869582982734,
+      "rss_mib": 143.46875,
+      "available_mib": 2599.859375,
+      "free_disk_gib": 21.268627166748047
+    },
+    {
+      "elapsed_seconds": 6.125158208014909,
+      "rss_mib": 162.15625,
+      "available_mib": 2479.609375,
+      "free_disk_gib": 21.276348114013672
+    },
+    {
+      "elapsed_seconds": 7.154513208020944,
+      "rss_mib": 168.203125,
+      "available_mib": 2496.765625,
+      "free_disk_gib": 21.276348114013672
+    },
+    {
+      "elapsed_seconds": 8.157132915977854,
+      "rss_mib": 155.5,
+      "available_mib": 2507.71875,
+      "free_disk_gib": 21.268531799316406
+    },
+    {
+      "elapsed_seconds": 9.161039791011717,
+      "rss_mib": 127.8125,
+      "available_mib": 2565.953125,
+      "free_disk_gib": 21.27635955810547
+    },
+    {
+      "elapsed_seconds": 10.166723124973942,
+      "rss_mib": 169.734375,
+      "available_mib": 2580.90625,
+      "free_disk_gib": 21.268543243408203
+    },
+    {
+      "elapsed_seconds": 11.170164707989898,
+      "rss_mib": 171.90625,
+      "available_mib": 2545.59375,
+      "free_disk_gib": 21.27629852294922
+    },
+    {
+      "elapsed_seconds": 12.173110499978065,
+      "rss_mib": 162.578125,
+      "available_mib": 2523.46875,
+      "free_disk_gib": 21.27629852294922
+    },
+    {
+      "elapsed_seconds": 13.178791125013959,
+      "rss_mib": 178.328125,
+      "available_mib": 2518.03125,
+      "free_disk_gib": 21.27629852294922
+    },
+    {
+      "elapsed_seconds": 14.179679707973264,
+      "rss_mib": 172.859375,
+      "available_mib": 2539.765625,
+      "free_disk_gib": 21.268444061279297
+    },
+    {
+      "elapsed_seconds": 15.185763708024751,
+      "rss_mib": 168.4375,
+      "available_mib": 2537.796875,
+      "free_disk_gib": 21.267906188964844
+    },
+    {
+      "elapsed_seconds": 16.19172816601349,
+      "rss_mib": 158.546875,
+      "available_mib": 2473.78125,
+      "free_disk_gib": 21.27669906616211
+    },
+    {
+      "elapsed_seconds": 17.20258525002282,
+      "rss_mib": 172.671875,
+      "available_mib": 2493.421875,
+      "free_disk_gib": 21.276626586914062
+    },
+    {
+      "elapsed_seconds": 18.238564040977508,
+      "rss_mib": 170.875,
+      "available_mib": 2467.96875,
+      "free_disk_gib": 21.276592254638672
+    },
+    {
+      "elapsed_seconds": 19.271940000005998,
+      "rss_mib": 296.203125,
+      "available_mib": 2473.171875,
+      "free_disk_gib": 21.276615142822266
+    },
+    {
+      "elapsed_seconds": 20.292126999993343,
+      "rss_mib": 333.6875,
+      "available_mib": 2480.390625,
+      "free_disk_gib": 21.276615142822266
+    },
+    {
+      "elapsed_seconds": 21.327887290972285,
+      "rss_mib": 329.359375,
+      "available_mib": 2518.046875,
+      "free_disk_gib": 21.276531219482422
+    }
+  ],
+  "scope": "Exact current production DiskMetadataIndex.catalog algorithm plus canonical JSON serialization on the contrast=.3 subset. Catalog-only: excludes complete Flask filter-preview, native curation/revisions, frozen membership payload, browser paint and details. The 100k import arm isolates EAV engine; derived1m SQL EAV is synthetic metadata only.",
+  "phase": "measure_duckdb_eav",
+  "known_field_ids": [
+    "epoch",
+    "date",
+    "cell",
+    "block",
+    "block time",
+    "cell type",
+    "group label",
+    "group",
+    "protocol",
+    "parameters/contrast",
+    "parameters/currentMean",
+    "parameters/seed",
+    "parameters/stimTime",
+    "metadata/cell/properties/type",
+    "metadata/cell/label",
+    "metadata/block/parameters/amp"
+  ],
+  "source_generation": "everyday-100000",
+  "scope_count": 20000,
+  "scope_sha256": "1f3935d7e5f9bd9c3aa73d2ef23dd1de68c4a220fbf8fb46414ba1b4c4eb6e1c",
+  "independent_membership_and_types_passed": true,
+  "active_samples_seconds": [
+    0.3364665000117384,
+    0.3472441249759868,
+    0.3183259590296075,
+    0.3354837500373833,
+    0.31619587499881163,
+    0.3194435419864021,
+    0.2997001250041649,
+    0.32624074997147545,
+    0.319000874995254,
+    0.3156715420191176
+  ],
+  "seconds": 21.98729075002484,
+  "peak_sampled_rss_mib": 442.9375
+}

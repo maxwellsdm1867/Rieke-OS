@@ -1,0 +1,63 @@
+{
+  "started": "2026-10-01T07:52:09.113775+00:00",
+  "source_head": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "scope": "Actual native MySQL8.4.2 and current Flask/WorkspaceService with sealed synthetic100k metadata index; empty saved annotations/default curation; no SQL doubles, no H5/waveform I/O, no private files.",
+  "name": "http_contrast_filter_preview_catalog_summary_false",
+  "measurement_scope": "Real localhost HTTP, response bytes and JSON decode; no browser rendering. Existing UI lightweight path, separate from historical default full-catalog API preview.",
+  "warmup_scope": "api-prewarmed",
+  "request_body": {
+    "predicate": {
+      "field": "parameters/contrast",
+      "operator": "eq",
+      "value": 0.3
+    },
+    "splits": "date,cell,block",
+    "summary_only": true,
+    "catalog_summary": false
+  },
+  "samples_seconds": [
+    0.5793825830332935,
+    0.5929631249746308,
+    0.6341554580139928,
+    0.6202918329508975,
+    0.5766071659745649,
+    0.5687549589783885,
+    0.5886336249532178,
+    0.5658425419824198,
+    0.5706201670109294,
+    0.5746077090152539
+  ],
+  "first_seconds": 0.5793825830332935,
+  "median_seconds": 0.5779948745039292,
+  "maximum_seconds": 0.6341554580139928,
+  "response_bytes": [
+    4893,
+    4893,
+    4893,
+    4893,
+    4893,
+    4893,
+    4893,
+    4893,
+    4893,
+    4893
+  ],
+  "response_keys": [
+    "catalog",
+    "catalog_summary",
+    "matched_count",
+    "metadata_fingerprint_version",
+    "predicate",
+    "source_revisions",
+    "source_scope",
+    "splits",
+    "total_catalog",
+    "total_source",
+    "tree",
+    "tree_revision"
+  ],
+  "canonical_response_sha256": "6f775c3216df0fef3af9e9bb83ea6b8e866205db074032a5179cf70e1b1538be",
+  "matched_count": 20000,
+  "passed": true,
+  "harness_sha256": "d3d3b653a7d57fd7c2a71d06ef1d50e5715cba519717d80692e66125b0fa7d2e"
+}

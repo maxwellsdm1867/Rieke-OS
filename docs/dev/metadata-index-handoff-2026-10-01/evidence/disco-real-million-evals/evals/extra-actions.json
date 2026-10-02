@@ -1,0 +1,90 @@
+{
+  "pid": 98166,
+  "status": "complete",
+  "results": {
+    "first_60_cells": {
+      "first_ms": 1.5632910071872175,
+      "warm_median_ms": 1.4185414765961468,
+      "max_ms": 1.5632910071872175,
+      "samples_ms": [
+        1.5632910071872175,
+        1.4488750020973384,
+        1.3408339582383633,
+        1.437624974641949,
+        1.3994579785503447
+      ],
+      "sha256": "60722f6140d3a2b3bde57e6c68b8142d5e753902fb8732c8bb049ca9b43f8a9a",
+      "payload_bytes": 3632
+    },
+    "next_60_cells": {
+      "first_ms": 1.451707968953997,
+      "warm_median_ms": 1.3099584903102368,
+      "max_ms": 1.451707968953997,
+      "samples_ms": [
+        1.451707968953997,
+        1.3789579970762134,
+        1.328666985500604,
+        1.2912499951198697,
+        1.272291992790997
+      ],
+      "sha256": "267a9b1772af1ef0aab6bf3495a5bc38f142f228cb7097bfbc737d37db7a2f94",
+      "payload_bytes": 3630
+    },
+    "blocks_in_loaded_cell": {
+      "first_ms": 2.0672919927164912,
+      "warm_median_ms": 0.5003745027352124,
+      "max_ms": 2.0672919927164912,
+      "samples_ms": [
+        2.0672919927164912,
+        0.5228330264799297,
+        0.5249999812804163,
+        0.4622499691322446,
+        0.4779159789904952
+      ],
+      "sha256": "b6cdbfeff2c0c80550041c17d370f855aa1f95c6db50d529fe034f06a861eaac",
+      "payload_bytes": 2309
+    },
+    "current_cached_detail": {
+      "first_ms": 0.2008330193348229,
+      "warm_median_ms": 0.17789550474844873,
+      "max_ms": 0.2008330193348229,
+      "samples_ms": [
+        0.2008330193348229,
+        0.17995800590142608,
+        0.17625000327825546,
+        0.17333397408947349,
+        0.179541006218642
+      ],
+      "sha256": "25002f2db9a22dc88519219965c3f2c62b0ad255d5e8e81f4ae95467be8db408",
+      "payload_bytes": 8141
+    },
+    "typed_detail": {
+      "first_ms": 0.18991704564541578,
+      "warm_median_ms": 0.1583749835845083,
+      "max_ms": 0.18991704564541578,
+      "samples_ms": [
+        0.18991704564541578,
+        0.1729580108076334,
+        0.16187498113140464,
+        0.15487498603761196,
+        0.15383295249193907
+      ],
+      "sha256": "25002f2db9a22dc88519219965c3f2c62b0ad255d5e8e81f4ae95467be8db408",
+      "payload_bytes": 8141
+    },
+    "full_cell_catalog": {
+      "milliseconds": 25591.374917014036,
+      "total": 687,
+      "fields": 141,
+      "sha256": "91de9dc08d48919e361e2e1da1cdd7c842a1dc43af02861ba8608faf34b419b6"
+    }
+  },
+  "cap_rss_bytes": 1073741824,
+  "cap_seconds": 47,
+  "navigation_oracle_seconds": 0.5474431659677066,
+  "details_equal": true,
+  "detail_payload_bytes": 8141,
+  "current_operation": "full native 687-epoch catalog",
+  "wall_seconds": 26.1664475419675,
+  "peak_rss_bytes": 66699264
+}

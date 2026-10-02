@@ -1,0 +1,299 @@
+{
+  "family": "browser",
+  "baseline": "docs/dev/performance-evals-2026-10-01/baseline/browser/same-day-browser-100k.json",
+  "candidate": "/private/tmp/disco-performance-runs-20261001/candidate-browser.json",
+  "correctness_passed": true,
+  "policy": "Median regression requires both >20% and >20ms by default; setup/first timings are descriptive single observations.",
+  "measurements": [
+    {
+      "name": "collapse_cell_cached",
+      "baseline": {
+        "median_ms": 61.09999996423721,
+        "first_ms": 61.09999996423721,
+        "max_ms": 70.10000002384186,
+        "warm_median_ms": 60.900000005960464,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 59.60000002384186,
+        "first_ms": 59.60000002384186,
+        "max_ms": 91.60000002384186,
+        "warm_median_ms": 59.849999994039536,
+        "n": 5
+      },
+      "delta_ms": -1.4999999403953552,
+      "speedup": 1.0251677842247535,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -1.4999999403953552,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "component_initial_tree_load_production_bundle_cold",
+      "baseline": {
+        "median_ms": 2904.6087500000003,
+        "first_ms": 2904.6087500000003,
+        "max_ms": 2904.6087500000003,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 909.5860419999999,
+        "first_ms": 909.5860419999999,
+        "max_ms": 909.5860419999999,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -1995.0227080000004,
+      "speedup": 3.1933303897378855,
+      "regression_threshold_ms": 580.9217500000001,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -1995.0227080000004,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "expand_block_first_time",
+      "baseline": {
+        "median_ms": 2565.099999964237,
+        "first_ms": 2633.300000011921,
+        "max_ms": 2650.099999964237,
+        "warm_median_ms": 2515.150000005961,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 100.59999996423721,
+        "first_ms": 115.69999998807907,
+        "max_ms": 349.5999999642372,
+        "warm_median_ms": 99.69999998807907,
+        "n": 5
+      },
+      "delta_ms": -2464.5,
+      "speedup": 25.49801193713834,
+      "regression_threshold_ms": 513.0199999928475,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2517.600000023842,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "expand_cell_first_time",
+      "baseline": {
+        "median_ms": 2465.900000035763,
+        "first_ms": 2600.0,
+        "max_ms": 2616.0,
+        "warm_median_ms": 2458.0,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 101.5,
+        "first_ms": 165.0999999642372,
+        "max_ms": 165.0999999642372,
+        "warm_median_ms": 100.7999999821186,
+        "n": 5
+      },
+      "delta_ms": -2364.400000035763,
+      "speedup": 24.29458128114052,
+      "regression_threshold_ms": 493.18000000715256,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2434.900000035763,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "baseline": {
+        "median_ms": 2615.600000023842,
+        "first_ms": 2531.2999999523163,
+        "max_ms": 2632.100000023842,
+        "warm_median_ms": 2615.6500000059605,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 98.5,
+        "first_ms": 99.10000002384186,
+        "max_ms": 99.30000001192093,
+        "warm_median_ms": 98.25,
+        "n": 5
+      },
+      "delta_ms": -2517.100000023842,
+      "speedup": 26.554314721054233,
+      "regression_threshold_ms": 523.1200000047684,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2432.1999999284744,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "baseline": {
+        "median_ms": 2549.699999988079,
+        "first_ms": 2583.900000035763,
+        "max_ms": 2617.199999988079,
+        "warm_median_ms": 2549.1999999880786,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 100.19999998807907,
+        "first_ms": 100.19999998807907,
+        "max_ms": 100.5,
+        "warm_median_ms": 100.15000000596046,
+        "n": 5
+      },
+      "delta_ms": -2449.5,
+      "speedup": 25.446107787339525,
+      "regression_threshold_ms": 509.9399999976158,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2483.7000000476837,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "next_cell_page_60",
+      "baseline": {
+        "median_ms": 2238.199999988079,
+        "first_ms": 2258.699999988079,
+        "max_ms": 2293.100000023842,
+        "warm_median_ms": 2189.59999999404,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 93.0,
+        "first_ms": 88.89999997615814,
+        "max_ms": 108.39999997615814,
+        "warm_median_ms": 96.90000000596046,
+        "n": 5
+      },
+      "delta_ms": -2145.199999988079,
+      "speedup": 24.066666666538485,
+      "regression_threshold_ms": 447.63999999761586,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2169.800000011921,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "reopen_cell_cached",
+      "baseline": {
+        "median_ms": 65.69999998807907,
+        "first_ms": 65.0,
+        "max_ms": 67.10000002384186,
+        "warm_median_ms": 66.19999998807907,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 66.39999997615814,
+        "first_ms": 65.5,
+        "max_ms": 80.5,
+        "warm_median_ms": 67.69999998807907,
+        "n": 5
+      },
+      "delta_ms": 0.699999988079071,
+      "speedup": 0.9894578315010479,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": 0.5,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "baseline": {
+        "median_ms": 32.19999998807907,
+        "first_ms": 32.0,
+        "max_ms": 33.80000001192093,
+        "warm_median_ms": 32.5,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 32.69999998807907,
+        "first_ms": 33.80000001192093,
+        "max_ms": 34.59999996423721,
+        "warm_median_ms": 32.29999998211861,
+        "n": 5
+      },
+      "delta_ms": 0.5,
+      "speedup": 0.98470948011675,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": 1.800000011920929,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "baseline": {
+        "median_ms": 32.5,
+        "first_ms": 32.10000002384186,
+        "max_ms": 48.19999998807907,
+        "warm_median_ms": 32.55000001192093,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 32.09999996423721,
+        "first_ms": 46.0,
+        "max_ms": 80.29999995231628,
+        "warm_median_ms": 31.69999998807907,
+        "n": 5
+      },
+      "delta_ms": -0.40000003576278687,
+      "speedup": 1.0124610603180195,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": 13.899999976158142,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "select_epoch_metadata",
+      "baseline": {
+        "median_ms": 97.19999998807907,
+        "first_ms": 94.60000002384186,
+        "max_ms": 113.69999998807907,
+        "warm_median_ms": 97.5,
+        "n": 5
+      },
+      "candidate": {
+        "median_ms": 96.19999998807907,
+        "first_ms": 92.89999997615814,
+        "max_ms": 101.40000003576279,
+        "warm_median_ms": 97.55000001192093,
+        "n": 5
+      },
+      "delta_ms": -1.0,
+      "speedup": 1.0103950103962984,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -1.7000000476837158,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    }
+  ],
+  "regressions": [],
+  "descriptive_slowdowns": [],
+  "missing_measurements": [],
+  "passed": true
+}

@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "compound_all", "mode": "page", "sample": 0, "ms": 14320.011541014537}
+{"arm": "candidate", "label": "compound_all", "mode": "page", "sample": 0, "ms": 1639.6967089967802}
+{"arm": "candidate", "label": "compound_all", "mode": "page", "sample": 1, "ms": 1642.2023749910295}
+{"arm": "baseline", "label": "compound_all", "mode": "page", "sample": 1, "ms": 14380.113874969538}
+{"arm": "baseline", "label": "compound_all", "mode": "page", "sample": 2, "ms": 14266.176083008759}
+{"arm": "candidate", "label": "compound_all", "mode": "page", "sample": 2, "ms": 1946.9725409871899}
+{"arm": "candidate", "label": "compound_all", "mode": "page", "sample": 3, "ms": 1665.1487920316868}
+{"arm": "baseline", "label": "compound_all", "mode": "page", "sample": 3, "ms": 14446.643040981144}
+{"arm": "baseline", "label": "compound_all", "mode": "page", "sample": 4, "ms": 14210.550540999975}
+{"arm": "candidate", "label": "compound_all", "mode": "page", "sample": 4, "ms": 1913.6802079738118}
+{"case": "compound_all", "mode": "page", "status": "passed"}

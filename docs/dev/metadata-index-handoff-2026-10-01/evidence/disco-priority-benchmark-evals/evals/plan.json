@@ -1,0 +1,253 @@
+{
+  "cases": [
+    {
+      "label": "global_page",
+      "predicate": null,
+      "scope": null,
+      "facets": [],
+      "count": 1000000
+    },
+    {
+      "label": "cell_page_two_facets",
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [
+        "parameters/currentSpotSize",
+        "parameters/useRandomSeed"
+      ],
+      "count": 687
+    },
+    {
+      "label": "saved_expanding_spot_layout",
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "facets": [
+        "parameters/currentSpotSize"
+      ],
+      "count": 668034
+    },
+    {
+      "label": "saved_history_filter",
+      "predicate": {
+        "field": "parameters/history1",
+        "operator": "eq",
+        "value": [
+          0,
+          675
+        ]
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject"
+      },
+      "facets": [],
+      "count": 31592
+    },
+    {
+      "label": "saved_frequency_filter",
+      "predicate": {
+        "field": "parameters/frequencyCutoff",
+        "operator": "eq",
+        "value": 100
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject"
+      },
+      "facets": [],
+      "count": 97030
+    },
+    {
+      "label": "mean_SD_filter",
+      "predicate": {
+        "all": [
+          {
+            "field": "parameters/currentMean",
+            "operator": "eq",
+            "value": 0
+          },
+          {
+            "field": "parameters/currentSD",
+            "operator": "eq",
+            "value": 750
+          }
+        ]
+      },
+      "scope": {
+        "protocol": "edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject"
+      },
+      "facets": [],
+      "count": 50310
+    },
+    {
+      "label": "NDF_filter",
+      "predicate": {
+        "field": "parameters/NDF",
+        "operator": "eq",
+        "value": 4
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [
+        "parameters/NDF"
+      ],
+      "count": 687
+    },
+    {
+      "label": "light_path_filter",
+      "predicate": {
+        "field": "parameters/lightPath",
+        "operator": "eq",
+        "value": "above"
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [],
+      "count": 687
+    },
+    {
+      "label": "bath_temperature_filter",
+      "predicate": {
+        "field": "properties/bathTemperature",
+        "operator": "eq",
+        "value": 31.5
+      },
+      "scope": null,
+      "facets": [],
+      "count": 113030
+    },
+    {
+      "label": "cold_canvas_query",
+      "predicate": {
+        "field": "parameters/canvasSize",
+        "operator": "eq",
+        "value": [
+          800,
+          600
+        ]
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [
+        "parameters/canvasSize"
+      ],
+      "count": 687
+    },
+    {
+      "label": "cold_generator_query",
+      "predicate": {
+        "field": "parameters/stimulusGenerator",
+        "operator": "eq",
+        "value": "edu.washington.riekelab.chris.stimuli.VariableHistoryNoiseGenerator"
+      },
+      "scope": null,
+      "facets": [],
+      "count": 110931
+    },
+    {
+      "label": "cold_trial_count_query",
+      "predicate": {
+        "field": "parameters/numberOfTrials",
+        "operator": "eq",
+        "value": 1
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [],
+      "count": 52
+    },
+    {
+      "label": "cold_seed_query",
+      "predicate": {
+        "field": "parameters/seed",
+        "operator": "eq",
+        "value": 0
+      },
+      "scope": null,
+      "facets": [],
+      "count": 53900
+    },
+    {
+      "label": "cold_rig_query",
+      "predicate": {
+        "field": "metadata/experiment/properties/rig",
+        "operator": "eq",
+        "value": "F (old slice)"
+      },
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "facets": [
+        "metadata/experiment/properties/rig"
+      ],
+      "count": 687
+    },
+    {
+      "label": "global_two_facets",
+      "predicate": null,
+      "scope": null,
+      "facets": [
+        "parameters/currentSpotSize",
+        "parameters/useRandomSeed"
+      ],
+      "count": 1000000
+    }
+  ],
+  "real_epochs": 2781,
+  "replayed_epochs": 1000000,
+  "shared_core": true,
+  "hot_paths": [
+    "block",
+    "block time",
+    "cell",
+    "cell type",
+    "date",
+    "epoch",
+    "group",
+    "group label",
+    "metadata/cell/properties/type",
+    "metadata/group/properties/externalSolutionAdditions",
+    "metadata/group/properties/internalSolutionAdditions",
+    "metadata/group/properties/pipetteSolution",
+    "metadata/group/properties/recordingTechnique",
+    "metadata/group/properties/seriesResistanceCompensation",
+    "parameters/NDF",
+    "parameters/currentMean",
+    "parameters/currentSD",
+    "parameters/currentSpotSize",
+    "parameters/frequencyCutoff",
+    "parameters/history1",
+    "parameters/history2",
+    "parameters/isControl",
+    "parameters/lightPath",
+    "parameters/segmentTime",
+    "parameters/target",
+    "parameters/useRandomSeed",
+    "properties/bathTemperature",
+    "protocol"
+  ]
+}

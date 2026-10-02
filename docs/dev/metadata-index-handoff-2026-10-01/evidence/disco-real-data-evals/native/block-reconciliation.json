@@ -1,0 +1,68 @@
+{
+  "empty_blocks": [
+    {
+      "block_id": 150,
+      "block_uuid": "655078dd-c979-5093-95d6-94995da7f88b",
+      "experiment_id": 4,
+      "group_id": 22,
+      "protocol_id": 4,
+      "protocol_name": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject",
+      "epochs": 0
+    },
+    {
+      "block_id": 151,
+      "block_uuid": "85074496-9501-522e-af15-daeee75a236d",
+      "experiment_id": 4,
+      "group_id": 22,
+      "protocol_id": 4,
+      "protocol_name": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject",
+      "epochs": 0
+    },
+    {
+      "block_id": 168,
+      "block_uuid": "826c091e-d6e6-5cf8-9abc-abe07c5f0e3b",
+      "experiment_id": 4,
+      "group_id": 24,
+      "protocol_id": 4,
+      "protocol_name": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject",
+      "epochs": 0
+    }
+  ],
+  "block_counts_by_source": [
+    {
+      "experiment_id": 3,
+      "registered_blocks": 37,
+      "zero_epoch_blocks": "0",
+      "nonempty_blocks": "37",
+      "epochs": "690"
+    },
+    {
+      "experiment_id": 4,
+      "registered_blocks": 67,
+      "zero_epoch_blocks": "3",
+      "nonempty_blocks": "64",
+      "epochs": "1005"
+    },
+    {
+      "experiment_id": 5,
+      "registered_blocks": 64,
+      "zero_epoch_blocks": "0",
+      "nonempty_blocks": "64",
+      "epochs": "1086"
+    }
+  ],
+  "sixth_protocol_relations": [
+    {
+      "protocol_id": 1,
+      "name": "no_group_protocol",
+      "group_count": 19,
+      "blocks": 0,
+      "epochs": 0
+    }
+  ],
+  "unregistered_source_blocks": [
+    {
+      "blocks": 0
+    }
+  ]
+}

@@ -1,0 +1,395 @@
+{
+  "family": "native",
+  "baseline": "docs/dev/performance-evals-2026-10-01/baseline/native/same-day-native-100k.json",
+  "candidate": "/private/tmp/disco-performance-runs-20261001/candidate-native/native-metadata-100k.json",
+  "correctness_passed": true,
+  "policy": "Median regression requires both >20% and >20ms by default; setup/first timings are descriptive single observations.",
+  "measurements": [
+    {
+      "name": "api_contrast_filter_preview",
+      "baseline": {
+        "median_ms": 4195.857124985196,
+        "first_ms": 4498.598207952455,
+        "max_ms": 4573.655707994476,
+        "warm_median_ms": 4167.464250000194,
+        "n": 10,
+        "bytes": 11439
+      },
+      "candidate": {
+        "median_ms": 2053.9580625190865,
+        "first_ms": 2182.305709051434,
+        "max_ms": 2326.017707993742,
+        "warm_median_ms": 2037.3483750154264,
+        "n": 10,
+        "bytes": 11439
+      },
+      "delta_ms": -2141.899062466109,
+      "speedup": 2.0428153824324764,
+      "regression_threshold_ms": 839.1714249970391,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2316.2924989010207,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_epoch_details",
+      "baseline": {
+        "median_ms": 64.83154199668206,
+        "first_ms": 75.51495905499905,
+        "max_ms": 100.45987501507625,
+        "warm_median_ms": 64.18070901418105,
+        "n": 10,
+        "bytes": 1818
+      },
+      "candidate": {
+        "median_ms": 63.19122953573242,
+        "first_ms": 64.09829197218642,
+        "max_ms": 70.57591702323407,
+        "warm_median_ms": 63.0176670383662,
+        "n": 10,
+        "bytes": 1818
+      },
+      "delta_ms": -1.6403124609496444,
+      "speedup": 1.0259579133528665,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -11.416667082812637,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_epoch_first_60",
+      "baseline": {
+        "median_ms": 61.322249996010214,
+        "first_ms": 158.97449996555224,
+        "max_ms": 158.97449996555224,
+        "warm_median_ms": 61.258249974343926,
+        "n": 10,
+        "bytes": 69141
+      },
+      "candidate": {
+        "median_ms": 60.88754200027324,
+        "first_ms": 150.2514589810744,
+        "max_ms": 150.2514589810744,
+        "warm_median_ms": 60.597167001105845,
+        "n": 10,
+        "bytes": 69141
+      },
+      "delta_ms": -0.4347079957369715,
+      "speedup": 1.00713952282283,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -8.723040984477848,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_epoch_next_60",
+      "baseline": {
+        "median_ms": 61.82035448728129,
+        "first_ms": 60.52933301543817,
+        "max_ms": 67.69625004380941,
+        "warm_median_ms": 61.94529199274257,
+        "n": 10,
+        "bytes": 69192
+      },
+      "candidate": {
+        "median_ms": 60.089875012636185,
+        "first_ms": 58.25649999314919,
+        "max_ms": 68.9961250172928,
+        "warm_median_ms": 60.9647500095889,
+        "n": 10,
+        "bytes": 69192
+      },
+      "delta_ms": -1.730479474645108,
+      "speedup": 1.028798187286647,
+      "regression_threshold_ms": 20,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2.272833022288978,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_overview",
+      "baseline": {
+        "median_ms": 569.3808750074822,
+        "first_ms": 1258.578209031839,
+        "max_ms": 1258.578209031839,
+        "warm_median_ms": 563.3125419844873,
+        "n": 10,
+        "bytes": 369831
+      },
+      "candidate": {
+        "median_ms": 560.1920835033525,
+        "first_ms": 1153.956665948499,
+        "max_ms": 1153.956665948499,
+        "warm_median_ms": 559.5657919766381,
+        "n": 10,
+        "bytes": 369831
+      },
+      "delta_ms": -9.188791504129767,
+      "speedup": 1.0164029299497852,
+      "regression_threshold_ms": 113.87617500149645,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -104.62154308333993,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_tree_expand_block",
+      "baseline": {
+        "median_ms": 2736.758895975072,
+        "first_ms": 2875.625582993962,
+        "max_ms": 2875.625582993962,
+        "warm_median_ms": 2732.193957956042,
+        "n": 10,
+        "bytes": 12844
+      },
+      "candidate": {
+        "median_ms": 16.249625012278557,
+        "first_ms": 15.459125046618283,
+        "max_ms": 17.625542008318007,
+        "warm_median_ms": 16.28975005587563,
+        "n": 10,
+        "bytes": 12844
+      },
+      "delta_ms": -2720.5092709627934,
+      "speedup": 168.419818543943,
+      "regression_threshold_ms": 547.3517791950144,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2860.1664579473436,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_tree_expand_cell",
+      "baseline": {
+        "median_ms": 2763.1438545067795,
+        "first_ms": 2698.9462089841254,
+        "max_ms": 2850.000708946027,
+        "warm_median_ms": 2765.7906250096858,
+        "n": 10,
+        "bytes": 4109
+      },
+      "candidate": {
+        "median_ms": 14.21893751830794,
+        "first_ms": 15.052209026180208,
+        "max_ms": 15.217999985907227,
+        "warm_median_ms": 14.125958026852459,
+        "n": 10,
+        "bytes": 4109
+      },
+      "delta_ms": -2748.9249169884715,
+      "speedup": 194.32843353795081,
+      "regression_threshold_ms": 552.6287709013559,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2683.893999957945,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_tree_expand_date",
+      "baseline": {
+        "median_ms": 2415.6795000017155,
+        "first_ms": 2520.8389589679427,
+        "max_ms": 2692.9793750168756,
+        "warm_median_ms": 2414.1268330276944,
+        "n": 10,
+        "bytes": 25162
+      },
+      "candidate": {
+        "median_ms": 15.253896039212123,
+        "first_ms": 108.51162497419864,
+        "max_ms": 108.51162497419864,
+        "warm_median_ms": 15.04183403449133,
+        "n": 10,
+        "bytes": 25162
+      },
+      "delta_ms": -2400.4256039625034,
+      "speedup": 158.36475440712965,
+      "regression_threshold_ms": 483.1359000003431,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2412.327333993744,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "api_tree_root",
+      "baseline": {
+        "median_ms": 2021.9649580249097,
+        "first_ms": 2645.036291971337,
+        "max_ms": 2645.036291971337,
+        "warm_median_ms": 2015.5671250540763,
+        "n": 10,
+        "bytes": 903
+      },
+      "candidate": {
+        "median_ms": 14.053853985387832,
+        "first_ms": 307.4995840433985,
+        "max_ms": 307.4995840433985,
+        "warm_median_ms": 13.990500010550022,
+        "n": 10,
+        "bytes": 903
+      },
+      "delta_ms": -2007.911104039522,
+      "speedup": 143.87263167293474,
+      "regression_threshold_ms": 404.39299160498194,
+      "status": "within_margin",
+      "small_sample_warning": false,
+      "single_observation_setup": false,
+      "first_use_delta_ms": -2337.5367079279386,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "setup_existing_sealed_index_open",
+      "baseline": {
+        "median_ms": 708.5982079734094,
+        "first_ms": 708.5982079734094,
+        "max_ms": 708.5982079734094,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 539.801333041396,
+        "first_ms": 539.801333041396,
+        "max_ms": 539.801333041396,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -168.79687493201345,
+      "speedup": 1.3127018489950057,
+      "regression_threshold_ms": 141.7196415946819,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -168.79687493201345,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "setup_native_context_first_proof",
+      "baseline": {
+        "median_ms": 28.553291980642825,
+        "first_ms": 28.553291980642825,
+        "max_ms": 28.553291980642825,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 27.805707999505103,
+        "first_ms": 27.805707999505103,
+        "max_ms": 27.805707999505103,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -0.7475839811377227,
+      "speedup": 1.0268859897813438,
+      "regression_threshold_ms": 20,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -0.7475839811377227,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "setup_normal_create_app_empty_native_annotations",
+      "baseline": {
+        "median_ms": 9728.745958011132,
+        "first_ms": 9728.745958011132,
+        "max_ms": 9728.745958011132,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 9604.903125029523,
+        "first_ms": 9604.903125029523,
+        "max_ms": 9604.903125029523,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -123.84283298160881,
+      "speedup": 1.0128937097406934,
+      "regression_threshold_ms": 1945.7491916022263,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -123.84283298160881,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "setup_owned_native_boot",
+      "baseline": {
+        "median_ms": 3480.5483330274,
+        "first_ms": 3480.5483330274,
+        "max_ms": 3480.5483330274,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 3376.6555410111323,
+        "first_ms": 3376.6555410111323,
+        "max_ms": 3376.6555410111323,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -103.89279201626778,
+      "speedup": 1.0307679568598096,
+      "regression_threshold_ms": 696.10966660548,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -103.89279201626778,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    },
+    {
+      "name": "setup_synthetic_model",
+      "baseline": {
+        "median_ms": 915.6881250091828,
+        "first_ms": 915.6881250091828,
+        "max_ms": 915.6881250091828,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "candidate": {
+        "median_ms": 879.2301670182496,
+        "first_ms": 879.2301670182496,
+        "max_ms": 879.2301670182496,
+        "warm_median_ms": null,
+        "n": 1
+      },
+      "delta_ms": -36.45795799093321,
+      "speedup": 1.041465772397885,
+      "regression_threshold_ms": 183.13762500183657,
+      "status": "descriptive_within_margin",
+      "small_sample_warning": true,
+      "single_observation_setup": true,
+      "first_use_delta_ms": -36.45795799093321,
+      "first_use_slowdown_warning": false,
+      "first_use_warning_scope": "Single first observation; repeat fresh processes before a verdict."
+    }
+  ],
+  "regressions": [],
+  "descriptive_slowdowns": [],
+  "missing_measurements": [],
+  "passed": true
+}

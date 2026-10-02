@@ -1,0 +1,152 @@
+{
+  "stored_components": {
+    "metadata_objects.payload": {
+      "count": 202,
+      "stored_bytes": 98589,
+      "min_bytes": 214,
+      "max_bytes": 1729
+    },
+    "epochs.detail_blob": {
+      "count": 2781,
+      "stored_bytes": 4131887,
+      "min_bytes": 1295,
+      "max_bytes": 1811
+    },
+    "epochs.row_json": {
+      "count": 2781,
+      "stored_bytes": 8193490,
+      "min_bytes": 2293,
+      "max_bytes": 3260
+    },
+    "field_values.value_json": {
+      "count": 10756,
+      "stored_bytes": 306494,
+      "min_bytes": 1,
+      "max_bytes": 971
+    },
+    "sources.source_json": {
+      "count": 3,
+      "stored_bytes": 4128,
+      "min_bytes": 1228,
+      "max_bytes": 1636
+    }
+  },
+  "unique_ancestor_objects": {
+    "cell": {
+      "objects": 13,
+      "compressed_bytes": 2806,
+      "uncompressed_bytes": 4778
+    },
+    "group": {
+      "objects": 24,
+      "compressed_bytes": 7107,
+      "uncompressed_bytes": 14480
+    },
+    "block": {
+      "objects": 165,
+      "compressed_bytes": 88676,
+      "uncompressed_bytes": 686863
+    }
+  },
+  "unique_ancestor_top_level_bytes": {
+    "attributes": 63075,
+    "label": 299,
+    "notes": 74,
+    "properties": 548486,
+    "start_time": 5656,
+    "type": 218,
+    "uuid": 7676,
+    "end_time": 5292,
+    "arrayPitch": 660,
+    "dataFile": 660,
+    "parameters": 41122,
+    "protocolID": 10653
+  },
+  "inline_detail_bytes": {
+    "sum": 17216870,
+    "median": 6399,
+    "max": 8443
+  },
+  "inline_top_level_bytes": {
+    "attributes": 698031,
+    "metadata": 13971413,
+    "parameters": 1744407,
+    "properties": 650064
+  },
+  "projection_unique_ancestor_objects": {
+    "cell": {
+      "objects": 13,
+      "compressed_bytes": 2806,
+      "uncompressed_bytes": 4778
+    },
+    "group": {
+      "objects": 24,
+      "compressed_bytes": 7107,
+      "uncompressed_bytes": 14480
+    },
+    "block": {
+      "objects": 165,
+      "compressed_bytes": 88676,
+      "uncompressed_bytes": 686863
+    }
+  },
+  "projection_ancestor_top_level_bytes": {
+    "attributes": 63075,
+    "label": 299,
+    "notes": 74,
+    "properties": 548486,
+    "start_time": 5656,
+    "type": 218,
+    "uuid": 7676,
+    "end_time": 5292,
+    "arrayPitch": 660,
+    "dataFile": 660,
+    "parameters": 41122,
+    "protocolID": 10653
+  },
+  "projection_ancestor_property_bytes": {
+    "type": 218,
+    "externalSolutionAdditions": 96,
+    "internalSolutionAdditions": 96,
+    "pipetteSolution": 96,
+    "recordingTechnique": 96,
+    "seriesResistanceCompensation": 24,
+    "frameTimesMs": 541770
+  },
+  "projection_inline_top_level_bytes": {
+    "parameters": 1744407,
+    "properties": 650064,
+    "attributes": 698031,
+    "metadata": 13971413
+  },
+  "ancestor_repeated_payload_bytes": 169863785,
+  "ancestor_repeated_top_level_bytes": {
+    "attributes": 2134952,
+    "label": 44491,
+    "notes": 11124,
+    "properties": 165205844,
+    "start_time": 233604,
+    "type": 46957,
+    "uuid": 317034,
+    "end_time": 155736,
+    "arrayPitch": 11124,
+    "dataFile": 11124,
+    "parameters": 758230,
+    "protocolID": 168790
+  },
+  "ancestor_repeated_properties_bytes": {
+    "type": 46957,
+    "externalSolutionAdditions": 11124,
+    "internalSolutionAdditions": 11124,
+    "pipetteSolution": 11124,
+    "recordingTechnique": 11124,
+    "seriesResistanceCompensation": 2781,
+    "frameTimesMs": 164672212
+  },
+  "unique_ancestor_raw_size": {
+    "min": 366,
+    "median": 929.0,
+    "max": 156572,
+    "sum": 706121
+  }
+}

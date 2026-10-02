@@ -1,0 +1,69 @@
+{
+  "scope": "Existing complete scoped catalog and exact predicate matching, same immutable generation. Excludes Flask serialization, MySQL, memberships and browser paint.",
+  "baseline_ref": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "baseline_module_sha256": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+  "candidate_module_sha256": "7b5f4b8c1bb81dc8154971de320bc9acf083fa23bd16b3e0959e4e537b2a73cd",
+  "database_sha256": "148fc73d30cdd42130e05feb6abf3ad094e1c63c97b6d3aaffa8d307118471a0",
+  "generation": "everyday-100000",
+  "implementations": {
+    "baseline": [
+      {
+        "action": "scoped_catalog",
+        "samples_seconds": [
+          3.3231827080016956,
+          3.264770417008549,
+          3.2902712500072084,
+          3.292633040982764
+        ],
+        "first_seconds": 3.3231827080016956,
+        "warm_median_seconds": 3.2902712500072084,
+        "warm_maximum_seconds": 3.292633040982764,
+        "result_sha256": "2036763474d0e9f2b925cebf0bebea1fc0833d4c9214a782e5fba255c35b3aeb"
+      },
+      {
+        "action": "predicate_match",
+        "samples_seconds": [
+          0.32811891700839624,
+          0.33130662504117936,
+          0.3284925839980133,
+          0.314208583033178
+        ],
+        "first_seconds": 0.32811891700839624,
+        "warm_median_seconds": 0.3284925839980133,
+        "warm_maximum_seconds": 0.33130662504117936,
+        "result_sha256": "bfe4ac6cdc5b0f78e9c5e4b1a00bd1d374f3834c7b2c51d38e6300d8557eda30"
+      }
+    ],
+    "candidate": [
+      {
+        "action": "scoped_catalog",
+        "samples_seconds": [
+          1.366988166992087,
+          1.349719957972411,
+          1.3680176659836434,
+          1.3298706249915995
+        ],
+        "first_seconds": 1.366988166992087,
+        "warm_median_seconds": 1.349719957972411,
+        "warm_maximum_seconds": 1.3680176659836434,
+        "result_sha256": "2036763474d0e9f2b925cebf0bebea1fc0833d4c9214a782e5fba255c35b3aeb"
+      },
+      {
+        "action": "predicate_match",
+        "samples_seconds": [
+          0.20537470804993063,
+          0.21867183403810486,
+          0.19984687498072162,
+          0.2036287920200266
+        ],
+        "first_seconds": 0.20537470804993063,
+        "warm_median_seconds": 0.2036287920200266,
+        "warm_maximum_seconds": 0.21867183403810486,
+        "result_sha256": "bfe4ac6cdc5b0f78e9c5e4b1a00bd1d374f3834c7b2c51d38e6300d8557eda30"
+      }
+    ]
+  },
+  "matched_count": 20000,
+  "epoch_count": 100000,
+  "exact_parity": true
+}

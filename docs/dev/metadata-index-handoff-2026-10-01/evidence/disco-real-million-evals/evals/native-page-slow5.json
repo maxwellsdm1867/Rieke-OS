@@ -1,0 +1,71 @@
+{
+  "arm": "native",
+  "mode": "page",
+  "results": [
+    {
+      "label": "largest_cell",
+      "expected_count": 687,
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "status": "passed",
+      "samples_ms": [
+        14734.127958014142,
+        13872.269332990982,
+        13492.434209038038,
+        13651.404667005409,
+        13725.658915995155
+      ],
+      "sha256": "a3ecd235c6030502a117c67a90c1c15f22ff59144ca07aebdf9f82aa1f2ef102",
+      "count": 687,
+      "payload_bytes": 193954,
+      "cursor": 412915,
+      "first_ms": 14734.127958014142,
+      "warm_median_ms": 13688.531791500282,
+      "max_ms": 14734.127958014142,
+      "next_page_sha256": "95882fd36bf7b3b9714293b177c17c6017fa45be6d13334c74fc87990e96f826",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_block",
+      "expected_count": 601,
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "status": "interrupted",
+      "samples_ms": [
+        14192.937208979856
+      ],
+      "sha256": "c48260deed218f2fa3a82ec08f0289edace8d3cc1f39a02daa44b8befb054c11",
+      "count": 601,
+      "payload_bytes": 193901,
+      "cursor": 661891
+    }
+  ],
+  "status": "intentionally_interrupted",
+  "caps": {
+    "process_seconds": 360,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "input_stat": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "native_open_seconds": 69.65309912501834,
+  "rank_cache_seconds": 6.019186541030649,
+  "rank_cache_epochs": 1000000,
+  "setup_seconds": 75.67745950003155,
+  "peak_rss_bytes": 336674816,
+  "wall_seconds": 184.18910820799647,
+  "input_stat_after": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "source_stat_unchanged": true,
+  "reason": "Stopped owned exploration after the cell comparison completed; bounded follow-up preserves additional native comparisons."
+}

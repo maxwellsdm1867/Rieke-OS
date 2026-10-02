@@ -1,0 +1,128 @@
+{
+  "status": "completed independent backend report; integrated everyday/scientific/storage lifecycle gates remain open",
+  "actions": [
+    {
+      "id": "E01-01",
+      "action": "Select epoch and display metadata",
+      "status": "not_run",
+      "backend_evidence": "Small HTTP full-detail decoding passed; million three-detail control passed",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-02",
+      "action": "Search selected metadata",
+      "status": "not_run",
+      "backend_evidence": "Selected DTO preservation passed; client search timing unrun",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-03",
+      "action": "Reopen cached cell",
+      "status": "not_run",
+      "backend_evidence": "Historical cached path makes no database request; fresh rendered timing unrun",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-04",
+      "action": "Scroll loaded rows",
+      "status": "not_run",
+      "backend_evidence": "Historical cached path makes no database request; fresh rendered timing unrun",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-05",
+      "action": "Expand unloaded cell",
+      "status": "not_run",
+      "backend_evidence": "Largest-cell backend proxy passed; full tree DTO/anchor path unmeasured",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-06",
+      "action": "Expand unloaded block",
+      "status": "not_run",
+      "backend_evidence": "Largest-block backend proxy passed; full tree DTO/anchor path unmeasured",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-07",
+      "action": "Load next 60 cells",
+      "status": "not_run",
+      "backend_evidence": "Minimal UUID/count group control passed; full tree route/paint unmeasured",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    },
+    {
+      "id": "E01-08",
+      "action": "Tag ten epochs, including revision preflight",
+      "status": "blocked",
+      "backend_evidence": "Small isolated tag/edit/export and revision-fault tests passed on transactional SQL doubles",
+      "reason": "No isolated native MySQL million-write authority; no live writes authorized"
+    },
+    {
+      "id": "E01-09",
+      "action": "Preview metadata filter, full scoped catalog",
+      "status": "not_run",
+      "backend_evidence": "Small HTTP requested summaries passed; million requested two-facet backend results above; full global catalog unmeasured",
+      "reason": "Complete rendered/HTTP everyday action not rerun on integrated real-million app"
+    }
+  ],
+  "missing_mat_fixtures": [
+    "examples/data/sample_epochs.mat",
+    "tests/baselines/MeanSelectedNodes_baseline.mat",
+    "tests/baselines/getCycleAverageResponse_baseline.mat",
+    "tests/baselines/getLinearFilterAndPrediction_baseline.mat",
+    "tests/baselines/getMeanResponseTrace_baseline.mat",
+    "tests/baselines/getResponseAmplitudeStats_baseline.mat"
+  ],
+  "gates": {
+    "real_million_seals_lineage": {
+      "status": "passed_sealed_real_replay_and_independent_full_lineage_checks",
+      "needs": "Coordinator verifies preserved source/replay seals, exact namespace and whole-block tail, streaming independent native value/DTO oracle; no simplified synthetic million.",
+      "receipt": "receipts/million/corpus-verified.json"
+    },
+    "integrated_service_faults": {
+      "status": "passed_small_fixture_on_exact_combined_commit",
+      "needs": "Committed integrated service client + deterministic worker hooks; metadata/source/annotation/publication changes before/after count/page/summary and wrong query cursor.",
+      "receipt": "receipts/million/integrated-service.json"
+    },
+    "empty_branches": {
+      "status": "unrun_missing_native_hierarchy_fixture",
+      "needs": "Native tree reader over frozen source branches, empty cells/groups/blocks and exact parent/parameter identities."
+    },
+    "all_nine_actions": {
+      "status": "not_run_or_blocked; see exact action ledger",
+      "needs": "Same integrated real-million UI/HTTP corpus; explicit milestones, before/after raw samples, first/warm/max with runtime/code/generation; no p95/p99 from five samples."
+    },
+    "dense_concurrent_tags": {
+      "status": "blocked_native_MySQL_authority_unavailable; small_transactional_double_checks_passed",
+      "needs": "Isolated writable project with authors, cell inheritance, epoch ownership and protocol/dataset curation; never live research writes."
+    },
+    "full_export_reconstruction": {
+      "status": "partial_full_metadata_and_tag_exchange; waveform_MAT_reconstruction_blocked",
+      "needs": "Independent full-detail/frozen-export equivalence; native waveforms and stimulus dependencies. Six MAT fixtures unavailable in snapshot."
+    },
+    "storage_growth_incremental_highwater": {
+      "status": "partial_physical_components_normalization_and_sampled_highwater_measured",
+      "needs": "Controlled original/intermediate/exact-million layout; file/allocated/components; incremental epochs/sources/new fields/values; sample staging+old/new+cache/recovery bytes then reader-safe cleanup.",
+      "receipt": "receipts/million/storage.json"
+    },
+    "cold_open_refresh": {
+      "status": "partial_warm_verified_sidecar_open_and_small_faults_only",
+      "needs": "Full validation/open, failed source/generation/rebuild publication, restart/cold reader and cancellation; query timings exclude startup only with separate receipt."
+    },
+    "legacy_matching_epochs": {
+      "status": "unqualified_unbounded_contract",
+      "needs": "Legacy MatchingEpochs still materializes full membership due to existing cell/anchor/tree-revision contracts. Additive /page correctness does not close this boundedness or everyday navigation gate."
+    },
+    "mounted_contextual_generation": {
+      "status": "unrun",
+      "needs": "Independent mounted UI must accept legitimate protocol/binding/annotation context enrichment from registry admission and reject changed shared generation fields or changed job contextual witnesses."
+    }
+  },
+  "final_report": "REPORT.md",
+  "backend_cases": {
+    "page_pairs_passed": 12,
+    "scoped_two_facet_pairs_passed": 2,
+    "broad_facet_native_arms_censored_45s": 2,
+    "typed_arms_independent_truth_passed": 16
+  }
+}

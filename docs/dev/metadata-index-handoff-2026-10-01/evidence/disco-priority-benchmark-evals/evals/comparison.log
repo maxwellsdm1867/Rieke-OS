@@ -1,0 +1,16 @@
+{"label": "global_page", "count": 1000000, "full_ms": 18.563312507467344, "priority_ms": 18.332812032895163}
+{"label": "cell_page_two_facets", "count": 687, "full_ms": 4.043291497509927, "priority_ms": 3.9083540032152086}
+{"label": "saved_expanding_spot_layout", "count": 668034, "full_ms": 3089.6792084968183, "priority_ms": 3086.7279790109023}
+{"label": "saved_history_filter", "count": 31592, "full_ms": 45.355270500294864, "priority_ms": 44.46181299863383}
+{"label": "saved_frequency_filter", "count": 97030, "full_ms": 302.4955205328297, "priority_ms": 299.55283299204893}
+{"label": "mean_SD_filter", "count": 50310, "full_ms": 333.95212548202835, "priority_ms": 331.7718130128924}
+{"label": "NDF_filter", "count": 687, "full_ms": 1648.0084375070874, "priority_ms": 1657.9315420240164}
+{"label": "light_path_filter", "count": 687, "full_ms": 678.3674999896903, "priority_ms": 685.509021015605}
+{"label": "bath_temperature_filter", "count": 113030, "full_ms": 167.1344165224582, "priority_ms": 167.5138540158514}
+{"label": "cold_canvas_query", "count": 687, "full_ms": 1654.7917500138283, "priority_ms": 2055.742791504599}
+{"label": "cold_generator_query", "count": 110931, "full_ms": 145.64352098386735, "priority_ms": 171.92483303369954}
+{"label": "cold_trial_count_query", "count": 52, "full_ms": 72.5737085158471, "priority_ms": 95.0529579713475}
+{"label": "cold_seed_query", "count": 53900, "full_ms": 64.88254148280248, "priority_ms": 122.45022898423485}
+{"label": "cold_rig_query", "count": 687, "full_ms": 1655.6028754857834, "priority_ms": 2055.048395501217}
+{"label": "global_two_facets", "count": 1000000, "full_ms": 3193.9379584800918, "priority_ms": 3157.2480000322685}
+{"status": "complete", "seconds": 136.9069568749983, "peak_rss_bytes": 243892224}

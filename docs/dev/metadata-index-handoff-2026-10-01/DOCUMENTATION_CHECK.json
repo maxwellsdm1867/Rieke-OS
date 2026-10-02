@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "authored_documents": 6,
+  "local_links_checked": 103,
+  "archive_hashes_verified": 338,
+  "frozen_source_snapshots_verified": 14,
+  "source_patch_verified": true,
+  "requirements": 21,
+  "evaluation_rules": 10,
+  "explicit_improvement_entries": 19,
+  "supporting_controls": 7,
+  "required_scale_corpus": "sealed one-million real-record replay",
+  "storage_baseline_ratios_verified": true,
+  "raw_waveform_ratio_measured": true,
+  "scientific_databases_copied": 0,
+  "benchmarks_rerun": false,
+  "application_code_changed_by_documentation_task": false,
+  "read_only_source_storage_inspection": true,
+  "source_h5_sha256_verified": 3,
+  "actual_2781_source_size_measured": true,
+  "million_recording_sizes_are_projections": true
+}

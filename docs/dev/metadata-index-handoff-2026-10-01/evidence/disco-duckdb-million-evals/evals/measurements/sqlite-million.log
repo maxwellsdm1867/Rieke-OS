@@ -1,0 +1,12 @@
+{"stage": "build", "seconds": 0.3306972080026753}
+{"stage": "epoch_first_60", "seconds": 19.170380583032966}
+{"stage": "epoch_next_60", "seconds": 19.182867000054102}
+{"stage": "tree_cells_first_60", "seconds": 19.210291458002757}
+{"stage": "tree_cells_next_60", "seconds": 19.393387333024293}
+{"stage": "tree_expand_cell", "seconds": 19.551214583043475}
+{"stage": "tree_expand_block", "seconds": 19.553878833015915}
+{"stage": "epoch_details", "seconds": 19.559353375050705}
+{"stage": "bounded_filter_preview", "seconds": 19.5602523330017}
+{"stage": "high_cardinality_seed_facet", "seconds": 25.045994792017154}
+{"stage": "tag_membership_20_metadata_join", "seconds": 29.27069312502863}
+{"passed": true, "seconds": 29.29161350004142, "peak_mib": 195.40625}

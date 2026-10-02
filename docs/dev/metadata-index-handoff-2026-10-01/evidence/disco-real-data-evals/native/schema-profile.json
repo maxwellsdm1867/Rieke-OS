@@ -1,0 +1,3663 @@
+{
+  "project_uuid": "f75a7799-a728-5220-8f20-bfa4e7dffcb1",
+  "database_kind": "native-mysql",
+  "queries": {
+    "server": {
+      "rows": [
+        {
+          "version": "8.4.2"
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "tables": {
+      "rows": [
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "TABLE_ROWS": 1,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "TABLE_ROWS": 78,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_clock",
+          "TABLE_ROWS": 1,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_instance",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_authors",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_dictionary",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 32768
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup_checkpoint",
+          "TABLE_ROWS": 1,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "TABLE_ROWS": 6,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "TABLE_ROWS": 7,
+          "DATA_LENGTH": 1589248,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "TABLE_ROWS": 196,
+          "DATA_LENGTH": 3686400,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "TABLE_ROWS": 58,
+          "DATA_LENGTH": 4734976,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "project",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "TABLE_ROWS": 5,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "TABLE_ROWS": 14,
+          "DATA_LENGTH": 65536,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_workspace",
+          "TABLE_ROWS": 5,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset_version",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_query_last_run",
+          "TABLE_ROWS": 10,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "~lineage",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 32768
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "TABLE_ROWS": 13,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 32768
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell_type_file",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "TABLE_ROWS": 2547,
+          "DATA_LENGTH": 5259264,
+          "INDEX_LENGTH": 131072
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "TABLE_ROWS": 150,
+          "DATA_LENGTH": 2310144,
+          "INDEX_LENGTH": 65536
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "TABLE_ROWS": 24,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 49152
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "TABLE_ROWS": 3,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 32768
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "protocol",
+          "TABLE_ROWS": 6,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "TABLE_ROWS": 4604,
+          "DATA_LENGTH": 3162112,
+          "INDEX_LENGTH": 98304
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell_type",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 32768
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorting_chunk",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "TABLE_ROWS": 2697,
+          "DATA_LENGTH": 2113536,
+          "INDEX_LENGTH": 65536
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "TABLE_ROWS": 0,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 16384
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "~lineage",
+          "TABLE_ROWS": 38,
+          "DATA_LENGTH": 16384,
+          "INDEX_LENGTH": 0
+        }
+      ],
+      "elapsed_seconds": 0.0017
+    },
+    "columns": {
+      "rows": [
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "COLUMN_NAME": "profile_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "COLUMN_NAME": "display_name",
+          "COLUMN_TYPE": "varchar(120)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "COLUMN_NAME": "created_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "annotation_profile",
+          "COLUMN_NAME": "created_by",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "target_kind",
+          "COLUMN_TYPE": "varchar(16)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "target_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "profile_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "last_generation",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_annotation_changes",
+          "COLUMN_NAME": "deleted",
+          "COLUMN_TYPE": "tinyint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "slot",
+          "COLUMN_TYPE": "smallint unsigned",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "table_id",
+          "COLUMN_TYPE": "smallint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "key_bytes",
+          "COLUMN_TYPE": "varbinary(1024)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "generation",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_changes",
+          "COLUMN_NAME": "deleted",
+          "COLUMN_TYPE": "tinyint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_clock",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_clock",
+          "COLUMN_NAME": "scope_epoch",
+          "COLUMN_TYPE": "char(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_clock",
+          "COLUMN_NAME": "generation",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_clock",
+          "COLUMN_NAME": "retained_after",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_instance",
+          "COLUMN_NAME": "singleton",
+          "COLUMN_TYPE": "tinyint unsigned",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_instance",
+          "COLUMN_NAME": "instance_epoch",
+          "COLUMN_TYPE": "char(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_recovery_instance",
+          "COLUMN_NAME": "owner_connection_id",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_authors",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_authors",
+          "COLUMN_NAME": "tag",
+          "COLUMN_TYPE": "varbinary(1020)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_authors",
+          "COLUMN_NAME": "profile_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_authors",
+          "COLUMN_NAME": "membership_count",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_dictionary",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_dictionary",
+          "COLUMN_NAME": "tag",
+          "COLUMN_TYPE": "varbinary(1020)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_dictionary",
+          "COLUMN_NAME": "target_count",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_dictionary",
+          "COLUMN_NAME": "fold_key",
+          "COLUMN_TYPE": "varbinary(1530)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "COLUMN_NAME": "target_kind",
+          "COLUMN_TYPE": "varchar(8)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "COLUMN_NAME": "target_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "COLUMN_NAME": "profile_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup",
+          "COLUMN_NAME": "tag",
+          "COLUMN_TYPE": "varbinary(1020)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup_checkpoint",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup_checkpoint",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup_checkpoint",
+          "COLUMN_NAME": "proof",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_shared_tag_lookup_checkpoint",
+          "COLUMN_NAME": "dirty",
+          "COLUMN_TYPE": "tinyint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "COLUMN_NAME": "scope_kind",
+          "COLUMN_TYPE": "varchar(32)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "COLUMN_NAME": "scope_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "COLUMN_NAME": "scope_epoch",
+          "COLUMN_TYPE": "char(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "app_state_generation",
+          "COLUMN_NAME": "generation",
+          "COLUMN_TYPE": "bigint unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "epoch_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "included",
+          "COLUMN_TYPE": "tinyint",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "tags",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "review_state",
+          "COLUMN_TYPE": "enum('unreviewed','approved')",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "revision",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "curation",
+          "COLUMN_NAME": "metadata_fingerprint",
+          "COLUMN_TYPE": "char(64)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "source_sha256",
+          "COLUMN_TYPE": "char(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "frozen",
+          "COLUMN_TYPE": "tinyint",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "archived",
+          "COLUMN_TYPE": "tinyint",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "query_excluded",
+          "COLUMN_TYPE": "tinyint(1)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "updated_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "actor_kind",
+          "COLUMN_TYPE": "enum('local_user','client_claimed')",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "server_actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "data_store_state",
+          "COLUMN_NAME": "reason",
+          "COLUMN_TYPE": "varchar(2000)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "dataset_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "created_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "recipe",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "artifact_path",
+          "COLUMN_TYPE": "varchar(2048)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "artifact_sha256",
+          "COLUMN_TYPE": "char(64)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "dataset_revision",
+          "COLUMN_NAME": "epoch_count",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "event_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "occurred_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "action",
+          "COLUMN_TYPE": "varchar(63)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "event",
+          "COLUMN_NAME": "payload",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "revision_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "created_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "parent_revision_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "summary",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "explorer_revision",
+          "COLUMN_NAME": "recipe",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "project",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "project",
+          "COLUMN_NAME": "name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "project",
+          "COLUMN_NAME": "directory",
+          "COLUMN_TYPE": "varchar(1024)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "COLUMN_NAME": "revision_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_binding",
+          "COLUMN_NAME": "bound_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "COLUMN_NAME": "suggestion_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "COLUMN_NAME": "created_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_suggestion",
+          "COLUMN_NAME": "summary",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "split_order",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "updated_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_tree_layout",
+          "COLUMN_NAME": "actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_workspace",
+          "COLUMN_NAME": "protocol_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_workspace",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "protocol_workspace",
+          "COLUMN_NAME": "definition",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "preset_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "name",
+          "COLUMN_TYPE": "varchar(160)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "description",
+          "COLUMN_TYPE": "varchar(2000)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "predicate",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "splits",
+          "COLUMN_TYPE": "varchar(4096)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "pinned",
+          "COLUMN_TYPE": "tinyint",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "updated_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset",
+          "COLUMN_NAME": "actor",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset_version",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset_version",
+          "COLUMN_NAME": "preset_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset_version",
+          "COLUMN_NAME": "version",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_preset_version",
+          "COLUMN_NAME": "recipe",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_query_last_run",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_query_last_run",
+          "COLUMN_NAME": "query_sha256",
+          "COLUMN_TYPE": "char(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "search_query_last_run",
+          "COLUMN_NAME": "result",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "target_kind",
+          "COLUMN_TYPE": "enum('cell','epoch')",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "target_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "profile_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "tags",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "author_name",
+          "COLUMN_TYPE": "varchar(120)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "revision",
+          "COLUMN_TYPE": "int unsigned",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "shared_annotation",
+          "COLUMN_NAME": "updated_at",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "COLUMN_NAME": "source_sha256",
+          "COLUMN_TYPE": "char(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "COLUMN_NAME": "project_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "COLUMN_NAME": "experiment_uuid",
+          "COLUMN_TYPE": "varchar(36)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "source",
+          "COLUMN_NAME": "manifest",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "table_name",
+          "COLUMN_TYPE": "varchar(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "attribute_name",
+          "COLUMN_TYPE": "varchar(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "recording_workspace",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "lineage",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "props_id",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "description",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "sex",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "age",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "weight",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "dark_adaptation",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "animal",
+          "COLUMN_NAME": "species",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell",
+          "COLUMN_NAME": "type",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell_type_file",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell_type_file",
+          "COLUMN_NAME": "chunk_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell_type_file",
+          "COLUMN_NAME": "algorithm",
+          "COLUMN_TYPE": "varchar(200)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "cell_type_file",
+          "COLUMN_NAME": "file_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "end_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch",
+          "COLUMN_NAME": "parameters",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "data_dir",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "protocol_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "chunk_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "end_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "parameters",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_block",
+          "COLUMN_NAME": "array_pitch",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "protocol_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "epoch_group",
+          "COLUMN_NAME": "end_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "exp_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "meta_file",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "data_file",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "tags_file",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "is_mea",
+          "COLUMN_TYPE": "tinyint",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "date_added",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "experimenter",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "institution",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "lab",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "project",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "rig",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "experiment",
+          "COLUMN_NAME": "rig_type",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "properties",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "attributes",
+          "COLUMN_TYPE": "json",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "start_time",
+          "COLUMN_TYPE": "datetime",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "bath_solution",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "preparation_type",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "region",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "preparation",
+          "COLUMN_NAME": "array_pitch",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "protocol",
+          "COLUMN_NAME": "protocol_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "protocol",
+          "COLUMN_NAME": "name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "device_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "h5path",
+          "COLUMN_TYPE": "varchar(511)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "label",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "sample_rate",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "sample_rate_units",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "offset_hours",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "response",
+          "COLUMN_NAME": "offset_ticks",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell",
+          "COLUMN_NAME": "chunk_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell",
+          "COLUMN_NAME": "algorithm",
+          "COLUMN_TYPE": "varchar(200)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell",
+          "COLUMN_NAME": "cluster_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell_type",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell_type",
+          "COLUMN_NAME": "sorted_cell_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell_type",
+          "COLUMN_NAME": "file_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorted_cell_type",
+          "COLUMN_NAME": "cell_type",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorting_chunk",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorting_chunk",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "sorting_chunk",
+          "COLUMN_NAME": "chunk_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "COLUMN_NAME": "id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "COLUMN_NAME": "parent_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "COLUMN_NAME": "device_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "stimulus",
+          "COLUMN_NAME": "h5path",
+          "COLUMN_TYPE": "varchar(511)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "tag_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "h5_uuid",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "experiment_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": "MUL"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "table_name",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "table_id",
+          "COLUMN_TYPE": "int",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "user",
+          "COLUMN_TYPE": "varchar(63)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "tags",
+          "COLUMN_NAME": "tag",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "table_name",
+          "COLUMN_TYPE": "varchar(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "attribute_name",
+          "COLUMN_TYPE": "varchar(64)",
+          "COLUMN_KEY": "PRI"
+        },
+        {
+          "TABLE_SCHEMA": "schema",
+          "TABLE_NAME": "~lineage",
+          "COLUMN_NAME": "lineage",
+          "COLUMN_TYPE": "varchar(255)",
+          "COLUMN_KEY": ""
+        }
+      ],
+      "elapsed_seconds": 0.0025
+    },
+    "count:schema.experiment": {
+      "rows": [
+        {
+          "row_count": 3
+        }
+      ],
+      "elapsed_seconds": 0.0005
+    },
+    "count:schema.cell": {
+      "rows": [
+        {
+          "row_count": 13
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "count:schema.epoch_group": {
+      "rows": [
+        {
+          "row_count": 24
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "count:schema.epoch_block": {
+      "rows": [
+        {
+          "row_count": 168
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "count:schema.epoch": {
+      "rows": [
+        {
+          "row_count": 2781
+        }
+      ],
+      "elapsed_seconds": 0.0004
+    },
+    "count:schema.protocol": {
+      "rows": [
+        {
+          "row_count": 6
+        }
+      ],
+      "elapsed_seconds": 0.0003
+    },
+    "count:schema.response": {
+      "rows": [
+        {
+          "row_count": 4713
+        }
+      ],
+      "elapsed_seconds": 0.0006
+    },
+    "count:schema.stimulus": {
+      "rows": [
+        {
+          "row_count": 2781
+        }
+      ],
+      "elapsed_seconds": 0.0004
+    },
+    "count:schema.tags": {
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "count:recording_workspace.source": {
+      "rows": [
+        {
+          "row_count": 3
+        }
+      ],
+      "elapsed_seconds": 0.0005
+    },
+    "count:recording_workspace.annotation_profile": {
+      "rows": [
+        {
+          "row_count": 3
+        }
+      ],
+      "elapsed_seconds": 0.0006
+    },
+    "count:recording_workspace.shared_annotation": {
+      "rows": [
+        {
+          "row_count": 1
+        }
+      ],
+      "elapsed_seconds": 0.0014
+    },
+    "count:recording_workspace.curation": {
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0004
+    },
+    "count:recording_workspace.app_shared_tag_authors": {
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "count:recording_workspace.app_shared_tag_dictionary": {
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0001
+    },
+    "count:recording_workspace.app_shared_tag_lookup": {
+      "rows": [
+        {
+          "row_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0001
+    },
+    "count:recording_workspace.dataset_revision": {
+      "rows": [
+        {
+          "row_count": 7
+        }
+      ],
+      "elapsed_seconds": 0.0005
+    },
+    "count:recording_workspace.explorer_revision": {
+      "rows": [
+        {
+          "row_count": 62
+        }
+      ],
+      "elapsed_seconds": 0.0004
+    },
+    "count:recording_workspace.protocol_workspace": {
+      "rows": [
+        {
+          "row_count": 5
+        }
+      ],
+      "elapsed_seconds": 0.0003
+    },
+    "source_manifest_fields": {
+      "rows": [
+        {
+          "experiment_id": 3,
+          "manifest_keys": "[\"counts\", \"format\", \"status\", \"version\", \"warnings\", \"parser_path\", \"source_path\", \"source_size\", \"validated_at\", \"metadata_path\", \"parser_sha256\", \"review_status\", \"source_sha256\", \"adapter_sha256\", \"operation_uuid\", \"adapter_version\", \"experiment_uuid\", \"metadata_sha256\", \"scientific_approval\", \"protocol_epoch_counts\"]"
+        },
+        {
+          "experiment_id": 4,
+          "manifest_keys": "[\"counts\", \"format\", \"status\", \"version\", \"warnings\", \"parser_path\", \"source_path\", \"source_size\", \"validated_at\", \"metadata_path\", \"parser_sha256\", \"review_status\", \"source_sha256\", \"adapter_sha256\", \"operation_uuid\", \"adapter_version\", \"experiment_uuid\", \"metadata_sha256\", \"scientific_approval\", \"cell_count_semantics\", \"protocol_epoch_counts\"]"
+        },
+        {
+          "experiment_id": 5,
+          "manifest_keys": "[\"counts\", \"format\", \"status\", \"version\", \"warnings\", \"parser_path\", \"source_path\", \"source_size\", \"validated_at\", \"metadata_path\", \"parser_sha256\", \"review_status\", \"source_sha256\", \"adapter_sha256\", \"operation_uuid\", \"adapter_version\", \"experiment_uuid\", \"metadata_sha256\", \"source_filename\", \"scientific_approval\", \"cell_count_semantics\", \"protocol_epoch_counts\"]"
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "source_coverage": {
+      "rows": [
+        {
+          "source_sha256": "63d48aeab9344cce6665a9a752f836a797d8c136211202482cce4f72f501003e",
+          "experiment_uuid": "06a29cf1-1a12-5f28-86be-5b2fd41c0fc8",
+          "experiment_id": 3,
+          "epoch_count": 690,
+          "cell_count": 5,
+          "block_count": 37
+        },
+        {
+          "source_sha256": "896e5d4f0572949baad064cfedd28d8cce8aeef907ce075c03829532a95ae07b",
+          "experiment_uuid": "3517907e-f6bd-5fc5-90c8-087b930b6af2",
+          "experiment_id": 4,
+          "epoch_count": 1005,
+          "cell_count": 5,
+          "block_count": 67
+        },
+        {
+          "source_sha256": "055d012f4f876447bf1c8b4b8279f7c7b094edd8e921697100a348058cf2f95c",
+          "experiment_uuid": "48f8948e-5a26-5c7d-87e6-b476369206b4",
+          "experiment_id": 5,
+          "epoch_count": 1086,
+          "cell_count": 3,
+          "block_count": 64
+        }
+      ],
+      "elapsed_seconds": 0.0005
+    },
+    "protocol_epoch_distribution": {
+      "rows": [
+        {
+          "name": "edu.washington.riekelab.turner.protocols.ExpandingSpots",
+          "epoch_count": 1857,
+          "block_count": 14,
+          "experiment_count": 3
+        },
+        {
+          "name": "edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject",
+          "epoch_count": 540,
+          "block_count": 22,
+          "experiment_count": 2
+        },
+        {
+          "name": "edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject",
+          "epoch_count": 309,
+          "block_count": 84,
+          "experiment_count": 3
+        },
+        {
+          "name": "edu.washington.riekelab.turner.protocols.SplitFieldCentering",
+          "epoch_count": 52,
+          "block_count": 25,
+          "experiment_count": 3
+        },
+        {
+          "name": "edu.washington.riekelab.protocols.SingleSpot",
+          "epoch_count": 23,
+          "block_count": 23,
+          "experiment_count": 3
+        },
+        {
+          "name": "no_group_protocol",
+          "epoch_count": 0,
+          "block_count": 0,
+          "experiment_count": 0
+        }
+      ],
+      "elapsed_seconds": 0.0049
+    },
+    "cell_epoch_distribution": {
+      "rows": [
+        {
+          "cell_id": 15,
+          "experiment_id": 5,
+          "epoch_count": 687,
+          "block_count": 39
+        },
+        {
+          "cell_id": 9,
+          "experiment_id": 4,
+          "epoch_count": 617,
+          "block_count": 7
+        },
+        {
+          "cell_id": 7,
+          "experiment_id": 3,
+          "epoch_count": 436,
+          "block_count": 5
+        },
+        {
+          "cell_id": 16,
+          "experiment_id": 5,
+          "epoch_count": 203,
+          "block_count": 2
+        },
+        {
+          "cell_id": 14,
+          "experiment_id": 5,
+          "epoch_count": 196,
+          "block_count": 23
+        },
+        {
+          "cell_id": 12,
+          "experiment_id": 4,
+          "epoch_count": 177,
+          "block_count": 24
+        },
+        {
+          "cell_id": 5,
+          "experiment_id": 3,
+          "epoch_count": 92,
+          "block_count": 13
+        },
+        {
+          "cell_id": 6,
+          "experiment_id": 3,
+          "epoch_count": 90,
+          "block_count": 12
+        },
+        {
+          "cell_id": 11,
+          "experiment_id": 4,
+          "epoch_count": 81,
+          "block_count": 5
+        },
+        {
+          "cell_id": 13,
+          "experiment_id": 4,
+          "epoch_count": 68,
+          "block_count": 17
+        },
+        {
+          "cell_id": 10,
+          "experiment_id": 4,
+          "epoch_count": 62,
+          "block_count": 14
+        },
+        {
+          "cell_id": 8,
+          "experiment_id": 3,
+          "epoch_count": 39,
+          "block_count": 4
+        },
+        {
+          "cell_id": 4,
+          "experiment_id": 3,
+          "epoch_count": 33,
+          "block_count": 3
+        }
+      ],
+      "elapsed_seconds": 0.001
+    },
+    "annotation_density": {
+      "rows": [
+        {
+          "target_kind": "epoch",
+          "annotation_rows": 1,
+          "targets": 1,
+          "profiles": 1,
+          "authors": 1,
+          "tag_entries": "0",
+          "max_tags": 0
+        }
+      ],
+      "elapsed_seconds": 0.0003
+    },
+    "curation_density": {
+      "rows": [],
+      "elapsed_seconds": 0.0001
+    },
+    "legacy_tag_density": {
+      "rows": [],
+      "elapsed_seconds": 0.0002
+    },
+    "epoch_metadata_size": {
+      "rows": [
+        {
+          "epoch_count": 2781,
+          "parameter_fields_min": 22,
+          "parameter_fields_avg": "26.5581",
+          "parameter_fields_max": 47,
+          "parameter_bytes_avg": "690.7213",
+          "parameter_bytes_max": 1219,
+          "property_fields_min": 2,
+          "property_fields_avg": "2.0000",
+          "property_fields_max": 2
+        }
+      ],
+      "elapsed_seconds": 0.0152
+    },
+    "field_presence:epoch.parameters": {
+      "rows": [
+        {
+          "field_name": "amp",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "canvasSize",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "centerOffset",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "gain",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "lightPath",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "microdisplayBrightness",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "microdisplayBrightnessValue",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "micronsPerPixel",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "monitorRefreshRate",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "NDF",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "ndfs",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "prerender",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "sampleRate",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "trueCanvasSize",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "numberOfAverages",
+          "occurrences": 2472
+        },
+        {
+          "field_name": "stimTime",
+          "occurrences": 2472
+        },
+        {
+          "field_name": "backgroundIntensity",
+          "occurrences": 1932
+        },
+        {
+          "field_name": "preTime",
+          "occurrences": 1932
+        },
+        {
+          "field_name": "tailTime",
+          "occurrences": 1932
+        },
+        {
+          "field_name": "onlineAnalysis",
+          "occurrences": 1909
+        },
+        {
+          "field_name": "spotIntensity",
+          "occurrences": 1880
+        },
+        {
+          "field_name": "currentSpotSize",
+          "occurrences": 1857
+        },
+        {
+          "field_name": "randomizeOrder",
+          "occurrences": 1857
+        },
+        {
+          "field_name": "spotSizes",
+          "occurrences": 1857
+        },
+        {
+          "field_name": "frequencyCutoff",
+          "occurrences": 849
+        },
+        {
+          "field_name": "numberOfFilters",
+          "occurrences": 849
+        },
+        {
+          "field_name": "useRandomSeed",
+          "occurrences": 849
+        },
+        {
+          "field_name": "interpulseInterval",
+          "occurrences": 563
+        },
+        {
+          "field_name": "currentMean",
+          "occurrences": 540
+        },
+        {
+          "field_name": "currentSD",
+          "occurrences": 540
+        },
+        {
+          "field_name": "seed",
+          "occurrences": 540
+        },
+        {
+          "field_name": "stdv",
+          "occurrences": 540
+        },
+        {
+          "field_name": "blockRepeatCount",
+          "occurrences": 309
+        },
+        {
+          "field_name": "controlMode",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history1",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history1Mean",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history1SD",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history2",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history2Mean",
+          "occurrences": 309
+        },
+        {
+          "field_name": "history2SD",
+          "occurrences": 309
+        },
+        {
+          "field_name": "historyNoiseVersion",
+          "occurrences": 309
+        },
+        {
+          "field_name": "isControl",
+          "occurrences": 309
+        },
+        {
+          "field_name": "numberOfTrials",
+          "occurrences": 309
+        },
+        {
+          "field_name": "numberOfTrialsInRun",
+          "occurrences": 309
+        },
+        {
+          "field_name": "repeatsPerTrial",
+          "occurrences": 309
+        },
+        {
+          "field_name": "samplesPerBlock",
+          "occurrences": 309
+        },
+        {
+          "field_name": "samplesPerSegment",
+          "occurrences": 309
+        },
+        {
+          "field_name": "segmentTime",
+          "occurrences": 309
+        },
+        {
+          "field_name": "sequenceShuffleSeed",
+          "occurrences": 309
+        },
+        {
+          "field_name": "shuffleSequence",
+          "occurrences": 309
+        },
+        {
+          "field_name": "stimulusGenerator",
+          "occurrences": 309
+        },
+        {
+          "field_name": "stimulusGeneratorVersion",
+          "occurrences": 309
+        },
+        {
+          "field_name": "stimulusSampleRate",
+          "occurrences": 309
+        },
+        {
+          "field_name": "target",
+          "occurrences": 309
+        },
+        {
+          "field_name": "targetMean",
+          "occurrences": 309
+        },
+        {
+          "field_name": "targetSD",
+          "occurrences": 309
+        },
+        {
+          "field_name": "targetSeed",
+          "occurrences": 309
+        },
+        {
+          "field_name": "totalDurationMs",
+          "occurrences": 309
+        },
+        {
+          "field_name": "trialNumber",
+          "occurrences": 309
+        },
+        {
+          "field_name": "firstHistoryID",
+          "occurrences": 292
+        },
+        {
+          "field_name": "history1Seed",
+          "occurrences": 292
+        },
+        {
+          "field_name": "history2Seed",
+          "occurrences": 292
+        },
+        {
+          "field_name": "spotDiameter",
+          "occurrences": 75
+        },
+        {
+          "field_name": "contrast",
+          "occurrences": 52
+        },
+        {
+          "field_name": "maskDiameter",
+          "occurrences": 52
+        },
+        {
+          "field_name": "rotation",
+          "occurrences": 52
+        },
+        {
+          "field_name": "splitField",
+          "occurrences": 52
+        },
+        {
+          "field_name": "temporalFrequency",
+          "occurrences": 52
+        }
+      ],
+      "elapsed_seconds": 0.0493
+    },
+    "field_presence:epoch.properties": {
+      "rows": [
+        {
+          "field_name": "bathTemperature",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "frameTimesMs",
+          "occurrences": 2781
+        }
+      ],
+      "elapsed_seconds": 0.0051
+    },
+    "field_presence:epoch.attributes": {
+      "rows": [
+        {
+          "field_name": "endTimeDotNetDateTimeOffsetOffsetHours",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "endTimeDotNetDateTimeOffsetTicks",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "startTimeDotNetDateTimeOffsetOffsetHours",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "startTimeDotNetDateTimeOffsetTicks",
+          "occurrences": 2781
+        },
+        {
+          "field_name": "uuid",
+          "occurrences": 2781
+        }
+      ],
+      "elapsed_seconds": 0.0115
+    },
+    "field_presence:epoch_block.parameters": {
+      "rows": [
+        {
+          "field_name": "amp",
+          "occurrences": 168
+        },
+        {
+          "field_name": "sampleRate",
+          "occurrences": 168
+        },
+        {
+          "field_name": "frequencyCutoff",
+          "occurrences": 106
+        },
+        {
+          "field_name": "numberOfFilters",
+          "occurrences": 106
+        },
+        {
+          "field_name": "useRandomSeed",
+          "occurrences": 106
+        },
+        {
+          "field_name": "controlMode",
+          "occurrences": 84
+        },
+        {
+          "field_name": "history1",
+          "occurrences": 84
+        },
+        {
+          "field_name": "history2",
+          "occurrences": 84
+        },
+        {
+          "field_name": "numberOfAverages",
+          "occurrences": 84
+        },
+        {
+          "field_name": "numberOfTrials",
+          "occurrences": 84
+        },
+        {
+          "field_name": "repeatsPerTrial",
+          "occurrences": 84
+        },
+        {
+          "field_name": "segmentTime",
+          "occurrences": 84
+        },
+        {
+          "field_name": "shuffleSequence",
+          "occurrences": 84
+        },
+        {
+          "field_name": "stimTime",
+          "occurrences": 84
+        },
+        {
+          "field_name": "target",
+          "occurrences": 84
+        },
+        {
+          "field_name": "backgroundIntensity",
+          "occurrences": 62
+        },
+        {
+          "field_name": "preTime",
+          "occurrences": 62
+        },
+        {
+          "field_name": "tailTime",
+          "occurrences": 62
+        },
+        {
+          "field_name": "spotDiameter",
+          "occurrences": 48
+        },
+        {
+          "field_name": "interpulseInterval",
+          "occurrences": 45
+        },
+        {
+          "field_name": "onlineAnalysis",
+          "occurrences": 39
+        },
+        {
+          "field_name": "spotIntensity",
+          "occurrences": 37
+        },
+        {
+          "field_name": "contrast",
+          "occurrences": 25
+        },
+        {
+          "field_name": "maskDiameter",
+          "occurrences": 25
+        },
+        {
+          "field_name": "rotation",
+          "occurrences": 25
+        },
+        {
+          "field_name": "splitField",
+          "occurrences": 25
+        },
+        {
+          "field_name": "temporalFrequency",
+          "occurrences": 25
+        },
+        {
+          "field_name": "currentMean",
+          "occurrences": 22
+        },
+        {
+          "field_name": "currentSD",
+          "occurrences": 22
+        },
+        {
+          "field_name": "randomizeOrder",
+          "occurrences": 14
+        },
+        {
+          "field_name": "spotSizes",
+          "occurrences": 14
+        }
+      ],
+      "elapsed_seconds": 0.0018
+    },
+    "field_presence:cell.properties": {
+      "rows": [
+        {
+          "field_name": "type",
+          "occurrences": 13
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    },
+    "epoch_parameter_types_and_cardinality": {
+      "rows": [
+        {
+          "field_name": "amp",
+          "json_type": "STRING",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "backgroundIntensity",
+          "json_type": "DOUBLE",
+          "occurrences": 1932,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "blockRepeatCount",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "canvasSize",
+          "json_type": "ARRAY",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "centerOffset",
+          "json_type": "ARRAY",
+          "occurrences": 2781,
+          "distinct_values": 14,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "contrast",
+          "json_type": "DOUBLE",
+          "occurrences": 52,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "controlMode",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "currentMean",
+          "json_type": "DOUBLE",
+          "occurrences": 540,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "currentSD",
+          "json_type": "DOUBLE",
+          "occurrences": 540,
+          "distinct_values": 10,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "currentSpotSize",
+          "json_type": "DOUBLE",
+          "occurrences": 1857,
+          "distinct_values": 13,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "firstHistoryID",
+          "json_type": "DOUBLE",
+          "occurrences": 292,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "frequencyCutoff",
+          "json_type": "DOUBLE",
+          "occurrences": 849,
+          "distinct_values": 4,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "gain",
+          "json_type": "NULL",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history1",
+          "json_type": "ARRAY",
+          "occurrences": 309,
+          "distinct_values": 15,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "history1Mean",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 6,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history1SD",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 8,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history1Seed",
+          "json_type": "DOUBLE",
+          "occurrences": 292,
+          "distinct_values": 292,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history2",
+          "json_type": "ARRAY",
+          "occurrences": 309,
+          "distinct_values": 3,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "history2Mean",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history2SD",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "history2Seed",
+          "json_type": "DOUBLE",
+          "occurrences": 292,
+          "distinct_values": 292,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "historyNoiseVersion",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "interpulseInterval",
+          "json_type": "DOUBLE",
+          "occurrences": 563,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "isControl",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "lightPath",
+          "json_type": "STRING",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "maskDiameter",
+          "json_type": "DOUBLE",
+          "occurrences": 52,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "microdisplayBrightness",
+          "json_type": "STRING",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "microdisplayBrightnessValue",
+          "json_type": "INTEGER",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "micronsPerPixel",
+          "json_type": "DOUBLE",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "monitorRefreshRate",
+          "json_type": "DOUBLE",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "NDF",
+          "json_type": "DOUBLE",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "ndfs",
+          "json_type": "STRING",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "numberOfAverages",
+          "json_type": "INTEGER",
+          "occurrences": 2472,
+          "distinct_values": 5,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "numberOfFilters",
+          "json_type": "DOUBLE",
+          "occurrences": 849,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "numberOfTrials",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "numberOfTrialsInRun",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "onlineAnalysis",
+          "json_type": "STRING",
+          "occurrences": 1909,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "prerender",
+          "json_type": "INTEGER",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "preTime",
+          "json_type": "DOUBLE",
+          "occurrences": 1932,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "randomizeOrder",
+          "json_type": "INTEGER",
+          "occurrences": 1857,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "repeatsPerTrial",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "rotation",
+          "json_type": "DOUBLE",
+          "occurrences": 52,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "sampleRate",
+          "json_type": "DOUBLE",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "samplesPerBlock",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "samplesPerSegment",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "seed",
+          "json_type": "DOUBLE",
+          "occurrences": 540,
+          "distinct_values": 391,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "segmentTime",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "sequenceShuffleSeed",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "shuffleSequence",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "splitField",
+          "json_type": "INTEGER",
+          "occurrences": 52,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "spotDiameter",
+          "json_type": "DOUBLE",
+          "occurrences": 75,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "spotIntensity",
+          "json_type": "DOUBLE",
+          "occurrences": 1880,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "spotSizes",
+          "json_type": "ARRAY",
+          "occurrences": 1857,
+          "distinct_values": 1,
+          "mean_json_length": "13.0000",
+          "max_json_length": 13
+        },
+        {
+          "field_name": "stdv",
+          "json_type": "DOUBLE",
+          "occurrences": 540,
+          "distinct_values": 10,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "stimTime",
+          "json_type": "DOUBLE",
+          "occurrences": 2472,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "stimulusGenerator",
+          "json_type": "STRING",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "stimulusGeneratorVersion",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "stimulusSampleRate",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "tailTime",
+          "json_type": "DOUBLE",
+          "occurrences": 1932,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "target",
+          "json_type": "ARRAY",
+          "occurrences": 309,
+          "distinct_values": 8,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "targetMean",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "targetSD",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 8,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "targetSeed",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 309,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "temporalFrequency",
+          "json_type": "DOUBLE",
+          "occurrences": 52,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "totalDurationMs",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 3,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "trialNumber",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 5,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "trueCanvasSize",
+          "json_type": "ARRAY",
+          "occurrences": 2781,
+          "distinct_values": 1,
+          "mean_json_length": "2.0000",
+          "max_json_length": 2
+        },
+        {
+          "field_name": "useRandomSeed",
+          "json_type": "DOUBLE",
+          "occurrences": 309,
+          "distinct_values": 1,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        },
+        {
+          "field_name": "useRandomSeed",
+          "json_type": "INTEGER",
+          "occurrences": 540,
+          "distinct_values": 2,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1
+        }
+      ],
+      "elapsed_seconds": 0.1731
+    },
+    "property_shape": {
+      "rows": [
+        {
+          "field_name": "bathTemperature",
+          "json_type": "DOUBLE",
+          "occurrences": 2781,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1,
+          "mean_value_bytes": "4.0000",
+          "max_value_bytes": 4
+        },
+        {
+          "field_name": "frameTimesMs",
+          "json_type": "ARRAY",
+          "occurrences": 1932,
+          "mean_json_length": "46.7992",
+          "max_json_length": 148,
+          "mean_value_bytes": "322.9358",
+          "max_value_bytes": 1116
+        },
+        {
+          "field_name": "frameTimesMs",
+          "json_type": "NULL",
+          "occurrences": 849,
+          "mean_json_length": "1.0000",
+          "max_json_length": 1,
+          "mean_value_bytes": "4.0000",
+          "max_value_bytes": 4
+        }
+      ],
+      "elapsed_seconds": 0.0242
+    },
+    "stream_density": {
+      "rows": [
+        {
+          "stream_count": 1,
+          "epochs": 849
+        },
+        {
+          "stream_count": 2,
+          "epochs": 1932
+        }
+      ],
+      "elapsed_seconds": 0.0035
+    },
+    "source_manifest_aggregates": {
+      "rows": [
+        {
+          "experiment_id": 3,
+          "counts": "{\"cells\": 5, \"epochs\": 690, \"stimuli\": 690, \"responses\": 1308}",
+          "protocol_epoch_counts": "{\"edu.washington.riekelab.protocols.SingleSpot\": 7, \"edu.washington.riekelab.turner.protocols.ExpandingSpots\": 595, \"edu.washington.riekelab.turner.protocols.SplitFieldCentering\": 16, \"edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject\": 72}",
+          "status": "\"validated\"",
+          "review_status": "\"unreviewed\""
+        },
+        {
+          "experiment_id": 4,
+          "counts": "{\"cells\": 5, \"epochs\": 1005, \"stimuli\": 1005, \"responses\": 1854}",
+          "protocol_epoch_counts": "{\"edu.washington.riekelab.protocols.SingleSpot\": 10, \"edu.washington.riekelab.turner.protocols.ExpandingSpots\": 819, \"edu.washington.riekelab.turner.protocols.SplitFieldCentering\": 20, \"edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject\": 20, \"edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject\": 136}",
+          "status": "\"validated\"",
+          "review_status": "\"unreviewed\""
+        },
+        {
+          "experiment_id": 5,
+          "counts": "{\"cells\": 3, \"epochs\": 1086, \"stimuli\": 1086, \"responses\": 1551}",
+          "protocol_epoch_counts": "{\"edu.washington.riekelab.protocols.SingleSpot\": 6, \"edu.washington.riekelab.turner.protocols.ExpandingSpots\": 443, \"edu.washington.riekelab.turner.protocols.SplitFieldCentering\": 16, \"edu.washington.riekelab.chris.protocols.VariableMeanNoiseCurInject\": 520, \"edu.washington.riekelab.chris.protocols.VariableHistoryNoiseCurInject\": 101}",
+          "status": "\"validated\"",
+          "review_status": "\"unreviewed\""
+        }
+      ],
+      "elapsed_seconds": 0.0002
+    }
+  }
+}

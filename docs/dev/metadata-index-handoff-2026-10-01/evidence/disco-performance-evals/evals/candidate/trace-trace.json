@@ -1,0 +1,38 @@
+[
+  {
+    "fixture_payload_mib": 32,
+    "file_bytes": 36765600,
+    "first_uncached_integrity_trace_seconds": 0.022443375026341528,
+    "warm_trace_seconds": [
+      0.0020570409833453596,
+      0.0017467089928686619,
+      0.0017574160010553896,
+      0.001700500026345253,
+      0.0017412500455975533
+    ],
+    "warm_median_seconds": 0.0017467089928686619,
+    "first_full_hash_calls": 1,
+    "warm_full_hash_calls": 0,
+    "samples_per_window": 20000,
+    "same_size_mutation_rejected": "Source recording checksum changed; refusing trace access",
+    "limits": "Real temp H5; OS page cache warm after construction; no API/HTTP/browser. Not a cold-disk benchmark."
+  },
+  {
+    "fixture_payload_mib": 256,
+    "file_bytes": 271646624,
+    "first_uncached_integrity_trace_seconds": 0.13380937499459833,
+    "warm_trace_seconds": [
+      0.002235499967355281,
+      0.0018633329891599715,
+      0.001646874996367842,
+      0.0016292500076815486,
+      0.0017759579932317138
+    ],
+    "warm_median_seconds": 0.0017759579932317138,
+    "first_full_hash_calls": 1,
+    "warm_full_hash_calls": 0,
+    "samples_per_window": 20000,
+    "same_size_mutation_rejected": "Source recording checksum changed; refusing trace access",
+    "limits": "Real temp H5; OS page cache warm after construction; no API/HTTP/browser. Not a cold-disk benchmark."
+  }
+]

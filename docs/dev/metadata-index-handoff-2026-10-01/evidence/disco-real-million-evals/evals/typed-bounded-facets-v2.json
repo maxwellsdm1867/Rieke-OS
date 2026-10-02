@@ -1,0 +1,118 @@
+{
+  "pid": 93074,
+  "candidate_version": "bounded",
+  "arm": "typed",
+  "mode": "facets",
+  "results": [
+    {
+      "label": "largest_cell",
+      "expected_count": 687,
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "status": "passed",
+      "samples_ms": [
+        4306.084375013597,
+        3001.7653339891694,
+        2791.366416029632
+      ],
+      "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+      "count": 687,
+      "payload_bytes": 194791,
+      "cursor": 412915,
+      "first_ms": 4306.084375013597,
+      "warm_median_ms": 2896.5658750094008,
+      "max_ms": 4306.084375013597,
+      "next_page_sha256": "fa5ace691d97012c0b8d40fe86926058a5b3aa087b0de2543b849156d7d27830",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_block",
+      "expected_count": 601,
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "status": "passed",
+      "samples_ms": [
+        2724.9157080077566,
+        2761.1661659902893,
+        2998.298667022027
+      ],
+      "sha256": "719b590cec33eb85c6082090cb09029f3da1a67e35c57ce977b21e0783353513",
+      "count": 601,
+      "payload_bytes": 194666,
+      "cursor": 661891,
+      "first_ms": 2724.9157080077566,
+      "warm_median_ms": 2879.732416506158,
+      "max_ms": 2998.298667022027,
+      "next_page_sha256": "ae42a8be7f3d775d7f6b5f017517ec626d1b1ac6f67fb424e77eac1fcb7e5ea9",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_protocol",
+      "expected_count": 668034,
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "status": "passed",
+      "samples_ms": [
+        3291.280374978669,
+        3186.624958005268,
+        3228.4054580377415
+      ],
+      "sha256": "04485f23d5d3cc5334e64d1effde14f4b00273d5a3ac184115139941e31b5728",
+      "count": 668034,
+      "payload_bytes": 194661,
+      "cursor": 1496,
+      "first_ms": 3291.280374978669,
+      "warm_median_ms": 3207.515208021505,
+      "max_ms": 3291.280374978669,
+      "next_page_sha256": "409f054a4d946a00b29267863d3123ddc306c20e6ac3a056b9eb40517b8b2bca",
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "global",
+      "expected_count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "status": "passed",
+      "samples_ms": [
+        3217.5178750185296,
+        3146.3582500000484,
+        3209.823875047732
+      ],
+      "sha256": "6583ed532ad447932ffae42d3a836964a960823eb49a8303729d4cb97b702da6",
+      "count": 1000000,
+      "payload_bytes": 196616,
+      "cursor": 60,
+      "first_ms": 3217.5178750185296,
+      "warm_median_ms": 3178.0910625238903,
+      "max_ms": 3217.5178750185296,
+      "next_page_sha256": "a902abec4ca8bcdd0233deedf38b1f9a5f3ae875623c93637aab0dffb2dc0f55",
+      "row_dto_oracle_passed": true
+    }
+  ],
+  "status": "complete",
+  "caps": {
+    "process_seconds": 360,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "input_stat": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "setup_seconds": 0.0049595419550314546,
+  "peak_rss_bytes": 164741120,
+  "wall_seconds": 50.100573166972026,
+  "input_stat_after": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "source_stat_unchanged": true
+}

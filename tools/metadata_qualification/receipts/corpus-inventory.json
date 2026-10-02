@@ -1,0 +1,24 @@
+{
+  "status": "stat only; no large hashes or queries",
+  "assets": [
+    {
+      "path": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+      "exists": true,
+      "bytes": 20787200,
+      "seal_status": "unverified; stat is not integrity or generation proof"
+    },
+    {
+      "path": "/private/tmp/disco-real-million-20261001/base.sqlite",
+      "exists": true,
+      "bytes": 7195836416,
+      "seal_status": "unverified; stat is not integrity or generation proof"
+    },
+    {
+      "path": "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite",
+      "exists": true,
+      "bytes": 1107034112,
+      "seal_status": "unverified; stat is not integrity or generation proof"
+    }
+  ],
+  "real_million_qualified": false
+}

@@ -1,0 +1,14 @@
+{"phase": "owned_native_boot", "seconds": 0.45368400000734255}
+/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/settings.py:992: UserWarning: No datajoint.json found. Using defaults and environment variables. Run `dj.config.save_template()` to create a template configuration.
+  config = _create_config()
+[2026-10-01 07:50:26] DataJoint 2.2.2 connected to root@127.0.0.1:52330
+[2026-10-01 07:50:26][WARNING]: Native type 'int' is used in attribute 'experiment_id'. Consider using a core DataJoint type for better portability.
+[2026-10-01 07:50:26][WARNING]: Native type 'int unsigned' is used in attribute 'revision'. Consider using a core DataJoint type for better portability.
+[2026-10-01 07:50:26][WARNING]: Native type 'int unsigned' is used in attribute 'revision'. Consider using a core DataJoint type for better portability.
+[2026-10-01 07:50:26][WARNING]: Native type 'int unsigned' is used in attribute 'epoch_count'. Consider using a core DataJoint type for better portability.
+{"phase": "sparse_canonical_seed", "seconds": 4.582029584038537}
+{"phase": "production_generation_bootstrap", "seconds": 4.688169334025588}
+{"phase": "initial_production_recovery_checkpoint", "seconds": 4.723705125041306}
+{"phase": "production_native_lookup_preparation", "seconds": 4.890515542007051}
+{"phase": "final_production_recovery_flush", "seconds": 9.417636750033125}
+{"passed": true, "seconds": 9.991961541993078}

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "correctness_passed": true,
+  "scope": "Matched API-prewarmed real-native HTTP diagnostic,10 samples each; catalog_summary:false, one identical full API prelude. Includes localhost HTTP + JSON decode, excludes browser rendering.",
+  "baseline_source": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "candidate_source": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "baseline_median_ms": 586.260541487718,
+  "candidate_median_ms": 577.9948745039292,
+  "delta_ms": -8.265666983788833,
+  "threshold_ms": 117.2521082975436,
+  "baseline_first_ms": 597.6029580342583,
+  "candidate_first_ms": 579.3825830332935,
+  "identical_canonical_response_sha256": "6f775c3216df0fef3af9e9bb83ea6b8e866205db074032a5179cf70e1b1538be",
+  "response_bytes": 4893,
+  "native_context_ready": true,
+  "legacy_oracle_calls": 0,
+  "both_owned_native_databases_stopped": true
+}

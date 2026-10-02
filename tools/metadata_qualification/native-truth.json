@@ -1,0 +1,1486 @@
+{
+  "description": "Hand-authored development fixture; not real-million replay or raw waveform evidence.",
+  "rows": [
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000001",
+      "cell_uuid": "00000000-0000-0000-0000-000000000064",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000c8",
+      "group_uuid": "00000000-0000-0000-0000-00000000012c",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:00",
+      "block_start_time": "12:00:00",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000002",
+      "cell_uuid": "00000000-0000-0000-0000-000000000064",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000c8",
+      "group_uuid": "00000000-0000-0000-0000-00000000012c",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:00",
+      "block_start_time": "12:00:00",
+      "epoch_number": 2
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000003",
+      "cell_uuid": "00000000-0000-0000-0000-000000000064",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000c9",
+      "group_uuid": "00000000-0000-0000-0000-00000000012c",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:01",
+      "block_start_time": "12:00:01",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000004",
+      "cell_uuid": "00000000-0000-0000-0000-000000000064",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000c9",
+      "group_uuid": "00000000-0000-0000-0000-00000000012c",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:01",
+      "block_start_time": "12:00:01",
+      "epoch_number": 2
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000005",
+      "cell_uuid": "00000000-0000-0000-0000-000000000065",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000ca",
+      "group_uuid": "00000000-0000-0000-0000-00000000012d",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:02",
+      "block_start_time": "12:00:02",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000006",
+      "cell_uuid": "00000000-0000-0000-0000-000000000065",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000ca",
+      "group_uuid": "00000000-0000-0000-0000-00000000012d",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:02",
+      "block_start_time": "12:00:02",
+      "epoch_number": 2
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000007",
+      "cell_uuid": "00000000-0000-0000-0000-000000000065",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cb",
+      "group_uuid": "00000000-0000-0000-0000-00000000012d",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:03",
+      "block_start_time": "12:00:03",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000008",
+      "cell_uuid": "00000000-0000-0000-0000-000000000065",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cb",
+      "group_uuid": "00000000-0000-0000-0000-00000000012d",
+      "group_label": "Identical group",
+      "protocol_name": "OriginalProtocol",
+      "source_sha256": "source-A",
+      "date": "2026-09-24",
+      "start_time": "12:00:03",
+      "block_start_time": "12:00:03",
+      "epoch_number": 2
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-000000000009",
+      "cell_uuid": "00000000-0000-0000-0000-000000000066",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cc",
+      "group_uuid": "00000000-0000-0000-0000-00000000012e",
+      "group_label": "Identical group",
+      "protocol_name": "FutureProtocol",
+      "source_sha256": "source-B",
+      "date": "2026-09-24",
+      "start_time": "12:00:04",
+      "block_start_time": "12:00:04",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-00000000000a",
+      "cell_uuid": "00000000-0000-0000-0000-000000000066",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cc",
+      "group_uuid": "00000000-0000-0000-0000-00000000012e",
+      "group_label": "Identical group",
+      "protocol_name": "FutureProtocol",
+      "source_sha256": "source-B",
+      "date": "2026-09-24",
+      "start_time": "12:00:04",
+      "block_start_time": "12:00:04",
+      "epoch_number": 2
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-00000000000b",
+      "cell_uuid": "00000000-0000-0000-0000-000000000066",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cd",
+      "group_uuid": "00000000-0000-0000-0000-00000000012e",
+      "group_label": "Identical group",
+      "protocol_name": "FutureProtocol",
+      "source_sha256": "source-B",
+      "date": "2026-09-24",
+      "start_time": "12:00:05",
+      "block_start_time": "12:00:05",
+      "epoch_number": 1
+    },
+    {
+      "epoch_uuid": "00000000-0000-0000-0000-00000000000c",
+      "cell_uuid": "00000000-0000-0000-0000-000000000066",
+      "cell_label": "Identical label",
+      "cell_type": "ON",
+      "block_uuid": "00000000-0000-0000-0000-0000000000cd",
+      "group_uuid": "00000000-0000-0000-0000-00000000012e",
+      "group_label": "Identical group",
+      "protocol_name": "FutureProtocol",
+      "source_sha256": "source-B",
+      "date": "2026-09-24",
+      "start_time": "12:00:05",
+      "block_start_time": "12:00:05",
+      "epoch_number": 2
+    }
+  ],
+  "details": {
+    "00000000-0000-0000-0000-000000000001": {
+      "parameters": {
+        "mixed": null,
+        "a/b~": 0,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000001"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000002": {
+      "parameters": {
+        "mixed": false,
+        "a/b~": 1,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": null,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000002"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000003": {
+      "parameters": {
+        "mixed": true,
+        "a/b~": 2,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": 2,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000003"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000004": {
+      "parameters": {
+        "mixed": 0,
+        "a/b~": 3,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000004"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000005": {
+      "parameters": {
+        "mixed": -0.0,
+        "a/b~": 4,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": 2,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000005"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000006": {
+      "parameters": {
+        "mixed": 1,
+        "a/b~": 5,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": null,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000006"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000007": {
+      "parameters": {
+        "mixed": 1.0,
+        "a/b~": 6,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000007"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000008": {
+      "parameters": {
+        "mixed": "1",
+        "a/b~": 7,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": null,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000008"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-000000000009": {
+      "parameters": {
+        "mixed": [
+          true,
+          1
+        ],
+        "a/b~": 8,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": 2,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-000000000009"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-00000000000a": {
+      "parameters": {
+        "mixed": [
+          0,
+          675
+        ],
+        "a/b~": 9,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-00000000000a"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-00000000000b": {
+      "parameters": {
+        "mixed": {
+          "x": [
+            1,
+            true
+          ]
+        },
+        "a/b~": 10,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": true,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": 2,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-00000000000b"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    },
+    "00000000-0000-0000-0000-00000000000c": {
+      "parameters": {
+        "mixed": [],
+        "a/b~": 11,
+        "array": [
+          true,
+          1,
+          null,
+          {
+            "x": 2
+          }
+        ],
+        "futureBoolean": false,
+        "precise": [
+          1152921504606846976,
+          1152921504606846977
+        ],
+        "emptyObject": {},
+        "optional": null,
+        "unseen000": 0,
+        "unseen001": 1,
+        "unseen002": 2,
+        "unseen003": 3,
+        "unseen004": 4,
+        "unseen005": 5,
+        "unseen006": 6,
+        "unseen007": 7,
+        "unseen008": 8,
+        "unseen009": 9,
+        "unseen010": 10,
+        "unseen011": 11,
+        "unseen012": 12,
+        "unseen013": 13,
+        "unseen014": 14,
+        "unseen015": 15,
+        "unseen016": 16,
+        "unseen017": 17,
+        "unseen018": 18,
+        "unseen019": 19,
+        "unseen020": 20,
+        "unseen021": 21,
+        "unseen022": 22,
+        "unseen023": 23,
+        "unseen024": 24,
+        "unseen025": 25,
+        "unseen026": 26,
+        "unseen027": 27,
+        "unseen028": 28,
+        "unseen029": 29,
+        "unseen030": 30,
+        "unseen031": 31,
+        "unseen032": 32,
+        "unseen033": 33,
+        "unseen034": 34,
+        "unseen035": 35,
+        "unseen036": 36,
+        "unseen037": 37,
+        "unseen038": 38,
+        "unseen039": 39,
+        "unseen040": 40,
+        "unseen041": 41,
+        "unseen042": 42,
+        "unseen043": 43,
+        "unseen044": 44,
+        "unseen045": 45,
+        "unseen046": 46,
+        "unseen047": 47,
+        "unseen048": 48,
+        "unseen049": 49,
+        "unseen050": 50,
+        "unseen051": 51,
+        "unseen052": 52,
+        "unseen053": 53,
+        "unseen054": 54,
+        "unseen055": 55,
+        "unseen056": 56,
+        "unseen057": 57,
+        "unseen058": 58,
+        "unseen059": 59,
+        "unseen060": 60,
+        "unseen061": 61,
+        "unseen062": 62,
+        "unseen063": 63,
+        "unseen064": 64,
+        "unseen065": 65,
+        "unseen066": 66,
+        "unseen067": 67,
+        "unseen068": 68,
+        "unseen069": 69,
+        "unseen070": 70,
+        "unseen071": 71,
+        "unseen072": 72,
+        "unseen073": 73,
+        "unseen074": 74,
+        "unseen075": 75,
+        "unseen076": 76,
+        "unseen077": 77,
+        "unseen078": 78,
+        "unseen079": 79,
+        "unseen080": 80,
+        "unseen081": 81,
+        "unseen082": 82,
+        "unseen083": 83,
+        "unseen084": 84,
+        "unseen085": 85,
+        "unseen086": 86,
+        "unseen087": 87,
+        "unseen088": 88,
+        "unseen089": 89,
+        "unseen090": 90,
+        "unseen091": 91,
+        "unseen092": 92,
+        "unseen093": 93,
+        "unseen094": 94,
+        "unseen095": 95,
+        "unseen096": 96,
+        "unseen097": 97,
+        "unseen098": 98,
+        "unseen099": 99,
+        "unseen100": 100,
+        "unseen101": 101,
+        "unseen102": 102,
+        "unseen103": 103,
+        "unseen104": 104,
+        "unseen105": 105,
+        "unseen106": 106,
+        "unseen107": 107,
+        "unseen108": 108,
+        "unseen109": 109,
+        "unseen110": 110,
+        "unseen111": 111,
+        "unseen112": 112,
+        "unseen113": 113,
+        "unseen114": 114,
+        "unseen115": 115,
+        "unseen116": 116,
+        "unseen117": 117,
+        "unseen118": 118,
+        "unseen119": 119,
+        "unseen120": 120,
+        "unseen121": 121,
+        "unseen122": 122,
+        "unseen123": 123,
+        "unseen124": 124,
+        "unseen125": 125,
+        "unseen126": 126,
+        "unseen127": 127,
+        "unseen128": 128,
+        "unseen129": 129,
+        "unseen130": 130,
+        "unseen131": 131,
+        "unseen132": 132,
+        "unseen133": 133,
+        "unseen134": 134,
+        "unseen135": 135,
+        "unseen136": 136,
+        "unseen137": 137,
+        "unseen138": 138,
+        "unseen139": 139,
+        "unseen140": 140,
+        "unseen141": 141,
+        "unseen142": 142,
+        "unseen143": 143,
+        "unseen144": 144,
+        "exactBigInteger": 1152921504606846977
+      },
+      "properties": {},
+      "attributes": {
+        "nativeTicks": 639258608779858225
+      },
+      "metadata": {
+        "epoch": {
+          "uuid": "00000000-0000-0000-0000-00000000000c"
+        },
+        "cell": {
+          "start_time": "2026-09-24T12:00:00",
+          "properties": {
+            "type": "ON"
+          }
+        },
+        "opaque": {
+          "complete": [
+            "dependency",
+            {
+              "seed": 99
+            }
+          ]
+        }
+      },
+      "raw_reconstruction_bundle": {
+        "generator": "native",
+        "calibration": {
+          "offset": null
+        }
+      }
+    }
+  },
+  "values": {
+    "00000000-0000-0000-0000-000000000001": {
+      "epoch": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000064",
+      "block": "00000000-0000-0000-0000-0000000000c8",
+      "block time": "12:00:00",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012c",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": null,
+      "parameters/a~1b~0": 0,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000002": {
+      "epoch": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000064",
+      "block": "00000000-0000-0000-0000-0000000000c8",
+      "block time": "12:00:00",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012c",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": false,
+      "parameters/a~1b~0": 1,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": null,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000003": {
+      "epoch": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000064",
+      "block": "00000000-0000-0000-0000-0000000000c9",
+      "block time": "12:00:01",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012c",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": true,
+      "parameters/a~1b~0": 2,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": 2,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000004": {
+      "epoch": "00000000-0000-0000-0000-000000000004",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000064",
+      "block": "00000000-0000-0000-0000-0000000000c9",
+      "block time": "12:00:01",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012c",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": 0,
+      "parameters/a~1b~0": 3,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000005": {
+      "epoch": "00000000-0000-0000-0000-000000000005",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000065",
+      "block": "00000000-0000-0000-0000-0000000000ca",
+      "block time": "12:00:02",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012d",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": -0.0,
+      "parameters/a~1b~0": 4,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": 2,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000006": {
+      "epoch": "00000000-0000-0000-0000-000000000006",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000065",
+      "block": "00000000-0000-0000-0000-0000000000ca",
+      "block time": "12:00:02",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012d",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": 1,
+      "parameters/a~1b~0": 5,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": null,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000007": {
+      "epoch": "00000000-0000-0000-0000-000000000007",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000065",
+      "block": "00000000-0000-0000-0000-0000000000cb",
+      "block time": "12:00:03",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012d",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": 1.0,
+      "parameters/a~1b~0": 6,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000008": {
+      "epoch": "00000000-0000-0000-0000-000000000008",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000065",
+      "block": "00000000-0000-0000-0000-0000000000cb",
+      "block time": "12:00:03",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012d",
+      "protocol": "OriginalProtocol",
+      "parameters/mixed": "1",
+      "parameters/a~1b~0": 7,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": null,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-000000000009": {
+      "epoch": "00000000-0000-0000-0000-000000000009",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000066",
+      "block": "00000000-0000-0000-0000-0000000000cc",
+      "block time": "12:00:04",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012e",
+      "protocol": "FutureProtocol",
+      "parameters/mixed": [
+        true,
+        1
+      ],
+      "parameters/a~1b~0": 8,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": 2,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-00000000000a": {
+      "epoch": "00000000-0000-0000-0000-00000000000a",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000066",
+      "block": "00000000-0000-0000-0000-0000000000cc",
+      "block time": "12:00:04",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012e",
+      "protocol": "FutureProtocol",
+      "parameters/mixed": [
+        0,
+        675
+      ],
+      "parameters/a~1b~0": 9,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-00000000000b": {
+      "epoch": "00000000-0000-0000-0000-00000000000b",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000066",
+      "block": "00000000-0000-0000-0000-0000000000cd",
+      "block time": "12:00:05",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012e",
+      "protocol": "FutureProtocol",
+      "parameters/a~1b~0": 10,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": true,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": 2,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/mixed/x": [
+        1,
+        true
+      ],
+      "parameters/exactBigInteger": 1152921504606846977
+    },
+    "00000000-0000-0000-0000-00000000000c": {
+      "epoch": "00000000-0000-0000-0000-00000000000c",
+      "date": "2026-09-24",
+      "cell": "00000000-0000-0000-0000-000000000066",
+      "block": "00000000-0000-0000-0000-0000000000cd",
+      "block time": "12:00:05",
+      "cell type": "ON",
+      "group label": "Identical group",
+      "group": "00000000-0000-0000-0000-00000000012e",
+      "protocol": "FutureProtocol",
+      "parameters/mixed": [],
+      "parameters/a~1b~0": 11,
+      "parameters/array": [
+        true,
+        1,
+        null,
+        {
+          "x": 2
+        }
+      ],
+      "parameters/futureBoolean": false,
+      "parameters/precise": [
+        1152921504606846976,
+        1152921504606846977
+      ],
+      "parameters/optional": null,
+      "parameters/unseen000": 0,
+      "parameters/unseen001": 1,
+      "parameters/unseen002": 2,
+      "parameters/unseen003": 3,
+      "parameters/unseen004": 4,
+      "parameters/unseen005": 5,
+      "parameters/unseen006": 6,
+      "parameters/unseen007": 7,
+      "parameters/unseen008": 8,
+      "parameters/unseen009": 9,
+      "parameters/unseen010": 10,
+      "parameters/unseen011": 11,
+      "parameters/unseen012": 12,
+      "parameters/unseen013": 13,
+      "parameters/unseen014": 14,
+      "parameters/unseen015": 15,
+      "parameters/unseen016": 16,
+      "parameters/unseen017": 17,
+      "parameters/unseen018": 18,
+      "parameters/unseen019": 19,
+      "parameters/unseen020": 20,
+      "parameters/unseen021": 21,
+      "parameters/unseen022": 22,
+      "parameters/unseen023": 23,
+      "parameters/unseen024": 24,
+      "parameters/unseen025": 25,
+      "parameters/unseen026": 26,
+      "parameters/unseen027": 27,
+      "parameters/unseen028": 28,
+      "parameters/unseen029": 29,
+      "parameters/unseen030": 30,
+      "parameters/unseen031": 31,
+      "parameters/unseen032": 32,
+      "parameters/unseen033": 33,
+      "parameters/unseen034": 34,
+      "parameters/unseen035": 35,
+      "parameters/unseen036": 36,
+      "parameters/unseen037": 37,
+      "parameters/unseen038": 38,
+      "parameters/unseen039": 39,
+      "parameters/unseen040": 40,
+      "parameters/unseen041": 41,
+      "parameters/unseen042": 42,
+      "parameters/unseen043": 43,
+      "parameters/unseen044": 44,
+      "parameters/unseen045": 45,
+      "parameters/unseen046": 46,
+      "parameters/unseen047": 47,
+      "parameters/unseen048": 48,
+      "parameters/unseen049": 49,
+      "parameters/unseen050": 50,
+      "parameters/unseen051": 51,
+      "parameters/unseen052": 52,
+      "parameters/unseen053": 53,
+      "parameters/unseen054": 54,
+      "parameters/unseen055": 55,
+      "parameters/unseen056": 56,
+      "parameters/unseen057": 57,
+      "parameters/unseen058": 58,
+      "parameters/unseen059": 59,
+      "parameters/unseen060": 60,
+      "parameters/unseen061": 61,
+      "parameters/unseen062": 62,
+      "parameters/unseen063": 63,
+      "parameters/unseen064": 64,
+      "parameters/unseen065": 65,
+      "parameters/unseen066": 66,
+      "parameters/unseen067": 67,
+      "parameters/unseen068": 68,
+      "parameters/unseen069": 69,
+      "parameters/unseen070": 70,
+      "parameters/unseen071": 71,
+      "parameters/unseen072": 72,
+      "parameters/unseen073": 73,
+      "parameters/unseen074": 74,
+      "parameters/unseen075": 75,
+      "parameters/unseen076": 76,
+      "parameters/unseen077": 77,
+      "parameters/unseen078": 78,
+      "parameters/unseen079": 79,
+      "parameters/unseen080": 80,
+      "parameters/unseen081": 81,
+      "parameters/unseen082": 82,
+      "parameters/unseen083": 83,
+      "parameters/unseen084": 84,
+      "parameters/unseen085": 85,
+      "parameters/unseen086": 86,
+      "parameters/unseen087": 87,
+      "parameters/unseen088": 88,
+      "parameters/unseen089": 89,
+      "parameters/unseen090": 90,
+      "parameters/unseen091": 91,
+      "parameters/unseen092": 92,
+      "parameters/unseen093": 93,
+      "parameters/unseen094": 94,
+      "parameters/unseen095": 95,
+      "parameters/unseen096": 96,
+      "parameters/unseen097": 97,
+      "parameters/unseen098": 98,
+      "parameters/unseen099": 99,
+      "parameters/unseen100": 100,
+      "parameters/unseen101": 101,
+      "parameters/unseen102": 102,
+      "parameters/unseen103": 103,
+      "parameters/unseen104": 104,
+      "parameters/unseen105": 105,
+      "parameters/unseen106": 106,
+      "parameters/unseen107": 107,
+      "parameters/unseen108": 108,
+      "parameters/unseen109": 109,
+      "parameters/unseen110": 110,
+      "parameters/unseen111": 111,
+      "parameters/unseen112": 112,
+      "parameters/unseen113": 113,
+      "parameters/unseen114": 114,
+      "parameters/unseen115": 115,
+      "parameters/unseen116": 116,
+      "parameters/unseen117": 117,
+      "parameters/unseen118": 118,
+      "parameters/unseen119": 119,
+      "parameters/unseen120": 120,
+      "parameters/unseen121": 121,
+      "parameters/unseen122": 122,
+      "parameters/unseen123": 123,
+      "parameters/unseen124": 124,
+      "parameters/unseen125": 125,
+      "parameters/unseen126": 126,
+      "parameters/unseen127": 127,
+      "parameters/unseen128": 128,
+      "parameters/unseen129": 129,
+      "parameters/unseen130": 130,
+      "parameters/unseen131": 131,
+      "parameters/unseen132": 132,
+      "parameters/unseen133": 133,
+      "parameters/unseen134": 134,
+      "parameters/unseen135": 135,
+      "parameters/unseen136": 136,
+      "parameters/unseen137": 137,
+      "parameters/unseen138": 138,
+      "parameters/unseen139": 139,
+      "parameters/unseen140": 140,
+      "parameters/unseen141": 141,
+      "parameters/unseen142": 142,
+      "parameters/unseen143": 143,
+      "parameters/unseen144": 144,
+      "metadata/cell/start_time": "2026-09-24T12:00:00",
+      "metadata/cell/properties/type": "ON",
+      "parameters/exactBigInteger": 1152921504606846977
+    }
+  },
+  "sources": [
+    {
+      "source_sha256": "source-A",
+      "metadata": {}
+    },
+    {
+      "source_sha256": "source-B",
+      "metadata": {}
+    }
+  ],
+  "empty_branches": [
+    {
+      "block_uuid": "empty-block",
+      "group_uuid": "empty-group",
+      "cell_uuid": "empty-cell",
+      "source_sha256": "source-A",
+      "protocol_name": "UnseenProtocol",
+      "parameters": {
+        "futureParameter": []
+      },
+      "epochs": []
+    }
+  ]
+}

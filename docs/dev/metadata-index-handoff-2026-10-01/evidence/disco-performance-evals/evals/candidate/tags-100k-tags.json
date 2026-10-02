@@ -1,0 +1,3301 @@
+{
+  "scope": "Persistent native tag lookup: tag-ten, tag-another-ten, filter-twenty and cell/epoch hierarchy.\n\nEvery project/database is disposable. Acquisition metadata is synthetic; actual\nMySQL, triggers, Flask routes, derived indexes and each version's save hooks\nare used. Native SQL commits are checked immediately; any background recovery\nmirror is explicitly flushed before its final oracle. HTTP times include Flask serialization/client JSON decoding, exclude\noracle work, and do not model browser concurrency/rendering. Sequential bundle\ntimes are sums of their separately measured requests. Profiles are separate.\n",
+  "epochs": 100000,
+  "profiles": 3,
+  "tags_per_annotation": 5,
+  "protocols": 2,
+  "samples": 10,
+  "source_root": "/private/tmp/disco-performance-evals-20261001",
+  "source_inventory_before": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "fixture_module": "/private/tmp/disco-performance-evals-20261001/docs/dev/scale-audit-2026-09-29/benchmark_service_scale.py",
+  "harness_sha256": "26d058c7a3b9c5f67071e38d70df66a566b37cef7b543656b0bcb521c04df133",
+  "started_at": "2026-10-01T07:44:24.217998+00:00",
+  "release_ready": false,
+  "operations": {
+    "first10_revision_preflight": {
+      "samples_seconds": [
+        0.01938308303942904,
+        0.04084899998269975,
+        0.006018500018399209,
+        0.037945249991025776,
+        0.006706250016577542,
+        0.006564167037140578,
+        0.006381792016327381,
+        0.00631358299870044,
+        0.005986207979731262,
+        0.006452874979004264
+      ],
+      "p50_seconds": 0.006508521008072421,
+      "p95_seconds": 0.04084899998269975,
+      "p99_seconds": 0.04084899998269975,
+      "maximum_seconds": 0.04084899998269975,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 21990,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 15364,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15364,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15364,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15364,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15365,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15365,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15365,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15365,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15365,
+          "Questions": 4
+        }
+      ]
+    },
+    "first10_save": {
+      "samples_seconds": [
+        0.054582417011260986,
+        0.017751500010490417,
+        0.018377124972175807,
+        0.020843957958277315,
+        0.020784207968972623,
+        0.018753791984636337,
+        0.018691500008571893,
+        0.018672625010367483,
+        0.018732250027824193,
+        0.01895029202569276
+      ],
+      "p50_seconds": 0.018743021006230265,
+      "p95_seconds": 0.054582417011260986,
+      "p99_seconds": 0.054582417011260986,
+      "maximum_seconds": 0.054582417011260986,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 24818,
+          "Questions": 43
+        },
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12424,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12425,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12425,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        }
+      ]
+    },
+    "second10_revision_preflight": {
+      "samples_seconds": [
+        0.013286667002830654,
+        0.005629874998703599,
+        0.005787291971500963,
+        0.0062904999940656126,
+        0.02587675000540912,
+        0.006004124996252358,
+        0.03019170800689608,
+        0.005620040989015251,
+        0.03368220798438415,
+        0.005642125033773482
+      ],
+      "p50_seconds": 0.006147312495158985,
+      "p95_seconds": 0.03368220798438415,
+      "p99_seconds": 0.03368220798438415,
+      "maximum_seconds": 0.03368220798438415,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15382,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15382,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15382,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15382,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15382,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15383,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15383,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15383,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15383,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15383,
+          "Questions": 4
+        }
+      ]
+    },
+    "second10_save": {
+      "samples_seconds": [
+        0.024322999990545213,
+        0.017339458980131894,
+        0.018984291004016995,
+        0.020760832994710654,
+        0.01802724995650351,
+        0.018595125002320856,
+        0.017348291003145278,
+        0.01646745897596702,
+        0.01731937500881031,
+        0.017570124997291714
+      ],
+      "p50_seconds": 0.017798687476897612,
+      "p95_seconds": 0.024322999990545213,
+      "p99_seconds": 0.024322999990545213,
+      "maximum_seconds": 0.024322999990545213,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12436,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12437,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12437,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter20": {
+      "samples_seconds": [
+        0.2185698749963194,
+        0.11749862501164898,
+        0.1329958330024965,
+        0.12553520896472037,
+        0.1149944580392912,
+        0.12112991698086262,
+        0.11396274995058775,
+        0.12284500000532717,
+        0.11980995797784999,
+        0.12697700003627688
+      ],
+      "p50_seconds": 0.12198745849309489,
+      "p95_seconds": 0.2185698749963194,
+      "p99_seconds": 0.2185698749963194,
+      "maximum_seconds": 0.2185698749963194,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 164695,
+          "Questions": 71
+        },
+        {
+          "Bytes_sent": 151639,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151639,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 446624,
+          "Questions": 183
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 151640,
+          "Questions": 57
+        }
+      ]
+    },
+    "cell_save": {
+      "samples_seconds": [
+        0.008131875016260892,
+        0.006753291992936283,
+        0.00896616600221023,
+        0.008111209026537836,
+        0.00710145803168416,
+        0.008824417018331587,
+        0.007926833990495652,
+        0.007410333026200533,
+        0.007995458028744906,
+        0.0073756250203587115
+      ],
+      "p50_seconds": 0.007961146009620279,
+      "p95_seconds": 0.00896616600221023,
+      "p99_seconds": 0.00896616600221023,
+      "maximum_seconds": 0.00896616600221023,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4166,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        }
+      ]
+    },
+    "filter_cell100": {
+      "samples_seconds": [
+        0.1705706249922514,
+        0.15780854102922603,
+        0.15353979100473225,
+        0.14837679197080433,
+        0.15835833398159593,
+        0.15095887501956895,
+        0.14856212498852983,
+        0.1506897920044139,
+        0.15070441603893414,
+        0.16118354100035504
+      ],
+      "p50_seconds": 0.1522493330121506,
+      "p95_seconds": 0.1705706249922514,
+      "p99_seconds": 0.1705706249922514,
+      "maximum_seconds": 0.1705706249922514,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 184946,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184948,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184948,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184948,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 184949,
+          "Questions": 57
+        }
+      ]
+    },
+    "filter_cell_and_epoch10": {
+      "samples_seconds": [
+        0.11956629197811708,
+        0.14012579200789332,
+        0.1148297080071643,
+        0.11663924995809793,
+        0.1144629170303233,
+        0.11766024999087676,
+        0.1294643750297837,
+        0.11914491601055488,
+        0.11569620802765712,
+        0.12109400000190362
+      ],
+      "p50_seconds": 0.11840258300071582,
+      "p95_seconds": 0.14012579200789332,
+      "p99_seconds": 0.14012579200789332,
+      "maximum_seconds": 0.14012579200789332,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 142262,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142264,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142264,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142264,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        },
+        {
+          "Bytes_sent": 142265,
+          "Questions": 58
+        }
+      ]
+    },
+    "remove_first10_revision_preflight": {
+      "samples_seconds": [
+        0.0062760000000707805,
+        0.0062339589931070805,
+        0.006214042019564658,
+        0.006896667007822543,
+        0.006236666988115758,
+        0.036720459000207484,
+        0.0062563749961555,
+        0.03694891696795821,
+        0.006495916983112693,
+        0.043319041025824845
+      ],
+      "p50_seconds": 0.006385958491591737,
+      "p95_seconds": 0.043319041025824845,
+      "p99_seconds": 0.043319041025824845,
+      "maximum_seconds": 0.043319041025824845,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15801,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        }
+      ]
+    },
+    "remove_first10_save": {
+      "samples_seconds": [
+        0.01889970898628235,
+        0.02500483300536871,
+        0.01898545800941065,
+        0.02004279097309336,
+        0.020518334000371397,
+        0.020125791954342276,
+        0.017955416988115758,
+        0.020788041001651436,
+        0.018671291996724904,
+        0.02178383298451081
+      ],
+      "p50_seconds": 0.020084291463717818,
+      "p95_seconds": 0.02500483300536871,
+      "p99_seconds": 0.02500483300536871,
+      "maximum_seconds": 0.02500483300536871,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12424,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12454,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12425,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12425,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12455,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter_hierarchy_after_epoch_remove": {
+      "samples_seconds": [
+        0.10322429199004546,
+        0.10239466599887237,
+        0.10580854199361056,
+        0.13157995796063915,
+        0.10290366702247411,
+        0.10532162501476705,
+        0.10081008297856897,
+        0.1045285000000149,
+        0.10759304196108133,
+        0.10311824997188523
+      ],
+      "p50_seconds": 0.10387639599503018,
+      "p95_seconds": 0.13157995796063915,
+      "p99_seconds": 0.13157995796063915,
+      "maximum_seconds": 0.13157995796063915,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 129794,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129796,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129796,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129796,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        },
+        {
+          "Bytes_sent": 129797,
+          "Questions": 55
+        }
+      ]
+    },
+    "filter_remaining10": {
+      "samples_seconds": [
+        0.12262120802188292,
+        0.12573991698445752,
+        0.12088120903354138,
+        0.11262500000884756,
+        0.12426550005329773,
+        0.11166770901763812,
+        0.14249349996680394,
+        0.11223145801341161,
+        0.15162554098060355,
+        0.11709691700525582
+      ],
+      "p50_seconds": 0.12175120852771215,
+      "p95_seconds": 0.15162554098060355,
+      "p99_seconds": 0.15162554098060355,
+      "maximum_seconds": 0.15162554098060355,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 141497,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141499,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141499,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141499,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141500,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141500,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141500,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 433807,
+          "Questions": 183
+        },
+        {
+          "Bytes_sent": 141500,
+          "Questions": 57
+        },
+        {
+          "Bytes_sent": 141500,
+          "Questions": 57
+        }
+      ]
+    },
+    "remove_second10_revision_preflight": {
+      "samples_seconds": [
+        0.009415125008672476,
+        0.00976491702022031,
+        0.00961854198249057,
+        0.009389875049237162,
+        0.009510834002867341,
+        0.009325833001639694,
+        0.00924783298978582,
+        0.03897791600320488,
+        0.009763790993019938,
+        0.038969083048868924
+      ],
+      "p50_seconds": 0.009564687992678955,
+      "p95_seconds": 0.03897791600320488,
+      "p99_seconds": 0.03897791600320488,
+      "maximum_seconds": 0.03897791600320488,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15802,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        },
+        {
+          "Bytes_sent": 15803,
+          "Questions": 4
+        }
+      ]
+    },
+    "remove_second10_save": {
+      "samples_seconds": [
+        0.019066750013735145,
+        0.02844766603084281,
+        0.020350834005512297,
+        0.018956332991365343,
+        0.019267041992861778,
+        0.018199792015366256,
+        0.018277666007634252,
+        0.018589042010717094,
+        0.022758917009923607,
+        0.020425249997060746
+      ],
+      "p50_seconds": 0.01916689600329846,
+      "p95_seconds": 0.02844766603084281,
+      "p99_seconds": 0.02844766603084281,
+      "maximum_seconds": 0.02844766603084281,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12436,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12466,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12437,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12437,
+          "Questions": 29
+        },
+        {
+          "Bytes_sent": 12467,
+          "Questions": 29
+        }
+      ]
+    },
+    "filter_after_all_epoch_removals": {
+      "samples_seconds": [
+        0.10423462500330061,
+        0.10532558301929384,
+        0.10916724998969585,
+        0.10077054204884917,
+        0.11135616595856845,
+        0.13104199996450916,
+        0.10020679200533777,
+        0.10320066596614197,
+        0.11651962500764057,
+        0.10069433297030628
+      ],
+      "p50_seconds": 0.10478010401129723,
+      "p95_seconds": 0.13104199996450916,
+      "p99_seconds": 0.13104199996450916,
+      "maximum_seconds": 0.13104199996450916,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 129037,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        }
+      ]
+    },
+    "remove_cell_save": {
+      "samples_seconds": [
+        0.011143083975184709,
+        0.007177957973908633,
+        0.008616583014372736,
+        0.007366000034380704,
+        0.007526875007897615,
+        0.007708500022999942,
+        0.006966332963202149,
+        0.007961000024806708,
+        0.007864582992624491,
+        0.0068040830083191395
+      ],
+      "p50_seconds": 0.007617687515448779,
+      "p95_seconds": 0.011143083975184709,
+      "p99_seconds": 0.011143083975184709,
+      "maximum_seconds": 0.011143083975184709,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4166,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4169,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4167,
+          "Questions": 11
+        },
+        {
+          "Bytes_sent": 4170,
+          "Questions": 11
+        }
+      ]
+    },
+    "filter_after_cell_removal": {
+      "samples_seconds": [
+        0.10113024996826425,
+        0.10316870897077024,
+        0.1009026660467498,
+        0.10159754101186991,
+        0.10278554097749293,
+        0.10488704196177423,
+        0.11524095898494124,
+        0.10175479197641835,
+        0.10066729097161442,
+        0.09978441701969132
+      ],
+      "p50_seconds": 0.10167616649414413,
+      "p95_seconds": 0.11524095898494124,
+      "p99_seconds": 0.11524095898494124,
+      "maximum_seconds": 0.11524095898494124,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 129037,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129039,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        },
+        {
+          "Bytes_sent": 129040,
+          "Questions": 54
+        }
+      ]
+    },
+    "tag10_then10_filter20_http_total": {
+      "samples_seconds": [
+        0.3301450420403853,
+        0.19906845898367465,
+        0.18216304096858948,
+        0.21137574990279973,
+        0.186388915986754,
+        0.17104712600121275,
+        0.18657604098552838,
+        0.16991870797937736,
+        0.1955299989785999,
+        0.1755924170720391
+      ],
+      "p50_seconds": 0.1864824784861412,
+      "p95_seconds": 0.3301450420403853,
+      "p99_seconds": 0.3301450420403853,
+      "maximum_seconds": 0.3301450420403853,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "cell_tag_then_cell_filter_http_total": {
+      "samples_seconds": [
+        0.1787025000085123,
+        0.16456183302216232,
+        0.16250595700694248,
+        0.15648800099734217,
+        0.1654597920132801,
+        0.15978329203790054,
+        0.15648895897902548,
+        0.15810012503061444,
+        0.15869987406767905,
+        0.16855916602071375
+      ],
+      "p50_seconds": 0.1611446245224215,
+      "p95_seconds": 0.1787025000085123,
+      "p99_seconds": 0.1787025000085123,
+      "maximum_seconds": 0.1787025000085123,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "first10_selected_action_http_total": {
+      "samples_seconds": [
+        0.07396550005069003,
+        0.05860049999319017,
+        0.024395624990575016,
+        0.05878920794930309,
+        0.027490457985550165,
+        0.025317959021776915,
+        0.025073292024899274,
+        0.024986208009067923,
+        0.024718458007555455,
+        0.025403167004697025
+      ],
+      "p50_seconds": 0.02536056301323697,
+      "p95_seconds": 0.07396550005069003,
+      "p99_seconds": 0.07396550005069003,
+      "maximum_seconds": 0.07396550005069003,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "second10_selected_action_http_total": {
+      "samples_seconds": [
+        0.03760966699337587,
+        0.022969333978835493,
+        0.02477158297551796,
+        0.027051332988776267,
+        0.04390399996191263,
+        0.024599249998573214,
+        0.047539999010041356,
+        0.02208749996498227,
+        0.05100158299319446,
+        0.023212250031065196
+      ],
+      "p50_seconds": 0.025911457982147112,
+      "p95_seconds": 0.05100158299319446,
+      "p99_seconds": 0.05100158299319446,
+      "maximum_seconds": 0.05100158299319446,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": []
+    },
+    "autocomplete_cold_diagnostic": {
+      "samples_seconds": [
+        0.029310791986063123
+      ],
+      "p50_seconds": 0.029310791986063123,
+      "p95_seconds": 0.029310791986063123,
+      "p99_seconds": 0.029310791986063123,
+      "maximum_seconds": 0.029310791986063123,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 249873,
+          "Questions": 95
+        }
+      ]
+    },
+    "autocomplete_warm_diagnostic": {
+      "samples_seconds": [
+        0.03264562500407919
+      ],
+      "p50_seconds": 0.03264562500407919,
+      "p95_seconds": 0.03264562500407919,
+      "p99_seconds": 0.03264562500407919,
+      "maximum_seconds": 0.03264562500407919,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 249873,
+          "Questions": 95
+        }
+      ]
+    },
+    "autocomplete_empty_diagnostic": {
+      "samples_seconds": [
+        0.02514008298749104
+      ],
+      "p50_seconds": 0.02514008298749104,
+      "p95_seconds": 0.02514008298749104,
+      "p99_seconds": 0.02514008298749104,
+      "maximum_seconds": 0.02514008298749104,
+      "quantile_method": "nearest_rank",
+      "sql_session_deltas": [
+        {
+          "Bytes_sent": 257901,
+          "Questions": 116
+        }
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "populated_native_migration_ready_before_timed_operations",
+      "passed": true
+    },
+    {
+      "name": "native_autocomplete_exact_counts_and_profile_authors",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_has_no_membership_aggregation",
+      "passed": true,
+      "membership_selects": 30,
+      "maximum_rows_per_seek": 1
+    },
+    {
+      "name": "autocomplete_compact_dictionary_fetches_are_bounded",
+      "passed": true,
+      "dictionary_selects": 9,
+      "scope": "Counts may scan matching compact entries; no unbounded dictionary rows are fetched for Python prefix filtering."
+    },
+    {
+      "name": "autocomplete_membership_winner_seeks_are_indexed",
+      "passed": true,
+      "plans": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1098",
+          "ref": "const,const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using where; Backward index scan; Using index"
+        }
+      ]
+    },
+    {
+      "name": "exact_native_case_upper",
+      "passed": true,
+      "count": 50000
+    },
+    {
+      "name": "exact_native_case_lower",
+      "passed": true,
+      "count": 50000
+    },
+    {
+      "name": "exact_native_unicode_nfc",
+      "passed": true,
+      "count": 33334
+    },
+    {
+      "name": "exact_native_unicode_nfd",
+      "passed": true,
+      "count": 66666
+    },
+    {
+      "name": "exact_native_or",
+      "passed": true,
+      "count": 66667
+    },
+    {
+      "name": "exact_native_not_with_inheritance",
+      "passed": true,
+      "count": 50000
+    },
+    {
+      "name": "exact_native_inherited_excluded_from_direct",
+      "passed": true,
+      "count": 0
+    },
+    {
+      "name": "no_sqlite_tag_membership_or_refresh_used",
+      "passed": true,
+      "calls": {
+        "membership_index": 0,
+        "refresh": 0
+      }
+    },
+    {
+      "name": "canonical_final_markers_removed",
+      "passed": true
+    },
+    {
+      "name": "flushed_recovery_mirror_exact_revisions_and_removal",
+      "passed": true,
+      "records": 63
+    },
+    {
+      "name": "one_canonical_cell_record_no_child_copies",
+      "passed": true,
+      "child_epochs": 100
+    },
+    {
+      "name": "independent_protocol_curation_untouched",
+      "passed": true
+    },
+    {
+      "name": "all_product_modules_loaded_from_selected_source",
+      "passed": true
+    }
+  ],
+  "page_cells": true,
+  "target_specification": "tag10_then10_filter20_and_cell_epoch_hierarchy",
+  "baseline_harness_sha256": "272fe050c8762ed4ea45bd013e236e8723d8fe46f5e7e293c58e2edf1fd52ddc",
+  "mysql_version": "8.4.2",
+  "seed_seconds": 13.988961583003402,
+  "populated_native_startup_seconds": 155.78459791699424,
+  "fixture_construction": {
+    "strategy": "canonical seed before normal app startup and populated native migration",
+    "native_derived_tables_absent_during_seed": true,
+    "canonical_shared_records": 303000,
+    "canonical_curation_records": 200000,
+    "product_triggers_disabled_during_timed_operations": false
+  },
+  "seed_checkpoint_seconds": 0.03346175001934171,
+  "native_lookup_startup_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {
+      "preparing_protocol_reads": {
+        "seconds": 1.516168
+      }
+    },
+    "project_uuid": "d31a82b6-0a52-5cfd-8f48-648bd9e03ee8",
+    "reused": false,
+    "protocols_prepared": 2,
+    "protocols_deferred": 0,
+    "phase": "complete",
+    "seconds": 132.788636
+  },
+  "selected_epoch_uuids": {
+    "first10": [
+      "0262b005-ee72-5d02-ba0c-5a7046d86b5e",
+      "f02c211a-a41c-5d78-a1fb-ca39a9be3957",
+      "c84150f3-653e-534e-b261-cd4f0e99d134",
+      "914f3993-ec40-51a2-82bc-7907b7052894",
+      "5b1ff86b-aea0-571a-af57-4fe6e6949492",
+      "17cb0141-aa20-5b50-84f1-d475f23a8a49",
+      "624b9571-aac7-5a0d-8b73-217e69b5c617",
+      "dc2ce341-0f82-5a74-abf2-3862754c7cf2",
+      "92ca9682-b16e-55ae-a139-e6a05e35d218",
+      "c59c498f-7753-59d6-b090-daff99d59905"
+    ],
+    "second10": [
+      "232c9db7-2e27-5243-b73c-a23cd93aee73",
+      "583dc239-3686-5f79-a23c-3a3f8fb51533",
+      "15708587-916f-5206-ae90-4731170b4a88",
+      "17133830-1644-54d7-b6c7-1ee778384a9e",
+      "6faae30f-20f6-54a9-8afa-9589f4d0ae4a",
+      "0d5979cd-11ac-59e5-a490-8d4b5024ea03",
+      "3b26fdea-05ec-5037-bc7a-85ef3fd23694",
+      "7a8f60d0-03d9-5cac-9712-fb1dc45d39c2",
+      "71e1dbd2-6184-5b6d-a579-7a42c6abc888",
+      "8bdb308c-6a36-5208-8161-0754af4b0e26"
+    ],
+    "cell": "b042dc93-1b37-5e6b-9677-87f670b19f4f",
+    "cell_children": [
+      "0262b005-ee72-5d02-ba0c-5a7046d86b5e",
+      "f02c211a-a41c-5d78-a1fb-ca39a9be3957",
+      "c84150f3-653e-534e-b261-cd4f0e99d134",
+      "914f3993-ec40-51a2-82bc-7907b7052894",
+      "5b1ff86b-aea0-571a-af57-4fe6e6949492",
+      "17cb0141-aa20-5b50-84f1-d475f23a8a49",
+      "624b9571-aac7-5a0d-8b73-217e69b5c617",
+      "dc2ce341-0f82-5a74-abf2-3862754c7cf2",
+      "92ca9682-b16e-55ae-a139-e6a05e35d218",
+      "c59c498f-7753-59d6-b090-daff99d59905",
+      "d635990b-eafe-5f97-bbd8-9d7ed1fedc07",
+      "009c053c-2e70-5b88-b0b1-32159cddd827",
+      "399f39c0-10c5-5ae4-9d41-ed9b69a74f66",
+      "0d835161-be47-532e-a21f-960ec4652409",
+      "33176dbc-06e0-5a8d-8d8c-3b2ad94aaa5f",
+      "5ed4271b-ec22-5777-9515-d9bf85a2b67c",
+      "d90a6bda-915a-5116-9cbf-b65b51710853",
+      "ec662b13-643e-5b8d-814a-733aaf8ed7d2",
+      "07f9197d-e061-5b02-b20e-08d736f8e0bd",
+      "920ff603-4915-5205-8dfb-4270566eda69",
+      "6313d18d-1a08-509a-ac46-3f68ac810741",
+      "8065befc-e3c3-581d-a43d-c88bb2f97d1f",
+      "14194aec-3db0-5c24-b927-1aed64750ea5",
+      "379287ad-f599-5c5f-9361-ed7090e87400",
+      "f8514dff-dfcb-53a6-bb88-f7e763a1d651",
+      "eeda8162-7066-5e0c-a34d-a85708d970b8",
+      "8c8a21cd-d50d-5c7a-ba03-9d061c492d4a",
+      "85859929-615e-5503-bd6a-c233364f8650",
+      "bc86a509-3fd0-5f7b-9d0a-ee46381dcaa4",
+      "66cdc7e8-cde8-5e41-8257-5adfccc48110",
+      "e248beda-826f-5252-90bb-8bf402c0a411",
+      "787121e6-47dd-5caf-b3f0-c3140746670e",
+      "cffcbc0c-0a8c-5875-b056-feac35a8f37f",
+      "ecfd2ec6-229b-53a7-9bae-f805583fbe7e",
+      "c9b59f43-f926-56dd-a6ff-8e6118a2ca5a",
+      "fb10b7a4-4cac-5a05-a735-2aad65b13b0c",
+      "08695e56-d31b-5792-9292-67700d40e175",
+      "ae563ffd-ce0c-546a-8882-b6129de67523",
+      "a4cc8988-7889-5594-8181-bfdd7cd2b35f",
+      "0d416969-e3a2-5bdf-83df-5118ce344267",
+      "d45729e7-c0d1-53e2-9640-6a2c19b373ff",
+      "98638307-42b1-56e4-9382-0bec094b74b2",
+      "74ec3abd-8c22-5ed2-97d7-6a5678afa3d3",
+      "f4405683-b7e9-5873-b3e8-ddbd6edeb745",
+      "c687c3ce-d967-5518-9773-3dd314a982a3",
+      "34b9ac5f-a9ab-5f5b-bbe9-e901cc2cc745",
+      "bddd2846-f6e3-5bf2-a671-681865e436ae",
+      "df7fa057-0122-51fc-9a6d-8a7154964b4b",
+      "e5cf0049-f945-5007-a993-308cd6fa35ec",
+      "7a222287-a5f1-595c-aec5-82f3453dc1c0",
+      "176cd037-db7a-50cf-86e1-54aeccf1c12d",
+      "8e293ee2-4e9e-5313-ade1-7ccf795bae57",
+      "76251e65-62f2-5a2e-9b0a-46d8dc08ddab",
+      "2dfdffc9-bbcd-5fa5-9b28-9f6bf8642d93",
+      "f78af08d-5ada-57ae-ba6b-2e82d41f5a35",
+      "6281c057-a341-5b18-bb44-59efee44b2c4",
+      "a50d958d-4d22-5b11-8601-ac387d21e6aa",
+      "b83ace8e-8506-5ff3-a4a3-ea5b838c2f37",
+      "a3b92925-2a04-5e2b-9c61-5c112a242b7e",
+      "e85a1ef6-1e85-5bee-8f1f-cc687f5297f5",
+      "a1be0a29-9be0-5f5b-8508-876f70fee67a",
+      "d60e94bd-1820-5904-892d-6f3b3c74fe2f",
+      "122ccbf7-bf22-5793-ae60-9f76c4c2a391",
+      "bebc23b3-fa4c-5e80-bb42-08df3f03f9d8",
+      "0c85eab5-7a3c-572d-aea0-8415128ada99",
+      "8b12238a-5d56-519f-843e-2e0ee5b29719",
+      "61ba6e4e-f072-52fb-aedd-7f3ecf9a009b",
+      "d7077f6c-2174-5344-a394-b3cc3b2d2162",
+      "0c085cc9-0b26-571a-b9f0-96b7c4ed508e",
+      "4a4265bb-a9ad-53cc-9748-03c783404a7b",
+      "c3207183-e3c3-5782-9442-e92de972db58",
+      "f0468682-f6ec-5255-ae33-5c69bd88ff8c",
+      "5f4d3acc-eef8-5a04-991e-4c15e3c7196e",
+      "621fe700-ba21-59a1-9375-31943cae2253",
+      "7edf695d-7771-58ac-82a7-518a42f834cc",
+      "484de413-2e82-5858-92aa-ac916eeb499b",
+      "411319ac-18bc-5020-9e3c-877fee54baf6",
+      "295415ab-bf9d-57bd-ab79-4738f6af4d31",
+      "6f961929-24df-5065-9190-651c158a2dca",
+      "e9f9b33c-8e89-58a8-80bc-8e1cd60f2549",
+      "cafd9ef9-6fb4-51d9-a87e-4283d175c444",
+      "2ac63ab8-4dea-5331-9831-42f89c3c8559",
+      "efa7a17e-5ffb-5bf4-8ea1-77bc6e021a5c",
+      "4cc3310e-44e1-5e01-9df7-eebc1242ba55",
+      "01de6cf2-d90b-575b-86ff-5ac8ab3c25b8",
+      "a2a02901-5be4-50dc-8098-a0862f2284bd",
+      "91f6b087-ff69-58db-a6ea-d6fe75a16522",
+      "fde8ffea-31c3-55c5-94a9-558841edbf40",
+      "df997b22-5c49-5b99-bb15-344f8a02e585",
+      "3eda3569-5382-594d-bab4-dd6eee967d78",
+      "6b8966ab-3fa6-5fbc-8ae2-2ea68d79e8e1",
+      "8b372235-c0ec-53b2-a484-e35c478a3e25",
+      "7b7c4f1d-56b8-5cef-a72e-f27623e071c4",
+      "67236e04-9946-5be2-b989-8170e3a32647",
+      "9fda1e03-4bd6-5f0e-9231-da91a2077374",
+      "759e4708-05ff-5648-97d1-7728284adb81",
+      "c3ac8066-c9fe-5a21-a23d-52da34d27e63",
+      "f2bb0e60-faa7-5f03-b7f4-9ce4f5a96aef",
+      "11dda2c8-2ef6-5556-bddc-6fe976cf3ffd",
+      "267204aa-30a2-5a5e-9762-c6ec6ffad0ef"
+    ]
+  },
+  "backup_receipts": [
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 1,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 2,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 3,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 4,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 5,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 0,
+          "last_error": null,
+          "last_success": null,
+          "pending": true,
+          "requested_sequence": 6,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 7,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 8,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 9,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 10,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 11,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 12,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 13,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 14,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 15,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 16,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 17,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 18,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 19,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 6,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:46.494752+00:00",
+          "pending": true,
+          "requested_sequence": 20,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 21,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 22,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 23,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 24,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 25,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 26,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 27,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 28,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 29,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 30,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 31,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 32,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 20,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:51.631033+00:00",
+          "pending": true,
+          "requested_sequence": 33,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 34,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 35,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 36,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 37,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 38,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 39,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 40,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 41,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 42,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 43,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 44,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 45,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 33,
+          "last_error": null,
+          "last_success": "2026-10-01T07:47:56.825423+00:00",
+          "pending": true,
+          "requested_sequence": 46,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 47,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 48,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 49,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 50,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 51,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 52,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 53,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 54,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 55,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 56,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 57,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_first10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 58,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_second10_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 46,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:02.612254+00:00",
+          "pending": true,
+          "requested_sequence": 59,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    },
+    {
+      "operation": "remove_cell_save",
+      "persistence": {
+        "backup": {
+          "completed_sequence": 59,
+          "last_error": null,
+          "last_success": "2026-10-01T07:48:07.803512+00:00",
+          "pending": true,
+          "requested_sequence": 60,
+          "running": false,
+          "status": "pending"
+        },
+        "database": "committed"
+      }
+    }
+  ],
+  "preparation_index_seconds": 0,
+  "lookup_mode": "persistent_native_sql_no_post_seed_tag_cache_preparation",
+  "bundle_definitions": {
+    "tag10_then10_filter20_http_total": [
+      "first10_revision_preflight",
+      "first10_save",
+      "second10_revision_preflight",
+      "second10_save",
+      "filter20"
+    ],
+    "cell_tag_then_cell_filter_http_total": [
+      "cell_save",
+      "filter_cell100"
+    ],
+    "first10_selected_action_http_total": [
+      "first10_revision_preflight",
+      "first10_save"
+    ],
+    "second10_selected_action_http_total": [
+      "second10_revision_preflight",
+      "second10_save"
+    ]
+  },
+  "final_backup_status": {
+    "status": "current",
+    "pending": false,
+    "running": false,
+    "last_success": "2026-10-01T07:48:13.630647+00:00",
+    "last_error": null,
+    "requested_sequence": 60,
+    "completed_sequence": 60
+  },
+  "autocomplete_sql": {
+    "autocomplete_cold_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+        "seconds": 0.00016200001118704677,
+        "result_rows": 0
+      },
+      {
+        "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+        "seconds": 0.00015816697850823402,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+        "seconds": 0.0001670410274527967,
+        "result_rows": 3
+      },
+      {
+        "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+        "seconds": 0.00015458301641047,
+        "result_rows": 3
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00018433301011100411,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0005012500332668424,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0003327500307932496,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.00023712503025308251,
+        "result_rows": 3
+      }
+    ],
+    "autocomplete_warm_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+        "seconds": 0.00017616699915379286,
+        "result_rows": 0
+      },
+      {
+        "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+        "seconds": 0.00013404100900515914,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+        "seconds": 0.00012158299796283245,
+        "result_rows": 3
+      },
+      {
+        "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+        "seconds": 0.0001314160181209445,
+        "result_rows": 3
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.000152791035361588,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.000246542040258646,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00016195903299376369,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.0001680420245975256,
+        "result_rows": 3
+      }
+    ],
+    "autocomplete_empty_diagnostic": [
+      {
+        "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+        "seconds": 0.00014970899792388082,
+        "result_rows": 0
+      },
+      {
+        "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+        "seconds": 0.00017487496370449662,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+        "seconds": 0.00014112499775364995,
+        "result_rows": 12
+      },
+      {
+        "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+        "seconds": 0.0001884160446934402,
+        "result_rows": 24
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00013816700084134936,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00012633297592401505,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.000381499994546175,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00016466702800244093,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00037762499414384365,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0001725409529171884,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0003173750010319054,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00018279202049598098,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0002823329996317625,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00016845803475007415,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 9.92499990388751e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 9.57910087890923e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 8.095899829640985e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00010266597382724285,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 9.379198309034109e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 9.716697968542576e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 9.033299284055829e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.0002074579824693501,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00014508399181067944,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00017433299217373133,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00010679097613319755,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 8.66670161485672e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 8.445803541690111e-05,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+        "seconds": 0.00027804099954664707,
+        "result_rows": 1
+      },
+      {
+        "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+        "seconds": 0.0002899589599110186,
+        "result_rows": 12
+      }
+    ]
+  },
+  "autocomplete_requests": {
+    "autocomplete_cold_diagnostic": {
+      "q": "gate",
+      "limit": 12,
+      "total": 3
+    },
+    "autocomplete_warm_diagnostic": {
+      "q": "gate",
+      "limit": 12,
+      "total": 3
+    },
+    "autocomplete_empty_diagnostic": {
+      "q": "",
+      "limit": 12,
+      "total": 41
+    }
+  },
+  "autocomplete_query_plans": [
+    {
+      "sql": "SELECT tag FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key IS NULL LIMIT 200",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_dictionary",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_prefix",
+          "key": "by_prefix",
+          "key_len": "1571",
+          "ref": "const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_dictionary",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "by_prefix",
+          "key": "by_prefix",
+          "key_len": "1571",
+          "ref": null,
+          "rows": 3,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s AND fold_key>=%s AND fold_key<%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_dictionary",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "by_prefix",
+          "key": "by_prefix",
+          "key_len": "1571",
+          "ref": null,
+          "rows": 3,
+          "filtered": 100.0,
+          "Extra": "Using index condition; Using filesort"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s)",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_authors",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "1060",
+          "ref": null,
+          "rows": 3,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT target_kind,target_uuid FROM `recording_workspace`.`app_shared_tag_lookup` FORCE INDEX (by_tag) WHERE project_uuid=%s AND tag=%s AND profile_uuid=%s ORDER BY target_kind DESC,target_uuid DESC LIMIT 1",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_lookup",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_tag",
+          "key": "by_tag",
+          "key_len": "1098",
+          "ref": "const,const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using where; Backward index scan; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "shared_annotation",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "331",
+          "ref": null,
+          "rows": 3,
+          "filtered": 100.0,
+          "Extra": "Using where"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT COUNT(*) AS amount FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_prefix) WHERE project_uuid=%s",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_dictionary",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_prefix",
+          "key": "by_prefix",
+          "key_len": "38",
+          "ref": "const",
+          "rows": 41,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,target_count FROM `recording_workspace`.`app_shared_tag_dictionary` FORCE INDEX (by_rank) WHERE project_uuid=%s ORDER BY target_count DESC,fold_key,tag LIMIT %s",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_dictionary",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "by_rank",
+          "key": "by_rank",
+          "key_len": "38",
+          "ref": "const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT tag,profile_uuid FROM `recording_workspace`.`app_shared_tag_authors` WHERE project_uuid=%s AND tag IN (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "app_shared_tag_authors",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "1060",
+          "ref": null,
+          "rows": 24,
+          "filtered": 100.0,
+          "Extra": "Using where; Using index"
+        }
+      ]
+    },
+    {
+      "sql": "SELECT target_kind,target_uuid,profile_uuid,author_name FROM `recording_workspace`.`shared_annotation` WHERE project_uuid=%s AND (target_kind,target_uuid,profile_uuid) IN ((%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s),(%s,%s,%s))",
+      "explain": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "shared_annotation",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "331",
+          "ref": null,
+          "rows": 12,
+          "filtered": 100.0,
+          "Extra": "Using where"
+        }
+      ]
+    }
+  ],
+  "sqlite_tag_cache_calls": {
+    "membership_index": 0,
+    "refresh": 0
+  },
+  "workflow_peak_rss_before_durable_oracle_bytes": 959348736,
+  "durable_snapshot_verify_seconds": 7.977031874994282,
+  "loaded_product_modules": {
+    "workspace_tree": "/private/tmp/disco-performance-evals-20261001/python/workspace_tree.py",
+    "workspace_predicates": "/private/tmp/disco-performance-evals-20261001/python/workspace_predicates.py",
+    "workspace_cache_lifecycle": "/private/tmp/disco-performance-evals-20261001/python/workspace_cache_lifecycle.py",
+    "workspace_metadata_objects": "/private/tmp/disco-performance-evals-20261001/python/workspace_metadata_objects.py",
+    "workspace_disk_index": "/private/tmp/disco-performance-evals-20261001/python/workspace_disk_index.py",
+    "workspace_catalog_identity": "/private/tmp/disco-performance-evals-20261001/python/workspace_catalog_identity.py",
+    "recording_workspace": "/private/tmp/disco-performance-evals-20261001/python/recording_workspace.py",
+    "workspace_recipes": "/private/tmp/disco-performance-evals-20261001/python/workspace_recipes.py",
+    "workspace_service": "/private/tmp/disco-performance-evals-20261001/python/workspace_service.py",
+    "workspace_audit": "/private/tmp/disco-performance-evals-20261001/python/workspace_audit.py",
+    "workspace_explorer": "/private/tmp/disco-performance-evals-20261001/python/workspace_explorer.py",
+    "workspace_tree_pages": "/private/tmp/disco-performance-evals-20261001/python/workspace_tree_pages.py",
+    "workspace_projects": "/private/tmp/disco-performance-evals-20261001/python/workspace_projects.py",
+    "workspace_mysql_profile": "/private/tmp/disco-performance-evals-20261001/python/workspace_mysql_profile.py",
+    "workspace_native_mysql": "/private/tmp/disco-performance-evals-20261001/python/workspace_native_mysql.py",
+    "workspace_mysql_runtime": "/private/tmp/disco-performance-evals-20261001/python/workspace_mysql_runtime.py",
+    "workspace_storage": "/private/tmp/disco-performance-evals-20261001/python/workspace_storage.py",
+    "workspace_diff": "/private/tmp/disco-performance-evals-20261001/python/workspace_diff.py",
+    "workspace_protocol_identity": "/private/tmp/disco-performance-evals-20261001/python/workspace_protocol_identity.py",
+    "workspace_import_check": "/private/tmp/disco-performance-evals-20261001/python/workspace_import_check.py",
+    "workspace_api": "/private/tmp/disco-performance-evals-20261001/python/workspace_api.py",
+    "workspace_state_snapshot": "/private/tmp/disco-performance-evals-20261001/python/workspace_state_snapshot.py",
+    "workspace_author_preferences": "/private/tmp/disco-performance-evals-20261001/python/workspace_author_preferences.py",
+    "workspace_curation": "/private/tmp/disco-performance-evals-20261001/python/workspace_curation.py",
+    "workspace_annotations": "/private/tmp/disco-performance-evals-20261001/python/workspace_annotations.py",
+    "workspace_shared_tag_index": "/private/tmp/disco-performance-evals-20261001/python/workspace_shared_tag_index.py",
+    "workspace_paths": "/private/tmp/disco-performance-evals-20261001/python/workspace_paths.py",
+    "workspace_desktop_paths": "/private/tmp/disco-performance-evals-20261001/python/workspace_desktop_paths.py",
+    "workspace_startup_registry": "/private/tmp/disco-performance-evals-20261001/python/workspace_startup_registry.py",
+    "workspace_datastores": "/private/tmp/disco-performance-evals-20261001/python/workspace_datastores.py",
+    "workspace_suggestions": "/private/tmp/disco-performance-evals-20261001/python/workspace_suggestions.py",
+    "workspace_tag_predicates": "/private/tmp/disco-performance-evals-20261001/python/workspace_tag_predicates.py",
+    "workspace_export_folder": "/private/tmp/disco-performance-evals-20261001/python/workspace_export_folder.py",
+    "workspace_import_progress": "/private/tmp/disco-performance-evals-20261001/python/workspace_import_progress.py",
+    "workspace_datastore_deletion": "/private/tmp/disco-performance-evals-20261001/python/workspace_datastore_deletion.py",
+    "workspace_project_preferences": "/private/tmp/disco-performance-evals-20261001/python/workspace_project_preferences.py",
+    "workspace_protocol_state": "/private/tmp/disco-performance-evals-20261001/python/workspace_protocol_state.py",
+    "workspace_state_generation": "/private/tmp/disco-performance-evals-20261001/python/workspace_state_generation.py",
+    "workspace_project_servers": "/private/tmp/disco-performance-evals-20261001/python/workspace_project_servers.py",
+    "workspace_launcher": "/private/tmp/disco-performance-evals-20261001/python/workspace_launcher.py",
+    "workspace_app_routes": "/private/tmp/disco-performance-evals-20261001/python/workspace_app_routes.py",
+    "workspace_folder_browser": "/private/tmp/disco-performance-evals-20261001/python/workspace_folder_browser.py",
+    "workspace_h5_inbox": "/private/tmp/disco-performance-evals-20261001/python/workspace_h5_inbox.py",
+    "workspace_tag_exchange": "/private/tmp/disco-performance-evals-20261001/python/workspace_tag_exchange.py",
+    "workspace_external_tags": "/private/tmp/disco-performance-evals-20261001/python/workspace_external_tags.py",
+    "workspace_qc": "/private/tmp/disco-performance-evals-20261001/python/workspace_qc.py",
+    "workspace_search": "/private/tmp/disco-performance-evals-20261001/python/workspace_search.py",
+    "workspace_matching_epochs": "/private/tmp/disco-performance-evals-20261001/python/workspace_matching_epochs.py",
+    "workspace_candidate_exports": "/private/tmp/disco-performance-evals-20261001/python/workspace_candidate_exports.py",
+    "workspace_backup_scheduler": "/private/tmp/disco-performance-evals-20261001/python/workspace_backup_scheduler.py",
+    "workspace_recovery_store": "/private/tmp/disco-performance-evals-20261001/python/workspace_recovery_store.py",
+    "workspace_recovery_generation": "/private/tmp/disco-performance-evals-20261001/python/workspace_recovery_generation.py",
+    "workspace_annotation_preparation": "/private/tmp/disco-performance-evals-20261001/python/workspace_annotation_preparation.py",
+    "workspace_native_tag_lookup": "/private/tmp/disco-performance-evals-20261001/python/workspace_native_tag_lookup.py",
+    "workspace_lifecycle": "/private/tmp/disco-performance-evals-20261001/python/workspace_lifecycle.py",
+    "workspace_undo": "/private/tmp/disco-performance-evals-20261001/python/workspace_undo.py",
+    "workspace_native_tag_filter": "/private/tmp/disco-performance-evals-20261001/python/workspace_native_tag_filter.py"
+  },
+  "owned_native_runtime_stopped": true,
+  "source_inventory_after": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "source_unchanged": true,
+  "harness_unchanged": true,
+  "seconds": 239.1981879999512,
+  "finished_at": "2026-10-01T07:48:23.417296+00:00",
+  "peak_rss_bytes": 1030946816,
+  "passed": true
+}

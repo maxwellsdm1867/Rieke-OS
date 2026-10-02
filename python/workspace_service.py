@@ -231,6 +231,15 @@ class WorkspaceService:
 
     def _match_metadata_predicate(self, predicate, ids):
         index = getattr(self, 'disk_index', None)
+        typed = getattr(self, 'typed_index', None)
+        from workspace_disk_index import DiskMetadataIndex
+        if typed is not None and type(index) is DiskMetadataIndex and isinstance(ids, (list, tuple)):
+            from workspace_explore_queries import typed_reader
+            with typed_reader(self) as reader:
+                validated = reader._validate(predicate)
+                matched = set(reader.iter_membership(validated, {'epoch_ids': iter(ids)}))
+            # The native contract keeps first-occurrence order and deduplicates IDs.
+            return validated, [identity for identity in dict.fromkeys(ids) if identity in matched]
         if index:
             return index.match(predicate, ids=ids)
         catalog, values = predicate_scope(*self._registered_tree_fields())
@@ -584,10 +593,22 @@ class WorkspaceService:
             for path, signature in final_checks:
                 if self._input_signature(path) != signature:
                     raise ValueError('Recorded input changed while building metadata index')
+        typed_index = None
+        if disk_index is not None:
+            from workspace_typed_lifecycle import prepare as prepare_typed
+            typed_started = time.perf_counter()
+            typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
+            metrics['typed_metadata_index_seconds'] = time.perf_counter() - typed_started
+            for path, signature in final_checks:
+                if self._input_signature(path) != signature:
+                    raise ValueError('Recorded input changed while building typed metadata index')
         metrics['discovery_indexes_preserved'] = preserve_indexes
         self.project, self.config, self.dj, self.Event = project, config, dj, Event
         self.rows, self.details, self.cells, self.sources = rows, disk_index.details if disk_index else details, cells, sources
-        self.disk_index = disk_index
+        # Published rows/details changed even when the verified index was reused.
+        self._tree_page_scope_cache = None
+        self._explore_publication = str(uuid.uuid4())
+        self.disk_index, self.typed_index = disk_index, typed_index
         self.manifests, self.protocols = manifests, protocols
         if not preserve_indexes:
             self._tree_catalog_cache = {}
@@ -604,7 +625,8 @@ class WorkspaceService:
         self.manager_error = None
         if projection_store and disk_index is not None:
             try:
-                metrics['cache_cleanup']={'metadata':disk_index.publish(),
+                metrics['cache_cleanup']={'typed_metadata':typed_index.publish() if typed_index else None,
+                    'metadata':disk_index.publish(),
                     'projections':projection_store.publish(entry['key'] for entry in next_cache.values())}
             except (OSError,ValueError) as error:
                 metrics.setdefault('cache_warnings',[]).append('Derived cache cleanup was deferred: '+str(error))
@@ -1001,6 +1023,14 @@ class WorkspaceService:
                 field['types_scope'] = 'registered_sources'
             cached = self._predicate_catalog_cache = (scope['revision'], data)
         return self._with_annotation_fields({**cached[1], 'source_scope': scope, 'total_catalog': len(self.rows)})
+
+    def explore_field_registry(self):
+        from workspace_explore_queries import field_registry
+        return field_registry(self)
+
+    def explore_page(self, predicate, **options):
+        from workspace_explore_queries import explore_page
+        return explore_page(self, predicate, **options)
 
     def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True):
         if type(include_catalog_summary) is not bool or (include_tree and not include_catalog_summary):

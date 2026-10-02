@@ -1,0 +1,1016 @@
+{
+  "all_passed": true,
+  "validation_rejections_equivalent": 5,
+  "source_identity_before": [
+    247999715,
+    39776256,
+    1790880438964612907
+  ],
+  "source_identity_after": [
+    247999715,
+    39776256,
+    1790880438964612907
+  ],
+  "core_identity_unchanged": true,
+  "field_count": 140,
+  "field_predicate_cases": 1185,
+  "field_checks": [
+    {
+      "field": "block",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "block time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "cell",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "cell type",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "date",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "epoch",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "group",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "group label",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/end_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/amp",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/backgroundIntensity",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/contrast",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/controlMode",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/currentMean",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/currentSD",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/frequencyCutoff",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/history1",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/history2",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/interpulseInterval",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/maskDiameter",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/numberOfAverages",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/numberOfFilters",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/numberOfTrials",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/onlineAnalysis",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/preTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/randomizeOrder",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/repeatsPerTrial",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/rotation",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/sampleRate",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/segmentTime",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/shuffleSequence",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/splitField",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/spotDiameter",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/spotIntensity",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/spotSizes",
+      "cases": 8,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/stimTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/tailTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/target",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/temporalFrequency",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/parameters/useRandomSeed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "metadata/block/properties/frameTimesMs",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/protocolID",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/block/start_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/cell/label",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/cell/notes",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/cell/properties/type",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/cell/start_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/epoch/end_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/epoch/label",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/epoch/protocolID",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/epoch/start_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/attributes/purpose",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/label",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/notes",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/properties/experimenter",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/properties/institution",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/properties/lab",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/properties/project",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/properties/rig",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/experiment/start_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/end_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/label",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/notes",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/properties/externalSolutionAdditions",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/properties/internalSolutionAdditions",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/properties/pipetteSolution",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/properties/recordingTechnique",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/properties/seriesResistanceCompensation",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "metadata/group/start_time",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/NDF",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/amp",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/backgroundIntensity",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/blockRepeatCount",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/canvasSize",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/centerOffset",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/contrast",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/controlMode",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/currentMean",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "parameters/currentSD",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "parameters/currentSpotSize",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "parameters/firstHistoryID",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/frequencyCutoff",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/gain",
+      "cases": 7,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/history1",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history1Mean",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history1SD",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history1Seed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history2",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history2Mean",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history2SD",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/history2Seed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/historyNoiseVersion",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/interpulseInterval",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "parameters/isControl",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/lightPath",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/maskDiameter",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/microdisplayBrightness",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/microdisplayBrightnessValue",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/micronsPerPixel",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/monitorRefreshRate",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/ndfs",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/numberOfAverages",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/numberOfFilters",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/numberOfTrials",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/numberOfTrialsInRun",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/onlineAnalysis",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/preTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/prerender",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/randomizeOrder",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "parameters/repeatsPerTrial",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/rotation",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/sampleRate",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/samplesPerBlock",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/samplesPerSegment",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/seed",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "parameters/segmentTime",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/sequenceShuffleSeed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/shuffleSequence",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/splitField",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/spotDiameter",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/spotIntensity",
+      "cases": 9,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "parameters/spotSizes",
+      "cases": 8,
+      "scope": {
+        "cell": "afa07f75-fa63-5c9e-b2ef-f443b187b8fe"
+      }
+    },
+    {
+      "field": "parameters/stdv",
+      "cases": 9,
+      "scope": {
+        "cell": "9d8d259d-0be8-552d-8eef-0a82fbd50e95"
+      }
+    },
+    {
+      "field": "parameters/stimTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/stimulusGenerator",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/stimulusGeneratorVersion",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/stimulusSampleRate",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/tailTime",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/target",
+      "cases": 8,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/targetMean",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/targetSD",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/targetSeed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/temporalFrequency",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/totalDurationMs",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/trialNumber",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "parameters/trueCanvasSize",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "parameters/useRandomSeed",
+      "cases": 9,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "properties/bathTemperature",
+      "cases": 9,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    },
+    {
+      "field": "properties/frameTimesMs",
+      "cases": 7,
+      "scope": {
+        "cell": "639147cf-4b8e-51eb-8d1d-0f28ee66a0ea"
+      }
+    },
+    {
+      "field": "protocol",
+      "cases": 8,
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      }
+    }
+  ],
+  "full_field_facet_scopes": [
+    {
+      "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+    },
+    {
+      "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+    },
+    {
+      "group": "11ea76bd-1e36-5acd-9006-0fe9a9b7d4ea"
+    }
+  ],
+  "compound_cases": 15,
+  "global_protocol_sql_unchanged": true,
+  "rows": 5562,
+  "seconds": 14.560025500017218,
+  "source_identity_unchanged": true,
+  "code_sha256": "e1a20579c3e4cf25475411b30124c8488e2bae674fd769c68b96ba044a93cee0"
+}

@@ -1,0 +1,10 @@
+{
+  "nine_original_actions_preserved": true,
+  "seven_browser_actions_passed_both_engines": true,
+  "ten_typed_query_hashes_identical_both_engines_and_adjustment": true,
+  "native_tagging_passed": true,
+  "full_original_million_filter_preview_qualified": false,
+  "full_million_production_application_qualified": false,
+  "installed_app_modified": false,
+  "covering_index_adjustment_scope": "backend query-only, separate copied SQLite database"
+}

@@ -1,0 +1,100 @@
+{
+  "repository": "/private/tmp/disco-performance-evals-20261001",
+  "baseline_commit": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "candidate_commit": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "files": [
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/tests/test_workspace_disk_index.py",
+      "sha256": "ae4c272cc0faa24885f9a4bb7282e43a3c6a892da04cf8d096136010b49d6736",
+      "bytes": 13309
+    },
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/workspace_disk_index.py",
+      "sha256": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+      "bytes": 35096
+    },
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/workspace_service.py",
+      "sha256": "0047396141328ebed056219978c689cb618234f3fcb39d62aba6c4e46b29125a",
+      "bytes": 72776
+    },
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/workspace_tree_pages.py",
+      "sha256": "f2590d3f73352ce639d7b51f55ad502e91b6ea30de50231c50352188d1a312f6",
+      "bytes": 19125
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/tests/test_workspace_disk_index.py",
+      "sha256": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+      "bytes": 16240
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/tests/test_workspace_tree_navigation_cache.py",
+      "sha256": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+      "bytes": 10854
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/workspace_disk_index.py",
+      "sha256": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+      "bytes": 37362
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/workspace_service.py",
+      "sha256": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+      "bytes": 73050
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/workspace_tree_pages.py",
+      "sha256": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+      "bytes": 27115
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/docs/dev/performance-evals-2026-10-01/catalog/comparison-full-generation.json",
+      "sha256": "df4a5c53102e67a1ca7212975f38dfa6ee921f956bf9f3acdff1d9b2a71a72a1",
+      "bytes": 1892
+    },
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/workspace_protocol_state.py",
+      "sha256": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+      "bytes": 25572,
+      "role": "Pre-existing foundation preserved, not a newly introduced improvement"
+    },
+    {
+      "revision": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+      "path": "baseline/python/workspace_state_generation.py",
+      "sha256": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+      "bytes": 28276,
+      "role": "Pre-existing foundation preserved, not a newly introduced improvement"
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/workspace_protocol_state.py",
+      "sha256": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+      "bytes": 25572,
+      "role": "Pre-existing foundation preserved, not a newly introduced improvement"
+    },
+    {
+      "revision": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+      "path": "candidate/python/workspace_state_generation.py",
+      "sha256": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+      "bytes": 28276,
+      "role": "Pre-existing foundation preserved, not a newly introduced improvement"
+    }
+  ],
+  "absent_from_baseline": [
+    "python/tests/test_workspace_tree_navigation_cache.py",
+    "docs/dev/performance-evals-2026-10-01/catalog/comparison-full-generation.json"
+  ],
+  "patch_sha256": "e26b2a3d7fdd5bbcd3a35768ad3fadf4b191275e3a93ff127cf20e1d0cf15db2"
+}

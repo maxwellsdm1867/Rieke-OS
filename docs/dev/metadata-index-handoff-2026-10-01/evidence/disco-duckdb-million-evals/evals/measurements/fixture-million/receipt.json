@@ -1,0 +1,157 @@
+{
+  "epochs": 1000000,
+  "engine": "fixture",
+  "scope": "Serial-worker typed SQLite/DuckDB build and read comparison, not app qualification.",
+  "operations": [],
+  "module_sha256": "dc31cd70e39e8193f0bd100a51d8f084aa17b61b290dd74e4153cf1f768d9357",
+  "samples": 10,
+  "phases": {},
+  "passed": true,
+  "seconds": 93.48670091701206,
+  "peak_rss_bytes": 21250048,
+  "fixture": {
+    "fixture_version": 1,
+    "epochs": 1000000,
+    "schema": [
+      [
+        "epoch_uuid",
+        "VARCHAR"
+      ],
+      [
+        "source_sha256",
+        "VARCHAR"
+      ],
+      [
+        "protocol_uuid",
+        "VARCHAR"
+      ],
+      [
+        "date",
+        "VARCHAR"
+      ],
+      [
+        "cell_uuid",
+        "VARCHAR"
+      ],
+      [
+        "cell_label",
+        "VARCHAR"
+      ],
+      [
+        "block_uuid",
+        "VARCHAR"
+      ],
+      [
+        "block_label",
+        "VARCHAR"
+      ],
+      [
+        "epoch_number",
+        "BIGINT"
+      ],
+      [
+        "start_time",
+        "VARCHAR"
+      ],
+      [
+        "duration_seconds",
+        "DOUBLE"
+      ],
+      [
+        "metadata_hash",
+        "VARCHAR"
+      ],
+      [
+        "group_uuid",
+        "VARCHAR"
+      ],
+      [
+        "group_label",
+        "VARCHAR"
+      ],
+      [
+        "cell_type",
+        "VARCHAR"
+      ],
+      [
+        "block_start_time",
+        "VARCHAR"
+      ],
+      [
+        "protocol_name",
+        "VARCHAR"
+      ],
+      [
+        "synthetic_index",
+        "BIGINT"
+      ],
+      [
+        "contrast",
+        "DOUBLE"
+      ],
+      [
+        "contrast_present",
+        "BOOLEAN"
+      ],
+      [
+        "contrast_kind",
+        "VARCHAR"
+      ],
+      [
+        "seed",
+        "BIGINT"
+      ],
+      [
+        "seed_present",
+        "BOOLEAN"
+      ],
+      [
+        "seed_kind",
+        "VARCHAR"
+      ],
+      [
+        "stimTime",
+        "BIGINT"
+      ],
+      [
+        "stimTime_present",
+        "BOOLEAN"
+      ],
+      [
+        "stimTime_kind",
+        "VARCHAR"
+      ],
+      [
+        "currentMean",
+        "BIGINT"
+      ],
+      [
+        "currentMean_present",
+        "BOOLEAN"
+      ],
+      [
+        "currentMean_kind",
+        "VARCHAR"
+      ]
+    ],
+    "bytes": 509050493,
+    "generation_seconds": 93.484416124993,
+    "expected_facets": {
+      "contrast": {
+        "[true, \"float\", 0.0]": 200000,
+        "[true, \"float\", 0.1]": 200000,
+        "[true, \"float\", 0.2]": 200000,
+        "[true, \"float\", 0.3]": 200000,
+        "[true, \"float\", 0.4]": 200000
+      },
+      "stimTime": {
+        "[true, \"integer\", 1000]": 1000000
+      },
+      "currentMean": {
+        "[true, \"integer\", 0]": 333334,
+        "[true, \"integer\", 100]": 333333,
+        "[true, \"integer\", 200]": 333333
+      }
+    }
+  }
+}

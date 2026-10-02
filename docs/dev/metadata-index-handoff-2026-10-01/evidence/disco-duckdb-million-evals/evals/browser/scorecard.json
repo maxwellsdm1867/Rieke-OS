@@ -1,0 +1,612 @@
+{
+  "schema": 1,
+  "required_actions": [
+    {
+      "key": "select_epoch_metadata",
+      "action": "Select epoch and display metadata",
+      "historical_100k_ms": 96,
+      "frozen_baseline_100k": {
+        "median_ms": 97.19999998807907,
+        "first_ms": 94.60000002384186,
+        "max_ms": 113.69999998807907,
+        "warm_median_ms": 97.5,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 96.19999998807907,
+        "first_ms": 92.89999997615814,
+        "max_ms": 101.40000003576279,
+        "warm_median_ms": 97.55000001192093,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "select_epoch_metadata",
+        "n": 5,
+        "median_ms": 93.69999998807907,
+        "first_ms": 92.19999998807907,
+        "warm_median_ms": 93.75,
+        "min_ms": 91.30000001192093,
+        "max_ms": 94.40000003576279,
+        "samples_ms": [
+          92.19999998807907,
+          94.40000003576279,
+          91.30000001192093,
+          93.69999998807907,
+          93.80000001192093
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "select_epoch_metadata",
+        "n": 5,
+        "median_ms": 92.5,
+        "first_ms": 89,
+        "warm_median_ms": 92.94999998807907,
+        "min_ms": 82.19999998807907,
+        "max_ms": 94.19999998807907,
+        "samples_ms": [
+          89,
+          92.5,
+          82.19999998807907,
+          94.19999998807907,
+          93.39999997615814
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "search_selected_epoch_metadata",
+      "action": "Search selected metadata",
+      "historical_100k_ms": 32,
+      "frozen_baseline_100k": {
+        "median_ms": 32.5,
+        "first_ms": 32.10000002384186,
+        "max_ms": 48.19999998807907,
+        "warm_median_ms": 32.55000001192093,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 32.09999996423721,
+        "first_ms": 46.0,
+        "max_ms": 80.29999995231628,
+        "warm_median_ms": 31.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "search_selected_epoch_metadata",
+        "n": 5,
+        "median_ms": 32.69999998807907,
+        "first_ms": 48.59999996423721,
+        "warm_median_ms": 32.55000001192093,
+        "min_ms": 32.299999952316284,
+        "max_ms": 48.59999996423721,
+        "samples_ms": [
+          48.59999996423721,
+          32.299999952316284,
+          32.69999998807907,
+          32.40000003576279,
+          32.69999998807907
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "search_selected_epoch_metadata",
+        "n": 5,
+        "median_ms": 32.39999997615814,
+        "first_ms": 48.700000047683716,
+        "warm_median_ms": 32.24999997019768,
+        "min_ms": 32,
+        "max_ms": 48.700000047683716,
+        "samples_ms": [
+          48.700000047683716,
+          32.09999996423721,
+          42.40000003576279,
+          32.39999997615814,
+          32
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "reopen_cell_cached",
+      "action": "Reopen cached cell",
+      "historical_100k_ms": 65,
+      "frozen_baseline_100k": {
+        "median_ms": 65.69999998807907,
+        "first_ms": 65.0,
+        "max_ms": 67.10000002384186,
+        "warm_median_ms": 66.19999998807907,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 66.39999997615814,
+        "first_ms": 65.5,
+        "max_ms": 80.5,
+        "warm_median_ms": 67.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "reopen_cell_cached",
+        "n": 5,
+        "median_ms": 66.19999998807907,
+        "first_ms": 66.69999998807907,
+        "warm_median_ms": 66,
+        "min_ms": 65.69999998807907,
+        "max_ms": 66.69999998807907,
+        "samples_ms": [
+          66.69999998807907,
+          65.80000001192093,
+          66.60000002384186,
+          65.69999998807907,
+          66.19999998807907
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "reopen_cell_cached",
+        "n": 5,
+        "median_ms": 65.40000003576279,
+        "first_ms": 64.59999996423721,
+        "warm_median_ms": 65.55000004172325,
+        "min_ms": 64.59999996423721,
+        "max_ms": 65.80000001192093,
+        "samples_ms": [
+          64.59999996423721,
+          65.80000001192093,
+          65.30000001192093,
+          65.70000004768372,
+          65.40000003576279
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "scroll_loaded_tree",
+      "action": "Scroll loaded rows",
+      "historical_100k_ms": 33,
+      "frozen_baseline_100k": {
+        "median_ms": 32.19999998807907,
+        "first_ms": 32.0,
+        "max_ms": 33.80000001192093,
+        "warm_median_ms": 32.5,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 32.69999998807907,
+        "first_ms": 33.80000001192093,
+        "max_ms": 34.59999996423721,
+        "warm_median_ms": 32.29999998211861,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "scroll_loaded_tree",
+        "n": 5,
+        "median_ms": 31.399999976158142,
+        "first_ms": 30.80000001192093,
+        "warm_median_ms": 31.69999998807907,
+        "min_ms": 30.80000001192093,
+        "max_ms": 32.89999997615814,
+        "samples_ms": [
+          30.80000001192093,
+          31.399999976158142,
+          31.399999976158142,
+          32.89999997615814,
+          32
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "scroll_loaded_tree",
+        "n": 5,
+        "median_ms": 32.30000001192093,
+        "first_ms": 32.19999998807907,
+        "warm_median_ms": 32.349999994039536,
+        "min_ms": 32.19999998807907,
+        "max_ms": 33.299999952316284,
+        "samples_ms": [
+          32.19999998807907,
+          32.30000001192093,
+          33.299999952316284,
+          32.30000001192093,
+          32.39999997615814
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "expand_cell_first_time",
+      "action": "Expand unloaded cell",
+      "historical_100k_ms": 2480,
+      "frozen_baseline_100k": {
+        "median_ms": 2465.900000035763,
+        "first_ms": 2600.0,
+        "max_ms": 2616.0,
+        "warm_median_ms": 2458.0,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 101.5,
+        "first_ms": 165.0999999642372,
+        "max_ms": 165.0999999642372,
+        "warm_median_ms": 100.7999999821186,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "expand_cell_first_time",
+        "n": 5,
+        "median_ms": 100.30000001192093,
+        "first_ms": 133.30000001192093,
+        "warm_median_ms": 100.0499999821186,
+        "min_ms": 99.69999998807907,
+        "max_ms": 133.30000001192093,
+        "samples_ms": [
+          133.30000001192093,
+          99.69999998807907,
+          99.79999995231628,
+          100.30000001192093,
+          100.40000003576279
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "expand_cell_first_time",
+        "n": 5,
+        "median_ms": 100.10000002384186,
+        "first_ms": 117.80000001192093,
+        "warm_median_ms": 100.05000001192093,
+        "min_ms": 83.10000002384186,
+        "max_ms": 117.80000001192093,
+        "samples_ms": [
+          117.80000001192093,
+          83.10000002384186,
+          100,
+          100.89999997615814,
+          100.10000002384186
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "expand_block_first_time",
+      "action": "Expand unloaded block",
+      "historical_100k_ms": 2400,
+      "frozen_baseline_100k": {
+        "median_ms": 2565.099999964237,
+        "first_ms": 2633.300000011921,
+        "max_ms": 2650.099999964237,
+        "warm_median_ms": 2515.150000005961,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 100.59999996423721,
+        "first_ms": 115.69999998807907,
+        "max_ms": 349.5999999642372,
+        "warm_median_ms": 99.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "expand_block_first_time",
+        "n": 5,
+        "median_ms": 99.10000002384186,
+        "first_ms": 99.10000002384186,
+        "warm_median_ms": 99.19999998807907,
+        "min_ms": 98.39999997615814,
+        "max_ms": 99.5,
+        "samples_ms": [
+          99.10000002384186,
+          99.10000002384186,
+          99.5,
+          99.29999995231628,
+          98.39999997615814
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "expand_block_first_time",
+        "n": 5,
+        "median_ms": 98.89999997615814,
+        "first_ms": 101.69999998807907,
+        "warm_median_ms": 98.65000000596046,
+        "min_ms": 98.39999997615814,
+        "max_ms": 101.69999998807907,
+        "samples_ms": [
+          101.69999998807907,
+          98.90000003576279,
+          98.40000003576279,
+          98.39999997615814,
+          98.89999997615814
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "next_cell_page_60",
+      "action": "Load next 60 cells",
+      "historical_100k_ms": 2140,
+      "frozen_baseline_100k": {
+        "median_ms": 2238.199999988079,
+        "first_ms": 2258.699999988079,
+        "max_ms": 2293.100000023842,
+        "warm_median_ms": 2189.59999999404,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 93.0,
+        "first_ms": 88.89999997615814,
+        "max_ms": 108.39999997615814,
+        "warm_median_ms": 96.90000000596046,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/sqlite/browser.json",
+        "name": "next_cell_page_60",
+        "n": 5,
+        "median_ms": 92.69999998807907,
+        "first_ms": 124.10000002384186,
+        "warm_median_ms": 92.34999999403954,
+        "min_ms": 91,
+        "max_ms": 124.10000002384186,
+        "samples_ms": [
+          124.10000002384186,
+          92.69999998807907,
+          93.80000001192093,
+          91,
+          92
+        ]
+      },
+      "one_million_duckdb": {
+        "status": "measured",
+        "scope": "unchanged production shared React components, experimental typed SQL readmodel HTTP bridge",
+        "receipt": "browser/duckdb/browser.json",
+        "name": "next_cell_page_60",
+        "n": 5,
+        "median_ms": 109,
+        "first_ms": 108.60000002384186,
+        "warm_median_ms": 109.25,
+        "min_ms": 108.19999998807907,
+        "max_ms": 109.69999998807907,
+        "samples_ms": [
+          108.60000002384186,
+          109,
+          109.5,
+          109.69999998807907,
+          108.19999998807907
+        ]
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "first10_selected_action_http_total",
+      "action": "Tag ten epochs¹",
+      "historical_100k_ms": 52,
+      "frozen_baseline_100k": {
+        "median_ms": 52.16541700065136,
+        "first_ms": 78.05633300449699,
+        "max_ms": 78.05633300449699,
+        "warm_median_ms": 38.407312997151166,
+        "n": 5,
+        "bytes": null
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 25.36056301323697,
+        "first_ms": 73.96550005069003,
+        "max_ms": 73.96550005069003,
+        "warm_median_ms": 25.317959021776915,
+        "n": 10,
+        "bytes": null
+      },
+      "one_million_sqlite": {
+        "status": "measured",
+        "scope": "production native MySQL registered annotation routes with experimental SQLite point lookup; sparse1k initial annotation seed; not whole-app or dense-regression qualification",
+        "receipt": "tagging/receipt.json",
+        "samples_seconds": [
+          0.04666433297097683,
+          0.020987833966501057,
+          0.021016583952587098,
+          0.021654791955370456,
+          0.026709709025453776,
+          0.021813875006046146,
+          0.020770000002812594,
+          0.020794957992620766,
+          0.020691582991275936,
+          0.02253274997929111
+        ],
+        "first_seconds": 0.04666433297097683,
+        "median_seconds": 0.021335687953978777,
+        "warm_median_seconds": 0.021016583952587098,
+        "maximum_seconds": 0.04666433297097683,
+        "n": 10,
+        "median_ms": 21.335687953978777,
+        "first_ms": 46.66433297097683,
+        "max_ms": 46.66433297097683,
+        "comparison_to_historical_100k": "unqualified_density_and_harness_differ"
+      },
+      "one_million_duckdb": {
+        "status": "shared_native_writer_not_remeasured",
+        "scope": "same authoritative MySQL writer; DuckDB only participates in separately measured metadata membership joins",
+        "reference": "one_million_sqlite"
+      },
+      "scope": "native API with revision preflight"
+    },
+    {
+      "key": "api_contrast_filter_preview",
+      "action": "Preview metadata filter¹",
+      "historical_100k_ms": 3900,
+      "frozen_baseline_100k": {
+        "median_ms": 4195.857124985196,
+        "first_ms": 4498.598207952455,
+        "max_ms": 4573.655707994476,
+        "warm_median_ms": 4167.464250000194,
+        "n": 10,
+        "bytes": 11439
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 2053.9580625190865,
+        "first_ms": 2182.305709051434,
+        "max_ms": 2326.017707993742,
+        "warm_median_ms": 2037.3483750154264,
+        "n": 10,
+        "bytes": 11439
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "native API full metadata catalog preview"
+    }
+  ],
+  "receipt_manifest": {
+    "docs/dev/performance-evals-2026-10-01/baseline/browser/browser-native-100k-raf.json": {
+      "sha256": "a9fe72fd43e12c25cb71b7109e117bbbe23171e87894ab3beda1ae6b454ca689",
+      "bytes": 14140
+    },
+    "docs/dev/performance-evals-2026-10-01/baseline/browser/same-day-browser-100k.json": {
+      "sha256": "ee17f46e10a6dcc56e6511affc29c213fa9b43c6ebb5bb7e9770e525a6620478",
+      "bytes": 66412
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/browser-100k.json": {
+      "sha256": "27c2b7754d19e6a236378deea37f568d74eef61843ed2b3ec1536b8cc45496b5",
+      "bytes": 66371
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/comparison-browser.json": {
+      "sha256": "ab34ea335ece42875f136fa91d5eb71faa3b7b2887814f2174bb904720def187",
+      "bytes": 10043
+    },
+    "docs/dev/performance-evals-2026-10-01/baseline/native/native-100k.json": {
+      "sha256": "a169eeb32636e57a6186a975e1cfed2054ac2712fc9778346b6542cc62352327",
+      "bytes": 113832
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/tags-100k-tags.json": {
+      "sha256": "095365fc2a36c9e4a829f23c6a7dc2b1bf84bab9dc708a434611233578365f58",
+      "bytes": 135998
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/tags-100k-comparison.json": {
+      "sha256": "30e68da501d8ad6a2f48d4a881a74c19860492fb64430e20e71587a3454d7d9f",
+      "bytes": 25584
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/baseline-paired-native-native-metadata-100k.json": {
+      "sha256": "09bec49fc01731ec77bffeb53040d0adacc08a0b9bf7f43fe15e5ea8c3c82690",
+      "bytes": 64520
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/candidate-paired-native-native-metadata-100k.json": {
+      "sha256": "2bfef2584e01bbfe094a20347b449f024d7152fe27b37f8c0c919de19d8f9dc5",
+      "bytes": 60976
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/comparison-native.json": {
+      "sha256": "9cafe3acc8322363a2c7295aefe689acc8fbfc5d85c197c736276b82e84326b4",
+      "bytes": 13400
+    }
+  },
+  "scope_note": "Historical photo rounded values are retained separately from complete same-day frozen replay. The one-million typed readmodel experiment is not production Flask/MySQL qualification. Tagging and full preview remain separate exact API action definitions.",
+  "one_million_browser_comparison": {
+    "correctness_passed": true,
+    "coverage": "all seven browser actions, five repetitions each per engine plus disjoint branches",
+    "regression_policy": "Flag only if DuckDB median exceeds SQLite by both 20% and 20ms. Small sample, descriptive comparison. Historical100k versus typed1m is not an engine-only regression test.",
+    "actions": [
+      {
+        "name": "select_epoch_metadata",
+        "sqlite_ms": 93.69999998807907,
+        "duckdb_ms": 92.5,
+        "delta_ms": -1.199999988079071,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "search_selected_epoch_metadata",
+        "sqlite_ms": 32.69999998807907,
+        "duckdb_ms": 32.39999997615814,
+        "delta_ms": -0.30000001192092896,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "reopen_cell_cached",
+        "sqlite_ms": 66.19999998807907,
+        "duckdb_ms": 65.40000003576279,
+        "delta_ms": -0.7999999523162842,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "scroll_loaded_tree",
+        "sqlite_ms": 31.399999976158142,
+        "duckdb_ms": 32.30000001192093,
+        "delta_ms": 0.9000000357627869,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "expand_cell_first_time",
+        "sqlite_ms": 100.30000001192093,
+        "duckdb_ms": 100.10000002384186,
+        "delta_ms": -0.19999998807907104,
+        "regression_margin_ms": 20.060000002384186,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "expand_block_first_time",
+        "sqlite_ms": 99.10000002384186,
+        "duckdb_ms": 98.89999997615814,
+        "delta_ms": -0.20000004768371582,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      },
+      {
+        "name": "next_cell_page_60",
+        "sqlite_ms": 92.69999998807907,
+        "duckdb_ms": 109,
+        "delta_ms": 16.30000001192093,
+        "regression_margin_ms": 20,
+        "regression": false,
+        "comparison_scope": "same million-epoch synthetic fixture and shared frontend, typed engine prototypes"
+      }
+    ],
+    "regressions": [],
+    "exact_page_request_response_hashes": {
+      "sqlite": "42b143fc44fdc533d2a0e4a61bf4cef3b979e703b6c1f01780c6079edb6c7d04",
+      "duckdb": "42b143fc44fdc533d2a0e4a61bf4cef3b979e703b6c1f01780c6079edb6c7d04"
+    },
+    "exact_page_request_response_parity_passed": true
+  },
+  "million_original_full_preview_status": "unqualified; bounded preview and catalog-only measurements cannot replace original full-catalog API preview row"
+}

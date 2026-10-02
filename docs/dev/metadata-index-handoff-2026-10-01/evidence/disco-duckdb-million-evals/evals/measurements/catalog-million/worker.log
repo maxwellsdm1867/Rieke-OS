@@ -1,0 +1,4 @@
+{"phase": "known_fields_before_timing", "epochs": 1000000}
+{"phase": "eav_build", "epochs": 1000000}
+{"phase": "persisted_reopen_and_scope", "epochs": 1000000}
+{"phase": "measure_duckdb_derived_eav", "epochs": 1000000}

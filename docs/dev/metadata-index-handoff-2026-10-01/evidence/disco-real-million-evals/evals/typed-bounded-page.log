@@ -1,0 +1,13 @@
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "largest_cell", "count": 687, "median_ms": 1.583937497343868, "peak_rss_bytes": 27525120}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "largest_block", "count": 601, "median_ms": 1.5991670079529285, "peak_rss_bytes": 29392896}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "compound_all", "count": 416035, "median_ms": 1710.3436244942714, "peak_rss_bytes": 88424448}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "array_eq", "count": 668034, "median_ms": 865.0679374986794, "peak_rss_bytes": 95830016}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "array_contains", "count": 668034, "median_ms": 844.3179789755959, "peak_rss_bytes": 97894400}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "number_eq", "count": 654751, "median_ms": 833.3692084997892, "peak_rss_bytes": 98222080}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "recorded_null", "count": 305041, "median_ms": 443.1690420024097, "peak_rss_bytes": 101007360}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "missing", "count": 331966, "median_ms": 2274.2008335189894, "peak_rss_bytes": 105283584}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "mixed_types", "count": 248194, "median_ms": 316.45797949749976, "peak_rss_bytes": 105283584}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "compound_any", "count": 688138, "median_ms": 1497.6150625152513, "peak_rss_bytes": 143523840}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "largest_protocol", "count": 668034, "median_ms": 54.874082998139784, "peak_rss_bytes": 144048128}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "global", "count": 1000000, "median_ms": 18.25283351354301, "peak_rss_bytes": 144850944}
+{"event": "worker_end", "arm": "typed", "mode": "page", "status": "complete", "seconds": 54.952951499959454, "peak_rss_bytes": 144998400}

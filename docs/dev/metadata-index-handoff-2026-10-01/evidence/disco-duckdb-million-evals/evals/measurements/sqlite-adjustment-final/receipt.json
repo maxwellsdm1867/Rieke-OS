@@ -1,0 +1,314 @@
+{
+  "scope": "Query-only covering-index adjustment on an owned SQLite copy.",
+  "source_database_sha256_before": "13e30f563ee2f39e7c1868d1a0ac9fa62647ea3fbba3d34820622e7c6e2731e6",
+  "phases": {
+    "copy_seconds": 0.5846104159718379,
+    "covering_index_build_and_analyze_seconds": 6.62375583301764,
+    "persisted_bytes": 1014566912
+  },
+  "controls": [
+    {
+      "phase": "before",
+      "field": "seed",
+      "scope": "contrast",
+      "samples_seconds": [
+        1.3691441250266507,
+        0.3673523750039749,
+        0.3849508339772001
+      ],
+      "median_seconds": 0.3849508339772001,
+      "sha256": "ce99dc486c036c7b9aafa2d0a3f8d5308e316f8cb4de10957727e465497e1497",
+      "query_plan": [
+        [
+          9,
+          0,
+          200,
+          "SEARCH epochs USING INDEX contrast_lookup (contrast_present=? AND contrast_kind=? AND contrast=?)"
+        ],
+        [
+          19,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "before",
+      "field": "seed",
+      "scope": "unfiltered",
+      "samples_seconds": [
+        0.8239618749939837,
+        0.8948950409539975,
+        0.8246276249992661
+      ],
+      "median_seconds": 0.8246276249992661,
+      "sha256": "61da1f65542fa3eefae1d943d1a9cc15e30bf48c9b85c4be27ce8a5054346a74",
+      "query_plan": [
+        [
+          8,
+          0,
+          215,
+          "SCAN epochs"
+        ],
+        [
+          10,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "before",
+      "field": "seed",
+      "scope": "cell100",
+      "samples_seconds": [
+        0.001630208978895098,
+        0.00022666703443974257,
+        0.00014266703510656953
+      ],
+      "median_seconds": 0.00022666703443974257,
+      "sha256": "9da2540eaee1b7dd7671cfc8bc7bacff6d931709f852212eaefac7174a8193f0",
+      "query_plan": [
+        [
+          9,
+          0,
+          89,
+          "SEARCH epochs USING INDEX cell_children (cell_uuid=?)"
+        ],
+        [
+          23,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "before",
+      "field": "currentMean",
+      "scope": "contrast",
+      "samples_seconds": [
+        0.4753973750048317,
+        0.4758650839794427,
+        0.4879232089733705
+      ],
+      "median_seconds": 0.4758650839794427,
+      "sha256": "7f998be5a987c7bf184fc100409f933763ae4351b2cd0880fff54a8fc1e550d1",
+      "query_plan": [
+        [
+          9,
+          0,
+          200,
+          "SEARCH epochs USING INDEX contrast_lookup (contrast_present=? AND contrast_kind=? AND contrast=?)"
+        ],
+        [
+          19,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "before",
+      "field": "currentMean",
+      "scope": "unfiltered",
+      "samples_seconds": [
+        1.412802750011906,
+        1.4246585000073537,
+        1.4014791250228882
+      ],
+      "median_seconds": 1.412802750011906,
+      "sha256": "1e382d4ba4d3c3063702bcffccb7e2588e8d7d7b39fdca4b8151944216e891ae",
+      "query_plan": [
+        [
+          8,
+          0,
+          215,
+          "SCAN epochs"
+        ],
+        [
+          10,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "before",
+      "field": "currentMean",
+      "scope": "cell100",
+      "samples_seconds": [
+        0.00022845802595838904,
+        0.00012041704030707479,
+        0.00011475000064820051
+      ],
+      "median_seconds": 0.00012041704030707479,
+      "sha256": "e393be5de381c52b66c2a7a660950dcead5e0340aa690c4800689190978145d0",
+      "query_plan": [
+        [
+          9,
+          0,
+          89,
+          "SEARCH epochs USING INDEX cell_children (cell_uuid=?)"
+        ],
+        [
+          23,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "seed",
+      "scope": "contrast",
+      "samples_seconds": [
+        0.0003541670157574117,
+        0.00017941597616299987,
+        0.00016458402387797832
+      ],
+      "median_seconds": 0.00017941597616299987,
+      "sha256": "ce99dc486c036c7b9aafa2d0a3f8d5308e316f8cb4de10957727e465497e1497",
+      "query_plan": [
+        [
+          8,
+          0,
+          187,
+          "SEARCH epochs USING COVERING INDEX contrast_seed_covering (contrast_present=? AND contrast_kind=? AND contrast=?)"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "seed",
+      "scope": "unfiltered",
+      "samples_seconds": [
+        0.7082637500134297,
+        0.7577373330132104,
+        0.6882700829883106
+      ],
+      "median_seconds": 0.7082637500134297,
+      "sha256": "61da1f65542fa3eefae1d943d1a9cc15e30bf48c9b85c4be27ce8a5054346a74",
+      "query_plan": [
+        [
+          8,
+          0,
+          210,
+          "SCAN epochs USING COVERING INDEX contrast_seed_covering"
+        ],
+        [
+          10,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "seed",
+      "scope": "cell100",
+      "samples_seconds": [
+        0.0002607080386951566,
+        0.00014887499855831265,
+        0.00014095898950472474
+      ],
+      "median_seconds": 0.00014887499855831265,
+      "sha256": "9da2540eaee1b7dd7671cfc8bc7bacff6d931709f852212eaefac7174a8193f0",
+      "query_plan": [
+        [
+          9,
+          0,
+          89,
+          "SEARCH epochs USING INDEX cell_children (cell_uuid=?)"
+        ],
+        [
+          23,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "currentMean",
+      "scope": "contrast",
+      "samples_seconds": [
+        0.0445610000169836,
+        0.043010667024645954,
+        0.04183058300986886
+      ],
+      "median_seconds": 0.043010667024645954,
+      "sha256": "7f998be5a987c7bf184fc100409f933763ae4351b2cd0880fff54a8fc1e550d1",
+      "query_plan": [
+        [
+          8,
+          0,
+          187,
+          "SEARCH epochs USING COVERING INDEX contrast_currentMean_covering (contrast_present=? AND contrast_kind=? AND contrast=?)"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "currentMean",
+      "scope": "unfiltered",
+      "samples_seconds": [
+        0.7814114170032553,
+        0.7791399579728022,
+        0.7751013750093989
+      ],
+      "median_seconds": 0.7791399579728022,
+      "sha256": "1e382d4ba4d3c3063702bcffccb7e2588e8d7d7b39fdca4b8151944216e891ae",
+      "query_plan": [
+        [
+          8,
+          0,
+          210,
+          "SCAN epochs USING COVERING INDEX contrast_currentMean_covering"
+        ],
+        [
+          10,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    },
+    {
+      "phase": "after",
+      "field": "currentMean",
+      "scope": "cell100",
+      "samples_seconds": [
+        0.00018566596554592252,
+        0.0001319579896517098,
+        0.00011912500485777855
+      ],
+      "median_seconds": 0.0001319579896517098,
+      "sha256": "e393be5de381c52b66c2a7a660950dcead5e0340aa690c4800689190978145d0",
+      "query_plan": [
+        [
+          9,
+          0,
+          89,
+          "SEARCH epochs USING INDEX cell_children (cell_uuid=?)"
+        ],
+        [
+          23,
+          0,
+          0,
+          "USE TEMP B-TREE FOR GROUP BY"
+        ]
+      ]
+    }
+  ],
+  "passed": true,
+  "all_ten_original_query_hashes_unchanged": true,
+  "source_database_sha256_after": "13e30f563ee2f39e7c1868d1a0ac9fa62647ea3fbba3d34820622e7c6e2731e6"
+}

@@ -1,0 +1,8 @@
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "largest_block", "count": 601, "median_ms": 14083.873124967795, "peak_rss_bytes": 332611584}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "compound_all", "count": 416035, "median_ms": 14966.389250010252, "peak_rss_bytes": 433373184}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "array_eq", "count": 668034, "median_ms": 14890.636708994862, "peak_rss_bytes": 433373184}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "number_eq", "count": 654751, "median_ms": 14399.038583040237, "peak_rss_bytes": 433373184}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "missing", "count": 331966, "median_ms": 15297.85695800092, "peak_rss_bytes": 443072512}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "largest_protocol", "count": 668034, "median_ms": 14936.641999986023, "peak_rss_bytes": 443072512}
+{"event": "case_complete", "arm": "native", "mode": "page", "label": "global", "count": 1000000, "median_ms": 13215.855749964248, "peak_rss_bytes": 456982528}
+{"event": "worker_end", "arm": "native", "mode": "page", "status": "complete", "seconds": 209.28890099999262, "peak_rss_bytes": 456982528}

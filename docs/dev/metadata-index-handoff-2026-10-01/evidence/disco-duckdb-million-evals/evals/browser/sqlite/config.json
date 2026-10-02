@@ -1,0 +1,31 @@
+{
+  "epochs": 1000000,
+  "engine": "sqlite",
+  "protocol_uuid": "93506526-6460-5710-8a2b-69478fbe29b9",
+  "source_head": "1017530311709477492a551c844f1b2a200e242c",
+  "catalog": {
+    "fields": [
+      {
+        "id": "parameters/contrast",
+        "path": "parameters.contrast",
+        "label": "contrast"
+      },
+      {
+        "id": "parameters/seed",
+        "path": "parameters.seed",
+        "label": "seed"
+      },
+      {
+        "id": "parameters/stimTime",
+        "path": "parameters.stimTime",
+        "label": "stimTime"
+      },
+      {
+        "id": "parameters/currentMean",
+        "path": "parameters.currentMean",
+        "label": "currentMean"
+      }
+    ]
+  },
+  "scope": "Experimental typed metadata HTTP bridge; exact deterministic million-epoch fixture; no native MySQL annotations, waveform I/O or production Flask service."
+}

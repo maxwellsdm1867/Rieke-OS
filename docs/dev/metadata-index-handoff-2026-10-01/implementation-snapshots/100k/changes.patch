@@ -1,0 +1,671 @@
+diff --git a/python/tests/test_workspace_disk_index.py b/python/tests/test_workspace_disk_index.py
+index 444e5f8..36aec4f 100644
+--- a/python/tests/test_workspace_disk_index.py
++++ b/python/tests/test_workspace_disk_index.py
+@@ -100,6 +100,46 @@ class DiskIndexTests(unittest.TestCase):
+         mutated=opened.catalog();mutated['fields'].clear()
+         self.assertEqual(len(opened.catalog()['fields']),len(tree.BASE_FIELDS))
+ 
++    def test_scoped_catalog_exact_parity_for_aliases_unicode_missing_and_joints(self):
++        rows,details,sources=fixture(271,True)
++        mixed=[1,1.0,True,False,-0.0,0.0,None,'µ 雪','__missing__',[1,True],{'µ':[1.0,False]}]
++        for number,row in enumerate(rows):
++            params=details[row['epoch_uuid']]['parameters']
++            params['typed']=mixed[number%len(mixed)]
++            params['alias']=params['typed']
++            if number%4:
++                params['partial']=None if number%3 else '雪'
++            # Named protocol axes can coincide without being deduplicated.
++            params['history2']=params['target']
++            if number%7==0: params.pop('history1')
++            row['cell_uuid']=None if number%19==0 else row['cell_uuid']
++        index=DiskMetadataIndex.build(self.path,rows,details,sources,'generation','project')
++        registered,values=tree.catalog(rows,details,sources=sources)
++        joint=tree.joint_id(['parameters/typed','parameters/partial'])
++        known=registered['fields']+[tree.joint_definition(joint,{field['id']:field for field in registered['fields']})]
++        by_id={row['epoch_uuid']:row for row in rows}
++        for ids in ([row['epoch_uuid'] for row in rows[::3]][::-1],['epoch-3','epoch-3','unknown','epoch-1'],[]):
++            # SQL scopes keep first known occurrence and ignore foreign IDs.
++            ordered=list(dict.fromkeys(identity for identity in ids if identity in by_id))
++            selected=[by_id[identity] for identity in ordered]
++            expected,projected=tree.catalog(selected,details,known_fields=known,sources=sources)
++            expected,projected=tree.materialize_combinations(expected,projected,[joint])
++            actual=index.catalog(ids,known)
++            self.assertEqual(json.dumps(actual,sort_keys=True),json.dumps(expected,sort_keys=True))
++            self.assertEqual(json.dumps(index.predicate_catalog(ids),sort_keys=True),
++                             json.dumps(predicates.predicate_catalog(*tree.catalog(selected,details,
++                                 known_fields=registered['fields'],sources=sources)),sort_keys=True))
++
++    def test_unscoped_view_preserves_identity_order_without_temporary_rows(self):
++        index=self.build(count=40)
++        with index._connect() as connection:
++            self.assertEqual(connection.execute("SELECT type FROM sqlite_temp_master WHERE name='scope'").fetchone()[0],'view')
++            self.assertEqual([row[0] for row in connection.execute('SELECT epoch_uuid FROM scope JOIN epochs USING(epoch_id) ORDER BY ordinal')],
++                             [row['epoch_uuid'] for row in self.rows])
++        with index._connect(['epoch-9','unknown','epoch-2','epoch-9']) as connection:
++            self.assertEqual(list(connection.execute('SELECT ordinal,epoch_uuid FROM scope JOIN epochs USING(epoch_id) ORDER BY ordinal')),
++                             [(0,'epoch-9'),(2,'epoch-2')])
++
+     def test_uuid_equality_uses_unique_index_without_decoding_distinct_values(self):
+         index=self.build(count=5000)
+         with patch.object(disk.json,'loads',wraps=disk.json.loads) as decode:
+diff --git a/python/tests/test_workspace_tree_navigation_cache.py b/python/tests/test_workspace_tree_navigation_cache.py
+new file mode 100644
+index 0000000..f24f38d
+--- /dev/null
++++ b/python/tests/test_workspace_tree_navigation_cache.py
+@@ -0,0 +1,208 @@
++"""Structural cache agrees with the general tree, including revision safeguards."""
++from pathlib import Path
++import tempfile
++import unittest
++import sys
++import gc
++import weakref
++from unittest.mock import patch
++
++from workspace_disk_index import DiskMetadataIndex
++from workspace_tree_pages import TreePages, StaleTreePage, _NavigationValues
++from test_workspace_api import FixtureService
++import test_workspace_refresh_cache as refresh_fixture
++
++
++class StructuralNavigationTests(unittest.TestCase):
++    def setUp(self):
++        self.temp = tempfile.TemporaryDirectory()
++        self.addCleanup(self.temp.cleanup)
++        self.service = FixtureService(self.temp.name)
++        # Multiple valid recording dates and Unicode labels; unknown durations.
++        for number, row in enumerate(self.service.rows.values()):
++            row['date'] = '2026-09-24' if number % 2 else '2026-09-25'
++            row['start_time'] = ('09/24/2026' if number % 2 else '09/25/2026') + row['start_time'][10:]
++            row['cell_label'] += ' · 日期 α'
++            row['duration_seconds'] = None if number == 0 else 1.0
++        self.pager = TreePages(self.service)
++
++    def index(self):
++        service = self.service
++        index = DiskMetadataIndex.build(Path(self.temp.name)/'structural.sqlite',
++            service.rows, service.details, service.sources, 'structural-v1',
++            service.project['project_uuid'])
++        service.disk_index = index
++        self.addCleanup(index.close)
++        return index
++
++    def pages(self, body):
++        root = self.pager.page(body)
++        result = []
++        def walk(page):
++            result.append(page)
++            for branch in page['branches']:
++                walk(self.pager.page({**body, 'path': branch['path'],
++                                     'revision': root['revision']}))
++            if page['has_more']:
++                walk(self.pager.page({**body, 'path':page['path'],
++                    'offset':page['offset']+page['limit'], 'revision':root['revision']}))
++        walk(root)
++        return result
++
++    def test_all_pages_offsets_anchors_order_counts_and_revisions_match_general_path(self):
++        bodies = [{'splits': order, 'limit': 1, **scope}
++                  for order in ('date,cell,block', 'block,date,cell', 'cell', 'date')
++                  for scope in ({}, {'protocol_uuid':self.service.protocol_id},
++                                {'filters':{'cell_type':'ON'}})]
++        expected = [self.pages(body) for body in bodies]
++        anchors = [{'protocol_uuid':self.service.protocol_id,
++                    'splits':'date,cell,block', 'anchor_uuid':identity, 'limit':2}
++                   for identity in self.service.rows]
++        expected_anchors = [self.pager.page(body) for body in anchors]
++        index = self.index()
++        # Structural navigation must never read the EAV projection or decorate
++        # the entire protocol's rows with curation merely to compute counts.
++        with patch.object(index, 'values', side_effect=AssertionError('No EAV matrix')), \
++             patch.object(self.service, 'curation_provider', side_effect=AssertionError('No full curation read')):
++            self.assertEqual([self.pages(body) for body in bodies], expected)
++            self.assertEqual([self.pager.page(body) for body in anchors], expected_anchors)
++
++    def test_cache_refuses_membership_fingerprint_source_binding_and_file_changes(self):
++        index = self.index()
++        body = {'protocol_uuid':self.service.protocol_id, 'splits':'date,cell,block'}
++        root = self.pager.page(body)
++        self.service.protocols[self.service.protocol_id]['result']['epochs'].pop()
++        with self.assertRaises(StaleTreePage):
++            self.pager.page({**body, 'revision':root['revision']})
++        root = self.pager.page(body)
++        self.service._fingerprints[self.service.ids[0]] = 'c'*64
++        with self.assertRaises(StaleTreePage):
++            self.pager.page({**body, 'revision':root['revision']})
++        source = self.pager.page({'splits':'date'})
++        self.service.set_source_state_provider(lambda: {'a'*64:{'query_excluded':True}})
++        with self.assertRaises(StaleTreePage):
++            self.pager.page({'splits':'date', 'revision':source['revision']})
++        self.assertEqual(self.pager.page({'splits':'date'})['count'],0)
++        root = self.pager.page(body)
++        binding = self.binding(self.service.ids[0], 'c'*64)
++        self.service.set_binding_provider(lambda protocol:binding)
++        with self.assertRaises(StaleTreePage):
++            self.pager.page({**body, 'revision':root['revision']})
++        with index.path.open('ab') as stream:
++            stream.write(b'changed')
++        with self.assertRaises(ValueError):
++            self.pager.page(body)
++
++    @staticmethod
++    def binding(identity, fingerprint='b'*64):
++        return {'version':1, 'revision_uuid':'changed', 'recipe':{
++            'epochs':[{'uuid':identity, 'metadata_hash':fingerprint}],
++            'source_revisions':['a'*64], 'predicate':{'all':[]},
++            'tree_view':{'fields':['date','cell','block']},
++            'splits':'date,cell,block', 'name':'Custom bound selection'}}
++
++    def test_unmatched_custom_header_uses_full_binding_and_detects_membership_change(self):
++        self.index()
++        identity = self.service.ids[0]
++        binding = self.binding(identity)
++        self.service.set_binding_provider(lambda protocol:binding,
++                                          header_provider=lambda protocol:None)
++        body = {'protocol_uuid':self.service.protocol_id, 'splits':'date,cell,block'}
++        root = self.pager.page(body)
++        self.assertEqual(root['count'],1)
++        leaf = self.pager.page({**body, 'anchor_uuid':identity})
++        self.assertEqual([row['epoch_uuid'] for row in leaf['epochs']],[identity])
++        binding['recipe']['epochs'] = [{'uuid':self.service.ids[1], 'metadata_hash':'b'*64}]
++        with self.assertRaises(StaleTreePage):
++            self.pager.page({**body, 'revision':root['revision']})
++        self.assertEqual(self.pager.page({**body, 'anchor_uuid':self.service.ids[1]})['count'],1)
++
++    def test_custom_membership_policies_are_authoritative_on_each_page(self):
++        self.index()
++        body = {'protocol_uuid':self.service.protocol_id, 'splits':'date,cell,block'}
++        for method in ('query_result', 'filtered_rows', '_tree_rows'):
++            original = getattr(self.service,method)
++            chosen = [self.service.ids[0]]
++            def custom(*args, **kwargs):
++                result = original(*args, **kwargs)
++                if method == 'query_result':
++                    result['epochs'] = [member for member in result['epochs'] if member['uuid'] in chosen]
++                    return result
++                return [row for row in result if row['epoch_uuid'] in chosen]
++            with self.subTest(method=method), patch.object(self.service,method,side_effect=custom):
++                root = self.pager.page(body)
++                self.assertEqual(root['count'],1)
++                leaf = self.pager.page({**body, 'anchor_uuid':chosen[0]})
++                self.assertEqual([row['epoch_uuid'] for row in leaf['epochs']],chosen)
++                chosen[:] = [self.service.ids[1]]
++                with self.assertRaises(StaleTreePage):
++                    self.pager.page({**body, 'revision':root['revision']})
++                self.assertEqual(self.pager.page({**body, 'anchor_uuid':chosen[0]})['count'],1)
++
++    def test_group_cache_reservation_bounds_lazy_growth(self):
++        self.index()
++        self.pages({'splits':'date,cell,block', 'limit':1})
++        for result, _, retained in self.service._tree_page_scope_cache[1].values():
++            values = result[2]
++            self.assertIsInstance(values, _NavigationValues)
++            self.assertLessEqual(values.group_bytes, values.grouping_budget)
++            self.assertLessEqual(len(values.group_cache),128)
++            self.assertGreaterEqual(retained, values.grouping_budget)
++            # Measure allocations actually reachable from the populated cache,
++            # excluding immutable rows/scalars/field names borrowed elsewhere.
++            # This checks the estimate independently of its own byte counter.
++            borrowed = {id(row) for row in self.service.rows.values()}
++            borrowed.update(id(value) for row in self.service.rows.values()
++                            for value in row.values())
++            borrowed.update(id(field) for field in values.fields)
++            borrowed.update(id(key) for entry in values.group_cache.values()
++                            for bucket in entry[1] for key in bucket)
++            borrowed.update(id(key) for entry in values.group_cache.values()
++                            for bucket in entry[1] for key in bucket['summary'])
++            seen = set(borrowed)
++            def allocated(value):
++                if id(value) in seen:
++                    return 0
++                seen.add(id(value))
++                cost = sys.getsizeof(value)
++                if isinstance(value,dict):
++                    cost += sum(allocated(key)+allocated(item) for key,item in value.items())
++                elif isinstance(value,(list,tuple)):
++                    cost += sum(allocated(item) for item in value)
++                return cost
++            self.assertLessEqual(allocated(values.group_cache), values.group_bytes)
++
++
++class NavigationRefreshLifetimeTests(unittest.TestCase):
++    def setUp(self):
++        self.fixture = refresh_fixture.RefreshCacheTests()
++        self.fixture.setUp()
++        self.addCleanup(self.fixture.doCleanups)
++        self.service = self.fixture.service
++
++    def test_successful_publication_releases_previous_navigation_generation(self):
++        TreePages(self.service).page({'splits':'date,cell,block'})
++        cache = self.service._tree_page_scope_cache
++        values = next(iter(cache[1].values()))[0][2]
++        old_values = weakref.ref(values)
++        del values, cache
++        old_rows = self.service.rows
++        self.service.refresh()
++        self.assertIsNone(self.service._tree_page_scope_cache)
++        self.assertIsNot(self.service.rows,old_rows)
++        gc.collect()
++        self.assertIsNone(old_values())
++
++    def test_failed_verification_does_not_replace_published_navigation_cache(self):
++        TreePages(self.service).page({'splits':'date,cell,block'})
++        cache, rows = self.service._tree_page_scope_cache, self.service.rows
++        metadata = Path(self.fixture.records[0]['manifest']['metadata_path'])
++        metadata.write_text(metadata.read_text().replace('30.0','31.0'))
++        with self.assertRaisesRegex(ValueError,'metadata checksum changed'):
++            self.service.refresh()
++        self.assertIs(self.service._tree_page_scope_cache,cache)
++        self.assertIs(self.service.rows,rows)
++
++
++if __name__ == '__main__':
++    unittest.main()
+diff --git a/python/workspace_disk_index.py b/python/workspace_disk_index.py
+index 7bbf1bc..7b90d36 100644
+--- a/python/workspace_disk_index.py
++++ b/python/workspace_disk_index.py
+@@ -237,10 +237,13 @@ class DiskMetadataIndex:
+         self._check()
+         connection=sqlite3.connect(self.path.as_uri()+'?mode=ro&immutable=1',uri=True)
+         try:
+-            connection.execute('CREATE TEMP TABLE scope(ordinal INTEGER PRIMARY KEY,epoch_id INTEGER UNIQUE)')
+             if ids is None:
+-                connection.execute('INSERT INTO scope SELECT epoch_id,epoch_id FROM epochs')
++                # Full generations already have an ordered identity index. A
++                # view preserves scope semantics without copying every identity
++                # into a new temporary table for each immutable read.
++                connection.execute('CREATE TEMP VIEW scope AS SELECT epoch_id AS ordinal,epoch_id FROM main.epochs')
+             else:
++                connection.execute('CREATE TEMP TABLE scope(ordinal INTEGER PRIMARY KEY,epoch_id INTEGER UNIQUE)')
+                 connection.executemany('INSERT OR IGNORE INTO scope SELECT ?,epoch_id FROM epochs WHERE epoch_uuid=?',enumerate(ids))
+             yield connection
+             self._check()
+@@ -296,18 +299,37 @@ class DiskMetadataIndex:
+             definitions={field['id']:field for field in self._definitions}
+             templates = known_fields if known_fields is not None else self.catalog()['fields'] if ids is not None else []
+             for field in templates: definitions[field['id']] = field
+-            present = {key for key, in connection.execute('SELECT DISTINCT field_id FROM scope JOIN epoch_values USING(epoch_id) JOIN fields USING(field_no)')}
++            # Aggregate the selected epoch/field relation once. Preserve first
++            # scope occurrence order, including numeric JSON representations;
++            # predicate choice buckets depend on that exact order.
++            # Explicit subsets must drive the lookup: SQLite otherwise scans
++            # every field/value relation in the generation and probes scope.
++            scoped_join=('CROSS JOIN' if ids is not None and
++                         len(rows)<getattr(self,'_epoch_count',float('inf')) else 'JOIN')
++            statistics={}
++            for number,raw,count,first in connection.execute(f'''SELECT ev.field_no,v.value_json,COUNT(*),MIN(s.ordinal)
++                    FROM scope s {scoped_join} epoch_values ev USING(epoch_id) JOIN field_values v USING(value_id)
++                    GROUP BY ev.field_no,ev.value_id ORDER BY ev.field_no,MIN(s.ordinal)'''):
++                statistics.setdefault(number,[]).append((raw,count,first))
++            field_numbers=dict(connection.execute('SELECT field_id,field_no FROM fields'))
+             for field in self._definitions:
+-                if field['id'] in present: definitions[field['id']] = field
++                if field_numbers.get(field['id']) in statistics: definitions[field['id']] = field
+             result,_=tree.catalog([],{},known_fields=list(definitions.values()))
+             total=len(rows);family=tree.protocol_family(rows);joint_projections={}
++            # Null is recorded but excluded from within-cell variation, exactly
++            # as the in-memory catalog. Calculate all ordinary columns together.
++            varying_numbers={number for number, in connection.execute(f'''SELECT DISTINCT field_no FROM (
++                    SELECT ev.field_no FROM scope s {scoped_join} epoch_values ev USING(epoch_id)
++                    JOIN epochs e USING(epoch_id) JOIN field_values v USING(value_id)
++                    WHERE v.value_json!='null' GROUP BY ev.field_no,e.cell_uuid
++                    HAVING COUNT(DISTINCT ev.value_id)>1)''')}
+             for field in result['fields']:
+                 key=field['id']
+                 if key.startswith('joint/'):
+                     projected=dict(self.values(ids=[row['epoch_uuid'] for row in rows],fields=[key]).items())
+                     joint_projections[key]=projected
+                     field.update(tree._joint_summary(field,projected));continue
+-                stats=list(connection.execute('SELECT v.value_json,COUNT(*),MIN(s.ordinal) FROM scope s JOIN epoch_values ev USING(epoch_id) JOIN fields f USING(field_no) JOIN field_values v USING(value_id) WHERE f.field_id=? GROUP BY v.value_id ORDER BY MIN(s.ordinal)',(key,)))
++                stats=statistics.get(field_numbers.get(key),[])
+                 distinct=[json.loads(raw) for raw,_,_ in stats];samples=sorted(distinct,key=tree.value_order)[:5]
+                 examples=[('null (recorded)' if value is None else tree.value_label(value))[:160] for value in samples]
+                 if key in {'cell','block','group'}:
+@@ -324,10 +346,10 @@ class DiskMetadataIndex:
+                         bucket=percell.setdefault(row.get('cell_uuid'),set());bucket.add(tree.value_key(val))
+                         if len(bucket)>1: varies=True;break
+                 else:
+-                    varies=connection.execute('SELECT 1 FROM scope s JOIN epochs e USING(epoch_id) JOIN epoch_values ev USING(epoch_id) JOIN fields f USING(field_no) JOIN field_values v USING(value_id) WHERE f.field_id=? AND v.value_json!=? GROUP BY e.cell_uuid HAVING COUNT(DISTINCT ev.value_id)>1 LIMIT 1',(field['id'],'null')).fetchone() is not None
++                    varies=field_numbers.get(field['id']) in varying_numbers
+                 field['varies_within_cell']=varies
+             scope_ids=[row['epoch_uuid'] for row in rows]
+-            suggestions=_suggest(result['fields'],self,scope_ids,family)
++            suggestions=_suggest(result['fields'],self,scope_ids,family,connection,joint_projections)
+             layout=tree.protocol_layout(result['fields'],suggestions,family)
+             if layout: result['presets'].insert(0,layout)
+             result.update(total=total,protocol_family=family,suggestions=suggestions,suggested_layout=layout)
+@@ -517,7 +539,7 @@ class _ScopedDetails(Mapping):
+         return self.details[key]
+ 
+ 
+-def _suggest(fields,index,ids,family):
++def _suggest(fields,index,ids,family,connection=None,joint_projections=None):
+     # Same ranking policy as tree.suggest_fields; fetch one candidate column at
+     # a time instead of retaining every epoch's complete metadata projection.
+     priority={'protocol':0,'date':1,'cell type':2,'group label':3,'parameters/frequencyCutoff':4,'parameters/currentSD':5,'parameters/currentMean':6,'parameters/currentSpotSize':7,'cell':8,'parameters/useRandomSeed':9}
+@@ -533,7 +555,19 @@ def _suggest(fields,index,ids,family):
+     seen=set();suggestions=[]
+     for field in candidates:
+         key=field['id']
+-        signature=tuple(tree.value_key(current[key]) if key in current else '__missing__' for current in index.values(ids,fields=[key]).values())
++        if joint_projections is not None and key in joint_projections:
++            signature=tuple(tree.value_key(current[key]) for current in joint_projections[key].values())
++        elif connection is not None and not key.startswith('joint/'):
++            # Stored value_json is already the exact canonical value_key. Use
++            # the existing scope and avoid decoding/encoding every value or
++            # rebuilding the temporary scope for each suggested column.
++            number=connection.execute('SELECT field_no FROM fields WHERE field_id=?',(key,)).fetchone()[0]
++            signature=tuple(raw if raw is not None else '__missing__' for raw, in connection.execute('''
++                SELECT v.value_json FROM scope s LEFT JOIN epoch_values ev
++                ON ev.epoch_id=s.epoch_id AND ev.field_no=? LEFT JOIN field_values v USING(value_id)
++                ORDER BY s.ordinal''',(number,)))
++        else:
++            signature=tuple(tree.value_key(current[key]) if key in current else '__missing__' for current in index.values(ids,fields=[key]).values())
+         if signature in seen: continue
+         if family and key.startswith('metadata/block/parameters/') and 'parameters/'+key.rsplit('/',1)[-1] in {f['id'] for f in candidates}: continue
+         if not family or key not in priority: seen.add(signature)
+diff --git a/python/workspace_service.py b/python/workspace_service.py
+index acb3a51..70481ae 100644
+--- a/python/workspace_service.py
++++ b/python/workspace_service.py
+@@ -587,6 +587,10 @@ class WorkspaceService:
+         metrics['discovery_indexes_preserved'] = preserve_indexes
+         self.project, self.config, self.dj, self.Event = project, config, dj, Event
+         self.rows, self.details, self.cells, self.sources = rows, disk_index.details if disk_index else details, cells, sources
++        # Navigation scopes borrow basic rows. Release the old generation at
++        # publication, including unchanged-index refreshes which replace rows.
++        # Verification failures above leave the published scope untouched.
++        self._tree_page_scope_cache = None
+         self.disk_index = disk_index
+         self.manifests, self.protocols = manifests, protocols
+         if not preserve_indexes:
+diff --git a/python/workspace_tree_pages.py b/python/workspace_tree_pages.py
+index 33af0f3..c5fd24e 100644
+--- a/python/workspace_tree_pages.py
++++ b/python/workspace_tree_pages.py
+@@ -9,16 +9,112 @@ import re
+ import sys
+ import uuid
+ from itertools import chain
++from collections.abc import Mapping
+ 
+ from workspace_recipes import checksum, parse_splits
+ from workspace_tree import (field_value_order, joint_definition, joint_value,
+                             value_key, protocol_family)
+ from workspace_predicates import validate as validate_predicate, matches
+-from workspace_service import validate_filters
++from workspace_service import validate_filters, WorkspaceService
++from workspace_explorer import ExplorerHistory
+ 
+ 
+ TREE_SCOPE_BYTE_BUDGET = 64 * 1024 * 1024
+ TREE_SCOPE_CACHE_OVERHEAD = 16 * 1024  # Reserve for eight keys/entries and generation bookkeeping.
++_STRUCTURAL_METHODS = {name: getattr(WorkspaceService, name) for name in (
++    '_tree_rows', 'filtered_rows', 'query_result', '_filter_rows',
++    '_epoch_page_identities', '_decorate', 'binding', 'source_scope', '_ready')}
++_STRUCTURAL_HISTORY_METHODS = {name: getattr(ExplorerHistory, name)
++                               for name in ('protocol_binding', 'protocol_binding_header', 'get')}
++
++
++def _structural_contract(service):
++    """Only borrow raw membership when its public policies are unchanged.
++
++    Custom query/filter adapters may narrow or transform rows. Their public
++    reader is authoritative, even if initially equivalent to the native reader.
++    Header shortcuts additionally require the matching immutable recipe owner.
++    """
++    for name, expected in _STRUCTURAL_METHODS.items():
++        actual = getattr(service, name, None)
++        if getattr(actual, '__func__', actual) is not expected:
++            return False
++    provider = getattr(service, 'binding_provider', None)
++    header = getattr(service, 'binding_header_provider', None)
++    if provider is None:
++        return header is None
++    owner = getattr(provider, '__self__', None)
++    return (type(owner) is ExplorerHistory
++            and getattr(provider, '__func__', None) is _STRUCTURAL_HISTORY_METHODS['protocol_binding']
++            and getattr(header, '__self__', None) is owner
++            and getattr(header, '__func__', None) is _STRUCTURAL_HISTORY_METHODS['protocol_binding_header']
++            and all(getattr(getattr(owner, name, None), '__func__', None) is method
++                    for name, method in _STRUCTURAL_HISTORY_METHODS.items()))
++
++
++class _NavigationValues(Mapping):
++    """Borrow immutable basic rows rather than copy an epoch×field matrix.
++
++    Only the three structural fields have an exact basic-row representation.
++    All dynamic, joint and annotation groupings continue through the index.
++    """
++    columns = {'date': 'date', 'cell': 'cell_uuid', 'block': 'block_uuid'}
++    # Charge this reservation to the scope admission budget up front, even
++    # before lazy grouping fills it. Group buckets retain only borrowed rows.
++    grouping_budget = 4 * 1024 * 1024
++
++    def __init__(self, rows, fields):
++        self.rows, self.fields = rows, tuple(fields)
++        self.grouping_budget = min(self.grouping_budget, max(16 * 1024, len(rows) * 64))
++        self.group_cache, self.group_bytes, self.summary = {}, 0, None
++
++    def __sizeof__(self):
++        return object.__sizeof__(self) + self.grouping_budget
++
++    def remember_groups(self, key, current, buckets):
++        # Compute summaries before admission, so neither later dictionary growth
++        # nor newly allocated count/duration values can escape the reservation.
++        # Rows and structural values are borrowed from service.rows. Container
++        # references are charged conservatively even when another entry shares
++        # them. The per-entry allowance covers the cache slot/value tuple/cost.
++        for bucket in buckets:
++            bucket['summary'] = _summary(bucket['rows'])
++        cost = (256 + sys.getsizeof(key) + sys.getsizeof(key[1])
++                + sys.getsizeof(buckets) + sys.getsizeof(current)
++                + sum(sys.getsizeof(bucket) + sys.getsizeof(bucket['rows'])
++                      + sys.getsizeof(bucket['summary'])
++                      + sum(sys.getsizeof(value) for value in bucket['summary'].values())
++                      for bucket in buckets))
++        if cost > self.grouping_budget:
++            return
++        while self.group_cache and (len(self.group_cache) >= 128
++                                   or self.group_bytes + cost > self.grouping_budget):
++            _, _, previous = self.group_cache.pop(next(iter(self.group_cache)))
++            self.group_bytes -= previous
++        self.group_cache[key] = (current, buckets, cost)
++        self.group_bytes += cost
++
++    def __getitem__(self, identity):
++        row = self.rows[identity]
++        return {field: row.get(self.columns[field]) for field in self.fields}
++
++    def __iter__(self):
++        return iter(self.rows)
++
++    def __len__(self):
++        return len(self.rows)
++
++
++def _structural_scope(body):
++    """Conservative fast-path eligibility; unsupported scopes retain the oracle."""
++    splits = body.get('splits', 'date,cell,block')
++    if not isinstance(splits, str):
++        return False
++    fields = [field.strip() for field in splits.split(',') if field.strip()]
++    return (bool(fields) and set(fields) <= {'date', 'cell', 'block'}
++            and body.get('predicate', {'all': []}) == {'all': []}
++            and not any(field in (body.get('filters') or {})
++                        for field in ('tag', 'tagged', 'tag_predicate')))
+ 
+ 
+ def _retained_scope_bytes(result, base_rows, limit):
+@@ -127,12 +223,22 @@ class TreePages:
+                 or referenced_fields(body.get('predicate', {'all': []}))):
+             return self._build_scope(body)
+         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
++        structural = _structural_scope(body)
++        if structural and not _structural_contract(service):
++            # An unproven policy cannot reuse a native membership/cache key.
++            return self._build_scope(body)
+         protocol = body.get('protocol_uuid')
+         if protocol is not None:
+             protocol = _uuid(protocol)
+             if 'predicate' in body:
+                 raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
+-        binding = service.binding(protocol) if protocol else None
++        header_provider = getattr(service, 'binding_header_provider', None)
++        binding = (header_provider(protocol) if structural and header_provider else service.binding(protocol)) if protocol else None
++        # Provider-only/unbound protocol fixtures may mutate their membership in
++        # place without replacing service.protocols. Frozen binding headers are
++        # immutable; other scopes compare their exact UUID sequence on each hit.
++        membership = (tuple(member['uuid'] for member in service.protocols[protocol]['result']['epochs'])
++                      if structural and protocol and binding is None else None)
+         generation = (id(index), index.generation, id(service.rows),
+                       id(service._fingerprints), id(service.protocols))
+         base_bytes = sys.getsizeof(service._fingerprints) + TREE_SCOPE_CACHE_OVERHEAD
+@@ -147,12 +253,13 @@ class TreePages:
+             # the full membership for every navigation request.
+             cached = service._tree_page_scope_cache = (generation, {}, dict(service._fingerprints))
+         cache = cached[1]
+-        key = checksum({'protocol': protocol, 'binding': binding and {
++        key = (checksum({'protocol': protocol, 'binding': binding and {
+             'version': binding['version'], 'revision_uuid': binding.get('revision_uuid')},
+             'source_scope': service.source_scope()['revision'] if protocol is None else None,
+             'predicate': body.get('predicate'), 'filters': filters,
+             'splits': body.get('splits', 'date,cell,block'),
+-            'depth': len(body.get('path', [])), 'anchor': bool(body.get('anchor_uuid'))})
++            'depth': None if structural else len(body.get('path', [])),
++            'anchor': False if structural else bool(body.get('anchor_uuid'))}), membership)
+         if key in cache:
+             entry = cache.pop(key)
+             cache[key] = entry
+@@ -161,10 +268,14 @@ class TreePages:
+         rows, _, values, _, _, _ = result
+         # Bound retained row references plus projected values across all scopes.
+         # An oversize projection may serve this request but is never retained.
+-        weight = len(rows) + sum(len(value) for value in values.values())
++        weight = len(rows) if isinstance(values, _NavigationValues) else len(rows) + sum(len(value) for value in values.values())
+         if weight <= 2_000_000:
+             byte_limit = TREE_SCOPE_BYTE_BUDGET - base_bytes
+             retained_bytes = _retained_scope_bytes(result, service.rows, byte_limit)
++            # UUID strings are borrowed from service.protocols, but the exact
++            # unbound membership tuple in this cache key is a new container.
++            if membership is not None:
++                retained_bytes += sys.getsizeof(membership)
+             if retained_bytes > byte_limit:
+                 return result
+             cache[key] = (result, weight, retained_bytes)
+@@ -182,8 +293,18 @@ class TreePages:
+             if 'predicate' in body:
+                 raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
+         filters = validate_filters(body.get('filters'))
+-        rows = service._tree_rows(protocol, filters)
+         index = getattr(service, 'disk_index', None)
++        from workspace_disk_index import DiskMetadataIndex
++        structural = (isinstance(index, DiskMetadataIndex) and _structural_scope(body)
++                      and _structural_contract(service))
++        if structural and protocol:
++            # Tree summaries have no curation fields. Use the same checked raw
++            # membership as the bounded epoch endpoint; only leaf annotations
++            # are subsequently fetched for the displayed page.
++            identities, _ = service._epoch_page_identities(protocol, filters)
++            rows = [service.rows[identity] for identity in identities]
++        else:
++            rows = service._tree_rows(protocol, filters)
+         if index is not None:
+             # Registered definitions remain valid for empty or excluded scopes;
+             # paged navigation needs no repeated per-field scope summaries.
+@@ -208,7 +329,9 @@ class TreePages:
+         for field in order:
+             if field not in definitions:
+                 definitions[field] = joint_definition(field, definitions)
+-        if index is not None:
++        if structural:
++            values = _NavigationValues(service.rows, order)
++        elif index is not None:
+             requested = order if body.get('anchor_uuid') else order[:len(body.get('path', []))+1]
+             columns = set()
+             for field in requested:
+@@ -216,7 +339,8 @@ class TreePages:
+             # One streaming read, not one SQL lookup per epoch. Retain only the
+             # current navigation columns, never the full epoch×field matrix.
+             values = dict(index.values(ids=[row['epoch_uuid'] for row in rows], fields=sorted(columns)).items()) if columns else {}
+-        binding = service.binding(protocol) if protocol else None
++        header_provider = getattr(service, 'binding_header_provider', None)
++        binding = (header_provider(protocol) if structural and header_provider else service.binding(protocol)) if protocol else None
+         revision = selection_revision(service, protocol, predicate, filters, order, rows, binding, annotation_scope=annotation_scope)
+         return rows, catalog, values, definitions, order, revision
+ 
+@@ -242,7 +366,12 @@ class TreePages:
+             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
+         if len(path) > len(order):
+             raise ValueError('Tree path exceeds the selected grouping depth')
+-        root_summary = _summary(rows)
++        if isinstance(values, _NavigationValues):
++            if values.summary is None:
++                values.summary = _summary(rows)
++            root_summary = values.summary
++        else:
++            root_summary = _summary(rows)
+         total_epochs = len(rows)
+         levels = [{'field':field,'label':definitions[field]['label'],
+                    **({'components':definitions[field]['components']} if definitions[field].get('components') else {})}
+@@ -259,6 +388,9 @@ class TreePages:
+ 
+         def groups(current, depth):
+             field = order[depth]
++            cache_key = (field, id(current))
++            if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
++                return values.group_cache[cache_key][1]
+             buckets = {}
+             for row in current:
+                 present, value = datum(row, field)
+@@ -273,7 +405,10 @@ class TreePages:
+                     from workspace_service import _date
+                     return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(bucket['value']))
+                 return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value']))
+-            return sorted(buckets.values(), key=sorting)
++            result = sorted(buckets.values(), key=sorting)
++            if isinstance(values, _NavigationValues):
++                values.remember_groups(cache_key, current, result)
++            return result
+ 
+         def branch_records(buckets, depth, parent_path):
+             if not buckets:
+@@ -295,9 +430,15 @@ class TreePages:
+             for bucket in buckets:
+                 key = key_for(bucket['row'],field)
+                 child = labels[key]
++                if isinstance(values, _NavigationValues):
++                    if 'summary' not in bucket:
++                        bucket['summary'] = _summary(bucket['rows'])
++                    summary = bucket['summary']
++                else:
++                    summary = _summary(bucket['rows'])
+                 result.append({'key':key,'label':child['label'],'value':bucket['value'],
+                     'missing':bucket['missing'], 'path':[*parent_path,key],
+-                    'has_children':depth + 1 < len(order), **_summary(bucket['rows']),
++                    'has_children':depth + 1 < len(order), **summary,
+                     **{name:child[name] for name in ('components','has_missing_components','start_time') if name in child}})
+             return result
+ 
+@@ -317,10 +458,17 @@ class TreePages:
+             ancestors.extend([{**item,'parent_offset':found[0] // limit * limit} for item in branch_records([current],depth,path[:depth])])
+             selected = current['rows']
+         depth = len(path)
++        if not isinstance(values, _NavigationValues):
++            selected_summary = _summary(selected)
++        elif ancestors:
++            selected_summary = {key: ancestors[-1][key]
++                                for key in ('count', 'cells', 'duration_seconds')}
++        else:
++            selected_summary = root_summary
+         payload = {'revision':revision,'split_order':order,'levels':levels,'total_epochs':total_epochs,
+             'count':root_summary['count'],'cells':root_summary['cells'],'duration_seconds':root_summary['duration_seconds'],
+             'path':path,'depth':depth,'offset':offset,'limit':limit,'branches':[],'epochs':[],
+-            'selection':_summary(selected), 'ancestors':ancestors,
++            'selection':selected_summary, 'ancestors':ancestors,
+             'source_scope_revision':self.service.source_scope()['revision'] if body.get('protocol_uuid') is None else None}
+         if depth < len(order):
+             buckets = groups(selected,depth)

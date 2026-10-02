@@ -1,0 +1,5 @@
+{
+  "status": "failed_before_measurement",
+  "reason": "Default sandbox denied psutil sysctl process enumeration. Original guard did not save its receipt. Launched owned worker confirmed absent; temporary output remained empty. Guard corrected to preflight before spawn and stop owned worker on supervisor failure. Authorized monitored rerun passed.",
+  "original_attempt": "sqlite-adjustment-guard"
+}

@@ -1,0 +1,286 @@
+{
+  "schema": 1,
+  "required_actions": [
+    {
+      "key": "select_epoch_metadata",
+      "action": "Select epoch and display metadata",
+      "historical_100k_ms": 96,
+      "frozen_baseline_100k": {
+        "median_ms": 97.19999998807907,
+        "first_ms": 94.60000002384186,
+        "max_ms": 113.69999998807907,
+        "warm_median_ms": 97.5,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 96.19999998807907,
+        "first_ms": 92.89999997615814,
+        "max_ms": 101.40000003576279,
+        "warm_median_ms": 97.55000001192093,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "search_selected_epoch_metadata",
+      "action": "Search selected metadata",
+      "historical_100k_ms": 32,
+      "frozen_baseline_100k": {
+        "median_ms": 32.5,
+        "first_ms": 32.10000002384186,
+        "max_ms": 48.19999998807907,
+        "warm_median_ms": 32.55000001192093,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 32.09999996423721,
+        "first_ms": 46.0,
+        "max_ms": 80.29999995231628,
+        "warm_median_ms": 31.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "reopen_cell_cached",
+      "action": "Reopen cached cell",
+      "historical_100k_ms": 65,
+      "frozen_baseline_100k": {
+        "median_ms": 65.69999998807907,
+        "first_ms": 65.0,
+        "max_ms": 67.10000002384186,
+        "warm_median_ms": 66.19999998807907,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 66.39999997615814,
+        "first_ms": 65.5,
+        "max_ms": 80.5,
+        "warm_median_ms": 67.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "scroll_loaded_tree",
+      "action": "Scroll loaded rows",
+      "historical_100k_ms": 33,
+      "frozen_baseline_100k": {
+        "median_ms": 32.19999998807907,
+        "first_ms": 32.0,
+        "max_ms": 33.80000001192093,
+        "warm_median_ms": 32.5,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 32.69999998807907,
+        "first_ms": 33.80000001192093,
+        "max_ms": 34.59999996423721,
+        "warm_median_ms": 32.29999998211861,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "expand_cell_first_time",
+      "action": "Expand unloaded cell",
+      "historical_100k_ms": 2480,
+      "frozen_baseline_100k": {
+        "median_ms": 2465.900000035763,
+        "first_ms": 2600.0,
+        "max_ms": 2616.0,
+        "warm_median_ms": 2458.0,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 101.5,
+        "first_ms": 165.0999999642372,
+        "max_ms": 165.0999999642372,
+        "warm_median_ms": 100.7999999821186,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "expand_block_first_time",
+      "action": "Expand unloaded block",
+      "historical_100k_ms": 2400,
+      "frozen_baseline_100k": {
+        "median_ms": 2565.099999964237,
+        "first_ms": 2633.300000011921,
+        "max_ms": 2650.099999964237,
+        "warm_median_ms": 2515.150000005961,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 100.59999996423721,
+        "first_ms": 115.69999998807907,
+        "max_ms": 349.5999999642372,
+        "warm_median_ms": 99.69999998807907,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "next_cell_page_60",
+      "action": "Load next 60 cells",
+      "historical_100k_ms": 2140,
+      "frozen_baseline_100k": {
+        "median_ms": 2238.199999988079,
+        "first_ms": 2258.699999988079,
+        "max_ms": 2293.100000023842,
+        "warm_median_ms": 2189.59999999404,
+        "n": 5
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 93.0,
+        "first_ms": 88.89999997615814,
+        "max_ms": 108.39999997615814,
+        "warm_median_ms": 96.90000000596046,
+        "n": 5
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "shared React component browser"
+    },
+    {
+      "key": "first10_selected_action_http_total",
+      "action": "Tag ten epochs¹",
+      "historical_100k_ms": 52,
+      "frozen_baseline_100k": {
+        "median_ms": 52.16541700065136,
+        "first_ms": 78.05633300449699,
+        "max_ms": 78.05633300449699,
+        "warm_median_ms": 38.407312997151166,
+        "n": 5,
+        "bytes": null
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 25.36056301323697,
+        "first_ms": 73.96550005069003,
+        "max_ms": 73.96550005069003,
+        "warm_median_ms": 25.317959021776915,
+        "n": 10,
+        "bytes": null
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "native API with revision preflight"
+    },
+    {
+      "key": "api_contrast_filter_preview",
+      "action": "Preview metadata filter¹",
+      "historical_100k_ms": 3900,
+      "frozen_baseline_100k": {
+        "median_ms": 4195.857124985196,
+        "first_ms": 4498.598207952455,
+        "max_ms": 4573.655707994476,
+        "warm_median_ms": 4167.464250000194,
+        "n": 10,
+        "bytes": 11439
+      },
+      "frozen_candidate_100k": {
+        "median_ms": 2053.9580625190865,
+        "first_ms": 2182.305709051434,
+        "max_ms": 2326.017707993742,
+        "warm_median_ms": 2037.3483750154264,
+        "n": 10,
+        "bytes": 11439
+      },
+      "one_million_sqlite": {
+        "status": "pending"
+      },
+      "one_million_duckdb": {
+        "status": "pending"
+      },
+      "scope": "native API full metadata catalog preview"
+    }
+  ],
+  "receipt_manifest": {
+    "docs/dev/performance-evals-2026-10-01/baseline/browser/browser-native-100k-raf.json": {
+      "sha256": "a9fe72fd43e12c25cb71b7109e117bbbe23171e87894ab3beda1ae6b454ca689",
+      "bytes": 14140
+    },
+    "docs/dev/performance-evals-2026-10-01/baseline/browser/same-day-browser-100k.json": {
+      "sha256": "ee17f46e10a6dcc56e6511affc29c213fa9b43c6ebb5bb7e9770e525a6620478",
+      "bytes": 66412
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/browser-100k.json": {
+      "sha256": "27c2b7754d19e6a236378deea37f568d74eef61843ed2b3ec1536b8cc45496b5",
+      "bytes": 66371
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/comparison-browser.json": {
+      "sha256": "ab34ea335ece42875f136fa91d5eb71faa3b7b2887814f2174bb904720def187",
+      "bytes": 10043
+    },
+    "docs/dev/performance-evals-2026-10-01/baseline/native/native-100k.json": {
+      "sha256": "a169eeb32636e57a6186a975e1cfed2054ac2712fc9778346b6542cc62352327",
+      "bytes": 113832
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/tags-100k-tags.json": {
+      "sha256": "095365fc2a36c9e4a829f23c6a7dc2b1bf84bab9dc708a434611233578365f58",
+      "bytes": 135998
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/tags-100k-comparison.json": {
+      "sha256": "30e68da501d8ad6a2f48d4a881a74c19860492fb64430e20e71587a3454d7d9f",
+      "bytes": 25584
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/baseline-paired-native-native-metadata-100k.json": {
+      "sha256": "09bec49fc01731ec77bffeb53040d0adacc08a0b9bf7f43fe15e5ea8c3c82690",
+      "bytes": 64520
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/candidate-paired-native-native-metadata-100k.json": {
+      "sha256": "2bfef2584e01bbfe094a20347b449f024d7152fe27b37f8c0c919de19d8f9dc5",
+      "bytes": 60976
+    },
+    "docs/dev/performance-evals-2026-10-01/candidate/comparison-native.json": {
+      "sha256": "9cafe3acc8322363a2c7295aefe689acc8fbfc5d85c197c736276b82e84326b4",
+      "bytes": 13400
+    }
+  },
+  "scope_note": "Historical photo rounded values are retained separately from complete same-day frozen replay. The one-million typed readmodel experiment is not production Flask/MySQL qualification. Tagging and full preview remain separate exact API action definitions."
+}

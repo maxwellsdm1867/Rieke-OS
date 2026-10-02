@@ -1,0 +1,79 @@
+{
+  "source": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+  "target": "/private/tmp/disco-real-typed-sqlite-20261001/model/real-typed.sqlite",
+  "input_sha256_before": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "input_sha256_after": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "clone_seconds": 0.057697542011737823,
+  "build_and_verify_seconds": 1.3473972500069067,
+  "original_bytes": 20787200,
+  "indexed_bytes": 26234880,
+  "added_bytes": 5447680,
+  "original_tables": {
+    "meta": {
+      "rows": 6,
+      "sha256": "82ba345b4b92350a77452006874608374ff80342c0327ac9a30fd3653a92892a"
+    },
+    "epochs": {
+      "rows": 2781,
+      "sha256": "13b74a28dd5db0665cb9ffead86992b953685bc133c20612b68a7be8ecd9da2b"
+    },
+    "fields": {
+      "rows": 140,
+      "sha256": "3a60d72d0c2c650d05302ddc6e192db181feeebd81f335b6162c52e591ec0a12"
+    },
+    "field_values": {
+      "rows": 10756,
+      "sha256": "958fb743bbc49d75c3ef33cf0348d8c9043c99365aebf35032d938f5837a4075"
+    },
+    "epoch_values": {
+      "rows": 214451,
+      "sha256": "c82110ecd68eaf12a82e443d3b8fa380331738d8828a601cfe8acca39a7b3b2f"
+    },
+    "sources": {
+      "rows": 3,
+      "sha256": "da4bc9c1180bc9797b7ade63734b938c7f919b69703a01bac8fd846a55243052"
+    },
+    "metadata_objects": {
+      "rows": 202,
+      "sha256": "1e75249508ef335b51a16b0ebadd2e93f8ab427dc8e62c9e40231336f8f9ded0"
+    }
+  },
+  "dictionary_kinds": {
+    "string": 9153,
+    "number": 1509,
+    "array": 84,
+    "null": 10
+  },
+  "core_safe": {
+    "epoch": true,
+    "cell": true,
+    "block": true,
+    "group": true,
+    "protocol": true,
+    "date": true,
+    "cell type": true,
+    "group label": true,
+    "block time": true
+  },
+  "wide_numeric_fields": [],
+  "no_detail_materialization": true,
+  "original_query_eligibility_unchanged": true,
+  "original_pattern": [
+    "typed core columns",
+    "UUID lookup",
+    "chronology and parent indexes",
+    "bounded page and facets"
+  ],
+  "generic_adaptation": [
+    "typed scalar dictionary for every original native field",
+    "exact recursive array/object equality keys",
+    "int/float numeric equivalence",
+    "wide integer exact dictionary fallback",
+    "all seven native detail and ancestor tables retained"
+  ],
+  "peak_rss_bytes": 64585728,
+  "caps": {
+    "process_seconds": 120,
+    "process_rss_bytes": 536870912
+  }
+}

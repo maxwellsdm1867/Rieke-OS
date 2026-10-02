@@ -1,0 +1,51 @@
+{
+  "source": "/private/tmp/disco-real-million-20261001/fixture.sqlite",
+  "target": "/private/tmp/disco-real-million-20261001/typed/fixture-sidecar.sqlite",
+  "build_seconds": 0.4267251691198908,
+  "wall_seconds": 0.4281624580034986,
+  "timings": {
+    "core_extract_seconds": 0.1316573749645613,
+    "chronology_assign_seconds": 0.02088816702598706,
+    "dictionary_extract_seconds": 0.08470425003906712,
+    "indexes_seconds": 0.06482704204972833,
+    "core_equality_proof_seconds": 0.1005679169902578,
+    "analyze_seconds": 0.013231959019321948,
+    "quick_check_and_counts_seconds": 0.010848459030967206
+  },
+  "added_bytes": 8065024,
+  "original_bytes": 39776256,
+  "dictionary_kinds": {
+    "string": 12136,
+    "number": 1509,
+    "array": 84,
+    "null": 10
+  },
+  "core_safe": {
+    "epoch": true,
+    "cell": true,
+    "block": true,
+    "group": true,
+    "protocol": true,
+    "date": true,
+    "cell type": true,
+    "group label": true,
+    "block time": true
+  },
+  "wide_numeric_fields": [],
+  "native_table_counts": {
+    "meta": 4,
+    "epochs": 5562,
+    "fields": 140,
+    "field_values": 13739,
+    "epoch_values": 428902,
+    "sources": 6,
+    "metadata_objects": 404
+  },
+  "packaging": "shared immutable source plus typed auxiliary sidecar; no source clone",
+  "source_stat_unchanged": true,
+  "max_rss_bytes": 54034432,
+  "source_full_sha256_verification": "separate parent-owned preservation phase",
+  "validation_representatives": "actual values covering every observed kind and array-element kind",
+  "no_detail_materialization": true,
+  "all_passed": true
+}

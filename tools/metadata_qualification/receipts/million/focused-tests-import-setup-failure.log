@@ -1,0 +1,23 @@
+test_qualification (unittest.loader._FailedTest.test_qualification) ... ERROR
+
+======================================================================
+ERROR: test_qualification (unittest.loader._FailedTest.test_qualification)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_qualification
+Traceback (most recent call last):
+  File "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/loader.py", line 419, in _find_test_path
+    module = self._get_module_from_name(name)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/loader.py", line 362, in _get_module_from_name
+    __import__(name)
+  File "/tmp/typed-qualification-dev/tools/metadata_qualification/test_qualification.py", line 11, in <module>
+    from native import NativeAdapter
+  File "/tmp/typed-qualification-dev/tools/metadata_qualification/native.py", line 8, in <module>
+    from workspace_disk_index import DiskMetadataIndex
+ModuleNotFoundError: No module named 'workspace_disk_index'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

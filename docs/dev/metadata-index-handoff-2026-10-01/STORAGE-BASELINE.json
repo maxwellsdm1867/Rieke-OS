@@ -1,0 +1,44 @@
+{
+  "status": "reference_derived_from_preserved_receipts",
+  "new_benchmark_run": false,
+  "size_definition": "Recorded file lengths, not allocated disk or full project/canonical DB footprint",
+  "required_scale_corpus": "Sealed 1,000,000-epoch real-record replay",
+  "cases": [
+    {
+      "epochs": 2781,
+      "epoch_field_links": 214451,
+      "receipt": "evidence/disco-real-typed-sqlite-evals/model/build-receipt.json",
+      "base_metadata_file_bytes": 20787200,
+      "added_typed_index_file_bytes": 5447680,
+      "base_plus_typed_file_bytes": 26234880,
+      "added_index_over_base_metadata_percent": 26.20689655172414,
+      "added_index_bytes_per_epoch": 1958.8924847177275,
+      "base_plus_typed_bytes_per_epoch": 9433.61380798274,
+      "added_index_bytes_per_epoch_field_link": 25.402912553450438,
+      "base_plus_typed_bytes_per_epoch_field_link": 122.33507887582711
+    },
+    {
+      "epochs": 1000000,
+      "epoch_field_links": 77107863,
+      "receipt": "evidence/disco-real-million-evals/typed/build-million.receipt.json",
+      "base_metadata_file_bytes": 7195836416,
+      "added_typed_index_file_bytes": 1107034112,
+      "base_plus_typed_file_bytes": 8302870528,
+      "added_index_over_base_metadata_percent": 15.38437018299222,
+      "added_index_bytes_per_epoch": 1107.034112,
+      "base_plus_typed_bytes_per_epoch": 8302.870528,
+      "added_index_bytes_per_epoch_field_link": 14.356954906142322,
+      "base_plus_typed_bytes_per_epoch_field_link": 107.67864916707651
+    }
+  ],
+  "raw_recording_ratio": {
+    "actual_2781_sqlite_metadata_over_h5_percent": 3.805531255826272,
+    "projected_million_metadata_over_h5_percent": 3.349210556436686,
+    "projected_million_metadata_over_compressed_response_payload_percent": 6.292270777521587,
+    "receipt": "RECORDING-STORAGE.json",
+    "million_ratio_is_projection": true
+  },
+  "complete_project_metadata_ratio": null,
+  "controlled_intermediate_growth_curve": null,
+  "qualification": "Different clone/sidecar and catalog-sealing layouts; not a controlled growth curve."
+}

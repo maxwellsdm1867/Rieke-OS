@@ -1,0 +1,94 @@
+{
+  "pid": 95044,
+  "candidate_version": "previous",
+  "arm": "native",
+  "mode": "facets",
+  "results": [
+    {
+      "label": "largest_cell",
+      "expected_count": 687,
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "status": "passed",
+      "samples_ms": [
+        13635.050708020572,
+        13580.209832987748
+      ],
+      "sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5",
+      "count": 687,
+      "payload_bytes": 194791,
+      "cursor": 412915,
+      "first_ms": 13635.050708020572,
+      "warm_median_ms": 13580.209832987748,
+      "max_ms": 13635.050708020572,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_block",
+      "expected_count": 601,
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "status": "passed",
+      "samples_ms": [
+        14450.286875013262,
+        14225.290665985085
+      ],
+      "sha256": "719b590cec33eb85c6082090cb09029f3da1a67e35c57ce977b21e0783353513",
+      "count": 601,
+      "payload_bytes": 194666,
+      "cursor": 661891,
+      "first_ms": 14450.286875013262,
+      "warm_median_ms": 14225.290665985085,
+      "max_ms": 14450.286875013262,
+      "row_dto_oracle_passed": true
+    },
+    {
+      "label": "largest_protocol",
+      "expected_count": 668034,
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "status": "operation_timeout",
+      "reason": "45 second operation cap",
+      "samples_ms": []
+    },
+    {
+      "label": "global",
+      "expected_count": 1000000,
+      "predicate": null,
+      "scope": null,
+      "status": "operation_timeout",
+      "reason": "45 second operation cap",
+      "samples_ms": []
+    }
+  ],
+  "status": "complete",
+  "caps": {
+    "process_seconds": 360,
+    "operation_seconds": 45,
+    "peak_rss_bytes": 1073741824
+  },
+  "input_stat": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "open_policy": "Warm verified reader reconstructed from prior successful full production open and unchanged file stat; production match/values/catalog methods unchanged",
+  "native_open_seconds": 0.000542209018021822,
+  "rank_cache_seconds": 5.550376874976791,
+  "rank_cache_epochs": 1000000,
+  "setup_seconds": 5.555668750021141,
+  "peak_rss_bytes": 420872192,
+  "wall_seconds": 151.7196179589955,
+  "input_stat_after": [
+    248000770,
+    7195836416,
+    1790880924862763867
+  ],
+  "source_stat_unchanged": true
+}

@@ -1,0 +1,172 @@
+{
+  "arm": "current",
+  "phase": "measure",
+  "source_root": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI",
+  "original_database": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+  "worker_database": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/inputs/current/real.sqlite",
+  "database_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "schema_sha256": "b5a66ee94802b29dc6c11504dc2f7e801aa0c9974ed79773d1d835779048ef02",
+  "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+  "sqlite": "3.50.4",
+  "known_fields_count": 141,
+  "known_fields_sha256": "89f77b8f6ed64f1b003305adb1786f62893549edc45f93c640e16df9f02f7ca4",
+  "sources": {
+    "workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+  },
+  "scopes": [
+    {
+      "label": "global",
+      "field": null,
+      "epochs": 2781,
+      "membership_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+      "selection": "all",
+      "samples_ms": [
+        708.4987919661216,
+        683.4438749938272,
+        686.4094159682281,
+        668.3997500222176,
+        695.7465829909779
+      ],
+      "first_ms": 708.4987919661216,
+      "warm_median_ms": 684.9266454810277,
+      "warm_max_ms": 695.7465829909779,
+      "median_ms": 686.4094159682281,
+      "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+      "output_bytes": 64610,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "e3bf18e0058248fe7dbcf4c631d3c19e5372a8de57da152940442216f3b30aec",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "label": "largest_protocol",
+      "field": "protocol",
+      "epochs": 1857,
+      "membership_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+      "selection": "observed equality",
+      "samples_ms": [
+        470.54245800245553,
+        498.79008304560557,
+        474.95954198529944,
+        467.94158301781863,
+        473.56795897940174
+      ],
+      "first_ms": 470.54245800245553,
+      "warm_median_ms": 474.2637504823506,
+      "warm_max_ms": 498.79008304560557,
+      "median_ms": 473.56795897940174,
+      "output_sha256": "e64765d6fc245793152365c2452b711e8ba33dcd674023d6f1548590b8bd0724",
+      "output_bytes": 61349,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "05af11bd9d75d12a22e103fbefed47698911c57d001671909d59bbcde5a1b8d9",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "label": "largest_cell",
+      "field": "cell",
+      "epochs": 687,
+      "membership_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+      "selection": "observed equality",
+      "samples_ms": [
+        228.96195901557803,
+        232.88575001060963,
+        234.90375000983477,
+        259.78137500351295,
+        229.63779198471457
+      ],
+      "first_ms": 228.96195901557803,
+      "warm_median_ms": 233.8947500102222,
+      "warm_max_ms": 259.78137500351295,
+      "median_ms": 232.88575001060963,
+      "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+      "output_bytes": 63167,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "a77ee696cae58d498700f11240b6e7dfdf031f1307e485f13c940f28c08af46d",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "label": "numeric_value",
+      "field": "parameters/spotIntensity",
+      "epochs": 1820,
+      "membership_sha256": "c7def4348cea93495d9de5cacc99204f5722a79c51e398e22b3c240ccd699ac4",
+      "selection": "observed equality",
+      "samples_ms": [
+        449.5656249928288,
+        475.5173330195248,
+        453.8590419688262,
+        460.14916599961,
+        460.37124999566004
+      ],
+      "first_ms": 449.5656249928288,
+      "warm_median_ms": 460.260207997635,
+      "warm_max_ms": 475.5173330195248,
+      "median_ms": 460.14916599961,
+      "output_sha256": "d9da21706de4718bb5f3d4474713c5cea88d1c3adc45d460e985479569b24d04",
+      "output_bytes": 61295,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "1d7827dfe1efe3960e27ba7524b684c8599b01dee81e98a16f9bea407d521074",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "label": "text_value",
+      "field": "metadata/cell/label",
+      "epochs": 1249,
+      "membership_sha256": "0993328c3c28d8f2ebd3e2787e88231be8bc6ab24035852acc42753b91a23bc0",
+      "selection": "observed equality",
+      "samples_ms": [
+        322.1234590164386,
+        334.82883300166577,
+        331.28283300902694,
+        324.7199169709347,
+        326.70833298470825
+      ],
+      "first_ms": 322.1234590164386,
+      "warm_median_ms": 328.9955829968676,
+      "warm_max_ms": 334.82883300166577,
+      "median_ms": 326.70833298470825,
+      "output_sha256": "c4c67ef90cb29f0a7d0596693f98d2a8f836af193a07a455ba0a948cae6e53ad",
+      "output_bytes": 63980,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "d15d9cb90a73d9528fe3cbd19be73673687f3a0fa0432ae0e9f1dea81ab14898",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    },
+    {
+      "label": "missing_field",
+      "field": "parameters/currentSpotSize",
+      "epochs": 924,
+      "membership_sha256": "c19dc8be9cf2a5e9b5d9b9474a8bf89010053415abc13ae3055bf7e47d9624ea",
+      "selection": "absent",
+      "samples_ms": [
+        334.2760410159826,
+        332.22712500719354,
+        328.2880409969948,
+        335.07700002519414,
+        333.92487501259893
+      ],
+      "first_ms": 334.2760410159826,
+      "warm_median_ms": 333.07600000989623,
+      "warm_max_ms": 335.07700002519414,
+      "median_ms": 333.92487501259893,
+      "output_sha256": "190e9bbbc6d0431eb7d711b44710699dd2a34bf4ac5adaef8bef925a4a117c96",
+      "output_bytes": 64013,
+      "field_count": 141,
+      "field_ids_sha256": "72aa935786aa5afc851ea53582a29d9fb10ca94617b1056535becd4b767a3bfa",
+      "suggestions_sha256": "e3bf18e0058248fe7dbcf4c631d3c19e5372a8de57da152940442216f3b30aec",
+      "layout_sha256": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b"
+    }
+  ],
+  "limitations": [
+    "Actual 2781 epochs only; not a million-epoch qualification",
+    "Full catalog plus JSON only; not full API preview or app",
+    "Explicit identical known_fields and global cache bypass; scope extraction/open excluded",
+    "Exact sealed database cloned per worker before timing; normal production lifecycle preserved"
+  ],
+  "database_unchanged": true,
+  "process_peak_rss_mib": 73.015625
+}

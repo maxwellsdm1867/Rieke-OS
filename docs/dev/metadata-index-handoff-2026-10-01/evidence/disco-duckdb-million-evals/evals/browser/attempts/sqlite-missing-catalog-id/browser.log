@@ -1,0 +1,16 @@
+{"epochs":1000000,"name":"component_initial_tree_load_production_bundle_cold","sample_ms":573.3007500000003,"resources":[{"path":"/api/tree-pages","duration_ms":394.10000002384186,"response_bytes":19622}]}
+{"epochs":1000000,"name":"expand_cell_first_time","sample_ms":133.5,"resources":[{"path":"/api/tree-pages","duration_ms":2.799999952316284,"response_bytes":2836}]}
+{"epochs":1000000,"name":"expand_block_first_time","sample_ms":97.19999998807907,"resources":[{"path":"/api/tree-pages","duration_ms":2.5,"response_bytes":7028}]}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.waitForFunction: Timeout 30000ms exceeded.
+    at /private/tmp/disco-duckdb-million-20261001/docs/dev/duckdb-million-evals-2026-10-01/browser/run-browser.mjs:45:67
+    at measure (/private/tmp/disco-duckdb-million-20261001/docs/dev/duckdb-million-evals-2026-10-01/browser/run-browser.mjs:30:214)
+    at async file:///private/tmp/disco-duckdb-million-20261001/docs/dev/duckdb-million-evals-2026-10-01/browser/run-browser.mjs:45:3 {
+  log: [],
+  name: 'TimeoutError'
+}
+
+Node.js v24.13.0

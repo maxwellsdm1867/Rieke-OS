@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "recorded_null", "mode": "page", "sample": 0, "ms": 14198.910084029194}
+{"arm": "candidate", "label": "recorded_null", "mode": "page", "sample": 0, "ms": 788.2457089726813}
+{"arm": "candidate", "label": "recorded_null", "mode": "page", "sample": 1, "ms": 454.415375017561}
+{"arm": "baseline", "label": "recorded_null", "mode": "page", "sample": 1, "ms": 13731.825041992124}
+{"arm": "baseline", "label": "recorded_null", "mode": "page", "sample": 2, "ms": 13861.824666033499}
+{"arm": "candidate", "label": "recorded_null", "mode": "page", "sample": 2, "ms": 1079.9908749759197}
+{"arm": "candidate", "label": "recorded_null", "mode": "page", "sample": 3, "ms": 451.0848330100998}
+{"arm": "baseline", "label": "recorded_null", "mode": "page", "sample": 3, "ms": 15689.443459035829}
+{"arm": "baseline", "label": "recorded_null", "mode": "page", "sample": 4, "ms": 13998.055583972018}
+{"arm": "candidate", "label": "recorded_null", "mode": "page", "sample": 4, "ms": 1008.9167919941247}
+{"case": "recorded_null", "mode": "page", "status": "passed"}

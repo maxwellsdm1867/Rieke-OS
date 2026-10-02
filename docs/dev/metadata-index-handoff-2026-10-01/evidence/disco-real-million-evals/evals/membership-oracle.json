@@ -1,0 +1,92 @@
+{
+  "all_passed": true,
+  "checks": [
+    {
+      "label": "largest_cell",
+      "count": 687,
+      "ordered_membership_sha256": "e04b12ae716c0c3ef7958e37d1d4844de22ff8bdfb4722b15e764bbd83ee4791",
+      "all_members_checked": true,
+      "facets_oracle_passed": true,
+      "facets_sha256": "2bad32aeb0de6d3007b93b89feb89ea80702073944232da7db07b52b94a62bdf",
+      "preview_sha256": "7249fec685a82a6561f9ed42ffa1aee813adc17b883d3a961f22eba01c9226f5"
+    },
+    {
+      "label": "largest_block",
+      "count": 601,
+      "ordered_membership_sha256": "b51c855e3c7f204973cbdb4e60217ce06a55e8e7aea61a2d355c839b9d41d751",
+      "all_members_checked": true,
+      "facets_oracle_passed": true,
+      "facets_sha256": "dc7783337b304a1ff1a0d8fe86c45698ec22c0cc285fa68f1709c3b8a3a935da",
+      "preview_sha256": "719b590cec33eb85c6082090cb09029f3da1a67e35c57ce977b21e0783353513"
+    },
+    {
+      "label": "compound_all",
+      "count": 416035,
+      "ordered_membership_sha256": "4bfb8dd740334b6545e9802de6257a1ba21090fafb0f0a9da704e47db060ad9d",
+      "all_members_checked": true
+    },
+    {
+      "label": "array_eq",
+      "count": 668034,
+      "ordered_membership_sha256": "3d09a9ae4c4055c4dfdb1d7384a73d21e48983529a9b475f666fe228d5ba3e7f",
+      "all_members_checked": true
+    },
+    {
+      "label": "array_contains",
+      "count": 668034,
+      "ordered_membership_sha256": "3d09a9ae4c4055c4dfdb1d7384a73d21e48983529a9b475f666fe228d5ba3e7f",
+      "all_members_checked": true
+    },
+    {
+      "label": "number_eq",
+      "count": 654751,
+      "ordered_membership_sha256": "027e6f56f72ed18b26810a46b454cf25bf49b0185a2da75cd81ca869df8df326",
+      "all_members_checked": true
+    },
+    {
+      "label": "recorded_null",
+      "count": 305041,
+      "ordered_membership_sha256": "3ffb04bfcbdb2b32758e230cdb1a70c018ed33c582589fbcb23d22a92fcf1a67",
+      "all_members_checked": true
+    },
+    {
+      "label": "missing",
+      "count": 331966,
+      "ordered_membership_sha256": "974be0fcf1fde7f26d137cc68d993b996fbf66831a54225ae4f37b6f2c98a853",
+      "all_members_checked": true
+    },
+    {
+      "label": "mixed_types",
+      "count": 248194,
+      "ordered_membership_sha256": "4cea02db6b4f876f078e1c6002b919d7fcf3e08ee9c7d98a9fb3926793d1de7c",
+      "all_members_checked": true
+    },
+    {
+      "label": "compound_any",
+      "count": 688138,
+      "ordered_membership_sha256": "a02f6b80e49513c908de9456838b096e5b88dc4f32354139b2a967847f3aa18f",
+      "all_members_checked": true
+    },
+    {
+      "label": "largest_protocol",
+      "count": 668034,
+      "ordered_membership_sha256": "3d09a9ae4c4055c4dfdb1d7384a73d21e48983529a9b475f666fe228d5ba3e7f",
+      "all_members_checked": true,
+      "facets_oracle_passed": true,
+      "facets_sha256": "bbe0694915bfb19206325a1195962000316a3fa84702fd26dc2186817e27825d",
+      "preview_sha256": "04485f23d5d3cc5334e64d1effde14f4b00273d5a3ac184115139941e31b5728"
+    },
+    {
+      "label": "global",
+      "count": 1000000,
+      "ordered_membership_sha256": "4fba50736752569efdeac5d6adc0e6e40fc009f8b1045c95556c0815e7ef461a",
+      "all_members_checked": true,
+      "facets_oracle_passed": true,
+      "facets_sha256": "51e195a88113667a48464699ece1498fdc01d35512e68ddc77cc3926f2f2b9a9",
+      "preview_sha256": "6583ed532ad447932ffae42d3a836964a960823eb49a8303729d4cb97b702da6"
+    }
+  ],
+  "seconds": 22.375704791978933,
+  "peak_rss_bytes": 270761984,
+  "oracle": "Unchanged original real EAV values interpreted in Python; every returned epoch ID checked against source lineage membership, expected replay count proves completeness; core UUID equivalence proved at sidecar build."
+}

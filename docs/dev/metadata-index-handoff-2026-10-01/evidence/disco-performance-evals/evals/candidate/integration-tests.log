@@ -1,0 +1,30 @@
+............................................................................/private/tmp/disco-performance-evals-20261001/python/tests/test_workspace_combinations.py:176: ResourceWarning: unclosed file <_io.BufferedReader name='/private/var/folders/41/tclkvrfs1v9386sxps6_w5t40000gn/T/tmp2hmjo6ek/exports/4cb6dbb6-e677-5f0b-bdf2-9470d051c61c/recordings.json'>
+  package=case.client.get(exported.get_json()['download_url']).get_json()
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+........................[2026-10-01 00:33:40,238] ERROR in workspace_api: Workspace error 58865a04-e994-56df-9990-941ac71381b8
+Traceback (most recent call last):
+  File "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/disco-performance-evals-20261001/python/workspace_api.py", line 768, in protocol_tree_layout
+    return jsonify(layouts.save(protocol_uuid, fields, body['expected_version'],
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/disco-performance-evals-20261001/python/workspace_tree_layouts.py", line 58, in save
+    self.store._event(actor, 'protocol_tree_layout_saved', {
+  File "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1124, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1128, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/unittest/mock.py", line 1183, in _execute_mock_call
+    raise effect
+RuntimeError: Audit unavailable
+................................................................................................
+----------------------------------------------------------------------
+Ran 196 tests in 6.630s
+
+OK

@@ -1,0 +1,46 @@
+{
+  "status": "preserved historical references; no baseline rerun",
+  "base_commit": "f03577e650ce5f604e9585f5bee983ef01bccad3",
+  "references": [
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/STORAGE-BASELINE.json",
+      "bytes": 2056,
+      "sha256": "5cc14f94a6cfdd2cc623bce42b180975ca928ad335d90f36346007a135735924"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/RECORDING-STORAGE.json",
+      "bytes": 3613,
+      "sha256": "83bb279df9f600a13f4889924aac1dbee6058bcba3da691aebc751d2836a918e"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-real-million-evals/base.receipt.json",
+      "bytes": 1751,
+      "sha256": "fdb233ac7f500544b8be05380657523f8b133c79020edb6a4e85c7331b2a367c"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-priority-benchmark-evals/evals/scoped-comparison.json",
+      "bytes": 8331,
+      "sha256": "b78590937a232bb45b0b4e4dac7674c939cb397fdeeffc8ef44d95ff4e065669"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-real-million-evals/evals/native-page.json",
+      "bytes": 5617,
+      "sha256": "77a19f515807dc64fdcb127f6d585e9a4b22e66a808f947913b8f8f8d8820f8c"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-real-million-evals/evals/typed-bounded-page.json",
+      "bytes": 10854,
+      "sha256": "c6c18f388a4610cee1c5c61914c69903cafcf69e70a4d1a3c9089e87fcf87a58"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-real-typed-sqlite-evals/evals/v3/receipt.json",
+      "bytes": 191383,
+      "sha256": "f1fdbe78ee7e079d50102ecaccc4516f4549be462b1d515159484c69598a94f1"
+    },
+    {
+      "path": "docs/dev/metadata-index-handoff-2026-10-01/evidence/disco-everyday-benchmark/REPORT.md",
+      "bytes": 8329,
+      "sha256": "cdf3c279577cfb50de2ecb9d616950ceba16de17aade044e79e935f532541ee5"
+    }
+  ]
+}

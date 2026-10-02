@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "largest_block", "mode": "facets", "sample": 0, "ms": 13770.310666994192}
+{"arm": "candidate", "label": "largest_block", "mode": "facets", "sample": 0, "ms": 5.448042007628828}
+{"arm": "candidate", "label": "largest_block", "mode": "facets", "sample": 1, "ms": 3.9776249905116856}
+{"arm": "baseline", "label": "largest_block", "mode": "facets", "sample": 1, "ms": 13742.526083020493}
+{"arm": "baseline", "label": "largest_block", "mode": "facets", "sample": 2, "ms": 13664.58095802227}
+{"arm": "candidate", "label": "largest_block", "mode": "facets", "sample": 2, "ms": 4.330249968916178}
+{"arm": "candidate", "label": "largest_block", "mode": "facets", "sample": 3, "ms": 4.065666988026351}
+{"arm": "baseline", "label": "largest_block", "mode": "facets", "sample": 3, "ms": 13611.815957992803}
+{"arm": "baseline", "label": "largest_block", "mode": "facets", "sample": 4, "ms": 13837.705042038579}
+{"arm": "candidate", "label": "largest_block", "mode": "facets", "sample": 4, "ms": 5.9602909605018795}
+{"case": "largest_block", "mode": "facets", "status": "passed"}

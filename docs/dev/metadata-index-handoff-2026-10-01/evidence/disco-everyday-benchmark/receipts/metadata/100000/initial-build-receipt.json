@@ -1,0 +1,128 @@
+{
+  "epochs": 100000,
+  "source_head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "started_utc": "2026-10-01T06:07:59.920723+00:00",
+  "python": "3.11.13",
+  "platform": "macOS-14.2-arm64-arm-64bit",
+  "scope": "Synthetic metadata: actual current WorkspaceService, sealed SQLite index and production Flask routes. API saved-curation/database hooks use existing transactional test SQL doubles with empty tables; no MySQL latency, H5 source I/O, waveforms, dense annotations or user files.",
+  "phases": [
+    {
+      "name": "synthetic_model_generation",
+      "seconds": 7.437387457990553,
+      "rss_mib": 189.625
+    },
+    {
+      "name": "index_build",
+      "seconds": 25.71299558301689,
+      "rss_mib": 249.609375
+    },
+    {
+      "name": "persistent_index_reopen",
+      "seconds": 0.6956900000222959,
+      "rss_mib": 249.625
+    }
+  ],
+  "operations": [],
+  "status": "failed",
+  "resource_samples": [
+    {
+      "elapsed_seconds": 2.0130893330206163,
+      "rss_mib": 81.234375,
+      "available_mib": 3582.40625,
+      "disk_free_gib": 18.140884399414062
+    },
+    {
+      "elapsed_seconds": 4.071772750001401,
+      "rss_mib": 112.75,
+      "available_mib": 3565.71875,
+      "disk_free_gib": 18.140884399414062
+    },
+    {
+      "elapsed_seconds": 6.141413416014984,
+      "rss_mib": 141.78125,
+      "available_mib": 3536.625,
+      "disk_free_gib": 18.140884399414062
+    },
+    {
+      "elapsed_seconds": 8.199424332997296,
+      "rss_mib": 195.734375,
+      "available_mib": 3510.984375,
+      "disk_free_gib": 18.132991790771484
+    },
+    {
+      "elapsed_seconds": 10.20555808302015,
+      "rss_mib": 197.3125,
+      "available_mib": 3502.0625,
+      "disk_free_gib": 18.132991790771484
+    },
+    {
+      "elapsed_seconds": 12.216692832997069,
+      "rss_mib": 197.328125,
+      "available_mib": 3463.515625,
+      "disk_free_gib": 18.132984161376953
+    },
+    {
+      "elapsed_seconds": 14.222234208020382,
+      "rss_mib": 198.046875,
+      "available_mib": 3450.109375,
+      "disk_free_gib": 18.13299560546875
+    },
+    {
+      "elapsed_seconds": 16.227931750006974,
+      "rss_mib": 198.9375,
+      "available_mib": 3538.578125,
+      "disk_free_gib": 18.132999420166016
+    },
+    {
+      "elapsed_seconds": 18.242734333034605,
+      "rss_mib": 200.078125,
+      "available_mib": 3496.40625,
+      "disk_free_gib": 18.132957458496094
+    },
+    {
+      "elapsed_seconds": 20.24488295800984,
+      "rss_mib": 201.234375,
+      "available_mib": 3497.078125,
+      "disk_free_gib": 18.132999420166016
+    },
+    {
+      "elapsed_seconds": 22.255833750008605,
+      "rss_mib": 474.125,
+      "available_mib": 3480.125,
+      "disk_free_gib": 17.967876434326172
+    },
+    {
+      "elapsed_seconds": 24.256904250010848,
+      "rss_mib": 498.515625,
+      "available_mib": 3471.3125,
+      "disk_free_gib": 17.967876434326172
+    },
+    {
+      "elapsed_seconds": 26.267681666009594,
+      "rss_mib": 502.671875,
+      "available_mib": 3485.8125,
+      "disk_free_gib": 17.967876434326172
+    },
+    {
+      "elapsed_seconds": 28.27227816602681,
+      "rss_mib": 515.859375,
+      "available_mib": 3497.53125,
+      "disk_free_gib": 17.965587615966797
+    },
+    {
+      "elapsed_seconds": 30.283102457993664,
+      "rss_mib": 252.421875,
+      "available_mib": 3626.75,
+      "disk_free_gib": 17.967857360839844
+    },
+    {
+      "elapsed_seconds": 32.29132079100236,
+      "rss_mib": 254.40625,
+      "available_mib": 3620.953125,
+      "disk_free_gib": 17.967891693115234
+    }
+  ],
+  "index_bytes": 185298944,
+  "error": "1",
+  "traceback": "Traceback (most recent call last):\n  File \"/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/serving.py\", line 763, in __init__\n    self.server_bind()\n  File \"/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/http/server.py\", line 136, in server_bind\n    socketserver.TCPServer.server_bind(self)\n  File \"/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/socketserver.py\", line 472, in server_bind\n    self.socket.bind(self.server_address)\nPermissionError: [Errno 1] Operation not permitted\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/private/tmp/disco-everyday-bench-20261001/metadata/bench.py\", line 75, in <module>\n    server=make_server('127.0.0.1',0,api.app,threaded=True)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/serving.py\", line 934, in make_server\n    return ThreadedWSGIServer(\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/werkzeug/serving.py\", line 786, in __init__\n    sys.exit(1)\nSystemExit: 1\n"
+}

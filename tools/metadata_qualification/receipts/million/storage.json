@@ -1,0 +1,784 @@
+{
+  "status": "passed_read_only_physical_inspection",
+  "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+  "size_definition": "File length, allocated filesystem blocks, dbstat used pages and payload bytes are distinct; no full canonical project size claim",
+  "steady_candidate": {
+    "assets": [
+      {
+        "path": "/private/tmp/disco-real-million-20261001/base.sqlite",
+        "role": "native_base",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 7195836416,
+        "allocated_bytes": 7196549120,
+        "counted": true,
+        "inode": 248000770,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/rieke-typed-qualification-million/candidate.sqlite",
+        "role": "new_candidate_sidecar",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 1107034112,
+        "allocated_bytes": 1107361792,
+        "counted": true,
+        "inode": 248270732,
+        "device": 16777233
+      }
+    ],
+    "total_file_bytes": 8302870528,
+    "total_allocated_bytes": 8303910912
+  },
+  "steady_runtime_with_proof_files": {
+    "assets": [
+      {
+        "path": "/private/tmp/disco-real-million-20261001/base.sqlite",
+        "role": "native_base",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 7195836416,
+        "allocated_bytes": 7196549120,
+        "counted": true,
+        "inode": 248000770,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/rieke-typed-qualification-million/candidate.sqlite",
+        "role": "new_candidate_sidecar",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 1107034112,
+        "allocated_bytes": 1107361792,
+        "counted": true,
+        "inode": 248270732,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/disco-real-million-20261001/base.sqlite.sha256.json",
+        "role": "native_preservation_seal",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 240,
+        "allocated_bytes": 4096,
+        "counted": true,
+        "inode": 247999635,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/rieke-typed-qualification-million/candidate.sqlite.sha256.json",
+        "role": "candidate_generation_seal",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 223,
+        "allocated_bytes": 4096,
+        "counted": true,
+        "inode": 248271426,
+        "device": 16777233
+      }
+    ],
+    "total_file_bytes": 8302870991,
+    "total_allocated_bytes": 8303919104
+  },
+  "old_new_coexistence": {
+    "assets": [
+      {
+        "path": "/private/tmp/disco-real-million-20261001/base.sqlite",
+        "role": "native_base",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 7195836416,
+        "allocated_bytes": 7196549120,
+        "counted": true,
+        "inode": 248000770,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite",
+        "role": "retained_experimental_sidecar",
+        "generation": null,
+        "file_bytes": 1107034112,
+        "allocated_bytes": 1107070976,
+        "counted": true,
+        "inode": 248008954,
+        "device": 16777233
+      },
+      {
+        "path": "/private/tmp/rieke-typed-qualification-million/candidate.sqlite",
+        "role": "new_candidate_sidecar",
+        "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+        "file_bytes": 1107034112,
+        "allocated_bytes": 1107361792,
+        "counted": true,
+        "inode": 248270732,
+        "device": 16777233
+      }
+    ],
+    "total_file_bytes": 9409904640,
+    "total_allocated_bytes": 9410981888
+  },
+  "components": {
+    "native_base": {
+      "size_definition": "file length, allocated disk and SQLite used pages are separate",
+      "file_bytes": 7195836416,
+      "allocated_bytes": 7196549120,
+      "page_size": 4096,
+      "page_count": 1756796,
+      "freelist_pages": 0,
+      "freelist_bytes": 0,
+      "components": [
+        {
+          "name": "epoch_values",
+          "used_page_bytes": 1054748672,
+          "payload_bytes": 724066365,
+          "unused_page_bytes": 96268638,
+          "pages": 257507
+        },
+        {
+          "name": "epochs",
+          "used_page_bytes": 4880719872,
+          "payload_bytes": 4751081970,
+          "unused_page_bytes": 109661753,
+          "pages": 1191582
+        },
+        {
+          "name": "epochs_source",
+          "used_page_bytes": 74518528,
+          "payload_bytes": 70967105,
+          "unused_page_bytes": 333111,
+          "pages": 18193
+        },
+        {
+          "name": "field_values",
+          "used_page_bytes": 52355072,
+          "payload_bytes": 45408142,
+          "unused_page_bytes": 253530,
+          "pages": 12782
+        },
+        {
+          "name": "fields",
+          "used_page_bytes": 28672,
+          "payload_bytes": 22252,
+          "unused_page_bytes": 5638,
+          "pages": 7
+        },
+        {
+          "name": "meta",
+          "used_page_bytes": 4096,
+          "payload_bytes": 158,
+          "unused_page_bytes": 3914,
+          "pages": 1
+        },
+        {
+          "name": "metadata_objects",
+          "used_page_bytes": 51740672,
+          "payload_bytes": 46110044,
+          "unused_page_bytes": 4926382,
+          "pages": 12632
+        },
+        {
+          "name": "sources",
+          "used_page_bytes": 2224128,
+          "payload_bytes": 1560600,
+          "unused_page_bytes": 648570,
+          "pages": 543
+        },
+        {
+          "name": "sqlite_autoindex_epochs_1",
+          "used_page_bytes": 50552832,
+          "payload_bytes": 41967105,
+          "unused_page_bytes": 5437627,
+          "pages": 12342
+        },
+        {
+          "name": "sqlite_autoindex_field_values_1",
+          "used_page_bytes": 58134528,
+          "payload_bytes": 48623204,
+          "unused_page_bytes": 6096046,
+          "pages": 14193
+        },
+        {
+          "name": "sqlite_autoindex_fields_1",
+          "used_page_bytes": 12288,
+          "payload_bytes": 4362,
+          "unused_page_bytes": 7474,
+          "pages": 3
+        },
+        {
+          "name": "sqlite_autoindex_meta_1",
+          "used_page_bytes": 4096,
+          "payload_bytes": 51,
+          "unused_page_bytes": 4025,
+          "pages": 1
+        },
+        {
+          "name": "sqlite_autoindex_metadata_objects_1",
+          "used_page_bytes": 10887168,
+          "payload_bytes": 8252505,
+          "unused_page_bytes": 2384611,
+          "pages": 2658
+        },
+        {
+          "name": "sqlite_autoindex_sources_1",
+          "used_page_bytes": 98304,
+          "payload_bytes": 75472,
+          "unused_page_bytes": 19308,
+          "pages": 24
+        },
+        {
+          "name": "sqlite_schema",
+          "used_page_bytes": 4096,
+          "payload_bytes": 1702,
+          "unused_page_bytes": 2221,
+          "pages": 1
+        },
+        {
+          "name": "values_reverse",
+          "used_page_bytes": 959799296,
+          "payload_bytes": 724066365,
+          "unused_page_bytes": 1597434,
+          "pages": 234326
+        }
+      ],
+      "schema": [
+        {
+          "name": "epoch_values",
+          "kind": "table",
+          "rows": 77107863
+        },
+        {
+          "name": "epochs",
+          "kind": "table",
+          "rows": 1000000
+        },
+        {
+          "name": "epochs_source",
+          "kind": "index"
+        },
+        {
+          "name": "field_values",
+          "kind": "table",
+          "rows": 1081653
+        },
+        {
+          "name": "fields",
+          "kind": "table",
+          "rows": 140
+        },
+        {
+          "name": "meta",
+          "kind": "table",
+          "rows": 4
+        },
+        {
+          "name": "metadata_objects",
+          "kind": "table",
+          "rows": 72720
+        },
+        {
+          "name": "sources",
+          "kind": "table",
+          "rows": 1080
+        },
+        {
+          "name": "values_reverse",
+          "kind": "index"
+        }
+      ],
+      "dbstat_used_page_bytes": 7195832320
+    },
+    "retained_experimental_sidecar": {
+      "size_definition": "file length, allocated disk and SQLite used pages are separate",
+      "file_bytes": 1107034112,
+      "allocated_bytes": 1107070976,
+      "page_size": 4096,
+      "page_count": 270272,
+      "freelist_pages": 0,
+      "freelist_bytes": 0,
+      "components": [
+        {
+          "name": "sqlite_autoindex_typed_receipt_1",
+          "used_page_bytes": 4096,
+          "payload_bytes": 99,
+          "unused_page_bytes": 3974,
+          "pages": 1
+        },
+        {
+          "name": "sqlite_schema",
+          "used_page_bytes": 4096,
+          "payload_bytes": 2169,
+          "unused_page_bytes": 1753,
+          "pages": 1
+        },
+        {
+          "name": "sqlite_stat1",
+          "used_page_bytes": 4096,
+          "payload_bytes": 555,
+          "unused_page_bytes": 3485,
+          "pages": 1
+        },
+        {
+          "name": "typed_block_children",
+          "used_page_bytes": 49348608,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 269826,
+          "pages": 12048
+        },
+        {
+          "name": "typed_cell_children",
+          "used_page_bytes": 49336320,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 257574,
+          "pages": 12045
+        },
+        {
+          "name": "typed_chronology",
+          "used_page_bytes": 83714048,
+          "payload_bytes": 79967105,
+          "unused_page_bytes": 501691,
+          "pages": 20438
+        },
+        {
+          "name": "typed_core",
+          "used_page_bytes": 410632192,
+          "payload_bytes": 384335770,
+          "unused_page_bytes": 17611567,
+          "pages": 100252
+        },
+        {
+          "name": "typed_equality",
+          "used_page_bytes": 69267456,
+          "payload_bytes": 64852222,
+          "unused_page_bytes": 967389,
+          "pages": 16911
+        },
+        {
+          "name": "typed_group_children",
+          "used_page_bytes": 49340416,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 261658,
+          "pages": 12046
+        },
+        {
+          "name": "typed_kind",
+          "used_page_bytes": 21766144,
+          "payload_bytes": 18409137,
+          "unused_page_bytes": 48284,
+          "pages": 5314
+        },
+        {
+          "name": "typed_numeric",
+          "used_page_bytes": 22896640,
+          "payload_bytes": 19502657,
+          "unused_page_bytes": 81948,
+          "pages": 5590
+        },
+        {
+          "name": "typed_protocol_children",
+          "used_page_bytes": 72396800,
+          "payload_bytes": 68948676,
+          "unused_page_bytes": 236028,
+          "pages": 17675
+        },
+        {
+          "name": "typed_receipt",
+          "used_page_bytes": 8192,
+          "payload_bytes": 5394,
+          "unused_page_bytes": 2760,
+          "pages": 2
+        },
+        {
+          "name": "typed_sort_rank",
+          "used_page_bytes": 11997184,
+          "payload_bytes": 8934210,
+          "unused_page_bytes": 27830,
+          "pages": 2929
+        },
+        {
+          "name": "typed_text",
+          "used_page_bytes": 62402560,
+          "payload_bytes": 58310598,
+          "unused_page_bytes": 664187,
+          "pages": 15235
+        },
+        {
+          "name": "typed_uuid",
+          "used_page_bytes": 45543424,
+          "payload_bytes": 41967105,
+          "unused_page_bytes": 442895,
+          "pages": 11119
+        },
+        {
+          "name": "typed_values",
+          "used_page_bytes": 158367744,
+          "payload_bytes": 149078394,
+          "unused_page_bytes": 1082693,
+          "pages": 38664
+        }
+      ],
+      "schema": [
+        {
+          "name": "typed_block_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_cell_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_chronology",
+          "kind": "index"
+        },
+        {
+          "name": "typed_core",
+          "kind": "table",
+          "rows": 1000000
+        },
+        {
+          "name": "typed_equality",
+          "kind": "index"
+        },
+        {
+          "name": "typed_group_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_kind",
+          "kind": "index"
+        },
+        {
+          "name": "typed_numeric",
+          "kind": "index"
+        },
+        {
+          "name": "typed_protocol_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_receipt",
+          "kind": "table",
+          "rows": 5
+        },
+        {
+          "name": "typed_sort_rank",
+          "kind": "index"
+        },
+        {
+          "name": "typed_text",
+          "kind": "index"
+        },
+        {
+          "name": "typed_uuid",
+          "kind": "index"
+        },
+        {
+          "name": "typed_values",
+          "kind": "table",
+          "rows": 1081653
+        }
+      ],
+      "dbstat_used_page_bytes": 1107030016
+    },
+    "new_candidate_sidecar": {
+      "size_definition": "file length, allocated disk and SQLite used pages are separate",
+      "file_bytes": 1107034112,
+      "allocated_bytes": 1107361792,
+      "page_size": 4096,
+      "page_count": 270272,
+      "freelist_pages": 0,
+      "freelist_bytes": 0,
+      "components": [
+        {
+          "name": "sqlite_autoindex_typed_receipt_1",
+          "used_page_bytes": 4096,
+          "payload_bytes": 151,
+          "unused_page_bytes": 3910,
+          "pages": 1
+        },
+        {
+          "name": "sqlite_schema",
+          "used_page_bytes": 4096,
+          "payload_bytes": 2169,
+          "unused_page_bytes": 1753,
+          "pages": 1
+        },
+        {
+          "name": "sqlite_stat1",
+          "used_page_bytes": 4096,
+          "payload_bytes": 555,
+          "unused_page_bytes": 3485,
+          "pages": 1
+        },
+        {
+          "name": "typed_block_children",
+          "used_page_bytes": 49348608,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 269826,
+          "pages": 12048
+        },
+        {
+          "name": "typed_cell_children",
+          "used_page_bytes": 49336320,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 257574,
+          "pages": 12045
+        },
+        {
+          "name": "typed_chronology",
+          "used_page_bytes": 83714048,
+          "payload_bytes": 79967105,
+          "unused_page_bytes": 501691,
+          "pages": 20438
+        },
+        {
+          "name": "typed_core",
+          "used_page_bytes": 410632192,
+          "payload_bytes": 384335770,
+          "unused_page_bytes": 17611567,
+          "pages": 100252
+        },
+        {
+          "name": "typed_equality",
+          "used_page_bytes": 69267456,
+          "payload_bytes": 64852222,
+          "unused_page_bytes": 967389,
+          "pages": 16911
+        },
+        {
+          "name": "typed_group_children",
+          "used_page_bytes": 49340416,
+          "payload_bytes": 45934210,
+          "unused_page_bytes": 261658,
+          "pages": 12046
+        },
+        {
+          "name": "typed_kind",
+          "used_page_bytes": 21766144,
+          "payload_bytes": 18409137,
+          "unused_page_bytes": 48284,
+          "pages": 5314
+        },
+        {
+          "name": "typed_numeric",
+          "used_page_bytes": 22896640,
+          "payload_bytes": 19502657,
+          "unused_page_bytes": 81948,
+          "pages": 5590
+        },
+        {
+          "name": "typed_protocol_children",
+          "used_page_bytes": 72396800,
+          "payload_bytes": 68948676,
+          "unused_page_bytes": 236028,
+          "pages": 17675
+        },
+        {
+          "name": "typed_receipt",
+          "used_page_bytes": 8192,
+          "payload_bytes": 5582,
+          "unused_page_bytes": 2556,
+          "pages": 2
+        },
+        {
+          "name": "typed_sort_rank",
+          "used_page_bytes": 11997184,
+          "payload_bytes": 8934210,
+          "unused_page_bytes": 27830,
+          "pages": 2929
+        },
+        {
+          "name": "typed_text",
+          "used_page_bytes": 62402560,
+          "payload_bytes": 58310598,
+          "unused_page_bytes": 664187,
+          "pages": 15235
+        },
+        {
+          "name": "typed_uuid",
+          "used_page_bytes": 45543424,
+          "payload_bytes": 41967105,
+          "unused_page_bytes": 442895,
+          "pages": 11119
+        },
+        {
+          "name": "typed_values",
+          "used_page_bytes": 158367744,
+          "payload_bytes": 149078394,
+          "unused_page_bytes": 1082693,
+          "pages": 38664
+        }
+      ],
+      "schema": [
+        {
+          "name": "typed_block_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_cell_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_chronology",
+          "kind": "index"
+        },
+        {
+          "name": "typed_core",
+          "kind": "table",
+          "rows": 1000000
+        },
+        {
+          "name": "typed_equality",
+          "kind": "index"
+        },
+        {
+          "name": "typed_group_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_kind",
+          "kind": "index"
+        },
+        {
+          "name": "typed_numeric",
+          "kind": "index"
+        },
+        {
+          "name": "typed_protocol_children",
+          "kind": "index"
+        },
+        {
+          "name": "typed_receipt",
+          "kind": "table",
+          "rows": 9
+        },
+        {
+          "name": "typed_sort_rank",
+          "kind": "index"
+        },
+        {
+          "name": "typed_text",
+          "kind": "index"
+        },
+        {
+          "name": "typed_uuid",
+          "kind": "index"
+        },
+        {
+          "name": "typed_values",
+          "kind": "table",
+          "rows": 1081653
+        }
+      ],
+      "dbstat_used_page_bytes": 1107030016
+    }
+  },
+  "native_stored_columns": {
+    "epochs.row_json": {
+      "rows": 1000000,
+      "stored_payload_bytes": 2946465752,
+      "min_bytes": 2293,
+      "max_bytes": 3260,
+      "average_bytes": 2946.465752
+    },
+    "epochs.detail_blob": {
+      "rows": 1000000,
+      "stored_payload_bytes": 1592616218,
+      "min_bytes": 1374,
+      "max_bytes": 1969,
+      "average_bytes": 1592.616218
+    },
+    "metadata_objects.payload": {
+      "rows": 72720,
+      "stored_payload_bytes": 35497604,
+      "min_bytes": 210,
+      "max_bytes": 1737,
+      "average_bytes": 488.1408690869087
+    },
+    "field_values.value_json": {
+      "rows": 1081653,
+      "stored_payload_bytes": 41000580,
+      "min_bytes": 1,
+      "max_bytes": 971,
+      "average_bytes": 37.90548355156413
+    },
+    "sources.source_json": {
+      "rows": 1080,
+      "stored_payload_bytes": 1486080,
+      "min_bytes": 1228,
+      "max_bytes": 1636,
+      "average_bytes": 1376.0
+    }
+  },
+  "normalized": {
+    "epochs": 1000000,
+    "epoch_field_links": 77107863,
+    "total_metadata_file_bytes": 8302870528,
+    "base_metadata_file_bytes": 7195836416,
+    "incremental_index_file_bytes": 1107034112,
+    "total_bytes_per_epoch": 8302.870528,
+    "added_bytes_per_epoch": 1107.034112,
+    "total_bytes_per_epoch_field_link": 107.67864916707651,
+    "added_bytes_per_epoch_field_link": 14.356954906142322,
+    "added_index_over_base_metadata": 0.15384370182992219,
+    "raw_ratios": [
+      {
+        "numerator_bytes": 8302870528,
+        "denominator_bytes": null,
+        "denominator": "actual distinct accessible H5 files; same dataset scope required",
+        "projected": false,
+        "ratio": null
+      },
+      {
+        "numerator_bytes": 8302870528,
+        "denominator_bytes": 247905301505.84634,
+        "denominator": "lineage-weighted equivalent H5 projection",
+        "projected": true,
+        "ratio": 0.03349210556436686
+      },
+      {
+        "numerator_bytes": 8302870528,
+        "denominator_bytes": 131953484228,
+        "denominator": "lineage-weighted compressed response payload projection",
+        "projected": true,
+        "ratio": 0.06292270777521587
+      }
+    ],
+    "canonical_project_metadata_bytes": null
+  },
+  "incremental_added_index_over_native_base": {
+    "file_bytes": 1107034112,
+    "bytes_per_epoch": 1107.034112,
+    "scope": "Same sealed million metadata, added complete typed sidecar"
+  },
+  "new_vs_retained_experimental_index_delta_bytes": 0,
+  "replay_stress_metadata_over_reused_original_h5": {
+    "numerator_bytes": 8302870528,
+    "denominator_bytes": 689388110,
+    "denominator": "Reused original H5 files physically present; scope differs from million metadata; stress-fixture ratio only",
+    "projected": false,
+    "ratio": 12.043826122849726
+  },
+  "original_source_ratio_preserved": {
+    "status": "preserved_reference_not_fresh_H5_inspection",
+    "epochs": 2781,
+    "metadata_bytes": 26234880,
+    "actual_h5_bytes": 689388110,
+    "percent": 3.805531255826272
+  },
+  "recording_reference_sha256": "83bb279df9f600a13f4889924aac1dbee6058bcba3da691aebc751d2836a918e",
+  "growth": {
+    "status": "unrun_controlled_common_layout_curve",
+    "reason": "Original clone and million sidecar reference have different layouts; no intermediate real-lineage replay built"
+  },
+  "incremental_import": {
+    "status": "unrun",
+    "epochs": null,
+    "sources": null,
+    "fields": null,
+    "distinct_values": null,
+    "reason": "No independently controlled import mutation workload"
+  },
+  "lifecycle_cleanup": {
+    "status": "unrun_reader_safe_cleanup",
+    "reason": "Preserved sidecars remain available; no old-generation deletion or restart test"
+  },
+  "canonical_project_metadata_bytes": null,
+  "persistent_summary_cache_bytes": null,
+  "annotation_mapping_bytes": null,
+  "seconds": 69.8574854999897,
+  "stored_columns_definition": "Stored UTF-8 byte lengths via CAST(text AS BLOB); encoded BLOB lengths unchanged",
+  "stored_column_byte_verification_seconds": 15.717595166002866
+}

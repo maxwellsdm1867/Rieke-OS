@@ -1,0 +1,10 @@
+{
+  "pid": 291,
+  "status": "guard_stop",
+  "results": {},
+  "cap_rss_bytes": 1073741824,
+  "cap_seconds": 47,
+  "operation": "Original global catalog: all 140 stored fields plus derived joint, field stats/grouping/suggestions/layout",
+  "reason": "1 GiB peak RSS cap",
+  "peak_rss_bytes": 1093255168
+}

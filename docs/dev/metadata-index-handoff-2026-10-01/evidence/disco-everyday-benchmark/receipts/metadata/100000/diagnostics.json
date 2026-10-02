@@ -1,0 +1,721 @@
+{
+  "epochs": 100000,
+  "source_head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "started_utc": "2026-10-01T06:18:59.678226+00:00",
+  "python": "3.11.13",
+  "platform": "macOS-14.2-arm64-arm-64bit",
+  "scope": "Synthetic metadata: actual current WorkspaceService, sealed SQLite index and production Flask routes. API saved-curation/database hooks use existing transactional test SQL doubles with empty tables; no MySQL latency, H5 source I/O, waveforms, dense annotations or user files.",
+  "phases": [
+    {
+      "name": "synthetic_model_generation",
+      "seconds": 7.947720792028122,
+      "rss_mib": 174.28125
+    },
+    {
+      "name": "index_build",
+      "seconds": 0.7397010840359144,
+      "rss_mib": 160.3125
+    },
+    {
+      "name": "persistent_index_reopen",
+      "seconds": 0.6992301249993034,
+      "rss_mib": 161.15625
+    }
+  ],
+  "operations": [
+    {
+      "name": "control_sql_epoch_first_60",
+      "layer": "indexed SQLite diagnostic control",
+      "first_seconds": 0.00031308300094679,
+      "warm_samples_seconds": [
+        0.00026000000070780516,
+        0.0002699579927138984,
+        0.000264250033069402,
+        0.00026729103410616517,
+        0.0002843340043909848
+      ],
+      "warm_median_seconds": 0.00026729103410616517,
+      "warm_max_seconds": 0.0002843340043909848,
+      "response_json_bytes": 38964,
+      "response_json_bytes_samples": [
+        38964,
+        38964,
+        38964,
+        38964,
+        38964,
+        38964
+      ],
+      "rss_mib": 244.59375,
+      "oracle_passed": true
+    },
+    {
+      "name": "control_sql_contrast_count_first_60",
+      "layer": "indexed SQLite diagnostic control",
+      "first_seconds": 0.0017867080168798566,
+      "warm_samples_seconds": [
+        0.0015328330337069929,
+        0.0015277499915100634,
+        0.0015901250299066305,
+        0.0015634170267730951,
+        0.0016720420098863542
+      ],
+      "warm_median_seconds": 0.0015634170267730951,
+      "warm_max_seconds": 0.0016720420098863542,
+      "response_json_bytes": 39054,
+      "response_json_bytes_samples": [
+        39054,
+        39054,
+        39054,
+        39054,
+        39054,
+        39054
+      ],
+      "rss_mib": 241.828125,
+      "oracle_passed": true
+    }
+  ],
+  "status": "complete",
+  "resource_samples": [
+    {
+      "elapsed_seconds": 2.0115123750292696,
+      "rss_mib": 75.921875,
+      "available_mib": 2586.90625,
+      "disk_free_gib": 16.912830352783203
+    },
+    {
+      "elapsed_seconds": 4.075635584013071,
+      "rss_mib": 73.4375,
+      "available_mib": 2703.28125,
+      "disk_free_gib": 16.912822723388672
+    },
+    {
+      "elapsed_seconds": 6.087918292032555,
+      "rss_mib": 118.046875,
+      "available_mib": 2695.171875,
+      "disk_free_gib": 16.913799285888672
+    },
+    {
+      "elapsed_seconds": 8.137152875016909,
+      "rss_mib": 182.828125,
+      "available_mib": 2598.4375,
+      "disk_free_gib": 16.913650512695312
+    },
+    {
+      "elapsed_seconds": 10.172940292046405,
+      "rss_mib": 269.640625,
+      "available_mib": 2523.765625,
+      "disk_free_gib": 16.913455963134766
+    },
+    {
+      "elapsed_seconds": 12.533959667023737,
+      "rss_mib": 270.25,
+      "available_mib": 2564.328125,
+      "disk_free_gib": 16.913497924804688
+    },
+    {
+      "elapsed_seconds": 14.597849917015992,
+      "rss_mib": 358.65625,
+      "available_mib": 2560.296875,
+      "disk_free_gib": 16.913501739501953
+    },
+    {
+      "elapsed_seconds": 16.60403679200681,
+      "rss_mib": 223.0625,
+      "available_mib": 2565.640625,
+      "disk_free_gib": 16.913501739501953
+    },
+    {
+      "elapsed_seconds": 18.60801733401604,
+      "rss_mib": 264.421875,
+      "available_mib": 2554.90625,
+      "disk_free_gib": 16.91345977783203
+    },
+    {
+      "elapsed_seconds": 20.614242875017226,
+      "rss_mib": 247.0,
+      "available_mib": 2514.515625,
+      "disk_free_gib": 16.913330078125
+    }
+  ],
+  "index_existed_before_run": true,
+  "index_bytes": 185298944,
+  "profiles": [
+    {
+      "name": "api_epoch_page_60",
+      "profiled_wall_seconds": 2.812042500008829,
+      "top_cumulative": [
+        {
+          "file": "bench.py",
+          "line": 82,
+          "function": "<lambda>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.334e-06,
+          "cumulative_seconds": 2.81096475
+        },
+        {
+          "file": "test.py",
+          "line": 1163,
+          "function": "get",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 5.3740000000000006e-06,
+          "cumulative_seconds": 2.810962416
+        },
+        {
+          "file": "testing.py",
+          "line": 204,
+          "function": "open",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.2584e-05,
+          "cumulative_seconds": 2.810957042
+        },
+        {
+          "file": "test.py",
+          "line": 1062,
+          "function": "open",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.081000000000001e-06,
+          "cumulative_seconds": 2.8107800000000003
+        },
+        {
+          "file": "test.py",
+          "line": 984,
+          "function": "run_wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.3333000000000001e-05,
+          "cumulative_seconds": 2.8107648330000004
+        },
+        {
+          "file": "test.py",
+          "line": 1230,
+          "function": "run_wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.708000000000001e-06,
+          "cumulative_seconds": 2.810598875
+        },
+        {
+          "file": "app.py",
+          "line": 1529,
+          "function": "__call__",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.25e-06,
+          "cumulative_seconds": 2.8105740000000003
+        },
+        {
+          "file": "app.py",
+          "line": 1479,
+          "function": "wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.2084000000000002e-05,
+          "cumulative_seconds": 2.81056775
+        },
+        {
+          "file": "app.py",
+          "line": 904,
+          "function": "full_dispatch_request",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1e-05,
+          "cumulative_seconds": 2.8103263330000003
+        },
+        {
+          "file": "app.py",
+          "line": 879,
+          "function": "dispatch_request",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.7e-05,
+          "cumulative_seconds": 2.8100641250000002
+        },
+        {
+          "file": "workspace_api.py",
+          "line": 771,
+          "function": "epoch_page",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.008144594,
+          "cumulative_seconds": 2.8100437080000003
+        },
+        {
+          "file": "workspace_protocol_state.py",
+          "line": 391,
+          "function": "read_selected",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.4292e-05,
+          "cumulative_seconds": 2.7809172500000003
+        },
+        {
+          "file": "workspace_protocol_state.py",
+          "line": 179,
+          "function": "_oracle",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.001301457,
+          "cumulative_seconds": 2.780562083
+        },
+        {
+          "file": "workspace_api.py",
+          "line": 173,
+          "function": "legacy_state",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.020869751000000002,
+          "cumulative_seconds": 2.7792255000000003
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 202,
+          "function": "read",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 1.3083000000000002e-05,
+          "cumulative_seconds": 1.3073343750000002
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 75,
+          "function": "_scope",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.020660458,
+          "cumulative_seconds": 1.14379625
+        },
+        {
+          "file": "workspace_service.py",
+          "line": 647,
+          "function": "query_result",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.002780456,
+          "cumulative_seconds": 1.1231029160000001
+        },
+        {
+          "file": "copy.py",
+          "line": 128,
+          "function": "deepcopy",
+          "primitive_calls": 10,
+          "calls": 1008878,
+          "self_seconds": 0.594226919,
+          "cumulative_seconds": 1.1228611670000002
+        },
+        {
+          "file": "copy.py",
+          "line": 227,
+          "function": "_deepcopy_dict",
+          "primitive_calls": 4,
+          "calls": 202124,
+          "self_seconds": 0.204684415,
+          "cumulative_seconds": 1.122802208
+        },
+        {
+          "file": "copy.py",
+          "line": 201,
+          "function": "_deepcopy_list",
+          "primitive_calls": 13,
+          "calls": 133,
+          "self_seconds": 0.039902618,
+          "cumulative_seconds": 1.1227580000000001
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 81,
+          "function": "<dictcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.061837576000000005,
+          "cumulative_seconds": 0.866983375
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 69,
+          "function": "_fingerprint",
+          "primitive_calls": 100000,
+          "calls": 100000,
+          "self_seconds": 0.040795812,
+          "cumulative_seconds": 0.805145799
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.any>",
+          "primitive_calls": 100004,
+          "calls": 100004,
+          "self_seconds": 0.27204880600000003,
+          "cumulative_seconds": 0.7570430340000001
+        },
+        {
+          "file": "workspace_service.py",
+          "line": 623,
+          "function": "fingerprints",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 4.000000000000001e-06,
+          "cumulative_seconds": 0.574918
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 70,
+          "function": "<genexpr>",
+          "primitive_calls": 6500000,
+          "calls": 6500000,
+          "self_seconds": 0.484973513,
+          "cumulative_seconds": 0.484973513
+        },
+        {
+          "file": "workspace_recipes.py",
+          "line": 21,
+          "function": "checksum",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.001396167,
+          "cumulative_seconds": 0.310794167
+        },
+        {
+          "file": "__init__.py",
+          "line": 183,
+          "function": "dumps",
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.001411375,
+          "cumulative_seconds": 0.286602208
+        },
+        {
+          "file": "encoder.py",
+          "line": 183,
+          "function": "encode",
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 2.6418e-05,
+          "cumulative_seconds": 0.285183375
+        },
+        {
+          "file": "encoder.py",
+          "line": 205,
+          "function": "iterencode",
+          "primitive_calls": 3,
+          "calls": 3,
+          "self_seconds": 0.27832058400000004,
+          "cumulative_seconds": 0.27832058400000004
+        },
+        {
+          "file": "workspace_curation.py",
+          "line": 76,
+          "function": "<listcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.016230596,
+          "cumulative_seconds": 0.256150667
+        }
+      ]
+    },
+    {
+      "name": "api_contrast_preview",
+      "profiled_wall_seconds": 4.404454583011102,
+      "top_cumulative": [
+        {
+          "file": "bench.py",
+          "line": 82,
+          "function": "<lambda>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 2.5e-06,
+          "cumulative_seconds": 4.403347916
+        },
+        {
+          "file": "test.py",
+          "line": 1168,
+          "function": "post",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 3.541e-06,
+          "cumulative_seconds": 4.4033454160000005
+        },
+        {
+          "file": "testing.py",
+          "line": 204,
+          "function": "open",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 8.459e-06,
+          "cumulative_seconds": 4.403341875000001
+        },
+        {
+          "file": "test.py",
+          "line": 1062,
+          "function": "open",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 3.5830000000000003e-06,
+          "cumulative_seconds": 4.403128292
+        },
+        {
+          "file": "test.py",
+          "line": 984,
+          "function": "run_wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 6.7090000000000005e-06,
+          "cumulative_seconds": 4.4031146670000005
+        },
+        {
+          "file": "test.py",
+          "line": 1230,
+          "function": "run_wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 5.001e-06,
+          "cumulative_seconds": 4.403004042
+        },
+        {
+          "file": "app.py",
+          "line": 1529,
+          "function": "__call__",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 7.5840000000000006e-06,
+          "cumulative_seconds": 4.4029806250000005
+        },
+        {
+          "file": "app.py",
+          "line": 1479,
+          "function": "wsgi_app",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 3.458e-06,
+          "cumulative_seconds": 4.402973041
+        },
+        {
+          "file": "app.py",
+          "line": 904,
+          "function": "full_dispatch_request",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 3.541e-06,
+          "cumulative_seconds": 4.4028290000000005
+        },
+        {
+          "file": "app.py",
+          "line": 879,
+          "function": "dispatch_request",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.0008043340000000001,
+          "cumulative_seconds": 4.402655167000001
+        },
+        {
+          "file": "workspace_api.py",
+          "line": 848,
+          "function": "explorer_preview",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000987209,
+          "cumulative_seconds": 4.401847292
+        },
+        {
+          "file": "workspace_service.py",
+          "line": 1005,
+          "function": "explore_preview",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.007073458,
+          "cumulative_seconds": 4.4002127920000005
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 291,
+          "function": "catalog",
+          "primitive_calls": 2,
+          "calls": 2,
+          "self_seconds": 0.036282452,
+          "cumulative_seconds": 3.737393125
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 54,
+          "calls": 54,
+          "self_seconds": 1.957169294,
+          "cumulative_seconds": 1.957169294
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 520,
+          "function": "_suggest",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.0045219200000000005,
+          "cumulative_seconds": 0.713029667
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 536,
+          "function": "<genexpr>",
+          "primitive_calls": 60003,
+          "calls": 60003,
+          "self_seconds": 0.024067964,
+          "cumulative_seconds": 0.7059753280000001
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 474,
+          "function": "values",
+          "primitive_calls": 60003,
+          "calls": 60003,
+          "self_seconds": 0.012110456,
+          "cumulative_seconds": 0.647026155
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 444,
+          "function": "items",
+          "primitive_calls": 60003,
+          "calls": 60003,
+          "self_seconds": 0.279704246,
+          "cumulative_seconds": 0.634915699
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.next>",
+          "primitive_calls": 25,
+          "calls": 27,
+          "self_seconds": 2.6961e-05,
+          "cumulative_seconds": 0.540576543
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 235,
+          "function": "_connect",
+          "primitive_calls": 10,
+          "calls": 10,
+          "self_seconds": 5.6704000000000005e-05,
+          "cumulative_seconds": 0.540487083
+        },
+        {
+          "file": "contextlib.py",
+          "line": 132,
+          "function": "__enter__",
+          "primitive_calls": 7,
+          "calls": 8,
+          "self_seconds": 8.417000000000001e-06,
+          "cumulative_seconds": 0.538884584
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<method 'executemany' of 'sqlite3.Connection' objects>",
+          "primitive_calls": 10,
+          "calls": 10,
+          "self_seconds": 0.5366540820000001,
+          "cumulative_seconds": 0.5366540820000001
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 299,
+          "function": "<setcomp>",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.536278708,
+          "cumulative_seconds": 0.536278708
+        },
+        {
+          "file": "workspace_service.py",
+          "line": 240,
+          "function": "match_predicate",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.009019918,
+          "cumulative_seconds": 0.511021958
+        },
+        {
+          "file": "workspace_tag_predicates.py",
+          "line": 170,
+          "function": "match",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 5.042e-06,
+          "cumulative_seconds": 0.5020007080000001
+        },
+        {
+          "file": "workspace_service.py",
+          "line": 232,
+          "function": "_match_metadata_predicate",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 0.000171625,
+          "cumulative_seconds": 0.501985458
+        },
+        {
+          "file": "workspace_disk_index.py",
+          "line": 359,
+          "function": "match",
+          "primitive_calls": 1,
+          "calls": 1,
+          "self_seconds": 7.604000000000001e-05,
+          "cumulative_seconds": 0.501813083
+        },
+        {
+          "file": "__init__.py",
+          "line": 299,
+          "function": "loads",
+          "primitive_calls": 147026,
+          "calls": 147026,
+          "self_seconds": 0.067656451,
+          "cumulative_seconds": 0.325224273
+        },
+        {
+          "file": "decoder.py",
+          "line": 332,
+          "function": "decode",
+          "primitive_calls": 147026,
+          "calls": 147026,
+          "self_seconds": 0.112509544,
+          "cumulative_seconds": 0.24001339500000002
+        },
+        {
+          "file": "~",
+          "line": 0,
+          "function": "<built-in method builtins.sorted>",
+          "primitive_calls": 36,
+          "calls": 36,
+          "self_seconds": 0.036610902,
+          "cumulative_seconds": 0.14594954100000002
+        }
+      ]
+    }
+  ],
+  "sql_control_scope": "Diagnostic control only, not an application implementation. SELECT on actual sealed SQLite metadata index, indexed epoch_id order equals synthetic protocol insertion order. Contrast count and page use values_reverse(field_no,value_id,epoch_id). Includes row JSON decode; excludes global curation and recipe revisions.",
+  "query_plans": {
+    "epoch": [
+      [
+        4,
+        0,
+        216,
+        "SCAN epochs"
+      ]
+    ],
+    "contrast": [
+      [
+        5,
+        0,
+        55,
+        "SEARCH v USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+      ],
+      [
+        13,
+        0,
+        45,
+        "SEARCH e USING INTEGER PRIMARY KEY (rowid=?)"
+      ]
+    ]
+  }
+}

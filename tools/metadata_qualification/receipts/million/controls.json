@@ -1,0 +1,195 @@
+{
+  "status": "passed",
+  "target_commit": "e6c996a10afa819bb944135e58a593867d344a76",
+  "baseline_commit": "f03577e650ce5f604e9585f5bee983ef01bccad3",
+  "ui_timing": false,
+  "legacy_tree_dto": false,
+  "scope": "minimal UUID/count group page and three native full decoded details",
+  "jobs": [
+    {
+      "status": "complete",
+      "arms": {
+        "baseline": {
+          "samples_ms": [
+            10075.462459004484,
+            10336.534916015808,
+            10163.163582968991,
+            10103.024291980546,
+            10121.547624992672
+          ],
+          "first_ms": 10075.462459004484,
+          "warm_median_ms": 10142.355603980832,
+          "max_ms": 10336.534916015808,
+          "p95_ms": null,
+          "p99_ms": null
+        },
+        "candidate": {
+          "samples_ms": [
+            5.735375045333058,
+            1.5507499920204282,
+            1.7187920166179538,
+            1.405165996402502,
+            1.48695899406448
+          ],
+          "first_ms": 5.735375045333058,
+          "warm_median_ms": 1.5188544930424541,
+          "max_ms": 5.735375045333058,
+          "p95_ms": null,
+          "p99_ms": null
+        }
+      },
+      "generation": {
+        "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+          16777233,
+          247920613,
+          20787200,
+          1790870383902409025,
+          1790870383902451900
+        ],
+        "/private/tmp/disco-real-million-20261001/base.sqlite": [
+          16777233,
+          248000770,
+          7195836416,
+          1790880924862763867,
+          1790880924862763867
+        ],
+        "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+          16777233,
+          248270732,
+          1107034112,
+          1790902879165610511,
+          1790902879165610511
+        ]
+      },
+      "expected_payload_sha256": "267a9b1772af1ef0aab6bf3495a5bc38f142f228cb7097bfbc737d37db7a2f94",
+      "caps": {
+        "sample_seconds": 45,
+        "peak_rss_bytes": 1073741824
+      },
+      "timing_scope": "backend call plus JSON serialization",
+      "ui_slo_certified": false,
+      "peak_rss_bytes": 96927744,
+      "memory_guard_limit": "50 ms RSS watchdog polling; bounded overshoot between polls possible",
+      "label": "next60_cell_counts"
+    },
+    {
+      "status": "complete",
+      "arms": {
+        "baseline": {
+          "samples_ms": [
+            3.1639999942854047,
+            2.7282090159133077,
+            2.851625031325966,
+            3.131333040073514,
+            2.9902500100433826
+          ],
+          "first_ms": 3.1639999942854047,
+          "warm_median_ms": 2.9209375206846744,
+          "max_ms": 3.1639999942854047,
+          "p95_ms": null,
+          "p99_ms": null
+        },
+        "candidate": {
+          "samples_ms": [
+            11.597500008065253,
+            3.1938330503180623,
+            2.869499963708222,
+            2.7358329971320927,
+            2.9160829726606607
+          ],
+          "first_ms": 11.597500008065253,
+          "warm_median_ms": 2.8927914681844413,
+          "max_ms": 11.597500008065253,
+          "p95_ms": null,
+          "p99_ms": null
+        }
+      },
+      "generation": {
+        "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+          16777233,
+          247920613,
+          20787200,
+          1790870383902409025,
+          1790870383902451900
+        ],
+        "/private/tmp/disco-real-million-20261001/base.sqlite": [
+          16777233,
+          248000770,
+          7195836416,
+          1790880924862763867,
+          1790880924862763867
+        ],
+        "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+          16777233,
+          248270732,
+          1107034112,
+          1790902879165610511,
+          1790902879165610511
+        ]
+      },
+      "expected_payload_sha256": "d585e8d5a6c3f17f9e43f36a97676b1a155561c44ac36fe19b50c0f195ebf0e7",
+      "caps": {
+        "sample_seconds": 45,
+        "peak_rss_bytes": 1073741824
+      },
+      "timing_scope": "backend call plus JSON serialization",
+      "ui_slo_certified": false,
+      "peak_rss_bytes": 96927744,
+      "memory_guard_limit": "50 ms RSS watchdog polling; bounded overshoot between polls possible",
+      "label": "three_full_details"
+    }
+  ],
+  "metadata_generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+  "input_signatures_before": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      16777233,
+      248000770,
+      7195836416,
+      1790880924862763867,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+      16777233,
+      247920613,
+      20787200,
+      1790870383902409025,
+      1790870383902451900
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+      16777233,
+      248270732,
+      1107034112,
+      1790902879165610511,
+      1790902879165610511
+    ]
+  },
+  "input_signatures_after": {
+    "/private/tmp/disco-real-million-20261001/base.sqlite": [
+      16777233,
+      248000770,
+      7195836416,
+      1790880924862763867,
+      1790880924862763867
+    ],
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": [
+      16777233,
+      247920613,
+      20787200,
+      1790870383902409025,
+      1790870383902451900
+    ],
+    "/tmp/rieke-typed-qualification-million/candidate.sqlite": [
+      16777233,
+      248270732,
+      1107034112,
+      1790902879165610511,
+      1790902879165610511
+    ]
+  },
+  "peak_rss_bytes": 96927744,
+  "limitations": [
+    "Native group comparator is raw SQLite epochs cell count projection, not full legacy tree route/DTO/anchor",
+    "Details baseline cache primed when freezing native expected values; candidate detail cache policy may differ",
+    "No UI render, waveform decode, native MySQL write or cold startup measurement"
+  ]
+}

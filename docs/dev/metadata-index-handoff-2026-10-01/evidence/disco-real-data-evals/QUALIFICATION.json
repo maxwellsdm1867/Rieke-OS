@@ -1,0 +1,16 @@
+{
+  "saved_at": "2026-10-01T09:08:10.471420-07:00",
+  "epochs": 2781,
+  "actual_data": true,
+  "synthetic_generation": false,
+  "mounted_inputs_unchanged": true,
+  "engine_output_oracles_passed": true,
+  "million_real_workload_qualified": false,
+  "source_sha256": {
+    "workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17"
+  }
+}

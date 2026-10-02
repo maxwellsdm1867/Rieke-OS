@@ -1,0 +1,51 @@
+{
+  "source": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+  "target": "/private/tmp/disco-real-million-20261001/typed/small-sidecar.sqlite",
+  "build_seconds": 0.23573420703178272,
+  "wall_seconds": 0.23733612499199808,
+  "timings": {
+    "core_extract_seconds": 0.08636820799438283,
+    "chronology_assign_seconds": 0.010866833035834134,
+    "dictionary_extract_seconds": 0.04965824994724244,
+    "indexes_seconds": 0.0421253340318799,
+    "core_equality_proof_seconds": 0.031535540998447686,
+    "analyze_seconds": 0.009323749982286245,
+    "quick_check_and_counts_seconds": 0.005856291041709483
+  },
+  "added_bytes": 5054464,
+  "original_bytes": 20787200,
+  "dictionary_kinds": {
+    "string": 9153,
+    "number": 1509,
+    "array": 84,
+    "null": 10
+  },
+  "core_safe": {
+    "epoch": true,
+    "cell": true,
+    "block": true,
+    "group": true,
+    "protocol": true,
+    "date": true,
+    "cell type": true,
+    "group label": true,
+    "block time": true
+  },
+  "wide_numeric_fields": [],
+  "native_table_counts": {
+    "meta": 6,
+    "epochs": 2781,
+    "fields": 140,
+    "field_values": 10756,
+    "epoch_values": 214451,
+    "sources": 3,
+    "metadata_objects": 202
+  },
+  "packaging": "shared immutable source plus typed auxiliary sidecar; no source clone",
+  "source_stat_unchanged": true,
+  "max_rss_bytes": 40632320,
+  "source_full_sha256_verification": "separate parent-owned preservation phase",
+  "validation_representatives": "actual values covering every observed kind and array-element kind",
+  "no_detail_materialization": true,
+  "all_passed": true
+}

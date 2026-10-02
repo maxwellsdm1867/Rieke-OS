@@ -1,0 +1,1637 @@
+{
+  "scope": "Focused native tagging routes against a SQL-backed million-epoch universe.\n\nNot whole-app startup or the production protocol epoch endpoint. SharedAnnotations,\nregistered Flask routes, MySQL triggers, generation authority, recovery mirror and\nBackupScheduler are production implementations. Metadata point lookups and native\nmembership-to-SQL joins are experimental read-model adapters. No authority contract\nis replaced. Sparse annotations are deliberately separate from prior dense100k runs.\n",
+  "source_head": "1017530311709477492a551c844f1b2a200e242c",
+  "started_utc": "2026-10-01T14:50:22.152687+00:00",
+  "source_inventory_before": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "harness_sha256": "19f928568cbed3ab7f9222c5b389cfb8263ad05ddbb9be7d355649bbde3a0249",
+  "samples": 10,
+  "operations": {
+    "revision_preflight_first10": {
+      "samples_seconds": [
+        0.004826417018193752,
+        0.00398554204730317,
+        0.0041701250011101365,
+        0.004474334011320025,
+        0.004121333011426032,
+        0.003990666999015957,
+        0.0038768340018577874,
+        0.004265249997843057,
+        0.004081957973539829,
+        0.004292208002880216
+      ],
+      "first_seconds": 0.004826417018193752,
+      "median_seconds": 0.004145729006268084,
+      "warm_median_seconds": 0.004121333011426032,
+      "maximum_seconds": 0.004826417018193752
+    },
+    "tag_first10": {
+      "samples_seconds": [
+        0.04183154198108241,
+        0.01694800000404939,
+        0.016792583046481013,
+        0.017119625001214445,
+        0.022519542020745575,
+        0.017765874974429607,
+        0.01683924999088049,
+        0.016463833977468312,
+        0.016552792047150433,
+        0.018180834013037384
+      ],
+      "first_seconds": 0.04183154198108241,
+      "median_seconds": 0.017033812502631918,
+      "warm_median_seconds": 0.01694800000404939,
+      "maximum_seconds": 0.04183154198108241
+    },
+    "tag_first10_including_preflight": {
+      "samples_seconds": [
+        0.04666433297097683,
+        0.020987833966501057,
+        0.021016583952587098,
+        0.021654791955370456,
+        0.026709709025453776,
+        0.021813875006046146,
+        0.020770000002812594,
+        0.020794957992620766,
+        0.020691582991275936,
+        0.02253274997929111
+      ],
+      "first_seconds": 0.04666433297097683,
+      "median_seconds": 0.021335687953978777,
+      "warm_median_seconds": 0.021016583952587098,
+      "maximum_seconds": 0.04666433297097683
+    },
+    "revision_preflight_second10": {
+      "samples_seconds": [
+        0.004356125020422041,
+        0.004216083965729922,
+        0.0047691669897176325,
+        0.003932457999326289,
+        0.004172458022367209,
+        0.004076999961398542,
+        0.0038909579743631184,
+        0.003925166965927929,
+        0.004119375022128224,
+        0.004483416967559606
+      ],
+      "first_seconds": 0.004356125020422041,
+      "median_seconds": 0.004145916522247717,
+      "warm_median_seconds": 0.004119375022128224,
+      "maximum_seconds": 0.0047691669897176325
+    },
+    "tag_second10": {
+      "samples_seconds": [
+        0.018604999990202487,
+        0.016721750027500093,
+        0.020021166012156755,
+        0.017861208005342633,
+        0.017521750007290393,
+        0.017092916008550674,
+        0.01580237498274073,
+        0.015895374992396683,
+        0.017581791034899652,
+        0.020312041975557804
+      ],
+      "first_seconds": 0.018604999990202487,
+      "median_seconds": 0.017551770521095023,
+      "warm_median_seconds": 0.017521750007290393,
+      "maximum_seconds": 0.020312041975557804
+    },
+    "tag_second10_including_preflight": {
+      "samples_seconds": [
+        0.023038707964587957,
+        0.02101254096487537,
+        0.02487899997504428,
+        0.021879958047065884,
+        0.021818999957758933,
+        0.021268584008794278,
+        0.01978116697864607,
+        0.019895165984053165,
+        0.021795124979689717,
+        0.024896499991882592
+      ],
+      "first_seconds": 0.023038707964587957,
+      "median_seconds": 0.021807062468724325,
+      "warm_median_seconds": 0.021795124979689717,
+      "maximum_seconds": 0.024896499991882592
+    },
+    "experimental_native_lookup_sql_filter20": {
+      "samples_seconds": [
+        0.02005950000602752,
+        0.020736540958750993,
+        0.03321266599232331,
+        0.03012720897095278,
+        0.022076957975514233,
+        0.025275457999669015,
+        0.019767999998293817,
+        0.02015104203019291,
+        0.026371666055638343,
+        0.020797832985408604
+      ],
+      "first_seconds": 0.02005950000602752,
+      "median_seconds": 0.02143739548046142,
+      "warm_median_seconds": 0.022076957975514233,
+      "maximum_seconds": 0.03321266599232331
+    },
+    "experimental_native_lookup_duck_filter20": {
+      "samples_seconds": [
+        0.053459250018931925,
+        0.022100541973486543,
+        0.025058874976821244,
+        0.01862116699339822,
+        0.02291170903481543,
+        0.033086667011957616,
+        0.023289208998903632,
+        0.021134749986231327,
+        0.026574207993689924,
+        0.02292125002713874
+      ],
+      "first_seconds": 0.053459250018931925,
+      "median_seconds": 0.023105229513021186,
+      "warm_median_seconds": 0.02292125002713874,
+      "maximum_seconds": 0.053459250018931925
+    },
+    "tag_cell_one_record": {
+      "samples_seconds": [
+        0.006760041986126453,
+        0.010325125011149794,
+        0.007322500052396208,
+        0.006012124998960644,
+        0.007087083999067545,
+        0.006451458029914647,
+        0.00667679199250415,
+        0.006179500021971762,
+        0.007442083035130054,
+        0.006363082968164235
+      ],
+      "first_seconds": 0.006760041986126453,
+      "median_seconds": 0.006718416989315301,
+      "warm_median_seconds": 0.00667679199250415,
+      "maximum_seconds": 0.010325125011149794
+    },
+    "experimental_native_lookup_sql_cell_filter100": {
+      "samples_seconds": [
+        0.022036250040400773,
+        0.031452667026314884,
+        0.020539834047667682,
+        0.02276604197686538,
+        0.02235858398489654,
+        0.020278999989386648,
+        0.02053891698596999,
+        0.020477917045354843,
+        0.025969291978981346,
+        0.020643208001274616
+      ],
+      "first_seconds": 0.022036250040400773,
+      "median_seconds": 0.021339729020837694,
+      "warm_median_seconds": 0.020643208001274616,
+      "maximum_seconds": 0.031452667026314884
+    },
+    "experimental_native_lookup_duck_cell_filter100": {
+      "samples_seconds": [
+        0.0252489170525223,
+        0.2407829590374604,
+        0.024386291042901576,
+        0.02406445803353563,
+        0.0236717090010643,
+        0.02596483298111707,
+        0.02220583299640566,
+        0.021778124966658652,
+        0.026103666983544827,
+        0.021572249999735504
+      ],
+      "first_seconds": 0.0252489170525223,
+      "median_seconds": 0.024225374538218603,
+      "warm_median_seconds": 0.02406445803353563,
+      "maximum_seconds": 0.2407829590374604
+    },
+    "production_native_hierarchy_filter_scoped100": {
+      "samples_seconds": [
+        0.03814562503248453,
+        0.05575300002237782,
+        0.020671417005360126,
+        0.021360957995057106,
+        0.021916333003900945,
+        0.024691624974366277,
+        0.020963167014997452,
+        0.0198467499576509,
+        0.02075445803347975,
+        0.020250083005521446
+      ],
+      "first_seconds": 0.03814562503248453,
+      "median_seconds": 0.02116206250502728,
+      "warm_median_seconds": 0.020963167014997452,
+      "maximum_seconds": 0.05575300002237782
+    },
+    "autocomplete_prefix": {
+      "samples_seconds": [
+        0.02267595799639821,
+        0.030149166996125132,
+        0.021250249992590398,
+        0.023240666021592915,
+        0.023226000019349158,
+        0.02273862500442192,
+        0.0191372919944115,
+        0.03611770900897682,
+        0.021359541977290064,
+        0.020926584023982286
+      ],
+      "first_seconds": 0.02267595799639821,
+      "median_seconds": 0.022707291500410065,
+      "warm_median_seconds": 0.02273862500442192,
+      "maximum_seconds": 0.03611770900897682
+    },
+    "remove_epoch20": {
+      "samples_seconds": [
+        0.03456687502330169,
+        0.0392104159691371,
+        0.029696291021537036,
+        0.028429666010197252,
+        0.028555833036080003,
+        0.02775558299617842,
+        0.02750150003703311,
+        0.06381808401783928,
+        0.03191245801281184,
+        0.029322292015422136
+      ],
+      "first_seconds": 0.03456687502330169,
+      "median_seconds": 0.029509291518479586,
+      "warm_median_seconds": 0.029322292015422136,
+      "maximum_seconds": 0.06381808401783928
+    },
+    "remove_cell_tag": {
+      "samples_seconds": [
+        0.005952875013463199,
+        0.005937417037785053,
+        0.006726125022396445,
+        0.005960334034170955,
+        0.005522957944776863,
+        0.006328333052806556,
+        0.005616292008198798,
+        0.009357083996292204,
+        0.005770249990746379,
+        0.005819583951961249
+      ],
+      "first_seconds": 0.005952875013463199,
+      "median_seconds": 0.005945146025624126,
+      "warm_median_seconds": 0.005937417037785053,
+      "maximum_seconds": 0.009357083996292204
+    },
+    "revision_preflight_previously_unannotated10": {
+      "samples_seconds": [
+        0.0023410000139847398,
+        0.001721833017654717,
+        0.001651667000260204,
+        0.0018164580105803907,
+        0.0017449170118197799,
+        0.0016872090054675937,
+        0.0019955839961767197,
+        0.0016689159674569964,
+        0.0017008750000968575,
+        0.0016347499913536012
+      ],
+      "first_seconds": 0.0023410000139847398,
+      "median_seconds": 0.0017113540088757873,
+      "warm_median_seconds": 0.0017008750000968575,
+      "maximum_seconds": 0.0023410000139847398
+    },
+    "tag_previously_unannotated10": {
+      "samples_seconds": [
+        0.010054207989014685,
+        0.013089750020299107,
+        0.0130666249897331,
+        0.014229917025659233,
+        0.013718542002607137,
+        0.012988624977879226,
+        0.01592450001044199,
+        0.013691583997569978,
+        0.013477250002324581,
+        0.014261042000725865
+      ],
+      "first_seconds": 0.010054207989014685,
+      "median_seconds": 0.01358441699994728,
+      "warm_median_seconds": 0.013691583997569978,
+      "maximum_seconds": 0.01592450001044199
+    },
+    "remove_previously_unannotated10": {
+      "samples_seconds": [
+        0.013544458022806793,
+        0.01293670799350366,
+        0.014155999990180135,
+        0.01523020799504593,
+        0.01375416701193899,
+        0.012681375024840236,
+        0.014451000024564564,
+        0.013117583992425352,
+        0.014360792003571987,
+        0.01287208398571238
+      ],
+      "first_seconds": 0.013544458022806793,
+      "median_seconds": 0.013649312517372891,
+      "warm_median_seconds": 0.01375416701193899,
+      "maximum_seconds": 0.01523020799504593
+    }
+  },
+  "phases": {
+    "owned_native_boot": 3.493033832986839,
+    "sparse_canonical_seed": 0.10528574994532391,
+    "production_generation_bootstrap": 0.027600833971519023,
+    "initial_production_recovery_checkpoint": 0.1648274589679204,
+    "production_native_lookup_preparation": 0.48548462498001754,
+    "final_production_recovery_flush": 0.03541483299341053
+  },
+  "checks": [
+    {
+      "name": "actual_sql_metadata_contains_one_million_rows",
+      "passed": true
+    },
+    {
+      "name": "actual_duck_metadata_contains_one_million_rows",
+      "passed": true
+    },
+    {
+      "name": "production_native_lookup_ready",
+      "passed": true
+    },
+    {
+      "name": "cell_has_exactly_one_hundred_children",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_0_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_0_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_0_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_0_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_0_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_0_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_0",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_0",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_0",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_0",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_0",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_0",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_0",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_0",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_0",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_0",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_0",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_0",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_0",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_0",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_1_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_1_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_1_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_1_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_1_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_1_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_1",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_1",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_1",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_1",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_1",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_1",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_1",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_1",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_1",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_1",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_1",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_1",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_1",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_1",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_2_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_2_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_2_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_2_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_2_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_2_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_2",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_2",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_2",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_2",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_2",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_2",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_2",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_2",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_2",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_2",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_2",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_2",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_2",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_2",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_3_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_3_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_3_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_3_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_3_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_3_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_3",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_3",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_3",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_3",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_3",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_3",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_3",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_3",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_3",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_3",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_3",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_3",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_3",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_3",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_4_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_4_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_4_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_4_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_4_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_4_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_4",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_4",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_4",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_4",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_4",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_4",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_4",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_4",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_4",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_4",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_4",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_4",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_4",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_4",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_5_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_5_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_5_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_5_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_5_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_5_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_5",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_5",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_5",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_5",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_5",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_5",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_5",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_5",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_5",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_5",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_5",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_5",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_5",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_5",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_6_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_6_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_6_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_6_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_6_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_6_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_6",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_6",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_6",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_6",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_6",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_6",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_6",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_6",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_6",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_6",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_6",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_6",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_6",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_6",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_7_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_7_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_7_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_7_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_7_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_7_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_7",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_7",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_7",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_7",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_7",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_7",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_7",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_7",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_7",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_7",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_7",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_7",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_7",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_7",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_8_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_8_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_8_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_8_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_8_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_8_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_8",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_8",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_8",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_8",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_8",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_8",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_8",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_8",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_8",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_8",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_8",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_8",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_8",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_8",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_9_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_9_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_first10_9_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_9_committed",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_9_canonical_oracle",
+      "passed": true
+    },
+    {
+      "name": "tag_second10_9_native_generation_advanced",
+      "passed": true
+    },
+    {
+      "name": "filter20_exact_9",
+      "passed": true
+    },
+    {
+      "name": "duck_filter20_exact_parity_9",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_one_canonical_record_9",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_does_not_write_children_9",
+      "passed": true
+    },
+    {
+      "name": "cell_filter100_exact_9",
+      "passed": true
+    },
+    {
+      "name": "duck_cell100_exact_parity_9",
+      "passed": true
+    },
+    {
+      "name": "production_hierarchy_cell_epoch_intersection_9",
+      "passed": true
+    },
+    {
+      "name": "autocomplete_exact_counts_9",
+      "passed": true
+    },
+    {
+      "name": "remove20_committed_9",
+      "passed": true
+    },
+    {
+      "name": "remove20_canonical_oracle_9",
+      "passed": true
+    },
+    {
+      "name": "cell_tag_removed_9",
+      "passed": true
+    },
+    {
+      "name": "epoch_tag_removed_9",
+      "passed": true
+    },
+    {
+      "name": "fresh10_exact_canonical_9",
+      "passed": true
+    },
+    {
+      "name": "fresh10_removed_canonical_9",
+      "passed": true
+    },
+    {
+      "name": "case_sensitive_QC_vs_qc",
+      "passed": true
+    },
+    {
+      "name": "unicode_composed_vs_decomposed_exact",
+      "passed": true
+    },
+    {
+      "name": "revision_conflict_has_no_partial_write",
+      "passed": true
+    },
+    {
+      "name": "unregistered_target_rejected_without_generation_change",
+      "passed": true
+    },
+    {
+      "name": "recovery_scheduler_current",
+      "passed": true
+    },
+    {
+      "name": "recovery_exactly_matches_canonical_annotation_content",
+      "passed": true
+    },
+    {
+      "name": "zero_sqlite_membership_fallback_calls",
+      "passed": true
+    }
+  ],
+  "metadata_path": "/private/tmp/disco-duckdb-million-runs-20261001/sqlite-million/metadata.sqlite",
+  "sparse_seed_epochs": 1000,
+  "profiles": 3,
+  "tags_per_seed_annotation": 5,
+  "timing_scope": "Flask test_client JSON including SQL transaction and post-commit recovery scheduling; excludes browser, network, setup and oracle validation. SQL join results explicitly experimental.",
+  "full_create_app_run": false,
+  "production_protocol_context_claim": false,
+  "sqlite_membership_fallback_calls": 0,
+  "duckdb_version": "1.5.6",
+  "duckdb_path": "/private/tmp/disco-duckdb-million-runs-20261001/duckdb-million/metadata.duckdb",
+  "epochs": 1000000,
+  "cells": 10000,
+  "phase": "final_production_recovery_flush",
+  "canonical_seed_records": 3000,
+  "seed_density": 0.001,
+  "mysql_version": "8.4.2",
+  "annotation_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {},
+    "project_uuid": "215f3fa5-a23c-58cb-b1f9-c1f07b480933",
+    "reused": false,
+    "phase": "complete",
+    "seconds": 0.481122
+  },
+  "recovery_shape": [
+    "format",
+    "project",
+    "protocols",
+    "source_references",
+    "source_sha256s",
+    "tables",
+    "version"
+  ],
+  "native_authority_ready": true,
+  "row_cache_entries": 120,
+  "successful_operations": true,
+  "owned_native_runtime_stopped": true,
+  "seconds": 9.991961541993078,
+  "peak_worker_rss_bytes": 170934272,
+  "source_inventory_after": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "source_unchanged": true,
+  "passed": true
+}

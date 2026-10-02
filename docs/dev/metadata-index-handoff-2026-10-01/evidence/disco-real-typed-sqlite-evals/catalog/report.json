@@ -1,0 +1,797 @@
+{
+  "status": "complete",
+  "data_kind": "2781 actual mounted epochs; no synthetic rows",
+  "full_catalog_only": true,
+  "all_catalog_oracles_passed": true,
+  "database_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "schema_sha256": "b5a66ee94802b29dc6c11504dc2f7e801aa0c9974ed79773d1d835779048ef02",
+  "known_fields_count": 141,
+  "known_fields_sha256": "89f77b8f6ed64f1b003305adb1786f62893549edc45f93c640e16df9f02f7ca4",
+  "sources": {
+    "current": {
+      "workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+      "workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+      "workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+    },
+    "prior_optimized": {
+      "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+      "workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+      "workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+    }
+  },
+  "scopes": [
+    {
+      "label": "global",
+      "field": null,
+      "epochs": 2781,
+      "membership_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+      "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+      "output_bytes": 64610,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          708.4987919661216,
+          683.4438749938272,
+          686.4094159682281,
+          668.3997500222176,
+          695.7465829909779
+        ],
+        "first_ms": 708.4987919661216,
+        "warm_median_ms": 684.9266454810277,
+        "warm_max_ms": 695.7465829909779
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          535.1877500070259,
+          512.1957919909619,
+          518.0624589556828,
+          561.9609999703243,
+          519.1622500424273
+        ],
+        "first_ms": 535.1877500070259,
+        "warm_median_ms": 518.6123544990551,
+        "warm_max_ms": 561.9609999703243
+      },
+      "warm_speedup": 1.3206909545042,
+      "fraction_time_reduced": 0.24282058827652875,
+      "matches_previous_receipt_catalog_hash": true
+    },
+    {
+      "label": "largest_protocol",
+      "field": "protocol",
+      "epochs": 1857,
+      "membership_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+      "output_sha256": "e64765d6fc245793152365c2452b711e8ba33dcd674023d6f1548590b8bd0724",
+      "output_bytes": 61349,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          470.54245800245553,
+          498.79008304560557,
+          474.95954198529944,
+          467.94158301781863,
+          473.56795897940174
+        ],
+        "first_ms": 470.54245800245553,
+        "warm_median_ms": 474.2637504823506,
+        "warm_max_ms": 498.79008304560557
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          332.75837503606454,
+          323.4937500092201,
+          334.8771670134738,
+          324.18441597837955,
+          321.0040839621797
+        ],
+        "first_ms": 332.75837503606454,
+        "warm_median_ms": 323.8390829937998,
+        "warm_max_ms": 334.8771670134738
+      },
+      "warm_speedup": 1.4645043646304754,
+      "fraction_time_reduced": 0.31717513163416167,
+      "matches_previous_receipt_catalog_hash": true
+    },
+    {
+      "label": "largest_cell",
+      "field": "cell",
+      "epochs": 687,
+      "membership_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+      "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+      "output_bytes": 63167,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          228.96195901557803,
+          232.88575001060963,
+          234.90375000983477,
+          259.78137500351295,
+          229.63779198471457
+        ],
+        "first_ms": 228.96195901557803,
+        "warm_median_ms": 233.8947500102222,
+        "warm_max_ms": 259.78137500351295
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          121.79616698995233,
+          120.95437501557171,
+          121.9344999990426,
+          129.68324997927994,
+          122.08687502425164
+        ],
+        "first_ms": 121.79616698995233,
+        "warm_median_ms": 122.01068751164712,
+        "warm_max_ms": 129.68324997927994
+      },
+      "warm_speedup": 1.917002147765905,
+      "fraction_time_reduced": 0.4783521754707417,
+      "matches_previous_receipt_catalog_hash": true
+    },
+    {
+      "label": "numeric_value",
+      "field": "parameters/spotIntensity",
+      "epochs": 1820,
+      "membership_sha256": "c7def4348cea93495d9de5cacc99204f5722a79c51e398e22b3c240ccd699ac4",
+      "output_sha256": "d9da21706de4718bb5f3d4474713c5cea88d1c3adc45d460e985479569b24d04",
+      "output_bytes": 61295,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          449.5656249928288,
+          475.5173330195248,
+          453.8590419688262,
+          460.14916599961,
+          460.37124999566004
+        ],
+        "first_ms": 449.5656249928288,
+        "warm_median_ms": 460.260207997635,
+        "warm_max_ms": 475.5173330195248
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          320.61920897103846,
+          321.27549999859184,
+          317.68025003839284,
+          313.62908298615366,
+          316.36754097416997
+        ],
+        "first_ms": 320.61920897103846,
+        "warm_median_ms": 317.0238955062814,
+        "warm_max_ms": 321.27549999859184
+      },
+      "warm_speedup": 1.4518155082998012,
+      "fraction_time_reduced": 0.3112072475578632,
+      "matches_previous_receipt_catalog_hash": true
+    },
+    {
+      "label": "text_value",
+      "field": "metadata/cell/label",
+      "epochs": 1249,
+      "membership_sha256": "0993328c3c28d8f2ebd3e2787e88231be8bc6ab24035852acc42753b91a23bc0",
+      "output_sha256": "c4c67ef90cb29f0a7d0596693f98d2a8f836af193a07a455ba0a948cae6e53ad",
+      "output_bytes": 63980,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          322.1234590164386,
+          334.82883300166577,
+          331.28283300902694,
+          324.7199169709347,
+          326.70833298470825
+        ],
+        "first_ms": 322.1234590164386,
+        "warm_median_ms": 328.9955829968676,
+        "warm_max_ms": 334.82883300166577
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          229.02329097269103,
+          215.38162499200553,
+          218.50683400407434,
+          212.87304197903723,
+          219.19991698814556
+        ],
+        "first_ms": 229.02329097269103,
+        "warm_median_ms": 216.94422949803993,
+        "warm_max_ms": 219.19991698814556
+      },
+      "warm_speedup": 1.516498427997321,
+      "fraction_time_reduced": 0.3405861941310456,
+      "matches_previous_receipt_catalog_hash": true
+    },
+    {
+      "label": "missing_field",
+      "field": "parameters/currentSpotSize",
+      "epochs": 924,
+      "membership_sha256": "c19dc8be9cf2a5e9b5d9b9474a8bf89010053415abc13ae3055bf7e47d9624ea",
+      "output_sha256": "190e9bbbc6d0431eb7d711b44710699dd2a34bf4ac5adaef8bef925a4a117c96",
+      "output_bytes": 64013,
+      "field_count": 141,
+      "current": {
+        "samples_ms": [
+          334.2760410159826,
+          332.22712500719354,
+          328.2880409969948,
+          335.07700002519414,
+          333.92487501259893
+        ],
+        "first_ms": 334.2760410159826,
+        "warm_median_ms": 333.07600000989623,
+        "warm_max_ms": 335.07700002519414
+      },
+      "prior_optimized": {
+        "samples_ms": [
+          183.4451659815386,
+          185.2971250191331,
+          198.28654202865437,
+          183.9263750007376,
+          182.75566695956513
+        ],
+        "first_ms": 183.4451659815386,
+        "warm_median_ms": 184.61175000993535,
+        "warm_max_ms": 198.28654202865437
+      },
+      "warm_speedup": 1.80419718675529,
+      "fraction_time_reduced": 0.44573685884167513,
+      "matches_previous_receipt_catalog_hash": true
+    }
+  ],
+  "limitations": [
+    "Actual 2781 epochs only; not a million-epoch qualification",
+    "Full catalog plus JSON only; not full API preview or app",
+    "Explicit identical known_fields and global cache bypass; scope extraction/open excluded",
+    "Exact sealed database cloned per worker before timing; normal production lifecycle preserved"
+  ],
+  "measurement": {
+    "processes": "independent serial workers for each implementation",
+    "repeats": 5,
+    "first_and_four_warm": true,
+    "includes": "catalog result plus canonical JSON encoding",
+    "excludes": [
+      "scope extraction",
+      "DB copy",
+      "index open",
+      "checksum validation",
+      "profiling",
+      "API service",
+      "browser"
+    ]
+  },
+  "profiles": {
+    "current": {
+      "receipt": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/current-profile.json",
+      "process_peak_rss_mib": 65.53125,
+      "scopes": [
+        {
+          "label": "global",
+          "sql_by_category": {
+            "scope_create": {
+              "statements": 15,
+              "trace_statements": 15,
+              "execute_ms": 2.248125907499343,
+              "fetch_ms": 0.0
+            },
+            "scope_population": {
+              "statements": 8,
+              "trace_statements": 19468,
+              "execute_ms": 58.702251059003174,
+              "fetch_ms": 0.0
+            },
+            "other": {
+              "statements": 0,
+              "trace_statements": 8,
+              "execute_ms": 0.0,
+              "fetch_ms": 0.0
+            },
+            "row_json": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.02091703936457634,
+              "fetch_ms": 5.59947406873107
+            },
+            "present_fields": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.043584033846855164,
+              "fetch_ms": 98.2577046379447
+            },
+            "field_statistics": {
+              "statements": 140,
+              "trace_statements": 140,
+              "execute_ms": 151.4740840648301,
+              "fetch_ms": 6.180667318403721
+            },
+            "field_definitions": {
+              "statements": 7,
+              "trace_statements": 10,
+              "execute_ms": 0.18433301011100411,
+              "fetch_ms": 0.0
+            },
+            "suggestion_or_joint_values": {
+              "statements": 7,
+              "trace_statements": 7,
+              "execute_ms": 0.48808305291458964,
+              "fetch_ms": 61.7591452319175
+            },
+            "within_cell_variation": {
+              "statements": 140,
+              "trace_statements": 140,
+              "execute_ms": 279.00704531930387,
+              "fetch_ms": 0.38512167520821095
+            }
+          },
+          "top_cumulative": [
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 291,
+              "function": "catalog",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 7.452650000000001,
+              "cumulative_ms": 832.9870840000001
+            },
+            {
+              "file": "~",
+              "line": 0,
+              "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+              "primitive_calls": 305,
+              "calls": 305,
+              "self_ms": 443.700755,
+              "cumulative_ms": 443.700755
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 444,
+              "function": "items",
+              "primitive_calls": 19474,
+              "calls": 19474,
+              "self_ms": 83.8977,
+              "cumulative_ms": 173.10793800000002
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 520,
+              "function": "_suggest",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 1.3678810000000001,
+              "cumulative_ms": 165.779583
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 536,
+              "function": "<genexpr>",
+              "primitive_calls": 16692,
+              "calls": 16692,
+              "self_ms": 5.539785,
+              "cumulative_ms": 163.827843
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 474,
+              "function": "values",
+              "primitive_calls": 16692,
+              "calls": 16692,
+              "self_ms": 3.156114,
+              "cumulative_ms": 150.907375
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 299,
+              "function": "<setcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 104.65754100000001,
+              "cumulative_ms": 104.65754100000001
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+              "line": 299,
+              "function": "loads",
+              "primitive_calls": 26977,
+              "calls": 26977,
+              "self_ms": 12.594874,
+              "cumulative_ms": 70.550143
+            }
+          ]
+        },
+        {
+          "label": "largest_protocol",
+          "sql_by_category": {
+            "scope_create": {
+              "statements": 17,
+              "trace_statements": 17,
+              "execute_ms": 2.08358489908278,
+              "fetch_ms": 0.0
+            },
+            "scope_population": {
+              "statements": 9,
+              "trace_statements": 16713,
+              "execute_ms": 48.392750963103026,
+              "fetch_ms": 0.0
+            },
+            "other": {
+              "statements": 0,
+              "trace_statements": 9,
+              "execute_ms": 0.0,
+              "fetch_ms": 0.0
+            },
+            "row_json": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.021000043489038944,
+              "fetch_ms": 3.778618120122701
+            },
+            "present_fields": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.043459003791213036,
+              "fetch_ms": 74.56562301376835
+            },
+            "field_statistics": {
+              "statements": 140,
+              "trace_statements": 140,
+              "execute_ms": 108.28212049091235,
+              "fetch_ms": 3.1159877544268966
+            },
+            "field_definitions": {
+              "statements": 8,
+              "trace_statements": 11,
+              "execute_ms": 0.17508206656202674,
+              "fetch_ms": 0.0
+            },
+            "suggestion_or_joint_values": {
+              "statements": 8,
+              "trace_statements": 8,
+              "execute_ms": 0.5165840266272426,
+              "fetch_ms": 47.294598480220884
+            },
+            "within_cell_variation": {
+              "statements": 140,
+              "trace_statements": 140,
+              "execute_ms": 167.46157204033807,
+              "fetch_ms": 0.08495012298226357
+            }
+          },
+          "top_cumulative": [
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 291,
+              "function": "catalog",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 5.991447000000001,
+              "cumulative_ms": 543.416542
+            },
+            {
+              "file": "~",
+              "line": 0,
+              "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+              "primitive_calls": 307,
+              "calls": 307,
+              "self_ms": 262.802743,
+              "cumulative_ms": 262.802743
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 520,
+              "function": "_suggest",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 1.061552,
+              "cumulative_ms": 125.66570800000001
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 444,
+              "function": "items",
+              "primitive_calls": 14864,
+              "calls": 14864,
+              "self_ms": 54.46369,
+              "cumulative_ms": 124.59811400000001
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 536,
+              "function": "<genexpr>",
+              "primitive_calls": 13006,
+              "calls": 13006,
+              "self_ms": 4.743021,
+              "cumulative_ms": 124.230821
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 474,
+              "function": "values",
+              "primitive_calls": 13006,
+              "calls": 13006,
+              "self_ms": 2.46166,
+              "cumulative_ms": 113.180814
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py",
+              "line": 299,
+              "function": "<setcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 76.24837500000001,
+              "cumulative_ms": 76.24837500000001
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+              "line": 299,
+              "function": "loads",
+              "primitive_calls": 20676,
+              "calls": 20676,
+              "self_ms": 9.636223000000001,
+              "cumulative_ms": 52.172744
+            }
+          ]
+        }
+      ]
+    },
+    "optimized": {
+      "receipt": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/optimized-profile.json",
+      "process_peak_rss_mib": 72.90625,
+      "scopes": [
+        {
+          "label": "global",
+          "sql_by_category": {
+            "scope_create": {
+              "statements": 3,
+              "trace_statements": 3,
+              "execute_ms": 0.5548750632442534,
+              "fetch_ms": 0.0
+            },
+            "row_json": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.021625019144266844,
+              "fetch_ms": 5.697851884178817
+            },
+            "field_statistics": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 140.7038330216892,
+              "fetch_ms": 6.982894788961858
+            },
+            "field_definitions": {
+              "statements": 8,
+              "trace_statements": 11,
+              "execute_ms": 0.2618340658955276,
+              "fetch_ms": 0.08969870395958424
+            },
+            "within_cell_variation": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 258.9850419899449,
+              "fetch_ms": 41.60841560224071
+            },
+            "scope_population": {
+              "statements": 1,
+              "trace_statements": 2781,
+              "execute_ms": 8.459582983050495,
+              "fetch_ms": 0.0
+            },
+            "other": {
+              "statements": 0,
+              "trace_statements": 1,
+              "execute_ms": 0.0,
+              "fetch_ms": 0.0
+            },
+            "suggestion_or_joint_values": {
+              "statements": 7,
+              "trace_statements": 7,
+              "execute_ms": 0.19433494890108705,
+              "fetch_ms": 46.01205961080268
+            }
+          },
+          "top_cumulative": [
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 294,
+              "function": "catalog",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 10.655987,
+              "cumulative_ms": 590.2544160000001
+            },
+            {
+              "file": "~",
+              "line": 0,
+              "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+              "primitive_calls": 20,
+              "calls": 20,
+              "self_ms": 381.013168,
+              "cumulative_ms": 381.013168
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+              "line": 299,
+              "function": "loads",
+              "primitive_calls": 14464,
+              "calls": 14464,
+              "self_ms": 6.705624,
+              "cumulative_ms": 46.205477
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 321,
+              "function": "<setcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 44.15920800000001,
+              "cumulative_ms": 44.15920800000001
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+              "line": 332,
+              "function": "decode",
+              "primitive_calls": 14464,
+              "calls": 14464,
+              "self_ms": 11.122259000000001,
+              "cumulative_ms": 37.691477
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 298,
+              "function": "<listcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 12.937463000000001,
+              "cumulative_ms": 36.71212500000001
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 542,
+              "function": "_suggest",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 1.232398,
+              "cumulative_ms": 33.032292000000005
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 565,
+              "function": "<genexpr>",
+              "primitive_calls": 16692,
+              "calls": 16692,
+              "self_ms": 31.459257000000004,
+              "cumulative_ms": 31.459257000000004
+            }
+          ]
+        },
+        {
+          "label": "largest_protocol",
+          "sql_by_category": {
+            "scope_create": {
+              "statements": 3,
+              "trace_statements": 3,
+              "execute_ms": 0.47274999087676406,
+              "fetch_ms": 0.0
+            },
+            "scope_population": {
+              "statements": 2,
+              "trace_statements": 3714,
+              "execute_ms": 10.734292038250715,
+              "fetch_ms": 0.0
+            },
+            "other": {
+              "statements": 0,
+              "trace_statements": 2,
+              "execute_ms": 0.0,
+              "fetch_ms": 0.0
+            },
+            "row_json": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 0.020875013433396816,
+              "fetch_ms": 4.082667990587652
+            },
+            "field_statistics": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 123.05604200810194,
+              "fetch_ms": 4.89164877217263
+            },
+            "field_definitions": {
+              "statements": 9,
+              "trace_statements": 12,
+              "execute_ms": 0.1477090991102159,
+              "fetch_ms": 0.07576093776151538
+            },
+            "within_cell_variation": {
+              "statements": 1,
+              "trace_statements": 1,
+              "execute_ms": 96.12583299167454,
+              "fetch_ms": 38.6058769072406
+            },
+            "suggestion_or_joint_values": {
+              "statements": 8,
+              "trace_statements": 8,
+              "execute_ms": 0.13191491598263383,
+              "fetch_ms": 19.763508287724108
+            }
+          },
+          "top_cumulative": [
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 294,
+              "function": "catalog",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 9.449921,
+              "cumulative_ms": 369.97454200000004
+            },
+            {
+              "file": "~",
+              "line": 0,
+              "function": "<method 'execute' of 'sqlite3.Connection' objects>",
+              "primitive_calls": 22,
+              "calls": 22,
+              "self_ms": 225.668835,
+              "cumulative_ms": 225.668835
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 321,
+              "function": "<setcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 44.244417,
+              "cumulative_ms": 44.244417
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/__init__.py",
+              "line": 299,
+              "function": "loads",
+              "primitive_calls": 7677,
+              "calls": 7677,
+              "self_ms": 3.4397130000000002,
+              "cumulative_ms": 26.346053
+            },
+            {
+              "file": "/PATH/TO/LOCAL_HOME/.local/share/uv/python/cpython-3.11.13-macos-aarch64-none/lib/python3.11/json/decoder.py",
+              "line": 332,
+              "function": "decode",
+              "primitive_calls": 7677,
+              "calls": 7677,
+              "self_ms": 5.729673,
+              "cumulative_ms": 21.982627
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 298,
+              "function": "<listcomp>",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 4.546734,
+              "cumulative_ms": 20.220791000000002
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 542,
+              "function": "_suggest",
+              "primitive_calls": 1,
+              "calls": 1,
+              "self_ms": 0.9677760000000001,
+              "cumulative_ms": 15.738458
+            },
+            {
+              "file": "/private/tmp/disco-duckdb-million-20261001/python/workspace_disk_index.py",
+              "line": 565,
+              "function": "<genexpr>",
+              "primitive_calls": 13006,
+              "calls": 13006,
+              "self_ms": 14.520351000000002,
+              "cumulative_ms": 14.520351000000002
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "conclusion": "Prior shared catalog optimization alone saves 24–48% of warm catalog time with exact output parity, without changing datatypes, schema, indexes or sealed database. Still 122–519ms warm across these actual scopes, so full catalog does not meet the proposed 100ms threshold. Batched aggregate statistics and per-cell variation remain the main cost. Typed bounded filters/page test is a separate experiment.",
+  "profiling_note": "cProfile and SQL execute/fetch tracing ran in separate untimed calls. Timings in profiles include diagnostic overhead and must not be mixed with latency samples. Trace counts include expanded per-epoch inserts and are retained only by category; no SQL raw values are emitted."
+}

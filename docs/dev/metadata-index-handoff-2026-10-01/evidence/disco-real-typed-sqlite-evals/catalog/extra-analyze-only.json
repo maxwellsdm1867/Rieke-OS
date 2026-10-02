@@ -1,0 +1,105 @@
+{
+  "arm": "analyze-only",
+  "operation": "Unmodified current full catalog plus JSON; auxiliary typed tables not queried by current code",
+  "input_path": "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite",
+  "input_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "owned_path": "/private/tmp/disco-real-typed-sqlite-20261001/catalog/inputs/analyze-only/real.sqlite",
+  "owned_sha256": "34aeee8b79e24ac441b61ccea02f128e414ac19fee2e2412e73c25e26fe7ce40",
+  "original_tables": {
+    "meta": {
+      "rows": 6,
+      "sha256": "82ba345b4b92350a77452006874608374ff80342c0327ac9a30fd3653a92892a"
+    },
+    "epochs": {
+      "rows": 2781,
+      "sha256": "13b74a28dd5db0665cb9ffead86992b953685bc133c20612b68a7be8ecd9da2b"
+    },
+    "fields": {
+      "rows": 140,
+      "sha256": "3a60d72d0c2c650d05302ddc6e192db181feeebd81f335b6162c52e591ec0a12"
+    },
+    "field_values": {
+      "rows": 10756,
+      "sha256": "958fb743bbc49d75c3ef33cf0348d8c9043c99365aebf35032d938f5837a4075"
+    },
+    "epoch_values": {
+      "rows": 214451,
+      "sha256": "c82110ecd68eaf12a82e443d3b8fa380331738d8828a601cfe8acca39a7b3b2f"
+    },
+    "sources": {
+      "rows": 3,
+      "sha256": "da4bc9c1180bc9797b7ade63734b938c7f919b69703a01bac8fd846a55243052"
+    },
+    "metadata_objects": {
+      "rows": 202,
+      "sha256": "1e75249508ef335b51a16b0ebadd2e93f8ab427dc8e62c9e40231336f8f9ded0"
+    }
+  },
+  "sqlite_stat1_sha256": "b4282b63821492a13097ad6a549ce6ba2e715aa26ec873987173eb8573594ff9",
+  "sqlite_stat1_rows": 9,
+  "source_hashes": {
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/private/tmp/disco-real-typed-sqlite-20261001/model/real-typed.sqlite": "84167c9c7b6ae416997a0b05a10db3e81fdb51674f4c984570e54d411738a834",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+  },
+  "scopes": [
+    {
+      "label": "global",
+      "field": null,
+      "epochs": 2781,
+      "membership_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+      "selection": "all",
+      "samples_ms": [
+        656.7429160350002,
+        656.8654999719001,
+        639.2175829969347,
+        629.5385830453597,
+        642.3056250205263
+      ],
+      "warm_median_ms": 642.3056250205263,
+      "warm_min_ms": 629.5385830453597,
+      "warm_max_ms": 656.8654999719001,
+      "field_count": 141,
+      "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+      "exact_original_catalog_parity": true
+    },
+    {
+      "label": "largest_cell",
+      "field": "cell",
+      "epochs": 687,
+      "membership_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+      "selection": "observed equality",
+      "samples_ms": [
+        254.49124997248873,
+        258.0339999985881,
+        267.3120829858817,
+        260.3877499932423,
+        258.0831670202315
+      ],
+      "warm_median_ms": 258.0831670202315,
+      "warm_min_ms": 254.49124997248873,
+      "warm_max_ms": 267.3120829858817,
+      "field_count": 141,
+      "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+      "exact_original_catalog_parity": true
+    }
+  ],
+  "sampling": "One excluded full catalog warmup followed by five warm timed calls per scope; same explicit known_fields; global cache bypassed",
+  "limitations": [
+    "2781 actual epochs only",
+    "Catalog computation plus JSON, not full API preview or app",
+    "ANALYZE and typed model attribution on owned copies; no source or mounted changes"
+  ],
+  "all_oracles_passed": true,
+  "source_hashes_after": {
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/private/tmp/disco-real-typed-sqlite-20261001/model/real-typed.sqlite": "84167c9c7b6ae416997a0b05a10db3e81fdb51674f4c984570e54d411738a834",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd"
+  },
+  "owned_database_unchanged_during_catalog": true,
+  "process_peak_rss_mib": 81.125
+}

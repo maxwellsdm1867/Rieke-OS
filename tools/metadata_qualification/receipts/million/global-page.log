@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "global", "mode": "page", "sample": 0, "ms": 12693.548666953575}
+{"arm": "candidate", "label": "global", "mode": "page", "sample": 0, "ms": 33.11787499114871}
+{"arm": "candidate", "label": "global", "mode": "page", "sample": 1, "ms": 19.050209026318043}
+{"arm": "baseline", "label": "global", "mode": "page", "sample": 1, "ms": 12445.429624989629}
+{"arm": "baseline", "label": "global", "mode": "page", "sample": 2, "ms": 12200.40654100012}
+{"arm": "candidate", "label": "global", "mode": "page", "sample": 2, "ms": 22.645915974862874}
+{"arm": "candidate", "label": "global", "mode": "page", "sample": 3, "ms": 17.921874998137355}
+{"arm": "baseline", "label": "global", "mode": "page", "sample": 3, "ms": 12446.747292007785}
+{"arm": "baseline", "label": "global", "mode": "page", "sample": 4, "ms": 12230.89758300921}
+{"arm": "candidate", "label": "global", "mode": "page", "sample": 4, "ms": 22.878625022713095}
+{"case": "global", "mode": "page", "status": "passed"}

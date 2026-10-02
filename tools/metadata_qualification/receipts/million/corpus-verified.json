@@ -1,0 +1,53 @@
+{
+  "status": "seals_counts_generation_verified",
+  "source_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+  "replay_sha256": "7e03e05e97885505f227e1b0938b34f303229db90ddcdd1f7e40f40d6b55e2b6",
+  "counts": {
+    "epochs": 1000000,
+    "fields": 140,
+    "epoch_values": 77107863
+  },
+  "lineage_receipt": {
+    "source_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "base_sha256": "7e03e05e97885505f227e1b0938b34f303229db90ddcdd1f7e40f40d6b55e2b6",
+    "epochs": 1000000,
+    "full_copies": 359,
+    "remainder_epochs": 1621,
+    "remainder_blocks": [
+      "58718c9c-081c-5c7a-96a1-5d41313cf447",
+      "1f4be3d8-50f1-52bd-acd7-612c4aa6a1ae",
+      "63037003-e67d-55ca-8221-9346be3eb272",
+      "79b147d6-d8d7-5e84-9b9a-baa3cc477b96",
+      "926e9b9d-6c73-56e4-90a9-3dc05459257f",
+      "6fc5ceec-c9db-5443-9788-1ed7cb6cf8e9",
+      "e5bf23a3-3250-551d-a6d7-6c9d6a893b1e",
+      "4b3833bb-d623-5674-91eb-cdc3572825de",
+      "a672d5db-6fbc-55bc-913d-63d04ab69309",
+      "0b109391-3368-59df-8084-287a4c53f254"
+    ],
+    "fields": 140,
+    "epoch_value_links": 77107863,
+    "source_epochs": 2781,
+    "source_ancestors": 202,
+    "generation": "ecc7b07cff319076486899a8521f18b8131fbb2662b68f38027697ab6ec148d0",
+    "project_uuid": "f75a7799-a728-5220-8f20-bfa4e7dffcb1",
+    "bytes": 7195836416,
+    "insert_seconds": 224.1962519250228,
+    "index_seconds": 114.81948254199233,
+    "total_seconds": 420.35097037500236,
+    "peak_rss_bytes": 315293696,
+    "source_unchanged": true,
+    "experimental_fingerprint": true,
+    "limitations": [
+      "Real-record replay: scientific parameter cardinalities and timestamps repeat; not one million independent acquired epochs.",
+      "Seven production tables and production indices, experimental construction; native full-detail fingerprints and upfront full-field catalogs are not produced.",
+      "Source paths are audit provenance; copied replay IDs and paths do not identify readable new H5 traces.",
+      "Final remainder comprises whole source blocks; copied source counts remain original provenance for a partial source replay."
+    ]
+  },
+  "limitations": [
+    "Exact replay seal binds preserved namespace/whole-block tail. Streaming native lineage/value oracle still required.",
+    "Repeated scientific cardinality; no new readable waveform sources; native eligibility remains a separate gate."
+  ],
+  "seconds": 9.374181416991632
+}

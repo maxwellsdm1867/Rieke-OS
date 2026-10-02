@@ -1,0 +1,167 @@
+{
+  "head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "epochs": 100000,
+  "scope": "Actual native MySQL8.4.2 and current Flask/WorkspaceService with sealed synthetic100k metadata index; empty saved annotations/default curation; no SQL doubles, no H5/waveform I/O, no private files.",
+  "started": "2026-10-01T06:26:52.925580+00:00",
+  "operations": [
+    {
+      "name": "api_epoch_first_60",
+      "samples_seconds": [
+        0.14481741597410291,
+        0.055953916045837104,
+        0.056136665982194245
+      ],
+      "median_seconds": 0.056136665982194245,
+      "maximum_seconds": 0.14481741597410291,
+      "oracle_calls": 0,
+      "bytes": 69141,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_epoch_next_60",
+      "samples_seconds": [
+        0.05573741695843637,
+        0.05535191699163988,
+        0.05677399999694899
+      ],
+      "median_seconds": 0.05573741695843637,
+      "maximum_seconds": 0.05677399999694899,
+      "oracle_calls": 0,
+      "bytes": 69192,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_root",
+      "samples_seconds": [
+        2.381541249982547,
+        1.951275999948848,
+        1.9826461669872515
+      ],
+      "median_seconds": 1.9826461669872515,
+      "maximum_seconds": 2.381541249982547,
+      "oracle_calls": 0,
+      "bytes": 903,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_date",
+      "samples_seconds": [
+        2.285430166986771,
+        2.632446124975104,
+        2.3315149580012076
+      ],
+      "median_seconds": 2.3315149580012076,
+      "maximum_seconds": 2.632446124975104,
+      "oracle_calls": 0,
+      "bytes": 25162,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_cell",
+      "samples_seconds": [
+        2.645736709004268,
+        2.679263625002932,
+        2.5262102499837056
+      ],
+      "median_seconds": 2.645736709004268,
+      "maximum_seconds": 2.679263625002932,
+      "oracle_calls": 0,
+      "bytes": 4109,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_block",
+      "samples_seconds": [
+        2.5828849999816157,
+        2.6566961249918677,
+        2.693862124986481
+      ],
+      "median_seconds": 2.6566961249918677,
+      "maximum_seconds": 2.693862124986481,
+      "oracle_calls": 0,
+      "bytes": 12844,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_epoch_details",
+      "samples_seconds": [
+        0.07117850001668558,
+        0.0782105409889482,
+        0.0599460419616662
+      ],
+      "median_seconds": 0.07117850001668558,
+      "maximum_seconds": 0.0782105409889482,
+      "oracle_calls": 0,
+      "bytes": 1818,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_overview",
+      "samples_seconds": [
+        1.1637280419818126,
+        0.5633834589971229,
+        0.5601494160364382
+      ],
+      "median_seconds": 0.5633834589971229,
+      "maximum_seconds": 1.1637280419818126,
+      "oracle_calls": 0,
+      "bytes": 369831,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_contrast_filter_preview",
+      "samples_seconds": [
+        3.962705874990206,
+        3.9048535419860855,
+        3.8270004999940284
+      ],
+      "median_seconds": 3.9048535419860855,
+      "maximum_seconds": 3.962705874990206,
+      "oracle_calls": 0,
+      "bytes": 11439,
+      "exact_oracle_passed": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "native_context_ready_without_contract_override",
+      "passed": true
+    },
+    {
+      "name": "zero_legacy_oracle_calls",
+      "passed": true
+    }
+  ],
+  "phases": {
+    "synthetic_model": 0.8958697920315899,
+    "owned_native_boot": 3.460534291982185,
+    "existing_sealed_index_open": 0.7465929590398446,
+    "normal_create_app_empty_native_annotations": 9.556146749993786,
+    "native_context_first_proof": 0.026856374985072762
+  },
+  "oracle_calls": 0,
+  "phase": "native_browser_server_ready",
+  "native_contract": true,
+  "native_context_ready": true,
+  "native_context_contract": "protocol-state-v3",
+  "annotation_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {
+      "preparing_protocol_reads": {
+        "seconds": 0.791613
+      }
+    },
+    "project_uuid": "d597a1f3-6212-58f6-9e9c-1ee7212fa1a0",
+    "reused": false,
+    "protocols_prepared": 1,
+    "protocols_deferred": 0,
+    "phase": "complete",
+    "seconds": 1.001635
+  },
+  "backend_passed": true,
+  "browser_done_signal": true,
+  "owned_native_runtime_stopped": true,
+  "seconds": 154.52354279201245,
+  "passed": true
+}

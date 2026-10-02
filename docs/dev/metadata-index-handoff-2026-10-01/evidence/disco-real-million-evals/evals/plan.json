@@ -1,0 +1,158 @@
+{
+  "cases": [
+    {
+      "label": "largest_cell",
+      "predicate": null,
+      "scope": {
+        "cell": "89c03137-b190-5456-a318-a8a96bf25e9a"
+      },
+      "original_scope": {
+        "cell": "9bbb4f99-ecd2-5721-9a67-94d93a1222cc"
+      },
+      "expected_count": 687
+    },
+    {
+      "label": "largest_block",
+      "predicate": null,
+      "scope": {
+        "block": "b40dfd89-8191-5fcc-9415-44b4e99df501"
+      },
+      "original_scope": {
+        "block": "58718c9c-081c-5c7a-96a1-5d41313cf447"
+      },
+      "expected_count": 601
+    },
+    {
+      "label": "compound_all",
+      "predicate": {
+        "all": [
+          {
+            "field": "metadata/block/parameters/spotIntensity",
+            "operator": "eq",
+            "value": 0.8
+          },
+          {
+            "field": "metadata/cell/label",
+            "operator": "eq",
+            "value": "Cell1"
+          }
+        ]
+      },
+      "scope": null,
+      "expected_count": 416035
+    },
+    {
+      "label": "array_eq",
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "eq",
+        "value": [
+          40.0,
+          80.0,
+          120.0,
+          160.0,
+          180.0,
+          200.0,
+          220.0,
+          240.0,
+          280.0,
+          320.0,
+          460.0,
+          600.0,
+          720.0
+        ]
+      },
+      "scope": null,
+      "expected_count": 668034
+    },
+    {
+      "label": "array_contains",
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "contains",
+        "value": 40.0
+      },
+      "scope": null,
+      "expected_count": 668034
+    },
+    {
+      "label": "number_eq",
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "eq",
+        "value": 0.8
+      },
+      "scope": null,
+      "expected_count": 654751
+    },
+    {
+      "label": "recorded_null",
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "is_null"
+      },
+      "scope": null,
+      "expected_count": 305041
+    },
+    {
+      "label": "missing",
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "missing"
+      },
+      "scope": null,
+      "expected_count": 331966
+    },
+    {
+      "label": "mixed_types",
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "eq",
+        "value": "current injt differenrt history "
+      },
+      "scope": null,
+      "expected_count": 248194
+    },
+    {
+      "label": "compound_any",
+      "predicate": {
+        "any": [
+          {
+            "field": "metadata/block/parameters/spotIntensity",
+            "operator": "eq",
+            "value": 0.8
+          },
+          {
+            "field": "metadata/cell/label",
+            "operator": "eq",
+            "value": "Cell1"
+          }
+        ]
+      },
+      "scope": null,
+      "expected_count": 688138
+    },
+    {
+      "label": "largest_protocol",
+      "predicate": null,
+      "scope": {
+        "protocol": "edu.washington.riekelab.turner.protocols.ExpandingSpots"
+      },
+      "expected_count": 668034
+    },
+    {
+      "label": "global",
+      "predicate": null,
+      "scope": null,
+      "expected_count": 1000000
+    }
+  ],
+  "facet_fields": [
+    "parameters/useRandomSeed",
+    "parameters/currentSpotSize"
+  ],
+  "real_epochs": 2781,
+  "fields": 140,
+  "tail_epochs": 1621,
+  "source_sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e"
+}

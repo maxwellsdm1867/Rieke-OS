@@ -201,6 +201,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         store.binding_header_provider=explorer_history.protocol_binding_header
         if shared_annotations is not None:shared_annotations.state_generation=generation
         app.extensions['state_generation']=generation
+        service._explore_state_generation=generation
 
     def state(protocol_uuid):
         return selected_state.materialized_state(protocol_uuid)
@@ -837,6 +838,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body, dict) or set(body) - allowed or required - set(body):
             raise ValueError('Malformed explorer predicate request or unsupported fields')
         return body
+
+    from workspace_explore_queries import register_explore_query_routes
+    register_explore_query_routes(app, service, db_lock, data_stores.registration_locks, explorer_request)
 
     @app.get('/api/explore/predicate-fields')
     def explorer_predicate_fields():
@@ -1859,7 +1863,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             # other writes, including idempotent/no-op mutations: a previous
             # committed write may still need protection after a backup failure.
             # In particular, explore/run records last-run state and is a write.
-            read_posts = {'explorer_preview', 'tree_page', 'matching_epochs',
+            read_posts = {'explorer_preview', 'explorer_summaries', 'explorer_summary_cancel', 'explorer_query_page', 'tree_page', 'matching_epochs',
                 'annotation_batch_read', 'curation_batch_read', 'tag_import_preview',
                 'preview_source_propagation', 'resolve_search_preset',
                 'compare_protocol_revision'}

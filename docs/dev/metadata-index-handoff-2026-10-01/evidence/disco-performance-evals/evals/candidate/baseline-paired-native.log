@@ -1,0 +1,35 @@
+{"stage": "synthetic_model", "elapsed": 0.06481729197548702}
+{"stage": "owned_native_boot", "elapsed": 0.9363623330136761}
+/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/.rieke-runtime/venv/lib/python3.11/site-packages/datajoint/settings.py:992: UserWarning: No datajoint.json found. Using defaults and environment variables. Run `dj.config.save_template()` to create a template configuration.
+  config = _create_config()
+{"stage": "existing_sealed_index_open", "elapsed": 5.052964792004786}
+[2026-10-01 00:50:34] DataJoint 2.2.2 connected to root@127.0.0.1:56232
+[2026-10-01 00:50:34][WARNING]: Native type 'int' is used in attribute 'experiment_id'. Consider using a core DataJoint type for better portability.
+{"stage": "normal_create_app_empty_native_annotations", "elapsed": 5.79311545798555}
+[2026-10-01 00:50:34][WARNING]: Native type 'int unsigned' is used in attribute 'revision'. Consider using a core DataJoint type for better portability.
+[2026-10-01 00:50:34][WARNING]: Native type 'int unsigned' is used in attribute 'epoch_count'. Consider using a core DataJoint type for better portability.
+[2026-10-01 00:50:34][WARNING]: Native type 'int unsigned' is used in attribute 'version'. Consider using a core DataJoint type for better portability.
+[2026-10-01 00:50:34][WARNING]: Native type 'int unsigned' is used in attribute 'version'. Consider using a core DataJoint type for better portability.
+[2026-10-01 00:50:34][WARNING]: Native type 'int unsigned' is used in attribute 'revision'. Consider using a core DataJoint type for better portability.
+{"stage": "native_context_first_proof", "elapsed": 15.373845541966148}
+{"stage": "api_epoch_first_60", "elapsed": 15.408821082965005}
+{"stage": "api_epoch_next_60", "elapsed": 15.557895875012036}
+{"stage": "api_tree_root", "elapsed": 15.616749957960565}
+{"stage": "api_tree_expand_date", "elapsed": 17.72984758298844}
+{"stage": "api_tree_expand_cell", "elapsed": 20.029957207967527}
+{"stage": "api_tree_expand_block", "elapsed": 22.652123707986902}
+{"stage": "api_epoch_details", "elapsed": 25.229565541958436}
+{"stage": "api_overview", "elapsed": 25.29252074996475}
+{"stage": "api_contrast_filter_preview", "elapsed": 26.455003916984424}
+{"stage": "native_browser_server_ready", "elapsed": 30.34171091701137}
+127.0.0.1 - - [01/Oct/2026 00:50:59] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:00] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:00] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:01] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:02] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:02] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:03] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:03] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:04] "POST /api/explore/preview HTTP/1.1" 200 -
+127.0.0.1 - - [01/Oct/2026 00:51:05] "POST /api/explore/preview HTTP/1.1" 200 -
+{"done": true, "passed": true, "seconds": 38.53197733301204}

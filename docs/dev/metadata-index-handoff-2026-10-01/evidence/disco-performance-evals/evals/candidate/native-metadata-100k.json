@@ -1,0 +1,3350 @@
+{
+  "head": "eb1e73e2ea4af821ddc73b957568f13746dd9b8f",
+  "source_root": "/private/tmp/disco-performance-evals-20261001",
+  "source_inventory_before": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "harness_sha256": "9ca093ba51cde2864a9646ab541aa5f52b09317502e88f6ab95cf03ae83710c9",
+  "samples": 10,
+  "epochs": 100000,
+  "scope": "Actual native MySQL8.4.2 and current Flask/WorkspaceService with sealed synthetic100k metadata index; empty saved annotations/default curation; no SQL doubles, no H5/waveform I/O, no private files.",
+  "started": "2026-10-01T07:35:20.583641+00:00",
+  "operations": [
+    {
+      "name": "api_epoch_first_60",
+      "samples_seconds": [
+        0.1502514589810744,
+        0.06117791699944064,
+        0.06367795896949247,
+        0.061815458990167826,
+        0.060597167001105845,
+        0.06356724997749552,
+        0.06053150002844632,
+        0.059185000020079315,
+        0.05924295797012746,
+        0.0599020830122754
+      ],
+      "first_seconds": 0.1502514589810744,
+      "warm_median_seconds": 0.060597167001105845,
+      "median_seconds": 0.06088754200027324,
+      "maximum_seconds": 0.1502514589810744,
+      "oracle_calls": 0,
+      "bytes": 69141,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_epoch_next_60",
+      "samples_seconds": [
+        0.05825649999314919,
+        0.058238625002559274,
+        0.05921500001568347,
+        0.0585636249743402,
+        0.058516208024229854,
+        0.06122966599650681,
+        0.0689961250172928,
+        0.06177779199788347,
+        0.062377541966270655,
+        0.0609647500095889
+      ],
+      "first_seconds": 0.05825649999314919,
+      "warm_median_seconds": 0.0609647500095889,
+      "median_seconds": 0.060089875012636185,
+      "maximum_seconds": 0.0689961250172928,
+      "oracle_calls": 0,
+      "bytes": 69192,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_root",
+      "samples_seconds": [
+        0.3074995840433985,
+        0.015522792004048824,
+        0.013705457968171686,
+        0.014547792030498385,
+        0.013990500010550022,
+        0.014352041005622596,
+        0.014117207960225642,
+        0.013879958016332239,
+        0.013989042025059462,
+        0.013479625049512833
+      ],
+      "first_seconds": 0.3074995840433985,
+      "warm_median_seconds": 0.013990500010550022,
+      "median_seconds": 0.014053853985387832,
+      "maximum_seconds": 0.3074995840433985,
+      "oracle_calls": 0,
+      "bytes": 903,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_date",
+      "samples_seconds": [
+        0.10851162497419864,
+        0.01646587497089058,
+        0.014645999995991588,
+        0.014450250018853694,
+        0.015472166996914893,
+        0.01504183403449133,
+        0.01450195797951892,
+        0.016339124995283782,
+        0.01493283297168091,
+        0.015465958043932915
+      ],
+      "first_seconds": 0.10851162497419864,
+      "warm_median_seconds": 0.01504183403449133,
+      "median_seconds": 0.015253896039212123,
+      "maximum_seconds": 0.10851162497419864,
+      "oracle_calls": 0,
+      "bytes": 25162,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_cell",
+      "samples_seconds": [
+        0.015052209026180208,
+        0.01431191700976342,
+        0.015121792035643011,
+        0.013447834004182369,
+        0.014125958026852459,
+        0.013530500000342727,
+        0.01458441698923707,
+        0.013502041983883828,
+        0.015217999985907227,
+        0.013718875008635223
+      ],
+      "first_seconds": 0.015052209026180208,
+      "warm_median_seconds": 0.014125958026852459,
+      "median_seconds": 0.01421893751830794,
+      "maximum_seconds": 0.015217999985907227,
+      "oracle_calls": 0,
+      "bytes": 4109,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_tree_expand_block",
+      "samples_seconds": [
+        0.015459125046618283,
+        0.016971667006146163,
+        0.015847333997953683,
+        0.01628975005587563,
+        0.01664429099764675,
+        0.017625542008318007,
+        0.015836665988899767,
+        0.015844249981455505,
+        0.016209499968681484,
+        0.017060957965441048
+      ],
+      "first_seconds": 0.015459125046618283,
+      "warm_median_seconds": 0.01628975005587563,
+      "median_seconds": 0.016249625012278557,
+      "maximum_seconds": 0.017625542008318007,
+      "oracle_calls": 0,
+      "bytes": 12844,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_epoch_details",
+      "samples_seconds": [
+        0.06409829197218642,
+        0.07057591702323407,
+        0.06890116597060114,
+        0.0630176670383662,
+        0.0624924169969745,
+        0.06336479203309864,
+        0.06378366699209437,
+        0.06281570898136124,
+        0.061051541997585446,
+        0.06186612497549504
+      ],
+      "first_seconds": 0.06409829197218642,
+      "warm_median_seconds": 0.0630176670383662,
+      "median_seconds": 0.06319122953573242,
+      "maximum_seconds": 0.07057591702323407,
+      "oracle_calls": 0,
+      "bytes": 1818,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_overview",
+      "samples_seconds": [
+        1.153956665948499,
+        0.5567419590079226,
+        0.6252353329909965,
+        0.5573382919537835,
+        0.5608183750300668,
+        0.5557804579730146,
+        0.6142328749992885,
+        0.5595657919766381,
+        0.5496593749849126,
+        0.5727289170026779
+      ],
+      "first_seconds": 1.153956665948499,
+      "warm_median_seconds": 0.5595657919766381,
+      "median_seconds": 0.5601920835033525,
+      "maximum_seconds": 1.153956665948499,
+      "oracle_calls": 0,
+      "bytes": 369831,
+      "exact_oracle_passed": true
+    },
+    {
+      "name": "api_contrast_filter_preview",
+      "samples_seconds": [
+        2.182305709051434,
+        1.8886263750027865,
+        2.0373483750154264,
+        1.954353291017469,
+        1.8955460829893127,
+        1.95481079100864,
+        2.1226944580557756,
+        2.0705677500227466,
+        2.326017707993742,
+        2.08796529204119
+      ],
+      "first_seconds": 2.182305709051434,
+      "warm_median_seconds": 2.0373483750154264,
+      "median_seconds": 2.0539580625190865,
+      "maximum_seconds": 2.326017707993742,
+      "oracle_calls": 0,
+      "bytes": 11439,
+      "exact_oracle_passed": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "native_context_ready_without_contract_override",
+      "passed": true
+    },
+    {
+      "name": "zero_legacy_oracle_calls",
+      "passed": true
+    }
+  ],
+  "phases": {
+    "synthetic_model": 0.8792301670182496,
+    "owned_native_boot": 3.3766555410111323,
+    "existing_sealed_index_open": 0.539801333041396,
+    "normal_create_app_empty_native_annotations": 9.604903125029523,
+    "native_context_first_proof": 0.027805707999505103
+  },
+  "oracle_calls": 0,
+  "product_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "memory_scope": "Python worker only; excludes owned MySQL and Chrome processes. Sampled RSS can miss transient peaks and can drop due to compression/paging; rusage maximum is also recorded.",
+  "resource_samples": [
+    {
+      "elapsed_seconds": 0.5154486249666661,
+      "rss_mib": 89.390625,
+      "available_ram_mib": 3604.421875,
+      "free_disk_gib": 15.719356536865234
+    },
+    {
+      "elapsed_seconds": 1.0480464999563992,
+      "rss_mib": 159.140625,
+      "available_ram_mib": 3577.9375,
+      "free_disk_gib": 15.719356536865234
+    },
+    {
+      "elapsed_seconds": 1.5517112919478677,
+      "rss_mib": 176.96875,
+      "available_ram_mib": 3438.484375,
+      "free_disk_gib": 15.550636291503906
+    },
+    {
+      "elapsed_seconds": 2.055664707964752,
+      "rss_mib": 174.515625,
+      "available_ram_mib": 3407.71875,
+      "free_disk_gib": 15.523483276367188
+    },
+    {
+      "elapsed_seconds": 2.5657704999903217,
+      "rss_mib": 174.515625,
+      "available_ram_mib": 3476.546875,
+      "free_disk_gib": 15.530097961425781
+    },
+    {
+      "elapsed_seconds": 3.0740864999825135,
+      "rss_mib": 143.96875,
+      "available_ram_mib": 3221.265625,
+      "free_disk_gib": 15.57619857788086
+    },
+    {
+      "elapsed_seconds": 3.5841434999601915,
+      "rss_mib": 144.0,
+      "available_ram_mib": 3187.5625,
+      "free_disk_gib": 15.55276107788086
+    },
+    {
+      "elapsed_seconds": 4.092431082972325,
+      "rss_mib": 144.0625,
+      "available_ram_mib": 3188.015625,
+      "free_disk_gib": 15.56524658203125
+    },
+    {
+      "elapsed_seconds": 4.59364579198882,
+      "rss_mib": 156.34375,
+      "available_ram_mib": 3149.234375,
+      "free_disk_gib": 15.558616638183594
+    },
+    {
+      "elapsed_seconds": 5.097100582963321,
+      "rss_mib": 278.1875,
+      "available_ram_mib": 3077.859375,
+      "free_disk_gib": 15.380165100097656
+    },
+    {
+      "elapsed_seconds": 5.600089082960039,
+      "rss_mib": 237.203125,
+      "available_ram_mib": 3163.296875,
+      "free_disk_gib": 15.380069732666016
+    },
+    {
+      "elapsed_seconds": 6.112373749958351,
+      "rss_mib": 246.59375,
+      "available_ram_mib": 3148.5625,
+      "free_disk_gib": 15.378334045410156
+    },
+    {
+      "elapsed_seconds": 6.622741499973927,
+      "rss_mib": 246.90625,
+      "available_ram_mib": 3145.5625,
+      "free_disk_gib": 15.377925872802734
+    },
+    {
+      "elapsed_seconds": 7.128153291996568,
+      "rss_mib": 247.296875,
+      "available_ram_mib": 3158.078125,
+      "free_disk_gib": 15.37750244140625
+    },
+    {
+      "elapsed_seconds": 7.635231166961603,
+      "rss_mib": 247.515625,
+      "available_ram_mib": 3142.0,
+      "free_disk_gib": 15.377025604248047
+    },
+    {
+      "elapsed_seconds": 8.149595041992143,
+      "rss_mib": 247.71875,
+      "available_ram_mib": 3144.78125,
+      "free_disk_gib": 15.37655258178711
+    },
+    {
+      "elapsed_seconds": 8.659699374984484,
+      "rss_mib": 247.90625,
+      "available_ram_mib": 3150.265625,
+      "free_disk_gib": 15.37607192993164
+    },
+    {
+      "elapsed_seconds": 9.170698624977376,
+      "rss_mib": 248.046875,
+      "available_ram_mib": 3144.984375,
+      "free_disk_gib": 15.375602722167969
+    },
+    {
+      "elapsed_seconds": 9.676712332991883,
+      "rss_mib": 248.25,
+      "available_ram_mib": 3140.78125,
+      "free_disk_gib": 15.375125885009766
+    },
+    {
+      "elapsed_seconds": 10.17726008297177,
+      "rss_mib": 248.40625,
+      "available_ram_mib": 3141.28125,
+      "free_disk_gib": 15.374378204345703
+    },
+    {
+      "elapsed_seconds": 10.685453916958068,
+      "rss_mib": 248.578125,
+      "available_ram_mib": 3145.875,
+      "free_disk_gib": 15.373916625976562
+    },
+    {
+      "elapsed_seconds": 11.195685166982003,
+      "rss_mib": 248.125,
+      "available_ram_mib": 3147.515625,
+      "free_disk_gib": 15.37344741821289
+    },
+    {
+      "elapsed_seconds": 11.70956829196075,
+      "rss_mib": 246.96875,
+      "available_ram_mib": 3146.28125,
+      "free_disk_gib": 15.372978210449219
+    },
+    {
+      "elapsed_seconds": 12.215461124957073,
+      "rss_mib": 238.578125,
+      "available_ram_mib": 3096.953125,
+      "free_disk_gib": 15.372573852539062
+    },
+    {
+      "elapsed_seconds": 12.721701499947812,
+      "rss_mib": 238.765625,
+      "available_ram_mib": 3099.1875,
+      "free_disk_gib": 15.372077941894531
+    },
+    {
+      "elapsed_seconds": 13.236634457949549,
+      "rss_mib": 233.421875,
+      "available_ram_mib": 3087.140625,
+      "free_disk_gib": 15.371509552001953
+    },
+    {
+      "elapsed_seconds": 13.742802749969997,
+      "rss_mib": 227.5625,
+      "available_ram_mib": 3090.71875,
+      "free_disk_gib": 15.371013641357422
+    },
+    {
+      "elapsed_seconds": 14.253237041993998,
+      "rss_mib": 225.03125,
+      "available_ram_mib": 3082.84375,
+      "free_disk_gib": 15.370536804199219
+    },
+    {
+      "elapsed_seconds": 14.767056999960914,
+      "rss_mib": 261.96875,
+      "available_ram_mib": 3046.59375,
+      "free_disk_gib": 15.369678497314453
+    },
+    {
+      "elapsed_seconds": 15.28015070798574,
+      "rss_mib": 363.484375,
+      "available_ram_mib": 3025.34375,
+      "free_disk_gib": 15.369678497314453
+    },
+    {
+      "elapsed_seconds": 15.795917624956928,
+      "rss_mib": 356.546875,
+      "available_ram_mib": 3033.484375,
+      "free_disk_gib": 15.369674682617188
+    },
+    {
+      "elapsed_seconds": 16.304774791991804,
+      "rss_mib": 356.546875,
+      "available_ram_mib": 3047.09375,
+      "free_disk_gib": 15.369674682617188
+    },
+    {
+      "elapsed_seconds": 16.839397832984105,
+      "rss_mib": 358.265625,
+      "available_ram_mib": 3057.3125,
+      "free_disk_gib": 15.369377136230469
+    },
+    {
+      "elapsed_seconds": 17.350763124995865,
+      "rss_mib": 364.5625,
+      "available_ram_mib": 3199.171875,
+      "free_disk_gib": 15.369377136230469
+    },
+    {
+      "elapsed_seconds": 17.861651582992636,
+      "rss_mib": 364.578125,
+      "available_ram_mib": 3188.75,
+      "free_disk_gib": 15.369400024414062
+    },
+    {
+      "elapsed_seconds": 18.377536457963288,
+      "rss_mib": 364.609375,
+      "available_ram_mib": 3173.0,
+      "free_disk_gib": 15.369400024414062
+    },
+    {
+      "elapsed_seconds": 18.887649624957703,
+      "rss_mib": 400.53125,
+      "available_ram_mib": 3150.78125,
+      "free_disk_gib": 15.369388580322266
+    },
+    {
+      "elapsed_seconds": 19.39775445795385,
+      "rss_mib": 406.875,
+      "available_ram_mib": 3127.609375,
+      "free_disk_gib": 15.360206604003906
+    },
+    {
+      "elapsed_seconds": 19.91549004195258,
+      "rss_mib": 432.359375,
+      "available_ram_mib": 3140.546875,
+      "free_disk_gib": 15.35916519165039
+    },
+    {
+      "elapsed_seconds": 20.417623041954357,
+      "rss_mib": 457.65625,
+      "available_ram_mib": 3127.328125,
+      "free_disk_gib": 15.35812759399414
+    },
+    {
+      "elapsed_seconds": 20.93334133294411,
+      "rss_mib": 469.765625,
+      "available_ram_mib": 3122.484375,
+      "free_disk_gib": 15.35812759399414
+    },
+    {
+      "elapsed_seconds": 21.447960374993272,
+      "rss_mib": 479.359375,
+      "available_ram_mib": 3110.40625,
+      "free_disk_gib": 15.35811996459961
+    },
+    {
+      "elapsed_seconds": 21.964600416948088,
+      "rss_mib": 494.453125,
+      "available_ram_mib": 3111.265625,
+      "free_disk_gib": 15.35811996459961
+    },
+    {
+      "elapsed_seconds": 22.481571624986827,
+      "rss_mib": 495.421875,
+      "available_ram_mib": 3111.015625,
+      "free_disk_gib": 15.35811996459961
+    },
+    {
+      "elapsed_seconds": 23.00064799998654,
+      "rss_mib": 495.78125,
+      "available_ram_mib": 3115.265625,
+      "free_disk_gib": 15.35811996459961
+    },
+    {
+      "elapsed_seconds": 23.51605762494728,
+      "rss_mib": 497.453125,
+      "available_ram_mib": 3105.875,
+      "free_disk_gib": 15.35811996459961
+    },
+    {
+      "elapsed_seconds": 24.038880874984898,
+      "rss_mib": 501.53125,
+      "available_ram_mib": 3122.875,
+      "free_disk_gib": 15.358085632324219
+    },
+    {
+      "elapsed_seconds": 24.565047499956563,
+      "rss_mib": 501.609375,
+      "available_ram_mib": 3105.53125,
+      "free_disk_gib": 15.358055114746094
+    },
+    {
+      "elapsed_seconds": 25.075194874953013,
+      "rss_mib": 485.6875,
+      "available_ram_mib": 3127.453125,
+      "free_disk_gib": 15.349651336669922
+    },
+    {
+      "elapsed_seconds": 25.57577458297601,
+      "rss_mib": 457.078125,
+      "available_ram_mib": 3152.046875,
+      "free_disk_gib": 15.349651336669922
+    },
+    {
+      "elapsed_seconds": 26.08589474996552,
+      "rss_mib": 473.1875,
+      "available_ram_mib": 3146.078125,
+      "free_disk_gib": 15.341773986816406
+    },
+    {
+      "elapsed_seconds": 26.590426249953452,
+      "rss_mib": 469.1875,
+      "available_ram_mib": 3147.203125,
+      "free_disk_gib": 15.341835021972656
+    },
+    {
+      "elapsed_seconds": 27.097310916986316,
+      "rss_mib": 439.53125,
+      "available_ram_mib": 3141.796875,
+      "free_disk_gib": 15.349655151367188
+    },
+    {
+      "elapsed_seconds": 27.603885541961063,
+      "rss_mib": 441.046875,
+      "available_ram_mib": 3168.8125,
+      "free_disk_gib": 15.349655151367188
+    },
+    {
+      "elapsed_seconds": 28.104502124944702,
+      "rss_mib": 459.15625,
+      "available_ram_mib": 3160.359375,
+      "free_disk_gib": 15.341876983642578
+    },
+    {
+      "elapsed_seconds": 28.614640249987133,
+      "rss_mib": 463.34375,
+      "available_ram_mib": 3151.140625,
+      "free_disk_gib": 15.34572982788086
+    },
+    {
+      "elapsed_seconds": 29.123789791949093,
+      "rss_mib": 444.875,
+      "available_ram_mib": 3172.328125,
+      "free_disk_gib": 15.35354232788086
+    },
+    {
+      "elapsed_seconds": 29.666325749945827,
+      "rss_mib": 435.921875,
+      "available_ram_mib": 3256.375,
+      "free_disk_gib": 15.35354232788086
+    },
+    {
+      "elapsed_seconds": 30.1765261249966,
+      "rss_mib": 447.203125,
+      "available_ram_mib": 3252.703125,
+      "free_disk_gib": 15.35323715209961
+    },
+    {
+      "elapsed_seconds": 30.694217874959577,
+      "rss_mib": 437.328125,
+      "available_ram_mib": 3289.5,
+      "free_disk_gib": 15.353233337402344
+    },
+    {
+      "elapsed_seconds": 31.194345208001323,
+      "rss_mib": 425.21875,
+      "available_ram_mib": 3298.890625,
+      "free_disk_gib": 15.353233337402344
+    },
+    {
+      "elapsed_seconds": 31.703845874988474,
+      "rss_mib": 436.46875,
+      "available_ram_mib": 3278.0,
+      "free_disk_gib": 15.353229522705078
+    },
+    {
+      "elapsed_seconds": 32.21207612496801,
+      "rss_mib": 446.28125,
+      "available_ram_mib": 3310.421875,
+      "free_disk_gib": 15.353229522705078
+    },
+    {
+      "elapsed_seconds": 32.719410499965306,
+      "rss_mib": 447.46875,
+      "available_ram_mib": 3308.484375,
+      "free_disk_gib": 15.353229522705078
+    },
+    {
+      "elapsed_seconds": 33.229519707965665,
+      "rss_mib": 427.0,
+      "available_ram_mib": 3309.015625,
+      "free_disk_gib": 15.353225708007812
+    },
+    {
+      "elapsed_seconds": 33.73387749999529,
+      "rss_mib": 435.265625,
+      "available_ram_mib": 3299.28125,
+      "free_disk_gib": 15.353225708007812
+    },
+    {
+      "elapsed_seconds": 34.23529245797545,
+      "rss_mib": 441.25,
+      "available_ram_mib": 3318.984375,
+      "free_disk_gib": 15.353225708007812
+    },
+    {
+      "elapsed_seconds": 34.747724124987144,
+      "rss_mib": 421.640625,
+      "available_ram_mib": 3313.765625,
+      "free_disk_gib": 15.353218078613281
+    },
+    {
+      "elapsed_seconds": 35.25052974995924,
+      "rss_mib": 418.046875,
+      "available_ram_mib": 3301.140625,
+      "free_disk_gib": 15.353218078613281
+    },
+    {
+      "elapsed_seconds": 35.76064716698602,
+      "rss_mib": 423.078125,
+      "available_ram_mib": 3297.203125,
+      "free_disk_gib": 15.353218078613281
+    },
+    {
+      "elapsed_seconds": 36.270759041944984,
+      "rss_mib": 433.609375,
+      "available_ram_mib": 3293.359375,
+      "free_disk_gib": 15.345405578613281
+    },
+    {
+      "elapsed_seconds": 36.780717916961294,
+      "rss_mib": 425.09375,
+      "available_ram_mib": 3309.046875,
+      "free_disk_gib": 15.353218078613281
+    },
+    {
+      "elapsed_seconds": 37.283774541981984,
+      "rss_mib": 390.375,
+      "available_ram_mib": 3223.640625,
+      "free_disk_gib": 15.353340148925781
+    },
+    {
+      "elapsed_seconds": 37.78665437496966,
+      "rss_mib": 373.125,
+      "available_ram_mib": 3192.109375,
+      "free_disk_gib": 15.353340148925781
+    },
+    {
+      "elapsed_seconds": 38.28778220794629,
+      "rss_mib": 372.171875,
+      "available_ram_mib": 3173.15625,
+      "free_disk_gib": 15.353446960449219
+    },
+    {
+      "elapsed_seconds": 38.79611779196421,
+      "rss_mib": 362.25,
+      "available_ram_mib": 3171.640625,
+      "free_disk_gib": 15.353473663330078
+    },
+    {
+      "elapsed_seconds": 39.30055883299792,
+      "rss_mib": 317.5625,
+      "available_ram_mib": 3099.453125,
+      "free_disk_gib": 15.353507995605469
+    },
+    {
+      "elapsed_seconds": 39.80530245800037,
+      "rss_mib": 345.296875,
+      "available_ram_mib": 3015.3125,
+      "free_disk_gib": 15.35354232788086
+    },
+    {
+      "elapsed_seconds": 40.311337666993495,
+      "rss_mib": 351.28125,
+      "available_ram_mib": 3011.40625,
+      "free_disk_gib": 15.353767395019531
+    },
+    {
+      "elapsed_seconds": 40.821434666984715,
+      "rss_mib": 341.75,
+      "available_ram_mib": 3019.90625,
+      "free_disk_gib": 15.353767395019531
+    },
+    {
+      "elapsed_seconds": 41.32352545799222,
+      "rss_mib": 347.96875,
+      "available_ram_mib": 3018.625,
+      "free_disk_gib": 15.35382080078125
+    },
+    {
+      "elapsed_seconds": 41.83193074999144,
+      "rss_mib": 347.125,
+      "available_ram_mib": 2997.015625,
+      "free_disk_gib": 15.35384750366211
+    },
+    {
+      "elapsed_seconds": 42.34047924994957,
+      "rss_mib": 349.671875,
+      "available_ram_mib": 3004.6875,
+      "free_disk_gib": 15.35384750366211
+    },
+    {
+      "elapsed_seconds": 42.847570374957286,
+      "rss_mib": 351.921875,
+      "available_ram_mib": 2998.109375,
+      "free_disk_gib": 15.35287094116211
+    },
+    {
+      "elapsed_seconds": 43.355537082999945,
+      "rss_mib": 348.0,
+      "available_ram_mib": 2974.40625,
+      "free_disk_gib": 15.352867126464844
+    },
+    {
+      "elapsed_seconds": 43.865170957986265,
+      "rss_mib": 349.609375,
+      "available_ram_mib": 2989.265625,
+      "free_disk_gib": 15.352867126464844
+    },
+    {
+      "elapsed_seconds": 44.37380487495102,
+      "rss_mib": 343.671875,
+      "available_ram_mib": 2999.765625,
+      "free_disk_gib": 15.345043182373047
+    },
+    {
+      "elapsed_seconds": 44.883933042001445,
+      "rss_mib": 345.890625,
+      "available_ram_mib": 2979.578125,
+      "free_disk_gib": 15.344951629638672
+    },
+    {
+      "elapsed_seconds": 45.39048762497259,
+      "rss_mib": 347.53125,
+      "available_ram_mib": 2987.25,
+      "free_disk_gib": 15.35260009765625
+    },
+    {
+      "elapsed_seconds": 45.89382645796286,
+      "rss_mib": 347.53125,
+      "available_ram_mib": 3006.828125,
+      "free_disk_gib": 15.352619171142578
+    },
+    {
+      "elapsed_seconds": 46.40350491699064,
+      "rss_mib": 336.234375,
+      "available_ram_mib": 3007.828125,
+      "free_disk_gib": 15.352619171142578
+    },
+    {
+      "elapsed_seconds": 46.90587237494765,
+      "rss_mib": 334.484375,
+      "available_ram_mib": 3033.265625,
+      "free_disk_gib": 15.352619171142578
+    },
+    {
+      "elapsed_seconds": 47.416020791977644,
+      "rss_mib": 334.1875,
+      "available_ram_mib": 3027.28125,
+      "free_disk_gib": 15.352615356445312
+    },
+    {
+      "elapsed_seconds": 47.92562208295567,
+      "rss_mib": 333.9375,
+      "available_ram_mib": 3033.5625,
+      "free_disk_gib": 15.352615356445312
+    },
+    {
+      "elapsed_seconds": 48.43504470796324,
+      "rss_mib": 333.9375,
+      "available_ram_mib": 3029.21875,
+      "free_disk_gib": 15.352615356445312
+    },
+    {
+      "elapsed_seconds": 48.942716166959144,
+      "rss_mib": 333.9375,
+      "available_ram_mib": 3025.03125,
+      "free_disk_gib": 15.352649688720703
+    },
+    {
+      "elapsed_seconds": 49.452007874962874,
+      "rss_mib": 332.03125,
+      "available_ram_mib": 3046.234375,
+      "free_disk_gib": 15.351673126220703
+    },
+    {
+      "elapsed_seconds": 49.96093637496233,
+      "rss_mib": 331.3125,
+      "available_ram_mib": 3085.890625,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 50.47082183294697,
+      "rss_mib": 326.484375,
+      "available_ram_mib": 3107.375,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 50.97438504197635,
+      "rss_mib": 323.78125,
+      "available_ram_mib": 3115.0,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 51.48394979198929,
+      "rss_mib": 323.78125,
+      "available_ram_mib": 3109.515625,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 51.99309133295901,
+      "rss_mib": 314.03125,
+      "available_ram_mib": 3127.8125,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 52.502177791961,
+      "rss_mib": 210.59375,
+      "available_ram_mib": 3121.359375,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 53.00753170798998,
+      "rss_mib": 196.921875,
+      "available_ram_mib": 3127.234375,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 53.51659608294722,
+      "rss_mib": 195.265625,
+      "available_ram_mib": 3138.40625,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 54.025532999949064,
+      "rss_mib": 195.265625,
+      "available_ram_mib": 3159.46875,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 54.53452708298573,
+      "rss_mib": 174.90625,
+      "available_ram_mib": 3140.921875,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 55.04265795799438,
+      "rss_mib": 174.90625,
+      "available_ram_mib": 3156.3125,
+      "free_disk_gib": 15.351669311523438
+    },
+    {
+      "elapsed_seconds": 55.55126083298819,
+      "rss_mib": 174.90625,
+      "available_ram_mib": 3182.21875,
+      "free_disk_gib": 15.351573944091797
+    },
+    {
+      "elapsed_seconds": 56.06033420795575,
+      "rss_mib": 174.984375,
+      "available_ram_mib": 3180.53125,
+      "free_disk_gib": 15.351573944091797
+    },
+    {
+      "elapsed_seconds": 56.567140291968826,
+      "rss_mib": 174.984375,
+      "available_ram_mib": 3183.1875,
+      "free_disk_gib": 15.351573944091797
+    },
+    {
+      "elapsed_seconds": 57.07770691695623,
+      "rss_mib": 175.0,
+      "available_ram_mib": 3179.953125,
+      "free_disk_gib": 15.351573944091797
+    },
+    {
+      "elapsed_seconds": 57.588000374962576,
+      "rss_mib": 175.0,
+      "available_ram_mib": 3179.015625,
+      "free_disk_gib": 15.351573944091797
+    },
+    {
+      "elapsed_seconds": 58.096661041956395,
+      "rss_mib": 175.0,
+      "available_ram_mib": 3222.171875,
+      "free_disk_gib": 15.350460052490234
+    },
+    {
+      "elapsed_seconds": 58.600938874995336,
+      "rss_mib": 175.03125,
+      "available_ram_mib": 3241.140625,
+      "free_disk_gib": 15.350460052490234
+    },
+    {
+      "elapsed_seconds": 59.10645466699498,
+      "rss_mib": 175.03125,
+      "available_ram_mib": 3235.703125,
+      "free_disk_gib": 15.350460052490234
+    },
+    {
+      "elapsed_seconds": 59.61661041696789,
+      "rss_mib": 175.03125,
+      "available_ram_mib": 3226.3125,
+      "free_disk_gib": 15.350460052490234
+    },
+    {
+      "elapsed_seconds": 60.125295166973956,
+      "rss_mib": 139.46875,
+      "available_ram_mib": 3231.578125,
+      "free_disk_gib": 15.338249206542969
+    },
+    {
+      "elapsed_seconds": 60.63531145796878,
+      "rss_mib": 110.78125,
+      "available_ram_mib": 3222.890625,
+      "free_disk_gib": 15.338249206542969
+    },
+    {
+      "elapsed_seconds": 61.14168837497709,
+      "rss_mib": 95.828125,
+      "available_ram_mib": 3197.9375,
+      "free_disk_gib": 15.338249206542969
+    },
+    {
+      "elapsed_seconds": 61.6498960419558,
+      "rss_mib": 87.546875,
+      "available_ram_mib": 3176.578125,
+      "free_disk_gib": 15.338249206542969
+    },
+    {
+      "elapsed_seconds": 62.1572417919524,
+      "rss_mib": 87.34375,
+      "available_ram_mib": 3177.828125,
+      "free_disk_gib": 15.338268280029297
+    },
+    {
+      "elapsed_seconds": 62.66694279195508,
+      "rss_mib": 85.28125,
+      "available_ram_mib": 3170.0625,
+      "free_disk_gib": 15.338268280029297
+    },
+    {
+      "elapsed_seconds": 63.177315666980576,
+      "rss_mib": 85.28125,
+      "available_ram_mib": 3155.875,
+      "free_disk_gib": 15.338268280029297
+    },
+    {
+      "elapsed_seconds": 63.68807091697818,
+      "rss_mib": 53.734375,
+      "available_ram_mib": 3131.953125,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 64.19765104196267,
+      "rss_mib": 41.734375,
+      "available_ram_mib": 3090.078125,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 64.70729008299531,
+      "rss_mib": 35.296875,
+      "available_ram_mib": 3056.421875,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 65.20901045796927,
+      "rss_mib": 35.296875,
+      "available_ram_mib": 3046.921875,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 65.7146304170019,
+      "rss_mib": 34.9375,
+      "available_ram_mib": 3062.609375,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 66.22422666696366,
+      "rss_mib": 34.03125,
+      "available_ram_mib": 3048.84375,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 66.73547891696217,
+      "rss_mib": 30.125,
+      "available_ram_mib": 2985.96875,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 67.24200129194651,
+      "rss_mib": 28.625,
+      "available_ram_mib": 2999.53125,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 67.74771979195066,
+      "rss_mib": 26.46875,
+      "available_ram_mib": 2991.28125,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 68.25723420799477,
+      "rss_mib": 26.484375,
+      "available_ram_mib": 2992.84375,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 68.76492887496715,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3129.171875,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 69.26641674997518,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3117.296875,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 69.7736280829995,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3107.5,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 70.28075262496714,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3107.515625,
+      "free_disk_gib": 15.338310241699219
+    },
+    {
+      "elapsed_seconds": 70.78782999998657,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3102.015625,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 71.29749004199402,
+      "rss_mib": 26.6875,
+      "available_ram_mib": 3092.859375,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 71.80837975000031,
+      "rss_mib": 26.703125,
+      "available_ram_mib": 3085.0625,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 72.31576958298683,
+      "rss_mib": 26.703125,
+      "available_ram_mib": 3083.9375,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 72.82607516698772,
+      "rss_mib": 26.703125,
+      "available_ram_mib": 3080.140625,
+      "free_disk_gib": 15.338340759277344
+    },
+    {
+      "elapsed_seconds": 73.33173074998194,
+      "rss_mib": 26.03125,
+      "available_ram_mib": 3116.953125,
+      "free_disk_gib": 15.338146209716797
+    },
+    {
+      "elapsed_seconds": 73.84151720796945,
+      "rss_mib": 26.03125,
+      "available_ram_mib": 3100.515625,
+      "free_disk_gib": 15.338153839111328
+    },
+    {
+      "elapsed_seconds": 74.35118624998722,
+      "rss_mib": 26.03125,
+      "available_ram_mib": 3091.296875,
+      "free_disk_gib": 15.338153839111328
+    },
+    {
+      "elapsed_seconds": 74.85650645795977,
+      "rss_mib": 25.9375,
+      "available_ram_mib": 3021.015625,
+      "free_disk_gib": 15.33822250366211
+    },
+    {
+      "elapsed_seconds": 75.36558512499323,
+      "rss_mib": 25.953125,
+      "available_ram_mib": 3025.71875,
+      "free_disk_gib": 15.337860107421875
+    },
+    {
+      "elapsed_seconds": 75.8751659579575,
+      "rss_mib": 25.953125,
+      "available_ram_mib": 3031.5,
+      "free_disk_gib": 15.335693359375
+    },
+    {
+      "elapsed_seconds": 76.38075045798905,
+      "rss_mib": 25.9375,
+      "available_ram_mib": 3030.609375,
+      "free_disk_gib": 15.347740173339844
+    },
+    {
+      "elapsed_seconds": 76.8837194579537,
+      "rss_mib": 25.9375,
+      "available_ram_mib": 3052.53125,
+      "free_disk_gib": 15.348121643066406
+    },
+    {
+      "elapsed_seconds": 77.39169349998701,
+      "rss_mib": 25.9375,
+      "available_ram_mib": 3051.109375,
+      "free_disk_gib": 15.348377227783203
+    },
+    {
+      "elapsed_seconds": 77.90071766695473,
+      "rss_mib": 26.015625,
+      "available_ram_mib": 3070.828125,
+      "free_disk_gib": 15.348522186279297
+    },
+    {
+      "elapsed_seconds": 78.40770224999869,
+      "rss_mib": 26.015625,
+      "available_ram_mib": 3064.109375,
+      "free_disk_gib": 15.349430084228516
+    },
+    {
+      "elapsed_seconds": 78.91769549995661,
+      "rss_mib": 26.015625,
+      "available_ram_mib": 3071.65625,
+      "free_disk_gib": 15.349662780761719
+    },
+    {
+      "elapsed_seconds": 79.43378074996872,
+      "rss_mib": 26.015625,
+      "available_ram_mib": 3069.421875,
+      "free_disk_gib": 15.349937438964844
+    },
+    {
+      "elapsed_seconds": 79.93752458295785,
+      "rss_mib": 25.96875,
+      "available_ram_mib": 3042.734375,
+      "free_disk_gib": 15.347164154052734
+    },
+    {
+      "elapsed_seconds": 80.43798945797607,
+      "rss_mib": 25.84375,
+      "available_ram_mib": 2945.796875,
+      "free_disk_gib": 15.349872589111328
+    },
+    {
+      "elapsed_seconds": 80.94696758297505,
+      "rss_mib": 25.75,
+      "available_ram_mib": 2862.25,
+      "free_disk_gib": 15.350181579589844
+    },
+    {
+      "elapsed_seconds": 81.45347616699291,
+      "rss_mib": 25.15625,
+      "available_ram_mib": 2763.8125,
+      "free_disk_gib": 15.35018539428711
+    },
+    {
+      "elapsed_seconds": 81.95435616699979,
+      "rss_mib": 25.515625,
+      "available_ram_mib": 2724.578125,
+      "free_disk_gib": 15.348548889160156
+    },
+    {
+      "elapsed_seconds": 82.50834149995353,
+      "rss_mib": 167.078125,
+      "available_ram_mib": 2549.78125,
+      "free_disk_gib": 15.3485107421875
+    },
+    {
+      "elapsed_seconds": 83.012585999968,
+      "rss_mib": 227.546875,
+      "available_ram_mib": 2487.703125,
+      "free_disk_gib": 15.3485107421875
+    },
+    {
+      "elapsed_seconds": 83.51290854194667,
+      "rss_mib": 210.890625,
+      "available_ram_mib": 2483.265625,
+      "free_disk_gib": 15.3485107421875
+    },
+    {
+      "elapsed_seconds": 84.02200237498619,
+      "rss_mib": 212.265625,
+      "available_ram_mib": 2832.3125,
+      "free_disk_gib": 15.348506927490234
+    },
+    {
+      "elapsed_seconds": 84.52508149994537,
+      "rss_mib": 213.625,
+      "available_ram_mib": 2732.296875,
+      "free_disk_gib": 15.347854614257812
+    },
+    {
+      "elapsed_seconds": 85.03655879199505,
+      "rss_mib": 186.265625,
+      "available_ram_mib": 2711.296875,
+      "free_disk_gib": 15.348304748535156
+    },
+    {
+      "elapsed_seconds": 85.5406432079617,
+      "rss_mib": 175.5625,
+      "available_ram_mib": 2556.171875,
+      "free_disk_gib": 15.348358154296875
+    },
+    {
+      "elapsed_seconds": 86.06338499998674,
+      "rss_mib": 173.828125,
+      "available_ram_mib": 2490.921875,
+      "free_disk_gib": 15.347957611083984
+    },
+    {
+      "elapsed_seconds": 86.56811737496173,
+      "rss_mib": 176.859375,
+      "available_ram_mib": 2876.21875,
+      "free_disk_gib": 15.347904205322266
+    },
+    {
+      "elapsed_seconds": 87.07665124995401,
+      "rss_mib": 178.171875,
+      "available_ram_mib": 2965.546875,
+      "free_disk_gib": 15.348377227783203
+    },
+    {
+      "elapsed_seconds": 87.58320437499788,
+      "rss_mib": 179.3125,
+      "available_ram_mib": 2928.34375,
+      "free_disk_gib": 15.347606658935547
+    },
+    {
+      "elapsed_seconds": 88.09086249995744,
+      "rss_mib": 177.75,
+      "available_ram_mib": 2904.453125,
+      "free_disk_gib": 15.330936431884766
+    },
+    {
+      "elapsed_seconds": 88.59675995795988,
+      "rss_mib": 178.375,
+      "available_ram_mib": 3280.4375,
+      "free_disk_gib": 15.316925048828125
+    },
+    {
+      "elapsed_seconds": 89.1054801249993,
+      "rss_mib": 178.40625,
+      "available_ram_mib": 3229.140625,
+      "free_disk_gib": 15.301300048828125
+    },
+    {
+      "elapsed_seconds": 89.61135883297538,
+      "rss_mib": 178.40625,
+      "available_ram_mib": 3201.84375,
+      "free_disk_gib": 15.277862548828125
+    },
+    {
+      "elapsed_seconds": 90.11855479195947,
+      "rss_mib": 178.40625,
+      "available_ram_mib": 3181.25,
+      "free_disk_gib": 15.260902404785156
+    },
+    {
+      "elapsed_seconds": 90.62869279197184,
+      "rss_mib": 178.40625,
+      "available_ram_mib": 3151.34375,
+      "free_disk_gib": 15.245277404785156
+    },
+    {
+      "elapsed_seconds": 91.1393193329568,
+      "rss_mib": 178.4375,
+      "available_ram_mib": 3135.171875,
+      "free_disk_gib": 15.237464904785156
+    },
+    {
+      "elapsed_seconds": 91.64868358295644,
+      "rss_mib": 178.4375,
+      "available_ram_mib": 3188.09375,
+      "free_disk_gib": 15.221893310546875
+    },
+    {
+      "elapsed_seconds": 92.15942195797106,
+      "rss_mib": 178.4375,
+      "available_ram_mib": 3185.140625,
+      "free_disk_gib": 15.206295013427734
+    },
+    {
+      "elapsed_seconds": 92.66874420800013,
+      "rss_mib": 178.4375,
+      "available_ram_mib": 3194.90625,
+      "free_disk_gib": 15.198482513427734
+    },
+    {
+      "elapsed_seconds": 93.17896962497616,
+      "rss_mib": 178.4375,
+      "available_ram_mib": 3202.0625,
+      "free_disk_gib": 15.182891845703125
+    },
+    {
+      "elapsed_seconds": 93.69106654200004,
+      "rss_mib": 177.9375,
+      "available_ram_mib": 3201.046875,
+      "free_disk_gib": 15.175079345703125
+    },
+    {
+      "elapsed_seconds": 94.19461120798951,
+      "rss_mib": 177.90625,
+      "available_ram_mib": 3202.203125,
+      "free_disk_gib": 15.159454345703125
+    },
+    {
+      "elapsed_seconds": 94.6992927499814,
+      "rss_mib": 131.484375,
+      "available_ram_mib": 3159.59375,
+      "free_disk_gib": 15.151649475097656
+    },
+    {
+      "elapsed_seconds": 95.20555741694989,
+      "rss_mib": 131.40625,
+      "available_ram_mib": 3169.8125,
+      "free_disk_gib": 15.136024475097656
+    },
+    {
+      "elapsed_seconds": 95.7141931669903,
+      "rss_mib": 131.40625,
+      "available_ram_mib": 3169.375,
+      "free_disk_gib": 15.136028289794922
+    },
+    {
+      "elapsed_seconds": 96.22358762496151,
+      "rss_mib": 130.234375,
+      "available_ram_mib": 3036.84375,
+      "free_disk_gib": 14.9874267578125
+    },
+    {
+      "elapsed_seconds": 96.72818924998865,
+      "rss_mib": 130.234375,
+      "available_ram_mib": 3011.765625,
+      "free_disk_gib": 14.259021759033203
+    },
+    {
+      "elapsed_seconds": 97.23776349995751,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 2992.5,
+      "free_disk_gib": 14.259021759033203
+    },
+    {
+      "elapsed_seconds": 97.74763812497258,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 2988.796875,
+      "free_disk_gib": 14.259021759033203
+    },
+    {
+      "elapsed_seconds": 98.25747270794818,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 2983.65625,
+      "free_disk_gib": 14.258960723876953
+    },
+    {
+      "elapsed_seconds": 98.76654804195277,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 2987.921875,
+      "free_disk_gib": 14.258930206298828
+    },
+    {
+      "elapsed_seconds": 99.27482545794919,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3006.5,
+      "free_disk_gib": 14.258865356445312
+    },
+    {
+      "elapsed_seconds": 99.78365129197482,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 2996.515625,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 100.29154008295154,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3006.5625,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 100.80098283296684,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3009.15625,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 101.30988662497839,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3024.421875,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 101.82004991697613,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3020.890625,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 102.32910083298339,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3022.0625,
+      "free_disk_gib": 14.258857727050781
+    },
+    {
+      "elapsed_seconds": 102.83743124996545,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3015.5,
+      "free_disk_gib": 14.258831024169922
+    },
+    {
+      "elapsed_seconds": 103.33984379196772,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3033.84375,
+      "free_disk_gib": 14.25174331665039
+    },
+    {
+      "elapsed_seconds": 103.8488942499971,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3060.4375,
+      "free_disk_gib": 14.251773834228516
+    },
+    {
+      "elapsed_seconds": 104.36060254200129,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3041.6875,
+      "free_disk_gib": 14.251773834228516
+    },
+    {
+      "elapsed_seconds": 104.86942999996245,
+      "rss_mib": 127.96875,
+      "available_ram_mib": 3024.65625,
+      "free_disk_gib": 14.251827239990234
+    },
+    {
+      "elapsed_seconds": 105.37830754194874,
+      "rss_mib": 127.375,
+      "available_ram_mib": 3008.421875,
+      "free_disk_gib": 14.251827239990234
+    },
+    {
+      "elapsed_seconds": 105.88346933299908,
+      "rss_mib": 79.171875,
+      "available_ram_mib": 3011.59375,
+      "free_disk_gib": 14.251827239990234
+    },
+    {
+      "elapsed_seconds": 106.39349770796252,
+      "rss_mib": 47.40625,
+      "available_ram_mib": 3000.375,
+      "free_disk_gib": 14.251827239990234
+    },
+    {
+      "elapsed_seconds": 106.9015935419593,
+      "rss_mib": 46.875,
+      "available_ram_mib": 2989.6875,
+      "free_disk_gib": 14.251827239990234
+    },
+    {
+      "elapsed_seconds": 107.40563962497981,
+      "rss_mib": 40.625,
+      "available_ram_mib": 2965.421875,
+      "free_disk_gib": 14.251766204833984
+    },
+    {
+      "elapsed_seconds": 107.90737695799908,
+      "rss_mib": 40.671875,
+      "available_ram_mib": 2908.421875,
+      "free_disk_gib": 14.251766204833984
+    },
+    {
+      "elapsed_seconds": 108.41189137496985,
+      "rss_mib": 40.71875,
+      "available_ram_mib": 2986.78125,
+      "free_disk_gib": 14.251766204833984
+    },
+    {
+      "elapsed_seconds": 108.91363770799944,
+      "rss_mib": 40.71875,
+      "available_ram_mib": 3005.453125,
+      "free_disk_gib": 14.251766204833984
+    },
+    {
+      "elapsed_seconds": 109.41641579195857,
+      "rss_mib": 38.921875,
+      "available_ram_mib": 2992.671875,
+      "free_disk_gib": 14.251766204833984
+    },
+    {
+      "elapsed_seconds": 109.92605224996805,
+      "rss_mib": 15.234375,
+      "available_ram_mib": 3039.15625,
+      "free_disk_gib": 14.251667022705078
+    },
+    {
+      "elapsed_seconds": 110.43164649995742,
+      "rss_mib": 15.265625,
+      "available_ram_mib": 3031.265625,
+      "free_disk_gib": 14.251667022705078
+    },
+    {
+      "elapsed_seconds": 110.9425221249694,
+      "rss_mib": 15.40625,
+      "available_ram_mib": 3005.265625,
+      "free_disk_gib": 14.251667022705078
+    },
+    {
+      "elapsed_seconds": 111.45206554199103,
+      "rss_mib": 15.453125,
+      "available_ram_mib": 3081.75,
+      "free_disk_gib": 14.251655578613281
+    },
+    {
+      "elapsed_seconds": 111.95792091696057,
+      "rss_mib": 15.53125,
+      "available_ram_mib": 3056.859375,
+      "free_disk_gib": 14.251651763916016
+    },
+    {
+      "elapsed_seconds": 112.46159295795951,
+      "rss_mib": 15.53125,
+      "available_ram_mib": 3093.9375,
+      "free_disk_gib": 14.251651763916016
+    },
+    {
+      "elapsed_seconds": 112.97138191695558,
+      "rss_mib": 15.53125,
+      "available_ram_mib": 3099.875,
+      "free_disk_gib": 14.251655578613281
+    },
+    {
+      "elapsed_seconds": 113.47959879197879,
+      "rss_mib": 15.53125,
+      "available_ram_mib": 3076.5625,
+      "free_disk_gib": 14.251655578613281
+    },
+    {
+      "elapsed_seconds": 113.9839290419477,
+      "rss_mib": 15.515625,
+      "available_ram_mib": 3075.125,
+      "free_disk_gib": 14.251655578613281
+    },
+    {
+      "elapsed_seconds": 114.49369454197586,
+      "rss_mib": 15.515625,
+      "available_ram_mib": 3075.671875,
+      "free_disk_gib": 14.251655578613281
+    },
+    {
+      "elapsed_seconds": 114.999781874998,
+      "rss_mib": 15.34375,
+      "available_ram_mib": 3072.75,
+      "free_disk_gib": 14.251686096191406
+    },
+    {
+      "elapsed_seconds": 115.50924979196861,
+      "rss_mib": 15.34375,
+      "available_ram_mib": 3073.09375,
+      "free_disk_gib": 14.251686096191406
+    },
+    {
+      "elapsed_seconds": 116.01968174998183,
+      "rss_mib": 15.328125,
+      "available_ram_mib": 3098.390625,
+      "free_disk_gib": 14.251617431640625
+    },
+    {
+      "elapsed_seconds": 116.52757587499218,
+      "rss_mib": 15.265625,
+      "available_ram_mib": 3100.3125,
+      "free_disk_gib": 14.251617431640625
+    },
+    {
+      "elapsed_seconds": 117.03543704195181,
+      "rss_mib": 15.265625,
+      "available_ram_mib": 3103.4375,
+      "free_disk_gib": 14.251617431640625
+    },
+    {
+      "elapsed_seconds": 117.53596383298282,
+      "rss_mib": 15.234375,
+      "available_ram_mib": 3095.6875,
+      "free_disk_gib": 14.251617431640625
+    },
+    {
+      "elapsed_seconds": 118.04474208294414,
+      "rss_mib": 15.21875,
+      "available_ram_mib": 3056.15625,
+      "free_disk_gib": 14.251617431640625
+    },
+    {
+      "elapsed_seconds": 118.55034720798722,
+      "rss_mib": 15.21875,
+      "available_ram_mib": 3060.828125,
+      "free_disk_gib": 14.251556396484375
+    },
+    {
+      "elapsed_seconds": 119.0578067919705,
+      "rss_mib": 15.25,
+      "available_ram_mib": 3064.71875,
+      "free_disk_gib": 14.251556396484375
+    },
+    {
+      "elapsed_seconds": 119.56701187498402,
+      "rss_mib": 15.25,
+      "available_ram_mib": 3062.921875,
+      "free_disk_gib": 14.251495361328125
+    },
+    {
+      "elapsed_seconds": 120.07520533294883,
+      "rss_mib": 13.171875,
+      "available_ram_mib": 3062.9375,
+      "free_disk_gib": 14.142078399658203
+    },
+    {
+      "elapsed_seconds": 120.58379479194991,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 3061.21875,
+      "free_disk_gib": 14.141460418701172
+    },
+    {
+      "elapsed_seconds": 121.09403695794754,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 3071.765625,
+      "free_disk_gib": 14.141460418701172
+    },
+    {
+      "elapsed_seconds": 121.60349766694708,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 3063.390625,
+      "free_disk_gib": 14.141460418701172
+    },
+    {
+      "elapsed_seconds": 122.10953866696218,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 3057.15625,
+      "free_disk_gib": 14.14145278930664
+    },
+    {
+      "elapsed_seconds": 122.61867370799882,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3027.609375,
+      "free_disk_gib": 14.141456604003906
+    },
+    {
+      "elapsed_seconds": 123.12889904197073,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3038.625,
+      "free_disk_gib": 14.141456604003906
+    },
+    {
+      "elapsed_seconds": 123.63403154199477,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3031.953125,
+      "free_disk_gib": 14.141456604003906
+    },
+    {
+      "elapsed_seconds": 124.14566462498624,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3027.234375,
+      "free_disk_gib": 14.141456604003906
+    },
+    {
+      "elapsed_seconds": 124.65293799998472,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3034.375,
+      "free_disk_gib": 14.141456604003906
+    },
+    {
+      "elapsed_seconds": 125.15635770797962,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3029.546875,
+      "free_disk_gib": 14.14145278930664
+    },
+    {
+      "elapsed_seconds": 125.66543508297764,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3045.421875,
+      "free_disk_gib": 14.14145278930664
+    },
+    {
+      "elapsed_seconds": 126.17462729196995,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3045.125,
+      "free_disk_gib": 14.141468048095703
+    },
+    {
+      "elapsed_seconds": 126.68183687498095,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 3035.3125,
+      "free_disk_gib": 14.141529083251953
+    },
+    {
+      "elapsed_seconds": 127.19218912499491,
+      "rss_mib": 11.859375,
+      "available_ram_mib": 3022.078125,
+      "free_disk_gib": 14.141494750976562
+    },
+    {
+      "elapsed_seconds": 127.70051054196665,
+      "rss_mib": 11.859375,
+      "available_ram_mib": 2995.1875,
+      "free_disk_gib": 14.135189056396484
+    },
+    {
+      "elapsed_seconds": 128.20779133297037,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2963.859375,
+      "free_disk_gib": 14.14023208618164
+    },
+    {
+      "elapsed_seconds": 128.7131648749928,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 2953.5625,
+      "free_disk_gib": 14.13991928100586
+    },
+    {
+      "elapsed_seconds": 129.2233337079524,
+      "rss_mib": 11.9375,
+      "available_ram_mib": 2960.578125,
+      "free_disk_gib": 14.13958740234375
+    },
+    {
+      "elapsed_seconds": 129.73214245797135,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 2959.734375,
+      "free_disk_gib": 14.139274597167969
+    },
+    {
+      "elapsed_seconds": 130.23328399995808,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2970.34375,
+      "free_disk_gib": 14.138954162597656
+    },
+    {
+      "elapsed_seconds": 130.74126374995103,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2970.609375,
+      "free_disk_gib": 14.138626098632812
+    },
+    {
+      "elapsed_seconds": 131.2506880419678,
+      "rss_mib": 12.0,
+      "available_ram_mib": 2994.421875,
+      "free_disk_gib": 14.137901306152344
+    },
+    {
+      "elapsed_seconds": 131.76085545797832,
+      "rss_mib": 12.015625,
+      "available_ram_mib": 2988.375,
+      "free_disk_gib": 14.137901306152344
+    },
+    {
+      "elapsed_seconds": 132.2686016249936,
+      "rss_mib": 12.015625,
+      "available_ram_mib": 2991.734375,
+      "free_disk_gib": 14.137397766113281
+    },
+    {
+      "elapsed_seconds": 132.77771412499715,
+      "rss_mib": 12.03125,
+      "available_ram_mib": 2977.046875,
+      "free_disk_gib": 14.137401580810547
+    },
+    {
+      "elapsed_seconds": 133.28495570796076,
+      "rss_mib": 12.03125,
+      "available_ram_mib": 2974.546875,
+      "free_disk_gib": 14.137401580810547
+    },
+    {
+      "elapsed_seconds": 133.79303183295997,
+      "rss_mib": 12.0,
+      "available_ram_mib": 2968.921875,
+      "free_disk_gib": 14.141365051269531
+    },
+    {
+      "elapsed_seconds": 134.30166837497381,
+      "rss_mib": 12.0,
+      "available_ram_mib": 2964.078125,
+      "free_disk_gib": 14.141365051269531
+    },
+    {
+      "elapsed_seconds": 134.80641533294693,
+      "rss_mib": 11.9375,
+      "available_ram_mib": 2960.78125,
+      "free_disk_gib": 14.141403198242188
+    },
+    {
+      "elapsed_seconds": 135.31106145796366,
+      "rss_mib": 11.9375,
+      "available_ram_mib": 2956.078125,
+      "free_disk_gib": 14.141387939453125
+    },
+    {
+      "elapsed_seconds": 135.82244037499186,
+      "rss_mib": 11.9375,
+      "available_ram_mib": 2952.34375,
+      "free_disk_gib": 14.141422271728516
+    },
+    {
+      "elapsed_seconds": 136.32763545797206,
+      "rss_mib": 11.9375,
+      "available_ram_mib": 2953.09375,
+      "free_disk_gib": 14.14138412475586
+    },
+    {
+      "elapsed_seconds": 136.8359147500014,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 2972.5,
+      "free_disk_gib": 14.14138412475586
+    },
+    {
+      "elapsed_seconds": 137.34203674999299,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2980.96875,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 137.8511692499742,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2980.5,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 138.3569601669442,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2969.78125,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 138.86401145794662,
+      "rss_mib": 12.0,
+      "available_ram_mib": 2972.09375,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 139.36787974997424,
+      "rss_mib": 12.015625,
+      "available_ram_mib": 2970.578125,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 139.87683987495257,
+      "rss_mib": 11.984375,
+      "available_ram_mib": 2952.90625,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 140.3804062079871,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 2953.4375,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 140.88462166697718,
+      "rss_mib": 12.03125,
+      "available_ram_mib": 2945.265625,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 141.39471541700186,
+      "rss_mib": 12.03125,
+      "available_ram_mib": 2963.0625,
+      "free_disk_gib": 14.14132308959961
+    },
+    {
+      "elapsed_seconds": 141.90446133294608,
+      "rss_mib": 12.03125,
+      "available_ram_mib": 2965.09375,
+      "free_disk_gib": 14.141204833984375
+    },
+    {
+      "elapsed_seconds": 142.4137473749579,
+      "rss_mib": 12.015625,
+      "available_ram_mib": 2948.640625,
+      "free_disk_gib": 14.141204833984375
+    },
+    {
+      "elapsed_seconds": 142.9205342499772,
+      "rss_mib": 12.015625,
+      "available_ram_mib": 2951.984375,
+      "free_disk_gib": 14.141204833984375
+    },
+    {
+      "elapsed_seconds": 143.4267977499985,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2958.4375,
+      "free_disk_gib": 14.141204833984375
+    },
+    {
+      "elapsed_seconds": 143.92902999999933,
+      "rss_mib": 11.96875,
+      "available_ram_mib": 2959.703125,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 144.43921474996023,
+      "rss_mib": 11.890625,
+      "available_ram_mib": 2957.84375,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 144.9478856669739,
+      "rss_mib": 11.796875,
+      "available_ram_mib": 2930.1875,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 145.45819829194807,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2945.03125,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 145.96572908299277,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2940.609375,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 146.47377729194704,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2940.078125,
+      "free_disk_gib": 14.141143798828125
+    },
+    {
+      "elapsed_seconds": 146.98356183298165,
+      "rss_mib": 11.765625,
+      "available_ram_mib": 2948.0625,
+      "free_disk_gib": 14.141178131103516
+    },
+    {
+      "elapsed_seconds": 147.48648145794868,
+      "rss_mib": 11.765625,
+      "available_ram_mib": 2961.421875,
+      "free_disk_gib": 14.141178131103516
+    },
+    {
+      "elapsed_seconds": 147.99074208299862,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2960.84375,
+      "free_disk_gib": 14.141117095947266
+    },
+    {
+      "elapsed_seconds": 148.49470045795897,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 2941.96875,
+      "free_disk_gib": 14.141117095947266
+    },
+    {
+      "elapsed_seconds": 149.00233037496218,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 2945.15625,
+      "free_disk_gib": 14.14111328125
+    },
+    {
+      "elapsed_seconds": 149.50406570796622,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 2970.40625,
+      "free_disk_gib": 14.141117095947266
+    },
+    {
+      "elapsed_seconds": 150.008909999975,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 3036.859375,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 150.5190657499479,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 3026.109375,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 151.02713374997256,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 3029.234375,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 151.5372726249625,
+      "rss_mib": 11.953125,
+      "available_ram_mib": 3027.703125,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 152.0476184169529,
+      "rss_mib": 11.921875,
+      "available_ram_mib": 3035.78125,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 152.55762099998537,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3023.125,
+      "free_disk_gib": 14.133533477783203
+    },
+    {
+      "elapsed_seconds": 153.06668716698186,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3008.546875,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 153.57392404199345,
+      "rss_mib": 11.90625,
+      "available_ram_mib": 3003.515625,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 154.084239082993,
+      "rss_mib": 11.859375,
+      "available_ram_mib": 2984.046875,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 154.5938450419926,
+      "rss_mib": 11.828125,
+      "available_ram_mib": 2953.96875,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 155.10392237495398,
+      "rss_mib": 11.6875,
+      "available_ram_mib": 2965.0625,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 155.61430199997267,
+      "rss_mib": 11.671875,
+      "available_ram_mib": 2977.953125,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 156.12469304195838,
+      "rss_mib": 11.671875,
+      "available_ram_mib": 2982.296875,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 156.63420941698132,
+      "rss_mib": 11.671875,
+      "available_ram_mib": 2963.203125,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 157.14441149996128,
+      "rss_mib": 11.671875,
+      "available_ram_mib": 2953.5,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 157.65554899995914,
+      "rss_mib": 11.703125,
+      "available_ram_mib": 2953.125,
+      "free_disk_gib": 14.133529663085938
+    },
+    {
+      "elapsed_seconds": 158.1680458749761,
+      "rss_mib": 11.703125,
+      "available_ram_mib": 2943.265625,
+      "free_disk_gib": 14.13357162475586
+    },
+    {
+      "elapsed_seconds": 158.67658137495164,
+      "rss_mib": 11.703125,
+      "available_ram_mib": 2939.546875,
+      "free_disk_gib": 14.13357162475586
+    },
+    {
+      "elapsed_seconds": 159.18583645799663,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2947.640625,
+      "free_disk_gib": 14.13357162475586
+    },
+    {
+      "elapsed_seconds": 159.69677170796786,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2943.390625,
+      "free_disk_gib": 14.133502960205078
+    },
+    {
+      "elapsed_seconds": 160.206744666968,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2953.46875,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 160.71683224994922,
+      "rss_mib": 11.84375,
+      "available_ram_mib": 2939.546875,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 161.22437099996023,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2944.78125,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 161.73426820797613,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2942.5625,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 162.24248016695492,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2937.421875,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 162.7508027079748,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2946.21875,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 163.26008349994663,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2940.71875,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 163.76815320795868,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2940.890625,
+      "free_disk_gib": 14.13351821899414
+    },
+    {
+      "elapsed_seconds": 164.27447649999522,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2954.234375,
+      "free_disk_gib": 14.13348388671875
+    },
+    {
+      "elapsed_seconds": 164.7849214169546,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2933.65625,
+      "free_disk_gib": 14.13348388671875
+    },
+    {
+      "elapsed_seconds": 165.29337633296382,
+      "rss_mib": 11.75,
+      "available_ram_mib": 2935.625,
+      "free_disk_gib": 14.13348388671875
+    },
+    {
+      "elapsed_seconds": 165.8030245419941,
+      "rss_mib": 11.78125,
+      "available_ram_mib": 2942.234375,
+      "free_disk_gib": 14.13348388671875
+    },
+    {
+      "elapsed_seconds": 166.3114489579457,
+      "rss_mib": 11.828125,
+      "available_ram_mib": 2986.21875,
+      "free_disk_gib": 14.13348388671875
+    },
+    {
+      "elapsed_seconds": 166.81366662494838,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2944.109375,
+      "free_disk_gib": 14.182819366455078
+    },
+    {
+      "elapsed_seconds": 167.3239844169584,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2937.953125,
+      "free_disk_gib": 14.181583404541016
+    },
+    {
+      "elapsed_seconds": 167.82841858296888,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2925.75,
+      "free_disk_gib": 14.18035888671875
+    },
+    {
+      "elapsed_seconds": 168.33840283297468,
+      "rss_mib": 11.8125,
+      "available_ram_mib": 2933.96875,
+      "free_disk_gib": 14.18035888671875
+    },
+    {
+      "elapsed_seconds": 168.84864570799982,
+      "rss_mib": 8.765625,
+      "available_ram_mib": 2942.96875,
+      "free_disk_gib": 14.18039321899414
+    },
+    {
+      "elapsed_seconds": 169.35733474994777,
+      "rss_mib": 8.765625,
+      "available_ram_mib": 2943.21875,
+      "free_disk_gib": 14.17844009399414
+    },
+    {
+      "elapsed_seconds": 169.8675543749705,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2954.6875,
+      "free_disk_gib": 14.178421020507812
+    },
+    {
+      "elapsed_seconds": 170.37413187499624,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2947.890625,
+      "free_disk_gib": 14.178421020507812
+    },
+    {
+      "elapsed_seconds": 170.88498445798177,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2950.65625,
+      "free_disk_gib": 14.178421020507812
+    },
+    {
+      "elapsed_seconds": 171.39507345797028,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2957.59375,
+      "free_disk_gib": 14.178421020507812
+    },
+    {
+      "elapsed_seconds": 171.90491758298595,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2964.296875,
+      "free_disk_gib": 14.174514770507812
+    },
+    {
+      "elapsed_seconds": 172.41456058295444,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2953.703125,
+      "free_disk_gib": 14.174514770507812
+    },
+    {
+      "elapsed_seconds": 172.92239354195772,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 2966.9375,
+      "free_disk_gib": 14.174514770507812
+    },
+    {
+      "elapsed_seconds": 173.43324124999344,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 2970.125,
+      "free_disk_gib": 14.16744613647461
+    },
+    {
+      "elapsed_seconds": 173.9425526249688,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 2967.171875,
+      "free_disk_gib": 14.16744613647461
+    },
+    {
+      "elapsed_seconds": 174.45299520797562,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 2960.84375,
+      "free_disk_gib": 14.16744613647461
+    },
+    {
+      "elapsed_seconds": 174.95913412497612,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2956.65625,
+      "free_disk_gib": 14.16741943359375
+    },
+    {
+      "elapsed_seconds": 175.4687824169523,
+      "rss_mib": 8.796875,
+      "available_ram_mib": 2967.140625,
+      "free_disk_gib": 14.16741943359375
+    },
+    {
+      "elapsed_seconds": 175.97626124997623,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2972.875,
+      "free_disk_gib": 14.16741943359375
+    },
+    {
+      "elapsed_seconds": 176.48558641696582,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2957.953125,
+      "free_disk_gib": 14.166927337646484
+    },
+    {
+      "elapsed_seconds": 176.98893549997592,
+      "rss_mib": 8.703125,
+      "available_ram_mib": 2974.640625,
+      "free_disk_gib": 14.158889770507812
+    },
+    {
+      "elapsed_seconds": 177.49016433296492,
+      "rss_mib": 8.6875,
+      "available_ram_mib": 2960.09375,
+      "free_disk_gib": 14.158889770507812
+    },
+    {
+      "elapsed_seconds": 178.00052304199198,
+      "rss_mib": 8.6875,
+      "available_ram_mib": 2962.96875,
+      "free_disk_gib": 14.158889770507812
+    },
+    {
+      "elapsed_seconds": 178.50830424996093,
+      "rss_mib": 8.703125,
+      "available_ram_mib": 2965.1875,
+      "free_disk_gib": 14.158889770507812
+    },
+    {
+      "elapsed_seconds": 179.01715504197637,
+      "rss_mib": 8.71875,
+      "available_ram_mib": 2969.21875,
+      "free_disk_gib": 14.158889770507812
+    },
+    {
+      "elapsed_seconds": 179.51810104196193,
+      "rss_mib": 8.8125,
+      "available_ram_mib": 2935.65625,
+      "free_disk_gib": 14.158882141113281
+    },
+    {
+      "elapsed_seconds": 180.0283034579479,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 2936.625,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 180.53427791694412,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 2933.046875,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 181.04531854199013,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 2938.109375,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 181.55442879197653,
+      "rss_mib": 8.921875,
+      "available_ram_mib": 2934.734375,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 182.06405370798893,
+      "rss_mib": 8.921875,
+      "available_ram_mib": 2939.296875,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 182.57431012496818,
+      "rss_mib": 8.921875,
+      "available_ram_mib": 2928.578125,
+      "free_disk_gib": 14.149765014648438
+    },
+    {
+      "elapsed_seconds": 183.08035812497837,
+      "rss_mib": 8.890625,
+      "available_ram_mib": 2921.640625,
+      "free_disk_gib": 14.148780822753906
+    },
+    {
+      "elapsed_seconds": 183.5900681669591,
+      "rss_mib": 8.859375,
+      "available_ram_mib": 2940.03125,
+      "free_disk_gib": 14.148780822753906
+    },
+    {
+      "elapsed_seconds": 184.09541037498275,
+      "rss_mib": 8.859375,
+      "available_ram_mib": 2940.4375,
+      "free_disk_gib": 14.138031005859375
+    },
+    {
+      "elapsed_seconds": 184.5958864579443,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 2948.046875,
+      "free_disk_gib": 14.138023376464844
+    },
+    {
+      "elapsed_seconds": 185.10608741699252,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 2945.234375,
+      "free_disk_gib": 14.138023376464844
+    },
+    {
+      "elapsed_seconds": 185.6064859579783,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3004.03125,
+      "free_disk_gib": 14.308746337890625
+    },
+    {
+      "elapsed_seconds": 186.10752158297691,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3146.609375,
+      "free_disk_gib": 14.436100006103516
+    },
+    {
+      "elapsed_seconds": 186.61770224996144,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3136.984375,
+      "free_disk_gib": 15.001564025878906
+    },
+    {
+      "elapsed_seconds": 187.12042341695633,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3125.765625,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 187.62807108298875,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3110.765625,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 188.1384254579898,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3108.140625,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 188.64352383295773,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3099.578125,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 189.15307783294702,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3095.765625,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 189.66359604196623,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3090.65625,
+      "free_disk_gib": 15.34145736694336
+    },
+    {
+      "elapsed_seconds": 190.17233399994439,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3091.890625,
+      "free_disk_gib": 15.34149169921875
+    },
+    {
+      "elapsed_seconds": 190.67871445795754,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3086.640625,
+      "free_disk_gib": 15.34149169921875
+    },
+    {
+      "elapsed_seconds": 191.1872175829485,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3084.15625,
+      "free_disk_gib": 15.34149169921875
+    },
+    {
+      "elapsed_seconds": 191.6967679169611,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3072.015625,
+      "free_disk_gib": 15.341487884521484
+    },
+    {
+      "elapsed_seconds": 192.20631229196442,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3066.96875,
+      "free_disk_gib": 15.34149169921875
+    },
+    {
+      "elapsed_seconds": 192.71398912498262,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3063.6875,
+      "free_disk_gib": 15.341346740722656
+    },
+    {
+      "elapsed_seconds": 193.2189972079941,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3039.15625,
+      "free_disk_gib": 15.349384307861328
+    },
+    {
+      "elapsed_seconds": 193.72907462494913,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3022.578125,
+      "free_disk_gib": 15.349395751953125
+    },
+    {
+      "elapsed_seconds": 194.2384575829492,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3025.84375,
+      "free_disk_gib": 15.349395751953125
+    },
+    {
+      "elapsed_seconds": 194.74918504199013,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3059.125,
+      "free_disk_gib": 15.349235534667969
+    },
+    {
+      "elapsed_seconds": 195.25753999996232,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3042.953125,
+      "free_disk_gib": 15.349201202392578
+    },
+    {
+      "elapsed_seconds": 195.76556708296994,
+      "rss_mib": 8.84375,
+      "available_ram_mib": 3066.96875,
+      "free_disk_gib": 15.349201202392578
+    },
+    {
+      "elapsed_seconds": 196.27183604199672,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3093.234375,
+      "free_disk_gib": 15.349166870117188
+    },
+    {
+      "elapsed_seconds": 196.77530854195356,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3094.5625,
+      "free_disk_gib": 15.349163055419922
+    },
+    {
+      "elapsed_seconds": 197.28461099998094,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3114.21875,
+      "free_disk_gib": 15.349159240722656
+    },
+    {
+      "elapsed_seconds": 197.79338045796612,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3117.203125,
+      "free_disk_gib": 15.349163055419922
+    },
+    {
+      "elapsed_seconds": 198.3017948329798,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3107.03125,
+      "free_disk_gib": 15.349163055419922
+    },
+    {
+      "elapsed_seconds": 198.8109425419825,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3104.734375,
+      "free_disk_gib": 15.349178314208984
+    },
+    {
+      "elapsed_seconds": 199.31968099996448,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3124.484375,
+      "free_disk_gib": 15.349178314208984
+    },
+    {
+      "elapsed_seconds": 199.82783320796443,
+      "rss_mib": 8.828125,
+      "available_ram_mib": 3115.96875,
+      "free_disk_gib": 15.349178314208984
+    },
+    {
+      "elapsed_seconds": 200.3321972079575,
+      "rss_mib": 165.203125,
+      "available_ram_mib": 3120.25,
+      "free_disk_gib": 15.349178314208984
+    },
+    {
+      "elapsed_seconds": 200.84174820798216,
+      "rss_mib": 174.28125,
+      "available_ram_mib": 3111.078125,
+      "free_disk_gib": 15.349212646484375
+    },
+    {
+      "elapsed_seconds": 201.34465008298866,
+      "rss_mib": 189.03125,
+      "available_ram_mib": 3080.625,
+      "free_disk_gib": 15.34920883178711
+    },
+    {
+      "elapsed_seconds": 201.85391345794778,
+      "rss_mib": 205.859375,
+      "available_ram_mib": 3085.59375,
+      "free_disk_gib": 15.34920883178711
+    },
+    {
+      "elapsed_seconds": 202.3640947919921,
+      "rss_mib": 209.125,
+      "available_ram_mib": 3077.765625,
+      "free_disk_gib": 15.34920883178711
+    },
+    {
+      "elapsed_seconds": 202.8675671669771,
+      "rss_mib": 211.328125,
+      "available_ram_mib": 3070.46875,
+      "free_disk_gib": 15.34920883178711
+    },
+    {
+      "elapsed_seconds": 203.37259558297228,
+      "rss_mib": 217.734375,
+      "available_ram_mib": 3076.890625,
+      "free_disk_gib": 15.349075317382812
+    },
+    {
+      "elapsed_seconds": 203.87420491699595,
+      "rss_mib": 217.828125,
+      "available_ram_mib": 3071.546875,
+      "free_disk_gib": 15.349075317382812
+    },
+    {
+      "elapsed_seconds": 204.3766559169744,
+      "rss_mib": 220.171875,
+      "available_ram_mib": 3079.0,
+      "free_disk_gib": 15.349075317382812
+    },
+    {
+      "elapsed_seconds": 204.88683999999193,
+      "rss_mib": 222.90625,
+      "available_ram_mib": 3061.8125,
+      "free_disk_gib": 15.34906005859375
+    },
+    {
+      "elapsed_seconds": 205.39694637496723,
+      "rss_mib": 227.203125,
+      "available_ram_mib": 3061.046875,
+      "free_disk_gib": 15.34906005859375
+    },
+    {
+      "elapsed_seconds": 205.92038699996192,
+      "rss_mib": 227.203125,
+      "available_ram_mib": 3081.0,
+      "free_disk_gib": 15.34906005859375
+    },
+    {
+      "elapsed_seconds": 206.4371637919685,
+      "rss_mib": 227.53125,
+      "available_ram_mib": 3084.3125,
+      "free_disk_gib": 15.34906005859375
+    },
+    {
+      "elapsed_seconds": 206.93757158296648,
+      "rss_mib": 227.625,
+      "available_ram_mib": 3091.140625,
+      "free_disk_gib": 15.349056243896484
+    },
+    {
+      "elapsed_seconds": 207.44735820795177,
+      "rss_mib": 227.6875,
+      "available_ram_mib": 3085.578125,
+      "free_disk_gib": 15.349056243896484
+    },
+    {
+      "elapsed_seconds": 207.9572377500008,
+      "rss_mib": 227.6875,
+      "available_ram_mib": 3104.046875,
+      "free_disk_gib": 15.349056243896484
+    },
+    {
+      "elapsed_seconds": 208.4664578329539,
+      "rss_mib": 227.6875,
+      "available_ram_mib": 3091.625,
+      "free_disk_gib": 15.34906005859375
+    },
+    {
+      "elapsed_seconds": 208.97657062497456,
+      "rss_mib": 221.46875,
+      "available_ram_mib": 3104.953125,
+      "free_disk_gib": 15.349029541015625
+    },
+    {
+      "elapsed_seconds": 209.48545904195635,
+      "rss_mib": 221.46875,
+      "available_ram_mib": 3100.640625,
+      "free_disk_gib": 15.349029541015625
+    },
+    {
+      "elapsed_seconds": 209.9949210420018,
+      "rss_mib": 203.0625,
+      "available_ram_mib": 3105.21875,
+      "free_disk_gib": 15.34881591796875
+    },
+    {
+      "elapsed_seconds": 210.5012155000004,
+      "rss_mib": 178.71875,
+      "available_ram_mib": 3121.8125,
+      "free_disk_gib": 15.348823547363281
+    },
+    {
+      "elapsed_seconds": 211.00443658296717,
+      "rss_mib": 178.71875,
+      "available_ram_mib": 3117.3125,
+      "free_disk_gib": 15.348823547363281
+    },
+    {
+      "elapsed_seconds": 211.5151087080012,
+      "rss_mib": 178.71875,
+      "available_ram_mib": 3112.53125,
+      "free_disk_gib": 15.348823547363281
+    },
+    {
+      "elapsed_seconds": 212.02487112494418,
+      "rss_mib": 175.015625,
+      "available_ram_mib": 3114.296875,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 212.5323145419825,
+      "rss_mib": 174.125,
+      "available_ram_mib": 3089.515625,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 213.0346515829442,
+      "rss_mib": 174.125,
+      "available_ram_mib": 3088.421875,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 213.53931545797968,
+      "rss_mib": 174.125,
+      "available_ram_mib": 3085.0,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 214.04824733297573,
+      "rss_mib": 174.125,
+      "available_ram_mib": 3084.171875,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 214.55681554198964,
+      "rss_mib": 174.125,
+      "available_ram_mib": 3078.0,
+      "free_disk_gib": 15.34885025024414
+    },
+    {
+      "elapsed_seconds": 215.06663908297196,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3067.8125,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 215.57685087498976,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3067.8125,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 216.0861539579928,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3081.765625,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 216.5901327499887,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3079.421875,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 217.0995203749626,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3080.21875,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 217.6097554169828,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3083.484375,
+      "free_disk_gib": 15.349830627441406
+    },
+    {
+      "elapsed_seconds": 218.1166017499636,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3101.375,
+      "free_disk_gib": 15.349754333496094
+    },
+    {
+      "elapsed_seconds": 218.62509966699872,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3100.90625,
+      "free_disk_gib": 15.349754333496094
+    },
+    {
+      "elapsed_seconds": 219.13314295798773,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3098.96875,
+      "free_disk_gib": 15.349754333496094
+    },
+    {
+      "elapsed_seconds": 219.6444717499544,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3116.46875,
+      "free_disk_gib": 15.349708557128906
+    },
+    {
+      "elapsed_seconds": 220.15164833294693,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3116.25,
+      "free_disk_gib": 15.349708557128906
+    },
+    {
+      "elapsed_seconds": 220.6579934170004,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3151.203125,
+      "free_disk_gib": 15.34969711303711
+    },
+    {
+      "elapsed_seconds": 221.16588883299846,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3149.859375,
+      "free_disk_gib": 15.34969711303711
+    },
+    {
+      "elapsed_seconds": 221.67471683298936,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3141.078125,
+      "free_disk_gib": 15.34969711303711
+    },
+    {
+      "elapsed_seconds": 222.18415241700131,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3164.5625,
+      "free_disk_gib": 15.349685668945312
+    },
+    {
+      "elapsed_seconds": 222.69103287498,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3157.09375,
+      "free_disk_gib": 15.349685668945312
+    },
+    {
+      "elapsed_seconds": 223.19972962496104,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3157.96875,
+      "free_disk_gib": 15.349685668945312
+    },
+    {
+      "elapsed_seconds": 223.7080750829773,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3173.71875,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 224.2171862499672,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3176.578125,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 224.72650845797034,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3141.828125,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 225.23290841694688,
+      "rss_mib": 173.46875,
+      "available_ram_mib": 3138.046875,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 225.74169133295072,
+      "rss_mib": 173.515625,
+      "available_ram_mib": 3152.15625,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 226.25153804197907,
+      "rss_mib": 128.140625,
+      "available_ram_mib": 3117.671875,
+      "free_disk_gib": 15.349624633789062
+    },
+    {
+      "elapsed_seconds": 226.76171166700078,
+      "rss_mib": 128.140625,
+      "available_ram_mib": 3120.90625,
+      "free_disk_gib": 15.34963607788086
+    }
+  ],
+  "phase": "native_browser_server_ready",
+  "phase_rss_mib": {
+    "synthetic_model": 182.78125,
+    "owned_native_boot": 144.0625,
+    "existing_sealed_index_open": 237.21875,
+    "normal_create_app_empty_native_annotations": 355.65625,
+    "native_context_first_proof": 355.65625
+  },
+  "fixture_index_sha256": "148fc73d30cdd42130e05feb6abf3ad094e1c63c97b6d3aaffa8d307118471a0",
+  "native_contract": true,
+  "native_context_ready": true,
+  "native_context_contract": "protocol-state-v3",
+  "annotation_preparation": {
+    "status": "ready",
+    "storage": "native_sql",
+    "phases": {
+      "preparing_protocol_reads": {
+        "seconds": 0.77054
+      }
+    },
+    "project_uuid": "d597a1f3-6212-58f6-9e9c-1ee7212fa1a0",
+    "reused": false,
+    "protocols_prepared": 1,
+    "protocols_deferred": 0,
+    "phase": "complete",
+    "seconds": 1.034087
+  },
+  "backend_passed": true,
+  "browser_done_signal": false,
+  "owned_native_runtime_stopped": true,
+  "peak_rss_bytes": 530169856,
+  "sampled_peak_rss_mib": 501.609375,
+  "seconds": 227.25360424997052,
+  "source_inventory_after": {
+    "python/benchmark_workspace_metadata.py": "34396f00dbf9125ee040c30b9be86ca42b03a0f9f0d8280335b352ad73a9a0c0",
+    "python/field_mapper.py": "7d2b94ddd160df7bf27280c9418d77558149cb9400a4a4e8cd0f28ee8b29150f",
+    "python/manage_workspace_storage.py": "3a9a30b0ae971031b6b6c082676cd801bbb0218c6045452b25d4ef9ca68d5ebe",
+    "python/query_protocol_workspace.py": "a09054aa63228effbd54a60cb479dd4431d16b46650d844ec92e5775347d329f",
+    "python/query_workspace_export.py": "9397c79664375f32a438619ca6d3654225aec5dc03a9847ce37afa99e475aad6",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba",
+    "python/snapshot_protocol_workspace.py": "4e0b01ba212b8862f6f63e54064144e8108a8fe76978945b9842cb65d70052b9",
+    "python/tests/__init__.py": "977a7d7d0653710771d95091eccfae7cbb23d8cf79cb5ddf5d85fcf7b190e98f",
+    "python/tests/test_desktop_artifact_faults.py": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+    "python/tests/test_desktop_release.py": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+    "python/tests/test_desktop_release_plan.py": "2aecc2cd536bbb66f003cd71b01c4c533186f49251aba444ad61c493606ba88f",
+    "python/tests/test_desktop_runtime_audit.py": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+    "python/tests/test_desktop_runtime_packaging.py": "a2ca336af89cf3c381cd388d10297b6ca9c682474383a31445f5eaa832ee3581",
+    "python/tests/test_desktop_test_release.py": "9b5e5ed15791e9e27efd1f81085795840ca2df424b819e5c7a461962eeee1a5e",
+    "python/tests/test_recording_workspace.py": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+    "python/tests/test_workspace_annotation_density.py": "66d66d68054719f5b9e14cb2024146862d5883388cc7afececc9050ccac96af4",
+    "python/tests/test_workspace_annotation_preparation.py": "e8b62c2d3dfda9969ccc7e1697338a3141209a06ae4b18633772091967b795cd",
+    "python/tests/test_workspace_annotations.py": "8e838d7297a5ddd9826fa09f12e8ce1fa4ad41a83784e9d6ee70bef5f2d7248c",
+    "python/tests/test_workspace_api.py": "c97cf30b35901f46eca741f8d90fc76b143ff0f39dcb5092bb6d302c61b7841b",
+    "python/tests/test_workspace_app_routes.py": "884434fedf25b1b82a94944f84c00e9fad9b81ddb4c56fcdaab8ac22b7a216a5",
+    "python/tests/test_workspace_appearance.py": "28b280d15e916cfd5af77e80584671e5927f01e0f054613656d23447ab10fa06",
+    "python/tests/test_workspace_audit.py": "2366c63b57422b0e5a77cb4e01aab752a368b668568576c2a539138c3b425a27",
+    "python/tests/test_workspace_author_preferences.py": "eb28fccb9e18d769c18635797d229227717b617cb31e30d12de499b7538e2b5c",
+    "python/tests/test_workspace_backend_responsiveness.py": "352017c0ea1a90be0597758578340847fe736c7f6d2c906b2d5bc6a57f118656",
+    "python/tests/test_workspace_backup_scheduler.py": "47d06824147bafb64b4b9c6741cc1465a421e6be7c6f058732e63c733a6a7a9f",
+    "python/tests/test_workspace_bootstrap.py": "a781c66702903781dcb733abfdf6aa9348fe0994e8ba92e8ef9c863d1f568b38",
+    "python/tests/test_workspace_cache_lifecycle.py": "2d50c23f856a365b1beaee8ee7d2aaa563e5ecb3e8dfbe121e8838e0fcd90494",
+    "python/tests/test_workspace_cache_publication.py": "cf3194e38d97fa89c351654e9ecddd69990eac7c5c82f9fb85631ff680e5f558",
+    "python/tests/test_workspace_candidate_exports.py": "6e999e196fdfa73776406465626d254403c80ddb6c4374ca785a1297b2d26162",
+    "python/tests/test_workspace_catalog_collision.py": "6f9639e8e083399b30d0db61f5d784c21c295e4cf18dbb195776a478be157251",
+    "python/tests/test_workspace_catalog_identity.py": "8c5cfceeb6a6d7dffb34650a0a0061ea0c5efac33aa615a298d038afffa5463b",
+    "python/tests/test_workspace_catalog_optimization.py": "c5fdfdeb629d9f31a94fc04a49f27bee36e03a0a87c3f02d9cf370232de2d8b4",
+    "python/tests/test_workspace_combinations.py": "42cd58e67682ce8bd2d38bbc700ef2e21a87f926f5d76b206eae6e7d025a9441",
+    "python/tests/test_workspace_compact_explorer.py": "13360c45c9ce7776732a4412289765986041c1c5d423ed5c0ea032a7e77af26b",
+    "python/tests/test_workspace_concurrent_requests.py": "f074a762536ab5bb52abe4ea56faada41babb1cd765512acb3caba18dd503648",
+    "python/tests/test_workspace_curation.py": "39f18a88786f55738ba2b4f597b9ce32c811d80cf692840c593f412830d23bb4",
+    "python/tests/test_workspace_curation_batch.py": "33c4b53abbac16401914f649ca5d9dab16d2b9bf89424253e8f9eeac7669dd13",
+    "python/tests/test_workspace_datastore_deletion.py": "51d46e59f137eb0cd01ab439cc693ab3a2d2a7765b076f1f02079380d0a64961",
+    "python/tests/test_workspace_datastore_migration.py": "232f95f1c177b768643d73a9e5dd332344928b381374a374e663b6672eddc888",
+    "python/tests/test_workspace_datastores.py": "2db26628554f0a61af9122fef079099d65c9700400d928402026f29eb15ffd1c",
+    "python/tests/test_workspace_desktop.py": "c1a08d2040a4bc937015e13fbcf0608caa7b7f269c8b2874d095d1b769b373bb",
+    "python/tests/test_workspace_desktop_paths.py": "be12fb413ea6e2f3777f440c158e29480719991c6987433e53b14ac5865d08d6",
+    "python/tests/test_workspace_diff.py": "ece3af5b165588361c6d23be32c2706f5a96c95242db0f7542a4579b46e3c2f7",
+    "python/tests/test_workspace_disk_index.py": "f5b44ea849e28647f28e4dad30587064f42f1b17bdc945d53970c93164d110e6",
+    "python/tests/test_workspace_disk_index_crash.py": "14f8fb2ae81180f888aef4246893c04f4528c7870c1167835f6b7911ea79f5f8",
+    "python/tests/test_workspace_empty_blocks.py": "ff0973074a72cf110b90dd8f76f032d5016315bbb21f84569e9fa701b11a7d88",
+    "python/tests/test_workspace_epoch_page_performance.py": "e21ee24baee1f473273503e51d1e92b80e95083dd463a3967860e90cadff4462",
+    "python/tests/test_workspace_event_paging.py": "e79cd1de3bd7469818e255cc01f087a608c11e799a48e81e4ca0ac29ff7a578e",
+    "python/tests/test_workspace_export_boundaries.py": "8d3a9f160d3df09f5ef99f59ee7f58189b59520e2b8881113dd064d1082b13dc",
+    "python/tests/test_workspace_export_paths.py": "070b987b09afb06090bcafda808706316d272f20a24b5d09776bebf73a98002c",
+    "python/tests/test_workspace_export_reader.py": "ee260e95c19c4184c07f66633876bbd889abea14c8065cc17e8e8f253b408bbd",
+    "python/tests/test_workspace_external_tags.py": "25389f6868db35877a9a7564c9be32f786684c1cdac88ed43f8e1a2881abc807",
+    "python/tests/test_workspace_folder_browser.py": "1f111e4e2938b402be70ecd05849002cf2def5e7fb9c2470aa54928e635ccf9b",
+    "python/tests/test_workspace_frontend.py": "086ce8b19abaca47511f123f482072d40f48862ebe0c5361b1d48bc016f1f3e0",
+    "python/tests/test_workspace_generation_portability.py": "31cf7f52d275a9892366aa9e54d66ff12e0be2f70967722d3c179ef4b7f0f3b2",
+    "python/tests/test_workspace_h5_inbox.py": "ebb20a6daf67e245cfdd89c8abff75634bc6aa82f4bc859636caea1b66b918cc",
+    "python/tests/test_workspace_handoffs.py": "54ee6e197211cb5092fbf610842ca505372c9655c1daec5fe94a859b751fc7da",
+    "python/tests/test_workspace_identity_conflicts.py": "85aca1903054f632dc26b5f0d018c4b6e1163b848bcef1b740c2735de6eece7a",
+    "python/tests/test_workspace_import_api.py": "96dd94451b324cb157b2c694fac6fa09e449683f6a570e565d12fe483027fc45",
+    "python/tests/test_workspace_import_check.py": "c4b862ed07a803b1a86b22233b93db37c01a6b79d0296f8945960b372e4fc211",
+    "python/tests/test_workspace_import_identities.py": "e62c6c5df029329ae9b42b326a904e75699b068e899627951c7e05a8a5bbf655",
+    "python/tests/test_workspace_import_progress.py": "599a6962aed71928f85edc64daa4383ef07c0e81b1d9aa793a467437c602739d",
+    "python/tests/test_workspace_import_progress_failures.py": "32e838db0652c4c01f557e45ca54813ba34564bf7577f44a3e90b4fdb4bad88d",
+    "python/tests/test_workspace_import_worker_lease.py": "bc790683e5005027e2931e5c825a9fe64ac738f6931214315e68f32527e9b8cb",
+    "python/tests/test_workspace_installation.py": "e455e788040ce4f5f05a2dbf1e3c764f675aa6d6ff0a6ff4b2fc450b3b5e483e",
+    "python/tests/test_workspace_lifecycle.py": "e004025f8124fb8281edd222087c08399927763f8d1638240320b6107b570773",
+    "python/tests/test_workspace_matching_epochs.py": "162460c2a57676a32a9f703a4da9fe296f6e2be651c61893eed9e2244e562225",
+    "python/tests/test_workspace_matlab.py": "9442b7b76a151490a656745638fed9fa02460ec6d73593b951e6d1e847447004",
+    "python/tests/test_workspace_metadata_object_contract.py": "3694f9ffdbf19f96f4451efacc704bba837042fc80450d35d96e564dc068c6c1",
+    "python/tests/test_workspace_metadata_objects.py": "59a82e532d17d786a65c6a89d5ad8073920c9549f0429c1dc915c263b1b60f51",
+    "python/tests/test_workspace_metadata_refresh_api.py": "56b0858dbb422a5599411bd7a97c2b99f2368a8cd660f94bf6dd1aac9c0612a5",
+    "python/tests/test_workspace_migration.py": "2cac6f1ec33df1b7d7ef24b58f0ab6fb71730a12c5c6acf28c35f822e6aaed78",
+    "python/tests/test_workspace_mysql_runtime.py": "4b08894222ae6b85bfe39585927dae739bb00445f7d7f3f7e5d79f905a40b32f",
+    "python/tests/test_workspace_native_connections.py": "6d8b6288577772fb126f4c46fb7bf0c0fa1df6ebba4ae6df113e01492db96892",
+    "python/tests/test_workspace_native_crash.py": "f5419b10632abb0fbd19712e246851438e0520c76d09b370662db4ae306f9fa7",
+    "python/tests/test_workspace_native_mysql.py": "eb090deaadc98bfa921bc017b43de780512a6b4c35a909a75fd6b42f19966858",
+    "python/tests/test_workspace_native_tag_filter.py": "86912660ab6c59706286c4779e1873223ab7569ed772bf85412c2b45e2bdf3a1",
+    "python/tests/test_workspace_native_tag_integration.py": "3cf4ab9a1b5db849600c2716e9026cfb3d0817389f240d5d9cee9dbfe0b7922d",
+    "python/tests/test_workspace_native_tag_lookup.py": "57445bfc3e8841bb0541b52181151a985199e599c2e296fe0242908bb0089243",
+    "python/tests/test_workspace_open_folder.py": "900c8c175f88ad404c6201ebcd7b71ca81ebda7059c3c3656eed5a3a88d989ad",
+    "python/tests/test_workspace_path_api.py": "f852f8af8b9795c63772800c3ca3cb7203fa0a1b81e0ef562ef848c1e31a06b0",
+    "python/tests/test_workspace_portability.py": "e907ea424e151e77191f53de2cef625789bf6a85d92c7e8b57a5c24aafe88f61",
+    "python/tests/test_workspace_portability_app.py": "e4a66a59c5890ab0770ffac6401ac5b202e11081238aa436c09700713f676f7a",
+    "python/tests/test_workspace_predicates.py": "3e00510d5d3cf76f13bfc679c88635bfb917e1077b5c9bd02649a285da2cf7c6",
+    "python/tests/test_workspace_project_preferences.py": "52e7a3574d45efee8c89657e46b3a057879ada4ef895fbc5f0c02856b530dbd2",
+    "python/tests/test_workspace_project_relocation.py": "79882c510136ca6f4c90e81735ed44b8a6e2a61e5c09bc114b04ae4310f0dd89",
+    "python/tests/test_workspace_project_servers.py": "a9aa45c943854e84c2ffcd7ae17d7b1a2f1f084643881e29678432a1dfd72bb5",
+    "python/tests/test_workspace_project_validation.py": "572107975e2240615345bca7e6165f1357f148b11ab3a89e163d55f6d53bd1d1",
+    "python/tests/test_workspace_projection_cache.py": "558a21a3642ee04242252fbc52541f55a81b23bcd912fc2e7ee2f902cdf0ebdb",
+    "python/tests/test_workspace_projection_objects.py": "0bed3c4a8da2321e37da11e40031530d284f9837ed64ff3b0057193b686a9e17",
+    "python/tests/test_workspace_projects.py": "32c2dd9c73d2f40ab09522b717d75bb026ba3648f19d5c191b66b9e9fd945b3e",
+    "python/tests/test_workspace_propagation.py": "d5a7789eebffffe753765886084924073d3ef0fae7ae229415cbe60a5e1e79c6",
+    "python/tests/test_workspace_protocol_binding.py": "7519a925051a7d86c37ff4003e696c55ed384a83ef3f690dbaebbd98aedc59f6",
+    "python/tests/test_workspace_protocol_state.py": "67d57fb3c6f37804573dfeb3d94b7c1f74ffef41536344e1e0f3f16f9f04ce08",
+    "python/tests/test_workspace_qc.py": "08bdea9646e7606bfe921bb36ee9a380aaf825a66a861ed43a204894dba18a07",
+    "python/tests/test_workspace_recipes.py": "a0aa7499dccae4e1d66b700bcfcb222110568af2785ca2a2a3e46edf1d25da58",
+    "python/tests/test_workspace_recording_display_name.py": "11cc281f52359dd2b413a11e56cebdbd82bd48cfed7562736169759462893360",
+    "python/tests/test_workspace_recovery_generation.py": "0bca8f152148f7039b6863c54f4264359783c7b82cb363c51bc4010c257c656a",
+    "python/tests/test_workspace_recovery_store.py": "520fb79262eb814665db6eb942b38514a147de1a4cf665d5b4fe4d8a12a56ef9",
+    "python/tests/test_workspace_refresh_cache.py": "e0fcc584585ddd7fd047b092c7fdce7e390d2a48d3a322c94752cf6cb1946e95",
+    "python/tests/test_workspace_root_boundaries.py": "ed05c71c1c58fac7fe7c8175f983fc849ec7959cd95de064bb17cba357f5ccc2",
+    "python/tests/test_workspace_scale.py": "f749f206748081a810a41388ff4fedbb18118460eaf347624263eaf21e21d275",
+    "python/tests/test_workspace_search.py": "2f966a4b4ade0a8e6d9ded8eedb8cea1f6841e56b0ec050acbbb4c40642e7838",
+    "python/tests/test_workspace_search_presets.py": "5be3998d5c66f44c4dc9463a2d0e951d22ebb7a449c6f181e2a2994ece86dd4e",
+    "python/tests/test_workspace_service.py": "7fe035916c152aad2df6f41cc6f5c55e8d30cb4168f53c4ab1aa9e171bdd7cfc",
+    "python/tests/test_workspace_shared_tag_cache_dependencies.py": "9a6586732efdd855886ef80f26523e60c476a51b0de80f33f5d3f2a0338ae5dd",
+    "python/tests/test_workspace_shared_tag_index.py": "388a786b5e1be76dbdd5daffe649da8fec73045f99e92756c41765674b766b09",
+    "python/tests/test_workspace_shared_tag_threads.py": "40a756caedd2dbf035a966f5711b610bca98546404aba26d53a6492655468f6e",
+    "python/tests/test_workspace_shared_vocabulary.py": "9d3a764074be9b89441279aa23eb6c7d7a5a8d077578ea1d282d0a7c9a8e7892",
+    "python/tests/test_workspace_source_identity.py": "a7bc5ddb5f153aacb23c13eb11b1ca14515ddcd12526567f41e49252931ddf96",
+    "python/tests/test_workspace_sqlite.py": "863ac4ce766def86d881f13d3e3cf9456a3bf6e649c90ab486e3ab9b68994433",
+    "python/tests/test_workspace_startup.py": "33aef6fad6f4e3e712e8b25d2738f43705aa9e33cc969bd91f626d7acd4204c2",
+    "python/tests/test_workspace_startup_registry.py": "2a22b884ff273685c8ba7ec39f796bd0181358f152a7022c2ce31e382320dfb8",
+    "python/tests/test_workspace_state_generation.py": "9b242c1e9efbcedf724576bd290a99511992744e0fda2f2119de7a8e48f94485",
+    "python/tests/test_workspace_state_snapshot.py": "07af085d7c1deb6c7ad625af8c52d6a79e48b94a866f12a1f4af4b83dba6b4b0",
+    "python/tests/test_workspace_storage.py": "e4cb1e8aa0f78b22688f67687675b20066385dba98866d79c11f530cb1f960de",
+    "python/tests/test_workspace_suggestions.py": "9a0be55c0c41f7160ebc5a5bdcc892d8d92bd11ec3432aaaf64ec93a5abb4533",
+    "python/tests/test_workspace_tag_exchange.py": "eb2e089b07db9e50c5844a5c3d5a58650ba49ca830ebc56d76903f533ff75f03",
+    "python/tests/test_workspace_tag_lifecycle.py": "7ab917a93c3b530dbcca70dac535fccc76dfddb5325bec44480051454d5001d1",
+    "python/tests/test_workspace_tags.py": "8eb64c890ccf6c6d2556ef50badf337bbe68f157d306ac39bdb05c4137ddbb80",
+    "python/tests/test_workspace_tree.py": "ba683c76eceb1aed9af17796b3da30afa2063cf911ac2e5f8250e74a27aca997",
+    "python/tests/test_workspace_tree_layouts.py": "215f3660c23b03103ba8ee4ce6ec1fe41e890ab1c51c1ccc26f6d984a53e3046",
+    "python/tests/test_workspace_tree_navigation_cache.py": "f3e5c36f52609fee23a8f43dbfd5bbf3fd43652a8e3c33cf7c010de35cf66ce2",
+    "python/tests/test_workspace_tree_pages.py": "3ca10d83d1f7837e8c6c5c12868f8cd9d5c1170237ba9897c039a2c05a730f6c",
+    "python/tests/test_workspace_undo.py": "ad0ee80177eded134004253f66ef72f4e91518a1ae166d2240eb6942abcfffc1",
+    "python/tests/test_workspace_updates.py": "5c8c6e8d82be6a5b3f16a9d6ee9b45996c4163b6b89cbaabdd0bc7cc4a196873",
+    "python/verify_import_progress.py": "167cf6f5935a023d42239be6d3e7fdf8c75d6ee8d8723bc05b2a5b42c66d5865",
+    "python/workspace_annotation_checkpoint.py": "3ee21f6fe2a1052b0c7d01b3bfc94f958a664bf7c131b076f0272f2692610930",
+    "python/workspace_annotation_preparation.py": "6d89f8a735c34e6ec3f7f3db291e5d21c1bd8e64a60e7b12563e82dc18eb9f24",
+    "python/workspace_annotations.py": "81d32449e996c06f1287add541054f05633d413cfe1c8e377b757eae9549e522",
+    "python/workspace_api.py": "cb6b6a1626f2779981699d1eebe837e9a5e04e40218c655ba39bf521fa87e1c8",
+    "python/workspace_app_routes.py": "cf0a98838f447f4cdc0f26ae3c3e16c12e4015029bd0fe2220cacb209179267b",
+    "python/workspace_audit.py": "aef01b1eb407b189f30f81ec21f51ab0ed7ceedc1758db6c1377a1b2b4e73761",
+    "python/workspace_author_preferences.py": "b376fa04f5c0689e7e32d55f02e35c8016f087474f860e2b56576e8dbe593487",
+    "python/workspace_backup_scheduler.py": "a7b955dad598ac197ebba8f3e8a988289f61ac2adf47495849f96c55914e1cbf",
+    "python/workspace_bootstrap.py": "68659d5a0aa5599984f2605e254bd6b6ec9722f1bd417ef1546dfcf9acd39664",
+    "python/workspace_cache_lifecycle.py": "f85876806899228ce4cc79fb3aaee7003bc3e5a55bb51b103db2f17b13d9078a",
+    "python/workspace_candidate_exports.py": "a985bd84bf081e82317b41e4353fcee3efbe46dec6b75be8f20ad3247bc43985",
+    "python/workspace_catalog_collision.py": "38989ddb1d528289eeacdaa80834bc53a0a61c416bf8a9df5829dc003eb55b28",
+    "python/workspace_catalog_identity.py": "1a18ce3a8702ba30b60ced08e39ed6a25f26f09255a40c26808818e0c5e707f2",
+    "python/workspace_curation.py": "debb74851e07640cd6437e7bc78be517723a4b0ffd83ed8e3122aa1eea3da219",
+    "python/workspace_curation_vocabulary.py": "2257ff99d2e4543534e7bb4e83d41914b35fb93963631fde021c32943a0f6a0c",
+    "python/workspace_datastore_deletion.py": "5f4b69d083253e08230ba9bc022549493c043c2baa3fadb5d71db984b632006d",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_desktop.py": "6dc70a2b3609d138f67f3984d4e495c1230de9f777d6c70eadc5eed4d385a957",
+    "python/workspace_desktop_paths.py": "e32d88c4bf4e41301bd917b8c2cd311e840fd1e45aef28142b8d7f2ece7548e7",
+    "python/workspace_diff.py": "7f5a806bd9a325a0cbeeeac4bf4e975efb703cca94f727f028353c9e67604798",
+    "python/workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+    "python/workspace_explorer.py": "13d5cc9e1cf73207b88b011f9a11530049e8ac8b04e0321b8a600d5a3a667d91",
+    "python/workspace_export_folder.py": "9dfcb3328f5ebf09eddf73671a2f781248c439d4474e8d2175d5b859cea69465",
+    "python/workspace_external_tags.py": "6f7cd83c884c6d756dc89f52064692ba46bc40d9caed13660f32213443591a8f",
+    "python/workspace_folder_browser.py": "efa023840cc73547c1ea653edf077a40979952a7700b6718cd620f316d7d51a0",
+    "python/workspace_frontend.py": "731954b0e82b927e9fa5cf9a6134b61a23252283ad54e64a8fd307f116931757",
+    "python/workspace_h5_inbox.py": "5737740344b377b90f7c9d7d09296ff5d66d2cccb558cc287df0283ee3459b02",
+    "python/workspace_import_check.py": "857cacb94ba3b83454b2aa2c32785930e7b3fcd150c1bca3f25d1cca8c643232",
+    "python/workspace_import_progress.py": "6b89cd32272a3ae095a1807f0583f317230fe9a726dc54fd1af04c29d6011057",
+    "python/workspace_installation.py": "547132d014cb3c4aaddcaa4d486c77d3e166847183e215f2d1d83145da6f3b32",
+    "python/workspace_launcher.py": "f662aaeaa095b59ecc0459643a7eb924537a8199935fa7b7fd7ade77a24324d1",
+    "python/workspace_lifecycle.py": "077e4533455420268714bfb2ac79081edf65fbd540a5bc40ced33a6565ee669a",
+    "python/workspace_matching_epochs.py": "a2157e20908490c06035a2f765e31ec80f348d5081cd046e1deca58829fe225d",
+    "python/workspace_matlab.py": "5efa87bbbc20f78fce3a1ae8c93c4f313fd571b3af56fa8c2cdb106c142039d8",
+    "python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "python/workspace_migration.py": "b4a103f679230d022d75922e8f47d21775f9755f963dbf7ef15232256e6a39c3",
+    "python/workspace_mysql_profile.py": "1c06e5a679af3bc8ed842aa6bb6aad38f259bcfa97687c774e21c358f481fed0",
+    "python/workspace_mysql_runtime.py": "d03c5e41f6fe37a8d514f6c1b90e92769a171c1348ebee62683c395edd4b4224",
+    "python/workspace_native_mysql.py": "a4ce9e35376bdf95ee59224b886978e504da0c0a9aef033ab1581fbde45d2001",
+    "python/workspace_native_tag_filter.py": "8cb336a98cf2f487a3bf30db1ddc6ad5db1081018cee394d2690dffa04f8c1bd",
+    "python/workspace_native_tag_lookup.py": "ae8d7fd3b2f80d56078777b03de4189b648f536ead1ca1225ad6c72a7c59a466",
+    "python/workspace_paths.py": "c39843552ae94a69fa85aeee558fedea4b0fd7db3151adb039c82283eab733ab",
+    "python/workspace_portability.py": "9bea2aae20ce789366d4309de67c9e518f3c2e49f9a65030652b944dc56c0891",
+    "python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "python/workspace_project_database.py": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+    "python/workspace_project_preferences.py": "418fd4543381a235870ca77a6865c0945fa1a456fe749b7da6997863efd19387",
+    "python/workspace_project_servers.py": "ff7fb1aa76b0c0afef6726a7c9d21f2ac779f99e0a3c41141e990716c5acba18",
+    "python/workspace_project_validation.py": "a8478af122534573145b194c9f7a65934e7c83f39b6fbcbd0eb52275effcfd9f",
+    "python/workspace_projection_cache.py": "89d7a7365de9a64f9b85979e20f0b90b869300c42e62c599c8c436e3bfe88f17",
+    "python/workspace_projects.py": "bd372ddfe82b46735a0f84c1fa65181d1c8bdc182e42b42b2ff3d80779cc09ce",
+    "python/workspace_protocol_identity.py": "9a9e3c8426cc9ed58ebd77f4f06e03db2d2287212969ad80e48990fae3e0a986",
+    "python/workspace_protocol_state.py": "fab53296fc4e06de042c9059c61174e55662de3b20c539667de8679135130c6e",
+    "python/workspace_qc.py": "f9f687003b446366bb480c56b1aa5217695d0b40b774694d0f49e06e6705e9eb",
+    "python/workspace_recipes.py": "d20f0d8eaf61e0c2d83cb5077ba9671927283f772069e680f2881cd651c52683",
+    "python/workspace_recording_files.py": "f972bdd791010adeb44e9df28a540f5d5969fcf9991162cde8a23e7f29e3a612",
+    "python/workspace_recovery_generation.py": "2579fefde5230c735be19f7ab76d05ae20c1ed70a32a731cd31b0b69460d0ce1",
+    "python/workspace_recovery_store.py": "769f36f82f8a29a2a4c04f8e9accce9fab162d899704d6966b1ae732e6d61804",
+    "python/workspace_search.py": "b9849cdb0d14ade477df96011c0fc0dadce4e045213e2a206afb82bddcb68a71",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_service.py": "2b7a73f95e4c04fe64c90ea60995c73cb0a0982c825fac247c5cace5cb1b24b4",
+    "python/workspace_shared_tag_index.py": "b8cbef326a67f096527463dc2dc9490a3a6fdfbed01b2b199ebe369f8c0ead33",
+    "python/workspace_shared_vocabulary.py": "c196ccc8fcbc1bfb105db7159c286231be2c86ef0bb73317a76f3542b7072590",
+    "python/workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1",
+    "python/workspace_startup_registry.py": "3e5fcce7a6df8fbddceead8326943d9327e691cc1e706f1aa08ed02151c187d0",
+    "python/workspace_state_generation.py": "68e142d6008248c67310462b692b130f0951a87a802187f59d0e6302a78073fc",
+    "python/workspace_state_snapshot.py": "94cad9f90d27dcae1fbf0d2a7029b3afc60151eace9fc4aad3be41770e5249a3",
+    "python/workspace_storage.py": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+    "python/workspace_suggestions.py": "0975ecc4704f218516a7c801f1e057804aa9309bd6c02ebae9eafc6452d6e1d9",
+    "python/workspace_tag_exchange.py": "e897918039370b98585b61ab3ff58dbfe564224f9b025aafbdf0250c55c07ea4",
+    "python/workspace_tag_predicates.py": "c2807d6626619ce19ff7b1b83d56a499bd089f79123d71eb92210489368eaa74",
+    "python/workspace_tree.py": "db25f45e60aa2d0f7091168d983f50db0f353cb6c62e2fba30a571416dcb93ea",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_tree_pages.py": "ea2b450d4576b263d2909a880f3f8cf54a6c5be69a61f1f52b10f13e0ab55ddb",
+    "python/workspace_undo.py": "b60ae93afd9b826a46400d6629648721f2b5fb7eb21cb0ce358021c779d394ef",
+    "python/workspace_updates.py": "ae334bae629eac4ec0d20918b3a598eee6a289ac77487966cbf66aa04a60e2fd"
+  },
+  "source_unchanged": true,
+  "passed": true
+}

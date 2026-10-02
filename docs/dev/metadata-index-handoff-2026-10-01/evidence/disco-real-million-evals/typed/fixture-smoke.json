@@ -1,0 +1,839 @@
+{
+  "all_checks_passed": true,
+  "predicates": [
+    {
+      "predicate": {
+        "field": "protocol",
+        "operator": "eq",
+        "value": "edu.washington.riekelab.turner.protocols.SplitFieldCentering"
+      },
+      "count": 104,
+      "plan": [
+        [
+          5,
+          0,
+          123,
+          "SEARCH c USING INDEX typed_protocol_children (protocol_name=?)"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "protocol",
+        "operator": "missing"
+      },
+      "count": 0,
+      "plan": [
+        [
+          6,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "cell",
+        "operator": "eq",
+        "value": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "count": 436,
+      "plan": [
+        [
+          5,
+          0,
+          100,
+          "SEARCH c USING INDEX typed_cell_children (cell_uuid=?)"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "cell",
+        "operator": "missing"
+      },
+      "count": 0,
+      "plan": [
+        [
+          6,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "eq",
+        "value": 1.0
+      },
+      "count": 1398,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "gte",
+        "value": 1.0
+      },
+      "count": 1398,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          18,
+          8,
+          40,
+          "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          49,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "missing"
+      },
+      "count": 3864,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/contrast",
+        "operator": "eq",
+        "value": 0.05
+      },
+      "count": 66,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/contrast",
+        "operator": "gte",
+        "value": 0.05
+      },
+      "count": 104,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          18,
+          8,
+          40,
+          "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          49,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/contrast",
+        "operator": "missing"
+      },
+      "count": 5458,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/centerOffset",
+        "operator": "eq",
+        "value": [
+          60.0,
+          5.0
+        ]
+      },
+      "count": 874,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/centerOffset",
+        "operator": "missing"
+      },
+      "count": 0,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/amp",
+        "operator": "eq",
+        "value": "Amp1"
+      },
+      "count": 5562,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/amp",
+        "operator": "missing"
+      },
+      "count": 0,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/lightPath",
+        "operator": "eq",
+        "value": "above"
+      },
+      "count": 5562,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/lightPath",
+        "operator": "missing"
+      },
+      "count": 0,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/seed",
+        "operator": "eq",
+        "value": 551620334.0
+      },
+      "count": 2,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/seed",
+        "operator": "gte",
+        "value": 551620334.0
+      },
+      "count": 780,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          18,
+          8,
+          40,
+          "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          49,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/seed",
+        "operator": "missing"
+      },
+      "count": 4482,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          14,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          24,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "eq",
+        "value": 1.0
+      },
+      "count": 1398,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          20,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          50,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "all": [
+          {
+            "field": "protocol",
+            "operator": "eq",
+            "value": "edu.washington.riekelab.turner.protocols.SplitFieldCentering"
+          },
+          {
+            "field": "parameters/useRandomSeed",
+            "operator": "gte",
+            "value": 1.0
+          }
+        ]
+      },
+      "count": 0,
+      "plan": [
+        [
+          4,
+          0,
+          85,
+          "SEARCH c USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          8,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          12,
+          8,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=?)"
+        ],
+        [
+          18,
+          8,
+          40,
+          "SEARCH v USING INTEGER PRIMARY KEY (rowid=?)"
+        ],
+        [
+          31,
+          8,
+          0,
+          "CREATE BLOOM FILTER"
+        ],
+        [
+          51,
+          0,
+          0,
+          "USE TEMP B-TREE FOR ORDER BY"
+        ]
+      ]
+    },
+    {
+      "predicate": {
+        "any": [
+          {
+            "field": "cell",
+            "operator": "missing"
+          },
+          {
+            "field": "parameters/contrast",
+            "operator": "eq",
+            "value": 0.05
+          }
+        ]
+      },
+      "count": 66,
+      "plan": [
+        [
+          5,
+          0,
+          144,
+          "SCAN c USING INDEX typed_sort_rank"
+        ],
+        [
+          11,
+          0,
+          0,
+          "LIST SUBQUERY 1"
+        ],
+        [
+          15,
+          11,
+          39,
+          "SEARCH v USING COVERING INDEX typed_equality (field_no=? AND equality_json=?)"
+        ],
+        [
+          23,
+          11,
+          55,
+          "SEARCH native.epoch_values USING COVERING INDEX values_reverse (field_no=? AND value_id=?)"
+        ],
+        [
+          34,
+          11,
+          0,
+          "CREATE BLOOM FILTER"
+        ]
+      ]
+    }
+  ],
+  "page_count": 2,
+  "detail_count": 3,
+  "group_kinds": [
+    "cell",
+    "block"
+  ],
+  "seconds": 1.7542579169967212,
+  "source_sha256_unchanged": "6c9bd96a104f65e0a9b3993b0b14391c97186bbba338cab4e514b4c22b553a60"
+}

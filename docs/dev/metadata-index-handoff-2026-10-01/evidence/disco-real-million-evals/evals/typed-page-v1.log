@@ -1,0 +1,18 @@
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "largest_cell", "count": 687, "median_ms": 1.6335210239049047, "peak_rss_bytes": 26427392}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "largest_block", "count": 601, "median_ms": 1.4255415298976004, "peak_rss_bytes": 26624000}
+{"event": "case_complete", "arm": "typed", "mode": "page", "label": "compound_all", "count": 416035, "median_ms": 11757.401500013657, "peak_rss_bytes": 104611840}
+{"event": "worker_end", "arm": "typed", "mode": "page", "status": "running", "seconds": 124.37272987497272, "peak_rss_bytes": 104611840}
+Traceback (most recent call last):
+  File "/private/tmp/disco-real-million-20261001/evals/compare_million.py", line 167, in <module>
+    prepare() if a.prepare else worker(a)
+                                ^^^^^^^^^
+  File "/private/tmp/disco-real-million-20261001/evals/compare_million.py", line 121, in worker
+    page=arm.preview(**kwargs)
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/disco-real-million-20261001/typed/typed_real_previous.py", line 321, in preview
+    page = self._page(where, arguments, cursor, limit)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/private/tmp/disco-real-million-20261001/typed/typed_real_previous.py", line 308, in _page
+    fetched = self.connection.execute('SELECT c.sort_rank,e.row_json FROM typed_core c JOIN epochs e USING(epoch_id) WHERE ' + where + cursor_sql + ' ORDER BY c.sort_rank LIMIT ?', arguments + cursor_args + [limit+1]).fetchall()
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

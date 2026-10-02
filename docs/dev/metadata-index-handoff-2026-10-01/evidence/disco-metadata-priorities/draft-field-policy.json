@@ -1,0 +1,3393 @@
+{
+  "status": "proposal_not_runtime_configuration",
+  "native_fields": 140,
+  "real_epochs": 2781,
+  "field_counts": {
+    "common-navigation": 9,
+    "on-demand": 83,
+    "protocol-specific": 41,
+    "common-scientific": 7
+  },
+  "source_profile_sha256": "e4675b0b3212f62ce24d3c9e75f6a604a3ca108ce30af478ce4edff23aeb9644",
+  "common_source_conditions": [
+    "metadata/cell/properties/type",
+    "metadata/group/properties/externalSolutionAdditions",
+    "metadata/group/properties/internalSolutionAdditions",
+    "metadata/group/properties/pipetteSolution",
+    "metadata/group/properties/recordingTechnique",
+    "metadata/group/properties/seriesResistanceCompensation",
+    "properties/bathTemperature"
+  ],
+  "protocol_pack_leaves": {
+    "visual": [
+      "backgroundIntensity",
+      "centerOffset",
+      "contrast",
+      "currentSpotSize",
+      "maskDiameter",
+      "rotation",
+      "splitField",
+      "spotDiameter",
+      "spotIntensity",
+      "temporalFrequency"
+    ],
+    "mean_noise": [
+      "currentMean",
+      "currentSD",
+      "frequencyCutoff",
+      "useRandomSeed"
+    ],
+    "history_noise": [
+      "frequencyCutoff",
+      "history1",
+      "history1Mean",
+      "history1SD",
+      "history2",
+      "history2Mean",
+      "history2SD",
+      "isControl",
+      "segmentTime",
+      "target",
+      "targetMean",
+      "targetSD",
+      "useRandomSeed"
+    ]
+  },
+  "additional_concepts": [
+    {
+      "id": "source_revision",
+      "status": "Native core source hash exists; preserve source/experiment keys beyond the 140-field UI catalog"
+    },
+    {
+      "id": "scoped_tags",
+      "status": "Separate mutable annotation path; preserve existing cell-tag inheritance and protocol/dataset tag scopes"
+    },
+    {
+      "id": "pipette_amplifier_offset",
+      "status": "User-confirmed priority; no matching field identified in the 140 query fields or 340 cached raw detail paths; audit acquisition/device source, do not substitute visual centerOffset"
+    },
+    {
+      "id": "clamp_mode",
+      "status": "Science priority; capture explicit amplifier/acquisition state when available, keep distinct from recordingTechnique and numeric protocol controlMode"
+    }
+  ],
+  "fields": [
+    {
+      "id": "epoch",
+      "source_path": "epoch_uuid",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 2781
+      }
+    },
+    {
+      "id": "date",
+      "source_path": "date",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "cell",
+      "source_path": "cell_uuid",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 13
+      }
+    },
+    {
+      "id": "block",
+      "source_path": "block_uuid",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 165
+      }
+    },
+    {
+      "id": "block time",
+      "source_path": "block_start_time",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 165
+      }
+    },
+    {
+      "id": "cell type",
+      "source_path": "cell_type",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "group label",
+      "source_path": "group_label",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "group",
+      "source_path": "group_uuid",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 24
+      }
+    },
+    {
+      "id": "protocol",
+      "source_path": "protocol_name",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-navigation",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "bounded row context",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "parameters/NDF",
+      "source_path": "parameters.NDF",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/amp",
+      "source_path": "parameters.amp",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/backgroundIntensity",
+      "source_path": "parameters.backgroundIntensity",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/canvasSize",
+      "source_path": "parameters.canvasSize",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/centerOffset",
+      "source_path": "parameters.centerOffset",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 14
+      },
+      "semantic_note": "Observed visual stimulus position offset. User separately confirmed pipette/amplifier offsets are important."
+    },
+    {
+      "id": "parameters/contrast",
+      "source_path": "parameters.contrast",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/gain",
+      "source_path": "parameters.gain",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/lightPath",
+      "source_path": "parameters.lightPath",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/maskDiameter",
+      "source_path": "parameters.maskDiameter",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/microdisplayBrightness",
+      "source_path": "parameters.microdisplayBrightness",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/microdisplayBrightnessValue",
+      "source_path": "parameters.microdisplayBrightnessValue",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "integer": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/micronsPerPixel",
+      "source_path": "parameters.micronsPerPixel",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/monitorRefreshRate",
+      "source_path": "parameters.monitorRefreshRate",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/ndfs",
+      "source_path": "parameters.ndfs",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/numberOfAverages",
+      "source_path": "parameters.numberOfAverages",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2472,
+        "missing": 309,
+        "null": 0,
+        "types": {
+          "integer": 2472
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "parameters/onlineAnalysis",
+      "source_path": "parameters.onlineAnalysis",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1909,
+        "missing": 872,
+        "null": 0,
+        "types": {
+          "string": 1909
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/preTime",
+      "source_path": "parameters.preTime",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/prerender",
+      "source_path": "parameters.prerender",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "integer": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/rotation",
+      "source_path": "parameters.rotation",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/sampleRate",
+      "source_path": "parameters.sampleRate",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/splitField",
+      "source_path": "parameters.splitField",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "integer": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/spotDiameter",
+      "source_path": "parameters.spotDiameter",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 75,
+        "missing": 2706,
+        "null": 0,
+        "types": {
+          "real": 75
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/stimTime",
+      "source_path": "parameters.stimTime",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2472,
+        "missing": 309,
+        "null": 0,
+        "types": {
+          "real": 2472
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/tailTime",
+      "source_path": "parameters.tailTime",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/temporalFrequency",
+      "source_path": "parameters.temporalFrequency",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/trueCanvasSize",
+      "source_path": "parameters.trueCanvasSize",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "properties/bathTemperature",
+      "source_path": "properties.bathTemperature",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 36
+      }
+    },
+    {
+      "id": "metadata/cell/properties/type",
+      "source_path": "metadata.cell.properties.type",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/group/properties/externalSolutionAdditions",
+      "source_path": "metadata.group.properties.externalSolutionAdditions",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      },
+      "semantic_note": "Actual cache value is the string [] (not array or null); preserve native type. Structured interpretation requires a verified source encoding contract."
+    },
+    {
+      "id": "metadata/group/properties/internalSolutionAdditions",
+      "source_path": "metadata.group.properties.internalSolutionAdditions",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      },
+      "semantic_note": "All mounted-cache values are null; preserve importance and distinguish recorded null from unloaded or absent. Check original acquisition/import before declaring unavailable."
+    },
+    {
+      "id": "metadata/group/properties/pipetteSolution",
+      "source_path": "metadata.group.properties.pipetteSolution",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      },
+      "semantic_note": "All mounted-cache values are null; preserve importance and distinguish recorded null from unloaded or absent. Check original acquisition/import before declaring unavailable."
+    },
+    {
+      "id": "metadata/group/properties/recordingTechnique",
+      "source_path": "metadata.group.properties.recordingTechnique",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      },
+      "semantic_note": "All mounted-cache values are null; preserve importance and distinguish recorded null from unloaded or absent. Check original acquisition/import before declaring unavailable."
+    },
+    {
+      "id": "metadata/group/properties/seriesResistanceCompensation",
+      "source_path": "metadata.group.properties.seriesResistanceCompensation",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "common-scientific",
+      "protocol_packs": [],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "condition panel",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "integer": 2781
+        },
+        "distinct": 1
+      },
+      "semantic_note": "Actual cache value is integer 0; this is a compensation setting, not measured series resistance."
+    },
+    {
+      "id": "metadata/experiment/attributes/purpose",
+      "source_path": "metadata.experiment.attributes.purpose",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2091,
+        "types": {
+          "null": 2091,
+          "string": 690
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/experiment/label",
+      "source_path": "metadata.experiment.label",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/experiment/notes",
+      "source_path": "metadata.experiment.notes",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/experiment/start_time",
+      "source_path": "metadata.experiment.start_time",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/cell/label",
+      "source_path": "metadata.cell.label",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "metadata/cell/notes",
+      "source_path": "metadata.cell.notes",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/cell/start_time",
+      "source_path": "metadata.cell.start_time",
+      "owner": "cell",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 13
+      }
+    },
+    {
+      "id": "metadata/group/end_time",
+      "source_path": "metadata.group.end_time",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 24
+      }
+    },
+    {
+      "id": "metadata/group/label",
+      "source_path": "metadata.group.label",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "metadata/group/notes",
+      "source_path": "metadata.group.notes",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "array": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/group/start_time",
+      "source_path": "metadata.group.start_time",
+      "owner": "group",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 24
+      }
+    },
+    {
+      "id": "metadata/block/end_time",
+      "source_path": "metadata.block.end_time",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 165
+      }
+    },
+    {
+      "id": "metadata/block/protocolID",
+      "source_path": "metadata.block.protocolID",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "metadata/block/start_time",
+      "source_path": "metadata.block.start_time",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 165
+      }
+    },
+    {
+      "id": "metadata/epoch/end_time",
+      "source_path": "metadata.epoch.end_time",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 2781
+      }
+    },
+    {
+      "id": "metadata/epoch/label",
+      "source_path": "metadata.epoch.label",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/epoch/protocolID",
+      "source_path": "metadata.epoch.protocolID",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/epoch/start_time",
+      "source_path": "metadata.epoch.start_time",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 2781
+      }
+    },
+    {
+      "id": "metadata/experiment/properties/experimenter",
+      "source_path": "metadata.experiment.properties.experimenter",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2091,
+        "types": {
+          "null": 2091,
+          "string": 690
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/experiment/properties/institution",
+      "source_path": "metadata.experiment.properties.institution",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/experiment/properties/lab",
+      "source_path": "metadata.experiment.properties.lab",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/experiment/properties/project",
+      "source_path": "metadata.experiment.properties.project",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 2781,
+        "types": {
+          "null": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/experiment/properties/rig",
+      "source_path": "metadata.experiment.properties.rig",
+      "owner": "experiment",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/amp",
+      "source_path": "metadata.block.parameters.amp",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "string": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/backgroundIntensity",
+      "source_path": "metadata.block.parameters.backgroundIntensity",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/block/parameters/contrast",
+      "source_path": "metadata.block.parameters.contrast",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/block/parameters/maskDiameter",
+      "source_path": "metadata.block.parameters.maskDiameter",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/numberOfAverages",
+      "source_path": "metadata.block.parameters.numberOfAverages",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2472,
+        "missing": 309,
+        "null": 0,
+        "types": {
+          "integer": 2472
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "metadata/block/parameters/onlineAnalysis",
+      "source_path": "metadata.block.parameters.onlineAnalysis",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1909,
+        "missing": 872,
+        "null": 0,
+        "types": {
+          "string": 1909
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/preTime",
+      "source_path": "metadata.block.parameters.preTime",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/rotation",
+      "source_path": "metadata.block.parameters.rotation",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/block/parameters/sampleRate",
+      "source_path": "metadata.block.parameters.sampleRate",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2781,
+        "missing": 0,
+        "null": 0,
+        "types": {
+          "real": 2781
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/splitField",
+      "source_path": "metadata.block.parameters.splitField",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "integer": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/spotDiameter",
+      "source_path": "metadata.block.parameters.spotDiameter",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 75,
+        "missing": 2706,
+        "null": 0,
+        "types": {
+          "real": 75
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/stimTime",
+      "source_path": "metadata.block.parameters.stimTime",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 2472,
+        "missing": 309,
+        "null": 0,
+        "types": {
+          "real": 2472
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/block/parameters/tailTime",
+      "source_path": "metadata.block.parameters.tailTime",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1932,
+        "missing": 849,
+        "null": 0,
+        "types": {
+          "real": 1932
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/temporalFrequency",
+      "source_path": "metadata.block.parameters.temporalFrequency",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 52,
+        "missing": 2729,
+        "null": 0,
+        "types": {
+          "real": 52
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/currentSpotSize",
+      "source_path": "parameters.currentSpotSize",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1857,
+        "missing": 924,
+        "null": 0,
+        "types": {
+          "real": 1857
+        },
+        "distinct": 13
+      }
+    },
+    {
+      "id": "parameters/randomizeOrder",
+      "source_path": "parameters.randomizeOrder",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1857,
+        "missing": 924,
+        "null": 0,
+        "types": {
+          "integer": 1857
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/spotIntensity",
+      "source_path": "parameters.spotIntensity",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1880,
+        "missing": 901,
+        "null": 0,
+        "types": {
+          "real": 1880
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/spotSizes",
+      "source_path": "parameters.spotSizes",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1857,
+        "missing": 924,
+        "null": 0,
+        "types": {
+          "array": 1857
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/randomizeOrder",
+      "source_path": "metadata.block.parameters.randomizeOrder",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1857,
+        "missing": 924,
+        "null": 0,
+        "types": {
+          "integer": 1857
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/spotIntensity",
+      "source_path": "metadata.block.parameters.spotIntensity",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "visual"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1880,
+        "missing": 901,
+        "null": 0,
+        "types": {
+          "real": 1880
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/block/parameters/spotSizes",
+      "source_path": "metadata.block.parameters.spotSizes",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 1857,
+        "missing": 924,
+        "null": 0,
+        "types": {
+          "array": 1857
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/blockRepeatCount",
+      "source_path": "parameters.blockRepeatCount",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/controlMode",
+      "source_path": "parameters.controlMode",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      },
+      "semantic_note": "Observed numeric 0/1 protocol option; do not equate with current/voltage clamp without generator/acquisition specification."
+    },
+    {
+      "id": "parameters/firstHistoryID",
+      "source_path": "parameters.firstHistoryID",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 292,
+        "missing": 2489,
+        "null": 0,
+        "types": {
+          "real": 292
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/frequencyCutoff",
+      "source_path": "parameters.frequencyCutoff",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise",
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "real": 849
+        },
+        "distinct": 4
+      }
+    },
+    {
+      "id": "parameters/history1",
+      "source_path": "parameters.history1",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 15
+      }
+    },
+    {
+      "id": "parameters/history1Mean",
+      "source_path": "parameters.history1Mean",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 6
+      }
+    },
+    {
+      "id": "parameters/history1SD",
+      "source_path": "parameters.history1SD",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 8
+      }
+    },
+    {
+      "id": "parameters/history1Seed",
+      "source_path": "parameters.history1Seed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 292,
+        "missing": 2489,
+        "null": 0,
+        "types": {
+          "real": 292
+        },
+        "distinct": 292
+      }
+    },
+    {
+      "id": "parameters/history2",
+      "source_path": "parameters.history2",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/history2Mean",
+      "source_path": "parameters.history2Mean",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/history2SD",
+      "source_path": "parameters.history2SD",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/history2Seed",
+      "source_path": "parameters.history2Seed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 292,
+        "missing": 2489,
+        "null": 0,
+        "types": {
+          "real": 292
+        },
+        "distinct": 292
+      }
+    },
+    {
+      "id": "parameters/historyNoiseVersion",
+      "source_path": "parameters.historyNoiseVersion",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/isControl",
+      "source_path": "parameters.isControl",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/numberOfFilters",
+      "source_path": "parameters.numberOfFilters",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "real": 849
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/numberOfTrials",
+      "source_path": "parameters.numberOfTrials",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/numberOfTrialsInRun",
+      "source_path": "parameters.numberOfTrialsInRun",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/repeatsPerTrial",
+      "source_path": "parameters.repeatsPerTrial",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/samplesPerBlock",
+      "source_path": "parameters.samplesPerBlock",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/samplesPerSegment",
+      "source_path": "parameters.samplesPerSegment",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/segmentTime",
+      "source_path": "parameters.segmentTime",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/sequenceShuffleSeed",
+      "source_path": "parameters.sequenceShuffleSeed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/shuffleSequence",
+      "source_path": "parameters.shuffleSequence",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/stimulusGenerator",
+      "source_path": "parameters.stimulusGenerator",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "string": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/stimulusGeneratorVersion",
+      "source_path": "parameters.stimulusGeneratorVersion",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/stimulusSampleRate",
+      "source_path": "parameters.stimulusSampleRate",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/target",
+      "source_path": "parameters.target",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 8
+      }
+    },
+    {
+      "id": "parameters/targetMean",
+      "source_path": "parameters.targetMean",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/targetSD",
+      "source_path": "parameters.targetSD",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 8
+      }
+    },
+    {
+      "id": "parameters/targetSeed",
+      "source_path": "parameters.targetSeed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 309
+      }
+    },
+    {
+      "id": "parameters/totalDurationMs",
+      "source_path": "parameters.totalDurationMs",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "parameters/trialNumber",
+      "source_path": "parameters.trialNumber",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 5
+      }
+    },
+    {
+      "id": "parameters/useRandomSeed",
+      "source_path": "parameters.useRandomSeed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise",
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "real": 309,
+          "integer": 540
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "properties/frameTimesMs",
+      "source_path": "properties.frameTimesMs",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 849,
+        "types": {
+          "null": 849
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/properties/frameTimesMs",
+      "source_path": "metadata.block.properties.frameTimesMs",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 483,
+        "missing": 2298,
+        "null": 0,
+        "types": {
+          "array": 483
+        },
+        "distinct": 11
+      }
+    },
+    {
+      "id": "metadata/block/parameters/controlMode",
+      "source_path": "metadata.block.parameters.controlMode",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "integer": 309
+        },
+        "distinct": 2
+      },
+      "semantic_note": "Observed numeric 0/1 protocol option; do not equate with current/voltage clamp without generator/acquisition specification."
+    },
+    {
+      "id": "metadata/block/parameters/frequencyCutoff",
+      "source_path": "metadata.block.parameters.frequencyCutoff",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise",
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "real": 849
+        },
+        "distinct": 4
+      }
+    },
+    {
+      "id": "metadata/block/parameters/history1",
+      "source_path": "metadata.block.parameters.history1",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 15
+      }
+    },
+    {
+      "id": "metadata/block/parameters/history2",
+      "source_path": "metadata.block.parameters.history2",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 3
+      }
+    },
+    {
+      "id": "metadata/block/parameters/numberOfFilters",
+      "source_path": "metadata.block.parameters.numberOfFilters",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "real": 849
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/numberOfTrials",
+      "source_path": "metadata.block.parameters.numberOfTrials",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "integer": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/block/parameters/repeatsPerTrial",
+      "source_path": "metadata.block.parameters.repeatsPerTrial",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": false,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "integer": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/segmentTime",
+      "source_path": "metadata.block.parameters.segmentTime",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "real": 309
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/block/parameters/shuffleSequence",
+      "source_path": "metadata.block.parameters.shuffleSequence",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "integer": 309
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "metadata/block/parameters/target",
+      "source_path": "metadata.block.parameters.target",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 309,
+        "missing": 2472,
+        "null": 0,
+        "types": {
+          "array": 309
+        },
+        "distinct": 8
+      }
+    },
+    {
+      "id": "metadata/block/parameters/useRandomSeed",
+      "source_path": "metadata.block.parameters.useRandomSeed",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise",
+        "history-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 849,
+        "missing": 1932,
+        "null": 0,
+        "types": {
+          "integer": 849
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/currentMean",
+      "source_path": "parameters.currentMean",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "parameters/currentSD",
+      "source_path": "parameters.currentSD",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 10
+      }
+    },
+    {
+      "id": "parameters/interpulseInterval",
+      "source_path": "parameters.interpulseInterval",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 563,
+        "missing": 2218,
+        "null": 0,
+        "types": {
+          "real": 563
+        },
+        "distinct": 1
+      }
+    },
+    {
+      "id": "parameters/seed",
+      "source_path": "parameters.seed",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 391
+      }
+    },
+    {
+      "id": "parameters/stdv",
+      "source_path": "parameters.stdv",
+      "owner": "epoch",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 10
+      }
+    },
+    {
+      "id": "metadata/block/parameters/currentMean",
+      "source_path": "metadata.block.parameters.currentMean",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 2
+      }
+    },
+    {
+      "id": "metadata/block/parameters/currentSD",
+      "source_path": "metadata.block.parameters.currentSD",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "protocol-specific",
+      "protocol_packs": [
+        "mean-noise"
+      ],
+      "index_candidate": true,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "active protocol preset",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 540,
+        "missing": 2241,
+        "null": 0,
+        "types": {
+          "real": 540
+        },
+        "distinct": 10
+      }
+    },
+    {
+      "id": "metadata/block/parameters/interpulseInterval",
+      "source_path": "metadata.block.parameters.interpulseInterval",
+      "owner": "block",
+      "owner_status": "Path ownership; any inheritance or epoch override must be proven before consolidation",
+      "priority": "on-demand",
+      "protocol_packs": [],
+      "index_candidate": false,
+      "query_route": "Existing typed/native general metadata path remains available for every one of the 140 eligible fields",
+      "default_display": "detail on demand",
+      "facet_policy": "Compute only when requested in current scope",
+      "possible_reconstruction_dependency": true,
+      "reconstruction_policy": "Protocol-specific full native metadata and referenced stimulus/device/calibration bundle; this registry is not a complete dependency whitelist",
+      "observed": {
+        "present": 563,
+        "missing": 2218,
+        "null": 0,
+        "types": {
+          "real": 563
+        },
+        "distinct": 1
+      }
+    }
+  ]
+}

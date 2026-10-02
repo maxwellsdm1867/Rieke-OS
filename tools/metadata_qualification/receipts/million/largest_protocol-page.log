@@ -1,0 +1,11 @@
+{"arm": "baseline", "label": "largest_protocol", "mode": "page", "sample": 0, "ms": 14920.312666974496}
+{"arm": "candidate", "label": "largest_protocol", "mode": "page", "sample": 0, "ms": 87.29841699823737}
+{"arm": "candidate", "label": "largest_protocol", "mode": "page", "sample": 1, "ms": 55.54354103514925}
+{"arm": "baseline", "label": "largest_protocol", "mode": "page", "sample": 1, "ms": 14556.264875049237}
+{"arm": "baseline", "label": "largest_protocol", "mode": "page", "sample": 2, "ms": 14591.363208019175}
+{"arm": "candidate", "label": "largest_protocol", "mode": "page", "sample": 2, "ms": 74.06004203949124}
+{"arm": "candidate", "label": "largest_protocol", "mode": "page", "sample": 3, "ms": 86.48608298972249}
+{"arm": "baseline", "label": "largest_protocol", "mode": "page", "sample": 3, "ms": 15967.64558297582}
+{"arm": "baseline", "label": "largest_protocol", "mode": "page", "sample": 4, "ms": 14941.299833008088}
+{"arm": "candidate", "label": "largest_protocol", "mode": "page", "sample": 4, "ms": 66.33991602575406}
+{"case": "largest_protocol", "mode": "page", "status": "passed"}

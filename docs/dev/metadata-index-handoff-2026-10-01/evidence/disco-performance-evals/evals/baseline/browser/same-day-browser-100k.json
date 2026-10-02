@@ -1,0 +1,1166 @@
+{
+  "measured_at": "2026-10-01T07:20:37.836Z",
+  "source_head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "epochs": 100000,
+  "browser": "154.0.8037.58",
+  "machine": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpu": "Apple M1 Pro"
+  },
+  "fixture_scope": "Actual native MySQL8.4.2 and current Flask/WorkspaceService with sealed synthetic100k metadata index; empty saved annotations/default curation; no SQL doubles, no H5/waveform I/O, no private files.",
+  "scope": "Exact-source production-built React PagedTree/MetadataPanel mounted in a minimal experiment shell; real synthetic service API over localhost. Includes request, response parsing, React commit and two animation frames. Excludes full App startup, waveform reads, desktop packaging, and physical screen display. Actual native MySQL8.4.2 and current Flask/WorkspaceService with sealed synthetic100k metadata index; empty saved annotations/default curation; no SQL doubles, no H5/waveform I/O, no private files.",
+  "measurements": [
+    {
+      "name": "component_initial_tree_load_production_bundle_cold",
+      "sample_ms": 2904.6087500000003,
+      "clock": "host navigation wall clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2760.100000023842,
+          "response_bytes": 19513
+        }
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "sample_ms": 2600,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2516.100000023842,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "sample_ms": 2633.300000011921,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2543.800000011921,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "sample_ms": 94.60000002384186,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+          "duration_ms": 14.600000023841858,
+          "response_bytes": 1578
+        }
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "sample_ms": 32.10000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "collapse_cell_cached",
+      "sample_ms": 61.09999996423721,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "reopen_cell_cached",
+      "sample_ms": 65,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "sample_ms": 32,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "next_cell_page_60",
+      "sample_ms": 2258.699999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2194.899999976158,
+          "response_bytes": 19518
+        }
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "sample_ms": 2397.900000035763,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2316.899999976158,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "sample_ms": 2650.099999964237,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2562.800000011921,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "sample_ms": 97,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+          "duration_ms": 11.699999988079071,
+          "response_bytes": 1578
+        }
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "sample_ms": 32.5,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "collapse_cell_cached",
+      "sample_ms": 60.5,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "reopen_cell_cached",
+      "sample_ms": 66.69999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "sample_ms": 32.80000001192093,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "next_cell_page_60",
+      "sample_ms": 2009,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 1944.7000000476837,
+          "response_bytes": 19518
+        }
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "sample_ms": 2616,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2531.099999964237,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "sample_ms": 2364.600000023842,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2290.300000011921,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "sample_ms": 97.80000001192093,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+          "duration_ms": 12.5,
+          "response_bytes": 1578
+        }
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "sample_ms": 32.60000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "collapse_cell_cached",
+      "sample_ms": 60.69999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "reopen_cell_cached",
+      "sample_ms": 65.10000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "sample_ms": 33.80000001192093,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "next_cell_page_60",
+      "sample_ms": 2238.199999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2168.100000023842,
+          "response_bytes": 19518
+        }
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "sample_ms": 2450.099999964237,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2372.7999999523163,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "sample_ms": 2465.2000000476837,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2397.199999988079,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "sample_ms": 113.69999998807907,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+          "duration_ms": 29.19999998807907,
+          "response_bytes": 1578
+        }
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "sample_ms": 48.19999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "collapse_cell_cached",
+      "sample_ms": 70.10000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "reopen_cell_cached",
+      "sample_ms": 67.10000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "sample_ms": 31.5,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "next_cell_page_60",
+      "sample_ms": 2293.100000023842,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2212.2999999523163,
+          "response_bytes": 19518
+        }
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "sample_ms": 2465.900000035763,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2394,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "sample_ms": 2565.099999964237,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2490.800000011921,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "sample_ms": 97.19999998807907,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+          "duration_ms": 11.300000011920929,
+          "response_bytes": 1578
+        }
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "sample_ms": 32.19999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "collapse_cell_cached",
+      "sample_ms": 61.10000002384186,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "reopen_cell_cached",
+      "sample_ms": 65.69999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "sample_ms": 32.19999998807907,
+      "clock": "renderer performance clock",
+      "resources": []
+    },
+    {
+      "name": "next_cell_page_60",
+      "sample_ms": 2141,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2072,
+          "response_bytes": 19518
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "sample_ms": 2583.900000035763,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2502.600000023842,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "sample_ms": 2531.2999999523163,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2448.900000035763,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "sample_ms": 2617.199999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2546.300000011921,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "sample_ms": 2597.800000011921,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2527.800000011921,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "sample_ms": 2548.699999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2464.699999988079,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "sample_ms": 2632.100000023842,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2559.5,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "sample_ms": 2549.699999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2469.400000035763,
+          "response_bytes": 3084
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "sample_ms": 2615.600000023842,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2533.100000023842,
+          "response_bytes": 11532
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "sample_ms": 2532.199999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2444.400000035763,
+          "response_bytes": 3083
+        }
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "sample_ms": 2615.699999988079,
+      "clock": "renderer performance clock",
+      "resources": [
+        {
+          "path": "/api/tree-pages",
+          "duration_ms": 2531.100000023842,
+          "response_bytes": 11511
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "source_manifest": {
+    "head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+    "source_root": "/private/tmp/rieke-os-issues-20260930/repo",
+    "source_inventory": {
+      "workspace-app/src/App.jsx": "e798b574e74fbd960213ded478148250e1ff7d42f77681900167b433304a0567",
+      "workspace-app/src/WorkspaceNavigation.css": "a6af59d5233ad2c80df1914f4101aba233d7f559a91e5cfe899927de1dba91c2",
+      "workspace-app/src/annotationProfile.js": "20dc38eb4f2e86aff440adc9252e844019183f2b8279422d6a0cd14fd4a94f2b",
+      "workspace-app/src/annotationReceiptWorkflow.test.js": "9771c0925d8b7a5604631046f3140d30c00c11503b7a2602cafa98a4b40e36d9",
+      "workspace-app/src/annotationReceipts.js": "609f8b878e03a65c7f7f53d02375d73777ae3bb975e685cfd93299e9d8c167b7",
+      "workspace-app/src/annotationTags.js": "292b784b215148fb4c8eeb044f7acf8db19d3c6fe4ead9f0c4a5dd465aa89d41",
+      "workspace-app/src/annotationTags.test.js": "bdde5edfd0656b008566dda3cd0b8ef623fa589969d67427d7df4e42e6453091",
+      "workspace-app/src/api.js": "c2d3789f6e0c68e5235fddc0d53de7b0e54dc74dc559333f11bdf9efeeddcc8d",
+      "workspace-app/src/appAppearance.js": "36c84d8dd514476e777ae2c5126c8873269a4df288bac97ee37e8b77292f6237",
+      "workspace-app/src/appUpdates.js": "cf776031828cc0d9138b357a011ad2376ebb95d7383860555df14f3877003cc1",
+      "workspace-app/src/appUpdates.test.js": "27f1dbe7ce25e4033d5deffa977084f1aa24fa2ac62e7a2653470e5c5cecf996",
+      "workspace-app/src/appUpdatesLifecycle.test.js": "7e30bd5d5259845dec209a39582bfda178acf178e92cd8bef1474dc1c86b9ec6",
+      "workspace-app/src/boundedTree.js": "dba203e26cda6933e8bcead18e31409e7f74b6da14054eeaf7de023ca4be78e9",
+      "workspace-app/src/boundedTree.test.js": "d53b30290e624cd20e3111b90892fd5d0169296e94ec91f5690d4a951ca9eec0",
+      "workspace-app/src/cellBaselinePreparation.test.js": "7a2efc9b3d1d2a429c4d3e04412261bade11811fd34e5f740c59c89643417ade",
+      "workspace-app/src/cellTemperatureObservations.test.js": "7853da9372749b0a9929545d88113e6d9b49e8e453404c558037ba49a2dcc20b",
+      "workspace-app/src/columnTreeNavigation.js": "78168c3c27ab20942d60150492c0d00946c4ac7fe38ff371842100aea5ee6892",
+      "workspace-app/src/columnTreeNavigation.test.js": "738ae5b04c000ffc6205c1342d5d71c0d134cf204b7330ede8956ca49f3a197a",
+      "workspace-app/src/components/AnnotationIndicator.jsx": "27094bdc5b540abe9cefb7e96d7431abb2988b21d09c5c9d44ae8d5e77eefbd8",
+      "workspace-app/src/components/AnnotationProfile.jsx": "7a1498567883a0661ddbc7f011fbeaf79400b510621092bff6775d3b2851052b",
+      "workspace-app/src/components/AnnotationTags.css": "5b98288d299cd1a3ca6a3c9565df7698f716c883eebaa8156d1f8781a941633c",
+      "workspace-app/src/components/AnnotationTags.jsx": "0c62215c31f933eb203f77c04cc4a64202b1c711145bf27a7a5f94b63610028a",
+      "workspace-app/src/components/AppAppearance.css": "2ee26fa3e64b93fde9c9c762fbfc2c0f6c06339f2ab5eff5e7359f00ad10ddaa",
+      "workspace-app/src/components/AppAppearance.jsx": "d5c5ddd2dbcb6ca24aeedb91054f6b7e84fd433ce8b2fdc6e9b93ae0c8a70d06",
+      "workspace-app/src/components/AppUpdates.css": "104b6ba4193891ac8df3272b17148614b0958c74ad5142cb666f60a15b42ed15",
+      "workspace-app/src/components/AppUpdates.jsx": "e5fc1b1890a0b309d8194bb8ed7dd744248dbe37dc749d09a637ecac5adc91b7",
+      "workspace-app/src/components/BrowseFilesButton.jsx": "a64d39292490df41fcd3d68279a9da9d27f941985de9ec739a0ab05b144f006f",
+      "workspace-app/src/components/CandidateExportPanel.css": "e5bc81b3f742f8d01da663632c9cbc2b8355659105d658bd6281b10e1eee6126",
+      "workspace-app/src/components/CandidateExportPanel.jsx": "64d1a1392065609cafa62df25907173aa1772cf3b6fa940112c7d13fd6354172",
+      "workspace-app/src/components/CellList.css": "0a78471a8c564595482bc0e8e892b367bb273be773baecdd62f86069abcfbe8b",
+      "workspace-app/src/components/CellQC.css": "f36ede8bf10a151b2d8680f354ffe0331533c1b90e7aec5a4ac7202985ce188d",
+      "workspace-app/src/components/CellQC.jsx": "060f4a78627b1134e39ea6e06e3c4f4943e7b3018e58707b8656858de0035db1",
+      "workspace-app/src/components/ColumnTree.css": "9b8733010cc0475a5e29b34733106a10ccbe20a1817382d5b68b072c6899f450",
+      "workspace-app/src/components/ColumnTree.jsx": "1c589ae833fe6c143a165a8f7b1e2e4e5d5e97a4953a245435adce5d170e404b",
+      "workspace-app/src/components/Common.jsx": "7f602f4b8b21532dae0a6b9eda08dac191a106da2eca7edb617f6ebcb28c1351",
+      "workspace-app/src/components/DataStores.css": "e3e9e5cf6d69ffab4933711ec1d4f6d94f1f4e4ffc4d6ec204cdf32f865f3630",
+      "workspace-app/src/components/DataStores.jsx": "d0a886f8b4f1a885bf368c1491c3bab82be54931a6c9fab8dbc360529480b2c0",
+      "workspace-app/src/components/DesktopDraftRecovery.jsx": "c92953552716df3fe4c91463888f4c8be77e6ca1a0b88909b805bc5919cc5862",
+      "workspace-app/src/components/EpochAnalysisInclusion.jsx": "03ace5d560a0545ccc4a1621d481f02ffae6c154b8f97f2d42d2c4da64d7e79d",
+      "workspace-app/src/components/EpochBrowserChrome.jsx": "d9b0e6ffebe43073beb8467aa066c2694c743369adbd8fa9622b70f1b8524812",
+      "workspace-app/src/components/EpochBrowserLayout.jsx": "3ffdf64cbd7c5dd0930184519f51702578de700a67fc1b76cfece73f1380473a",
+      "workspace-app/src/components/EpochConnections.css": "f05cb74270ee2763fb8584a4ed9080b88fd39f74c88a14b8f8cc662fb3c7abc2",
+      "workspace-app/src/components/EpochConnections.jsx": "22d2a3d50e8b5778de5f3264b01f4477d834e41a3e2901f51f0ce2be525d0e57",
+      "workspace-app/src/components/EpochDetailHeading.jsx": "378e2f2c0ab79b284f8bdd2c4b5b26633e608ccbf5ced7d0e41f11eca3e60994",
+      "workspace-app/src/components/EpochInclusionToggle.css": "535519c7f881f9637f7a971a96b13d8493828616b0e1dac9ee28a854360b3041",
+      "workspace-app/src/components/EpochInclusionToggle.jsx": "7a2aaa8a08370ca9f2658f69f1c2dcc55270f49fe7cf7d858acbfba297c9f1c1",
+      "workspace-app/src/components/EpochSkimList.jsx": "314a36708443dcfb59da04d7656e2538c0f4035284c5b4721b29c146d27b7b95",
+      "workspace-app/src/components/EpochTags.css": "107f9535c3196a597917e8310a60cc394320eaeb5a9dca58e3d74cc4045b0876",
+      "workspace-app/src/components/EpochTags.jsx": "2f2d4be04269e45d82d03df0a7f5d5cb51a4e20330162512e1c9cf0a946c78da",
+      "workspace-app/src/components/EpochTreePane.jsx": "c161c747a715519092e5b7095472cda91f29d3871f9657a198fc08827881a203",
+      "workspace-app/src/components/EpochViewer.css": "10c3d7f2b161171e7c9bcb9f589421d0ea39c1a71774555ffbe2bfc42fd7064a",
+      "workspace-app/src/components/EpochViewer.jsx": "91095d0a47016789e8d20c4b0bbeb73ab826134b95f12317fe4a283b2119113c",
+      "workspace-app/src/components/ExportSelectionDialog.css": "e66b8470441ba77bb6016a1e3cd75a456f8e0d2b1af24415a87bf1bcf23fb9db",
+      "workspace-app/src/components/ExportSelectionDialog.jsx": "cbf63eafff8b89617148171fb0312adf2744b9d5daf266fca8dd3656dbd065fd",
+      "workspace-app/src/components/ExternalTagSync.jsx": "b92c95f6904f9e672f19640f0c235d09cb322aedb7430879a71a927956c05713",
+      "workspace-app/src/components/FolderBrowserDialog.css": "208acaff373635344e850500c7bf0da42cb588b7521b350c6d9cc8554d9e91b7",
+      "workspace-app/src/components/FolderBrowserDialog.jsx": "19c600a5dac295327bd9cbcefbad3e6f9944e60782a33e069b49224cbbf99651",
+      "workspace-app/src/components/FolderPathInput.css": "507ed928e721e5cb326211452e768c24caca610a91d5e95ea9651cb38d90f021",
+      "workspace-app/src/components/FolderPathInput.jsx": "d4a23e65331c7eb063f2750544864fe8cfddddfa8b9059708e897e25aa0dbdf9",
+      "workspace-app/src/components/GlobalSearch.css": "93f12d293727faa377046f16a8a7d21b11be8fc7be27eb6c7e02b3cfceb17c51",
+      "workspace-app/src/components/GlobalSearch.jsx": "fc3884c6260e3a50dd3ad726286ba9b1b7a664946a295aaca9049510641f4e9c",
+      "workspace-app/src/components/H5Inbox.css": "0282deb5bce72f137980aca75a7b3f502a92b14df9e12e4594283dfe65cd132c",
+      "workspace-app/src/components/H5Inbox.jsx": "198b771e76a07c9d5348ee3075f31e7a5c043503472e79db8b7afdb8c45bee61",
+      "workspace-app/src/components/HierarchyTree.css": "50fe5ca506db43074798810af75d521e2e7844455f5d9d18e4300804ab917d61",
+      "workspace-app/src/components/HierarchyTree.jsx": "cafd448f6773e35d8d20596b82b960aa2b237812dbbfe5f8071e892548c004a8",
+      "workspace-app/src/components/ImportHistory.css": "fd50cfc26c9e35a6ba50029e7d5aa6d74762e8bd14c6ddd29f6c8fef8eb98e67",
+      "workspace-app/src/components/ImportHistory.jsx": "0d377697bdfcddc48cb6a34a8c57d21163eb34492a92c95074e167c77073dd55",
+      "workspace-app/src/components/ImportStatusBar.css": "aa4e4fdc268e3e11dd088d87264368ddc9c3831c1fd084bf7c58fdc7b7c6c598",
+      "workspace-app/src/components/ImportStatusBar.jsx": "a0058f256ddbb4cda7573e564dfd6d660708ebb8c2470600c0882f308cf041ab",
+      "workspace-app/src/components/InspectionCellTree.css": "dff8e589b627be899b9031491fd25b4dc51be703fb163635bd87800446d93702",
+      "workspace-app/src/components/InspectionCellTree.jsx": "5698d31ff446bd7254043c777cd65aa4c3304ed45d2260af2bad84b7c242f3bb",
+      "workspace-app/src/components/Inspector.css": "9323e5ad99652aec77ad1eb335785980661ad1f03ee74ded5f233448230046b9",
+      "workspace-app/src/components/Inspector.jsx": "7ca42f6d85a269fd01fa170aa8f8ea2a6da3205ed5dfc700decfd35db0d35945",
+      "workspace-app/src/components/InspectorActions.jsx": "4cfc53a0bf2a3f82a9fa44e0e5a606c2bb946486fb7a35eb93b1960e40bec180",
+      "workspace-app/src/components/InspectorPolish.css": "9114e1aadc6148996b5720cf28e573270bdadbe1ec8400c5d95b532574f4c246",
+      "workspace-app/src/components/JointGroupingEditor.jsx": "34662c156a1fc4bc3b5a962cd01b6995fa0651756c0be03a02052072a4fad1b4",
+      "workspace-app/src/components/LocalExportFolder.jsx": "32c4b01bb7283449d101122d52b3dcdc32f23f60bab13ed3656657cb5f14e324",
+      "workspace-app/src/components/MasterLog.css": "02fd7220dfaaca4f37003ad9f24bbe0006fb45248e35e9696a78d8583e0291fb",
+      "workspace-app/src/components/MasterLog.jsx": "c1fa74211d3045c5dc3722fc2f606240ac4c28e3f65150e4157441998ceb64e9",
+      "workspace-app/src/components/MatchingEpochs.css": "b3f4be8ec6bb60a98d8618176620bf2775cba2aa16c8eb480e3253542e94b4fc",
+      "workspace-app/src/components/MatchingEpochs.jsx": "29ffaa736b939f640c9e77001e3d87b72924915e7a7644510a165d71447cdf79",
+      "workspace-app/src/components/MetadataExplorer.css": "c934d543b4556ba2633059e9e726a4dad178b16afa339ac189bc5e18cf977bac",
+      "workspace-app/src/components/MetadataExplorer.jsx": "f278caf948c7b7f3e5468af6dceab86e85ab277d53c4632f164974ea33fdf7b7",
+      "workspace-app/src/components/MetadataPanel.css": "aaa91263881b0fa946886456c30a1a0fd7f8e89c467fc378eeba8233079d4ec6",
+      "workspace-app/src/components/MetadataPanel.jsx": "40b33eccc1fb6a0dc96fd99a6bd94723205408047b14187a0c6a5051dc872a18",
+      "workspace-app/src/components/MetadataRefresh.css": "98e874e4b478ad858462b97bee860c8941c260a1f96f65058a9f3718ce102f02",
+      "workspace-app/src/components/MetadataRefresh.jsx": "51c090d6381091d05df22e87d270398302f31255b76afda2372ea582fc824e45",
+      "workspace-app/src/components/MetadataTable.jsx": "357e09938aea2e9eea0fc245a087da74f82d0cd111ae0f5d0b0b10bec3a39f3f",
+      "workspace-app/src/components/NavigationLoading.css": "e72c85c4783a4962879a03f48188beebcd7af29a2b65b3f41946b43f27f3428f",
+      "workspace-app/src/components/NavigationLoading.jsx": "42202a49d6db5ca42cad94e590fa73b50c7848ef23d89cd6c5de9ecf5380fe04",
+      "workspace-app/src/components/NeuronIcon.jsx": "4c8a156735a96855ed1b6d821c7e13ce0da6bdde66386d91e39afa6f8ffb50b3",
+      "workspace-app/src/components/NewPinnedProtocol.jsx": "963724a9a2c787737a4c507d12c105e8d86e47d85e81c915778c131030f9791c",
+      "workspace-app/src/components/Overview.css": "6c73bbf9c67a438f683aa246c11f1a3b51b6ae94ea802a3d90f569a69c4c279f",
+      "workspace-app/src/components/Overview.jsx": "6243f74ed7b69ab4b312d52f9e1b0fe73edccb002cd514cfbc257818b65d4e05",
+      "workspace-app/src/components/PagedTree.css": "1d98473881ed79693cce57d35e5fd6842d160637469f97b68001e1af4242f976",
+      "workspace-app/src/components/PagedTree.jsx": "e1fac84aab80a372e9a5b0697ff38450e8a994ea63ad4598e9031093f6f8d105",
+      "workspace-app/src/components/PaneDivider.jsx": "621b273a7c1f72bd97e3215afa55c611c131dc9284decf54cb094e5d93b3aebc",
+      "workspace-app/src/components/PredicateBuilder.css": "3bda6621dd2e265c54155513ea48ac7b4325fec2bc07251f019bfe48a53b370e",
+      "workspace-app/src/components/PredicateBuilder.jsx": "a06e10c872079f6cdf72b243a162cee4426b3fafc7f65720c7b903507d9330ad",
+      "workspace-app/src/components/PredicateDialog.css": "83504219bd24cfaa332f7364cd60fa4cc385b3bc8e0718206d90cfd538db902f",
+      "workspace-app/src/components/PredicateDialog.jsx": "480af6a45f4b13ce39837752fbe43a1dbf32fae883faa20a5f8eba226f1749dc",
+      "workspace-app/src/components/PredicateValueInput.jsx": "8f3881087cf517f130ddace33776798abc5067d8fb94af3813aeb7bcffeb83a4",
+      "workspace-app/src/components/ProjectClosedNotice.css": "75399b5a1f91b2a47576a7c606efd7341993405f3da0af8b00a40b446b6d37c0",
+      "workspace-app/src/components/ProjectClosedNotice.jsx": "83acfaba053fd77e31aaebabedfcdd80ba605e66e2ab79dd43f61abb68cd37a0",
+      "workspace-app/src/components/ProjectFiles.css": "833c04e231c27ec76a13af5d32af3f0ad6451a8ee6180e50c47085ec0b74bfb0",
+      "workspace-app/src/components/ProjectFiles.jsx": "5bec00aa21339685620f4d3a84fd2e270037881479427931331f94b6f82ebfcf",
+      "workspace-app/src/components/ProjectFolder.css": "e32f571f891c4a0ec300619834c1479e015b512a104a4b7004c28f262e467ee6",
+      "workspace-app/src/components/ProjectFolder.jsx": "821f2f3dd6f623b514a19358e39c75aab205cdad735eddc5adf4c201d4e02c1f",
+      "workspace-app/src/components/ProjectNavigator.css": "7b605ab6236571a86524a513bdf603e8b47ccb7508bae94a93fa3ffc4b0cdcca",
+      "workspace-app/src/components/ProjectNavigator.jsx": "da99dd8ebdf34fb33c59d9e643d4e390d652b1fbea3440e2faa931f8e7b1193a",
+      "workspace-app/src/components/ProjectOnboarding.css": "64f124093f3d920da3c346428acf883c021da249d39c02d89a04b3ee78fc8367",
+      "workspace-app/src/components/ProjectOnboarding.jsx": "f3933e612440c58f2d41a85fa73992fd3417dab751545a2113b1a6dc0a0c3cce",
+      "workspace-app/src/components/ProjectSetupDialog.css": "74987456de3f0fc3f81a92c297842f1cc60845732e8fc24038c33579a31ea9ce",
+      "workspace-app/src/components/ProjectSetupDialog.jsx": "9c3fb019fd73b37e9392a3387f946dfdf189a47e1a1a78c0308c8dc1933de603",
+      "workspace-app/src/components/ProtocolApplyPanel.jsx": "b7c5fc76576a4fa103fe11a63c7cbce43149f85b9100dcac89293e9333f48fc6",
+      "workspace-app/src/components/ProtocolDiff.css": "2ee5da02d20e185f8f0f6b469b070125afff09f6c91ed13f2dc8ce479f34c6c9",
+      "workspace-app/src/components/ProtocolDiff.jsx": "0601a64b2e5d2ff428fc70151ff970ad2b7ff020a4516196db40a51c87e07797",
+      "workspace-app/src/components/ProtocolExportDialog.jsx": "025ecb022d624e99d5cc4666d1945937cb357da0498b688fcb3447095c4908ce",
+      "workspace-app/src/components/ProtocolExports.css": "1df4feb393d3cf65908b4297240d1a26465d428c4b76d9b2dfc20a31d77f5f0c",
+      "workspace-app/src/components/ProtocolExports.jsx": "8763e5444e4d468ada5c8bf028f3707f326403bb3bc943e8ee406c4d368182e2",
+      "workspace-app/src/components/ProtocolInfographic.css": "b5713e5f8f390ab6f92135b4a7d0a4a024d046117476248b666b5e12127afcab",
+      "workspace-app/src/components/ProtocolInfographic.jsx": "036c666c24acd7d542190629c7c4a3a19f7d830eedc8d21230e40be387d66a2f",
+      "workspace-app/src/components/ProtocolSidebar.css": "17acc97de03c883199fae299fe9c5d94dd6dbd16a6a185c2e098c22372aeacfe",
+      "workspace-app/src/components/ProtocolSidebar.jsx": "465a569ac9d0b08ce050b218a9cf1f505f6a50d4d7ba2dd59856cf590333485e",
+      "workspace-app/src/components/ProtocolSuggestion.css": "1913b1a507f186a10ad940e607d3fdf6b43aee010943a7950c1c708cd6ecd61b",
+      "workspace-app/src/components/ProtocolSuggestion.jsx": "1e6cde4228f1667f92811ad6f603342a49e89fd1363368307888e917e8a48d95",
+      "workspace-app/src/components/ProtocolTagSummary.jsx": "b0948be30deda310ebbc4e4df227b91b69af32e14653d213bfb7d9bb95549c6b",
+      "workspace-app/src/components/ProtocolViewFilter.css": "29f86fbb45e68dfa68816ae5e8a6bc1e4926db8dcf0b14941138501ca587899d",
+      "workspace-app/src/components/ProtocolViewFilter.jsx": "7161375f9f538e3a15a7283918adf55736c201eb95acf8ea260282cae0108008",
+      "workspace-app/src/components/QueryPresetDialog.jsx": "966211a91c810a28a2f52905cc2745775d18d24197333caec6dbdee6d44695ec",
+      "workspace-app/src/components/QueryPresetHistory.jsx": "e936645f3fd19c698130df543b57d43b7e561f14de79c6461fac9418acddd381",
+      "workspace-app/src/components/RecordingSize.jsx": "104efe706dbfd7949c2c5503319fc1c4884cf7172daf59ef9c9e6432fd03159f",
+      "workspace-app/src/components/ScientificContext.jsx": "02d45b7925421aec4106dcc849aa44180d610659bb7d8631a62279f0e73cbc8e",
+      "workspace-app/src/components/SearchPresets.css": "76634320a62a0a5224c90facc7d648dcb1119c8588fdbc4d2ce34374a3537a66",
+      "workspace-app/src/components/SearchPresets.jsx": "a349df170349497ec983590eefa67621dc74fbc0e55ce217baf446251205ef45",
+      "workspace-app/src/components/SelectionMaskDialog.jsx": "fecf1e9ce7569dc68d8d140617abfb0c826c4b53ef68527357146085d79086b5",
+      "workspace-app/src/components/SelectionOverview.jsx": "eb1230017552cdefb5933a96925eb8ed5644a268bbcfa630cfbd20f0cf7c40a0",
+      "workspace-app/src/components/SourcePropagation.css": "b1b66ab2fac3d049f52a04e9c7d36efe6dc90a317a78579453cf7f93d9aef6aa",
+      "workspace-app/src/components/SourcePropagation.jsx": "00bf1d0be5a13b1efbb7f69aa3c9ea1a95c34c99c0b14442dbc503e0cf160dee",
+      "workspace-app/src/components/StableContent.css": "f23b6bfdf641260e0af75a822fef5caf0aba5a96ed7542dc58192191b63e7a4c",
+      "workspace-app/src/components/StableContent.jsx": "4d0a4a157dc649b534332c061949212988e907c6736234dc63ee7318a45f12e5",
+      "workspace-app/src/components/TagExchange.css": "0ba2ec4ce16a16dee8e76d389572969eb2d7eb0cbbc4903f3af2b758d8547ff9",
+      "workspace-app/src/components/TagExchangeControls.jsx": "b9e19873c711e68c052f4323038f3bbd6dc8514c7c339fea95afa656f3982f76",
+      "workspace-app/src/components/TagExchangeDialog.jsx": "fc2d216fade8ce4cf25f779ee8b91429b8c176d42d4c42b8374cc27b9ae84c55",
+      "workspace-app/src/components/TraceViewer.css": "d10504280c216eee76f1cb4653411dfb0162c12c98cf0cd122a1c28446c7df19",
+      "workspace-app/src/components/TraceViewer.jsx": "00ee6a726cafc7dd8cc830cfcf73f954d9fe725ec3a7363413a547a6920a08eb",
+      "workspace-app/src/components/TreeBuilder.css": "98a032bfb82a185384032bf98682a69f35027738167db39aa5f5ac42488f013b",
+      "workspace-app/src/components/TreeBuilder.jsx": "8d7651e886a098478ce6cc5aa2c90ae502449337fdab23f7a1242e862e98c507",
+      "workspace-app/src/components/TreePreview.css": "9568ee3b49cef57602d6043f874ab48ed7735893eb0b1668863c707d079bae93",
+      "workspace-app/src/components/TreePreview.jsx": "fd32bbb0d77dac26117491cd1bbb963d86556b63f5017bfb4f2f6fef2c6b0750",
+      "workspace-app/src/components/UndoControls.jsx": "c041cb0a340bb5b8d2e3bac6069555249df47a4971a5355f95a21a9bb83fcf81",
+      "workspace-app/src/components/metadataValues.js": "7ce8b253bb1c02dc5b35c79792c1b7fea311f54e854ddb9027cc5e6d08e41906",
+      "workspace-app/src/components/overviewModel.js": "533dc9377addaf547fd1ae663b7c8229726b7b07c25316cd7f8c3defe4bac766",
+      "workspace-app/src/components/predicateEditor.js": "4fa96999a5d0ff304af60ce710b8ab6bd823af3d8a53e4e579f147e9db2081c8",
+      "workspace-app/src/components/predicateState.js": "56ee3c61ae235941344f67f299fa0b42935e482ec68d1d1d7cf9d10c435683c4",
+      "workspace-app/src/components/traceGeometry.js": "e2c9a9fd769a68a86d87cbfed9aade2a2f601b7d35c0f15e4d955f7b4994206a",
+      "workspace-app/src/curation-scope.test.js": "03b9d50421dc3ca0fddcf84aa919d869ff8aa12de9d39b3bb31f159b250a3111",
+      "workspace-app/src/curationSelection.js": "e13d930a935f0f5777205d12986b754fec75f1dd506b1fcebdf8703a384b4009",
+      "workspace-app/src/curationSelection.test.js": "764f90744d79a4d28f777f9c2361548a12cb9173c815b54855f6d3d5b256a1f8",
+      "workspace-app/src/dataExportUi.test.js": "31e3204bee5c79f13c06d76f164ce502db0c6105d6f6bf8e880a1ed04fedd91e",
+      "workspace-app/src/deletedSourceSelections.js": "648c851096ec2fa3f087a08cdb44d2c31ebddde7faed2dc19a163a8783e38dc2",
+      "workspace-app/src/deletedSourceSelections.test.js": "a5ce919564ec7e083bc3114faec9e3916c52cef70ff9647488067813b55fc252",
+      "workspace-app/src/desktopDraftSession.js": "e7e3405950fcb1e8d039080591ae8393fb8ecca76c0c650ff991a938ca868de9",
+      "workspace-app/src/desktopDraftSession.test.js": "9de106d7ec40c8e9241c1dcf7cf6e4503a414c77d14204849109bfdd3274749a",
+      "workspace-app/src/desktopLifecycle.js": "8428ed6ecdc43811c8028900adb6b099178980107bedd02bf16948c72348db6c",
+      "workspace-app/src/desktopLifecycle.test.js": "a003bd4d3744b2966cf169e324c8573d31ac374117a51aab2eeb17f3c239954d",
+      "workspace-app/src/epochBrowserSource.js": "c6857102d97fd288634deb1dd61cfde87097e4cf55718de0137925c1bb3ca782",
+      "workspace-app/src/epochBrowserSource.test.js": "e61ab6d5d4d65b4122ba18b287cfb52bb059bbdc96963b3051d705ce52a7837f",
+      "workspace-app/src/epochListScroll.js": "6d21ad32bf35ec3d497bc30ae12d687948b6afd00b4e1c6019900ead96b270a6",
+      "workspace-app/src/epochListScroll.test.js": "95a82ff95404156fe766f7eb46d3af14ad9b0e11e1c7fba87e20ab53a11f1e22",
+      "workspace-app/src/epochNavigationIntent.js": "4bd629912657d5a8677ddfd1de9b005fbc37b485d935f51a570f44420b838296",
+      "workspace-app/src/epochNavigationIntent.test.js": "13db4b46eac9baea550fbd7097ed22f707c35a3099b6555a3e2791e096e64a95",
+      "workspace-app/src/epochSelection.js": "eef553eab8b53ee1f4174fbf960a3f7bd4015dcae2807a44ddd4e497ebebf222",
+      "workspace-app/src/epochSelection.test.js": "c16dd9e6e30160eff8178c055fbc26aa3d7b74620ae6e2fa8456568e5ccd254d",
+      "workspace-app/src/epochSkimGroups.js": "06dddaf99cdca361030dae7e80de142f790283ee1329622b7a731d9d6c30ec42",
+      "workspace-app/src/epochSkimGroups.test.js": "722d25fde0467d94808fe3c28820e102af8d48ba640deb5bb252ea3bf0f7b107",
+      "workspace-app/src/epochViewerArchitecture.test.js": "9aa453133ac25c1a243102f2b23a2cde4daf0d7ff46c27fb2c471acabf75c91f",
+      "workspace-app/src/epochViewerRendering.test.js": "6a7875f14460884768f2121cd182e10b5492ab59ac6609fd10089f36f7354408",
+      "workspace-app/src/explorerScope.js": "ed260ea3caea2aad20336b694f4da892556c0cc2bd50580803759dcc8fc3ab15",
+      "workspace-app/src/explorerScope.test.js": "a0401aad546e612cdc36b835d4eb00b8e4990076f0af1b0c16c10f1e8e8e7e51",
+      "workspace-app/src/export-policy.test.js": "9236c64edbfb57aa56ddffc2dc086703205b04c89b889b9b6512f7c4e7624648",
+      "workspace-app/src/exportFormats.js": "d1fc3ddfa2b944da07d60888e52b4b0eb572172a4ffa18e87336f95cb2427c8f",
+      "workspace-app/src/exportFormats.test.js": "0bff130d01677b9cd73812d9a6a657404a26669f73e1b0dd3445663782c1915d",
+      "workspace-app/src/exportProtocolTargets.js": "3e8dbdf6a2bc507f5402ce8d317ca342535d40403c72a1174aaed9e4071e1525",
+      "workspace-app/src/exportProtocolTargets.test.js": "ff0c41e9dd019cab6a6ba479ecbc317811d7c2c4cd81843ede2fa862bd290388",
+      "workspace-app/src/exportReuse.js": "a43fa2531e60fda0c02e840d0f95b8aa0d75a8bbffb45bdcd3e9096b55a4fc4c",
+      "workspace-app/src/exportReuse.test.js": "1767cc54ede90c15d1b15716d3e2ef1ad4976de82d0ed43ded5472620fa8bf4d",
+      "workspace-app/src/externalTagMonitor.js": "e980a4466f5e57b2982cca0f307010bec968edda06da78fedca24a35f20ad5a9",
+      "workspace-app/src/externalTagMonitor.test.js": "e32d55506ef167f245c0eadde6fb698b24ea9998868b26d0b0c4ae0215ad17cc",
+      "workspace-app/src/folderBrowser.js": "2ffb8fec1c9c72b8d68af7d25223c3ecb58f31cbdfb86ba80a7ff44f14932730",
+      "workspace-app/src/folderBrowser.test.js": "4b92d9b74350fc08e6b5357381f416f31c14ca31bdc1b1507422029afda9e5ea",
+      "workspace-app/src/folderPathInputLifecycle.test.js": "b6a10f0bc13603e82540e874fe13dd8c648c6f62be7ea6ddb0b6c1db5a9fade7",
+      "workspace-app/src/hierarchyTreeState.js": "f3d17947164ab469bfd16c517c8d10f9ca8cd2927420dab436f071c0c2d9a0e2",
+      "workspace-app/src/hierarchyTreeState.test.js": "4d55ea07487f4682f82715b4afab1c4d14b32091cddeb0080e2c2f56fd604fce",
+      "workspace-app/src/importProgress.js": "650bbab3b93836b4d315afba9c9577f35942772345b2fa448a64e0a434568f40",
+      "workspace-app/src/importProgress.test.js": "9dabb78af52e9c73d8e4881be81c8b81e7e6a698894dfc75fe723caca45c8226",
+      "workspace-app/src/importReadiness.js": "ae89817b7c6a6abfe6fbd20d2a785ac94f27616c1a93a3f981803894f9269531",
+      "workspace-app/src/importReadiness.test.js": "89114d71e675aad724ae8646916a8a5a4415e391df181ec9830c1b5d5001ecc1",
+      "workspace-app/src/inspectionCellTree.js": "3e5b9983cc6a727380aad5ecec1e9264301b7f9962fbf426a6bf1ddce3188fab",
+      "workspace-app/src/inspectionCellTree.test.js": "d60c92efb7ac54227df535880b8e9568ac87d49e11df3f1326407e9033a366d7",
+      "workspace-app/src/inspectionScope.js": "b752a7ac4a809ac1d433d59a75ace47d0847b2851d77777dbe1a96240c549bc4",
+      "workspace-app/src/inspectionScope.test.js": "6071c16db65255b65d963470c0e3368c008a8f8eb46752daa4dfc5e4acfeaf5e",
+      "workspace-app/src/inspectionTreeLifecycle.test.js": "f2567c3c32bb63ee2905db311c610af1fcdcd24105f05332eb8b97694f50d373",
+      "workspace-app/src/inspectorCurationLifecycle.test.js": "72359c24261254bea423a8b8250fc3c8aef7940ebf0f35d95d4d1d699b7e9412",
+      "workspace-app/src/inspectorInteraction.js": "9c3b2c69d45314eb41b1fd62ec1b1f0663fca451784db3e4d2b165d6ca6c04a4",
+      "workspace-app/src/inspectorInteraction.test.js": "34e0e236715e785894c86465910eb1a9f903f902736c875663d2e8bab5ef9c07",
+      "workspace-app/src/jointGrouping.js": "afe7fcd6d9676a64bf6d96f5ba4f9b7a4fe27416fe0523114d154a1e67edb4ec",
+      "workspace-app/src/jointGrouping.test.js": "508af81429c764688db6e549e28ace293b82d29bcf2c8a12affc5e880d128263",
+      "workspace-app/src/loadingNotice.js": "37e7ac79febafd4b07a54beeebd8b11e2de143e6c7ab6dab066f65175233dd9a",
+      "workspace-app/src/loadingNotice.test.js": "ed96cc0f78b5e72f8249eacaac784a86400a5e582dcbd1830279937eacdd1bcd",
+      "workspace-app/src/main.jsx": "71e69d3115df4c686a931737c07357f1e85123c5719c903175a4e032be7536f6",
+      "workspace-app/src/metadataRefresh.js": "ca29104e42a02cc99a23598958582bca509fc2dd7cb229d124d99a0e54239314",
+      "workspace-app/src/metadataRefresh.test.js": "85a68db32a16a3e67666a9c353c45f4e3761ddae2e6de8bf4690af25c2a90be5",
+      "workspace-app/src/metadataRefreshLifecycle.test.js": "a1817e2b2fdf86467c448c6cb6b90e52cb6027c398d923a7a8f6ce70299984c5",
+      "workspace-app/src/metadataSearch.js": "766b7a7d12fcf827a0761a0ff367d34748a3d093275f819f7c7ae7103f637474",
+      "workspace-app/src/metadataSearch.test.js": "d74db36dc9d27b39f3e90fd71b6a34f51f90a368b4e69e8dfc29bbd31f9168c8",
+      "workspace-app/src/metadataValues.test.js": "4baf4f36cd38e3e8849d725225b52ef7cb194545ad780011c8b3ab3a98147c14",
+      "workspace-app/src/mutationUndo.js": "0a056827a51cc8106405fc6836ce51adf3364d79aac2e37337ce83c1d6b739bd",
+      "workspace-app/src/mutationUndo.test.js": "aa1cacbeede7ad69fd82bdee6f7fa6f36193fc7c8a391e33ea12d5b30c4ba75f",
+      "workspace-app/src/mutationUndoWorkflow.test.js": "36063f4243448175eb0033f1b75bcc9e5e1934e8fdc54b4ad8497b0334626f16",
+      "workspace-app/src/ordering.js": "3fe5ca26a4eedff0c101e513fdf5f5973554afaadddda2f75fab6476d3e5064e",
+      "workspace-app/src/ordering.test.js": "a97c50b8a3c69719ee0243b4fcc1dd74ca423bffa74a9104fcbd60c7f36facb7",
+      "workspace-app/src/overviewModel.test.js": "cf8ee3fc618de607bf4bdbdd0ee76118471015ae8d5e0a2aeaa1aacc224bdb5a",
+      "workspace-app/src/pagedTreeLifecycle.test.js": "ca49e829a3d84889542c1c72c9b251119a569ebe7f12011e4ca6b416d12d2eb4",
+      "workspace-app/src/pagedTreeRequest.js": "e6ccfb4db1224452719fd6ecab59e3e05697c057e19bf34552104de28593b887",
+      "workspace-app/src/pagedTreeRequest.test.js": "84e0a69b7e780eb927676d2e2a17ef83a010eb4038797a72531771b545101e28",
+      "workspace-app/src/pointerDrag.js": "c1062622121f82cdd4d20847b990d1657708e160008c0741c9b41855d8b7d2e0",
+      "workspace-app/src/pointerDrag.test.js": "261ad37352c817b0e44723c7db4f0c7d1612e1b65c66e3acf4961eac267faf83",
+      "workspace-app/src/predicateEditor.test.js": "98ad8f7e803eb31b460645891e696b4e1cbdf97e0527762374f4304e171b15fa",
+      "workspace-app/src/predicateFieldPresentation.js": "95c8215c786e14ed0b96b807df2a41a09948c3133fc3004dabbddd77728693ec",
+      "workspace-app/src/predicateFieldPresentation.test.js": "1d4695da51af48fa8676d5de98e2ff00e6960618a4f106fe906f48da6c36f8d2",
+      "workspace-app/src/predicateIdentity.js": "59cf1abd3454c8c3382cb35ab7845d96f4d338bdbbd43f0efb6723722b6c75c1",
+      "workspace-app/src/predicateIdentity.test.js": "98369a6618d0bb2928a63d3ac4e304f82efe713d1191d5f36f981daad4f55f5f",
+      "workspace-app/src/predicateState.test.js": "0a29a48443fce3d729d5ac8db161623095e0b2968544f2d9aabbc338ccfd3922",
+      "workspace-app/src/predicateValueSuggestions.js": "24afa38099571f416d1e54771ee0fa60450e24fdcf295245e9885dae14a95d74",
+      "workspace-app/src/predicateValueSuggestions.test.js": "28ca7ca5ad5d06e86d48d30666215d01534544c5198aeab4d92dbb0a72e86b1b",
+      "workspace-app/src/projectNavigation.js": "4a53606229e8ed0787144a018f82910da5ca27e73cacad7341e350baaf3053de",
+      "workspace-app/src/projectNavigation.test.js": "50f6c9743e491740ac3099ef21ac9d71b76dddbbb9afe165edb357c0f4d5af0c",
+      "workspace-app/src/projectPreferences.js": "c8e35df6c18d80895fe7e12d86dd3827e59670d4e7868732e65b85050482a08e",
+      "workspace-app/src/projectPreferences.test.js": "99216a435e9963ab8ff1a4d75ebf2ea5cab5bc9b56fa61205898a70462263f67",
+      "workspace-app/src/projectSearchPresets.js": "d0ad7e9a9ee5bf433fb38c9fdc6df737751993ed30eedf2cde37250df2de8c49",
+      "workspace-app/src/projectSearchPresets.test.js": "d0116a52e5c694e8da5576f7fdc0a76d056826fa5555430b127f94549cfe22f8",
+      "workspace-app/src/projectTransfer.js": "f49fe91f3850fa7b36250eff35d2d39d156aafb67ddfa14b5fb8cca86aa60432",
+      "workspace-app/src/projectTransfer.test.js": "796b09a088c51a5e65753ab66fb9151625349a7688e9a38d6fc75b4f651a8bef",
+      "workspace-app/src/protocolOverviewModel.js": "56bb36a40dc42c15c4bf8f0a1ee50521ac513dac3e3a614ac4c1a3531a21afa7",
+      "workspace-app/src/protocolOverviewModel.test.js": "980162b6e21d70d178ead87159318f22d9412a06d4694f6dc2b5c386eedc84a9",
+      "workspace-app/src/protocolPredicateWorkflow.test.js": "e48ebce99c47efdb37e8dbc3a713322f677e7552c4e71d2ac61a0cf02dc06257",
+      "workspace-app/src/protocolSuggestions.js": "bf5674469ca030db7721182f0e5a2858ef1e156f6e7e508dd00ebfaec054894e",
+      "workspace-app/src/protocolSuggestions.test.js": "1fdb6bda2f131a3db6fce1a439e0b294e9d5c1f60645534aa60676f4893e26c7",
+      "workspace-app/src/protocolViewFilter.js": "e61cd70de7eac45137bb907f7dde34e0b141465b708bc41d3cd70d4f44b05097",
+      "workspace-app/src/protocolViewFilter.test.js": "a8e593ea9928b8a8ee74d1be7a4b22b4e6b2689fb2946e6eb1ab436caccaabcf",
+      "workspace-app/src/recordingIdentity.js": "14171269f759d95e2050b2a433957dca930106efc7cbb5d6de4ede5c472f1e32",
+      "workspace-app/src/resourceCache.js": "17ca8c7c8a45768430d967e3ef53c358fa91ff37f25666734de1fa8df760cbad",
+      "workspace-app/src/resourceCache.test.js": "c79a1eebec4c49cbaee89e2b7ab969fe693efa95b9522547b8bce464cb7b71d7",
+      "workspace-app/src/resourceRequest.js": "7f7ed9af2de01b03cff6687e8221f129a91ffd5ea7230cf3c9d6859d1dc33e76",
+      "workspace-app/src/resourceRequest.test.js": "e8cc14c6a9c3cb0238eb478852b6f200a05b493cae1cd6ec5c91cb6b3ee41c08",
+      "workspace-app/src/scrollbars.css": "7ae0ac6fd665bff1761c3c2d2befa9632aa8d6172ffdb5ffa8d501c4afcf3e68",
+      "workspace-app/src/searchInclusion.js": "ac63f91061362bae667791420f611ae52c89327f1f5e6ec692838b011ad97aa6",
+      "workspace-app/src/searchInclusion.test.js": "e3e12732312841ec822c8d19772e2c348b6441bcd31eb4842fc7c5c0be8d1439",
+      "workspace-app/src/searchPresets.js": "00837ffb304a76e41352d7137a3b97164d27614236159cc8b3f3f02c78d23dcc",
+      "workspace-app/src/searchPresets.test.js": "130cf9c2613f368f56582f46502f524bc796a8ef63830c85b759697e170c2c05",
+      "workspace-app/src/selectionMaskDownload.test.js": "a7c2c618e3ab131bbdac95b0c04463717d5317605c85f9703d6d0e18f2efda4c",
+      "workspace-app/src/styles.css": "731e932aefdc854c5ce31278ed79de6e315189a79bef6ea56e07ccc2e4469a74",
+      "workspace-app/src/tagExchange.js": "0338efbf03c37edbdbdfde016952ca463746d36d53a6bff5cf2f3d7ae20620a1",
+      "workspace-app/src/tagExchange.test.js": "2afa7da8fa2b84c65602060e411af73e1c68f24b9d1d3bd2169da757613a9f34",
+      "workspace-app/src/test-support/inspectionTreeHarness.js": "58c038bc97337a92de3fb0ae64a9fb608adbba634a6dce48852d9190e0de32e7",
+      "workspace-app/src/test-support/inspectorHarness.js": "09a1905ac6e3c5899d89a5a2b1d35b5804fecddb42a83c4b4b0b6bd40c13f9c7",
+      "workspace-app/src/test-support/pagedTreeHarness.js": "3c714ac9cf9dcf71c516c80cfd28326bde9a7f503925642f243ec68cb6548180",
+      "workspace-app/src/test-support/workflowHarness.js": "2632e23f1b861ec1e79d80d0362bc375070dddd6cde6e8fa5d77b2599e9af1ac",
+      "workspace-app/src/traceGeometry.test.js": "afa9d853be58ceb78b0bd5593ffc983ce7365318e9145fdf2bb1c5940092d76f",
+      "workspace-app/src/treeBranchPresentation.js": "da35be6063e256faf1c89f9b2a93fcd1834ac7fee26d9c3a00ba517ae7f841c0",
+      "workspace-app/src/treeBranchPresentation.test.js": "0406f370dff4f4f7673d0f70c36a7a2ede68fda878817da455db4a4808bd8bde",
+      "workspace-app/src/treeFieldPresentation.js": "f64652cdcfafb7b526f5fa3646ed55bbeeea05540cef6bd8e2ca5272544851d5",
+      "workspace-app/src/treeFieldPresentation.test.js": "b3103dfb4fbeaa0bf84eb523ae0de1d9421880dde7443397a7487754e57aab81",
+      "workspace-app/src/treeLayoutPersistence.js": "84e5ddb9bdfb5bbc53072a1de7f1816dcdeaa415c81b4dec5001e1d7864ab24f",
+      "workspace-app/src/treeLayoutPersistence.test.js": "9a2c719ca3f0410263ab6c28dd3aa91870e05a4136e789ca9dd3c76efbbc5afc",
+      "workspace-app/src/uploadRecording.js": "f7587bc910536b4796d3206d27a2cfe9f31815a057f3c7e28375f117a22584bf",
+      "workspace-app/src/uploadRecording.test.js": "7a5d8cd30f1a7a98e92aaec7e1750e786e776ec23e5a6552f684397c8744a69a",
+      "workspace-app/src/useAnnotationReceipts.js": "761e02d9f9c523880193ffbc16c661475b87b474a1cacd99d8f9349964b10c49",
+      "workspace-app/src/useDesktopDraft.js": "0dcdae9aa69cf869166b2673633f74d568a3b67d32995d607a8658636d1ccde7",
+      "workspace-app/src/useEpochBrowserPage.js": "3e61a3bdb70371a53180463646fece3dca9ede345502932e8e5e787472de30ec",
+      "workspace-app/src/useImportMonitor.js": "caa732e28c72921dbe5609337e71d366e513c465c61cf63bb07b02bdc929fb4c",
+      "workspace-app/src/useImportQueue.js": "9af2c96cdd5eb30e3a6fb768634c79082b0804851cc7ee15028b8296e80e8071",
+      "workspace-app/src/useMutationUndo.js": "0826c3d96b1e5f8ee508502d70196b8d5835a1460e5a207c1e63e31f06a9159a",
+      "workspace-app/src/useProjectPreference.js": "c920a9fed4d829a5a768aab1f595b9e3f8ce2dd9df02182deeaa9d4d82ea4e1e",
+      "workspace-app/src/useProtocolTreeLayout.js": "edb12b76a4349ae940ed8e38ab52a6c9062ea867045889e1b612dc9baeef2c0d",
+      "workspace-app/src/useWorkspaceChanges.js": "cfb71618d364764fd6fc9060a5d8e3a5550fb61de81562cf25bd942c2baa4670",
+      "workspace-app/src/useWorkspaceNavigation.js": "19d42b45a2456dca6410c357a9a266dcc90e1dc983dc031d24a4ef0d986d9378",
+      "workspace-app/src/workflowResponsiveness.test.js": "2b4d5af0ca966e399d16a9af37a38a63f794daf9dc4c25e5d8e6925c126488be",
+      "workspace-app/src/workspaceNavigation.js": "cc44e94ca7a4ed4b2b5735d1b737509b8ce02acbe23f972852d60400c0d9581d",
+      "workspace-app/src/workspaceNavigation.test.js": "550f3c1816f82148a32ed9e66ca19ec10db32be65ced39c4540864c3e6738a42"
+    },
+    "exact_source_snapshot_verified": true
+  },
+  "request_count": 41,
+  "requests": [
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\",\"a38a98e78c3d429ce6e93217ce630b762462fe9fb88c4569203eb9ba646c72de\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+      "method": "GET",
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":60,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\",\"a38a98e78c3d429ce6e93217ce630b762462fe9fb88c4569203eb9ba646c72de\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+      "method": "GET",
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":60,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\",\"a38a98e78c3d429ce6e93217ce630b762462fe9fb88c4569203eb9ba646c72de\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+      "method": "GET",
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":60,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\",\"a38a98e78c3d429ce6e93217ce630b762462fe9fb88c4569203eb9ba646c72de\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+      "method": "GET",
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":60,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"763d5ebea19e90147e4011f58561643deea191d1ee4e8340d5e526f3896b4a37\",\"a38a98e78c3d429ce6e93217ce630b762462fe9fb88c4569203eb9ba646c72de\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/epochs/ebf485bf-ecad-564c-b31a-887556516452",
+      "method": "GET",
+      "body": null
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":60,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"b46c55bc9511bd271897c8feba284033f31d47b6b72a72e2202699dfe48f7ba1\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"b46c55bc9511bd271897c8feba284033f31d47b6b72a72e2202699dfe48f7ba1\",\"bf7163a0ac46af1ea9d7e8471be3cada162f8e986c55785058d5cc73b7f25588\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"3427e082d87e6de6101ed6168bc32b3675896cee011f656cef96ee3f2b6aa5f1\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"3427e082d87e6de6101ed6168bc32b3675896cee011f656cef96ee3f2b6aa5f1\",\"813a46567fa50390fbdd861e4cf9e7563931124f7acad95de3c68cf8f7805256\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"f4b2474dde42e382139072ab191427a7508a56c1bc5b2df37b17ef97248c8731\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"f4b2474dde42e382139072ab191427a7508a56c1bc5b2df37b17ef97248c8731\",\"3c9b0e7c820b73b82e8cc586b9af3daa3441cbcb000e7458e4a667fa2a3a797a\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"2f607b1f45dc20d13694dd2141e177fe0bfa21965233129c7e62a63cadf3ac14\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"2f607b1f45dc20d13694dd2141e177fe0bfa21965233129c7e62a63cadf3ac14\",\"6a6248e03a6e25b27462a533ba941730cb3afb84097b613f31c970d3acec7fc3\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[],\"offset\":0,\"limit\":60}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"ca806d2c67f53c1059dd3117d129ec2e5147e5eda042e10d66b0d1799525929c\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    },
+    {
+      "url": "http://127.0.0.1:54895/api/tree-pages",
+      "method": "POST",
+      "body": "{\"protocol_uuid\":\"93506526-6460-5710-8a2b-69478fbe29b9\",\"filters\":{},\"splits\":\"cell,block\",\"path\":[\"ca806d2c67f53c1059dd3117d129ec2e5147e5eda042e10d66b0d1799525929c\",\"52b2655ac6275ddea21702bb09b7e7d52040e1a485d486fa457500c9c0da50e5\"],\"offset\":0,\"limit\":60,\"revision\":\"5d6f563f75593e93e698617b347a3088be6304a2fb600bde84c51accb22b2e0e\"}"
+    }
+  ],
+  "summary": [
+    {
+      "name": "component_initial_tree_load_production_bundle_cold",
+      "n": 1,
+      "median_ms": 2904.6087500000003,
+      "min_ms": 2904.6087500000003,
+      "max_ms": 2904.6087500000003,
+      "samples_ms": [
+        2904.6087500000003
+      ]
+    },
+    {
+      "name": "expand_cell_first_time",
+      "n": 5,
+      "median_ms": 2465.900000035763,
+      "min_ms": 2397.900000035763,
+      "max_ms": 2616,
+      "samples_ms": [
+        2397.900000035763,
+        2450.099999964237,
+        2465.900000035763,
+        2600,
+        2616
+      ]
+    },
+    {
+      "name": "expand_block_first_time",
+      "n": 5,
+      "median_ms": 2565.099999964237,
+      "min_ms": 2364.600000023842,
+      "max_ms": 2650.099999964237,
+      "samples_ms": [
+        2364.600000023842,
+        2465.2000000476837,
+        2565.099999964237,
+        2633.300000011921,
+        2650.099999964237
+      ]
+    },
+    {
+      "name": "select_epoch_metadata",
+      "n": 5,
+      "median_ms": 97.19999998807907,
+      "min_ms": 94.60000002384186,
+      "max_ms": 113.69999998807907,
+      "samples_ms": [
+        94.60000002384186,
+        97,
+        97.19999998807907,
+        97.80000001192093,
+        113.69999998807907
+      ]
+    },
+    {
+      "name": "search_selected_epoch_metadata",
+      "n": 5,
+      "median_ms": 32.5,
+      "min_ms": 32.10000002384186,
+      "max_ms": 48.19999998807907,
+      "samples_ms": [
+        32.10000002384186,
+        32.19999998807907,
+        32.5,
+        32.60000002384186,
+        48.19999998807907
+      ]
+    },
+    {
+      "name": "collapse_cell_cached",
+      "n": 5,
+      "median_ms": 61.09999996423721,
+      "min_ms": 60.5,
+      "max_ms": 70.10000002384186,
+      "samples_ms": [
+        60.5,
+        60.69999998807907,
+        61.09999996423721,
+        61.10000002384186,
+        70.10000002384186
+      ]
+    },
+    {
+      "name": "reopen_cell_cached",
+      "n": 5,
+      "median_ms": 65.69999998807907,
+      "min_ms": 65,
+      "max_ms": 67.10000002384186,
+      "samples_ms": [
+        65,
+        65.10000002384186,
+        65.69999998807907,
+        66.69999998807907,
+        67.10000002384186
+      ]
+    },
+    {
+      "name": "scroll_loaded_tree",
+      "n": 5,
+      "median_ms": 32.19999998807907,
+      "min_ms": 31.5,
+      "max_ms": 33.80000001192093,
+      "samples_ms": [
+        31.5,
+        32,
+        32.19999998807907,
+        32.80000001192093,
+        33.80000001192093
+      ]
+    },
+    {
+      "name": "next_cell_page_60",
+      "n": 5,
+      "median_ms": 2238.199999988079,
+      "min_ms": 2009,
+      "max_ms": 2293.100000023842,
+      "samples_ms": [
+        2009,
+        2141,
+        2238.199999988079,
+        2258.699999988079,
+        2293.100000023842
+      ]
+    },
+    {
+      "name": "expand_disjoint_cell_first_use",
+      "n": 5,
+      "median_ms": 2549.699999988079,
+      "min_ms": 2532.199999988079,
+      "max_ms": 2617.199999988079,
+      "samples_ms": [
+        2532.199999988079,
+        2548.699999988079,
+        2549.699999988079,
+        2583.900000035763,
+        2617.199999988079
+      ]
+    },
+    {
+      "name": "expand_disjoint_block_first_use",
+      "n": 5,
+      "median_ms": 2615.600000023842,
+      "min_ms": 2531.2999999523163,
+      "max_ms": 2632.100000023842,
+      "samples_ms": [
+        2531.2999999523163,
+        2597.800000011921,
+        2615.600000023842,
+        2615.699999988079,
+        2632.100000023842
+      ]
+    }
+  ]
+}

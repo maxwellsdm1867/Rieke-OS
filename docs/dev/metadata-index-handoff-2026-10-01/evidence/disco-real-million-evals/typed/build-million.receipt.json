@@ -1,0 +1,51 @@
+{
+  "source": "/private/tmp/disco-real-million-20261001/base.sqlite",
+  "target": "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite",
+  "build_seconds": 218.5079777080682,
+  "wall_seconds": 218.5126029580133,
+  "timings": {
+    "core_extract_seconds": 24.449801375041716,
+    "chronology_assign_seconds": 6.86526870803209,
+    "dictionary_extract_seconds": 5.334456374985166,
+    "indexes_seconds": 13.921803792007267,
+    "core_equality_proof_seconds": 154.02946504199645,
+    "analyze_seconds": 1.9782964159967378,
+    "quick_check_and_counts_seconds": 11.928886000008788
+  },
+  "added_bytes": 1107034112,
+  "original_bytes": 7195836416,
+  "dictionary_kinds": {
+    "string": 1080050,
+    "number": 1509,
+    "array": 84,
+    "null": 10
+  },
+  "core_safe": {
+    "epoch": true,
+    "cell": true,
+    "block": true,
+    "group": true,
+    "protocol": true,
+    "date": true,
+    "cell type": true,
+    "group label": true,
+    "block time": true
+  },
+  "wide_numeric_fields": [],
+  "native_table_counts": {
+    "meta": 4,
+    "epochs": 1000000,
+    "fields": 140,
+    "field_values": 1081653,
+    "epoch_values": 77107863,
+    "sources": 1080,
+    "metadata_objects": 72720
+  },
+  "packaging": "shared immutable source plus typed auxiliary sidecar; no source clone",
+  "source_stat_unchanged": true,
+  "max_rss_bytes": 161234944,
+  "source_full_sha256_verification": "separate parent-owned preservation phase",
+  "validation_representatives": "actual values covering every observed kind and array-element kind",
+  "no_detail_materialization": true,
+  "all_passed": true
+}

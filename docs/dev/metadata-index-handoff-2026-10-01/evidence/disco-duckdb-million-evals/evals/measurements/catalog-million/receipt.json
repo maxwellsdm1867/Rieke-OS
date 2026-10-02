@@ -1,0 +1,390 @@
+{
+  "epochs": 1000000,
+  "status": "passed",
+  "phases": {
+    "build": {
+      "phases": {
+        "epoch_rows_seconds": 2.4072964579681866,
+        "epoch": {
+          "distinct": 1000000,
+          "seconds": 0.6085677910014056
+        },
+        "date": {
+          "distinct": 1,
+          "seconds": 0.03260216600028798
+        },
+        "cell": {
+          "distinct": 10000,
+          "seconds": 0.04207629105076194
+        },
+        "block": {
+          "distinct": 50000,
+          "seconds": 0.05888195795705542
+        },
+        "block time": {
+          "distinct": 1000000,
+          "seconds": 0.5571270840009674
+        },
+        "cell type": {
+          "distinct": 2,
+          "seconds": 0.033560208044946194
+        },
+        "group label": {
+          "distinct": 1,
+          "seconds": 0.03304195898817852
+        },
+        "group": {
+          "distinct": 1,
+          "seconds": 0.03339929203502834
+        },
+        "protocol": {
+          "distinct": 1,
+          "seconds": 0.03297350002685562
+        },
+        "parameters/contrast": {
+          "distinct": 5,
+          "seconds": 0.0637756249634549
+        },
+        "parameters/currentMean": {
+          "distinct": 3,
+          "seconds": 0.052378083986695856
+        },
+        "parameters/seed": {
+          "distinct": 1000000,
+          "seconds": 0.42143370799021795
+        },
+        "parameters/stimTime": {
+          "distinct": 1,
+          "seconds": 0.043130416015628725
+        },
+        "metadata/cell/properties/type": {
+          "distinct": 2,
+          "seconds": 0.03250770800514147
+        },
+        "metadata/cell/label": {
+          "distinct": 10000,
+          "seconds": 0.03619866701774299
+        },
+        "metadata/block/parameters/amp": {
+          "distinct": 1,
+          "seconds": 0.0322353329975158
+        }
+      },
+      "seconds": 6.165287415962666,
+      "bytes": 406335488,
+      "epoch_values": 16000000
+    },
+    "reopen_seconds": 0.010443541978020221
+  },
+  "operations": [
+    {
+      "name": "duckdb_derived_eav",
+      "samples_seconds": [
+        3.8263065419741906,
+        3.6114649579976685,
+        3.446334666979965,
+        3.383643957960885,
+        3.5300030829967,
+        3.5268805000232533,
+        3.4292019169661216,
+        3.4929965839837678,
+        3.455387542024255,
+        3.4258964579785243
+      ],
+      "first_seconds": 3.8263065419741906,
+      "median_seconds": 3.4741920630040113,
+      "warm_median_seconds": 3.455387542024255,
+      "maximum_seconds": 3.8263065419741906,
+      "catalog_sha256": "cf89899a3f312a5d117f10e32cf6637a9c8927b7ceb0ac0847db412581858788",
+      "response_json_bytes": 7391,
+      "independent_oracle_passed": true,
+      "exact_sqlite_control_hash_passed": null
+    }
+  ],
+  "resources": [
+    {
+      "elapsed_seconds": 9.124999633058906e-05,
+      "rss_mib": 88.25,
+      "available_mib": 2578.359375,
+      "free_disk_gib": 21.274879455566406
+    },
+    {
+      "elapsed_seconds": 1.0010558330104686,
+      "rss_mib": 531.234375,
+      "available_mib": 2474.75,
+      "free_disk_gib": 21.259235382080078
+    },
+    {
+      "elapsed_seconds": 2.0069373329752125,
+      "rss_mib": 785.390625,
+      "available_mib": 2500.515625,
+      "free_disk_gib": 21.139389038085938
+    },
+    {
+      "elapsed_seconds": 3.0102404999779537,
+      "rss_mib": 825.0,
+      "available_mib": 2499.984375,
+      "free_disk_gib": 21.03969955444336
+    },
+    {
+      "elapsed_seconds": 4.016281332995277,
+      "rss_mib": 904.28125,
+      "available_mib": 2525.640625,
+      "free_disk_gib": 21.006858825683594
+    },
+    {
+      "elapsed_seconds": 5.0177839159732684,
+      "rss_mib": 513.734375,
+      "available_mib": 2507.515625,
+      "free_disk_gib": 20.991771697998047
+    },
+    {
+      "elapsed_seconds": 6.023363166023046,
+      "rss_mib": 434.578125,
+      "available_mib": 2553.8125,
+      "free_disk_gib": 20.990257263183594
+    },
+    {
+      "elapsed_seconds": 7.035258290998172,
+      "rss_mib": 439.46875,
+      "available_mib": 2749.375,
+      "free_disk_gib": 20.894180297851562
+    },
+    {
+      "elapsed_seconds": 8.083342000027187,
+      "rss_mib": 794.46875,
+      "available_mib": 2477.609375,
+      "free_disk_gib": 20.8941650390625
+    },
+    {
+      "elapsed_seconds": 9.086727040994447,
+      "rss_mib": 1204.328125,
+      "available_mib": 2513.328125,
+      "free_disk_gib": 20.8941650390625
+    },
+    {
+      "elapsed_seconds": 10.09610112500377,
+      "rss_mib": 1300.234375,
+      "available_mib": 2508.453125,
+      "free_disk_gib": 20.894027709960938
+    },
+    {
+      "elapsed_seconds": 11.12381183297839,
+      "rss_mib": 540.828125,
+      "available_mib": 2899.203125,
+      "free_disk_gib": 20.89389419555664
+    },
+    {
+      "elapsed_seconds": 12.330388374975882,
+      "rss_mib": 1014.8125,
+      "available_mib": 2641.5,
+      "free_disk_gib": 20.893924713134766
+    },
+    {
+      "elapsed_seconds": 13.446263541001827,
+      "rss_mib": 1377.609375,
+      "available_mib": 2488.5,
+      "free_disk_gib": 20.892765045166016
+    },
+    {
+      "elapsed_seconds": 14.484164832974784,
+      "rss_mib": 1184.75,
+      "available_mib": 2481.71875,
+      "free_disk_gib": 20.89257049560547
+    },
+    {
+      "elapsed_seconds": 15.490602875011973,
+      "rss_mib": 1152.046875,
+      "available_mib": 2616.578125,
+      "free_disk_gib": 20.89257049560547
+    },
+    {
+      "elapsed_seconds": 16.504207333025988,
+      "rss_mib": 1280.890625,
+      "available_mib": 2556.546875,
+      "free_disk_gib": 20.89257049560547
+    },
+    {
+      "elapsed_seconds": 17.512284750002436,
+      "rss_mib": 1367.890625,
+      "available_mib": 2555.75,
+      "free_disk_gib": 20.89257049560547
+    },
+    {
+      "elapsed_seconds": 18.54675166599918,
+      "rss_mib": 1050.90625,
+      "available_mib": 2889.6875,
+      "free_disk_gib": 20.89257049560547
+    },
+    {
+      "elapsed_seconds": 19.55612695799209,
+      "rss_mib": 1349.796875,
+      "available_mib": 2729.296875,
+      "free_disk_gib": 20.892532348632812
+    },
+    {
+      "elapsed_seconds": 20.573283749981783,
+      "rss_mib": 1220.359375,
+      "available_mib": 2617.53125,
+      "free_disk_gib": 20.892501831054688
+    },
+    {
+      "elapsed_seconds": 21.608369500027038,
+      "rss_mib": 794.96875,
+      "available_mib": 3138.0,
+      "free_disk_gib": 20.892501831054688
+    },
+    {
+      "elapsed_seconds": 22.762926666007843,
+      "rss_mib": 1301.359375,
+      "available_mib": 2751.40625,
+      "free_disk_gib": 20.892498016357422
+    },
+    {
+      "elapsed_seconds": 23.849764332990162,
+      "rss_mib": 1369.078125,
+      "available_mib": 2652.6875,
+      "free_disk_gib": 20.892536163330078
+    },
+    {
+      "elapsed_seconds": 24.88563229102874,
+      "rss_mib": 1341.625,
+      "available_mib": 2673.09375,
+      "free_disk_gib": 20.892536163330078
+    },
+    {
+      "elapsed_seconds": 25.889116499980446,
+      "rss_mib": 1197.46875,
+      "available_mib": 2790.921875,
+      "free_disk_gib": 20.892539978027344
+    },
+    {
+      "elapsed_seconds": 26.891461915976834,
+      "rss_mib": 1386.6875,
+      "available_mib": 2693.46875,
+      "free_disk_gib": 20.892539978027344
+    },
+    {
+      "elapsed_seconds": 27.901299500023015,
+      "rss_mib": 1090.625,
+      "available_mib": 2667.078125,
+      "free_disk_gib": 20.892555236816406
+    },
+    {
+      "elapsed_seconds": 28.948470540985,
+      "rss_mib": 947.484375,
+      "available_mib": 2833.75,
+      "free_disk_gib": 20.892597198486328
+    },
+    {
+      "elapsed_seconds": 30.085100665979553,
+      "rss_mib": 1320.578125,
+      "available_mib": 2725.828125,
+      "free_disk_gib": 20.892536163330078
+    },
+    {
+      "elapsed_seconds": 31.10244958300609,
+      "rss_mib": 1343.265625,
+      "available_mib": 2618.96875,
+      "free_disk_gib": 20.89254379272461
+    },
+    {
+      "elapsed_seconds": 32.1459675829974,
+      "rss_mib": 894.75,
+      "available_mib": 3082.53125,
+      "free_disk_gib": 20.89250946044922
+    },
+    {
+      "elapsed_seconds": 33.208376375027,
+      "rss_mib": 1476.390625,
+      "available_mib": 2607.609375,
+      "free_disk_gib": 20.892505645751953
+    },
+    {
+      "elapsed_seconds": 34.22595633298624,
+      "rss_mib": 1220.6875,
+      "available_mib": 2573.046875,
+      "free_disk_gib": 20.89246368408203
+    },
+    {
+      "elapsed_seconds": 35.26280924997991,
+      "rss_mib": 1186.359375,
+      "available_mib": 2626.546875,
+      "free_disk_gib": 20.892383575439453
+    },
+    {
+      "elapsed_seconds": 36.39599437499419,
+      "rss_mib": 1109.453125,
+      "available_mib": 2790.984375,
+      "free_disk_gib": 20.892414093017578
+    },
+    {
+      "elapsed_seconds": 37.41741925000679,
+      "rss_mib": 1383.453125,
+      "available_mib": 2691.515625,
+      "free_disk_gib": 20.892349243164062
+    },
+    {
+      "elapsed_seconds": 38.429556916002184,
+      "rss_mib": 1281.421875,
+      "available_mib": 2667.15625,
+      "free_disk_gib": 20.892349243164062
+    },
+    {
+      "elapsed_seconds": 39.48582983302185,
+      "rss_mib": 1007.015625,
+      "available_mib": 2915.953125,
+      "free_disk_gib": 20.892349243164062
+    },
+    {
+      "elapsed_seconds": 40.5158252500114,
+      "rss_mib": 1429.9375,
+      "available_mib": 2683.90625,
+      "free_disk_gib": 20.892215728759766
+    },
+    {
+      "elapsed_seconds": 41.53612537501613,
+      "rss_mib": 1437.34375,
+      "available_mib": 2681.796875,
+      "free_disk_gib": 20.892215728759766
+    }
+  ],
+  "scope": "Exact current production DiskMetadataIndex.catalog algorithm plus canonical JSON serialization on the contrast=.3 subset. Catalog-only: excludes complete Flask filter-preview, native curation/revisions, frozen membership payload, browser paint and details. The 100k import arm isolates EAV engine; derived1m SQL EAV is synthetic metadata only.",
+  "phase": "measure_duckdb_derived_eav",
+  "known_field_ids": [
+    "epoch",
+    "date",
+    "cell",
+    "block",
+    "block time",
+    "cell type",
+    "group label",
+    "group",
+    "protocol",
+    "parameters/contrast",
+    "parameters/currentMean",
+    "parameters/seed",
+    "parameters/stimTime",
+    "metadata/cell/properties/type",
+    "metadata/cell/label",
+    "metadata/block/parameters/amp"
+  ],
+  "source_generation": "everyday-100000",
+  "scope_count": 200000,
+  "scope_sha256": "499f09d2ed7b6860824275d92e39d117bf1366df8d0532bd90f18fcf0cfe1597",
+  "independent_membership_and_types_passed": true,
+  "active_samples_seconds": [
+    3.8263065419741906,
+    3.6114649579976685,
+    3.446334666979965,
+    3.383643957960885,
+    3.5300030829967,
+    3.5268805000232533,
+    3.4292019169661216,
+    3.4929965839837678,
+    3.455387542024255,
+    3.4258964579785243
+  ],
+  "seconds": 42.31816779100336,
+  "peak_sampled_rss_mib": 1476.390625
+}

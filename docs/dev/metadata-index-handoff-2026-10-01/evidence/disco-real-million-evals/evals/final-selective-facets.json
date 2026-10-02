@@ -1,0 +1,1412 @@
+{
+  "all_passed": true,
+  "all_fields": 140,
+  "scopes": [
+    "cell",
+    "block"
+  ],
+  "comparisons": 140,
+  "checks": [
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "block",
+        "block time"
+      ],
+      "sha256": "51997720772670496ce6029e5fc88bd09957b94e99b19a5339664592116f17e6"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "cell",
+        "cell type"
+      ],
+      "sha256": "50a338d461b7fadfa567f78877546013e089d59e51607ea79ec69140d4a23c3f"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "date",
+        "epoch"
+      ],
+      "sha256": "7c2d028fdce543c1ebca7022738c0bdeb0a764e9de59ece0aa973664d8fe10b7"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "group",
+        "group label"
+      ],
+      "sha256": "5edf1877e7dec24d6bf1d774960ee1e48f662f196b29853bfad85685522cc0f6"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/end_time",
+        "metadata/block/parameters/amp"
+      ],
+      "sha256": "8f2c4130b3bcce9d58c93e27f620a175631fcccef7d5b1986edc883c1db1956d"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/backgroundIntensity",
+        "metadata/block/parameters/contrast"
+      ],
+      "sha256": "67f52700594c391ecba0d5f0690b98fb29afd16f0bdd80f0bd8f7fe238cc1693"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/controlMode",
+        "metadata/block/parameters/currentMean"
+      ],
+      "sha256": "29682b66cbd850cd6fa54b2f16d1c732f771c7b97a30dc7ab06a89131f17661c"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/currentSD",
+        "metadata/block/parameters/frequencyCutoff"
+      ],
+      "sha256": "657f0a3952bab19dd2fc82fe547ad705861618c0e841971a961d43c66a7f9501"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/history1",
+        "metadata/block/parameters/history2"
+      ],
+      "sha256": "64b9562d6c0cc4c1d53e18c8202e5fcdbf8d5ec345ef1427b6455aa235e27148"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/interpulseInterval",
+        "metadata/block/parameters/maskDiameter"
+      ],
+      "sha256": "e0ecc0b18b30169291ee561507f58cd0f94078b338ff83623dfed9f56d0bc277"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/numberOfAverages",
+        "metadata/block/parameters/numberOfFilters"
+      ],
+      "sha256": "831c2f4e950386ecd8720e5fb4d7032b94c1af743389efa9a75243de7fd6f1ee"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/numberOfTrials",
+        "metadata/block/parameters/onlineAnalysis"
+      ],
+      "sha256": "9bb59cca74e29eafe72e6905d2a75fd299bc2ddad0650fdfa6319d97d0c39871"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/preTime",
+        "metadata/block/parameters/randomizeOrder"
+      ],
+      "sha256": "2db6f9f3e5a8027265652e38e6c586222875fde8f58bf79846fc78344c489069"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/repeatsPerTrial",
+        "metadata/block/parameters/rotation"
+      ],
+      "sha256": "41dc9f63b2324c2d98bf854a06906903f9ff88eec43f8acf18362cb2424e3dff"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/sampleRate",
+        "metadata/block/parameters/segmentTime"
+      ],
+      "sha256": "fa4e8b6a2162415a9a6fde7d62d4cf2acbf6fb8545d2974a3280ab007b7e8929"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/shuffleSequence",
+        "metadata/block/parameters/splitField"
+      ],
+      "sha256": "1cff6d72a1b8f7647c2a08cb9b64a4ea331b3bca9d5f0e2b008582ffbc9a1ab2"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/spotDiameter",
+        "metadata/block/parameters/spotIntensity"
+      ],
+      "sha256": "2164c68ac3cbdf9098196fc742aa7db0c1daab8a10e28a554d13d10702532fff"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/spotSizes",
+        "metadata/block/parameters/stimTime"
+      ],
+      "sha256": "910b8275fd34a422a162e4a9ab9407472aaeaaf26774d1a5b80917fb0a77ac9e"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/tailTime",
+        "metadata/block/parameters/target"
+      ],
+      "sha256": "43153ec53105de51325ba6d2b995d6aadcab5363e06f2f83f6ea3b011102975b"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/parameters/temporalFrequency",
+        "metadata/block/parameters/useRandomSeed"
+      ],
+      "sha256": "99c35bdb9098cfd63b63de2bf43081a88377363bdfa1f42f0e73693002eddf50"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/properties/frameTimesMs",
+        "metadata/block/protocolID"
+      ],
+      "sha256": "43d62990b7536904b296522465ff64b37c3dd9e7cf6714f9daa21a6c783c33fb"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/block/start_time",
+        "metadata/cell/label"
+      ],
+      "sha256": "091ec777bc1458bb8986c67c597c9feac592110a03732e031e65ac465cc15417"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/cell/notes",
+        "metadata/cell/properties/type"
+      ],
+      "sha256": "02661214d273331dfc8ae8fac135baf77794e5b8a96d51ea66ba465228923cdc"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/cell/start_time",
+        "metadata/epoch/end_time"
+      ],
+      "sha256": "0d889acc5e1ae05c12e6327a4b75af19cc060a58c0c53e3ef971f38a6c9940a8"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/epoch/label",
+        "metadata/epoch/protocolID"
+      ],
+      "sha256": "14b3f6b7cf35fbff06f7dcb5a1e0982eb319f19c9680f5b160ea35f60bad4950"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/epoch/start_time",
+        "metadata/experiment/attributes/purpose"
+      ],
+      "sha256": "f512075907c2bc77ad5dc0ff07fd341867489beea803b972e29586a2be07a2bf"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/experiment/label",
+        "metadata/experiment/notes"
+      ],
+      "sha256": "e61eefbc6b1a924aa2d13a9b18621ed645470cd75ba33c5ce7f3bd1ef14f2e6c"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/experiment/properties/experimenter",
+        "metadata/experiment/properties/institution"
+      ],
+      "sha256": "dc78e919c05ac111de256a6d5789d36c7951c41650f806043fdfbe5089c1c6dc"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/experiment/properties/lab",
+        "metadata/experiment/properties/project"
+      ],
+      "sha256": "88dab9f8586db2562aadfdb01c252c34670a0aa8843a4c444371b20052217458"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/experiment/properties/rig",
+        "metadata/experiment/start_time"
+      ],
+      "sha256": "b95288ebbcd665242b0312e10a4b08ae208762caeb9c19bccf6208d718df4de9"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/group/end_time",
+        "metadata/group/label"
+      ],
+      "sha256": "a0254c18534f1d5803ec007a9d5a1b061a779820ef7823d6fa89c311a4872a49"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/group/notes",
+        "metadata/group/properties/externalSolutionAdditions"
+      ],
+      "sha256": "e1f4cbdce1922b61986b92ce66018dfcb676d326036f55f3502e5ec03c5af494"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/group/properties/internalSolutionAdditions",
+        "metadata/group/properties/pipetteSolution"
+      ],
+      "sha256": "cb5c735a1c05e0f357b4c607a35a76857c1cd6ef18eec935b370d453a91aae9a"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/group/properties/recordingTechnique",
+        "metadata/group/properties/seriesResistanceCompensation"
+      ],
+      "sha256": "1c4e5ad4efff2d0ea71719e57d84631899bee3c42b193d77c5e2d420058916f8"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "metadata/group/start_time",
+        "parameters/NDF"
+      ],
+      "sha256": "cbd1b78d0cf6c70eae02884c72a298ce95465b98df8a458fef5c7e5187cd2ec6"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/amp",
+        "parameters/backgroundIntensity"
+      ],
+      "sha256": "89199901c30d4750ed4b73c55d7221250a5092f9d008fcbe08724cf5dec86c99"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/blockRepeatCount",
+        "parameters/canvasSize"
+      ],
+      "sha256": "f673d4c1a1915c8fa98a84a9850e1e32c3a0e3ab5dc9d9087929981135c9fa3b"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/centerOffset",
+        "parameters/contrast"
+      ],
+      "sha256": "4a85e0b54eafa8bf728d94ef84acb0fb1b57bfd81410a1f5815e4f7c5d254d75"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/controlMode",
+        "parameters/currentMean"
+      ],
+      "sha256": "010deca8e8803d18abec474162206ce4033b34f0616f2dad86dc44169faa5402"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/currentSD",
+        "parameters/currentSpotSize"
+      ],
+      "sha256": "df493f6bb15c6b70b3d0a5c92d5f1b0d8946f2b19552532a2a5958c01686366b"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/firstHistoryID",
+        "parameters/frequencyCutoff"
+      ],
+      "sha256": "ba6cd27b7f95681432d8a05eb235b3ee9cd9395d495563b2e2912ec11da4b468"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/gain",
+        "parameters/history1"
+      ],
+      "sha256": "a1f9473d0252d25ecb73060af99c8e38360c14ae64528d08bb719e256c8e7eeb"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/history1Mean",
+        "parameters/history1SD"
+      ],
+      "sha256": "995b58c1fb73a1b9d70416adde0b0c09ccfb96ac357eebe587c06af4f138fdbd"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/history1Seed",
+        "parameters/history2"
+      ],
+      "sha256": "1d5edb00a1105ccaeee6f1bf4159cfb39ca5c33b66d8c51b715018da1b122374"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/history2Mean",
+        "parameters/history2SD"
+      ],
+      "sha256": "7b5e9fa87067abcac901fdd68ae2c5a7bf880448b4688c74ebb3a1ffee289568"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/history2Seed",
+        "parameters/historyNoiseVersion"
+      ],
+      "sha256": "248554db497efbf63ef7627bf817d1d6f4580db5f02fc6c4c139b953fac80e33"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/interpulseInterval",
+        "parameters/isControl"
+      ],
+      "sha256": "f7db0e4c35afb2f901893f9a09f753b0b7fc6fb6bc0192e0db5d89fa5a95df42"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/lightPath",
+        "parameters/maskDiameter"
+      ],
+      "sha256": "5e53056220f35212c918099c9bb9ba6d054000d3ca22105a6ce0839d80db21db"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/microdisplayBrightness",
+        "parameters/microdisplayBrightnessValue"
+      ],
+      "sha256": "ff30ed5da20f25f30545d209c1e23b8636c1be499ffa70a0bba76b9a653c5e1b"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/micronsPerPixel",
+        "parameters/monitorRefreshRate"
+      ],
+      "sha256": "ba7971ef87c9e2757b10be6c0851ade24c6e544a131f1d865775f517de564e3d"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/ndfs",
+        "parameters/numberOfAverages"
+      ],
+      "sha256": "949a5f3e6a30d99a2682dc3c8cfbe9cd2bfbdecaba8e5e46a94193b384c5df9a"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/numberOfFilters",
+        "parameters/numberOfTrials"
+      ],
+      "sha256": "8a68143669a409c2d55b21c3b892ca4b35ffdf0394dfa34f610797c7d1d0b1b4"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/numberOfTrialsInRun",
+        "parameters/onlineAnalysis"
+      ],
+      "sha256": "532ddb20fb68a016529c81588af88d0a1cc31726b708df3be9d6f6e8676366bf"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/preTime",
+        "parameters/prerender"
+      ],
+      "sha256": "fde4b3c28c232039b8ec28fcf9dd26e4c72a8bcf904f92b89ec07a31eef98a58"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/randomizeOrder",
+        "parameters/repeatsPerTrial"
+      ],
+      "sha256": "b672a20bbd97dc84680555e982f23c351d3d03627d85f4ea3b08a2b91b0b24f7"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/rotation",
+        "parameters/sampleRate"
+      ],
+      "sha256": "ec2d65e5e54e9028d124d953e79ef64521bd12ad99b680b681d3399324503ca5"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/samplesPerBlock",
+        "parameters/samplesPerSegment"
+      ],
+      "sha256": "a9647ca257780826901e30d4b38d63ccaac42530cba20efd28804deef4ac238d"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/seed",
+        "parameters/segmentTime"
+      ],
+      "sha256": "e576d3c7495ed7d664e8eb0d45944b304b043a2093a319264a4b4b16ca4cc149"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/sequenceShuffleSeed",
+        "parameters/shuffleSequence"
+      ],
+      "sha256": "dc2f204fe72630d62e2faf5951531684222c0354ad1955cc3c69d264816ecd78"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/splitField",
+        "parameters/spotDiameter"
+      ],
+      "sha256": "1678d04de43249df341bebabef1a62a877b23ac8ddda4d754d5aafedf17431c8"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/spotIntensity",
+        "parameters/spotSizes"
+      ],
+      "sha256": "b40929e3a720a8bb58833b84e63f893d3a1cd5e9709a25d4669c657a7fbb2b41"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/stdv",
+        "parameters/stimTime"
+      ],
+      "sha256": "e77d4058063c2b8bc7bb9e85d9e421cc54555fe81e261ca1c043f7086f8f571a"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/stimulusGenerator",
+        "parameters/stimulusGeneratorVersion"
+      ],
+      "sha256": "3ce8f3a96f844721451cadaad18290ffa10a1f98fb32941dbf9f5bc6c2b2e734"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/stimulusSampleRate",
+        "parameters/tailTime"
+      ],
+      "sha256": "f97e14d443a067c38e6a1656472acde745513ba4a39a40e5dfedb990156bdfa3"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/target",
+        "parameters/targetMean"
+      ],
+      "sha256": "4416970871f77efbba9b503ac770df385b262597054bb6822348c5974c6e7e2e"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/targetSD",
+        "parameters/targetSeed"
+      ],
+      "sha256": "8a9927ea2bf40aba78964879ddf2058c1f777eee2e13577537ee30951ad206a1"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/temporalFrequency",
+        "parameters/totalDurationMs"
+      ],
+      "sha256": "4a0f5a103aba875a3230ae0faa4e63b6f544279b839ddf2d5441c76ca9efdf2f"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/trialNumber",
+        "parameters/trueCanvasSize"
+      ],
+      "sha256": "6ef834b690864a32a004ff4c82c241d23aa1f7b85a5859d7ae1adc96a7f641d5"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "parameters/useRandomSeed",
+        "properties/bathTemperature"
+      ],
+      "sha256": "e8de5d6321c2a9cba304b57d4fa6754bf3b84749d9b8ea905d4cc5a968a57127"
+    },
+    {
+      "scope": {
+        "cell": "56b5fdb8-2a66-5e28-8df5-e0e707266483"
+      },
+      "fields": [
+        "properties/frameTimesMs",
+        "protocol"
+      ],
+      "sha256": "a40f41a19183e6d77dde4835477c84631465d432bfcff25d2979ff2338d4bdc3"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "block",
+        "block time"
+      ],
+      "sha256": "c90c07f81bc0481bcfa9def54324b296e7b640271f59a98cc8945596c5e032a8"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "cell",
+        "cell type"
+      ],
+      "sha256": "84a736831cbe857bbbc68d43e1ea8e27c1b6e1c3f4eab4c597fbb01ccd62633a"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "date",
+        "epoch"
+      ],
+      "sha256": "54e5f140fa34fca1599564f566f25130f880c4c3777c0bb0d4eee054e75f7491"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "group",
+        "group label"
+      ],
+      "sha256": "8e386d159b80fc182343e6b6bc760b98fda5ae5785e50f9d135d5b86cb59845e"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/end_time",
+        "metadata/block/parameters/amp"
+      ],
+      "sha256": "d488469baec35a3bf5e17c58a73bc7a035b927533d2720e0d76ad98dc04e8511"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/backgroundIntensity",
+        "metadata/block/parameters/contrast"
+      ],
+      "sha256": "a2aa84f8d46909654cf720f7c0ac31eca97a7e7ad49897f2b87477867f7d595c"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/controlMode",
+        "metadata/block/parameters/currentMean"
+      ],
+      "sha256": "dded5361796ddcd3c63df2c2e215986ccc4cc62889e52ba3720bfa7e88f1704b"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/currentSD",
+        "metadata/block/parameters/frequencyCutoff"
+      ],
+      "sha256": "28de161788c88d47a5e0c203ea0de10f3a0dbeae7421dbd91659de4bc1feeeae"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/history1",
+        "metadata/block/parameters/history2"
+      ],
+      "sha256": "c2da642bb3bd80b0ae66e6811864278a52e7e534b49564ef9235caf2e7df0289"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/interpulseInterval",
+        "metadata/block/parameters/maskDiameter"
+      ],
+      "sha256": "1f8c307beff858b68d68797f305a38e5e15d77b275aef50965bec43451d16147"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/numberOfAverages",
+        "metadata/block/parameters/numberOfFilters"
+      ],
+      "sha256": "acf8c84084a709866473a202c1b836ac20769c9a44a8738990941c894a5d6994"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/numberOfTrials",
+        "metadata/block/parameters/onlineAnalysis"
+      ],
+      "sha256": "b2668301b9d4fd7e3e84ccf937455e07e135a45e7505078bbe1ad83176874228"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/preTime",
+        "metadata/block/parameters/randomizeOrder"
+      ],
+      "sha256": "e23cf8e7727a2e75db139d54c8d98464c85488319537b60c9fc17454637064e6"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/repeatsPerTrial",
+        "metadata/block/parameters/rotation"
+      ],
+      "sha256": "12f239ff2846083fbb8e8710704a92aac73fcc1ef910ecd1dd69d27d79a300b2"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/sampleRate",
+        "metadata/block/parameters/segmentTime"
+      ],
+      "sha256": "e7a41e32072ad60c61ec68a2c803978e0287b76725e7403feb14033bf1099e76"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/shuffleSequence",
+        "metadata/block/parameters/splitField"
+      ],
+      "sha256": "4dd8eb2e41f3553d08a29d188e9ac212bd68ae665fd5c51a947a0333efe568b2"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/spotDiameter",
+        "metadata/block/parameters/spotIntensity"
+      ],
+      "sha256": "bf8dbc749f7031381cce163d1489781b79698e3e4f097c98323756241313124e"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/spotSizes",
+        "metadata/block/parameters/stimTime"
+      ],
+      "sha256": "a58daef6974b6c5fa038ddc43b5f0ebf2481168dea097b22545c515dbdf2011c"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/tailTime",
+        "metadata/block/parameters/target"
+      ],
+      "sha256": "526e1a789e021c1ffd2fe5eab24af0b338d66df45302e41cabdba64a23a7814f"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/parameters/temporalFrequency",
+        "metadata/block/parameters/useRandomSeed"
+      ],
+      "sha256": "47116c3119e84dddbc3eb3a19b536105b2ec4c638d80f9ea92780b19cdb33783"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/properties/frameTimesMs",
+        "metadata/block/protocolID"
+      ],
+      "sha256": "cf8b1608d72c6bdefcdfe81e2fd86c7aff001f7cc907701b79f25a0648ee60ed"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/block/start_time",
+        "metadata/cell/label"
+      ],
+      "sha256": "60244640892530afac0de578b41fbfc1770a050b46437c45748da84d056a3635"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/cell/notes",
+        "metadata/cell/properties/type"
+      ],
+      "sha256": "bbce17babc048dd873adc36276b95239b4adbabd83e1f79c2e18739253d88e32"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/cell/start_time",
+        "metadata/epoch/end_time"
+      ],
+      "sha256": "7d03708f604aff5d89131eeb14e529b28af23cddbb97ad23fcfcd14a0e1e78dc"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/epoch/label",
+        "metadata/epoch/protocolID"
+      ],
+      "sha256": "1c5e2dcca1e9786f46f71ec78e064bfe1a5e1033f1ddcd1e875e2137b40c9f9e"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/epoch/start_time",
+        "metadata/experiment/attributes/purpose"
+      ],
+      "sha256": "700c570698057b5c417e5cbec262520dd1f443bbe5d8ce0b823ceab43789d5c4"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/experiment/label",
+        "metadata/experiment/notes"
+      ],
+      "sha256": "46d0e3c7a60ad0cc6da613e3f1fdcaee2ec44427f30c1438660ef179c2a0fe2b"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/experiment/properties/experimenter",
+        "metadata/experiment/properties/institution"
+      ],
+      "sha256": "9845e1fa459693d2c7f49a86ad4453ff25003db94d58b79833c46efccd688759"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/experiment/properties/lab",
+        "metadata/experiment/properties/project"
+      ],
+      "sha256": "524c4345603937fda38351dbadddeea3cd47ec58040e8b8757613eedd340a75f"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/experiment/properties/rig",
+        "metadata/experiment/start_time"
+      ],
+      "sha256": "9c73ddbd2265cfaa7d4857b47f9070f7619c03ed5a9b4587ac550c68a4e15f1f"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/group/end_time",
+        "metadata/group/label"
+      ],
+      "sha256": "d7ff8246c921c2a50b46473b1337a0641af771c22f674baa3e1947ee7a187fcd"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/group/notes",
+        "metadata/group/properties/externalSolutionAdditions"
+      ],
+      "sha256": "5423dd63aacc90521cc40ec3b9301ecd198eb91c409686b018f2f5b359cd80eb"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/group/properties/internalSolutionAdditions",
+        "metadata/group/properties/pipetteSolution"
+      ],
+      "sha256": "dcf2ecb8359da3339feace091aa357f131d6097be8712f89050f469971c88238"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/group/properties/recordingTechnique",
+        "metadata/group/properties/seriesResistanceCompensation"
+      ],
+      "sha256": "09369bce8c5500a06bb13a912c0ea1f02e52cb87c202e80ccacbb339c31e3711"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "metadata/group/start_time",
+        "parameters/NDF"
+      ],
+      "sha256": "fb403bca64361652f7cac0a9a5853098dc94e0b94210db46e9ebdc6703a08f6c"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/amp",
+        "parameters/backgroundIntensity"
+      ],
+      "sha256": "3d122627ec7b1d0d8be1ba0a67489180fee73ff619f04ba45e2d8ef3ef4beeaa"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/blockRepeatCount",
+        "parameters/canvasSize"
+      ],
+      "sha256": "40ad71edd7f8a2c6b628c2f4b78a58442cff682f007de0458f5041ac3598fb6f"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/centerOffset",
+        "parameters/contrast"
+      ],
+      "sha256": "6c18dbd62243d4714016c8ab30419b3651eed4c7ba2692a495e98698ffca6ea0"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/controlMode",
+        "parameters/currentMean"
+      ],
+      "sha256": "7dc2ef4737dee43c6febe8c1955281915cf58c43d565502b7b8970acae42d4b5"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/currentSD",
+        "parameters/currentSpotSize"
+      ],
+      "sha256": "6ccb2be2597f490a8ba0d5800f2dd4dd7c06079eb6629232f1f1c67d1b4ff80a"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/firstHistoryID",
+        "parameters/frequencyCutoff"
+      ],
+      "sha256": "a701e2ecf9e772bbb0071f7c4c029de07aec4ae74c018112cbb4b76acf9f6f8b"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/gain",
+        "parameters/history1"
+      ],
+      "sha256": "37eaf0404051a5d0e31364b1e4c57f8a695b46dd2fe3d365e6a7f0b01adc8a01"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/history1Mean",
+        "parameters/history1SD"
+      ],
+      "sha256": "6de43f94a443cca323e3848330604e6595684c73544fa5ab4395a0a5d668c350"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/history1Seed",
+        "parameters/history2"
+      ],
+      "sha256": "bdc05274b135601ca347964d9f07372b10025cfcf4754f58fafc70c30d3f4ebe"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/history2Mean",
+        "parameters/history2SD"
+      ],
+      "sha256": "401f8ea480936501970091078fe64ef4a93d932613121f28e922e726b341f40a"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/history2Seed",
+        "parameters/historyNoiseVersion"
+      ],
+      "sha256": "bdb78d000be92980b62777d4ced6997d1ce38f491b7588421e78fb16619a5604"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/interpulseInterval",
+        "parameters/isControl"
+      ],
+      "sha256": "cc95e93d7564186648185868601df9c570b87cbb837280cbdaa6b67e6d00071d"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/lightPath",
+        "parameters/maskDiameter"
+      ],
+      "sha256": "c42ef3efe08fd159d88f797b6350e464270ffdb41615451d825806ccb257ff33"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/microdisplayBrightness",
+        "parameters/microdisplayBrightnessValue"
+      ],
+      "sha256": "b452bce4a15abdfabcdd07bef8f68d4c65172af2def82753ca04f43766f0f7c5"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/micronsPerPixel",
+        "parameters/monitorRefreshRate"
+      ],
+      "sha256": "031eef6ddd1609734f68c212ae59c12c1a26b02705564d81807b5f9dafd963a3"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/ndfs",
+        "parameters/numberOfAverages"
+      ],
+      "sha256": "35175c20c55846dfcb34b0d398d0f55de6663fddac0808d530991ad7154a5ca1"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/numberOfFilters",
+        "parameters/numberOfTrials"
+      ],
+      "sha256": "3fbc7cf002c4029760ee87d59cce4d657b71c7a31b542fc6c95eb12ca2c05188"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/numberOfTrialsInRun",
+        "parameters/onlineAnalysis"
+      ],
+      "sha256": "48a58fb7a0bb33e06871656e36874f0656820add144d5365fea0949564a35369"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/preTime",
+        "parameters/prerender"
+      ],
+      "sha256": "77d6a7dbadb824821fecde61acd016bc1f1ef2ee123f7fc30156cec359b3954e"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/randomizeOrder",
+        "parameters/repeatsPerTrial"
+      ],
+      "sha256": "fdf64c4e4109040805f73deecac6ea05ae02b4f98a399b20d028b069591787ee"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/rotation",
+        "parameters/sampleRate"
+      ],
+      "sha256": "541435f58e2ca45a27223df32f04d930235fdc7ee7f620af87c79156c26094ac"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/samplesPerBlock",
+        "parameters/samplesPerSegment"
+      ],
+      "sha256": "0eee5461ff062e66e5ae07bbbd3ae64a802cb28d6445c1eadbf44cc98d46b0f3"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/seed",
+        "parameters/segmentTime"
+      ],
+      "sha256": "afe9ecbe1d74e5b6f0785644bf6a26532dd4e8c0ab7a0c6ed1f0396719b7a4b0"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/sequenceShuffleSeed",
+        "parameters/shuffleSequence"
+      ],
+      "sha256": "5d77895c33928c29fb1d3fb548ee17fb9356c9db8c13cdc0632a73bc07a535cf"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/splitField",
+        "parameters/spotDiameter"
+      ],
+      "sha256": "3acc331293dc1f829c822ab9a70313393eade7b1da40829bceb3175eb14fdd07"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/spotIntensity",
+        "parameters/spotSizes"
+      ],
+      "sha256": "d026d0543e1d731b797aa87a9cae294404d1739000fd74f415cbc85d1b66794c"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/stdv",
+        "parameters/stimTime"
+      ],
+      "sha256": "8f4c7f961683e2f3f69c3d67d2b67f8a10cb253c6640121013927bb4ef328078"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/stimulusGenerator",
+        "parameters/stimulusGeneratorVersion"
+      ],
+      "sha256": "3cd47ac0183cb27c36bb43e453ffc719f1277924dc8c733b338fa57fe290483a"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/stimulusSampleRate",
+        "parameters/tailTime"
+      ],
+      "sha256": "3b3158636f702c2106f83317426358721231751c65dbaf3279a9b45e9bb70c7a"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/target",
+        "parameters/targetMean"
+      ],
+      "sha256": "7603fd530e91764f999eae180ce0f29730784b2878e8aa6383f6ab604001c213"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/targetSD",
+        "parameters/targetSeed"
+      ],
+      "sha256": "17606e5aa8a7523e78452bed38a55db0f918f373ba96bcd268a70093320ac3f1"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/temporalFrequency",
+        "parameters/totalDurationMs"
+      ],
+      "sha256": "f3e1cbd5821f853a454a4853f68dd49ce558136097bfbb952e91f8db20723c64"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/trialNumber",
+        "parameters/trueCanvasSize"
+      ],
+      "sha256": "b0910c546f43c10c8facc63f86ae0851df95218619938b2566fc75ea9df36dfe"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "parameters/useRandomSeed",
+        "properties/bathTemperature"
+      ],
+      "sha256": "4cc865b688a0ccd5f04881bbb4c65f06ed7e79825aa9aad1991fc68b11ed2a2b"
+    },
+    {
+      "scope": {
+        "block": "30f33f6f-0746-5b33-ad02-ebb5cda3469c"
+      },
+      "fields": [
+        "properties/frameTimesMs",
+        "protocol"
+      ],
+      "sha256": "8a9033f72c8ebf393c53200d5d67fbc0a106730c6f5e83948884c3de8a3e3d73"
+    }
+  ],
+  "seconds": 4.573509040987119
+}

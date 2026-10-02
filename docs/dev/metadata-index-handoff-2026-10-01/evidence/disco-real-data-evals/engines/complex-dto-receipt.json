@@ -1,0 +1,116 @@
+{
+  "data_kind": "actual real metadata, no synthetic values",
+  "tests": [
+    {
+      "label": "widest_recorded_array",
+      "field": "metadata/block/properties/frameTimesMs",
+      "matching_epochs": 7,
+      "membership_sha256": "2970b87aa2bfa0d96272716eb68cae00e7d5acff6411174dc4fc52b64521ebf1",
+      "sample_epochs": 7,
+      "value_type": "list",
+      "value_json_bytes": 971,
+      "array_length": 1,
+      "typed_values_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            0.8462920086458325,
+            0.6078330334275961,
+            0.5482910200953484,
+            0.5258329911157489,
+            0.5058340029790998
+          ],
+          "median_ms": 0.5482910200953484,
+          "output_sha256": "a4caa0ec0f14451b7bbb25111c8fa360b315e55b695e5f0cd7ad42e137a7d493",
+          "output_bytes": 7379
+        },
+        "duckdb": {
+          "milliseconds": [
+            10.265791963320225,
+            4.626250010915101,
+            3.887334023602307,
+            3.507499990519136,
+            3.5993329947814345
+          ],
+          "median_ms": 3.887334023602307,
+          "output_sha256": "a4caa0ec0f14451b7bbb25111c8fa360b315e55b695e5f0cd7ad42e137a7d493",
+          "output_bytes": 7379
+        }
+      },
+      "representative_detail_decode_json": {
+        "sqlite": {
+          "milliseconds": [
+            0.517916982062161,
+            0.4569579614326358,
+            0.44133298797532916,
+            0.44062500819563866,
+            0.5320420023053885
+          ],
+          "median_ms": 0.4569579614326358,
+          "output_sha256": "9ca01dd1a1de59aed59f0e6668686f9c9dfa19a6c103e77a78fe295e6b55e28a",
+          "output_bytes": 11305
+        },
+        "duckdb": {
+          "milliseconds": [
+            2.4253749870695174,
+            1.1002499959431589,
+            1.0558339999988675,
+            1.0794999543577433,
+            1.0837919544428587
+          ],
+          "median_ms": 1.0837919544428587,
+          "output_sha256": "9ca01dd1a1de59aed59f0e6668686f9c9dfa19a6c103e77a78fe295e6b55e28a",
+          "output_bytes": 11305
+        }
+      }
+    },
+    {
+      "label": "raw_detail_integers_above_js_safe_precision",
+      "paths": [
+        "/attributes/endTimeDotNetDateTimeOffsetTicks",
+        "/attributes/startTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/attributes/endTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/attributes/startTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/backgrounds/epochBlock/endTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/backgrounds/epochBlock/startTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/responses/Amp1/inputTimeDotNetDateTimeOffsetTicks",
+        "/metadata/epoch/responses/Frame Monitor/inputTimeDotNetDateTimeOffsetTicks",
+        "/metadata/block/attributes/endTimeDotNetDateTimeOffsetTicks",
+        "/metadata/block/attributes/startTimeDotNetDateTimeOffsetTicks",
+        "/metadata/cell/attributes/creationTimeDotNetDateTimeOffsetTicks",
+        "/metadata/group/attributes/endTimeDotNetDateTimeOffsetTicks",
+        "/metadata/group/attributes/startTimeDotNetDateTimeOffsetTicks"
+      ],
+      "indexed_value_support": false,
+      "note": "Observed raw detail ticks are excluded from native query fields; preserved in exact metadata DTO.",
+      "detail_sql_decode_json": {
+        "sqlite": {
+          "milliseconds": [
+            0.6762500270269811,
+            0.6463330355472863,
+            0.6517079891636968,
+            0.6287919823080301,
+            0.6219589849933982
+          ],
+          "median_ms": 0.6463330355472863,
+          "output_sha256": "49636322f6aad1e19e4f84b6f1f5989be068dd334650dcbdd04add7f33da5db3",
+          "output_bytes": 13254
+        },
+        "duckdb": {
+          "milliseconds": [
+            2.1404160070233047,
+            1.3120839721523225,
+            1.5714169712737203,
+            1.3593329931609333,
+            1.3164160191081464
+          ],
+          "median_ms": 1.3593329931609333,
+          "output_sha256": "49636322f6aad1e19e4f84b6f1f5989be068dd334650dcbdd04add7f33da5db3",
+          "output_bytes": 13254
+        }
+      }
+    }
+  ],
+  "all_oracles_passed": true,
+  "indexed_wide_integer_candidates": 0,
+  "peak_rss_bytes": 124944384
+}

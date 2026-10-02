@@ -1,0 +1,83 @@
+{
+  "all_passed": true,
+  "source_base_unchanged": true,
+  "mounted_active_metadata_matches_snapshot": true,
+  "checked_sha256": {
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_disk_index.py": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_predicates.py": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+    "/PATH/TO/LOCAL_HOME/Documents/GitHub/epicTreeGUI/python/workspace_metadata_objects.py": "8cb62575cf0fc6198a7e2d4d51e20d7ff14ad6172200bc917d13b3b2b9a372cd",
+    "/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/private/tmp/disco-real-million-20261001/base.sqlite": "7e03e05e97885505f227e1b0938b34f303229db90ddcdd1f7e40f40d6b55e2b6",
+    "/private/tmp/disco-real-million-20261001/typed/sidecar.sqlite": "27b7818d13501234f0e66cd96b162f102bfa38230e05815372e27f90ee72b489",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e"
+  },
+  "final_code_sha256": {
+    "/private/tmp/disco-real-million-20261001/typed/typed_bounded.py": "36cc3f5bf74385c8bc3cf8af8431275eca17f791964213283c18fcc32b5813f2",
+    "/private/tmp/disco-real-million-20261001/typed/build_sidecar.py": "967088440d38e687362c23fa2a2541df27e846c68c2429a9bdfee467600a9725",
+    "/private/tmp/disco-real-million-20261001/typed/typed_sidecar.py": "c69ea13dc742674808050fc958d3bec62f3f7608cb64bc5bd5b8908177d84039",
+    "/private/tmp/disco-real-million-20261001/typed/smoke_sidecar.py": "2887c35cabac49b2d4f02e089612f22dde5d74851d6e6aa64e94213c0d0ac4bd",
+    "/private/tmp/disco-real-million-20261001/typed/typed_bounded_v2.py": "5c06de69d5d6ba1f07951e335bc392af39fb0005ca7ae6537bb5d2d950844763",
+    "/private/tmp/disco-real-million-20261001/typed/typed_real_previous.py": "75658088b3bce59653c6d0ae3a0ae37c33301332c96e73aa5d65a84e204d5a67",
+    "/private/tmp/disco-real-million-20261001/evals/extra_actions.py": "d4b0f64a6dabe1d9219ec38cae9293788b953de4bf7a0ed0fddf6bab87c7ca50",
+    "/private/tmp/disco-real-million-20261001/evals/compare_million.py": "aa05dcd34c8219b690aa3370c01c1a078f1e91e431c089d02de10acc11587981",
+    "/private/tmp/disco-real-million-20261001/evals/batched_catalog.py": "ccc3d6a804e6b74fe85129b04700bd4212668e90a16565ae1ade01d208549ff6",
+    "/private/tmp/disco-real-million-20261001/evals/export_results.py": "52b40fb28a38f184ca4c51d6581f6ff8a2c888f49fa3949510fcd31bdac5b223",
+    "/private/tmp/disco-real-million-20261001/evals/membership_oracle.py": "38b1669aa21640958f5e247b466375ef6ef3ef876e36f166cb7e669c3cc8ca27",
+    "/private/tmp/disco-real-million-20261001/evals/preserve.py": "27d83c309eb5ad40d439a4b5d1cb0f53fd3dc88360a518af2f5fddaf366e4126",
+    "/private/tmp/disco-real-million-20261001/evals/final_fixture.py": "ea12e90c5e310d39eecbc2dc32ce59bd3d7c943781d575b6b620c96e2aacf5cb"
+  },
+  "mounted_manifests_after": {
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/.current-generations.json": {
+      "sha256": "7d85210e7efc1e1aae788b1ce201e5b5957746d46c969208f0fc70cba26cea92",
+      "contents": {
+        "keep": [
+          "1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite"
+        ],
+        "kind": "metadata",
+        "owner": "f75a7799-a728-5220-8f20-bfa4e7dffcb1",
+        "version": 1
+      }
+    },
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/.current-generations.json": {
+      "sha256": "453409e5eacaf1a67e2e36ad91a90ab10c8389359e9ee66de427e6bfc7101a9a",
+      "contents": {
+        "keep": [
+          "22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.zlib",
+          "a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.zlib",
+          "d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.zlib"
+        ],
+        "kind": "projections",
+        "owner": null,
+        "version": 1
+      }
+    }
+  },
+  "mounted_protected_before": {
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/.current-generations.json": "453409e5eacaf1a67e2e36ad91a90ab10c8389359e9ee66de427e6bfc7101a9a",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.zlib": "b8674ac27581d49efe4b760f7534f99a07e0be550f121d3c22b9431343e6e1a5",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.sha256": "fbda0907cf92c2cb8a572501cccc64616576a964d0cf961acd63f72bd0e1f5f7",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.zlib": "97030296518c822c6fae215acfcb6f485da804f92d268c5a5882c54bec83abbe",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.sha256": "2f2cffe9ee3640fd27e9894391b641901a2aaae56e236769c5d6578e9eb19c25",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.zlib": "89bba97f490b26d405950cf010c710ea8c0cfa28b9fd424fe66ec11140d1c2db",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.sha256": "e524205a4506dfa2a8b5fa82eadbad7630c72c14f2b98e0e359ad0ede55449ac",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/.current-generations.json": "7d85210e7efc1e1aae788b1ce201e5b5957746d46c969208f0fc70cba26cea92",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite.sha256.json": "e80722e84ace4eed515097802ff122a2b0852c574583a0d7e788f812ad5471ea"
+  },
+  "mounted_protected_after": {
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/.current-generations.json": "453409e5eacaf1a67e2e36ad91a90ab10c8389359e9ee66de427e6bfc7101a9a",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.zlib": "b8674ac27581d49efe4b760f7534f99a07e0be550f121d3c22b9431343e6e1a5",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.sha256": "fbda0907cf92c2cb8a572501cccc64616576a964d0cf961acd63f72bd0e1f5f7",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.zlib": "97030296518c822c6fae215acfcb6f485da804f92d268c5a5882c54bec83abbe",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.sha256": "2f2cffe9ee3640fd27e9894391b641901a2aaae56e236769c5d6578e9eb19c25",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.zlib": "89bba97f490b26d405950cf010c710ea8c0cfa28b9fd424fe66ec11140d1c2db",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/source-projections/d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.sha256": "e524205a4506dfa2a8b5fa82eadbad7630c72c14f2b98e0e359ad0ede55449ac",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/.current-generations.json": "7d85210e7efc1e1aae788b1ce201e5b5957746d46c969208f0fc70cba26cea92",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "/PATH/TO/LOCAL_HOME/Documents/RecordingWorkspace/LOCAL_NATIVE_PROJECT/cache/metadata/1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite.sha256.json": "e80722e84ace4eed515097802ff122a2b0852c574583a0d7e788f812ad5471ea"
+  },
+  "mounted_protection_origin": "Previous same-project real-data qualification snapshot; unchanged throughout this replay experiment",
+  "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+  "sqlite": "3.50.4",
+  "policy": "Expected current query-source hashes from initial snapshot; real/base file seals verified after all experiments. Mounted source/index files read only; no scientific database exported or canonical annotations written. Final code includes retained v2/v3 and prior batched catalog."
+}

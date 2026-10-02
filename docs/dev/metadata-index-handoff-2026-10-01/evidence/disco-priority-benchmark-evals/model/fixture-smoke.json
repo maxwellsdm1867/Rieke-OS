@@ -1,0 +1,314 @@
+{
+  "all_passed": true,
+  "cases": [
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "eq",
+        "value": 1.0
+      },
+      "count": 1398
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "missing"
+      },
+      "count": 3864
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "exists"
+      },
+      "count": 1698
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "is_null"
+      },
+      "count": 0
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "gte",
+        "value": 1.0
+      },
+      "count": 1398
+    },
+    {
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "eq",
+        "value": 40.0
+      },
+      "count": 300
+    },
+    {
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "missing"
+      },
+      "count": 1848
+    },
+    {
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "exists"
+      },
+      "count": 3714
+    },
+    {
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "is_null"
+      },
+      "count": 0
+    },
+    {
+      "predicate": {
+        "field": "parameters/currentSpotSize",
+        "operator": "gte",
+        "value": 40.0
+      },
+      "count": 3714
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "eq",
+        "value": [
+          40.0,
+          80.0,
+          120.0,
+          160.0,
+          180.0,
+          200.0,
+          220.0,
+          240.0,
+          280.0,
+          320.0,
+          460.0,
+          600.0,
+          720.0
+        ]
+      },
+      "count": 3714
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "missing"
+      },
+      "count": 1848
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "exists"
+      },
+      "count": 3714
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "is_null"
+      },
+      "count": 0
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotSizes",
+        "operator": "contains",
+        "value": 40.0
+      },
+      "count": 3714
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "eq",
+        "value": 0.8
+      },
+      "count": 3640
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "missing"
+      },
+      "count": 1802
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "exists"
+      },
+      "count": 3760
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "is_null"
+      },
+      "count": 0
+    },
+    {
+      "predicate": {
+        "field": "metadata/block/parameters/spotIntensity",
+        "operator": "gte",
+        "value": 0.8
+      },
+      "count": 3640
+    },
+    {
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "eq",
+        "value": null
+      },
+      "count": 1698
+    },
+    {
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "missing"
+      },
+      "count": 3864
+    },
+    {
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "exists"
+      },
+      "count": 1698
+    },
+    {
+      "predicate": {
+        "field": "properties/frameTimesMs",
+        "operator": "is_null"
+      },
+      "count": 1698
+    },
+    {
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "eq",
+        "value": "current injt differenrt history "
+      },
+      "count": 1380
+    },
+    {
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "missing"
+      },
+      "count": 0
+    },
+    {
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "exists"
+      },
+      "count": 5562
+    },
+    {
+      "predicate": {
+        "field": "metadata/experiment/attributes/purpose",
+        "operator": "is_null"
+      },
+      "count": 4182
+    },
+    {
+      "predicate": {
+        "field": "parameters/useRandomSeed",
+        "operator": "eq",
+        "value": 1.0
+      },
+      "count": 1398
+    },
+    {
+      "predicate": {
+        "field": "epoch",
+        "operator": "eq",
+        "value": "15988133-a845-5452-b91f-0bd15756e9e4"
+      },
+      "count": 1
+    },
+    {
+      "predicate": {
+        "all": [
+          {
+            "field": "parameters/useRandomSeed",
+            "operator": "eq",
+            "value": 1.0
+          },
+          {
+            "field": "parameters/useRandomSeed",
+            "operator": "gte",
+            "value": 1.0
+          }
+        ]
+      },
+      "count": 1398
+    },
+    {
+      "predicate": {
+        "any": [
+          {
+            "field": "parameters/useRandomSeed",
+            "operator": "eq",
+            "value": 1.0
+          },
+          {
+            "field": "parameters/useRandomSeed",
+            "operator": "gte",
+            "value": 1.0
+          }
+        ]
+      },
+      "count": 1398
+    },
+    {
+      "predicate": {
+        "not": {
+          "field": "parameters/useRandomSeed",
+          "operator": "eq",
+          "value": 1.0
+        }
+      },
+      "count": 4164
+    }
+  ],
+  "cold_materializations": [
+    {
+      "field": "parameters/useRandomSeed",
+      "rows": 3,
+      "seconds": 0.0004112079623155296
+    },
+    {
+      "field": "metadata/block/parameters/spotSizes",
+      "rows": 1,
+      "seconds": 6.854202365502715e-05
+    },
+    {
+      "field": "metadata/block/parameters/spotIntensity",
+      "rows": 3,
+      "seconds": 3.38749960064888e-05
+    },
+    {
+      "field": "properties/frameTimesMs",
+      "rows": 1,
+      "seconds": 1.850002445280552e-05
+    },
+    {
+      "field": "metadata/experiment/attributes/purpose",
+      "rows": 2,
+      "seconds": 4.57499991171062e-05
+    }
+  ],
+  "uuid_lookup_materializations": [],
+  "rows": 5562
+}

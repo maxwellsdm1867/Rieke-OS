@@ -1,0 +1,542 @@
+{
+  "data_kind": "actual real mounted source-projection metadata; no synthetic rows",
+  "epochs": 2781,
+  "cells": 13,
+  "sources": 3,
+  "input_evidence": {
+    "manifest_sha256": "453409e5eacaf1a67e2e36ad91a90ab10c8389359e9ee66de427e6bfc7101a9a",
+    "manifest": [
+      "22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.zlib",
+      "a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.zlib",
+      "d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.zlib"
+    ],
+    "sources": [
+      {
+        "projection": "22e27b7de0b2ec237d4326d7d097092623013dfb39e4ad2dc42e92ebe522f94f.json.zlib",
+        "sha256": "b8674ac27581d49efe4b760f7534f99a07e0be550f121d3c22b9431343e6e1a5",
+        "epochs": 690,
+        "metadata_objects": 49
+      },
+      {
+        "projection": "a6ea7bd9cf479568139eb4dbf3cc47d8aefd3c40ae972faea42269cd069889c0.json.zlib",
+        "sha256": "97030296518c822c6fae215acfcb6f485da804f92d268c5a5882c54bec83abbe",
+        "epochs": 1086,
+        "metadata_objects": 74
+      },
+      {
+        "projection": "d2ac52417d9b4f2a6246f2a8cbbf09031a3cc375bc15517115652007bd7c975b.json.zlib",
+        "sha256": "89bba97f490b26d405950cf010c710ea8c0cfa28b9fd424fe66ec11140d1c2db",
+        "epochs": 1005,
+        "metadata_objects": 79
+      }
+    ]
+  },
+  "python": "3.11.13 (main, Oct  7 2025, 16:08:14) [Clang 20.1.4 ]",
+  "sqlite": "3.50.4",
+  "duckdb": "1.5.6",
+  "caps": {
+    "process_seconds": 120,
+    "process_peak_rss_bytes": 536870912,
+    "duckdb_threads": 2,
+    "duckdb_query_memory": "192MB"
+  },
+  "limitations": [
+    "2781 real epochs do not qualify one million real epochs",
+    "Catalog algorithm and bounded SQL controls, not the full native preview endpoint",
+    "DuckDB constructed by copying production EAV SQLite, so import timings are not symmetric initial-ingest comparisons",
+    "Five warm repeats; page cache and runtime initialized; no cold app startup or waveform I/O",
+    "DuckDB preserves the installed production EAV representation; optimized typed schema is not this comparison"
+  ],
+  "source_sqlite": {
+    "active_name": "1acbf50ca7fa6ed75946b16eac5db41f06f1d5b4d7030c3f215c033da34a6b2d.sqlite",
+    "sha256": "0427f38b01fad730941c3161d67a4fd6ae75988344527648cc066771b983147e",
+    "manifest_sha256": "7d85210e7efc1e1aae788b1ce201e5b5957746d46c969208f0fc70cba26cea92",
+    "native_code_sha256": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2"
+  },
+  "sqlite_clone_open": {
+    "seconds": 0.07542708300752565,
+    "bytes": 20787200,
+    "initial_ingest_not_measured": true
+  },
+  "duck_copy": {
+    "tables": {
+      "meta": {
+        "rows": 6,
+        "seconds": 0.019700291974004358
+      },
+      "epochs": {
+        "rows": 2781,
+        "seconds": 0.05345966701861471
+      },
+      "fields": {
+        "rows": 140,
+        "seconds": 0.00410249998094514
+      },
+      "field_values": {
+        "rows": 10756,
+        "seconds": 0.014527708990499377
+      },
+      "epoch_values": {
+        "rows": 214451,
+        "seconds": 0.31725554197328165
+      },
+      "sources": {
+        "rows": 3,
+        "seconds": 0.0011177920387126505
+      }
+    },
+    "seconds": 0.4247344160103239,
+    "bytes": 12070912,
+    "bytes_with_metadata_objects": 12333056
+  },
+  "duck_metadata_objects": 202,
+  "native_epoch_membership_sha256": "13c889a70a45f3e8d2c3ed1c7422590b51034688df3cbf4ae84f6552ba427801",
+  "table_copy_oracles": {
+    "meta": {
+      "rows": 6,
+      "output_sha256": "652aac57a5cb15d0a684537d72fa671ded3b1e7946540db36bcece8c91cc83f2"
+    },
+    "epochs": {
+      "rows": 2781,
+      "output_sha256": "3d8b0cdfd8f50f4181d082523715eca6b1ca2281b471c3250f0d967730d75152"
+    },
+    "fields": {
+      "rows": 140,
+      "output_sha256": "a8549ff2ced274bd7d2bffe029500567f50d64387b4016368f4bdea1380786d2"
+    },
+    "field_values": {
+      "rows": 10756,
+      "output_sha256": "ed77d1d20d2e0a8feaa4ac612d7409e535110415098855471b91d236215890d2"
+    },
+    "epoch_values": {
+      "rows": 214451,
+      "output_sha256": "e4241f334e4579e0e4579fd1bd5f653c0d541df9eb82c5e37c162820f8e6c99b"
+    },
+    "sources": {
+      "rows": 3,
+      "output_sha256": "61a787bf27907d79d0bd26ed9a44425aa758648af3182cf11c9acdae2e7a6142"
+    },
+    "metadata_objects": {
+      "rows": 202,
+      "output_sha256": "aee35179aab89629de4707e2d8657c84276bbaea07b7a9ddae4dd647735a97a7"
+    }
+  },
+  "scopes": [
+    {
+      "label": "global",
+      "field": null,
+      "selection": "all",
+      "epochs": 2781,
+      "membership_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            668.1815420161001,
+            662.9391250316985,
+            653.8321659900248,
+            659.4235409866087,
+            674.4460830232129
+          ],
+          "median_ms": 662.9391250316985,
+          "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+          "output_bytes": 64610
+        },
+        "duckdb": {
+          "milliseconds": [
+            646.2037080200389,
+            628.336958005093,
+            583.9271669974551,
+            637.4239580472931,
+            597.2881670459174
+          ],
+          "median_ms": 628.336958005093,
+          "output_sha256": "86fb38bbdaafa5114f747f371afc45b6f07dc5a40b690c6edd15564584d43473",
+          "output_bytes": 64610
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            2.8973749722354114,
+            2.521249989513308,
+            2.5659999810159206,
+            2.394000010099262,
+            2.41049996111542
+          ],
+          "median_ms": 2.521249989513308,
+          "output_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+          "output_bytes": 108460
+        },
+        "duckdb": {
+          "milliseconds": [
+            1.4835839974693954,
+            1.1437920038588345,
+            1.1175829567946494,
+            1.1454159975983202,
+            1.20358302956447
+          ],
+          "median_ms": 1.1454159975983202,
+          "output_sha256": "6a5308c7b4f0f704338aca2929f0e1fd586dbd8f0265ad7bffc8245036257dc1",
+          "output_bytes": 108460
+        }
+      }
+    },
+    {
+      "label": "largest_protocol",
+      "field": "protocol",
+      "selection": "observed equality",
+      "epochs": 1857,
+      "membership_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            467.04749995842576,
+            472.8642500122078,
+            506.82658300502226,
+            471.83024999685585,
+            458.0032920348458
+          ],
+          "median_ms": 471.83024999685585,
+          "output_sha256": "e64765d6fc245793152365c2452b711e8ba33dcd674023d6f1548590b8bd0724",
+          "output_bytes": 61349
+        },
+        "duckdb": {
+          "milliseconds": [
+            496.6545000206679,
+            488.14600001787767,
+            530.2871660096571,
+            470.88549996260554,
+            504.1434169979766
+          ],
+          "median_ms": 496.6545000206679,
+          "output_sha256": "e64765d6fc245793152365c2452b711e8ba33dcd674023d6f1548590b8bd0724",
+          "output_bytes": 61349
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            3.29054199391976,
+            2.7730409638024867,
+            2.7279999922029674,
+            2.711041015572846,
+            2.8953750152140856
+          ],
+          "median_ms": 2.7730409638024867,
+          "output_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+          "output_bytes": 72424
+        },
+        "duckdb": {
+          "milliseconds": [
+            2.082000020891428,
+            1.5986249782145023,
+            1.4566669706255198,
+            1.4727500383742154,
+            1.4864170225337148
+          ],
+          "median_ms": 1.4864170225337148,
+          "output_sha256": "97abc9be1e89ae08d0f6e1290cf8251fa70b741bc459d9c8a9d58c9204c9c01d",
+          "output_bytes": 72424
+        }
+      }
+    },
+    {
+      "label": "largest_cell",
+      "field": "cell",
+      "selection": "observed equality",
+      "epochs": 687,
+      "membership_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            232.62920801062137,
+            251.6930000274442,
+            239.88000000827014,
+            231.24470800394192,
+            238.74933301704004
+          ],
+          "median_ms": 238.74933301704004,
+          "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+          "output_bytes": 63167
+        },
+        "duckdb": {
+          "milliseconds": [
+            454.48437496088445,
+            482.9146670526825,
+            499.7999170445837,
+            496.81345804128796,
+            489.43108395906165
+          ],
+          "median_ms": 489.43108395906165,
+          "output_sha256": "902215720f0506b6f927779494be0acaf3fa14c0e2d941e639d4e9b136ef3657",
+          "output_bytes": 63167
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            3.2290410017594695,
+            2.2994589526206255,
+            2.211624989286065,
+            2.21820903243497,
+            2.3365410161204636
+          ],
+          "median_ms": 2.2994589526206255,
+          "output_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+          "output_bytes": 26794
+        },
+        "duckdb": {
+          "milliseconds": [
+            1.6943750088103116,
+            1.3717500260099769,
+            1.139041967689991,
+            1.201417006086558,
+            1.6306249890476465
+          ],
+          "median_ms": 1.3717500260099769,
+          "output_sha256": "33433f8fa35b6bd7f8a6c42d609db249074035334053ac39c0338cb4de595ec2",
+          "output_bytes": 26794
+        }
+      }
+    },
+    {
+      "label": "numeric_value",
+      "field": "parameters/spotIntensity",
+      "selection": "observed equality",
+      "epochs": 1820,
+      "membership_sha256": "c7def4348cea93495d9de5cacc99204f5722a79c51e398e22b3c240ccd699ac4",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            522.8841250063851,
+            471.76320798462257,
+            501.5760000096634,
+            475.6132909678854,
+            463.49400002509356
+          ],
+          "median_ms": 475.6132909678854,
+          "output_sha256": "d9da21706de4718bb5f3d4474713c5cea88d1c3adc45d460e985479569b24d04",
+          "output_bytes": 61295
+        },
+        "duckdb": {
+          "milliseconds": [
+            510.21095900796354,
+            578.4301669918932,
+            520.3884159564041,
+            512.8883330035023,
+            464.86933302367106
+          ],
+          "median_ms": 512.8883330035023,
+          "output_sha256": "d9da21706de4718bb5f3d4474713c5cea88d1c3adc45d460e985479569b24d04",
+          "output_bytes": 61295
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            2.2338340058922768,
+            1.789207977708429,
+            1.8894999520853162,
+            1.9359579891897738,
+            1.7834169557318091
+          ],
+          "median_ms": 1.8894999520853162,
+          "output_sha256": "c7def4348cea93495d9de5cacc99204f5722a79c51e398e22b3c240ccd699ac4",
+          "output_bytes": 70981
+        },
+        "duckdb": {
+          "milliseconds": [
+            1.8552080146037042,
+            1.5272079617716372,
+            1.392750011291355,
+            1.4762079808861017,
+            1.4067080337554216
+          ],
+          "median_ms": 1.4762079808861017,
+          "output_sha256": "c7def4348cea93495d9de5cacc99204f5722a79c51e398e22b3c240ccd699ac4",
+          "output_bytes": 70981
+        }
+      }
+    },
+    {
+      "label": "text_value",
+      "field": "metadata/cell/label",
+      "selection": "observed equality",
+      "epochs": 1249,
+      "membership_sha256": "0993328c3c28d8f2ebd3e2787e88231be8bc6ab24035852acc42753b91a23bc0",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            332.55666599143296,
+            324.53354104654863,
+            356.82874999474734,
+            334.3321660067886,
+            336.1930839600973
+          ],
+          "median_ms": 334.3321660067886,
+          "output_sha256": "c4c67ef90cb29f0a7d0596693f98d2a8f836af193a07a455ba0a948cae6e53ad",
+          "output_bytes": 63980
+        },
+        "duckdb": {
+          "milliseconds": [
+            613.5821249918081,
+            586.3645829958841,
+            580.7519170339219,
+            592.2199579654261,
+            574.9911669990979
+          ],
+          "median_ms": 586.3645829958841,
+          "output_sha256": "c4c67ef90cb29f0a7d0596693f98d2a8f836af193a07a455ba0a948cae6e53ad",
+          "output_bytes": 63980
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            3.040666982997209,
+            2.375458017922938,
+            2.368749992456287,
+            2.3700419696979225,
+            2.3667500354349613
+          ],
+          "median_ms": 2.3700419696979225,
+          "output_sha256": "0993328c3c28d8f2ebd3e2787e88231be8bc6ab24035852acc42753b91a23bc0",
+          "output_bytes": 48712
+        },
+        "duckdb": {
+          "milliseconds": [
+            2.5572089944034815,
+            1.3755830004811287,
+            1.553791982587427,
+            1.3879579491913319,
+            1.2707920395769179
+          ],
+          "median_ms": 1.3879579491913319,
+          "output_sha256": "0993328c3c28d8f2ebd3e2787e88231be8bc6ab24035852acc42753b91a23bc0",
+          "output_bytes": 48712
+        }
+      }
+    },
+    {
+      "label": "missing_field",
+      "field": "parameters/currentSpotSize",
+      "selection": "absent",
+      "epochs": 924,
+      "membership_sha256": "c19dc8be9cf2a5e9b5d9b9474a8bf89010053415abc13ae3055bf7e47d9624ea",
+      "field_count": 141,
+      "catalog_plus_json": {
+        "sqlite": {
+          "milliseconds": [
+            334.29600001545623,
+            375.11629197979346,
+            409.4179999665357,
+            353.38375001447275,
+            374.52683300944045
+          ],
+          "median_ms": 374.52683300944045,
+          "output_sha256": "190e9bbbc6d0431eb7d711b44710699dd2a34bf4ac5adaef8bef925a4a117c96",
+          "output_bytes": 64013
+        },
+        "duckdb": {
+          "milliseconds": [
+            496.4009170071222,
+            623.0293330154382,
+            557.7284589526244,
+            479.3423330411315,
+            516.4213340030983
+          ],
+          "median_ms": 516.4213340030983,
+          "output_sha256": "190e9bbbc6d0431eb7d711b44710699dd2a34bf4ac5adaef8bef925a4a117c96",
+          "output_bytes": 64013
+        }
+      },
+      "membership_query": {
+        "sqlite": {
+          "milliseconds": [
+            5.549374967813492,
+            4.795583023224026,
+            4.701124969869852,
+            4.931542032863945,
+            4.74479200784117
+          ],
+          "median_ms": 4.795583023224026,
+          "output_sha256": "c19dc8be9cf2a5e9b5d9b9474a8bf89010053415abc13ae3055bf7e47d9624ea",
+          "output_bytes": 36037
+        },
+        "duckdb": {
+          "milliseconds": [
+            2.0160829881206155,
+            1.493832969572395,
+            1.413416990544647,
+            1.5211660065688193,
+            1.3773749815300107
+          ],
+          "median_ms": 1.493832969572395,
+          "output_sha256": "c19dc8be9cf2a5e9b5d9b9474a8bf89010053415abc13ae3055bf7e47d9624ea",
+          "output_bytes": 36037
+        }
+      }
+    }
+  ],
+  "first_60_rows_plus_json": {
+    "sqlite": {
+      "milliseconds": [
+        1.5518330037593842,
+        1.3086660183034837,
+        1.2325829593464732,
+        1.218042045366019,
+        1.2112500262446702
+      ],
+      "median_ms": 1.2325829593464732,
+      "output_sha256": "536995adcc5bbdadb934463a8a0dc1ab9b5193a0fdaaf8b9d59b49812b5b30f3",
+      "output_bytes": 194032
+    },
+    "duckdb": {
+      "milliseconds": [
+        7.021750032436103,
+        4.4785410282202065,
+        4.645209002774209,
+        5.122667003888637,
+        5.14758302597329
+      ],
+      "median_ms": 5.122667003888637,
+      "output_sha256": "536995adcc5bbdadb934463a8a0dc1ab9b5193a0fdaaf8b9d59b49812b5b30f3",
+      "output_bytes": 194032
+    }
+  },
+  "first_detail_sql_decode_json": {
+    "sqlite": {
+      "milliseconds": [
+        1.1494170175865293,
+        0.7076659821905196,
+        0.6867080228403211,
+        0.7049589767120779,
+        0.7635829970240593
+      ],
+      "median_ms": 0.7076659821905196,
+      "output_sha256": "49636322f6aad1e19e4f84b6f1f5989be068dd334650dcbdd04add7f33da5db3",
+      "output_bytes": 13254
+    },
+    "duckdb": {
+      "milliseconds": [
+        7.082333031576127,
+        5.587125022429973,
+        5.569625005591661,
+        5.709999997634441,
+        6.740792014170438
+      ],
+      "median_ms": 5.709999997634441,
+      "output_sha256": "49636322f6aad1e19e4f84b6f1f5989be068dd334650dcbdd04add7f33da5db3",
+      "output_bytes": 13254
+    }
+  },
+  "input_after_verified": true,
+  "total_seconds": 30.93362479202915,
+  "peak_rss_bytes": 386154496,
+  "all_oracles_passed": true
+}

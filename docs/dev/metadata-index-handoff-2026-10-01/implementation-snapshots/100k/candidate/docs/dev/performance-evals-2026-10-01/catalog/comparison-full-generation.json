@@ -1,0 +1,53 @@
+{
+  "scope": "Read-only full-generation catalog on same sealed index. Independent serial workers for honest process peak RSS; first and two warm observations. Excludes index build, MySQL, API and browser.",
+  "mode": "explicit-full-scope",
+  "baseline_ref": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "baseline_module_sha256": "bc38a7d0859a0d41edb1fd31b05048211ff4c94a30092003fc1b79b6fa2425a2",
+  "candidate_module_sha256": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+  "database_sha256": "148fc73d30cdd42130e05feb6abf3ad094e1c63c97b6d3aaffa8d307118471a0",
+  "implementations": {
+    "baseline": {
+      "mode": "explicit-full-scope",
+      "epochs": 100000,
+      "samples_seconds": [
+        9.652965250017587,
+        9.149935707973782,
+        9.583006542001385
+      ],
+      "first_seconds": 9.652965250017587,
+      "warm_median_seconds": 9.366471124987584,
+      "warm_maximum_seconds": 9.583006542001385,
+      "rss_before_mib": 53.734375,
+      "rss_after_each_mib": [
+        108.28125,
+        128.25,
+        102.671875
+      ],
+      "process_peak_rss_mib": 400.84375,
+      "result_sha256": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f"
+    },
+    "candidate": {
+      "mode": "explicit-full-scope",
+      "epochs": 100000,
+      "samples_seconds": [
+        6.582537500013132,
+        6.588261167053133,
+        6.499913709005341
+      ],
+      "first_seconds": 6.582537500013132,
+      "warm_median_seconds": 6.544087438029237,
+      "warm_maximum_seconds": 6.588261167053133,
+      "rss_before_mib": 43.84375,
+      "rss_after_each_mib": [
+        84.6875,
+        100.609375,
+        102.96875
+      ],
+      "process_peak_rss_mib": 410.640625,
+      "result_sha256": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f"
+    }
+  },
+  "wall_time_cap_seconds": 90,
+  "status": "complete",
+  "exact_parity": true
+}

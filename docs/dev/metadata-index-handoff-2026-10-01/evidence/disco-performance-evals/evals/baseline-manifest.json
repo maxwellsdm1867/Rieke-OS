@@ -1,0 +1,77 @@
+{
+  "source_head": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "immutable_prior_receipts": [
+    {
+      "path": "baseline/native/native-10k-initial-sandbox-attempt.json",
+      "sha256": "a8920f20e386f7bc1a4a1b1b50c24ec289adc357f68768b72d812fff77f466d3",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/native/native-10k.json",
+      "scope": "Failed sandbox attempt retained as failure evidence; not performance baseline"
+    },
+    {
+      "path": "baseline/native/native-100k.json",
+      "sha256": "a169eeb32636e57a6186a975e1cfed2054ac2712fc9778346b6542cc62352327",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/native/native-100k.json"
+    },
+    {
+      "path": "baseline/native/native-metadata-100k.json",
+      "sha256": "07708723d6c2b7727a8940218e02ea39b19bfc7525d4e0724fb3001cba1d0610",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/native/native-metadata-100k.json"
+    },
+    {
+      "path": "baseline/browser/browser-native-100k-raf.json",
+      "sha256": "a9fe72fd43e12c25cb71b7109e117bbbe23171e87894ab3beda1ae6b454ca689",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/browser/browser-native-100k-raf.json"
+    },
+    {
+      "path": "baseline/trace/trace.json",
+      "sha256": "047faeb3043886c191da43fec787dc094234f602c02b058d3a2dcf20f7315f68",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/trace/trace.json"
+    },
+    {
+      "path": "baseline/metadata/100000/receipt.json",
+      "sha256": "8a229872ef6c698129bac6975b1c774292c5417b7b150846a9f014a785a0e5c1",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/metadata/100000/receipt.json"
+    },
+    {
+      "path": "baseline/metadata/100000/initial-build-receipt.json",
+      "sha256": "cd8cc0dc0bdcfaf9895d9cd0e00a6949a2a661f0125450d77333fb6b1683b42d",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/metadata/100000/initial-build-receipt.json"
+    },
+    {
+      "path": "baseline/metadata/500000/receipt.json",
+      "sha256": "312b785abc71a865dc03a4efe14c3fdf6fed6a076328e454c7515ae09fcdf1c2",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/metadata/500000/receipt.json"
+    },
+    {
+      "path": "baseline/metadata/1000000/receipt.json",
+      "sha256": "7caf70114d5ac6d427269bd1b94a13ab7dee6560410a60693a82d555f581b96e",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/metadata/1000000/receipt.json"
+    },
+    {
+      "path": "baseline/native/same-day-native-100k.json",
+      "sha256": "e89a239017bd6142bdb990a84c15dbfe94bf7c1665fe8a43d7cf27c82b078c7a",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/baseline-native/native-metadata-100k.json"
+    },
+    {
+      "path": "baseline/browser/same-day-browser-100k.json",
+      "sha256": "ee17f46e10a6dcc56e6511affc29c213fa9b43c6ebb5bb7e9770e525a6620478",
+      "original_path": "/private/tmp/disco-performance-runs-20261001/baseline-browser.json"
+    },
+    {
+      "path": "baseline/native/same-day-native-runner.py",
+      "sha256": "677cb35102191c9fcdeac4bde3a09e200ae684579436e6072c95dfa74592ee05",
+      "scope": "exact observed runner snapshot; provenance only, use current isolated runner for reproduction"
+    },
+    {
+      "path": "baseline/native/browser-api-native-runner.py",
+      "sha256": "8656701db442b2a02f68d211fa40c64c5519eb522fb876291893f2be613d3487",
+      "scope": "exact observed runner snapshot; provenance only, use current isolated runner for reproduction"
+    },
+    {
+      "path": "baseline/native/native-10k.json",
+      "sha256": "0d6f452e532cbbd41cff4245209ba98b08c4c4db0aa3b1ce956933856c4561db",
+      "original_path": "/private/tmp/disco-everyday-bench-20261001/native/native-10k-permitted.json",
+      "scope": "Successful permitted native 10k baseline; supersedes failed initial attempt"
+    }
+  ]
+}

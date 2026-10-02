@@ -1,0 +1,17 @@
+{
+  "started": "2026-10-01T07:49:26.881380+00:00",
+  "family": "trace",
+  "source_root": "/private/tmp/disco-performance-evals-20261001",
+  "cap_seconds": 90,
+  "argv": [
+    "/private/tmp/disco-performance-evals-20261001/docs/dev/scale-audit-2026-09-29/benchmark_trace_integrity.py",
+    "--output",
+    "/private/tmp/disco-performance-runs-20261001/candidate-trace/trace.json"
+  ],
+  "existing_harness_sha256": "48626a0a8a04725807ce7a47f0c2333f149e811dc333d8d1780be5e296561a5f",
+  "wrapper_sha256": "10cd48e4b96dbb3588c21bbdfb6b23cacc7326323261024e7961f0a4f7507d8f",
+  "exit_code": 0,
+  "seconds": 0.7589078330202028,
+  "peak_rss_bytes": 71827456,
+  "receipt_exists": true
+}

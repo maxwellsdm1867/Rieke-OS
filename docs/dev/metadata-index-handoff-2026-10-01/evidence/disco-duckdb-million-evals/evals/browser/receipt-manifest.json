@@ -1,0 +1,106 @@
+{
+  "README.md": {
+    "sha256": "5e81312b625c943bf9083fee9bf5403a884478dc76eeacc58d0e65c175f55a67",
+    "bytes": 5005
+  },
+  "attempts/sqlite-missing-catalog-id/bridge-checks.json": {
+    "sha256": "b30bdfc44ee14df409f5dbf343b759c47acc8adc890afe31cd759d8d5f1cf348",
+    "bytes": 746
+  },
+  "attempts/sqlite-missing-catalog-id/browser.json": {
+    "sha256": "fb3b92868d31e4762147604ec6749319a8c4f919ef59bb402f98d548ac1be0ca",
+    "bytes": 113964
+  },
+  "attempts/sqlite-missing-catalog-id/browser.log": {
+    "sha256": "31cd89b5c1e6c7bc806fa867a8b2ca7e8614ba9f9373a6870fc745b1da508577",
+    "bytes": 1095
+  },
+  "attempts/sqlite-missing-catalog-id/config.json": {
+    "sha256": "9636ccb12f4f9bb9ee482df49b000a76a982b4ea8a8af04a93c3924d5a58722d",
+    "bytes": 1009
+  },
+  "attempts/sqlite-missing-catalog-id/ready.json": {
+    "sha256": "2a243e00b6ea1340f7474e9716322b833ad14daf19aa7c579c9080c619315d51",
+    "bytes": 129
+  },
+  "bench.jsx": {
+    "sha256": "31d3f0189c5efa5cbdaabaa9b90c86ef340c0fad3f60271410bef2d8009f76ec",
+    "bytes": 1512
+  },
+  "bridge.py": {
+    "sha256": "3f3866b87d81557e0502e88e0584be98bbcfc37ca7f90d930a107b96b3d6c9f2",
+    "bytes": 11081
+  },
+  "duckdb/bridge-checks.json": {
+    "sha256": "a7979f7889b7865ae08f03d15a43f8acf134de48b38d6d5e15f24237554354e6",
+    "bytes": 6638
+  },
+  "duckdb/browser.json": {
+    "sha256": "6d83c87bfdf0616fe3c23ffc750ce7911115cbe7693e0da98e3b1d4f78f58b99",
+    "bytes": 708479
+  },
+  "duckdb/browser.log": {
+    "sha256": "119f3b42ced522e5866bb356f1e80942464b0eef66b05c89701b45c87d74c596",
+    "bytes": 7441
+  },
+  "duckdb/browser.png": {
+    "sha256": "d748062932359a6ff89d7fdbe2f6c787c9deb9fde47b98e8e5302f6f18567024",
+    "bytes": 76197
+  },
+  "duckdb/config.json": {
+    "sha256": "2c51685a3429ebad5b5869f3c8330e45b6d2dc862b808f02c3490e6ed29ae103",
+    "bytes": 857
+  },
+  "duckdb/ready.json": {
+    "sha256": "64a332e54e2cbff461d396d02cfee032ee6a0f95e3db2a6c7dc40f227db60434",
+    "bytes": 135
+  },
+  "frozen-scorecard.json": {
+    "sha256": "75e49fdfe03e1d89ba59e6e2773075fd628af2171fe82cecc6a29407f2f37fcd",
+    "bytes": 9008
+  },
+  "index.html": {
+    "sha256": "08168c090c02f8d60c5cd52745eafa6f53fb33e580d8d9e135ed2ace6a502d35",
+    "bytes": 190
+  },
+  "prepare_browser.py": {
+    "sha256": "ee8a567090e82d660be164e7449959e1c23db3f4401c45093ef80b7f868dfa83",
+    "bytes": 1847
+  },
+  "run-browser.mjs": {
+    "sha256": "7e4efa7e8ee3cae0156bdaaef470bc6f5aa0b95f158e3e8747414b45ddc6dc16",
+    "bytes": 11163
+  },
+  "scorecard.json": {
+    "sha256": "61ed848bb5c497a305d007374c10de1308ace07109e2120156b23de49395269b",
+    "bytes": 21669
+  },
+  "sqlite/bridge-checks.json": {
+    "sha256": "a7979f7889b7865ae08f03d15a43f8acf134de48b38d6d5e15f24237554354e6",
+    "bytes": 6638
+  },
+  "sqlite/browser.json": {
+    "sha256": "f8ef80b204fe31ca914a011035348e362c55eddfd33357f2a8d911098cfad9e2",
+    "bytes": 708353
+  },
+  "sqlite/browser.log": {
+    "sha256": "25481ed4fbdd9dcedc4016ad9bfb1419c7e226ba7894d5b9dabf2f329222b172",
+    "bytes": 7403
+  },
+  "sqlite/browser.png": {
+    "sha256": "d748062932359a6ff89d7fdbe2f6c787c9deb9fde47b98e8e5302f6f18567024",
+    "bytes": 76197
+  },
+  "sqlite/config.json": {
+    "sha256": "ea88ceee07ab0d599137fd720121216699b3da2e916d87858f314325ece23155",
+    "bytes": 857
+  },
+  "sqlite/ready.json": {
+    "sha256": "94ee585531ba5a37cc519673fcd426dbe2222550771ed60bf7b69901115c739e",
+    "bytes": 135
+  },
+  "test_bridge.py": {
+    "sha256": "7b7e4803199081aadd47b0b46166d69c42801ce5b0acde0c75da357e5816e304",
+    "bytes": 2697
+  }
+}

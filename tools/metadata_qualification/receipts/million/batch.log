@@ -1,0 +1,30 @@
+{"event": "job_start", "case": "largest_block", "mode": "page"}
+{"label": "largest_block", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/largest_block-page.json"}
+{"event": "job_start", "case": "compound_all", "mode": "page"}
+{"label": "compound_all", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/compound_all-page.json"}
+{"event": "job_start", "case": "array_eq", "mode": "page"}
+{"label": "array_eq", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/array_eq-page.json"}
+{"event": "job_start", "case": "array_contains", "mode": "page"}
+{"label": "array_contains", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/array_contains-page.json"}
+{"event": "job_start", "case": "number_eq", "mode": "page"}
+{"label": "number_eq", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/number_eq-page.json"}
+{"event": "job_start", "case": "recorded_null", "mode": "page"}
+{"label": "recorded_null", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/recorded_null-page.json"}
+{"event": "job_start", "case": "missing", "mode": "page"}
+{"label": "missing", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/missing-page.json"}
+{"event": "job_start", "case": "mixed_types", "mode": "page"}
+{"label": "mixed_types", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/mixed_types-page.json"}
+{"event": "job_start", "case": "compound_any", "mode": "page"}
+{"label": "compound_any", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/compound_any-page.json"}
+{"event": "job_start", "case": "largest_protocol", "mode": "page"}
+{"label": "largest_protocol", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/largest_protocol-page.json"}
+{"event": "job_start", "case": "global", "mode": "page"}
+{"label": "global", "mode": "page", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/global-page.json"}
+{"event": "job_start", "case": "largest_cell", "mode": "facets"}
+{"label": "largest_cell", "mode": "facets", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/largest_cell-facets.json"}
+{"event": "job_start", "case": "largest_block", "mode": "facets"}
+{"label": "largest_block", "mode": "facets", "status": "passed", "returncode": 0, "receipt": "/tmp/rieke-typed-qualification-million/receipts/largest_block-facets.json"}
+{"event": "job_start", "case": "largest_protocol", "mode": "facets"}
+{"label": "largest_protocol", "mode": "facets", "status": "incomplete", "returncode": 1, "receipt": "/tmp/rieke-typed-qualification-million/receipts/largest_protocol-facets.json"}
+{"event": "job_start", "case": "global", "mode": "facets"}
+{"label": "global", "mode": "facets", "status": "incomplete", "returncode": 1, "receipt": "/tmp/rieke-typed-qualification-million/receipts/global-facets.json"}

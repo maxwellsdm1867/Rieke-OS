@@ -1,0 +1,42 @@
+{
+  "scope": "Candidate scope-first versus automatic join order, first+one warm observation. Component-only plan choice diagnostic, not nativeAPI performance. Same sealed100k index.",
+  "operations": [
+    {
+      "implementation": "automatic",
+      "epochs": 60,
+      "seconds": [
+        0.2744597079581581,
+        0.2775497919647023
+      ],
+      "hash": "edf0ff00c5d8cf27b6d36e582e3df1b9a257afdd7be1c5c1dd84c0b243d11116"
+    },
+    {
+      "implementation": "automatic",
+      "epochs": 100000,
+      "seconds": [
+        6.613109334022738,
+        6.571168875030708
+      ],
+      "hash": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f"
+    },
+    {
+      "implementation": "scope-first",
+      "epochs": 60,
+      "seconds": [
+        0.0033315420150756836,
+        0.002885624999180436
+      ],
+      "hash": "edf0ff00c5d8cf27b6d36e582e3df1b9a257afdd7be1c5c1dd84c0b243d11116"
+    },
+    {
+      "implementation": "scope-first",
+      "epochs": 100000,
+      "seconds": [
+        6.846345084020868,
+        6.90358974999981
+      ],
+      "hash": "2eb40ffbb36a8d58962611aaf3e8d0bee4adaa84271b5dd0989a56b7ff50c65f"
+    }
+  ],
+  "exact_parity": true
+}

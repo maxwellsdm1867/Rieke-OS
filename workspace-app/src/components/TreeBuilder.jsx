@@ -2,6 +2,12 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
 import { number, useResource } from '../api.js';
+import {useFieldRegistry} from '../useFieldRegistry.js';
+import {useRequestedSummaries} from '../useRequestedSummaries.js';
+import {useProtocolSummaryPreferences} from '../useProtocolSummaryPreferences.js';
+import {fieldsWithSummaries,requestedSummaryFields} from '../requestedSummaries.js';
+import SummaryStatus from './SummaryStatus.jsx';
+import SummaryPreferences from './SummaryPreferences.jsx';
 import './TreeBuilder.css';
 import { reorderIds } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
@@ -21,17 +27,29 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, catalogPath, catalogData, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
-  const fetchedCatalog = useResource(catalogData?null:`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`,revision);
-  const catalog = catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fetchedCatalog;
+  const legacyPath=`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`;
+  const registry=useFieldRegistry(revision,legacyPath);
+  const catalogScopeKey=JSON.stringify([legacyPath,revision]);
+  const [fullCatalogKey,setFullCatalogKey]=useState(null),[allSummaryKey,setAllSummaryKey]=useState(null);
+  const fullCatalog=fullCatalogKey===catalogScopeKey;
+  const fetchedCatalog=useResource(!catalogData&&fullCatalog?legacyPath:null,revision);
+  const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog?fetchedCatalog:registry;
+  const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
+  const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
+  const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
+  const summaryScopeKey=JSON.stringify([context,revision]);
+  const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.predicate,preferences:preferences.value,all:allSummaryKey===summaryScopeKey});
+  const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
+    {enabled:!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
   const fields = useMemo(()=>{
-    const recorded=(catalog.data?.fields || []).map(field=>({...field,label:treeFieldLabel(field)}));
+    const recorded=fieldsWithSummaries(definitions,summaries).map(field=>({...field,label:treeFieldLabel(field)}));
     for(const id of order)if(!recorded.some(field=>field.id===id)){
       const combined=jointDefinition(id,recorded);if(combined)recorded.push(combined);
     }
     return recorded;
-  },[catalog.data?.fields,JSON.stringify(order)]);
+  },[definitions,summaries.status,summaries.result,JSON.stringify(order)]);
   const fieldMap = useMemo(()=>new Map(fields.map(field=>[field.id,field])),[fields]);
   const suggestions = catalog.data?.suggestions || [];
   const presets=[{id:'acquisition-groups',label:'Date → Cell → Epoch group → Block',fields:['date','cell','group','block']},...(catalog.data?.presets || [])];
@@ -207,7 +225,14 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
     </>}</div>
     <div className={`tb-preview-status ${error?'tb-error-status':''}`} role="status">
       {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
-      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
+      <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?'Matching epoch count unavailable':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
+    </div>
+    <SummaryStatus state={{...summaries,retry:()=>{registry.reload();summaries.retry();}}}/>
+    {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
+    <div className="tb-summary-controls">
+      <button type="button" disabled={!registry.supportsSummaries||!registry.data?.generation} onClick={()=>{setAllSummaryKey(summaryScopeKey);summaries.retry();}}>Summarize all metadata fields</button>
+      <button type="button" onClick={()=>{if(onFullCatalog)onFullCatalog();else setFullCatalogKey(catalogScopeKey);}}>Load full catalog and suggestions</button>
+      <SummaryPreferences fields={definitions} preferences={preferences}/>
     </div>
     {open&&position&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
       onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}}}>
@@ -221,8 +246,8 @@ export default function TreeBuilder({protocolId, catalogPath, catalogData, query
           {group.entries.map(({field,index})=><button id={`${listId}-${index}`} role="option" aria-selected={active===index} tabIndex={-1}
             className={`tb-option ${active===index?'active':''}`} key={field.id} title={field.path || field.id}
             onMouseDown={event=>event.preventDefault()} onMouseEnter={()=>setActive(index)} onClick={()=>add(field)}>
-            <div><strong><Highlight text={field.label} term={search}/></strong><span>{field.recorded_distinct_count===1?(field.missing_count||field.null_count?'1 non-null value':'Constant'):`${number(field.distinct_count)} values`}</span></div>
-            {(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}<small><Highlight text={sampleText(field) || 'No recorded values'} term={search}/></small>
+            <div><strong><Highlight text={field.label} term={search}/></strong><span>{field.recorded_distinct_count===1?(field.missing_count||field.null_count?'1 non-null value':'Constant'):field.distinct_count==null?'Summary unavailable':`${number(field.distinct_count)} values`}</span></div>
+            {(COMMON_TREE_FIELDS.includes(field.id)||field.grouping_hint)&&<small className="tb-field-hint">{treeFieldHint(field)}</small>}<small><Highlight text={sampleText(field) || (field.summary_available?'No recorded values':'Recorded examples unavailable')} term={search}/></small>
             {field.missing_count>0&&<small>{number(field.missing_count)} epochs have no recorded value</small>}
           </button>)}
         </div>)}
