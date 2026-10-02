@@ -18,14 +18,13 @@ export default function ProtocolSelectionSummary({data,filters,onClear,onEdit,on
  const filtered=Object.keys(filters).length>0;
  const badges=[filters.cell_type&&`Cell type: ${filters.cell_type}`,filters.group_label&&`Group: ${filters.group_label}`,filters.cell_uuid&&'Selected cell',tagFilterLabel(filters)].filter(Boolean);
  return <section className="protocol-selection-flow" aria-label="Protocol recordings and export marks">
-  <header><div><Layers size={16}/><h2>Recordings in this protocol</h2></div><button className="quiet" onClick={onEdit}><SlidersHorizontal size={14}/> Edit protocol rule</button></header>
-  <div className="protocol-rule-summary"><Rule value={query}/></div>
-  <div className="protocol-scope-cards">
-   <div><span><Layers size={15}/> Protocol recordings</span><strong>{number(all.epochs)} <small>epochs</small></strong><p>{number(all.cells)} {all.cells===1?'cell':'cells'}</p></div>
-   <div><span><Eye size={15}/> Browsing now</span><strong>{number(visible.epochs)} <small>epochs</small></strong><p>{filtered?`${number(visible.cells)} cells match the view filters`:'All protocol recordings are visible'}</p>{filtered&&<button className="quiet" onClick={onClear}>Show all recordings</button>}</div>
-   <div><span><Check size={15}/> Marked for export</span><strong>{number(all.included??visible.included)} <small>epochs</small></strong><p>{number((all.epochs||0)-(all.included??visible.included??0))} excluded · still visible when browsing</p><button className="quiet" onClick={onExport}>Choose export subset</button></div>
+  <div className="protocol-scope-readouts">
+   <span><Layers size={14}/> Protocol <strong>{number(all.epochs)}</strong> epochs · <strong>{number(all.cells)}</strong> cells</span>
+   <span><Eye size={14}/> Browsing <strong>{number(visible.epochs)}</strong> epochs · <strong>{number(visible.cells)}</strong> cells{filtered&&<button className="quiet" onClick={onClear}>Show all recordings</button>}</span>
+   <span><Check size={14}/> Export marks <strong>{number(all.included??visible.included)}</strong> included · {number((all.epochs||0)-(all.included??visible.included??0))} excluded</span>
+   <button className="quiet" onClick={onExport}>Choose export subset</button>
   </div>
   {badges.length>0&&<div className="protocol-view-chips"><span>View filters</span>{badges.map(label=><span key={label}>{label}</span>)}</div>}
-  <details className="protocol-query-details"><summary><ChevronDown size={13}/> Technical query details</summary><pre>{JSON.stringify(query,null,2)}</pre></details>
+  <details className="protocol-query-details"><summary><ChevronDown size={13}/> Protocol rule & scope details</summary><div className="protocol-rule-summary"><Rule value={query}/></div><p>Browsing filters change what you see. Export marks are independent; choose export filters in the export dialog.</p><button className="quiet" onClick={onEdit}><SlidersHorizontal size={14}/> Edit protocol rule</button><pre>{JSON.stringify(query,null,2)}</pre></details>
  </section>;
 }
