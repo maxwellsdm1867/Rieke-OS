@@ -1,0 +1,91 @@
+{
+  "format": "local-browser-qualification-receipt",
+  "version": 1,
+  "date": "2026-10-02",
+  "distribution": "Local repository handoff only; no public push or packaging performed.",
+  "scope": {
+    "environment": "Actual Chrome against a copied native project",
+    "fixtures": "No DOM, source, trace or API mocks used for browser evidence",
+    "preservation": "Original project and installed application untouched; publication exercised only on disposable copied data"
+  },
+  "source": {
+    "initial_manual_ui": "0ad661bab41c1bceb21cdd19f1c2713c80c4d437",
+    "ordinary_continuity_fix": "e7694291bb43c5ba6c9111c0c6ec823b538e4c0d",
+    "qc_request_detail_fix": "abfa29c1cac55ba69141780a45d41160037f5c22",
+    "qc_composed_backend": "70651bc4f14901b616f1aea8dadc0adfca0d1842",
+    "workbench_binding_fix": "f7e8b4d94dfd8dc30d47b1602f919ab3926d54d5",
+    "workbench_route_tests": "0066c5ded961e7f63b15221f04b713ae310edd1d",
+    "actual_publication_frontend": "22becd64b2d4ea00dfcd26f04378d6206318fee1"
+  },
+  "focused_validation": {
+    "qc_tests": 20,
+    "qc_full_dto_parity": "PASS across valid/shared/mixed-unit/missing/invalid metadata fixtures",
+    "detail_lookups_per_epoch_before": 9,
+    "detail_lookups_per_epoch_after": 1,
+    "workbench_related_ui_tests": 25,
+    "route_coverage": [
+      "actual Protocol tab",
+      "restored session",
+      "reused Workbench route"
+    ]
+  },
+  "actual_browser": {
+    "ordinary_inspect": "Repeated active tab reselection retains tree, rows, canvas and scroll; no extra page/metadata reads",
+    "qc_identity": "Three families, two rounds each: exact epoch, source, stream and recorded sample identity; canvas and trial list retained",
+    "predicate": "Open, preview and close twice; builder retained during catalog refresh and dialog top stays constant",
+    "publication": [
+      "Create a private QA author",
+      "Select two actual incoming rows and save the draft",
+      "Reload and reopen persisted selections",
+      "Verify selected-only publication is rejected until explicitly reviewed",
+      "Inspect actual waveform/source/sample for both rows and mark reviewed",
+      "Preview and accept exactly two additions",
+      "Export the committed acceptance delta as Reference JSON",
+      "Click Download; verify exact two-epoch membership and artifact SHA-256"
+    ]
+  },
+  "publication_result": {
+    "main_before": 369,
+    "main_after": 371,
+    "pending_before": 753,
+    "pending_after": 751,
+    "accepted_epochs": 2,
+    "retained_main_epochs": 369,
+    "download_bytes": 307998,
+    "artifact_sha256": "495044a5ff0bab2e6bac21fa8eee1468c7f42eecb5bc14ecdcd603d98e8260a4",
+    "native_independent_gates": 8,
+    "native_replay": "Identical full-payload acceptance and export retries returned identical receipts; no additional operation created",
+    "native_oracle": "Complete Main and pending UUID sets, all24 metadata parameters, full stream descriptors and source/cell identity match; prior export hash unchanged"
+  },
+  "qc_diagnostic_ms": {
+    "entry_before": [
+      675.4,
+      568.5,
+      597.9
+    ],
+    "entry_after": [
+      449.1,
+      179.4,
+      180.3
+    ],
+    "summary_request_before": [
+      541,
+      465,
+      494
+    ],
+    "summary_request_after": [
+      276,
+      72,
+      74
+    ]
+  },
+  "limits": [
+    "Timing is diagnostic, not a quiet-window benchmark: cloud synchronization and other correctness work continued.",
+    "Fresh owned browser checks do not certify every long-lived user-session behavior. Existing user tabs were inspected passively without navigation or reload.",
+    "First-entry cumulative preparation required Retry on the pinned publication frontend; lifecycle fix awaits actual served retest.",
+    "A same-cohort incoming draft save dropped focus and collapsed branches on the pinned frontend; continuity fix remains separately gated.",
+    "The1857-epoch whole-group tag/undo and inherited-cell-tag browser gates remain pending.",
+    "Optional hidden-mounted QC-return work was excluded because hidden dialogs and async authority require further work."
+  ],
+  "privacy": "Private paths, author identities, epoch rows, request payloads, scope tokens and operation identifiers are omitted. Full private receipts remain with the runtime owners."
+}
