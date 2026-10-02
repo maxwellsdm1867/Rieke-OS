@@ -13,7 +13,7 @@ The MAIN overview must use its own unfiltered frozen-cohort protocol resource; b
 ## Qualification sequence
 
 1. Complete committed backend contracts and independent authority review, then combined source checks.
-2. Use only an E2E-owner supplied cleanly closed copied project: confirm native datadir/socket belongs to the copy, declare additive Workbench draft/decision/receipt tables, exercise frozen reads and receipt/acceptance authority, checkpoint restore, orderly close, old/new rollback and reopen. The original working database remains untouched.
+2. Use only an E2E-owner supplied cleanly closed copied project: confirm native datadir/socket belongs to the copy, declare additive Workbench draft/decision/receipt tables, exercise frozen reads and receipt/acceptance authority, checkpoint restore, orderly close, old/new rollback and reopen. Retain exact H5 source identity/path/hash, selected epoch and stream mapping, and exact waveform-window comparisons after import and migration. Reject wrong, missing and changed H5 sources; label only actually imported inputs with receipts. The original working database remains untouched.
 3. Complete final UI composition, rendered native gates and clean final source SHA.
 4. Packaging owner copies the matching sealed dependency runtime, refreshes renderer/application, regenerates the runtime manifest at the exact clean final commit, and packages unsigned local Preview with `--publish never`. Package source/bundle provenance and actual copied-project smoke are separate final gates.
 
