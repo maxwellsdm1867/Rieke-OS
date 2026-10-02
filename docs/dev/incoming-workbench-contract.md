@@ -28,3 +28,15 @@ Scope owner implements the Inspector read-context adapter; backend owner impleme
 ## Validation
 
 28 focused helper/navigation/search-exclusion/suggestion tests and 2 actual React SSR/TestRenderer/JSX checks passed in the released UI test window. No live original project was written. Browser automation runtime failed; dynamic fixture capture remained blank. A static browser render of actual component SSR exists as layout evidence only, not client E2E proof. No package/build/push/merge.
+
+## Versioned UI follow-up
+
+The UI now negotiates `/protocols/{p}/workbench` v1 and requires declared capability flags. A cumulative queue uses only its authoritative union counts, supports stable-cursor paging, and resumes an immutable candidate even when it is not on the loaded page. An established v1 queue remains established during failed/pending refreshes; it never falls back into global query browsing. Initial opening waits for service negotiation before selecting a viewer.
+
+`GET /workbench/summary` supplies independent sidebar pending-cell badges and the protocol's `pendingReviewCells` prop. If unavailable, the sidebar shows Review/Refresh and the dashboard count prop is null. No proposal, epoch, truncated-detail, or main-cohort total substitutes for this count. The overview owner owns the explicit main-versus-pending dashboard cards and unfiltered main summary.
+
+The frozen reviewer gates Inspector on the scoped adapter's explicit support marker and `context.protocol`. Without that adapter it shows a scoped-service limitation; no global query is substituted. Highlighting rows does not mark them reviewed or selected durably. Explicit buttons save highlighted selected/deselected decisions. Draft batches are at most 250 UUIDs, individually version-fenced; partial failure reports possible earlier saved batches and requires refresh. Deferral/resume updates only actor draft state. Shared tags remain separate immediate writes.
+
+Selected/all additive previews and acceptance use the separate service contract. Acceptance keeps one operation UUID and sealed preview across session restoration. An uncertain response locks new preview/draft operations and can recover the same receipt. A definitive stale/validation rejection permits refreshing and making a new preview. The receipt is saved before refreshing parent state. Incoming-only export and Accept & export stay disabled while `incoming_export:false`; the legacy full-candidate export is available only in the explicitly labelled legacy queue.
+
+Focused checks cover mounted uncertain receipt recovery across session restore (identical acceptance body/operation, one preview, no legacy replacement routes), cumulative-count rendering, refresh authority retention, bounded draft conflict behavior, and default non-scientific deferral. These are source/component and deterministic API doubles. Integrated native frozen browsing and durable DataJoint service behavior require the backend/scoped-owner commits and separate qualification. No live original writes, package build, push, or merge.

@@ -4,11 +4,11 @@ import { humanize } from '../api.js';
 import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShortcutSection } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
 import './ProtocolSidebar.css';
-import {currentProposalCellBadge} from '../incomingReview.js';
+import {pendingReviewBadge} from '../incomingReview.js';
 import {useProjectPreference} from '../useProjectPreference.js';
 
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };
-export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],suggestionsError,onRetrySuggestions }) {
+export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],workbenchCounts=[],suggestionsError,onRetrySuggestions }) {
   const projectPreferences=useProjectPreference(projectId,'protocol_shortcuts');
   const preferences=projectPreferences.value;
   const [organizing, setOrganizing] = useState(false);
@@ -71,6 +71,7 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
     return items.map((p,index)=>{
       const name=humanize(p.name),group=section(p),id=p.protocol_uuid;
       const suggestion=suggestions.find(item=>item.protocol_uuid===id);
+      const reviewSummary=workbenchCounts.find(item=>item.protocol_uuid===id),reviewBadge=pendingReviewBadge(suggestion,reviewSummary);
       return <div className={`protocol-shortcut ${dragging===id?'shortcut-drag-source':''} ${dragging&&dropSpot?.id===id&&dragging!==id?`shortcut-drop-${dropSpot.placement}`:''}`} key={id}
         data-protocol-shortcut={id}>
         <div className="shortcut-mainline">
@@ -78,7 +79,7 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
             aria-label={`Reorder ${name}`} aria-describedby={helpId} title="Drag to reorder or change section · Alt + ↑ / ↓"
             onKeyDown={event=>{if(event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();reorder(items,index,event.key==='ArrowUp'?-1:1);}}}><GripVertical size={14}/></button>}
           <button className={`nav-item protocol-nav ${activeId===id?'active':''}`} onClick={()=>onNavigate(id)} aria-current={activeId===id?'page':undefined} title={name}>
-            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{suggestion&&<small className="shortcut-update-badge" title="Distinct affected cells in the current saved proposal. Earlier pending proposals are not included. Open Workbench to review.">{currentProposalCellBadge(suggestion)}</small>}
+            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{reviewBadge&&<small className="shortcut-update-badge" title="Distinct incoming cells awaiting review in the authoritative cumulative queue. Open Workbench to review. If the count is unavailable, a generic Review notice is shown.">{reviewBadge}</small>}
           </button>
         </div>
         {organizing&&<div className="protocol-shortcut-actions" role="group" aria-label={`Organize ${name}`}>

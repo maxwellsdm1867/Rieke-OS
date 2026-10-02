@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {acceptIncoming,exportIncoming,reviewKey,reviewWorklist,currentProposalCellCount,currentProposalCellBadge} from './incomingReview.js';
+import {acceptIncoming,exportIncoming,reviewKey,reviewWorklist,currentProposalCellCount,currentProposalCellBadge,pendingReviewBadge} from './incomingReview.js';
 const item={protocol_uuid:'protocol',candidate_revision_uuid:'candidate',status:'pending',baseline_binding_version:2,diff_counts:{added:5,removed:0,changed:0},diff_summary:{cell_changes:{counts:{added:1,removed:0,updated:2}},current:{cells:3,epochs:30,acquisition_protocols:1},proposed:{cells:4,epochs:35,acquisition_protocols:1}}};
 const fresh={...item,expected_binding_version:2,expected_query_revision:'query',compatibility:{compatible:true}};
 const binding={revision_uuid:'candidate',version:3};
@@ -39,4 +39,11 @@ test('export retry has no membership write and uses immutable hash plus authorit
  assert.equal(result.dataset_uuid,'artifact');assert.equal(calls.length,2);
  for(const call of calls){assert.equal(call.path,'/explore/revisions/candidate/exports');assert.deepEqual(call.body,{format:'wheeler-sqlite',expected_recipe_sha256:'full-hash',name:'Test'});}
  await assert.rejects(()=>exportIncoming(candidate,{format:'wheeler-sqlite'},async()=>({})),/artifact receipt/);
+});
+
+test('pending-cell badges use only cumulative authoritative counts, never affected epoch/proposal fallbacks',()=>{
+ assert.equal(pendingReviewBadge(item,{pending_cell_count:7}),'7 cells');
+ assert.equal(pendingReviewBadge(item,{pending_cell_count:0}),'');
+ assert.equal(pendingReviewBadge(item,null),'Review');
+ assert.equal(pendingReviewBadge({...item,status:'stale'},null),'Refresh');
 });

@@ -47,3 +47,11 @@ export function currentProposalCellBadge(item){
   const count=currentProposalCellCount(item);
   return count===null?'Review':`${count} ${count===1?'cell':'cells'}`;
 }
+
+export function pendingReviewBadge(suggestion,summary){
+  if(Number.isSafeInteger(summary?.pending_cell_count)&&summary.pending_cell_count>=0){
+    const count=summary.pending_cell_count;
+    return count?`${count} ${count===1?'cell':'cells'}`:'';
+  }
+  return suggestion?.status==='stale'?'Refresh':suggestion?'Review':'';
+}
