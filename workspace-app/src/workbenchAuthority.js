@@ -3,7 +3,7 @@ export const workbenchCandidateRoot=(protocol,revision)=>`${workbenchRoot(protoc
 export function requireWorkbenchQueue(value){
   if(value?.contract_version!==1||!Array.isArray(value.candidates)||typeof value.queue_revision!=='string')throw new Error('The cumulative review service is unavailable or has an unsupported contract.');
   if(!value.capabilities||!['frozen_browse','drafts','additive_accept','incoming_export'].every(key=>typeof value.capabilities[key]==='boolean'))throw new Error('The queue did not declare its supported review capabilities.');
-  for(const key of ['pending_cell_count','pending_epoch_count'])if(!Number.isSafeInteger(value[key])||value[key]<0)throw new Error('The queue did not return authoritative pending counts.');
+  if(!Number.isSafeInteger(value.pending_epoch_count)||value.pending_epoch_count<0||value.pending_cell_count!==null&&(!Number.isSafeInteger(value.pending_cell_count)||value.pending_cell_count<0))throw new Error('The queue did not return authoritative pending counts.');
   if(value.candidates.some(item=>typeof item.candidate_revision_uuid!=='string'))throw new Error('The queue contains an invalid immutable candidate identity.');
   return value;
 }
@@ -43,7 +43,7 @@ export function workbenchPreviewCounts(preview){
 export async function acceptWorkbench(root,preview,operationUuid,request){
   if(typeof operationUuid!=='string'||!operationUuid)throw new Error('A stable operation identity is required for acceptance.');
   const receipt=await request(`${root}/accept`,{method:'POST',body:{expected_candidate_scope_revision:preview.expected_candidate_scope_revision,expected_draft_version:preview.expected_draft_version,mode:preview.mode,preview_sha256:preview.preview_sha256,expected_binding_version:preview.expected_binding_version,expected_query_revision:preview.expected_query_revision,operation_uuid:operationUuid}});
-  if(!receipt.binding?.revision_uuid||!Number.isSafeInteger(receipt.binding.version)||!receipt.event_uuid)throw new Error('Acceptance receipt is incomplete. Check this operation before retrying.');
+  if(!receipt.binding?.revision_uuid||!Number.isSafeInteger(receipt.binding.version)||!receipt.event_uuid||receipt.operation_uuid!==operationUuid)throw new Error('Acceptance receipt is incomplete. Check this operation before retrying.');
   return receipt;
 }
 export function selectionDecisions(previous,next){

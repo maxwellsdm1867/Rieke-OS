@@ -24,6 +24,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
   assert.match(cumulativeHtml,/2.*distinct cells/);assert.match(cumulativeHtml,/30.*incoming epochs/);assert.match(cumulativeHtml,/second-proposal/);assert.doesNotMatch(cumulativeHtml,/Earlier unmerged updates/);
   const blockedHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:0,pending_epoch_count:0,candidates:[{...item,status:'conflict',pending_epoch_count:0},{...item,candidate_revision_uuid:'blocked-source',status:'source_blocked',pending_epoch_count:0}]}}));
   assert.match(blockedHtml,/Conflict requires review/);assert.match(blockedHtml,/Source unavailable/);assert.match(blockedHtml,/blocked-source/);assert.doesNotMatch(blockedHtml,/No current incoming proposals/);
+  const unknownHtml=renderToStaticMarkup(React.createElement(Workbench,{...props,authority:{...cumulative,pending_cell_count:null}}));assert.match(unknownHtml,/Distinct cell count unavailable/);assert.doesNotMatch(unknownHtml,/0 distinct cells/);
   let renderer,saved;
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,{...props,onSession:value=>{saved=value;}}));});
   await act(async()=>renderer.root.findByType('input').props.onChange());
@@ -40,7 +41,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
 test('App and affected dialog/browser/sidebar JSX transform from isolated source',async()=>{
  const server=await create();
  try{
-  for(const file of ['App.jsx','components/MetadataExplorer.jsx','components/IncomingExportDialog.jsx','components/ExportSelectionDialog.jsx','components/ProtocolSidebar.jsx','components/FrozenIncomingReview.jsx']){
+  for(const file of ['App.jsx','components/MetadataExplorer.jsx','components/IncomingExportDialog.jsx','components/ExportSelectionDialog.jsx','components/ProtocolSidebar.jsx','components/FrozenIncomingReview.jsx','components/WorkbenchExportDialog.jsx']){
    const result=await server.transformRequest(`/src/${file}`);assert.ok(result?.code.length>0,file);
   }
  }finally{await server.close();}
@@ -96,5 +97,67 @@ test('known cumulative authority survives a pending or failed refresh without sw
   assert.equal(state.loading,true);assert.equal(state.data.queue_revision,'exact-union');
   await act(async()=>release());
   assert.equal(state.loading,false);assert.equal(state.data.queue_revision,'exact-union');assert.match(state.error,/unavailable/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('accept then export failure preserves acceptance receipt and retries identical export across remount',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch,calls=[];
+ let renderer,saved={},exports=0,changed=0,acceptAttempts=0;
+ const root='/protocols/history/workbench/candidates/proposal';let receiptRoot;
+ const counts={selected_epoch_count:2,accepted_epoch_count:2,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:42,accepted_cell_count:1};
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):undefined;
+  calls.push({path:endpoint,method:options.method||'GET',body});let status=200,value;
+  if(endpoint===`${root}/context`)value={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected'}};
+  else if(endpoint===`${root}/preview`)value={...counts,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'main'};
+  else if(endpoint===`${root}/accept`){if(acceptAttempts++===0){status=503;value={error:'Acceptance reply lost'};}else{receiptRoot=`/protocols/history/workbench/receipts/${body.operation_uuid}`;value={operation_uuid:body.operation_uuid,binding:{revision_uuid:'new-main',version:2},event_uuid:'accept-audit'};}}
+  else if(endpoint===`${receiptRoot}/export-context`){assert.equal(saved.receipt.event_uuid,'accept-audit','acceptance published before export evidence read');value={export_scope_revision:'exact-new-set',accepted_epoch_count:2,accept_operation_uuid:saved.receipt.operation_uuid};}
+  else if(endpoint===`${receiptRoot}/exports`){if(exports++===0){status=503;value={error:'Export reply lost'};}else value={dataset_uuid:'one-dataset',event_uuid:'export-event',artifact_sha256:'artifact-hash',epoch_count:2,download_url:'/download',format:body.format,operation_uuid:body.operation_uuid,export_scope:{kind:'workbench_incoming'}};}
+  else assert.fail(`Unexpected endpoint ${endpoint}`);
+  return {ok:status===200,status,json:async()=>value};
+ };
+ try{
+  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);},onChanged:()=>changed++});}
+  const mount=async()=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});};
+  await mount();await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.phase,'acceptance-unconfirmed');assert.ok(saved.acceptOperation);assert.equal(changed,0);
+  await act(async()=>renderer.unmount());await mount();
+  await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.phase,'export-failed');assert.equal(saved.receipt.binding.version,2);assert.equal(changed,1);assert.ok(saved.prepared);
+  const firstExport=calls.find(call=>call.path.endsWith('/exports'));
+  await act(async()=>renderer.unmount());await mount();
+  assert.equal(renderer.root.findAllByType('input').find(node=>node.props.maxLength===120).props.disabled,true,'saved export body cannot change');
+  await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.exported.dataset_uuid,'one-dataset');const acceptCalls=calls.filter(call=>call.path.endsWith('/accept'));assert.equal(acceptCalls.length,2);assert.deepEqual(acceptCalls[0],acceptCalls[1]);assert.equal(calls.filter(call=>call.path.endsWith('/preview')).length,1);
+  assert.deepEqual(calls.filter(call=>call.path.endsWith('/exports')),[firstExport,firstExport]);
+  assert.equal(renderer.root.findByType('a').props.href,'/download');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('completed independent export can proceed to review and fresh accept/export while preserving download',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved;
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({candidate_scope_revision:'new-scope',draft:{draft_version:5,selection_mode:'all'}})});
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const completed={workflow:'export',prepared:{path:'/old',body:{}},exported:{dataset_uuid:'old-dataset',download_url:'/old-download',epoch_count:2},exportOperation:'old-export'};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},capabilities:{drafts:true,additive_accept:true,incoming_export:true},session:{exportState:completed},onSession:value=>{saved=value;}}));});
+  const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  assert.equal(button('Preview accept all').props.disabled,false);
+  await act(async()=>button('Accept & export').props.onClick());
+  assert.equal(saved.exportState.prepared,undefined);assert.equal(saved.exportState.completed[0].exported.dataset_uuid,'old-dataset');
+  assert.equal(renderer.root.findByType('form').props.children.at(-1).props.children,'Accept & export');
+  assert.equal(renderer.root.findByType('a').props.href,'/old-download');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+test('definitively rejected acceptance refreshes on reopen and permits a fresh attempt',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved={phase:'rejected',preview:null,acceptOperation:null,error:'Old source scope'};
+ globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({candidate_scope_revision:'fresh',draft:{draft_version:6,selection_mode:'selected'}})});
+ try{
+  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);}});}
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
+  assert.equal(saved.phase,null);assert.equal(saved.error,'');
+  assert.equal(renderer.root.findAllByType('button').find(node=>label(node)==='Accept & export').props.disabled,false);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

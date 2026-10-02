@@ -40,3 +40,44 @@ The frozen reviewer gates Inspector on the scoped adapter's explicit support mar
 Selected/all additive previews and acceptance use the separate service contract. Acceptance keeps one operation UUID and sealed preview across session restoration. An uncertain response locks new preview/draft operations and can recover the same receipt. A definitive stale/validation rejection permits refreshing and making a new preview. The receipt is saved before refreshing parent state. Incoming-only export and Accept & export stay disabled while `incoming_export:false`; the legacy full-candidate export is available only in the explicitly labelled legacy queue.
 
 Focused checks cover mounted uncertain receipt recovery across session restore (identical acceptance body/operation, one preview, no legacy replacement routes), cumulative-count rendering, refresh authority retention, bounded draft conflict behavior, and default non-scientific deferral. These are source/component and deterministic API doubles. Integrated native frozen browsing and durable DataJoint service behavior require the backend/scoped-owner commits and separate qualification. No live original writes, package build, push, or merge.
+
+## Incoming-only export follow-up
+
+The UI exposes quick Export and Accept & export only when the queue declares
+`incoming_export:true`. Review first remains optional. A deliberate dialog choice
+uses saved selected+reviewed decisions, or explicitly approves all eligible
+incoming additions minus actor exclusions. Neither choice changes scientific
+approval tags or main curation.
+
+`POST candidateRoot/exports` uses the saved draft mode, sealed preview hash,
+main binding/query fences, format, optional name, and an independent export
+operation UUID. It exports only additions absent from current main.
+
+Accept & export saves the authoritative acceptance receipt before requesting
+`GET /protocols/{p}/workbench/receipts/{accept_op}/export-context`. Its
+`export_scope_revision`, exact accepted-new count and acceptance operation
+identity fence `POST .../exports`. Retries retain the identical export body and
+operation UUID; they never repeat an already confirmed acceptance. Lost
+acceptance responses retain their own exact request and recover that receipt
+before any export call. Saved operation cards stay reachable if acceptance
+removes the proposal from the pending queue.
+
+Client receipt checks require format, dataset/event IDs, artifact hash, operation
+identity, download URL, `export_scope.kind=workbench_incoming`, and the exact new
+count from the preview or accepted export context. Settings lock while an
+operation needs receipt recovery. Failure leaves confirmed acceptance visible.
+The durable operation records belong to the backend; dialog/session restoration
+is presentation state, not a new scientific persistence mechanism.
+
+The cumulative queue also retains conflicted/source-blocked proposals. A legacy
+historical proposal whose cell identity cannot be proven can return a null
+pending-cell count; the UI displays unavailable rather than substituting zero.
+
+24 focused helper/mounted React/JSX checks pass for this follow-up. Tests cover
+lost export response and remount recovery with one acceptance, identical export
+requests, and an authoritative final download. This is deterministic API-double
+evidence. Native export/DDL/FK/crash qualification and integrated browser proof
+remain with backend/E2E integration owners. No package build, push, merge, or live
+original writes were performed.
+
+Completed workflows archive their receipts and artifacts before a deliberate new workflow. Remaining additions stay reviewable after partial acceptance/export. Definitive acceptance rejection clears only after fresh context is loaded; uncertain operations retain their saved request identities. Independent Spec/Standards source review found and verified fixes for both lifecycle transitions.

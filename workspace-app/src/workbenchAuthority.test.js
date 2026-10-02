@@ -6,6 +6,7 @@ test('cumulative queue count comes from authority even when overlapping paged ca
  const queue={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{candidate_revision_uuid:'a',pending_epoch_count:20},{candidate_revision_uuid:'b',pending_epoch_count:20}]};
  assert.equal(requireWorkbenchQueue(queue).pending_cell_count,2);
  assert.equal(requireWorkbenchQueue(queue).pending_epoch_count,30);
+ assert.equal(requireWorkbenchQueue({...queue,pending_cell_count:null}).pending_cell_count,null);
  assert.throws(()=>requireWorkbenchQueue({...queue,pending_cell_count:undefined}),/authoritative/);
  assert.throws(()=>requireWorkbenchQueue({...queue,contract_version:2}),/unsupported/);
 });
@@ -31,7 +32,7 @@ test('additive acceptance uses explicit preview fences and stable operation retr
  const root=workbenchCandidateRoot('protocol','candidate');
  const preview=await previewWorkbench(root,context,'all',async(path,{body})=>{calls.push({path,body});return {preview_sha256:'reviewed-preview',expected_binding_version:9,expected_query_revision:'main-query',counts:{added:6,retained:40}};});
  let attempts=0;
- const request=async(path,{body})=>{calls.push({path,body});if(attempts++===0)throw Error('reply lost');return {binding:{version:10,revision_uuid:'main-combined'},event_uuid:'accept-event'};};
+ const request=async(path,{body})=>{calls.push({path,body});if(attempts++===0)throw Error('reply lost');return {binding:{version:10,revision_uuid:'main-combined'},event_uuid:'accept-event',operation_uuid:body.operation_uuid};};
  await assert.rejects(()=>acceptWorkbench(root,preview,'same-operation',request),/reply lost/);
  const receipt=await acceptWorkbench(root,preview,'same-operation',request);
  assert.equal(receipt.binding.revision_uuid,'main-combined');
