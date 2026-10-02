@@ -30,6 +30,8 @@ class UnmountTests(unittest.TestCase):
         remember_project_path(self.path, set_last=True)
         self.body = {'path': str(self.path), 'project_uuid': self.project['uuid']}
         self.stop = Mock(); self.shutdown = threading.Event()
+        launcher = patch('workspace_project_unmount.require_ready_launcher', return_value='http://127.0.0.1:9997/')
+        self.launcher_check = launcher.start(); self.addCleanup(launcher.stop)
 
     def app(self, current=False, busy=lambda:False):
         app = Flask(__name__)
@@ -68,6 +70,21 @@ class UnmountTests(unittest.TestCase):
         self.stop.assert_called_once();self.assertTrue(self.shutdown.wait(1))
         self.assertEqual(client.get('/api/projects').status_code,503)
         for name,digest in before.items():self.assertEqual(self.hashes()[name],digest)
+
+    def test_missing_chooser_refuses_before_close_and_keeps_project_usable(self):
+        before = self.hashes(); index_before = read_project_index()
+        app = self.app(current=True)
+        @app.post('/edit')
+        def edit():return jsonify(saved=True)
+        self.launcher_check.side_effect = ValueError('The project chooser is unavailable')
+        client = app.test_client()
+        response = client.post('/api/projects/unmount', json=self.body)
+        self.assertEqual(response.status_code, 409)
+        self.stop.assert_not_called(); self.assertFalse(self.shutdown.is_set())
+        self.assertTrue(client.post('/edit').json['saved'])
+        self.assertEqual(client.get('/api/projects').status_code, 200)
+        self.assertEqual(read_project_index(), index_before)
+        self.assertEqual(self.hashes(), before)
 
     def test_pending_import_or_background_export_refuses_without_detach(self):
         for kind in ('import','export'):

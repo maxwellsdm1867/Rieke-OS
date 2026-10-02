@@ -1,4 +1,9 @@
 export function projectKey(project){return project.path||project.uuid;}
+export function isCurrentProject(project,registry){
+ const active=registry?.projects?.find(item=>item.current===true);
+ return !!active&&project.path===active.path&&project.uuid===active.uuid&&
+  project.uuid===registry.current_project_uuid;
+}
 export function orderedProjectRecords(projects,order){
  if(!Array.isArray(order))return projects;
  const rank=new Map(order.map((key,index)=>[key,index]));
