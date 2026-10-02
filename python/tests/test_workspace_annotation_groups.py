@@ -80,6 +80,37 @@ class GroupTests(unittest.TestCase):
         self.assertTrue(all(value==[] for key,value in tags.items() if key!=first))
         self.assertTrue(self.groups.undo(body['operation_uuid'],{'operation_uuid':operation},'OS actor')['replayed'])
 
+    def test_native_empty_layout_has_no_projected_values_and_selects_complete_scope(self):
+        self.grow(1857);original=TreePages._scope
+        def empty_projection(tree,scope):
+            rows,catalog,values,definitions,order,revision=original(tree,scope)
+            self.assertEqual(order,[])
+            return rows,catalog,{},definitions,order,revision
+        with patch.object(TreePages,'_scope',empty_projection):
+            preview=self.preview({'splits':'','path':[]})
+        self.assertEqual(preview['count'],1857)
+        result=self.groups.apply(self.body(preview),'OS actor')
+        self.assertEqual(result['changed'],1857)
+        self.assertEqual({row['target_uuid'] for row in self.case.case.records.rows},set(self.service.rows))
+
+    def test_empty_path_without_projection_keeps_predicate_scope_and_nonempty_path_fails_closed(self):
+        self.grow(12);original=TreePages._scope
+        def no_values(tree,scope):
+            rows,catalog,values,definitions,order,revision=original(tree,scope)
+            return rows,catalog,{},definitions,order,revision
+        scope={'splits':'','predicate':{'field':'parameters/value','operator':'eq','value':1}}
+        with patch.object(TreePages,'_scope',no_values):preview=self.preview(scope)
+        wanted={key for key,value in self.service.details.items() if value['parameters']['value']==1}
+        self.assertEqual({row[0] for row in self.groups.selections[preview['selection_uuid']]['targets']},wanted)
+        self.groups.release({'selection_uuid':preview['selection_uuid']},'OS actor')
+        scope={'splits':'parameters/value'};root=TreePages(self.service).page(scope)
+        body={'scope':{**scope,'path':root['branches'][0]['path'],'revision':root['revision']},'profile_uuid':self.profile}
+        with patch.object(TreePages,'_scope',no_values),self.assertRaises(KeyError):
+            self.groups.preview(body,'OS actor')
+        self.assertEqual(self.groups.selections,{})
+        self.assertEqual(self.receipts.rows,[])
+        self.assertEqual(self.case.case.records.rows,[])
+
     def test_private_plan_supports_over2000_without_weakening_public_batch(self):
         self.grow(2001)
         preview=self.preview();body=self.body(preview)

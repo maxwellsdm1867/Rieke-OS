@@ -176,7 +176,9 @@ class AnnotationGroups:
                 vector=self._vector(context)
                 targets=[];budget=RetainedBudget()
                 for row in rows:
-                    if path.matches(values[row['epoch_uuid']]):
+                    # An empty structural path selects every scoped row. A
+                    # native empty layout intentionally projects no values.
+                    if not path.path or path.matches(values[row['epoch_uuid']]):
                         if len(targets)>=PROJECT_LIMIT:raise ValueError('Group exceeds the supported project admission')
                         item=[row['epoch_uuid'],self.service._fingerprints[row['epoch_uuid']],0]
                         budget.charge(item);targets.append(item)
