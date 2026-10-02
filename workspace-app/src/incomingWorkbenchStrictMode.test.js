@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import React,{act,useEffect} from 'react';
 import {createRoot} from 'react-dom/client';
-import {createServer} from 'vite';
+import {createServer} from './test-support/isolatedVite.js';
 const {JSDOM}=await import(process.env.RIEKE_TEST_DOM_MODULE||'jsdom');
 const root=fileURLToPath(new URL('..',import.meta.url));
 const protocol='strict-protocol',base=`/protocols/${protocol}/workbench`;
@@ -18,7 +18,7 @@ async function harness(fetch){
  const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,IS_REACT_ACT_ENVIRONMENT:true,fetch};
  const previous=new Map(Object.keys(globals).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
  for(const [key,value] of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
- const server=await createServer({root,configFile:false,plugins:[probes],cacheDir:root+'/.review-vite-cache',optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
+ const server=await createServer({root,configFile:false,plugins:[probes],optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
  const container=dom.window.document.getElementById('root');let mounted=createRoot(container),setups=0,cleanups=0,saved;
  function Proof(props){useEffect(()=>{setups++;return()=>{cleanups++;};},[]);return React.createElement(Review,{protocolId:protocol,onSession:value=>{saved=value;},...props});}
