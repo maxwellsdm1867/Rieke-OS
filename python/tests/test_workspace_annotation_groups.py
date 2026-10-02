@@ -206,6 +206,16 @@ class GroupTests(unittest.TestCase):
         self.assertEqual(self.case.case.records.rows,before)
         self.assertIsNone(self.receipts.rows[0]['receipt']['undone_by'])
 
+    def test_earlier_overlapping_group_inverse_keeps_original_profile_cas(self):
+        self.grow(5)
+        first=self.body(self.preview(),tag='first');self.groups.apply(first,'OS actor')
+        second=self.body(self.preview(),tag='second');self.groups.apply(second,'OS actor')
+        self.groups.undo(second['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+        before=copy.deepcopy((self.receipts.rows,self.case.case.records.rows))
+        with self.assertRaises(RevisionConflict):
+            self.groups.undo(first['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
+        self.assertEqual((self.receipts.rows,self.case.case.records.rows),before)
+
     def test_replay_after_guard_wait_returns_first_apply_and_inverse_receipts(self):
         self.grow(20);preview=self.preview();body=self.body(preview)
         second=AnnotationGroups(self.service,self.store,self.receipts,RLock(),nullcontext)

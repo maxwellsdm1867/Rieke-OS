@@ -57,7 +57,7 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
         // no cancellation signal; dismissal only closes the presentation.
         const result=await groupMutation.save({tag,profileUuid});
         if(isCurrent()){composerDirty.current=false;setValue('');setQuery('');setOpen(false);}
-        onChange?.(result,null);return true;
+        if(groupMutation.canPublish?.()!==false)onChange?.(result,null);return true;
       }
       let body;
       if(targetKind==='selected'){

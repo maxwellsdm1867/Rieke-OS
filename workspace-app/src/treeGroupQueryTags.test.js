@@ -41,3 +41,34 @@ test('incomplete, partial or wrong-profile receipt never confirms the group',()=
  assert.equal(confirmGroupReceipt(good,args),good);
  for(const changes of [{target_count:1000},{changed:1857},{profile_uuid:'foreign'},{persistence:{database:'unknown'}},{undo:{kind:'annotation_group',operation_uuid:'operation',count:1000}}])assert.throws(()=>confirmGroupReceipt({...good,...changes},args),/not confirmed/);
 });
+
+test('recovery slots reserve before dispatch, never evict, and preserve original project/profile',async()=>{
+ const {groupAnnotationRecovery:recovery,retainGroupOperation,runGroupOperation}=await import('./groupAnnotationRecovery.js');
+ const previous=recovery.currentProject();recovery.project('original-project');
+ let requests=0;const records=[];
+ const request=async()=>{requests++;throw Object.assign(Error('Definite refusal'),{status:409});};
+ for(let index=0;index<4;index++){
+  const body={selection_uuid:`selection-${index}`,profile_uuid:'original-author',tag:'original tag',operation_uuid:`operation-${index}`};
+  const record=retainGroupOperation({body,count:1857,request,confirm:()=>{}});body.profile_uuid='changed-author';records.push(record);
+ }
+ assert.throws(()=>retainGroupOperation({body:{operation_uuid:'fifth'},count:1,request,confirm:()=>{}}),/four/);assert.equal(requests,0);assert.equal(recovery.view().length,4);
+ recovery.project('different-project');await assert.rejects(recovery.retry('operation-0'),/original project/);assert.equal(requests,0);
+ recovery.project('original-project');assert.equal(records[0].body.profile_uuid,'original-author');
+ for(const record of records){await assert.rejects(runGroupOperation(record),/Definite refusal/);recovery.dismiss(record.body.operation_uuid);}
+ assert.equal(recovery.view().length,0);recovery.project(previous);
+});
+test('an earlier overlapping group undo refuses rather than retargeting author revisions',async()=>{
+ const history=createUndoHistory();history.project('owned project');
+ for(const operation of ['first','second'])history.record({kind:'annotation_group',operation_uuid:operation,profile_uuid:'author',count:1857});
+ assert.equal(await history.undo(async()=>({kind:'annotations',revisions:{}})),true);
+ assert.equal(await history.undo(async()=>{throw Error('Original author revision changed');}),false);
+ assert.equal(history.view().count,1);assert.match(history.view().message,/overlapping group edits retain their original author revisions/);
+});
+
+
+test('a preview cannot dispatch under a different project after it was captured',async()=>{
+ const {groupAnnotationRecovery:recovery}=await import('./groupAnnotationRecovery.js');const previous=recovery.currentProject();recovery.project('initial');let writes=0;
+ const request=async route=>{if(route.endsWith('preview'))return {selection_uuid:'selection',target_kind:'epoch',count:1857,profile_uuid:'author',tree_revision:revision};writes++;};
+ const target=await previewTreeGroup({scope,path,revision,count:1857,profileUuid:'author',request});recovery.project('later');
+ await assert.rejects(target.groupMutation.save({tag:'tag',profileUuid:'author'}),/original project/);assert.equal(writes,0);assert.equal(target.groupMutation.canPublish(),false);recovery.project(previous);
+});

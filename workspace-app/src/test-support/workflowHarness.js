@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-export async function createWorkflowHarness({total=500,baseline=false,delay=0,enableUndo=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
+export async function createWorkflowHarness({total=500,baseline=false,delay=0,enableUndo=false,portals=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
   const rootPath=fileURLToPath(new URL('../..',import.meta.url));
   const key=`__workflow${Math.random().toString(36).slice(2)}`;
   const baselineRoot=configuredBaselineRoot?path.resolve(configuredBaselineRoot):path.resolve(rootPath,'../docs/dev/scale-audit-2026-09-29/frozen-100000-dense-recovery/snapshot/workspace-app/src');
@@ -97,9 +97,10 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
     finally{record.completed=performance.now();fixture.pending.delete(record);}
   };
   const generic=`export default 'workflow-child'; export const ProjectRail='project-rail',ImportSuggestions='import-suggestions',ExportDestination='export-destination',AppearanceButton='appearance-button';export const IMPORT_TERMINAL=new Set();`;
-  const server=await createServer({root:rootPath,configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
+  const server=await createServer({root:rootPath,configFile:false,ssr:{noExternal:portals?['react-dom']:[]},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'mounted-workflow',enforce:'pre',
     resolveId(id,importer){
+      if(portals&&id==='react-dom')return '\0workflow-portals';
       if(id.endsWith('/annotationProfile.js')||id==='./annotationProfile.js'||id==='../annotationProfile.js')return '\0workflow-profile';
       if(importer?.endsWith('/App.jsx')){
         if(id==='./useWorkspaceNavigation.js')return '\0workflow-navigation';
@@ -110,6 +111,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
       if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','./IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
     async load(id){
+      if(id==='\0workflow-portals')return 'export const createPortal=children=>children;';
       if(baseline&&['App.jsx','components/Inspector.jsx','components/AnnotationTags.jsx'].some(name=>id===path.join(rootPath,'src',name))){
         const code=await readFile(path.join(baselineRoot,path.relative(path.join(rootPath,'src'),id)),'utf8');
         return id.endsWith('/App.jsx')?code.replace('function Protocol(', 'export function Protocol('):code;
@@ -126,7 +128,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
   const {default:App,Protocol}=await server.ssrLoadModule('/src/App.jsx');
   const {epochResourceCache}=await server.ssrLoadModule('/src/resourceCache.js');epochResourceCache.invalidate();
   let root;
-  const harness={fixture,App,Protocol,async component(name){return (await server.ssrLoadModule(`/src/components/${name}.jsx`)).default;},
+  const harness={fixture,App,Protocol,module:modulePath=>server.ssrLoadModule(`/src/${modulePath}`),async component(name){return (await server.ssrLoadModule(`/src/components/${name}.jsx`)).default;},
     async mount(component=App,props={}){await act(async()=>{root=TestRenderer.create(React.createElement(component,props),{createNodeMock:element=>{if(element.type==='dialog')return {showModal(){},close(){}};if(element.type==='input'){const node={focus:()=>{},closest:()=>null};fixture.nodes.set(element.props['aria-label'],node);return node;}return null;}});});},
     async render(component,props){await act(async()=>root.update(React.createElement(component,props)));},
     get root(){return root.root;},

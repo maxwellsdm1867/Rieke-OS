@@ -59,7 +59,7 @@ export function createUndoHistory(limits=UNDO_LIMITS){
     bytes=0;for(const saved of stack){saved.size=actionSize(saved.action);bytes+=saved.size;}
     while(bytes>limits.bytes)bytes-=stack.shift().size;
     message='Last edit undone.';return true;
-   }catch(error){if(error.saved&&entry.action.kind==='annotation_group'){message=`The inverse SQL commit needs recovery confirmation: ${error.message} Retry Undo to replay the same operation.`;}else if(error.saved){clear();message=`The inverse edit was saved to the database, but recovery needs attention: ${error.message} Session undo was cleared; refresh the targets.`;}else message=`Undo was not confirmed: ${error.message} Refresh the original targets before retrying.`;return false;}
+   }catch(error){if(error.saved&&entry.action.kind==='annotation_group'){message=`The inverse SQL commit needs recovery confirmation: ${error.message} Retry Undo to replay the same operation.`;}else if(error.saved){clear();message=`The inverse edit was saved to the database, but recovery needs attention: ${error.message} Session undo was cleared; refresh the targets.`;}else message=`Undo was not confirmed: ${error.message} ${entry.action.kind==='annotation_group'?'Earlier overlapping group edits retain their original author revisions and can conflict after a later inverse. ':''}Refresh the original targets before retrying.`;return false;}
    finally{busy=false;emit();}
   },
  };

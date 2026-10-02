@@ -2,6 +2,7 @@ import {epochResourceCache} from './resourceCache.js';
 import {useEffect,useRef} from 'react';
 import {api} from './api.js';
 import {mutationUndo,shouldUndoData,undoEnabled,expandUndoAction} from './mutationUndo.js';
+import {groupAnnotationRecovery} from './groupAnnotationRecovery.js';
 import {confirmGroupReceipt} from './treeGroupQueryTags.js';
 import {desktopBridge} from './desktopLifecycle.js';
 
@@ -37,7 +38,7 @@ export async function persistUndo(input,request=api){
 }
 export function useMutationUndo(projectId,onChanged){
  const changed=useRef(onChanged);changed.current=onChanged;
- useEffect(()=>{mutationUndo.project(projectId);},[projectId]);
+ useEffect(()=>{mutationUndo.project(projectId);groupAnnotationRecovery.project(projectId);return groupAnnotationRecovery.onChange(event=>{if(event.project===projectId&&groupAnnotationRecovery.currentProject()===projectId)changed.current?.({kind:'annotations'});});},[projectId]);
  const run=async()=>mutationUndo.undo(async action=>{try{const result=await persistUndo(action);changed.current?.({kind:result.kind,confirmed:result.confirmed});return result;}catch(error){if(error.saved)changed.current?.({kind:action.kind==='annotation_group'?'annotations':action.kind});throw error;}});
  const current=useRef(run);current.current=run;
  useEffect(()=>installUndoShortcuts({documentObject:document,bridge:desktopBridge(),run:()=>current.current(),enabled:undoEnabled}),[]);

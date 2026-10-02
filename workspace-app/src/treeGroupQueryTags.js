@@ -1,6 +1,5 @@
 import {treePageRequest} from './pagedTreeRequest.js';
-import {mutationUndo,undoEnabled} from './mutationUndo.js';
-import {epochResourceCache} from './resourceCache.js';
+import {groupAnnotationRecovery,retainGroupOperation,runGroupOperation} from './groupAnnotationRecovery.js';
 
 export function groupQueryScope(scope,path,revision){
   if(scope.readContext)throw Error('Shared group tags are not supported in Incoming Workbench yet.');
@@ -12,25 +11,29 @@ export function confirmGroupReceipt(result,{operationUuid,profileUuid,count,tag,
   return result;
 }
 export async function previewTreeGroup({scope,path,revision,count,profileUuid,request,signal}){
+  const originalProject=groupAnnotationRecovery.currentProject();
   if(!profileUuid)throw Error('Choose a tag author profile, then reopen this group.');
   const result=await request('/annotations/group-preview',{method:'POST',signal,body:{scope:groupQueryScope(scope,path,revision),profile_uuid:profileUuid}});
   if(!result?.selection_uuid||result.target_kind!=='epoch'||result.count!==count||result.profile_uuid!==profileUuid||result.tree_revision!==revision)throw Error('The exact group changed or its preview was not confirmed. Reopen this group.');
-  const attempts=new Map();let unresolved=null;
-  const mutation={selectionUuid:result.selection_uuid,profileUuid,count:result.count,async save({tag,profileUuid:author}){
+  let operation=null,releaseRequested=false,released=false;
+  const release=()=>{
+    releaseRequested=true;
+    if(released||operation&&['pending','unconfirmed','ready'].includes(operation.status))return;
+    released=true;
+    return request('/annotations/group-preview-release',{method:'POST',body:{selection_uuid:result.selection_uuid}}).catch(()=>{});
+  };
+  const mutation={selectionUuid:result.selection_uuid,profileUuid,count:result.count,release,canPublish:()=>originalProject===groupAnnotationRecovery.currentProject(),async save({tag,profileUuid:author}){
+    if(originalProject!==groupAnnotationRecovery.currentProject())throw Error('Return to the original project before saving this group.');
     if(author!==profileUuid)throw Error('The author profile changed. Reopen this group.');
-    if(unresolved&&unresolved!==tag)throw Error('Retry the unconfirmed tag with the same operation before saving another tag.');
-    if(!attempts.has(tag))attempts.set(tag,{selection_uuid:result.selection_uuid,profile_uuid:profileUuid,tag,operation_uuid:crypto.randomUUID()});
-    const body=attempts.get(tag),token=undoEnabled?mutationUndo.begin():null;
-    unresolved=tag;
-    try{
-      const receipt=confirmGroupReceipt(await request('/annotations/group',{method:'POST',body}),{operationUuid:body.operation_uuid,profileUuid,count:result.count,tag});
-      unresolved=null;epochResourceCache.invalidate();
-      if(token)mutationUndo.complete(token,{...receipt.undo,profile_uuid:profileUuid});
-      return receipt;
-    }catch(error){if(token)mutationUndo.complete(token,null);throw error;}
+    if(operation&&operation.body.tag!==tag)throw Error('Retry the original unconfirmed tag or reopen after its refusal before saving another tag.');
+    if(!operation){
+      const body={selection_uuid:result.selection_uuid,profile_uuid:profileUuid,tag,operation_uuid:crypto.randomUUID()};
+      operation=retainGroupOperation({body,count:result.count,request,confirm:receipt=>confirmGroupReceipt(receipt,{operationUuid:body.operation_uuid,profileUuid,count:result.count,tag}),onTerminal:()=>{if(releaseRequested)void release();}});
+    }
+    return runGroupOperation(operation);
   }};
   return Object.freeze({kind:'epoch',count:result.count,groupMutation:mutation,epoch:{epoch_uuid:result.selection_uuid,annotations:{epoch_tags:[],cell_tags:[],effective_tags:[],revisions:{epoch:{},cell:{}}}}});
 }
 export function releaseGroupPreview(target,request){
-  if(target?.groupMutation)return request('/annotations/group-preview-release',{method:'POST',body:{selection_uuid:target.groupMutation.selectionUuid}}).catch(()=>{});
+  return target?.groupMutation?.release();
 }

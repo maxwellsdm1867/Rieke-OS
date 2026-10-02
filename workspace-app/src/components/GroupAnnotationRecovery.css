@@ -1,0 +1,2 @@
+.group-annotation-recovery{position:fixed;right:20px;top:62px;max-width:min(480px,calc(100vw - 40px));z-index:1200;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 4px 20px #0002;color:var(--ink);font-size:12px}
+.group-annotation-recovery>div{display:grid;gap:6px;padding:6px 0}.group-annotation-recovery small{overflow-wrap:anywhere}.group-annotation-recovery button{justify-self:start}
