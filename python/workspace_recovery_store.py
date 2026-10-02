@@ -194,15 +194,16 @@ def _metadata(database, *, expected=None):
     if hashlib.sha256(blob).digest() != digest:
         raise ValueError('Recovery header checksum differs')
     header = _unpack(blob)
-    from workspace_state_snapshot import TABLES
+    from workspace_state_snapshot import TABLES, LEGACY_TABLES
+    stored_tables = set(header.get('state', {}).get('tables', {}))
     if (header.get('format') != FORMAT or header.get('version') != VERSION
             or set(header.get('keys', {})) - set(TABLES)
             or set(header.get('columns', {})) != set(header.get('keys', {}))
-            or set(header.get('state', {}).get('tables', {})) != set(TABLES)
+            or stored_tables not in (set(TABLES), set(LEGACY_TABLES))
             or any(header['state']['tables'].values())):
         raise ValueError('Unsupported recovery header')
     table_seals = header.get('table_seals')
-    if table_seals is not None and (set(table_seals) != set(TABLES) or any(
+    if table_seals is not None and (set(table_seals) != stored_tables or any(
             not isinstance(value, dict) or set(value) != {'count', 'xor'}
             or type(value['count']) is not int or value['count'] < 0
             or not isinstance(value['xor'], str) or not re.fullmatch(r'[0-9a-f]{64}', value['xor'])
@@ -513,7 +514,7 @@ def load_database(path, *, expected=None):
         state = header['state']
         from workspace_state_snapshot import TABLES
         seal = {'count': 0, 'xor': '0' * 64}
-        table_seals = {table: {'count': 0, 'xor': '0' * 64} for table in TABLES}
+        table_seals = {table: {'count': 0, 'xor': '0' * 64} for table in state['tables']}
         for table_id, key, blob, digest in database.execute(
                 'SELECT table_name,row_key,payload,sha256 FROM recovery_rows ORDER BY table_name,row_key'):
             if type(table_id) is not int or not 0 <= table_id < len(TABLES):

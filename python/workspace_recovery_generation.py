@@ -27,7 +27,8 @@ RECOVERY_WINDOW=20000
 TRIM_INTERVAL=1000
 TABLE_NAMES=('annotation_profile','shared_annotation','curation','protocol_workspace',
     'data_store_state','protocol_tree_layout','search_preset','search_preset_version',
-    'protocol_binding','explorer_revision','dataset_revision','search_query_last_run','source')
+    'protocol_binding','explorer_revision','dataset_revision','search_query_last_run','source',
+    'protocol_suggestion','workbench_draft','workbench_decision','workbench_receipt')
 TABLE_IDS={name:index+1 for index,name in enumerate(TABLE_NAMES)}
 IDENTIFIER=re.compile(r'^[a-z][a-z0-9_]*$')
 

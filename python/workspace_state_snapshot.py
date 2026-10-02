@@ -20,9 +20,10 @@ from pathlib import Path
 import sqlite3
 import tempfile
 
-TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protocol_workspace',
+LEGACY_TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protocol_workspace',
           'data_store_state', 'protocol_tree_layout', 'search_preset', 'search_preset_version',
           'protocol_binding', 'explorer_revision', 'dataset_revision', 'search_query_last_run')
+TABLES = LEGACY_TABLES + ('protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt')
 FORMAT = 'rieke-app-state'
 
 
@@ -34,6 +35,28 @@ def encode(value):
 
 def serialized(value):
     return json.dumps(value, default=encode, sort_keys=True, separators=(',', ':'), allow_nan=False)
+
+
+def revision_roots(tables, protocols):
+    roots = {row['revision_uuid'] for row in tables.get('protocol_binding', [])}
+    roots.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
+    for row in tables.get('protocol_suggestion', []):
+        roots.update(row['summary'].get(field) for field in ('baseline_revision_uuid', 'candidate_revision_uuid'))
+    for row in tables.get('workbench_draft', []):
+        roots.add(row['candidate_revision_uuid'])
+    for row in tables.get('workbench_receipt', []):
+        roots.add(row['candidate_revision_uuid'])
+        roots.add(row['receipt'].get('binding', {}).get('revision_uuid'))
+    roots.discard(None)
+    return roots
+
+
+def restore_table_order(tables):
+    # Explicit FK dependency; input dictionaries may be canonically sorted.
+    ordinary = [table for table in tables if table not in
+                {'workbench_draft', 'workbench_decision', 'explorer_revision', 'protocol_binding'}]
+    return ordinary + [table for table in ('explorer_revision', 'protocol_binding',
+                                           'workbench_draft', 'workbench_decision') if table in tables]
 
 
 def capture(project_dir, connection, *, include_tables=True, ordered=True):
@@ -48,7 +71,10 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
     existing = {row[0] for row in connection.query(
         "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
     tables = {table: [] for table in TABLES}
-    for table in TABLES if include_tables else ():
+    # Workbench baselines, candidates and additive parent lineage are durable
+    # authorities. Preserve their immutable IDs/hashes, including old parents.
+    capture_order = [table for table in TABLES if table != 'explorer_revision'] + ['explorer_revision']
+    for table in capture_order if include_tables else ():
         if table not in existing:
             continue
         restriction, arguments = '', (identity,)
@@ -59,17 +85,29 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
                 'WHERE current.project_uuid=search_preset_version.project_uuid '
                 'AND current.preset_uuid=search_preset_version.preset_uuid '
                 'AND current.version=search_preset_version.version)')
-        elif table == 'explorer_revision':
-            revisions = {row['revision_uuid'] for row in tables.get('protocol_binding', [])}
-            revisions.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
-            revisions.discard(None)
-            if not revisions:
-                continue
-            revision_ids = sorted(revisions)
-            restriction = ' AND revision_uuid IN (' + ','.join(['%s'] * len(revision_ids)) + ')'
-            arguments += tuple(revision_ids)
-        rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s' + restriction,
-                                args=arguments, as_dict=True).fetchall()
+        if table == 'explorer_revision':
+            # Fetch only the exact dependency closure, including immutable
+            # candidate baselines and committed additive parent transitions.
+            roots = revision_roots(tables, protocols)
+            rows, seen, pending = [], set(), set(roots)
+            while pending:
+                batch = sorted(pending - seen)[:250]
+                if not batch:
+                    break
+                seen.update(batch)
+                pending.difference_update(batch)
+                selected = connection.query('SELECT * FROM recording_workspace.`explorer_revision` WHERE project_uuid=%s'
+                    + ' AND revision_uuid IN (' + ','.join(['%s'] * len(batch)) + ')',
+                    args=(identity, *batch), as_dict=True).fetchall()
+                if {row['revision_uuid'] for row in selected} != set(batch):
+                    raise ValueError('Saved Workbench revision dependency is unavailable')
+                rows.extend(selected)
+                for row in selected:
+                    if row.get('parent_revision_uuid'):
+                        pending.add(row['parent_revision_uuid'])
+        else:
+            rows = connection.query(f'SELECT * FROM recording_workspace.`{table}` WHERE project_uuid=%s' + restriction,
+                                    args=arguments, as_dict=True).fetchall()
         json_fields = {row[0] for row in connection.query(
             f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall() if row[1] == 'json'}
         tables[table] = [{key:_column_value(value, key in json_fields)
@@ -80,10 +118,6 @@ def capture(project_dir, connection, *, include_tables=True, ordered=True):
     if 'search_preset_version' in tables:
         tables['search_preset_version'] = [row for row in tables['search_preset_version']
             if versions.get(row['preset_uuid']) == row['version']]
-    revisions = {row['revision_uuid'] for row in tables.get('protocol_binding', [])}
-    revisions.update(value.get('initial_revision_uuid') for value in protocols.values() if isinstance(value, dict))
-    if 'explorer_revision' in tables:
-        tables['explorer_revision'] = [row for row in tables['explorer_revision'] if row['revision_uuid'] in revisions]
     if ordered:
         for table, rows in tables.items():
             tables[table] = sorted(rows, key=serialized)
@@ -132,7 +166,11 @@ def compact_queries(state, service):
     Existing non-reproducible/frozen selections retain their explicit members;
     silently changing a pin during recovery would lose scientific intent.
     """
+    if any(state['tables'].get(table) for table in ('protocol_suggestion', 'workbench_draft', 'workbench_receipt')):
+        return  # Requery/remapping would invalidate saved candidate scopes and receipts.
     for row in state['tables'].get('explorer_revision', []):
+        if row['recipe'].get('membership_kind') == 'additive_union':
+            continue
         recipe = row['recipe']
         try:
             members = query_members(service, recipe)
@@ -253,7 +291,8 @@ def _save(project_dir, connection, *, day=None, service=None):
                 # in recovery. Reconcile them with a full pruned capture rather
                 # than adding unreferenced history to the current-state mirror.
                 full_tables = {'source', 'search_preset', 'search_preset_version',
-                               'protocol_binding', 'explorer_revision', 'dataset_revision'}
+                               'protocol_binding', 'explorer_revision', 'dataset_revision',
+                               'protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt'}
                 incremental = (current is not None and plan.complete
                     and bool(current['header'].get('table_seals'))
                     and keys == current['header']['keys'] and columns == current['header']['columns']
@@ -411,7 +450,11 @@ def _restore(project_dir, connection, snapshot):
         atomic_write(pending,serialized({'before_restore':str(before),'requested_snapshot':str(snapshot)}).encode())
     try:
         with connection.transaction:
-            order = [table for table in state['tables'] if table not in {'explorer_revision','protocol_binding'}] + ['explorer_revision','protocol_binding']
+            order = restore_table_order(state['tables'])
+            # Delete dependents before parents; insert parents before dependents.
+            for table in reversed(order):
+                if table in columns and table not in {'explorer_revision','dataset_revision','search_preset_version'}:
+                    connection.query(f'DELETE FROM recording_workspace.`{table}` WHERE project_uuid=%s',args=(identity,))
             for table in order:
                 rows = state['tables'].get(table,[])
                 if table not in columns:continue
@@ -419,8 +462,6 @@ def _restore(project_dir, connection, snapshot):
                     expand_queries(state,recovery_service)
                     files.update({root/'protocols'/name:serialized(value).encode() for name,value in state['protocols'].items()})
                 # Keep immutable export recipes and their historical dependencies.
-                if table not in {'explorer_revision','dataset_revision','search_preset_version'}:
-                    connection.query(f'DELETE FROM recording_workspace.`{table}` WHERE project_uuid=%s',args=(identity,))
                 names=columns[table]
                 quoted=','.join('`'+name+'`' for name in names)
                 placeholders=','.join(['%s']*len(names))

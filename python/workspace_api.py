@@ -1849,6 +1849,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_matching_epoch_routes(app, service, db_lock, data_stores.registration_locks, explorer_request)
     from workspace_candidate_exports import register_candidate_export_routes
     register_candidate_export_routes(app, service, store, explorer_history, db_lock, data_stores.registration_locks)
+    from workspace_workbench import register_workbench_routes
+    register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
+                              db_lock, data_stores.registration_locks)
     # Current-state recovery is independent of the action log. Fake services in
     # route tests have no SQL schema; real servers always enable these backups.
     if hasattr(service.dj, 'Schema'):
@@ -1880,6 +1883,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'annotation_batch_read', 'curation_batch_read', 'tag_import_preview',
                 'preview_source_propagation', 'resolve_search_preset',
                 'compare_protocol_revision'}
+            read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary'})
             readonly = request.method == 'POST' and request.endpoint in read_posts
             desktop_control = os.environ.get('RIEKE_DESKTOP_MODE') == '1' and request.path.startswith('/api/desktop/')
             if not readonly and not desktop_control and request.path != '/api/project/close' and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:

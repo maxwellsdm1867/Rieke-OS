@@ -81,6 +81,7 @@
     "workspace_state_snapshot.py",
     "workspace_storage.py",
     "workspace_suggestions.py",
+    "workspace_workbench.py",
     "workspace_tag_exchange.py",
     "workspace_tag_predicates.py",
     "workspace_tree.py",
