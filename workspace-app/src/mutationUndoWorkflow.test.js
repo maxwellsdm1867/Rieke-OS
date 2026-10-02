@@ -27,8 +27,11 @@ test('mounted committed tag undo survives epoch navigation and adds no ordinary 
   assert.equal(h.fixture.requests.slice(before).filter(row=>row.path==='/annotations').length,1);
   assert.equal(h.fixture.requests.slice(before).filter(row=>row.path==='/annotations/read').length,0);
   assert.equal(input(h).props['data-saved-undo'],'true');
+  // A saved annotation receipt enables the composer before refreshed row
+  // authority enables navigation. Invoke the row only when it is clickable.
+  await h.waitFor(()=>!h.viewer.treePane.listProps.navigationDisabled);
   // Navigate to another original epoch before pressing Undo.
-  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-2'));
+  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-2',{epoch_uuid:'epoch-2',cell_uuid:'cell-0'}));
   await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-2');
   assert.equal(input(h).props['data-saved-undo'],'true','A clean composer after epoch navigation must still hand off committed undo');
   const undo=h.root.findAllByType('button').find(row=>row.children.includes('Undo edit'));
