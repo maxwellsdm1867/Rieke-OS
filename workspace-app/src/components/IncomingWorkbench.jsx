@@ -35,7 +35,7 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
       {!!worklist.length&&<div className="incoming-worklist"><span>{worklist.length} selected proposals · each reviewed independently</span><button onClick={()=>setActive(worklist[0].candidate_revision_uuid)}>Review selected</button></div>}
       {!items.length&&!loading&&!queue.loading&&!error&&<p>No current incoming proposals need review.</p>}
       {items.map(item=>{const key=reviewKey(item),counts=item.diff_counts||{},state=exports[key];return <section className="incoming-proposal" key={key} aria-label={`Incoming update for ${humanize(item.protocol_name)}`}>
-        <header><label><input type="checkbox" checked={selected.includes(key)} onChange={()=>toggle(item)}/> {humanize(item.protocol_name)}</label><strong>{item.status==='stale'?'Refresh required':item.deferred?'Deferred':'Pending review'}</strong></header>
+        <header><label><input type="checkbox" checked={selected.includes(key)} onChange={()=>toggle(item)}/> {humanize(item.protocol_name)}</label><strong>{item.status==='stale'?'Refresh required':item.deferred||item.status==='deferred'?'Deferred':item.status==='accepted'?'Accepted':item.status==='covered'?'Already in main':item.status==='conflict'?'Conflict requires review':item.status==='source_blocked'?'Source unavailable':'Pending review'}</strong></header>
         <p>{item.source_filename||'Imported recording'} · {time(item.created_at)}</p>
         <div className="incoming-counts"><span>+{number(counts.added)} epochs</span><span>−{number(counts.removed)} epochs</span><span>{number(counts.changed)} metadata changes</span></div>
         <p>Base <code>{item.baseline_revision_uuid}</code> · proposal <code>{item.candidate_revision_uuid}</code></p>

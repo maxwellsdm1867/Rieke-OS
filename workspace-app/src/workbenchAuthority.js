@@ -25,12 +25,20 @@ export async function saveWorkbenchDecisions({root,context,decisions=[],deferred
   }
   return current;
 }
-export async function previewWorkbench(root,context,mode,request){
+export async function previewWorkbench(root,context,mode,request,onCommitted=()=>{}){
   requireWorkbenchContext(context);
   if(!['selected','all'].includes(mode))throw new Error('Choose selected additions or all eligible additions.');
+  if(context.draft.selection_mode!==mode)context=await saveWorkbenchDecisions({root,context,selectionMode:mode},request,onCommitted);
   const value=await request(`${root}/preview`,{method:'POST',body:{expected_candidate_scope_revision:context.candidate_scope_revision,expected_draft_version:context.draft.draft_version,mode}});
   if(typeof value.preview_sha256!=='string'||!Number.isSafeInteger(value.expected_binding_version)||typeof value.expected_query_revision!=='string')throw new Error('The additive preview did not return complete acceptance fences.');
   return {...value,mode,expected_candidate_scope_revision:context.candidate_scope_revision,expected_draft_version:context.draft.draft_version};
+}
+export function workbenchPreviewCounts(preview){
+  const fields={selected_epoch_count:'Selected incoming epochs',accepted_epoch_count:'New epochs to add',already_present_epoch_count:'Already in main',retained_epoch_count:'Existing main epochs retained',next_epoch_count:'Main epochs after acceptance',accepted_cell_count:'Cells with new additions'};
+  return Object.entries(fields).map(([key,label])=>{
+    if(!Number.isSafeInteger(preview[key])||preview[key]<0)throw new Error('The preview did not return authoritative addition counts. Refresh this proposal.');
+    return {key,label,count:preview[key]};
+  });
 }
 export async function acceptWorkbench(root,preview,operationUuid,request){
   if(typeof operationUuid!=='string'||!operationUuid)throw new Error('A stable operation identity is required for acceptance.');

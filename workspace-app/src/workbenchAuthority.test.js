@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {requireWorkbenchQueue,saveWorkbenchDecisions,previewWorkbench,acceptWorkbench,workbenchCandidateRoot,acceptanceFailureKind} from './workbenchAuthority.js';
-const context={candidate_scope_revision:'frozen-scope',draft:{draft_version:4}};
+import {requireWorkbenchQueue,saveWorkbenchDecisions,previewWorkbench,acceptWorkbench,workbenchCandidateRoot,acceptanceFailureKind,workbenchPreviewCounts} from './workbenchAuthority.js';
+const context={candidate_scope_revision:'frozen-scope',draft:{draft_version:4,selection_mode:'all'}};
 test('cumulative queue count comes from authority even when overlapping paged candidates differ',()=>{
  const queue={contract_version:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},queue_revision:'union',pending_cell_count:2,pending_epoch_count:30,candidates:[{candidate_revision_uuid:'a',pending_epoch_count:20},{candidate_revision_uuid:'b',pending_epoch_count:20}]};
  assert.equal(requireWorkbenchQueue(queue).pending_cell_count,2);
@@ -45,4 +45,21 @@ test('definitive stale rejection can refresh while uncertain commit preserves it
  assert.equal(acceptanceFailureKind({status:409,saved:true}),'unconfirmed');
  assert.equal(acceptanceFailureKind({status:503}),'unconfirmed');
  assert.equal(acceptanceFailureKind(Error('reply lost')),'unconfirmed');
+});
+
+test('preview saves mode with fresh draft fences before comparing; failed compare retains the saved draft',async()=>{
+ const calls=[],committed=[];
+ const initial={candidate_scope_revision:'before',draft:{draft_version:4,selection_mode:'selected'}};
+ await assert.rejects(()=>previewWorkbench('/candidate',initial,'all',async(path,{body})=>{
+  calls.push({path,body});
+  if(path.endsWith('/draft'))return {candidate_scope_revision:'after',draft:{draft_version:5,selection_mode:'all'}};
+  throw Error('Source changed');
+ },value=>committed.push(value)),/Source changed/);
+ assert.equal(committed.length,1);assert.equal(calls[0].body.selection_mode,'all');
+ assert.equal(calls[1].body.expected_candidate_scope_revision,'after');assert.equal(calls[1].body.expected_draft_version,5);
+});
+test('preview count display uses flat authority fields and rejects unavailable counts',()=>{
+ const preview={selected_epoch_count:7,accepted_epoch_count:6,already_present_epoch_count:1,retained_epoch_count:40,next_epoch_count:46,accepted_cell_count:2};
+ assert.deepEqual(workbenchPreviewCounts(preview).map(row=>row.count),[7,6,1,40,46,2]);
+ assert.throws(()=>workbenchPreviewCounts({...preview,accepted_epoch_count:undefined}),/authoritative/);
 });

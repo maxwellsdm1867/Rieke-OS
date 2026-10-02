@@ -48,12 +48,12 @@ test('mounted additive review preserves an uncertain acceptance operation and re
  const server=await create(),oldFetch=globalThis.fetch;
  const calls=[];let renderer,saved,accepts=0,changed=0;
  const root='/protocols/history/workbench/candidates/proposal';
- const context={candidate_scope_revision:'exact-frozen-scope',draft:{draft_version:4},protocol:null};
+ const context={candidate_scope_revision:'exact-frozen-scope',draft:{draft_version:4,selection_mode:'all'},protocol:null};
  globalThis.fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):undefined;
   calls.push({path:endpoint,method:options.method||'GET',body});
   let value=context,status=200;
-  if(endpoint===`${root}/preview`)value={preview_sha256:'sealed-preview',expected_binding_version:2,expected_query_revision:'main-query',counts:{added:7,retained:40}};
+  if(endpoint===`${root}/preview`)value={preview_sha256:'sealed-preview',expected_binding_version:2,expected_query_revision:'main-query',selected_epoch_count:7,accepted_epoch_count:7,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:47,accepted_cell_count:2};
   else if(endpoint===`${root}/accept`){if(accepts++===0){status=503;value={error:'Reply lost after possible commit'};}else value={binding:{revision_uuid:'main-plus-additions',version:3},event_uuid:'one-event',operation_uuid:body.operation_uuid};}
   else assert.equal(endpoint,`${root}/context`,'frozen review makes no global browse or replacement request');
   return {ok:status===200,status,json:async()=>value};
@@ -64,6 +64,7 @@ test('mounted additive review preserves an uncertain acceptance operation and re
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('No global query is substituted')));
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
   await act(async()=>button('Preview accept all').props.onClick());
+  assert.ok(renderer.root.findAllByType('dt').some(node=>label(node)==='Existing main epochs retained'));
   await act(async()=>button('Add these additions to main').props.onClick());
   assert.equal(saved.unconfirmed,true);assert.ok(saved.operation);assert.equal(saved.preview.mode,'all');
   assert.equal(button('Preview selected additions').props.disabled,true);

@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {api,number} from '../api.js';
 import Inspector,* as InspectorCapabilities from './Inspector.jsx';
 import ProtocolViewFilter from './ProtocolViewFilter.jsx';
-import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,selectionDecisions,workbenchCandidateRoot} from '../workbenchAuthority.js';
+import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
 export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={}}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
@@ -37,7 +37,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   async function compare(mode){
     if(inFlight.current||unconfirmed||!capabilities.additive_accept||!context)return;inFlight.current=true;setBusy(true);setError('');
-    try{const value=await previewWorkbench(root,context,mode,api);setPreview(value);operation.current=crypto.randomUUID();publish({preview:value,operation:operation.current});}
+    try{const value=await previewWorkbench(root,context,mode,api,value=>{current.current=value;setContext(value);});workbenchPreviewCounts(value);setPreview(value);operation.current=crypto.randomUUID();publish({preview:value,operation:operation.current});}
     catch(error){setError(error.message);setPreview(null);}finally{inFlight.current=false;setBusy(false);}
   }
   async function accept(){
@@ -63,7 +63,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     </div>
     {error&&<div className="error" role="alert">{error}<button disabled={busy} onClick={()=>setNonce(value=>value+1)}>Refresh draft</button></div>}
     {!context&&!error&&<p role="status">Loading frozen proposal…</p>}
-    {preview&&<section className="incoming-proposal" aria-label="Additive acceptance preview"><h2>{preview.mode==='all'?'All eligible incoming additions':'Selected incoming additions'}</h2><p>Existing main epochs stay included. Explicit draft exclusions stay excluded.</p><pre>{JSON.stringify(preview.counts,null,2)}</pre><button disabled={busy||!capabilities.additive_accept||!!receipt} className="primary" onClick={accept}>{busy?'Accepting…':unconfirmed?'Recover acceptance receipt':'Add these additions to main'}</button></section>}
+    {preview&&<section className="incoming-proposal" aria-label="Additive acceptance preview"><h2>{preview.mode==='all'?'All eligible incoming additions':'Selected incoming additions'}</h2><p>Existing main epochs stay included. Explicit draft exclusions stay excluded.</p><dl>{workbenchPreviewCounts(preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl><button disabled={busy||!capabilities.additive_accept||!!receipt} className="primary" onClick={accept}>{busy?'Accepting…':unconfirmed?'Recover acceptance receipt':'Add these additions to main'}</button></section>}
     {receipt&&<p role="status">Added to main · binding version {receipt.binding.version} · receipt {receipt.event_uuid}. No export artifact was created.</p>}
     {context&&adapterReady?<><ProtocolViewFilter readContext={{root,candidate_scope_revision:context.candidate_scope_revision}} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={revision} disabled={busy||unconfirmed} onChange={setFilters}/><Inspector readContext={{root,candidate_scope_revision:context.candidate_scope_revision}} projectId={projectId} protocol={protocol} filters={filters} revision={`${revision}:${context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={value=>{viewer.current=value;publish({viewer:value});}} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={()=>{}}/></>:context&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
