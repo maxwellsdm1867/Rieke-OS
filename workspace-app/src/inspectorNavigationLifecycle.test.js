@@ -158,3 +158,22 @@ test('annotation authority refresh with equal membership disables old navigation
   await h.act(()=>row(h,10).props.onClick({}));await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-9');
  }finally{await h.close();}
 });
+
+test('reselecting the active Inspect tab returns from design without remounting or rereading rows',async()=>{
+ const h=await createWorkflowHarness({total:500});try{
+  await h.mount(h.Protocol,{id:'protocol-A',revision:0,structureRevision:0,initialInspection:{epoch_uuid:'epoch-0'},onChange(){}});
+  await h.waitFor(()=>h.root.findAllByType('workflow-viewer').length>0&&!h.viewer.treePane.listProps.disabled);
+  await openCell(h);await h.act(()=>row(h,9).props.onClick({}));await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8');
+  const node=row(h,9),mounts=h.fixture.mounts;
+  const start=h.fixture.requests.length;
+  const tab=h.root.findAllByType('button').find(n=>n.props.role==='tab'&&n.props['aria-label']==='Inspect');
+  for(let i=0;i<3;i++)await h.act(()=>tab.props.onClick());
+  assert.equal(h.viewer.designMode,false);assert.equal(h.viewer.treePane.treeMode,false);
+  assert.equal(h.fixture.requests.slice(start).filter(r=>r.path.includes('/epochs?')||r.path==='/metadata/fields').length,0);
+  await h.act(()=>h.viewer.toolbar.onDesign());assert.equal(h.viewer.designMode,true);
+  await h.act(()=>tab.props.onClick());assert.equal(h.viewer.designMode,false);
+  assert.equal(h.fixture.mounts,mounts);assert.equal(h.fixture.unmounts,0);
+  assert.equal(row(h,9),node);assert.equal(h.viewer.epoch.epoch_uuid,'epoch-8');
+  assert.equal(h.fixture.requests.slice(start).filter(r=>r.path.includes('/epochs?')).length,0);
+ }finally{await h.close();}
+});

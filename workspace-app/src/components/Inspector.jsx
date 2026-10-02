@@ -28,7 +28,7 @@ import Trace from './TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,browseRequest=0}) {
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
   const requestedCellFocus=filters?.cell_uuid&&filters.cell_uuid!==cellScope?null:(cellScope || null);
   const [focusCell,setFocusCell]=useState(initialNavigation&&Object.hasOwn(initialNavigation,'focusCell')?initialNavigation.focusCell:requestedCellFocus);
@@ -52,6 +52,14 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const changeSplits=useCallback(fields=>{setSplits(fields.join(','));setDesignPath([]);setDesignNavigation(null);},[]);
   const [collapseRequest,setCollapseRequest]=useState(0);
   const [treeOpen,setTreeOpen]=useState(initialNavigation?.treeOpen ?? true),[treeMode,setTreeMode]=useState(initialNavigation?.treeMode ?? false);
+  // A tab reselection is a view intent, not a new recording authority. Keep
+  // mounted rows, scroll, focus and trace; only leave the tree designer.
+  const previousBrowseRequest=useRef(browseRequest);
+  useEffect(()=>{
+    if(previousBrowseRequest.current===browseRequest)return;
+    previousBrowseRequest.current=browseRequest;
+    setDesignMode(false);setTreeMode(false);setTreeOpen(true);
+  },[browseRequest]);
   const queries=inspectionSearches(filters,focusCell);
   const protocolSearch=frozenReadQuery(readContext,queries.protocol),search=frozenReadQuery(readContext,queries.navigation);
   const readRoot=readContext?.root||`/protocols/${id}`;

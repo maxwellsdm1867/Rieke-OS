@@ -127,7 +127,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
   const {epochResourceCache}=await server.ssrLoadModule('/src/resourceCache.js');epochResourceCache.invalidate();
   let root;
   const harness={fixture,App,Protocol,async component(name){return (await server.ssrLoadModule(`/src/components/${name}.jsx`)).default;},
-    async mount(component=App,props={}){await act(async()=>{root=TestRenderer.create(React.createElement(component,props),{createNodeMock:element=>{if(element.type==='input'){const node={focus:()=>{},closest:()=>null};fixture.nodes.set(element.props['aria-label'],node);return node;}return null;}});});},
+    async mount(component=App,props={}){await act(async()=>{root=TestRenderer.create(React.createElement(component,props),{createNodeMock:element=>{if(element.type==='dialog')return {showModal(){},close(){}};if(element.type==='input'){const node={focus:()=>{},closest:()=>null};fixture.nodes.set(element.props['aria-label'],node);return node;}return null;}});});},
     async render(component,props){await act(async()=>root.update(React.createElement(component,props)));},
     get root(){return root.root;},
     get viewer(){return root.root.findByType('workflow-viewer').props;},
