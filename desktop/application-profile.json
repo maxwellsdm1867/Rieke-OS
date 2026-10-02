@@ -60,6 +60,7 @@
     "workspace_predicates.py",
     "workspace_project_database.py",
     "workspace_project_preferences.py",
+    "workspace_project_unmount.py",
     "workspace_project_servers.py",
     "workspace_project_validation.py",
     "workspace_projection_cache.py",
