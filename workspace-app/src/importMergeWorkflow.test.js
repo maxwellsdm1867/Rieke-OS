@@ -11,7 +11,7 @@ const protocol='merge-protocol',project='merge-project',base=`/protocols/${proto
 const suggestion={protocol_uuid:protocol,protocol_name:'SplitFieldCentering',candidate_revision_uuid:'original-proposal',status:'pending',source_filename:'Fixture.h5',created_at:'2026-10-02T10:00:00Z',diff_counts:{added:16,removed:0,changed:0},diff_summary:{current:{cells:9,epochs:36,acquisition_protocols:1,duration_seconds:90},proposed:{cells:11,epochs:52,acquisition_protocols:1,duration_seconds:130},delta:{cells:2,epochs:16,acquisition_protocols:0}}};
 const response=(value,status=200)=>({ok:status===200,status,json:async()=>value});
 const deferred=()=>{let resolve;return {promise:new Promise(value=>{resolve=value;}),resolve:()=>resolve()};};
-async function harness({pending=3,failQueue=false,failPreview=false,failAccept=false,prepareGate=null,session=null,restore=null}={}){
+async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=false,failAccept=false,prepareGate=null,session=null,restore=null}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
  const calls=[],receiptBodies=[],receipts=new Map();let generation=1,mode='selected',previews=0,accepts=0,lastNavigation,revision=0;
  const caps={cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true};
@@ -20,7 +20,7 @@ async function harness({pending=3,failQueue=false,failPreview=false,failAccept=f
  const fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body&&JSON.parse(options.body);calls.push({endpoint,body,method:options.method||'GET'});
   if(endpoint.startsWith(base+'?'))return failQueue?response({error:'Queue unavailable'},503):response(queue());
-  if(endpoint===base+'/prepare'){if(prepareGate)await prepareGate.promise;return response({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:'union',root:candidate,candidate_scope_revision:context().candidate_scope_revision,queue_revision:body.expected_queue_revision,context:context()});}
+  if(endpoint===base+'/prepare'){if(prepareGate)await prepareGate.promise;if(failPrepare-->0)return response({error:'An unmerged original proposal has stale authority or conflicting fingerprints; reconcile it before cumulative preparation'},409);return response({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:'union',root:candidate,candidate_scope_revision:context().candidate_scope_revision,queue_revision:body.expected_queue_revision,context:context()});}
   if(endpoint===candidate+'/context')return response(context());
   if(endpoint===candidate+'/draft'){assert.equal(body.expected_version,generation);assert.equal(body.expected_candidate_scope_revision,context().candidate_scope_revision);assert.deepEqual(body.decisions,[],'all preview must not change reviewed/excluded flags');mode=body.selection_mode;generation++;return response(context());}
   if(endpoint===candidate+'/preview'){previews++;if(failPreview)return response({error:'Queue changed: preview again'},409);return response({preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',selected_epoch_count:pending,accepted_epoch_count:Math.max(0,pending-1),already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:36+Math.max(0,pending-1),accepted_cell_count:pending>1?2:0});}
@@ -84,6 +84,28 @@ test('cancel preview preserves exclusions and history restoration does not repla
 test('cancel while preparation is pending prevents late completion from previewing or accepting',async()=>{
  const gate=deferred(),h=await harness({prepareGate:gate});try{
   await h.click('Merge matched data');await h.click('Cancel merge request');await act(async()=>gate.resolve());assert.equal(h.previews,0);assert.equal(h.accepts,0);
+ }finally{await h.close();}
+});
+test('blocked preparation ends the merge request and exposes saved proposals without changing a draft',async()=>{
+ const h=await harness({failPrepare:1});try{
+  await h.click('Merge matched data');
+  assert.match(h.container.querySelector('[role="alert"]').textContent,/stale authority or conflicting fingerprints/);
+  assert.doesNotMatch(h.container.textContent,/Preparing your merge preview/);
+  assert.equal(h.button('Cancel merge request'),undefined);
+  await h.rerender();assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1,'failure does not retry on rerender');
+  await h.click('Review saved proposals');assert.match(h.container.textContent,/Proposal history/);
+  assert.equal(h.saved.history,true);assert.equal(h.previews,0);assert.equal(h.accepts,0);
+  assert.ok(h.calls.every(c=>c.method==='GET'||c.endpoint===base+'/prepare'),'no draft or scientific mutation');
+ }finally{await h.close();}
+});
+test('explicit preparation retry recovers browsing without replaying the failed merge intent',async()=>{
+ const h=await harness({failPrepare:1});try{
+  await h.click('Merge matched data');await h.click('Retry cumulative preparation');
+  assert.ok(h.container.querySelector('[data-frozen-scope]'));
+  assert.equal(h.previews,0,'the failed preview request was consumed');assert.equal(h.accepts,0);
+  assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,2);
+  assert.ok(h.calls.every(c=>c.method==='GET'||c.endpoint===base+'/prepare'));
+  await h.click('Merge all');assert.equal(h.previews,1,'a new explicit request can preview');assert.equal(h.accepts,0);
  }finally{await h.close();}
 });
 for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',{failQueue:true}],['stale preview',{failPreview:true}],['zero eligible',{pending:1}]])test(`${label} never silently accepts`,async()=>{
