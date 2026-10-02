@@ -28,7 +28,7 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
     try{
       let preview=saved.current.preview;
       if(!receipt&&!saved.current.prepared&&!preview){
-        preview=await previewWorkbench(root,context,mode,api,setContext);workbenchPreviewCounts(preview);publish({preview});
+        preview=await previewWorkbench(root,context,mode,api,setContext);workbenchPreviewCounts(preview);publish({preview,phase:'previewed'});return;
       }
       if(accepting&&!receipt){
         phase='accepting';const op=saved.current.acceptOperation||crypto.randomUUID();publish({acceptOperation:op,phase});
@@ -59,10 +59,11 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
       {state.phase==='acceptance-unconfirmed'&&<p>Acceptance may have committed. Retry the same saved operation to recover its receipt before exporting.</p>}
       {state.phase==='export-unconfirmed'&&<p>Export may have committed. Retry the same export operation to recover its artifact.</p>}
       {!state.exported&&<form onSubmit={submit}>
-        {!committed&&<fieldset disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>setMode('selected')}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>setMode('all')}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
+        {!committed&&<fieldset disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>{setMode('selected');publish({preview:null});}}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>{setMode('all');publish({preview:null});}}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
+        {state.preview&&!committed&&<dl aria-label="Incoming export preview counts">{workbenchPreviewCounts(state.preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl>}
         <label>Export name (optional)<input value={name} maxLength={120} disabled={locked} onChange={event=>setName(event.target.value)}/></label>
         <ExportDestination value={format} onChange={setFormat} disabled={locked}/>
-        <button className="primary" disabled={busy||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':accepting?'Accept & export':'Export'}</button>
+        <button className="primary" disabled={busy||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
       </form>}
       {state.exported&&<p role="status">{state.exported.name||'Export saved'} · {number(state.exported.epoch_count)} new epochs <a className="button" href={state.exported.download_url} download>Download {exportDownloadLabel(state.exported.format)}</a></p>}
     </div>

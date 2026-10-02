@@ -121,6 +121,8 @@ test('accept then export failure preserves acceptance receipt and retries identi
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);},onChanged:()=>changed++});}
   const mount=async()=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});};
   await mount();await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.phase,'previewed');assert.equal(calls.filter(call=>call.path.endsWith('/accept')).length,0,'counts shown before acceptance');
+  await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
   assert.equal(saved.phase,'acceptance-unconfirmed');assert.ok(saved.acceptOperation);assert.equal(changed,0);
   await act(async()=>renderer.unmount());await mount();
   await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
@@ -146,7 +148,7 @@ test('completed independent export can proceed to review and fresh accept/export
   assert.equal(button('Preview accept all').props.disabled,false);
   await act(async()=>button('Accept & export').props.onClick());
   assert.equal(saved.exportState.prepared,undefined);assert.equal(saved.exportState.completed[0].exported.dataset_uuid,'old-dataset');
-  assert.equal(renderer.root.findByType('form').props.children.at(-1).props.children,'Accept & export');
+  assert.equal(renderer.root.findByType('form').props.children.at(-1).props.children,'Preview additions');
   assert.equal(renderer.root.findByType('a').props.href,'/old-download');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
@@ -158,7 +160,7 @@ test('definitively rejected acceptance refreshes on reopen and permits a fresh a
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   assert.equal(saved.phase,null);assert.match(saved.error,/Fresh proposal loaded/);
-  assert.equal(renderer.root.findAllByType('button').find(node=>label(node)==='Accept & export').props.disabled,false);
+  assert.equal(renderer.root.findAllByType('button').find(node=>label(node)==='Preview additions').props.disabled,false);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -177,6 +179,8 @@ test('unsupported direct export format releases rejected request so fresh format
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   await act(async()=>renderer.root.findAllByType('input').find(node=>node.props.value==='matlab-mat').props.onChange());
+  await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(saved.phase,'previewed');
   await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
   assert.equal(saved.phase,null);assert.match(saved.error,/MATLAB cannot preserve/);assert.equal(saved.prepared,null);assert.equal(saved.exportOperation,null);
   await act(async()=>renderer.unmount());await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
@@ -200,5 +204,67 @@ test('shared change callback and external revision refresh frozen token while pr
   assert.equal(contextReads,2);assert.ok(renderer.root.findAllByType('span').some(node=>label(node).includes('scope-v2')));
   await act(async()=>renderer.update(React.createElement(Probe,{external:5})));
   assert.equal(contextReads,3);assert.equal(saved.operation,'same-operation');assert.deepEqual(saved.preview,preview);assert.equal(saved.unconfirmed,true);assert.equal(calls.length,3);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('default cumulative Workbench prepares once per queue fence, refreshes after partial acceptance, and keeps proposal history separate',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,preparedCalls=0,saved;
+ const protocol='history',root='/protocols/history/workbench';
+ const makeQueue=(token,count)=>({contract_version:1,queue_revision:token,pending_epoch_count:count,pending_cell_count:1,candidates:[{protocol_uuid:protocol,candidate_revision_uuid:'original-a',status:'pending',pending_epoch_count:count},{protocol_uuid:protocol,candidate_revision_uuid:'original-b',status:'pending',pending_epoch_count:count}],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}});
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value;
+  if(endpoint===`${root}/prepare`){preparedCalls++;const id=`union-${body.expected_queue_revision}`;value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${body.expected_queue_revision}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:'frozen',queue_revision:body.expected_queue_revision,context:{candidate_scope_revision:'frozen',draft:{draft_version:1,selection_mode:'selected'}}};}
+  else if(endpoint.endsWith('/context'))value={candidate_scope_revision:'fresh',draft:{draft_version:1,selection_mode:'selected'},protocol:null,counts:{pending_epochs:endpoint.includes('queue-1')?3:1}};
+  else assert.fail(`No global fallback or invented client union: ${endpoint}`);
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
+  const props={protocolId:protocol,authority:makeQueue('queue-1',3),onSession:value=>{saved=value;}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
+  assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('strong').some(node=>label(node)==='Unmerged incoming recordings'));
+  await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:{...props.authority}})));
+  assert.equal(preparedCalls,1,'ordinary rerender/poll result does not prepare again');
+  await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1,authority:makeQueue('queue-2',1)})));
+  assert.equal(preparedCalls,2);assert.equal(saved.cumulative.prepared.candidate_revision_uuid,'union-queue-2');
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('1 unmerged incoming epochs remain')));
+  const historyButton=renderer.root.findAllByType('button').find(node=>label(node)==='Proposal history');
+  await act(async()=>historyButton.props.onClick());
+  assert.ok(renderer.root.findAllByType('code').some(node=>label(node)==='original-a'));assert.equal(preparedCalls,2);
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Return to cumulative incoming review').props.onClick());
+  assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('queue changes preserve in-flight acceptance and older confirmed receipt keeps exact export action',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved,release,attempts=0,prepares=0;
+ const root='/protocols/history/workbench/candidates/old-union';
+ const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'all'},counts:{pending_epochs:2},protocol:null};
+ const preview={expected_candidate_scope_revision:'scope',expected_draft_version:1,mode:'all',preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'main',selected_epoch_count:2,accepted_epoch_count:2,already_present_epoch_count:0,retained_epoch_count:1,next_epoch_count:3,accepted_cell_count:1};
+ const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-old',candidate_revision_uuid:'old-union',root,candidate_scope_revision:'scope',context,queue_revision:'old-queue'};
+ const makeQueue=token=>({data:{queue_revision:token,pending_epoch_count:2,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value,status=200;
+  if(endpoint.endsWith('/context'))value=context;
+  else if(endpoint===`${root}/accept`){if(attempts++===0){await new Promise(resolve=>{release=resolve;});status=503;value={error:'Reply lost'};}else value={operation_uuid:body.operation_uuid,candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};}
+  else if(endpoint.endsWith('/prepare')){prepares++;value={...prepared,candidate_revision_uuid:'new-union',root:root.replace('old-union','new-union'),queue_revision:body.expected_queue_revision};}
+  else assert.fail(`Unexpected ${endpoint}`);
+  return {ok:status===200,status,json:async()=>value};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+  const props={protocolId:'history',queue:makeQueue('old-queue'),session:{prepared,drafts:{'old-union':{preview,operation:'same-operation'}}},onSession:value=>{saved=value;}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  let accepting;
+  await act(async()=>{accepting=renderer.root.findAllByType('button').find(node=>label(node)==='Add these additions to main').props.onClick();});
+  assert.equal(saved.drafts['old-union'].acceptPending,true);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,queue:makeQueue('new-queue')})));
+  assert.equal(prepares,0,'scope cannot switch during pending acceptance');
+  await act(async()=>{release();await accepting;});assert.equal(saved.drafts['old-union'].unconfirmed,true);assert.equal(prepares,0);
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Recover acceptance receipt').props.onClick());
+  assert.equal(prepares,1);assert.equal(saved.prepared.candidate_revision_uuid,'new-union');
+  const exportButton=renderer.root.findAllByType('button').find(node=>label(node)==='Export accepted additions');assert.ok(exportButton,'old accepted subset remains exportable');
+  await act(async()=>exportButton.props.onClick());
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('accepted-old')));assert.equal(attempts,2,'opening old receipt export does not accept again');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

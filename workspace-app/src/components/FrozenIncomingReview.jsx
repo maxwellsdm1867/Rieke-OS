@@ -6,18 +6,18 @@ import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal'}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
-  const [unconfirmed,setUnconfirmed]=useState(session?.unconfirmed||false);
+  const [unconfirmed,setUnconfirmed]=useState(session?.unconfirmed||session?.acceptPending||false),[acceptPending,setAcceptPending]=useState(false);
   const [highlighted,setHighlighted]=useState(session?.selected||[]);
   const [filters,setFilters]=useState(session?.filters||{}),[preview,setPreview]=useState(session?.preview||null),[receipt,setReceipt]=useState(session?.receipt||null);
   const [exportState,setExportState]=useState(session?.exportState||(exportIntent?{format:exportIntent.format,name:exportIntent.name}:{})),[exportDialog,setExportDialog]=useState(null);
   const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedRevision=useRef(revision);
   const contextFresh=context!==null&&loadedRevision.current===revision;
-  selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,operation:operation.current,receipt,preview,unconfirmed,viewer:viewer.current,exportState};
+  selected.current=highlighted;current.current=contextFresh?context:null;snapshot.current={filters,selected:selected.current,operation:operation.current,receipt,preview,unconfirmed,acceptPending,viewer:viewer.current,exportState};
   const publish=useCallback(value=>{onSession?.({...snapshot.current,...value});},[onSession]);
-  useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,exportState,publish]);
+  useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,acceptPending,exportState,publish]);
   useEffect(()=>{
     const controller=new AbortController();setContext(null);setError('');
     api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){loadedRevision.current=revision;setContext(requireWorkbenchContext(value));}}).catch(error=>{if(!controller.signal.aborted)setError(error.message);});
@@ -57,14 +57,15 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   async function accept(){
     if(inFlight.current||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
-    try{const result=await acceptWorkbench(root,preview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,operation:operation.current});setPreview(null);onChange?.();}
+    setAcceptPending(true);publish({acceptPending:true});
+    try{const result=await acceptWorkbench(root,preview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,operation:operation.current});setPreview(null);onChange?.();}
     catch(error){
       if(acceptanceFailureKind(error)==='rejected'){
-        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,preview:null,operation:null});setContext(null);
+        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});setContext(null);
         setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);
-      }else{setUnconfirmed(true);publish({unconfirmed:true,preview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
+      }else{setUnconfirmed(true);publish({unconfirmed:true,acceptPending:false,preview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
     }
-    finally{inFlight.current=false;setBusy(false);}
+    finally{inFlight.current=false;setBusy(false);setAcceptPending(false);}
   }
   const protocol=contextFresh?context.protocol:null;
   const adapterReady=capabilities.frozen_browse===true&&InspectorCapabilities.FROZEN_CANDIDATE_INSPECTOR_SUPPORTED===true&&!!protocol;
@@ -72,9 +73,9 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   function openExport(accept){if(exportState.exported||exportState.phase==='rejected')setExportState(nextWorkbenchWorkflow(exportState));setExportDialog(accept);}
   function reviewRemaining(){const next=nextWorkbenchWorkflow({...exportState,receipt});setExportState(next);setReceipt(null);setPreview(null);operation.current=null;publish({receipt:null,preview:null,operation:null,exportState:next});setNonce(value=>value+1);}
   return <section>
-    <div className="incoming-review-context"><strong>Frozen proposal additions</strong><code>{item.candidate_revision_uuid.slice(0,8)}</code><button disabled={busy} onClick={onDefer}>Back to queue</button><button disabled={busy||exportLocked||!capabilities.drafts||!contextFresh} onClick={defer}>Defer & return to queue</button>{onNext&&<button disabled={busy||unconfirmed} onClick={onNext}>Next proposal</button>}
-      <p>This browser shows one proposal snapshot. Overlapping proposals may repeat epochs, and epochs already added to main can remain visible here. The queue count deduplicates unmerged epochs; a cumulative unmerged browser is not available in this build.</p>
-      {contextFresh&&context?.counts&&<p>{number(context.counts.incoming_epochs)} proposal additions · {number(context.counts.pending_epochs)} absent from main · {number(context.counts.already_present_epochs)} already in main.</p>}
+    <div className="incoming-review-context"><strong>{scopeKind==='cumulative_pending'?'Unmerged incoming recordings':'Frozen proposal additions'}</strong><code>{item.candidate_revision_uuid.slice(0,8)}</code><button disabled={busy} onClick={onDefer}>Back to queue</button><button disabled={busy||exportLocked||!capabilities.drafts||!contextFresh} onClick={defer}>Defer & return to queue</button>{onNext&&<button disabled={busy||unconfirmed} onClick={onNext}>Next proposal</button>}
+      {scopeKind==='cumulative_pending'?<p>Review the deduplicated unmerged recordings accumulated for this protocol. Existing main recordings stay separate; original proposals remain in history.</p>:<p>This browser shows one proposal snapshot. Overlapping proposals may repeat epochs. The queue count deduplicates unmerged epochs; proposal history is separate from cumulative review.</p>}
+      {contextFresh&&context?.counts&&<p>{scopeKind==='cumulative_pending'?`${number(context.counts.pending_epochs)} unmerged incoming epochs remain.`:<>{number(context.counts.incoming_epochs)} proposal additions · {number(context.counts.pending_epochs)} absent from main · {number(context.counts.already_present_epochs)} already in main.</>}</p>}
       {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
       <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Adding to main preserves its existing epochs and curation; opening this view does not mark anything reviewed.</p>
       {context?.draft.deferred&&<button disabled={busy||exportLocked||!capabilities.drafts} onClick={()=>save([],{deferred:false})}>Resume deferred review</button>}

@@ -7,29 +7,33 @@ import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
 import {nextWorkbenchWorkflow} from '../workbenchExport.js';
 import MetadataExplorer from './MetadataExplorer.jsx';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
+import CumulativeIncomingReview from './CumulativeIncomingReview.jsx';
 import useWorkbenchQueue from '../useWorkbenchQueue.js';
 import './IncomingWorkbench.css';
 
 export default function IncomingWorkbench({projectId,protocolId,protocols=[],suggestions=[],loading=false,error,onRetry,onChange,onApplied,onQC,onInspect,revision,session,onSession,initialCandidateId=null,initialExportIntent=null,initialAcceptOperation=null,authority=undefined}){
   const queue=useWorkbenchQueue(protocolId,revision,authority);
   const cumulative=queue.data?.contract_version===1;
+  const preparedSupported=queue.data?.capabilities?.cumulative_pending_browse===true;
   const saved=useRef(session||{}).current;
   const [selected,setSelected]=useState(saved.selected||[]),[active,setActive]=useState(initialCandidateId||saved.active||null);
   const [exports,setExports]=useState(saved.exports||{}),[dialog,setDialog]=useState(null);
-  const drafts=useRef(saved.drafts||{}),snapshot=useRef(null);
+  const drafts=useRef(saved.drafts||{}),snapshot=useRef(null),cumulativeSession=useRef(saved.cumulative||{});
+  const [history,setHistory]=useState(!!initialCandidateId||saved.history||false);
   const items=cumulative?queue.data.candidates.filter(item=>!['accepted','covered'].includes(item.status)||item.pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
   const worklist=cumulative?items.filter(item=>selected.includes(reviewKey(item))):reviewWorklist({suggestions:items},selected);
   const current=items.find(item=>item.candidate_revision_uuid===active)||(cumulative&&active?{candidate_revision_uuid:active,protocol_uuid:protocolId}:null);
-  snapshot.current={selected,active,exports,drafts:drafts.current};
-  useEffect(()=>{onSession?.(snapshot.current);},[selected,active,exports,onSession]);
+  snapshot.current={selected,active,exports,drafts:drafts.current,history,cumulative:cumulativeSession.current};
+  useEffect(()=>{onSession?.(snapshot.current);},[selected,active,exports,history,onSession]);
   const remember=useCallback(value=>{drafts.current={...drafts.current,[active]:value};onSession?.({...snapshot.current,drafts:drafts.current});},[active,onSession]);
+  function rememberCumulative(value){cumulativeSession.current=value;onSession?.({...snapshot.current,cumulative:value});}
   function toggle(item){const key=reviewKey(item);setSelected(previous=>previous.includes(key)?previous.filter(id=>id!==key):[...previous,key]);}
   function startExport(item,accept){const key=reviewKey(item);if(exports[key]?.exported||exports[key]?.phase==='rejected')setExports(previous=>({...previous,[key]:nextWorkbenchWorkflow(previous[key])}));setDialog({key,item,accept});}
   const next=worklist.find(item=>item.candidate_revision_uuid!==active);
   const target=dialog&&(dialog.item||items.find(item=>reviewKey(item)===dialog.key));
   return <div className="incoming-workbench">
     <header><div><div className="eyebrow">PROTOCOL WORKBENCH</div><h1>Needs review</h1><p>Review an incoming proposal, export it independently, then deliberately update the main dataset.</p></div><button disabled={loading||queue.loading} onClick={()=>{queue.reload();onRetry?.();}}>Refresh queue</button></header>
-    {cumulative?<p className="incoming-contract-note">{queue.data.pending_cell_count===null?'Distinct cell count unavailable':`${number(queue.data.pending_cell_count)} distinct cells`} · {number(queue.data.pending_epoch_count)} incoming epochs awaiting review across saved proposals. This count is deduplicated across proposals. Proposal histories below may overlap; their counts must not be added together. Review opens one frozen proposal, not the cumulative unmerged set.</p>:<p className="incoming-contract-note">This queue shows the latest saved proposal for this protocol. Earlier unmerged updates and durable review decisions require the cumulative review service. Closing review leaves the proposal pending. Viewer selections are session state.</p>}
+    {cumulative?<p className="incoming-contract-note">{queue.data.pending_cell_count===null?'Distinct cell count unavailable':`${number(queue.data.pending_cell_count)} distinct cells`} · {number(queue.data.pending_epoch_count)} incoming epochs awaiting review across saved proposals. This count is deduplicated across proposals. Proposal histories below may overlap; their counts must not be added together. {preparedSupported?'Cumulative review opens only unmerged recordings.':'Review opens one frozen proposal; cumulative browsing is unavailable in this build.'}</p>:<p className="incoming-contract-note">This queue shows the latest saved proposal for this protocol. Earlier unmerged updates and durable review decisions require the cumulative review service. Closing review leaves the proposal pending. Viewer selections are session state.</p>}
     {queue.error&&<p className="incoming-contract-note" role="status">Cumulative queue unavailable: {queue.error}. {cumulative?'The previous queue receipt remains visible; refresh before continuing.':'Showing the current legacy proposal only.'}</p>}
     {error&&<div className="error" role="alert">{error}<button onClick={onRetry}>Retry</button></div>}
     {(loading||queue.loading)&&<p role="status">Loading current proposals…</p>}
@@ -37,6 +41,8 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
     {cumulative&&queue.data.capabilities.incoming_export&&dialog&&target&&<WorkbenchExportDialog key={dialog.key} protocolId={protocolId} item={target} accept={dialog.accept} state={exports[dialog.key]} onState={value=>setExports(previous=>({...previous,[dialog.key]:{...value,item:target}}))} onClose={()=>setDialog(null)} onChanged={onChange}/>}
     {cumulative&&Object.entries(exports).filter(([,state])=>state.receipt||state.acceptOperation||state.prepared||state.exported).map(([key,state])=><p key={key} role="status">{state.exported?<><a href={state.exported.download_url} download>{state.exported.name||'Download incoming export'}</a> · {number(state.exported.epoch_count)} new epochs</>:<>Saved incoming operation · {state.receipt?'acceptance confirmed; export pending':state.acceptOperation?'acceptance needs receipt recovery':'export needs receipt recovery'} <button disabled={!queue.data.capabilities.incoming_export} onClick={()=>setDialog({key,item:state.item,accept:!!state.receipt||!!state.acceptOperation})}>Resume export</button></>}</p>)}
     {cumulative&&Object.values(exports).flatMap(state=>state.completed||[]).filter(value=>value.exported).map(value=><p key={value.exported.dataset_uuid}><a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a> · {number(value.exported.epoch_count)} new epochs</p>)}
+    {preparedSupported&&!history?<CumulativeIncomingReview queue={queue} protocolId={protocolId} projectId={projectId} revision={revision} onChange={onChange} onQC={onQC} onDefer={()=>setHistory(true)} onHistory={()=>setHistory(true)} session={cumulativeSession.current} onSession={rememberCumulative}/>:<>
+    {preparedSupported&&<button onClick={()=>{setActive(null);setHistory(false);}}>Return to cumulative incoming review</button>}
     {!active?<>
       {!!worklist.length&&<div className="incoming-worklist"><span>{worklist.length} selected proposals · each reviewed independently</span><button onClick={()=>setActive(worklist[0].candidate_revision_uuid)}>Review selected</button></div>}
       {!items.length&&!loading&&!queue.loading&&!error&&<p>No current incoming proposals need review.</p>}
@@ -52,5 +58,6 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
       </section>;})}
       {cumulative&&queue.data.next_cursor&&<button disabled={queue.loading} onClick={queue.more}>Load more proposals</button>}
     </>:queue.loading&&!queue.data?<p role="status">Loading the review service before opening this proposal…</p>:current?(cumulative?<FrozenIncomingReview exportIntent={initialExportIntent} acceptOperation={initialAcceptOperation} capabilities={queue.data.capabilities} key={active} projectId={projectId} protocolId={protocolId} item={current} revision={revision} onChange={onChange} onQC={onQC} onDefer={()=>setActive(null)} onNext={next?()=>setActive(next.candidate_revision_uuid):null} session={drafts.current[active]} onSession={remember}/>:<MetadataExplorer key={active} projectId={projectId} undoScopeId={`incoming:${active}`} protocols={protocols} revision={revision} initialRevisionId={active} initialProtocolId={protocolId} incomingReview={current} onDefer={()=>setActive(null)} onNext={next?()=>setActive(next.candidate_revision_uuid):null} session={drafts.current[active]} onSession={remember} onChange={onChange} onProtocolApplied={onApplied} onQC={onQC} onInspect={onInspect} onExit={()=>setActive(null)}/>):<div role="status"><p>This proposal is no longer in the current pending queue. Its saved revision remains in candidate history. Refresh the queue to check the current binding.</p><button onClick={()=>setActive(null)}>Back to queue</button></div>}
+    </>}
   </div>;
 }

@@ -103,3 +103,34 @@ cumulative browsing semantics. The UI now labels that gap explicitly. Backend
 owner is implementing an approved authoritative cumulative pending snapshot
 (`prepare`) and consistent `C-B-M` readers. That subsequent slice requires its
 own tests and source integration; no client union/global fallback is supplied.
+
+## Capability-gated cumulative default
+
+When `cumulative_pending_browse:true` is declared, Workbench defaults to an
+authoritative prepared cumulative snapshot; original proposals move to optional
+history. The UI requests `POST /protocols/{p}/workbench/prepare` with exactly the
+latest `expected_queue_revision`, once per queue fence (explicit retry on an
+error). The server derives an idempotent operation if omitted. The response must
+be v1, kind `workbench_pending_union`, include its preparation operation ID,
+canonical frozen candidate root, matching context/scope and requested queue echo.
+No row union, predicate rerun or membership interpretation occurs in the client.
+
+Fresh queue fences after imports/partial acceptance prepare updated snapshots.
+The backend owns exact unmerged membership, fingerprint-conflict refusal,
+original proposal provenance, and same-fingerprint actor decision carry. Empty
+queues avoid preparation writes. Ordinary renders, identical queue responses,
+and resuming the same prepared scope do not create repeated requests.
+
+Pending acceptance is published to session state before POST; an unresolved
+acceptance/export keeps its old prepared root and request body until receipt
+recovery. Earlier prepared scopes retain recovery buttons and exact accepted
+subset export actions after newer snapshots open. Completed receipts/artifacts
+remain accessible. Quick Export/Accept & export display the selected/all preview
+counts before confirmation and keep full inspection optional.
+
+32 focused component/helper/JSX checks pass. Two independent source reviews
+verified preparation/recovery lifecycle fixes. Native three-import union,
+identity dedup, pending subtraction, durable draft carry, and actual browser
+proof still require the new backend checkpoint and E2E qualification. The old
+df92 implementation does not satisfy cumulative incoming-only browsing merely
+because it returns deduplicated counts.
