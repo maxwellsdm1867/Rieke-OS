@@ -55,9 +55,31 @@ def context_predicate(context):
     return {'all': [predicate, metadata_filter_predicate(filters['metadata_predicate'])]} if 'metadata_predicate' in filters else predicate
 
 
-def context_annotation_predicate(context):
-    fields = [field for field in context.get('summary_fields', []) if field.startswith(('annotations/', 'curation/'))]
-    return {'all': [context_predicate(context), *({'field': field, 'operator': 'exists'} for field in fields)]}
+def context_annotation_fields(context):
+    # Each caller AST has an independent grammar budget. Never discover from a
+    # synthetic AND whose traversal limit could hide a later annotation owner.
+    fields = referenced_fields(context.get('predicate', {}))
+    filters = context.get('filters') or {}
+    if 'metadata_predicate' in filters:
+        fields.update(referenced_fields(metadata_filter_predicate(filters['metadata_predicate'])))
+    fields.update(field for field in context.get('summary_fields', [])
+                  if field.startswith(('annotations/', 'curation/')))
+    return fields
+
+
+@contextmanager
+def context_annotation_locks(service, context):
+    fields = context_annotation_fields(context)
+    definitions = {field['id'] for field in TagPredicates(service).definitions()}
+    if fields - definitions:
+        raise ValueError('Choose annotations from a protocol workspace in this project')
+    protocols = {field.split('/')[1] for field in fields if field.startswith('curation/')}
+    if context.get('protocol_uuid'):
+        protocols.add(context['protocol_uuid'])
+    # annotation_locks always covers shared tags; explicit protocols avoid
+    # rediscovering the union through a second bounded synthetic AST.
+    with annotation_locks(service, {'all': []}, protocols):
+        yield
 
 
 def generation(service, context=None):
@@ -69,9 +91,7 @@ def generation(service, context=None):
     if typed is not None:
         typed._check()
     context = context or {}
-    annotation_fields = referenced_fields(context_predicate(context))
-    annotation_fields.update(field for field in context.get('summary_fields', [])
-                             if field.startswith(('annotations/', 'curation/')))
+    annotation_fields = context_annotation_fields(context)
     tracker = getattr(service, '_explore_state_generation', None)
     if tracker is not None:
         protocols = {field.split('/')[1] for field in annotation_fields if field.startswith('curation/')}
@@ -281,7 +301,7 @@ class SummaryJobs:
             result = reader.summaries(predicate, scope, facet_fields=context['summary_fields'])
             return {'matched_count': result['count'], 'summaries': result['facets']}
         # Authoritative fallback retains annotation and custom-policy behavior.
-        with self.db_lock, self.registration_locks(), annotation_locks(self.service, context_annotation_predicate(context), [context['protocol_uuid']] if context['protocol_uuid'] else []):
+        with self.db_lock, self.registration_locks(), context_annotation_locks(self.service, context):
             return _native_summaries(self.service, context, job['cancel'].is_set)
 
     def submit(self, body):
@@ -339,7 +359,7 @@ class SummaryJobs:
             try:
                 self._fence(job)
                 context = job['context']
-                native = (typed_combination_over_budget(context) or not typed_policy(self.service) or referenced_fields(context_predicate(context)) or
+                native = (typed_combination_over_budget(context) or not typed_policy(self.service) or context_annotation_fields(context) or
                     any(field.startswith(('annotations/', 'curation/')) for field in context['summary_fields']) or
                     any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
                 with self.db_lock, self.registration_locks():
@@ -427,7 +447,7 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
             raise
         except (ValueError, KeyError, TypeError) as error:
             raise ValueError('Malformed metadata cursor') from error
-    native = (typed_combination_over_budget(context) or not typed_policy(service) or referenced_fields(context_predicate(context)) or
+    native = (typed_combination_over_budget(context) or not typed_policy(service) or context_annotation_fields(context) or
               any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
     with typed_reader(service) as reader:
         if reader is not None and not native:
@@ -469,7 +489,7 @@ def register_explore_query_routes(app, service, db_lock, registration_locks, rea
     @app.post('/api/explore/page')
     def explorer_query_page():
         body = read_request({'predicate', 'protocol_uuid', 'filters', 'scope', 'limit', 'cursor'}, {'predicate'})
-        with db_lock, registration_locks(), annotation_locks(service, context_predicate(body), [body['protocol_uuid']] if body.get('protocol_uuid') else []):
+        with db_lock, registration_locks(), context_annotation_locks(service, body):
             try:
                 return jsonify(explore_page(service, **body))
             except StaleQuery as error:

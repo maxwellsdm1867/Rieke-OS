@@ -104,3 +104,16 @@ class ScopedPredicates(unittest.TestCase):
         with patch('workspace_explore_queries.generation',side_effect=[{'a':1},{'a':2}]):
             with self.assertRaisesRegex(ValueError,'annotations changed'):
                 self.s.tree(self.p,filters)
+
+    def test_independent_annotation_discovery_retains_late_curation_owner(self):
+        import workspace_explore_queries as queries
+        field=f'curation/{self.p}/tags'
+        leaf={'field':'parameters/example','operator':'eq','value':0}
+        context={'predicate':{'field':field,'operator':'contains','value':'QC'},'protocol_uuid':None,'filters':self.filters({'all':[leaf for _ in range(127)]}),'scope':{},'summary_fields':['annotations/effective/tags']}
+        self.assertEqual(queries.context_annotation_fields(context),{field,'annotations/effective/tags'})
+        # The lock gets the complete explicit protocol union, with no AST scan.
+        self.s.shared_annotations=SimpleNamespace(snapshot=lambda:{'revision':'a','records':[]})
+        from contextlib import nullcontext
+        with patch('workspace_explore_queries.annotation_locks',return_value=nullcontext()) as locks:
+            with queries.context_annotation_locks(self.s,context):pass
+        self.assertEqual(locks.call_args.args[2],{self.p})
