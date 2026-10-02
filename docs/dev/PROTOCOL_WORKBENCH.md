@@ -121,7 +121,10 @@ native token reader still refuses transaction-time reads. No legacy revision is
 substituted for a captured native receipt.
 
 Recovery feed contract v2 expands the exact key column to `varbinary(4096)` for
-complete Workbench Unicode actor keys. Bootstrap migrates only the known owned
+complete Workbench actor keys, including native-supported Unicode. The current
+production `utf8mb3` actor columns support BMP Unicode; astral characters require
+a separate source-schema migration and are not enabled by this feed expansion.
+Bootstrap migrates only the known owned
 1024-byte ring with `ALTER`, preserving existing hints and authored rows. Prior
 watermarks require full reconciliation. The ring still has 20,000 slots (up to
 about 80 MiB of key bytes at the new maximum, excluding SQL overhead). Larger or

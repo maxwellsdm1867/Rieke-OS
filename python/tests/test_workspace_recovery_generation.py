@@ -34,7 +34,7 @@ class RecoveryKeyCapacityTests(unittest.TestCase):
         self.assertEqual(specs['workbench_decision']['primary_keys'],
             ['project_uuid','protocol_uuid','candidate_revision_uuid','actor','epoch_uuid'])
         self.assertEqual(generation.FEED_KEY_BYTES,4096)
-        actor=('\x00\x01🚀"\\é'*43)[:255]
+        actor=('\x00\x01東"\\é'*43)[:255]
         encoded=json.dumps([str(uuid.uuid4()),str(uuid.uuid4()),str(uuid.uuid4()),actor,str(uuid.uuid4())],
             ensure_ascii=False).encode()
         self.assertGreater(len(encoded),1024)
@@ -128,7 +128,10 @@ class RecoveryGenerationTests(unittest.TestCase):
             self.assertEqual(len(specs['workbench_decision']['primary_keys']),5)
             self.tracker.bootstrap();self.assertTrue(self.tracker.ready,self.tracker.reason)
             baseline,_=self.capture()
-            candidate=str(uuid.uuid4());actor=('\x00\x01🚀"\\é'*43)[:255]
+            # Match the supported production utf8mb3 actor authority: preserve
+            # BMP Unicode/control/quote/backslash identity byte-for-byte. Astral
+            # characters require a separate source-schema charset migration.
+            candidate=str(uuid.uuid4());actor=('\x00\x01東"\\é'*43)[:255]
             draft=(self.project,self.protocol,candidate,actor)
             decision=(*draft,self.epoch)
             self.connection.query('INSERT INTO recording_workspace.workbench_draft VALUES (%s,%s,%s,%s,1)',draft)
