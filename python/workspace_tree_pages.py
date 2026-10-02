@@ -114,7 +114,7 @@ def _structural_scope(body):
     return (bool(fields) and set(fields) <= {'date', 'cell', 'block'}
             and body.get('predicate', {'all': []}) == {'all': []}
             and not any(field in (body.get('filters') or {})
-                        for field in ('tag', 'tagged', 'tag_predicate')))
+                        for field in ('tag', 'tagged', 'tag_predicate', 'metadata_predicate')))
 
 
 def _retained_scope_bytes(result, base_rows, limit):
@@ -219,7 +219,7 @@ class TreePages:
         index = getattr(service, 'disk_index', None)
         filters = validate_filters(body.get('filters'))
         if (not isinstance(index, DiskMetadataIndex)
-                or any(field in filters for field in ('tag', 'tagged', 'tag_predicate'))
+                or any(field in filters for field in ('tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
                 or referenced_fields(body.get('predicate', {'all': []}))):
             return self._build_scope(body)
         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
@@ -292,7 +292,12 @@ class TreePages:
             protocol = _uuid(protocol)
             if 'predicate' in body:
                 raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
-        filters = validate_filters(body.get('filters'))
+        filters = service.validate_metadata_filters(body.get('filters'), protocol)
+        scoped_generation = None
+        if 'metadata_predicate' in filters:
+            from workspace_explore_queries import generation
+            scoped_context = {'protocol_uuid': protocol, 'filters': filters}
+            scoped_generation = generation(service, scoped_context)
         index = getattr(service, 'disk_index', None)
         from workspace_disk_index import DiskMetadataIndex
         structural = (isinstance(index, DiskMetadataIndex) and _structural_scope(body)
@@ -313,7 +318,7 @@ class TreePages:
         else:
             catalog, values = service._tree_fields(protocol, filters)
         predicate = None
-        annotation_scope = None
+        annotation_scope = {'revision': checksum(scoped_generation)} if scoped_generation else None
         if protocol is None:
             requested_predicate = body.get('predicate', {'all': []})
             if requested_predicate == {'all': []}:
@@ -341,6 +346,8 @@ class TreePages:
             values = dict(index.values(ids=[row['epoch_uuid'] for row in rows], fields=sorted(columns)).items()) if columns else {}
         header_provider = getattr(service, 'binding_header_provider', None)
         binding = (header_provider(protocol) if structural and header_provider else service.binding(protocol)) if protocol else None
+        if scoped_generation is not None and generation(service, scoped_context) != scoped_generation:
+            raise StaleTreePage('Scoped annotations changed while loading this tree; reload the root')
         revision = selection_revision(service, protocol, predicate, filters, order, rows, binding, annotation_scope=annotation_scope)
         return rows, catalog, values, definitions, order, revision
 

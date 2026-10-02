@@ -163,12 +163,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     register_project_preference_routes(app, project_dir, service.project['project_uuid'], db_lock)
 
     def filters(allowed=()):
-        if any(len(request.args.getlist(key)) != 1 for key in ('tag', 'tagged', 'tag_predicate') if key in request.args):
-            raise ValueError('Tag filters must be specified once')
-        if set(request.args) - {"epoch_uuid", "cell_uuid", "cell_type", "group_label", "tag", "tagged", "tag_predicate", "offset", "limit", "splits"} - set(allowed):
+        if any(len(request.args.getlist(key)) != 1 for key in ('tag', 'tagged', 'tag_predicate', 'metadata_predicate') if key in request.args):
+            raise ValueError('Predicate and tag filters must be specified once')
+        if set(request.args) - {"epoch_uuid", "cell_uuid", "cell_type", "group_label", "tag", "tagged", "tag_predicate", "metadata_predicate", "offset", "limit", "splits"} - set(allowed):
             raise ValueError("Unknown query filter; no unrestricted fallback was applied")
-        return {key: request.args[key] for key in ("epoch_uuid", "cell_uuid", "cell_type", "group_label", "tag", "tagged", "tag_predicate")
+        values = {key: request.args[key] for key in ("epoch_uuid", "cell_uuid", "cell_type", "group_label", "tag", "tagged", "tag_predicate", "metadata_predicate")
                 if key in request.args}
+
+        return service.validate_metadata_filters(values, (request.view_args or {}).get('protocol_uuid'))
 
     def legacy_state(protocol_uuid):
         result = service.query_result(protocol_uuid)
@@ -729,10 +731,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def protocol(protocol_uuid):
         with db_lock:
             query_filters=filters()
+            from workspace_explore_queries import generation
+            context={'protocol_uuid':protocol_uuid,'filters':query_filters}
+            before=generation(service,context) if 'metadata_predicate' in query_filters else None
             native=native_protocol_summary(protocol_uuid,query_filters)
-            if native is not None:return jsonify(native)
-            return jsonify(enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid, query_filters)),
-                                           protocol_uuid, query_filters))
+            payload=native if native is not None else enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid,query_filters)),protocol_uuid,query_filters)
+            if before is not None and before!=generation(service,context):
+                raise StaleWorkspace('Scoped annotations changed while reading this summary. Refresh and retry.')
+            return jsonify(payload)
 
     def tree_layout_store():
         if 'tree_layouts' not in app.extensions:
@@ -780,7 +786,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             arguments={'anchor_uuid':request.args.get('anchor_uuid')}
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
-            page = service.epoch_page(protocol_uuid, filters({'anchor_uuid','include_cells'}), int(request.args.get("offset", 0)),
+            query_filters=filters({'anchor_uuid','include_cells'})
+            from workspace_explore_queries import generation
+            scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
+            scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
+            page = service.epoch_page(protocol_uuid, query_filters, int(request.args.get("offset", 0)),
                                       int(request.args.get("limit", 80)), **arguments)
             shared_receipt=page.pop('_shared_annotation_generation',None)
             identities=[row['epoch_uuid'] for row in page['epochs']]
@@ -804,6 +814,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if shared_receipt is not None and (not native.accepts_shared(shared_receipt) if native is not None
                     else shared_annotations.state_generation.token()!=shared_receipt):
                 raise StaleWorkspace('Shared annotations changed while reading this page. Refresh and retry.')
+            if scoped_generation is not None and scoped_generation!=generation(service,scoped_context):
+                raise StaleWorkspace('Scoped annotations changed while reading this page. Refresh and retry.')
             return jsonify(page)
 
     @app.get("/api/protocols/<protocol_uuid>/tree")
@@ -1166,7 +1178,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             return jsonify(service.trace(epoch_uuid, request.args["stream_uuid"],
                                          int(request.args.get("start", 0)), int(request.args.get("count", 20000))))
 
-    def curation_selection_scope(ids, scope):
+    def curation_selection_scope(ids, scope, protocol_uuid=None):
         """Validate only the selected rows; never load their detail metadata."""
         from workspace_service import validate_filters
         if not isinstance(scope, dict) or set(scope) - {'filters', 'cell_uuid'}:
@@ -1178,7 +1190,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         rows = [service.rows[key] for key in ids]
         if cell is not None and any(row['cell_uuid'] != cell for row in rows):
             raise ValueError('Curation includes epochs outside the current cell focus')
-        if len(service._filter_rows(rows, query_filters)) != len(ids):
+        if len(service._filter_rows(rows, query_filters, protocol_uuid)) != len(ids):
             raise ValueError('Curation includes epochs outside the current view filters')
         return rows
 
@@ -1208,7 +1220,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('The inspected query or dataset binding changed. Refresh before saving.')
             if set(ids) - current.keys():
                 raise ValueError('Curation includes epochs outside this protocol query')
-            rows = curation_selection_scope(ids, body['selection_scope'])
+            rows = curation_selection_scope(ids, body['selection_scope'], protocol_uuid)
             return jsonify(protocol_uuid=protocol_uuid, query_revision=revision,
                 expected_binding_version=current_binding_version,
                 epochs=[{'epoch_uuid': row['epoch_uuid'], 'cell_uuid': row['cell_uuid'],
@@ -1242,7 +1254,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if expected_binding != result.get('dataset_binding', {}).get('version', 0):
                     raise StaleWorkspace('The dataset binding changed. Refresh before saving.')
             if 'selection_scope' in body:
-                curation_selection_scope(ids, body['selection_scope'])
+                curation_selection_scope(ids, body['selection_scope'], protocol_uuid)
             changed = store.update(protocol_uuid, ids, body["changes"], body["expected_revisions"],
                                    {key: fingerprints[key] for key in ids}, os.environ.get("USER", "local-user"),
                                    per_epoch_changes=body.get("per_epoch_changes"),include_undo=request.headers.get('X-Rieke-Undo-Receipt')=='1',
@@ -1396,7 +1408,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('This working dataset contains sources excluded from new queries. Propagate source changes before creating a new export. Saved exports are unchanged.')
             definition = service.protocol(protocol_uuid)["definition"]
             snapshot = capture_query(definition, {**result, 'source_revisions': result['source_scope']['active_source_revisions']}, str(project_dir / "catalog.json"))
-            query_filters = body.get("filters", {})
+            query_filters = service.validate_metadata_filters(body.get("filters", {}), protocol_uuid)
             if not isinstance(query_filters, dict):
                 raise ValueError("Export filters must be an object")
             split_order = body.get("split_order", result.get("dataset_binding", {}).get("splits", "date, cell, block"))
@@ -1415,6 +1427,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                        review_policy=body.get("review_policy", "include_unreviewed"), approved_ids=approved,
                        actor=os.environ.get("USER", "local-user"),
                        options={"name": name, "filters": query_filters,
+                                **({"metadata_predicate_contract": {"version": 1, "scope": "frozen-protocol-intersection"}} if "metadata_predicate" in query_filters else {}),
                                 "split_order": split_order,
                                 "tree_view": {"format": "recording-tree-view", "version": 1,
                                     "fields": [{key: field_catalog[field][key] for key in ("id", "label", "path", "category", "components") if key in field_catalog[field]}

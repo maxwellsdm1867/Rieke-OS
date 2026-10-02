@@ -14,7 +14,7 @@ from dataclasses import asdict, is_dataclass
 
 from workspace_predicates import OPERATORS, equality_key, kind
 from workspace_recipes import checksum
-from workspace_service import validate_filters
+from workspace_service import validate_filters, metadata_filter_predicate
 from workspace_tag_predicates import TagPredicates, referenced_fields, annotation_locks
 from workspace_tree import predicate_scope
 
@@ -44,9 +44,20 @@ def query_context(service, body):
         protocol = str(uuid.UUID(protocol))
         if protocol not in service.protocols:
             raise ValueError('Protocol workspace is unavailable')
-    filters = validate_filters(body.get('filters'))
+    filters = service.validate_metadata_filters(body.get('filters'), protocol)
     return {'predicate': copy.deepcopy(body['predicate']), 'scope': scope,
             'protocol_uuid': protocol, 'filters': filters}
+
+
+def context_predicate(context):
+    filters = context.get('filters') or {}
+    predicate = context.get('predicate', {'all': []})
+    return {'all': [predicate, metadata_filter_predicate(filters['metadata_predicate'])]} if 'metadata_predicate' in filters else predicate
+
+
+def context_annotation_predicate(context):
+    fields = [field for field in context.get('summary_fields', []) if field.startswith(('annotations/', 'curation/'))]
+    return {'all': [context_predicate(context), *({'field': field, 'operator': 'exists'} for field in fields)]}
 
 
 def generation(service, context=None):
@@ -58,7 +69,7 @@ def generation(service, context=None):
     if typed is not None:
         typed._check()
     context = context or {}
-    annotation_fields = referenced_fields(context.get('predicate', {}))
+    annotation_fields = referenced_fields(context_predicate(context))
     annotation_fields.update(field for field in context.get('summary_fields', [])
                              if field.startswith(('annotations/', 'curation/')))
     tracker = getattr(service, '_explore_state_generation', None)
@@ -214,13 +225,31 @@ def typed_reader(service):
         reader.close()
 
 
+def typed_combination_over_budget(context):
+    # Each caller AST has already been admitted with its own grammar budget.
+    # Internal conjunctions may exceed that budget; use the native independent
+    # intersection instead of rejecting an otherwise valid request later.
+    from workspace_predicates import MAX_DEPTH, MAX_NODES
+    field_map = {'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label'}
+    root = {'all': [context_predicate(context), *({'field': key} for key in context['filters'] if key in field_map)]}
+    stack = [(root, 0)]; nodes = 0
+    while stack:
+        node, depth = stack.pop(); nodes += 1
+        if depth > MAX_DEPTH or nodes > MAX_NODES:
+            return True
+        if 'not' in node: stack.append((node['not'], depth + 1))
+        for key in ('all', 'any'):
+            stack.extend((child, depth + 1) for child in node.get(key, []))
+    return False
+
+
 def typed_scope(service, context):
     scope = {key.removesuffix('_uuid'): value for key, value in context['scope'].items()}
     scope['sources'] = ([source['source_sha256'] for source in service.sources]
                         if context['protocol_uuid'] else service.source_scope()['active_source_revisions'])
     filters = context['filters']
     field_map = {'epoch_uuid': 'epoch', 'cell_uuid': 'cell', 'cell_type': 'cell type', 'group_label': 'group label'}
-    predicates = [context['predicate']]
+    predicates = [context_predicate(context)]
     predicates.extend({'field': field_map[key], 'operator': 'eq', 'value': value}
                       for key, value in filters.items() if key in field_map)
     if context['protocol_uuid'] is not None:
@@ -252,7 +281,7 @@ class SummaryJobs:
             result = reader.summaries(predicate, scope, facet_fields=context['summary_fields'])
             return {'matched_count': result['count'], 'summaries': result['facets']}
         # Authoritative fallback retains annotation and custom-policy behavior.
-        with self.db_lock, self.registration_locks(), annotation_locks(self.service, context['predicate']):
+        with self.db_lock, self.registration_locks(), annotation_locks(self.service, context_annotation_predicate(context), [context['protocol_uuid']] if context['protocol_uuid'] else []):
             return _native_summaries(self.service, context, job['cancel'].is_set)
 
     def submit(self, body):
@@ -310,7 +339,7 @@ class SummaryJobs:
             try:
                 self._fence(job)
                 context = job['context']
-                native = (not typed_policy(self.service) or referenced_fields(context['predicate']) or
+                native = (typed_combination_over_budget(context) or not typed_policy(self.service) or referenced_fields(context_predicate(context)) or
                     any(field.startswith(('annotations/', 'curation/')) for field in context['summary_fields']) or
                     any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
                 with self.db_lock, self.registration_locks():
@@ -398,7 +427,7 @@ def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=
             raise
         except (ValueError, KeyError, TypeError) as error:
             raise ValueError('Malformed metadata cursor') from error
-    native = (not typed_policy(service) or referenced_fields(predicate) or
+    native = (typed_combination_over_budget(context) or not typed_policy(service) or referenced_fields(context_predicate(context)) or
               any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
     with typed_reader(service) as reader:
         if reader is not None and not native:
@@ -440,7 +469,7 @@ def register_explore_query_routes(app, service, db_lock, registration_locks, rea
     @app.post('/api/explore/page')
     def explorer_query_page():
         body = read_request({'predicate', 'protocol_uuid', 'filters', 'scope', 'limit', 'cursor'}, {'predicate'})
-        with db_lock, registration_locks(), annotation_locks(service, body['predicate']):
+        with db_lock, registration_locks(), annotation_locks(service, context_predicate(body), [body['protocol_uuid']] if body.get('protocol_uuid') else []):
             try:
                 return jsonify(explore_page(service, **body))
             except StaleQuery as error:

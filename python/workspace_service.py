@@ -73,8 +73,8 @@ def _fingerprint(epoch):
 
 def validate_filters(filters):
     filters = {} if filters is None else filters
-    if not isinstance(filters, dict) or set(filters) - {'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label', 'tag', 'tagged', 'tag_predicate'}:
-        raise ValueError('Unsupported filter; use epoch_uuid, cell_uuid, cell_type, group_label, tag, tagged, or tag_predicate')
+    if not isinstance(filters, dict) or set(filters) - {'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label', 'tag', 'tagged', 'tag_predicate', 'metadata_predicate'}:
+        raise ValueError('Unsupported filter; use epoch_uuid, cell_uuid, cell_type, group_label, tag, tagged, tag_predicate, or metadata_predicate')
     if any(not isinstance(value, str) for value in filters.values()):
         raise ValueError('Filter values must be text')
     if 'tag' in filters:
@@ -85,12 +85,24 @@ def validate_filters(filters):
     if 'tag_predicate' in filters:
         predicate = validate_tag_filter_predicate(filters['tag_predicate'])
         filters = {**filters, 'tag_predicate': json.dumps(predicate, sort_keys=True, separators=(',', ':'), allow_nan=False)}
+    if 'metadata_predicate' in filters:
+        predicate = metadata_filter_predicate(filters['metadata_predicate'])
+        filters = {**filters, 'metadata_predicate': json.dumps(predicate, sort_keys=True, separators=(',', ':'), ensure_ascii=False, allow_nan=False)}
     cleaned = {k: v for k, v in filters.items() if v}
     if 'epoch_uuid' in cleaned:
         cleaned['epoch_uuid'] = _uuid(cleaned['epoch_uuid'])
     if 'cell_uuid' in cleaned:
         cleaned['cell_uuid'] = _uuid(cleaned['cell_uuid'])
     return cleaned
+
+
+def metadata_filter_predicate(value):
+    if not isinstance(value, str) or len(value.encode('utf-8')) > 65536:
+        raise ValueError('Metadata predicate must be JSON text up to 65536 UTF-8 bytes')
+    try:
+        return json.loads(value)
+    except (ValueError, RecursionError) as error:
+        raise ValueError('Malformed metadata predicate JSON') from error
 
 
 TAG_FILTER_FIELDS = ('annotations/cell/tags', 'annotations/epoch/tags', 'annotations/effective/tags')
@@ -699,36 +711,70 @@ class WorkspaceService:
         result = self.query_result(protocol_uuid)
         curation = self._curation(protocol_uuid)
         rows = [self._decorate(self.rows[member['uuid']], curation) for member in result['epochs']]
-        return self._filter_rows(rows, filters)
+        return self._filter_rows(rows, filters, protocol_uuid)
 
-    def _filter_rows(self, rows, filters):
+    def validate_metadata_filters(self, filters, protocol_uuid=None):
+        """Validate against registered definitions even when the cohort is empty."""
+        filters = validate_filters(filters)
+        if 'metadata_predicate' in filters:
+            predicate = metadata_filter_predicate(filters['metadata_predicate'])
+            from workspace_tag_predicates import referenced_fields
+            foreign = {field for field in referenced_fields(predicate)
+                       if field.startswith('curation/') and field.split('/')[1] != protocol_uuid}
+            if foreign:
+                raise ValueError('Scoped filters support only this protocol\'s curation tags; foreign protocol curation fields are unavailable')
+            # Validation never reads saved annotation rows. Native leaf validators
+            # retain complete registered types; shared/curation arrays are strings.
+            from workspace_tag_predicates import TagPredicates
+            tags = TagPredicates(self).definitions()
+            registered = [field for field in self._registered_tree_fields()[0]['fields']
+                          if not field['id'].startswith('joint/')]
+            validated = validate_predicate(predicate, {'fields': registered + tags},
+                {field['id']: {field['id']: ['']} for field in tags})
+            pending = [validated]
+            while pending:
+                node = pending.pop()
+                if 'not' in node:
+                    pending.append(node['not'])
+                elif 'all' in node or 'any' in node:
+                    pending.extend(node.get('all', node.get('any', [])))
+                elif not referenced_fields(node):
+                    self._match_metadata_predicate(node, [])
+        return filters
+
+    def _filter_rows(self, rows, filters, protocol_uuid=None):
         """Narrow the current dataset without changing membership or annotations.
 
         Shared cell tags inherit to epochs. Protocol curation tags are a distinct
         scope and do not satisfy these shared annotation filters.
         """
-        ordinary = {key: value for key, value in filters.items() if key not in {'tag', 'tagged', 'tag_predicate'}}
+        filters = self.validate_metadata_filters(filters, protocol_uuid)
+        ordinary = {key: value for key, value in filters.items() if key not in {'tag', 'tagged', 'tag_predicate', 'metadata_predicate'}}
         rows = [row for row in rows if all(row.get(key) == value for key, value in ordinary.items())]
         if any(key in filters for key in ('tag', 'tagged', 'tag_predicate')):
             shared = getattr(self, 'shared_annotations', None)
             indexed=shared.filter_epoch_ids(rows,filters) if hasattr(shared,'filter_epoch_ids') else None
             if indexed is not None:
                 selected=set(indexed[0])
-                return sorted((row for row in rows if row['epoch_uuid'] in selected),
-                    key=lambda row:(row['date'],row['start_time'],row['epoch_uuid']))
-            annotations = shared.for_epochs(rows) if shared else {}
-            from workspace_predicates import matches
-            predicate = validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
-            selected = []
-            for row in rows:
-                tags = {chip['tag'] for chip in annotations.get(row['epoch_uuid'], {}).get('effective_tags', [])}
-                if ('tag' not in filters or filters['tag'] in tags) and ('tagged' not in filters or tags):
-                    annotation = annotations.get(row['epoch_uuid'], {})
-                    current = {field: sorted({chip['tag'] for chip in annotation.get(scope, [])})
-                               for field, scope in zip(TAG_FILTER_FIELDS, ('cell_tags', 'epoch_tags', 'effective_tags'))}
-                    if predicate is None or matches(predicate, current):
-                        selected.append(row)
-            rows = selected
+                rows = [row for row in rows if row['epoch_uuid'] in selected]
+            else:
+                annotations = shared.for_epochs(rows) if shared else {}
+                from workspace_predicates import matches
+                predicate = validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
+                selected = []
+                for row in rows:
+                    tags = {chip['tag'] for chip in annotations.get(row['epoch_uuid'], {}).get('effective_tags', [])}
+                    if ('tag' not in filters or filters['tag'] in tags) and ('tagged' not in filters or tags):
+                        annotation = annotations.get(row['epoch_uuid'], {})
+                        current = {field: sorted({chip['tag'] for chip in annotation.get(scope, [])})
+                                   for field, scope in zip(TAG_FILTER_FIELDS, ('cell_tags', 'epoch_tags', 'effective_tags'))}
+                        if predicate is None or matches(predicate, current):
+                            selected.append(row)
+                rows = selected
+        if 'metadata_predicate' in filters:
+            _, identities, _ = self.match_predicate(metadata_filter_predicate(filters['metadata_predicate']), ids=[row['epoch_uuid'] for row in rows])
+            selected = set(identities)
+            rows = [row for row in rows if row['epoch_uuid'] in selected]
         return sorted(rows, key=lambda row: (row['date'], row['start_time'], row['epoch_uuid']))
 
     @staticmethod
@@ -830,8 +876,8 @@ class WorkspaceService:
         self._ready()
         protocol_uuid = _uuid(protocol_uuid)
         protocol = self.protocols[protocol_uuid]
-        filters = validate_filters(filters)
-        tag_filters = {key:value for key,value in filters.items() if key in {'tag','tagged','tag_predicate'}}
+        filters = self.validate_metadata_filters(filters, protocol_uuid)
+        tag_filters = {key:value for key,value in filters.items() if key in {'tag','tagged','tag_predicate','metadata_predicate'}}
         ordinary = {key:value for key,value in filters.items() if key not in tag_filters}
         header_provider = getattr(self, 'binding_header_provider', None)
         binding = None if header_provider else self.binding(protocol_uuid)
@@ -889,10 +935,10 @@ class WorkspaceService:
         if tag_filters:
             rows = [self.rows[identity] for identity in identities]
             shared = getattr(self, 'shared_annotations', None)
-            indexed = shared.filter_epoch_ids(rows,tag_filters) if hasattr(shared,'filter_epoch_ids') else None
-            if indexed is not None:
+            indexed = shared.filter_epoch_ids(rows,tag_filters) if 'metadata_predicate' not in tag_filters and hasattr(shared,'filter_epoch_ids') else None
+            if indexed is not None and 'metadata_predicate' not in tag_filters:
                 return indexed
-            rows = self._filter_rows(rows, tag_filters)
+            rows = self._filter_rows(rows, tag_filters, protocol_uuid)
             identities = tuple(row['epoch_uuid'] for row in rows)
         return identities,None
 
@@ -927,7 +973,7 @@ class WorkspaceService:
         tag_generation=shared.generation_token() if uses_tags and hasattr(shared,'generation_token') else None
         tag_revision=tag_generation if tag_generation is not None else shared.snapshot()['revision'] if uses_tags else None
         key = (protocol_uuid, binding['version'] if binding else 0, scope_revision, tuple(sorted(filters.items())), tag_revision)
-        if key in cache:
+        if key in cache and 'metadata_predicate' not in filters:
             result = cache.pop(key)
             cache[key] = result  # Most recently used, without recomputation.
             return result
@@ -946,13 +992,19 @@ class WorkspaceService:
         if tag_generation is not None and shared.generation_token()!=tag_generation:
             from workspace_shared_tag_index import SharedTagsChanged
             raise SharedTagsChanged('Shared tags changed while loading this tree. Refresh and try again.')
-        return self._remember_tree_catalog(key, result)
+        return result if 'metadata_predicate' in filters else self._remember_tree_catalog(key, result)
 
     def tree_fields(self, protocol_uuid, filters=None, *, splits=None):
+        filters = self.validate_metadata_filters(filters, protocol_uuid)
+        from workspace_explore_queries import generation, StaleQuery
+        context = {'protocol_uuid': protocol_uuid, 'filters': filters}
+        before = generation(self, context) if 'metadata_predicate' in filters else None
         catalog, values = self._tree_fields(protocol_uuid, filters)
         if splits is not None:
             order = parse_splits(splits, {field['id'] for field in catalog['fields']})
             catalog, _ = materialize_combinations(catalog, values, order)
+        if before is not None and before != generation(self, context):
+            raise StaleQuery('Scoped annotations changed while loading fields; retry')
         return catalog
 
     def metadata_fields(self):
@@ -985,9 +1037,16 @@ class WorkspaceService:
         return parse_splits(splits, {field['id'] for field in fields})
 
     def tree(self, protocol_uuid, filters=None, splits='date, cell, block'):
+        filters = self.validate_metadata_filters(filters, protocol_uuid)
+        from workspace_explore_queries import generation, StaleQuery
+        context = {'protocol_uuid': protocol_uuid, 'filters': filters}
+        before = generation(self, context) if 'metadata_predicate' in filters else None
         rows = self._tree_rows(protocol_uuid, filters)
         catalog, values = self._tree_fields(protocol_uuid, filters)
-        return self._render_tree(rows, catalog, values, splits)
+        result = self._render_tree(rows, catalog, values, splits)
+        if before is not None and before != generation(self, context):
+            raise StaleQuery('Scoped annotations changed while loading the tree; retry')
+        return result
 
     def predicate_fields(self):
         self._ready()

@@ -1,0 +1,15 @@
+# Scoped scientific filters, v1
+
+`filters.metadata_predicate` is canonical JSON text (at most 65536 UTF-8 bytes), using the complete existing typed predicate grammar. It intersects immutable protocol membership, ordinary filters, and shared-tag filters. Every AST is validated against registered definitions even for an empty scope. Metadata detail, raw source fields, native IDs, eligibility and tag ownership stay unchanged. Foreign protocol curation fields are explicitly unavailable in this carrier; own protocol curation and shared annotations are supported.
+
+Existing protocol summary, epochs (including cells/offset/anchor), tree, tree-fields, selected curation validation and explicit export filters accept this additive carrier. Top-level protocol tree + predicate still rejects replacement. Export retains canonical criteria, grammar version and frozen-protocol-intersection provenance; browsing and export criteria remain independently persisted. Refresh, source propagation and historical undo retain the full cohort.
+
+The ordinary epoch identity cache excludes scientific predicates. Scientific membership is evaluated live; tree scope/catalog cache reuse and structural shortcuts are disabled for this carrier. Scoped tree/context and row/summary reads carry surrounding generation checks. Annotation validation reads definitions and native type representatives only. A typed internal AND exceeding the independently admitted caller AST budgets uses the native independent intersection; it does not invalidate an otherwise valid AST. This fallback is not a bounded million-row performance claim.
+
+Requested summaries use the same carrier in protocol context. `summary_fields:[]` performs a count-only request, with pending/ready/cancelled/stale/failed and exact acknowledged generation retained. Context predicate + filter AST + requested annotation fields supply lock/generation witnesses.
+
+Frontend uses the existing PredicateDialog/PredicateBuilder. Protocol context previews are count-only summaries, without a global run or cohort mutation. Saved unsupported fields remain in the draft and show a validation error. Candidate context uses its own server endpoint and authority receipts; global summary jobs are disabled until scoped distributions exist.
+
+Frozen candidate read adapter (integration dependency): Inspector accepts `readContext:{root:'/protocols/{p}/workbench/candidates/{r}',candidate_scope_revision}`. All row/cell/detail/tree/trace paths retain that token. `onSelectionChange(epoch_uuids)` is bounded to 1000 explicit UI targets; internal scope resets do not write durable decisions. `onReviewDecision({epoch_uuids,changes:{reviewed,included},query_revision,bindingVersion})` replaces destination protocol curation in candidate mode. Candidate masks/curation tags/global summary/trace prewarm are unavailable. Shared annotation writes remain actor-scoped. Trace implementation and Workbench backend are independent integration prerequisites.
+
+Verification uses disposable row/H5/SQLite fixtures and existing copied Node dependencies. Six excluded MAT fixtures and full native/million performance gates remain outside this slice.
