@@ -33,6 +33,7 @@
     "workspace_desktop_paths.py",
     "workspace_diff.py",
     "workspace_disk_index.py",
+    "workspace_explore_queries.py",
     "workspace_explorer.py",
     "workspace_export_folder.py",
     "workspace_external_tags.py",
@@ -85,6 +86,9 @@
     "workspace_tree.py",
     "workspace_tree_layouts.py",
     "workspace_tree_pages.py",
+    "workspace_typed_index.py",
+    "workspace_typed_lifecycle.py",
+    "workspace_typed_query.py",
     "workspace_updates.py"
   ],
   "source_exclusions": [

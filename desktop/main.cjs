@@ -1,5 +1,8 @@
 'use strict';
 const {app, BrowserWindow, ipcMain, dialog, session, shell, Menu, powerMonitor} = require('electron');
+let preview;
+try { preview = require('./local-preview.cjs').localPreview({app}); }
+catch (error) { dialog.showErrorBox('Open DISCO Preview', error.message); app.exit(1); throw error; }
 const path = require('node:path');
 const os = require('node:os');
 const {execFile} = require('node:child_process');
@@ -36,10 +39,16 @@ let draftStore, viewUnavailable = false;
 let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Verifying the complete app and its private runtime.'};
 
 const draftBarrier = new DraftBarrier();
+function previewStatus(value) {
+  return preview ? {...value, local_preview:true, channel:'unsigned-testing', installed:preview.application_version,
+    source_commit:preview.source_commit, can_download:false, can_restart:false,
+    message:value.message || `${preview.label}. Updates, installation and restore are disabled.`} : value;
+}
 function broadcast(value) {
+  value = previewStatus(value);
   for (const window of windows) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
 }
-function status() { return lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus; }
+function status() { return previewStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus); }
 function recovery(message, detail = '') {
   lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Disco recovery', message, detail}; broadcast(lifecycleStatus);
   if (scientificWindows.size) viewUnavailable = true;
@@ -78,12 +87,13 @@ function orderlyQuit() {
 
 function createWindow() {
   const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
-    icon:iconPath(appIcon), title: 'Disco', backgroundColor: '#f4f5f3', show: false,
+    icon:iconPath(appIcon), title: preview?.label || 'Disco', backgroundColor: '#f4f5f3', show: false,
     webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
       sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
       webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
       partition: 'rieke-desktop'}});
   windows.add(window);
+  if (preview) window.webContents.on('page-title-updated', event => { event.preventDefault(); window.setTitle(preview.label); });
   window.once('ready-to-show', () => window.show());
   window.webContents.setWindowOpenHandler(() => ({action: 'deny'}));
   window.webContents.on('will-attach-webview', event => event.preventDefault());
@@ -144,7 +154,7 @@ async function startScientificUI() {
       if (!matchesHealth(health, supervisor.expectedHealth())) throw new Error('Existing backend is not ready for recovery');
       origin = supervisor.origin; supervisor.ready = true; supervisor.origins.add(origin);
     } else origin = await supervisor.start();
-    if (!coordinator) {
+    if (!coordinator && !preview) {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
         ? require('./testing-updater.cjs').createTestingUpdateCoordinator
         : require('./updater.cjs').createUpdateCoordinator;
@@ -182,16 +192,19 @@ function registerIPC() {
   noPayload('desktop:status', () => status());
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {
+    if (preview) throw new Error('Updates are disabled in DISCO Preview.');
     if (!coordinator?.download) throw new Error('Update download is unavailable for this installation.');
     return coordinator.download();
   });
   noPayload('desktop:restart-to-update', () => {
+    if (preview) throw new Error('Updates are disabled in DISCO Preview.');
     if (!coordinator) throw new Error('No prepared update is available.');
     return coordinator.installPrepared();
   });
   noPayload('desktop:quit', () => orderlyQuit());
   noPayload('desktop:retry-startup', () => { if (bootstrap) throw new Error('Install the complete app before starting projects'); return startScientificUI(); });
   handle('desktop:restore-previous', async payload => {
+    if (preview) throw new Error('Restore is disabled in DISCO Preview.');
     if (payload !== undefined || lifecycleStatus.state !== 'Recovery') throw new Error('Verified restoration is available only from recovery');
     const restorePriorBundle = distribution.channel === 'unsigned-testing'
       ? require('./testing-install.cjs').restoreTestingPriorBundle
@@ -218,6 +231,7 @@ function registerIPC() {
     await shell.openExternal(url); return {opened: true};
   });
   noPayload('desktop:install-and-open', async () => {
+    if (preview) throw new Error('Installation is disabled in DISCO Preview.');
     if (!bootstrap || supervisor?.child) throw new Error('Install action is available only before backend startup');
     const result = await installCompleteBundle({source: sourceApp, destination, distribution});
     app.releaseSingleInstanceLock();
@@ -232,7 +246,7 @@ else {
   app.on('before-quit', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
-    app.setAboutPanelOptions({applicationName:'Disco',applicationVersion:app.getVersion(),copyright:'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
+    app.setAboutPanelOptions({applicationName:preview ? 'DISCO Preview' : 'Disco',applicationVersion:app.getVersion(),copyright:preview ? `Source ${preview.source_commit}` : 'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
     appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
     draftStore = new DraftStore(app.getPath('userData'));
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
@@ -240,7 +254,7 @@ else {
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
-      {label: 'Check for Updates', click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
+      {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 
     {label: 'Window', submenu: [{role: 'minimize'}, {role: 'zoom'}]}]));

@@ -18,3 +18,10 @@ test('signed bootstrap retains its signature guidance and never claims an unsign
  assert.equal(h.element('channel').hidden,true);assert.equal(h.element('gatekeeper').hidden,true);
  assert.equal(h.element('detail').textContent,'Developer ID signature verification is required.');assert.equal(h.installs,0);
 });
+test('local preview hides install and restore while retaining retry and quit',async()=>{
+ const h=page({state:'Recovery',channel:'unsigned-testing',local_preview:true});await h.settle();
+ assert.equal(h.element('restore').hidden,true);assert.equal(h.element('install').hidden,true);
+ assert.equal(h.element('retry').hidden,false);assert.equal(typeof h.element('quit').onclick,'function');
+ h.emit({state:'Bootstrap',channel:'unsigned-testing',local_preview:true});
+ assert.equal(h.element('install').hidden,true);
+});

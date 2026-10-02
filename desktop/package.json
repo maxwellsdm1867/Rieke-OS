@@ -1,6 +1,6 @@
 {
   "name": "disco-desktop",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "description": "Disco self-contained desktop application",
   "author": "Disco contributors",
@@ -13,6 +13,7 @@
     "test:e2e:startup-failure": "node e2e/backend-failure.e2e.cjs",
     "test:e2e:updater": "electron tests/e2e/updater-client.cjs",
     "pack": "electron-builder --mac --arm64 --dir",
+    "pack:preview": "electron-builder --config preview-builder.cjs --mac --arm64 --dir --publish never",
     "dist": "electron-builder --mac dmg zip --arm64 --publish never",
     "test:e2e:bootstrap": "node e2e/bootstrap.e2e.cjs",
     "test:e2e:github-updates": "node e2e/github-updates.e2e.cjs",
