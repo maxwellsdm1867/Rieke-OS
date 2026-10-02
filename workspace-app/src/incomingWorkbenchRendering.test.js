@@ -8,7 +8,7 @@ import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from 'vite';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('');
 const root=fileURLToPath(new URL('..',import.meta.url));
-const create=()=>createServer({root,configFile:false,cacheDir:root+'/.review-vite-cache',optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
+const create=(plugins=[])=>createServer({plugins,root,configFile:false,cacheDir:root+'/.review-vite-cache',optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 
 test('actual Workbench renders authoritative queue and session worklist controls',async()=>{
  const server=await create();
@@ -213,7 +213,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
  const makeQueue=(token,count)=>({contract_version:1,queue_revision:token,pending_epoch_count:count,pending_cell_count:1,candidates:[{protocol_uuid:protocol,candidate_revision_uuid:'original-a',status:'pending',pending_epoch_count:count},{protocol_uuid:protocol,candidate_revision_uuid:'original-b',status:'pending',pending_epoch_count:count}],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}});
  globalThis.fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value;
-  if(endpoint===`${root}/prepare`){preparedCalls++;const id=`union-${body.expected_queue_revision}`;value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${body.expected_queue_revision}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:'frozen',queue_revision:body.expected_queue_revision,context:{candidate_scope_revision:'frozen',draft:{draft_version:1,selection_mode:'selected'}}};}
+  if(endpoint===`${root}/prepare`){preparedCalls++;const id=`union-${body.expected_queue_revision}`;value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${body.expected_queue_revision}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:'frozen',queue_revision:body.expected_queue_revision,context:{candidate_revision_uuid:id,candidate_scope_revision:'frozen',draft:{draft_version:1,selection_mode:'selected'},protocol:{protocol_uuid:protocol}}};}
   else if(endpoint.endsWith('/context'))value={candidate_scope_revision:'fresh',draft:{draft_version:1,selection_mode:'selected'},protocol:null,counts:{pending_epochs:endpoint.includes('queue-1')?3:1}};
   else assert.fail(`No global fallback or invented client union: ${endpoint}`);
   return {ok:true,status:200,json:async()=>value};
@@ -233,6 +233,10 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   assert.ok(renderer.root.findAllByType('code').some(node=>label(node)==='original-a'));assert.equal(preparedCalls,2);
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Return to cumulative incoming review').props.onClick());
   assert.equal(preparedCalls,2,'resuming same prepared snapshot does not write again');
+  await act(async()=>renderer.update(React.createElement(Workbench,{...props,authority:makeQueue('all-excluded',0)})));
+  assert.equal(preparedCalls,3,'history permits restoring excluded draft even when awaiting-review count is zero');
+  assert.ok(renderer.root.findAllByType('strong').some(node=>label(node)==='Unmerged incoming recordings'));
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('Saved exclusions remain available')));
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -241,13 +245,13 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
  const root='/protocols/history/workbench/candidates/old-union';
  const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'all'},counts:{pending_epochs:2},protocol:null};
  const preview={expected_candidate_scope_revision:'scope',expected_draft_version:1,mode:'all',preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'main',selected_epoch_count:2,accepted_epoch_count:2,already_present_epoch_count:0,retained_epoch_count:1,next_epoch_count:3,accepted_cell_count:1};
- const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-old',candidate_revision_uuid:'old-union',root,candidate_scope_revision:'scope',context,queue_revision:'old-queue'};
+ const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-old',candidate_revision_uuid:'old-union',root,candidate_scope_revision:'scope',context:{...context,candidate_revision_uuid:'old-union',protocol:{protocol_uuid:'history'}},queue_revision:'old-queue'};
  const makeQueue=token=>({data:{queue_revision:token,pending_epoch_count:2,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
  globalThis.fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value,status=200;
   if(endpoint.endsWith('/context'))value=context;
   else if(endpoint===`${root}/accept`){if(attempts++===0){await new Promise(resolve=>{release=resolve;});status=503;value={error:'Reply lost'};}else value={operation_uuid:body.operation_uuid,candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};}
-  else if(endpoint.endsWith('/prepare')){prepares++;value={...prepared,candidate_revision_uuid:'new-union',root:root.replace('old-union','new-union'),queue_revision:body.expected_queue_revision};}
+  else if(endpoint.endsWith('/prepare')){prepares++;value={...prepared,candidate_revision_uuid:'new-union',root:root.replace('old-union','new-union'),context:{...prepared.context,candidate_revision_uuid:'new-union'},queue_revision:body.expected_queue_revision};}
   else assert.fail(`Unexpected ${endpoint}`);
   return {ok:status===200,status,json:async()=>value};
  };
@@ -266,5 +270,64 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
   const exportButton=renderer.root.findAllByType('button').find(node=>label(node)==='Export accepted additions');assert.ok(exportButton,'old accepted subset remains exportable');
   await act(async()=>exportButton.props.onClick());
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('accepted-old')));assert.equal(attempts,2,'opening old receipt export does not accept again');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('prepared cumulative scope refuses mismatched candidate, protocol, root or queue identity',async()=>{
+ const server=await create();
+ try{
+  const {requirePreparedWorkbench}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+  const protocol='7d76b76a-4c43-42c6-ac54-881ff2fc108a',candidate='b411db17-0ab4-42aa-872a-e6e614106041';
+  const value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-operation',candidate_revision_uuid:candidate,root:`/protocols/${protocol}/workbench/candidates/${candidate}`,queue_revision:'queue',candidate_scope_revision:'scope',context:{candidate_revision_uuid:candidate,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:'scope',draft:{draft_version:1}}};
+  assert.equal(requirePreparedWorkbench(protocol,value,'queue').candidate_revision_uuid,candidate);
+  assert.throws(()=>requirePreparedWorkbench(protocol,{...value,context:{...value.context,candidate_revision_uuid:protocol}},'queue'),/another candidate/);
+  assert.throws(()=>requirePreparedWorkbench(protocol,{...value,context:{...value.context,protocol:{definition:{protocol_uuid:candidate}}}},'queue'),/another candidate/);
+  assert.throws(()=>requirePreparedWorkbench(protocol,{...value,root:'/explore'},'queue'),/frozen destination/);
+  assert.throws(()=>requirePreparedWorkbench(protocol,{...value,queue_revision:'other'},'queue'),/scope changed/);
+ }finally{await server.close();}
+});
+
+test('new queue preparation preserves the mounted Inspector and fences an open export dialog until replacement is ready',async()=>{
+ const stubs={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
+ const server=await create([stubs]),oldFetch=globalThis.fetch;let renderer,release,prepares=0,contexts=0;
+ const protocol='history',root='/protocols/history/workbench';
+ const context=id=>({candidate_revision_uuid:id,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:`scope-${id}`,draft:{draft_version:1,selection_mode:'selected'},counts:{pending_epochs:2}});
+ const prepared=(id,token)=>({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${token}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:`scope-${id}`,queue_revision:token,context:context(id)});
+ const queue=token=>({data:{queue_revision:token,pending_epoch_count:2,total_candidate_count:2,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,'');let value;
+  if(endpoint===`${root}/prepare`){prepares++;await new Promise(resolve=>{release=resolve;});value=prepared('new-union','new-queue');}
+  else if(endpoint.endsWith('/context')){contexts++;value=context(endpoint.includes('old-union')?'old-union':'new-union');}
+  else assert.fail(`Preparation must fence old-scope writes: ${endpoint}`);
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Cumulative}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+  const {default:Frozen}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const props={protocolId:protocol,queue:queue('old-queue'),session:{prepared:prepared('old-union','old-queue'),drafts:{'old-union':{selected:['epoch'],filters:{date:'2026-10-01'}}}}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Cumulative,props));});
+  const original=renderer.root.findByType(Frozen);
+  const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Export new selection').props.onClick());
+  const openDialog=renderer.root.findByType('dialog');
+  assert.equal(contexts,2,'the open export dialog loads its own fresh context');
+  await act(async()=>renderer.update(React.createElement(Cumulative,{...props,revision:1,queue:queue('new-queue')})));
+  assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector,'revision refresh cannot unmount the visible frozen tree during prepare');
+  assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,'undefined:1');
+  assert.equal(renderer.root.findByType('dialog'),openDialog);
+  assert.equal(openDialog.findAllByType('button').find(node=>node.props.className==='primary').props.disabled,true);
+  await act(async()=>openDialog.findByType('form').props.onSubmit({preventDefault(){}}));
+  assert.equal(renderer.root.findByType(Frozen),original,'old browser is preserved while preparing');
+  assert.equal(contexts,3,'revision refresh obtains fresh context without remounting the visible frozen tree');
+  assert.equal(original.props.externalBusy,true);
+  const compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');
+  assert.equal(compare.props.disabled,true);
+  await act(async()=>compare.props.onClick());assert.equal(prepares,1);
+  await act(async()=>release());
+  const replacement=renderer.root.findByType(Frozen);
+  assert.notEqual(replacement,original);assert.equal(replacement.props.item.candidate_revision_uuid,'new-union');
+  assert.equal(replacement.props.externalBusy,false);assert.equal(contexts,4);
+  await act(async()=>renderer.update(React.createElement(Cumulative,{...props,queue:queue('new-queue')})));
+  assert.equal(renderer.root.findByType(Frozen),replacement);assert.equal(prepares,1,'stable paired queue echo does not prepare again');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

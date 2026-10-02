@@ -6,13 +6,13 @@ import {ExportDestination} from './ProtocolExports.jsx';
 import {exportDownloadLabel} from '../exportFormats.js';
 import './ExportSelectionDialog.css';
 
-export default function WorkbenchExportDialog({protocolId,item,accept=false,state={},onState,onClose,onChanged,acceptReceipt=null}){
+export default function WorkbenchExportDialog({protocolId,item,accept=false,state={},onState,onClose,onChanged,acceptReceipt=null,externalBusy=false}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid),dialog=useRef(null),inFlight=useRef(false),saved=useRef(state);
   saved.current=state;
   const accepting=state.workflow?state.workflow==='accept-export':accept;
   const [context,setContext]=useState(null),[loadError,setLoadError]=useState(''),[busy,setBusy]=useState(false);
   const [format,setFormat]=useState(state.format||'wheeler-sqlite'),[name,setName]=useState(state.name||''),[mode,setMode]=useState(state.mode||'selected');
-  const committed=state.receipt||acceptReceipt,locked=busy||!!state.prepared||!!state.acceptOperation&&!committed;
+  const committed=state.receipt||acceptReceipt,locked=busy||externalBusy||!!state.prepared||!!state.acceptOperation&&!committed;
   function publish(patch){saved.current={...saved.current,...patch};onState(saved.current);}
   useEffect(()=>{const el=dialog.current;el?.showModal?.();return()=>el?.close?.();},[]);
   useEffect(()=>{
@@ -22,9 +22,9 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
     return()=>controller.abort();
   },[root,!!committed,!!state.prepared,!!state.preview]);
   async function submit(event){
-    event.preventDefault();if(inFlight.current)return;inFlight.current=true;setBusy(true);
+    event.preventDefault();if(externalBusy||inFlight.current)return;inFlight.current=true;setBusy(true);
     let receipt=committed,phase=receipt?'exporting':'comparing';
-    publish({error:'',format,name,mode,workflow:accepting?'accept-export':'export',...(receipt?{receipt}:{})});
+    publish({pending:true,error:'',format,name,mode,workflow:accepting?'accept-export':'export',...(receipt?{receipt}:{})});
     try{
       let preview=saved.current.preview;
       if(!receipt&&!saved.current.prepared&&!preview){
@@ -47,7 +47,7 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
       }else if(phase==='exporting'&&saved.current.prepared&&acceptanceFailureKind(error)==='rejected'){
         publish({receipt,prepared:null,exportOperation:null,preview:null,phase:receipt?'export-rejected':'rejected',error:`Export was rejected. ${receipt?'Choose a supported format or retry with fresh export context. Acceptance remains saved.':'Reopen to refresh the proposal.'} ${error.message}`});if(!receipt)setContext(null);
       }else publish({receipt,phase:phase==='accepting'?'acceptance-unconfirmed':receipt?'export-failed':saved.current.prepared?'export-unconfirmed':'failed',error:error.message});
-    }finally{inFlight.current=false;setBusy(false);}
+    }finally{publish({pending:false});inFlight.current=false;setBusy(false);}
   }
   return <dialog ref={dialog} className="export-selection-dialog" aria-label={accepting?'Accept and export incoming additions':'Export incoming additions'} onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
     <header><h2>{accepting?'Accept & export':'Export new additions'}</h2><button disabled={busy} onClick={onClose}>Close</button></header>
@@ -63,7 +63,7 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
         {state.preview&&!committed&&<dl aria-label="Incoming export preview counts">{workbenchPreviewCounts(state.preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl>}
         <label>Export name (optional)<input value={name} maxLength={120} disabled={locked} onChange={event=>setName(event.target.value)}/></label>
         <ExportDestination value={format} onChange={setFormat} disabled={locked}/>
-        <button className="primary" disabled={busy||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
+        <button className="primary" disabled={busy||externalBusy||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
       </form>}
       {state.exported&&<p role="status">{state.exported.name||'Export saved'} · {number(state.exported.epoch_count)} new epochs <a className="button" href={state.exported.download_url} download>Download {exportDownloadLabel(state.exported.format)}</a></p>}
     </div>

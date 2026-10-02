@@ -113,12 +113,15 @@ latest `expected_queue_revision`, once per queue fence (explicit retry on an
 error). The server derives an idempotent operation if omitted. The response must
 be v1, kind `workbench_pending_union`, include its preparation operation ID,
 canonical frozen candidate root, matching context/scope and requested queue echo.
+The nested candidate identity and destination protocol identity must also match;
+native protocol DTOs identify their protocol in `definition.protocol_uuid`.
 No row union, predicate rerun or membership interpretation occurs in the client.
 
 Fresh queue fences after imports/partial acceptance prepare updated snapshots.
 The backend owns exact unmerged membership, fingerprint-conflict refusal,
 original proposal provenance, and same-fingerprint actor decision carry. Empty
-queues avoid preparation writes. Ordinary renders, identical queue responses,
+queues without original history avoid preparation writes. Saved exclusions remain
+resumable even when the awaiting-review count is zero. Ordinary renders, identical queue responses,
 and resuming the same prepared scope do not create repeated requests.
 
 Pending acceptance is published to session state before POST; an unresolved
@@ -134,3 +137,18 @@ identity dedup, pending subtraction, durable draft carry, and actual browser
 proof still require the new backend checkpoint and E2E qualification. The old
 df92 implementation does not satisfy cumulative incoming-only browsing merely
 because it returns deduplicated counts.
+
+Preparation keeps the prior frozen browser mounted while the newer scope loads,
+with draft/preview/accept/export mutation controls fenced. The replacement opens
+only after the complete prepared DTO passes identity and scope validation. A
+durable acceptance receipt resolves its transient pending flag; uncertain
+operations still retain their exact request and block scope replacement.
+
+34 focused checks cover identity refusal, zero-count exclusion resume, in-flight
+recovery, and preserved mounted browser/write fences during asynchronous prepare.
+Backend initialization must preserve the queue authority token (actor CAS version
+and actual later edits remain fenced); paired queue→prepare→queue qualification
+belongs to the cumulative backend slice. Open export dialogs are fenced too,
+and publish in-flight workflow state before requests to prevent scope replacement.
+Inspector review toggles must use candidate `review_decision`; synthetic scientific
+curation stays separate (owned Inspector adapter followup).
