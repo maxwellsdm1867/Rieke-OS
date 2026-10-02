@@ -12,6 +12,30 @@ export function recordingStorage(inventory,sourceIds){
 }
 export function sizeLabel(bytes){if(!Number.isFinite(bytes))return '—';if(bytes<1000)return `${bytes} B`;if(bytes<1e6)return `${(bytes/1000).toFixed(1)} KB`;if(bytes<1e9)return `${(bytes/1e6).toFixed(1)} MB`;return `${(bytes/1e9).toFixed(2)} GB`;}
 
+export const validCellCount=value=>Number.isSafeInteger(value)&&value>=0;
+export const validRecordedDuration=value=>typeof value==='number'&&Number.isFinite(value)&&value>=0;
+
+// The summary DTO partitions current epoch UUIDs by cell UUID. Its `exported`
+// field intersects that membership with a SET of saved-export epoch UUIDs;
+// summing it here never sums export receipts or counts an epoch twice.
+// A missing field poisons only that metric, rather than presenting a partial sum.
+export function aggregateCellTypes(cells=[]){
+  const groups=new Map();
+  for(const cell of distinctCells(cells)){
+    if(!(cell.cell_uuid||cell.uuid))continue;
+    const type=recordedCellType(cell);
+    const group=groups.get(type)||{type,count:0,cells:[],epochs:0,duration_seconds:0,exported:0,included:0,reviewed:0,withExports:0};
+    group.cells.push(cell);group.count++;
+    for(const field of ['epochs','duration_seconds','exported','included','reviewed']){
+      const valid=field==='duration_seconds'?validRecordedDuration:validCellCount;
+      group[field]=group[field]!==null&&valid(cell[field])&&valid(group[field]+cell[field])?group[field]+cell[field]:null;
+    }
+    group.withExports=group.withExports!==null&&validCellCount(cell.exported)?group.withExports+(cell.exported>0?1:0):null;
+    groups.set(type,group);
+  }
+  return [...groups.values()].sort((a,b)=>b.count-a.count||a.type.localeCompare(b.type));
+}
+
 // Count identities, not epoch totals or cell labels reused on different dates.
 export function protocolCellTypes(cells=[]){
   const types=new Map();

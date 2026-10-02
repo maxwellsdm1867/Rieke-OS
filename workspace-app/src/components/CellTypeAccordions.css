@@ -1,0 +1,33 @@
+.cell-type-accordions{container-type:inline-size;min-width:0}
+.cell-type-group+.cell-type-group{border-top:1px solid var(--border)}
+.cell-type-group-heading{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);column-gap:24px;padding:18px 22px;align-items:center;background:var(--surface)}
+.cell-type-group-heading>h3{min-width:0;margin:0}
+.cell-type-toggle{width:100%;min-width:0;border:0;background:transparent;text-align:left;padding:4px;justify-content:flex-start;white-space:normal;gap:14px}
+.cell-type-toggle:hover{background:var(--surface-subtle)}
+.cell-type-disclosure{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:10px;font-weight:400;color:var(--ink-muted)}
+.cell-type-disclosure>svg{flex-shrink:0;transform:rotate(-90deg)}
+.cell-type-toggle[aria-expanded=true] .cell-type-disclosure>svg{transform:rotate(0deg)}
+.cell-type-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:0;align-self:center}
+.cell-type-metrics>div{min-width:0}
+.cell-type-metrics dt{font-size:10px;color:var(--ink-muted);line-height:1.4;margin-bottom:5px;min-height:28px;display:flex;align-items:flex-end}
+.cell-type-metrics dd{margin:0;font-size:16px;line-height:1.4;color:var(--ink-secondary);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cell-type-metrics dd small{font-size:10px;font-weight:400}
+.cell-type-marks{grid-column:2;font-size:10px;line-height:1.6;color:var(--ink-muted);margin:7px 0 0}
+.cell-type-marks strong{font-weight:550;font-variant-numeric:tabular-nums}
+.cell-type-cells{border-top:1px solid var(--border-subtle)}
+.cell-type-cells[hidden]{display:none}
+.cell-type-cells .group-heading{display:none}
+@container (max-width:760px){
+  .cell-type-group-heading{grid-template-columns:minmax(0,1fr);gap:12px;padding:16px}
+  .cell-type-metrics{padding-left:4px;gap:12px}
+  .cell-type-marks{grid-column:1;margin:0;padding-left:4px}
+}
+@container (max-width:470px){
+  .cell-type-disclosure>span{display:none}
+  .cell-type-metrics dd{font-size:14px}
+  .cell-type-cells .cell-columns{display:none}
+  .cell-type-cells .cell-row>summary{grid-template-columns:minmax(0,1fr) auto;gap:9px}
+  .cell-type-cells .cell-row>summary>.cell-identity{grid-column:1/-1}
+  .cell-type-cells .cell-row>summary>.badge{white-space:normal;justify-self:start}
+  .cell-type-cells .cell-details{flex-wrap:wrap;gap:12px}
+}

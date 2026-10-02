@@ -1,4 +1,5 @@
 import {distinctCells,recordedCellType} from '../cellTypes.js';
+import {validCellCount} from '../protocolOverviewModel.js';
 // Overview quantities are derived from source cells, never by summing overlapping cohorts.
 export function overviewModel(data) {
   const cells = distinctCells(data.cells);
@@ -6,7 +7,9 @@ export function overviewModel(data) {
   for (const cell of cells) {
     const date = cell.date || 'Not recorded';
     const group = dates.get(date) || {date, cells:0, epochs:0, duration:0};
-    group.cells += 1; group.epochs += cell.epochs ?? cell.epoch_count ?? 0;
+    group.cells += 1;
+    const epochs=cell.epochs??cell.epoch_count;
+    group.epochs=group.epochs!==null&&validCellCount(epochs)&&validCellCount(group.epochs+epochs)?group.epochs+epochs:null;
     if(typeof cell.duration_seconds!=='number'||!Number.isFinite(cell.duration_seconds)||cell.duration_seconds<0)group.duration=null;
     else if(group.duration!==null)group.duration+=cell.duration_seconds;
     dates.set(date,group);
