@@ -66,3 +66,23 @@ test('adjacent prefetch is capped, metadata-only, sequential, and abortable befo
   await sleep(15);cancel();assert.deepEqual(calls,['/epochs/one','/epochs/two']);
   const stop=prefetchEpochMetadata(['/epochs/four'],{cache,delayMs:5,request:async()=>assert.fail('cancelled prefetch must not fetch')});stop();await sleep(10);
 });
+
+test('candidate detail does not prewarm through global trace authority or consume a warmed global trace',async()=>{
+ const cache=createResourceCache(),calls=[];
+ cache.put(initialEpochTracePath(epoch),4,{epoch_uuid:'one',values:['global snapshot']});
+ const root='/protocols/p/workbench/candidates/r';
+ const candidatePath=`${root}/epochs/one?candidate_scope_revision=exact-token`;
+ const result=await requestEpochWithTrace(candidatePath,{cache,revision:4,request:async url=>{calls.push(url);assert.equal(url,candidatePath);return {...epoch,candidate_scope_revision:'exact-token'};}});
+ assert.equal(result.candidate_scope_revision,'exact-token');assert.deepEqual(calls,[candidatePath]);
+ assert.equal(cache.get(candidatePath,4),undefined,'Candidate reads are uncached until scoped caching is certified');
+ assert.equal(cache.get(initialEpochTracePath(epoch),4).values[0],'global snapshot');
+});
+test('candidate token changes request exact metadata again without global prewarming',async()=>{
+ const cache=createResourceCache(),calls=[];
+ for(const token of ['first','second']){
+  const url=`/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=${token}`;
+  await requestEpochWithTrace(url,{cache,request:async path=>{calls.push(path);return epoch;}});
+ }
+ assert.deepEqual(calls,['/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=first','/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=second']);
+ assert.equal(cache.stats().entries,0);
+});

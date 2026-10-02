@@ -62,3 +62,13 @@ test('shared designer puts its only Back to epochs control in the left tree pane
  assert.ok(leftPane);assert.match(leftPane,/Back to epochs/);
  assert.ok(leftPane.indexOf('Back to epochs')<leftPane.indexOf('Tree builder'));
 });
+
+test('trace advertises frozen authority support and rejects incomplete candidate context during render',async()=>{
+ const {default:Trace}=await server.ssrLoadModule('/src/components/TraceViewer.jsx');
+ assert.equal(Trace.supportsFrozenReadContext,true);
+ const epoch={epoch_uuid:'fixture',streams:[{kind:'responses',uuid:'response-fixture',sample_count:10,sample_rate:10000,units:'pA',device:'fixture'}]};
+ const readContext={root:'/protocols/p/workbench/candidates/r',candidate_scope_revision:'exact-token'};
+ const html=render(Trace,{epoch,readContext});
+ assert.match(html,/Recorded response viewer/);assert.match(html,/Recorded sample readout/);
+ assert.throws(()=>render(Trace,{epoch,readContext:{root:readContext.root}}),/Frozen candidate context is unavailable/);
+});

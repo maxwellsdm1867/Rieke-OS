@@ -3,6 +3,7 @@ import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,RotateCcw,
 import {number,useResource} from '../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
+import {traceRequestPath,traceCacheRevision} from '../traceReadContext.js';
 import {useNavigationLoading,useDelayedLoading} from './NavigationLoading.jsx';
 
 function paintTrace(canvas,data){
@@ -40,8 +41,9 @@ function paintTrace(canvas,data){
 }
 
 // Keep the canvas mounted while resetting stream/window state for each identity.
-export default function Trace({epoch,revision=0}){return <TraceViewer epoch={epoch} revision={revision}/>;}
-function TraceViewer({epoch,revision}){
+export default function Trace({epoch,revision=0,readContext=null}){return <TraceViewer epoch={epoch} revision={revision} readContext={readContext}/>;}
+Trace.supportsFrozenReadContext=true;
+function TraceViewer({epoch,revision,readContext}){
   const streams=(epoch?.streams || []).filter(stream=>stream.kind==='responses'&&stream.sample_count>0);
   const [selection,setSelection]=useState({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});
   const sameEpoch=selection.epoch===epoch?.epoch_uuid;
@@ -53,13 +55,15 @@ function TraceViewer({epoch,revision}){
   const [entryError,setEntryError]=useState('');
   const bounded=clampWindow(sameEpoch?viewport.start:0,sameEpoch?viewport.count:MAX_TRACE_SAMPLES,stream?.sample_count);
   useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});setViewport(clampWindow(0,MAX_TRACE_SAMPLES,streams[0]?.sample_count));setEntryError('');}},[epoch?.epoch_uuid,sameEpoch]);
-  const requestPath=stream?`/epochs/${epoch.epoch_uuid}/trace?stream_uuid=${stream.uuid}&start=${bounded.start}&count=${bounded.count}`:null;
-  const resource=useResource(requestPath,revision,0,{cache:true});
+  const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,bounded,readContext);
+  const resource=useResource(requestPath,traceCacheRevision(revision,readContext),0,{cache:true});
   const data=resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===bounded.start&&resource.data?.count===bounded.count?resource.data:null;
   const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&data.values?.length===data.count;
   const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
   const cursorHelp=useId();
-  const painted=useRef(false);
+  const authorityKey=readContext?JSON.stringify([readContext.root,readContext.candidate_scope_revision]):'global';
+  const painted=useRef(false),paintedAuthority=useRef(authorityKey);
+  const canRetainPaint=painted.current&&paintedAuthority.current===authorityKey;
   const dataRef=useRef(null);dataRef.current=valid?data:null;
   const currentError=resource.path===requestPath?resource.error:null;
   const pending=!!stream&&!currentError&&(resource.loading||resource.path!==requestPath||!resource.data);
@@ -107,10 +111,10 @@ function TraceViewer({epoch,revision}){
     if(cursorInput.current)cursorInput.current.value=valid?String(data.start):'';
     let resizedFrame;
     const draw=()=>{
-      // A pending request keeps the previous bitmap visible but non-interactive.
+      // A pending window keeps its bitmap only within the same frozen authority.
       // Failed/invalid responses clear it; only validated samples get new axes.
-      geometry.current=valid?paintTrace(base.current,data):pending?null:paintTrace(base.current,null);
-      if(valid)painted.current=true;else if(!pending)painted.current=false;
+      geometry.current=valid?paintTrace(base.current,data):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
+      if(valid){painted.current=true;paintedAuthority.current=authorityKey;}else if(!pending||paintedAuthority.current!==authorityKey){painted.current=false;paintedAuthority.current=authorityKey;}
       const rect=base.current.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
       overlay.current.width=Math.round(rect.width*ratio);overlay.current.height=Math.round(rect.height*ratio);
       scheduleOverlay();
@@ -118,7 +122,7 @@ function TraceViewer({epoch,revision}){
     const resize=()=>{cancelAnimationFrame(resizedFrame);resizedFrame=requestAnimationFrame(draw);};
     draw();const observer=new ResizeObserver(resize);observer.observe(base.current);window.addEventListener('resize',resize);window.addEventListener('disco:appearance',resize);
     return()=>{observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
-  },[data,valid,pending]);
+  },[data,valid,pending,authorityKey]);
   function local(event){const rect=overlay.current.getBoundingClientRect(),g=geometry.current;return g?{x:Math.max(0,Math.min(g.w,event.clientX-rect.left-g.left)),inside:event.clientX-rect.left>=g.left&&event.clientX-rect.left<=g.left+g.w&&event.clientY-rect.top>=g.top&&event.clientY-rect.top<=g.top+g.h}:null;}
   function pointerMove(event){const at=local(event);if(!at||!dataRef.current)return;if(drag.current)drag.current.current=at.x;if(at.inside||drag.current)cursor.current=sampleAtPixel(at.x,geometry.current.w,dataRef.current.count);scheduleOverlay();}
   function pointerDown(event){const at=local(event);if(event.button!==0||pending||!dataRef.current||!at?.inside)return;surface.current.focus({preventScroll:true});event.currentTarget.setPointerCapture(event.pointerId);drag.current={origin:at.x,current:at.x};cursor.current=sampleAtPixel(at.x,geometry.current.w,data.count);scheduleOverlay();}
@@ -148,8 +152,8 @@ function TraceViewer({epoch,revision}){
       <canvas ref={base} className="tv-base" aria-hidden="true"/><canvas ref={overlay} className="tv-overlay" aria-hidden="true" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{drag.current=null;scheduleOverlay();}}/>
       {!stream&&<div className="tv-status">This epoch has no indexed response stream.</div>}
       {valid&&gapCount===data.count&&<div className="tv-status" role="status">No finite samples in this window.</div>}
-      {pending&&painted.current&&<span className="tv-previous-trace">Previous trace · inactive</span>}
-      {showLoading&&<div className="tv-status tv-loading" role="status"><span><LoaderCircle size={16}/> Loading selected samples{painted.current?' · previous trace is inactive':'…'}</span></div>}
+      {pending&&canRetainPaint&&<span className="tv-previous-trace">Previous trace · inactive</span>}
+      {showLoading&&<div className="tv-status tv-loading" role="status"><span><LoaderCircle size={16}/> Loading selected samples{canRetainPaint?' · previous trace is inactive':'…'}</span></div>}
       {currentError&&<div className="tv-status tv-error" role="alert"><span>{currentError}</span><button onClick={resource.reload}>Retry trace</button></div>}
       {invalidResponse&&<div className="tv-status tv-error" role="alert">Trace identity, sample rate or window does not match the request. No plot is shown.<button onClick={resource.reload}>Retry trace</button></div>}
     </div>

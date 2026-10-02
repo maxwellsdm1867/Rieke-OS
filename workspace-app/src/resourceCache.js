@@ -52,7 +52,8 @@ export function initialEpochTracePath(epoch){
 }
 export async function requestEpochWithTrace(path,options){
   const epoch=await cachedResourceRequest(path,options);
-  const tracePath=initialEpochTracePath(epoch);
+  // Scoped candidate metadata must not prewarm a trace through global authority.
+  const tracePath=cacheableEpochPath(path)?initialEpochTracePath(epoch):null;
   if(tracePath)try{await cachedResourceRequest(tracePath,options);}catch(error){if(options.signal?.aborted)throw error;/* Trace owns its error and retry; metadata remains usable. */}
   if(options.signal?.aborted)throw abortError();
   return epoch;
