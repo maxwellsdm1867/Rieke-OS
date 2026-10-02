@@ -1,6 +1,6 @@
 import {mutationUndo,isUndoableRequest} from './mutationUndo.js';
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
-import {cachedResourceRequest,epochResourceCache,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
+import {cachedResourceRequest,epochResourceCache,peekEpochWithTrace,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
 import { useCallback, useEffect, useState } from 'react';
 import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
 export function api(path,options={}){
@@ -27,15 +27,17 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
   const reload = useCallback(() => {if(cached)epochResourceCache.invalidate(path,{related:warmEpoch});setNonce(n => n + 1);}, [path,cached,warmEpoch]);
   useEffect(() => {
     if (!path) {setState({data: null, loading: false, error: null}); return;}
+    const complete=cached&&warmEpoch?peekEpochWithTrace(path,revision):undefined;
+    if(complete!==undefined){setState({data:complete,loading:false,error:null,path,revision,nonce});return;}
     setState(previous => previous.path === path ? {...previous, loading:true, error:null} : {data:null,loading:true,error:null,path});
     const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):api;
     return startResourceRequest({path,delayMs,request,
       onData:data=>setState({data,loading:false,error:null,path,revision,nonce}),
       onError:error=>setState({data:null,loading:false,error:error.message,path,revision,nonce})});
   }, [path, revision, nonce, delayMs,cached,warmEpoch]);
-  // A warmed trace is available during render, before a newly focused epoch can
-  // paint beside the old waveform. Warm-epoch publication still waits for I/O.
-  const hit=cached&&!warmEpoch&&path?epochResourceCache.peek(path,revision):undefined;
+  // Complete metadata/trace pairs publish in the same render; partial snapshots
+  // retain delayed I/O and the exact path/revision/reload publication fences.
+  const hit=cached&&path?(warmEpoch?peekEpochWithTrace(path,revision):epochResourceCache.peek(path,revision)):undefined;
   const visible=visibleResourceState({state,path,revision,nonce,hit});
   return {...visible, reload};
 }

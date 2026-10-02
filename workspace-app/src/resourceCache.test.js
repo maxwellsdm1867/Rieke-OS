@@ -1,9 +1,44 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createResourceCache,cachedResourceRequest,requestEpochWithTrace,initialEpochTracePath,prefetchEpochMetadata,cacheableEpochPath} from './resourceCache.js';
+import {createResourceCache,cachedResourceRequest,requestEpochWithTrace,initialEpochTracePath,peekEpochWithTrace,prefetchEpochMetadata,cacheableEpochPath} from './resourceCache.js';
 const path='/epochs/one?protocol_uuid=protocol-a';
 const epoch={epoch_uuid:'one',streams:[{uuid:'stim',kind:'stimuli',sample_count:50},{uuid:'response',kind:'responses',sample_count:40000}]};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const initialTrace=(metadata=epoch)=>({epoch_uuid:metadata.epoch_uuid,stream_uuid:metadata.streams.find(stream=>stream.kind==='responses'&&stream.sample_count>0).uuid,start:0,count:Math.min(20000,metadata.streams.find(stream=>stream.kind==='responses'&&stream.sample_count>0).sample_count),sample_rate:10000,values:Array(Math.min(20000,metadata.streams.find(stream=>stream.kind==='responses'&&stream.sample_count>0).sample_count)).fill(null)});
+test('complete warm peek requires exact global metadata URL, revision and matching initial trace',()=>{
+ const cache=createResourceCache();cache.put(path,7,epoch);
+ assert.equal(peekEpochWithTrace(path,7,cache),undefined,'metadata-only prefetch is not complete');
+ cache.put(initialEpochTracePath(epoch),7,initialTrace());
+ assert.equal(peekEpochWithTrace(path,7,cache),epoch);
+ for(const [url,revision] of [[path,8],['/epochs/one',7],['/epochs/one?protocol_uuid=other',7],[initialEpochTracePath(epoch),7],['/protocols/p/workbench/candidates/r/epochs/one?candidate_scope_revision=token',7]])assert.equal(peekEpochWithTrace(url,revision,cache),undefined);
+ cache.put(path,8,epoch);assert.equal(peekEpochWithTrace(path,8,cache),undefined,'trace revision must match metadata revision');
+});
+test('warm peek rejects malformed metadata and every mismatched or incomplete trace identity',()=>{
+ const cache=createResourceCache();const trace=initialTrace();cache.put(path,7,epoch);
+ for(const change of [{epoch_uuid:'other'},{stream_uuid:'stim'},{start:1},{count:7},{sample_rate:0},{sample_rate:Infinity},{sample_rate:'10000'},{values:[]},{values:{length:20000}}]){
+  cache.put(initialEpochTracePath(epoch),7,{...trace,...change});assert.equal(peekEpochWithTrace(path,7,cache),undefined,JSON.stringify(change));
+ }
+ cache.put(initialEpochTracePath(epoch),7,trace);
+ for(const change of [{epoch_uuid:'other'},{streams:null},{streams:[null]},{streams:[{kind:'responses',uuid:'response',sample_count:'40000'}]},{streams:[{kind:'responses',sample_count:40000}]}]){
+  cache.put(path,7,{...epoch,...change});assert.equal(peekEpochWithTrace(path,7,cache),undefined);
+ }
+ assert.equal(peekEpochWithTrace('/epochs/%ZZ',7,cache),undefined);
+});
+test('warm peek expires either member independently and reload invalidates the complete pair',()=>{
+ let at=0;const cache=createResourceCache({ttlMs:30,now:()=>at});const tracePath=initialEpochTracePath(epoch);
+ cache.put(tracePath,7,initialTrace());at=10;cache.put(path,7,epoch);assert.equal(peekEpochWithTrace(path,7,cache),epoch);
+ at=30;assert.equal(peekEpochWithTrace(path,7,cache),undefined,'expired trace cannot complete fresh metadata');
+ cache.put(tracePath,7,initialTrace());at=40;assert.equal(peekEpochWithTrace(path,7,cache),undefined,'expired metadata cannot use fresh trace');
+ cache.put(path,7,epoch);assert.equal(peekEpochWithTrace(path,7,cache),epoch);
+ cache.invalidate(path,{related:true});assert.equal(peekEpochWithTrace(path,7,cache),undefined);assert.equal(cache.peek(tracePath,7),undefined);
+});
+test('warm peek uses the first response and bounded count, while indexed-empty epochs need no trace',()=>{
+ const cache=createResourceCache();const short={epoch_uuid:'one',streams:[{kind:'responses',uuid:'short',sample_count:7},{kind:'responses',uuid:'other',sample_count:10}]};
+ cache.put(path,0,short);cache.put(initialEpochTracePath(short),0,initialTrace(short));assert.equal(peekEpochWithTrace(path,0,cache),short);
+ for(const streams of [[],[{kind:'responses',uuid:'empty',sample_count:0}],[{kind:'stimuli',uuid:'stim',sample_count:5}]]){
+  const empty={epoch_uuid:'one',streams};cache.put(path,0,empty);assert.equal(peekEpochWithTrace(path,0,cache),empty);
+ }
+});
 test('cache uses exact URL scope and revision, expires, and evicts least-recently used responses',()=>{
   let at=0;const cache=createResourceCache({entries:2,bytes:10000,ttlMs:30,now:()=>at});
   cache.put(path,1,{value:1});cache.put('/epochs/two',1,{value:2});

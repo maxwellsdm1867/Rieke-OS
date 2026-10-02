@@ -50,6 +50,24 @@ export function initialEpochTracePath(epoch){
   const {count}=clampWindow(0,MAX_TRACE_SAMPLES,stream.sample_count);
   return `/epochs/${epoch.epoch_uuid}/trace?stream_uuid=${stream.uuid}&start=0&count=${count}`;
 }
+// Only a complete global snapshot can skip navigation's I/O coalescing delay.
+// Adjacent metadata prefetch alone must still wait for its initial trace.
+export function peekEpochWithTrace(path,revision=0,cache=epochResourceCache){
+  const match=typeof path==='string'&&/^\/epochs\/([^/?#]+)(?:\?[^#]*)?$/.exec(path);
+  if(!match)return undefined;
+  let epochUuid;try{epochUuid=decodeURIComponent(match[1]);}catch{return undefined;}
+  const epoch=cache.peek(path,revision);
+  if(epoch?.epoch_uuid!==epochUuid||!Array.isArray(epoch.streams)||epoch.streams.some(stream=>!stream||typeof stream!=='object'))return undefined;
+  const responses=epoch.streams.filter(stream=>stream.kind==='responses');
+  if(responses.some(stream=>!Number.isSafeInteger(stream.sample_count)||stream.sample_count<0))return undefined;
+  const stream=responses.find(stream=>stream.sample_count>0);
+  if(!stream)return epoch;
+  if(typeof stream.uuid!=='string'||!stream.uuid)return undefined;
+  const {count}=clampWindow(0,MAX_TRACE_SAMPLES,stream.sample_count);
+  const trace=cache.peek(initialEpochTracePath(epoch),revision);
+  return trace?.epoch_uuid===epochUuid&&trace.stream_uuid===stream.uuid&&trace.start===0&&trace.count===count&&
+    Number.isFinite(trace.sample_rate)&&trace.sample_rate>0&&Array.isArray(trace.values)&&trace.values.length===count?epoch:undefined;
+}
 export async function requestEpochWithTrace(path,options){
   const epoch=await cachedResourceRequest(path,options);
   // Scoped candidate metadata must not prewarm a trace through global authority.
