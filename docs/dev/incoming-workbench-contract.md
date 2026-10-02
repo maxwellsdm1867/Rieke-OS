@@ -169,3 +169,20 @@ identities and no global query. This qualifies DTO/lifecycle composition on
 disposable doubles; native storage and actual browser proof remain separate.
 The backend commit alone lacks those generation dependencies and is not a
 standalone qualified composition.
+
+## StrictMode first-entry preparation
+
+Preparation retains its promise for the same protocol, queue fence and explicit
+retry key. Effect cleanup detaches only its display subscriber. React StrictMode
+setup/cleanup/setup rejoins one request, while a genuinely unmounted or superseded
+subscriber cannot publish a late response. Explicit retry and real remount send
+the identical body; the backend's deterministic preparation receipt supplies
+idempotency. An aborted display does not imply rollback of a native write.
+
+Five real ReactDOM createRoot/StrictMode regressions run with jsdom (test-only
+dependency): first entry without Retry, changed authority/late completion, real
+unmount/remount, lost response/exact-body retry, and uncertain acceptance before
+new preparation. The previous implementation fails the first-entry regression
+with the reported permanent interrupted message. All 40 focused checks pass.
+Inspector and filter probes isolate the lifecycle boundary; these tests do not
+claim native or full Inspector resource/browser qualification.

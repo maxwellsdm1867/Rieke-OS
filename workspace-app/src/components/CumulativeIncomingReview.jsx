@@ -23,13 +23,17 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
   useEffect(()=>{
     const token=queue.data?.queue_revision;
     const hasHistory=(queue.data?.total_candidate_count||queue.data?.candidates?.length||0)>0;
-    if(!token||queue.data.pending_epoch_count===0&&!hasHistory||queue.loading||queue.error||recovering||prepared?.queue_revision===token||attempted.current===`${token}:${nonce}`)return;
-    attempted.current=`${token}:${nonce}`;
-    const controller=new AbortController();let settled=false;setBusy(true);setError('');
-    api(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:token},signal:controller.signal}).then(value=>{
-      if(!controller.signal.aborted){const saved=requirePreparedWorkbench(protocolId,value,token);scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};settled=true;setBusy(false);setPrepared(saved);}
-    }).catch(error=>{if(!controller.signal.aborted){settled=true;setBusy(false);setError(error.message);}});
-    return()=>{controller.abort();if(!settled){setBusy(false);setError('Preparation was interrupted. Retry to recover the authoritative snapshot.');}};
+    if(!token||queue.data.pending_epoch_count===0&&!hasHistory||queue.loading||queue.error||recovering||prepared?.queue_revision===token){setBusy(false);return;}
+    const key=`${protocolId}:${token}:${nonce}`;
+    if(attempted.current?.key!==key)attempted.current={key,promise:api(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:token}})};
+    // Preparation may commit before a response arrives. Effect cleanup only
+    // detaches this display subscriber; StrictMode replay rejoins the same
+    // request, and a real remount retries the exact server-idempotent body.
+    let active=true;setBusy(true);setError('');
+    attempted.current.promise.then(value=>{
+      if(active){const saved=requirePreparedWorkbench(protocolId,value,token);scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};setBusy(false);setPrepared(saved);}
+    }).catch(error=>{if(active){setBusy(false);setError(error.message);}});
+    return()=>{active=false;};
   },[protocolId,queue.data?.queue_revision,queue.data?.pending_epoch_count,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision]);
   const authorityChanged=!!queue.data?.queue_revision&&prepared?.queue_revision!==queue.data.queue_revision;
   const remember=useCallback(value=>{drafts.current={...drafts.current,[prepared.candidate_revision_uuid]:value};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);},[prepared?.candidate_revision_uuid,onSession]);
