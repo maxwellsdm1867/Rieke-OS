@@ -9,6 +9,7 @@ import {createServer} from 'vite';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('');
 const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,cacheDir:root+'/.review-vite-cache',optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
+const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
 test('actual Workbench renders authoritative queue and session worklist controls',async()=>{
  const server=await create();
@@ -288,8 +289,8 @@ test('prepared cumulative scope refuses mismatched candidate, protocol, root or 
 });
 
 test('new queue preparation preserves the mounted Inspector and fences an open export dialog until replacement is ready',async()=>{
- const stubs={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
- const server=await create([stubs]),oldFetch=globalThis.fetch;let renderer,release,prepares=0,contexts=0;
+
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer,release,prepares=0,contexts=0;
  const protocol='history',root='/protocols/history/workbench';
  const context=id=>({candidate_revision_uuid:id,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:`scope-${id}`,draft:{draft_version:1,selection_mode:'selected'},counts:{pending_epochs:2}});
  const prepared=(id,token)=>({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${token}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:`scope-${id}`,queue_revision:token,context:context(id)});
@@ -329,5 +330,40 @@ test('new queue preparation preserves the mounted Inspector and fences an open e
   assert.equal(replacement.props.externalBusy,false);assert.equal(contexts,4);
   await act(async()=>renderer.update(React.createElement(Cumulative,{...props,queue:queue('new-queue')})));
   assert.equal(renderer.root.findByType(Frozen),replacement);assert.equal(prepares,1,'stable paired queue echo does not prepare again');
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+
+test('actual queue hook retains Inspector through old-token loading, delayed queue and delayed preparation',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch;let renderer,releaseQueue,releasePrepare,reads=0,prepares=0;
+ const protocol='history',root='/protocols/history/workbench';
+ const queue=token=>({contract_version:1,queue_revision:token,pending_epoch_count:2,pending_cell_count:1,total_candidate_count:1,candidates:[{protocol_uuid:protocol,candidate_revision_uuid:'original',status:'pending',pending_epoch_count:2}],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}});
+ const context=id=>({candidate_revision_uuid:id,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:`scope-${id}`,draft:{draft_version:1,selection_mode:'selected'},counts:{pending_epochs:2}});
+ const prepared=(id,token)=>({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:`prepare-${token}`,candidate_revision_uuid:id,root:`${root}/candidates/${id}`,candidate_scope_revision:`scope-${id}`,queue_revision:token,context:context(id)});
+ globalThis.fetch=async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,'');let value;
+  if(endpoint===`${root}?limit=20`){if(reads++===0)value=queue('old-queue');else{await new Promise(resolve=>{releaseQueue=resolve;});value=queue('new-queue');}}
+  else if(endpoint===`${root}/prepare`){if(prepares++===0)value=prepared('old-union','old-queue');else{await new Promise(resolve=>{releasePrepare=resolve;});value=prepared('new-union','new-queue');}}
+  else if(endpoint.endsWith('/context'))value=context(endpoint.includes('old-union')?'old-union':'new-union');
+  else assert.fail(`Old-scope actions must stay fenced during queue refresh: ${endpoint}`);
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
+  const props={protocolId:protocol,revision:0};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
+  const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);assert.equal(prepares,1);
+  await act(async()=>renderer.update(React.createElement(Workbench,{...props,revision:1})));
+  assert.equal(reads,2);assert.equal(prepares,1,'old token is retained while queue GET is pending');
+  assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector);
+  assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,'0:1');
+  let compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');assert.equal(compare.props.disabled,true);
+  await act(async()=>compare.props.onClick());
+  await act(async()=>releaseQueue());
+  assert.equal(prepares,2);assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector);
+  compare=renderer.root.findAllByType('button').find(node=>label(node)==='Preview selected additions');assert.equal(compare.props.disabled,true);
+  await act(async()=>releasePrepare());
+  const replacement=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.notEqual(replacement,inspector);
+  assert.equal(replacement.props.readContext.candidate_scope_revision,'scope-new-union');assert.equal(replacement.props.revision,'1:1');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

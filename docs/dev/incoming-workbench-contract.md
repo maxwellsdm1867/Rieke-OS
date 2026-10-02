@@ -152,3 +152,20 @@ belongs to the cumulative backend slice. Open export dialogs are fenced too,
 and publish in-flight workflow state before requests to prevent scope replacement.
 Inspector review toggles must use candidate `review_decision`; synthetic scientific
 curation stays separate (owned Inspector adapter followup).
+
+Queue refresh continuity is fenced before effects run: the queue hook reports
+loading synchronously when its revision/request parameters change, even while
+retaining the prior queue DTO. Cumulative refresh retains the mounted Inspector
+through delayed queue and prepare responses; fresh context is required for new
+actions. Exact uncertain operation recovery still uses its original request.
+35 focused checks include the actual hook's old-token loading sequence.
+
+Paired qualification used backend `d62593489ff21d49f0b1a8b3613b3538b9eb855c`
+composed with scoped/generation dependencies `a0f010a`, `6845e85`, `39a8ebd`.
+Two backend SQL-double queue/initialization/carry tests passed independently.
+Its actual three-proposal/three-pending-epoch DTOs then mounted in this UI:
+queue→prepare→queue/ordinary refresh produced one prepare POST, matching nested
+identities and no global query. This qualifies DTO/lifecycle composition on
+disposable doubles; native storage and actual browser proof remain separate.
+The backend commit alone lacks those generation dependencies and is not a
+standalone qualified composition.
