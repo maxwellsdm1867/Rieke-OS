@@ -23,7 +23,9 @@ import tempfile
 LEGACY_TABLES = ('annotation_profile', 'shared_annotation', 'curation', 'protocol_workspace',
           'data_store_state', 'protocol_tree_layout', 'search_preset', 'search_preset_version',
           'protocol_binding', 'explorer_revision', 'dataset_revision', 'search_query_last_run')
-TABLES = LEGACY_TABLES + ('protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt')
+WORKBENCH_TABLES = LEGACY_TABLES + ('protocol_suggestion', 'workbench_draft', 'workbench_decision', 'workbench_receipt')
+# Append only: compact recovery row IDs use this tuple's stable ordinal.
+TABLES = WORKBENCH_TABLES + ('annotation_group_receipt',)
 FORMAT = 'rieke-app-state'
 
 
@@ -60,10 +62,10 @@ def restore_table_order(tables):
 
 
 def migrate_restore_tables(state):
-    """Legacy restore deliberately restores a pre-Workbench, empty review state."""
+    """Append absent optional state without changing prior reviewed contents."""
     known = set(state.get('tables', {}))
-    if known == set(LEGACY_TABLES):
-        state['tables'].update({table: [] for table in TABLES if table not in LEGACY_TABLES})
+    if known in (set(LEGACY_TABLES), set(WORKBENCH_TABLES)):
+        state['tables'].update({table: [] for table in TABLES if table not in known})
     elif known != set(TABLES):
         raise ValueError('Restore snapshot table set is unsupported')
 

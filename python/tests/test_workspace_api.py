@@ -160,6 +160,11 @@ class WorkspaceAPITests(unittest.TestCase):
         workbench_schema = patch('workspace_workbench.workbench_tables', return_value=self.workbench_tables)
         workbench_schema.start()
         self.addCleanup(workbench_schema.stop)
+        self.group_receipts = Table(('project_uuid', 'operation_uuid'))
+        self.connection.tables.append(self.group_receipts)
+        group_schema = patch('workspace_annotation_groups.group_receipt_table', return_value=self.group_receipts)
+        group_schema.start()
+        self.addCleanup(group_schema.stop)
         self.explorer_history = ExplorerHistory(self.service.dj, self.service.project['project_uuid'],
             event_table=self.events, revision_table=self.explorer_revisions, binding_table=self.protocol_bindings)
         self.data_store_states = Table(('project_uuid', 'source_sha256'))

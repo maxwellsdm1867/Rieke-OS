@@ -194,12 +194,12 @@ def _metadata(database, *, expected=None):
     if hashlib.sha256(blob).digest() != digest:
         raise ValueError('Recovery header checksum differs')
     header = _unpack(blob)
-    from workspace_state_snapshot import TABLES, LEGACY_TABLES
+    from workspace_state_snapshot import TABLES, LEGACY_TABLES, WORKBENCH_TABLES
     stored_tables = set(header.get('state', {}).get('tables', {}))
     if (header.get('format') != FORMAT or header.get('version') != VERSION
             or set(header.get('keys', {})) - set(TABLES)
             or set(header.get('columns', {})) != set(header.get('keys', {}))
-            or stored_tables not in (set(TABLES), set(LEGACY_TABLES))
+            or stored_tables not in (set(TABLES), set(LEGACY_TABLES), set(WORKBENCH_TABLES))
             or any(header['state']['tables'].values())):
         raise ValueError('Unsupported recovery header')
     table_seals = header.get('table_seals')

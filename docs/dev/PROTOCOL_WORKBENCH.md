@@ -132,6 +132,19 @@ unknown schemas fail closed; actor identities and watch tables are not truncated
 
 ## Qualification limits
 
+The separately implemented whole-group annotation module is registered with its
+receipt table declared before generation and recovery bootstrap. Snapshot tables
+append `annotation_group_receipt` without renumbering prior compact mirror rows;
+pre-Workbench and sixteen-table Workbench snapshots restore with an empty new
+receipt table and preserve all prior contents. Preview and actor-scoped preview
+release are read-only POSTs. Group apply, inverse, and exact receipt replay use
+the synchronous recovery checkpoint. A checkpoint failure returns HTTP 507 with
+`saved: true`, `code: recovery_unconfirmed`, the operation UUID and committed SQL
+status; the client must retry the same request to confirm recovery without
+reapplying the operation. These hooks do not qualify group target resolution,
+mutation, inverse, admission limits or native performance; that module and its
+native proof are separate integration dependencies.
+
 SQL-double/file-fixture tests and independent source review qualify implementation
 semantics. Native DDL, fresh/populated FK restoration, crash/restart receipt
 persistence, >250 ancestor closure and large-project memory/latency require the

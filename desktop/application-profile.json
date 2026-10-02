@@ -12,6 +12,7 @@
     "field_mapper.py",
     "recording_workspace.py",
     "workspace_annotation_checkpoint.py",
+    "workspace_annotation_groups.py",
     "workspace_annotation_preparation.py",
     "workspace_annotations.py",
     "workspace_api.py",

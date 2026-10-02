@@ -155,6 +155,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         shared_annotations=SharedAnnotations(service)
     service.shared_annotations=shared_annotations
     app.extensions['shared_annotations']=shared_annotations
+    # Declare the durable whole-group operation table before generation and
+    # recovery bootstrap, outside any data transaction. Registration below
+    # reuses this exact table rather than lazily introducing unwatched writes.
+    from workspace_annotation_groups import group_receipt_table
+    annotation_group_receipts = group_receipt_table(service.dj) if hasattr(service.dj, 'Schema') else None
     frontend = (Path(os.environ['RIEKE_DESKTOP_FRONTEND']) if os.environ.get('RIEKE_DESKTOP_MODE') == '1'
                 else Path(__file__).resolve().parents[1] / "workspace-app/dist")
     app.extensions["workspace_service"] = service
@@ -1863,6 +1868,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     from workspace_workbench import register_workbench_routes
     register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
                               db_lock, data_stores.registration_locks)
+    from workspace_annotation_groups import register_group_annotation_routes
+    register_group_annotation_routes(app, service, shared_annotations, db_lock, data_stores.registration_locks,
+                                    revision_guard=revision_guard, receipt_table=annotation_group_receipts)
     # Current-state recovery is independent of the action log. Fake services in
     # route tests have no SQL schema; real servers always enable these backups.
     if hasattr(service.dj, 'Schema'):
@@ -1895,6 +1903,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 'preview_source_propagation', 'resolve_search_preset',
                 'compare_protocol_revision'}
             read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary'})
+            read_posts.update({'group_annotation_preview', 'group_annotation_preview_release'})
             readonly = request.method == 'POST' and request.endpoint in read_posts
             desktop_control = os.environ.get('RIEKE_DESKTOP_MODE') == '1' and request.path.startswith('/api/desktop/')
             if not readonly and not desktop_control and request.path != '/api/project/close' and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
@@ -1902,8 +1911,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     scheduler.flush()
                 except Exception:
                     app.logger.exception('App state was saved to SQL but its recovery snapshot failed')
-                    failure = jsonify(error='Saved to the database, but the app-state backup failed. '
+                    payload = dict(error='Saved to the database, but the app-state backup failed. '
                         'Check project disk space and permissions before closing the app.', saved=True)
+                    if request.endpoint in {'group_annotation_apply', 'group_annotation_undo'}:
+                        # A receipt exists in SQL even if the independent mirror
+                        # failed. Keep exact-operation recovery unambiguous;
+                        # replay must traverse this same synchronous flush hook.
+                        payload.update(code='recovery_unconfirmed',
+                            operation_uuid=request.get_json()['operation_uuid'],
+                            persistence=dict(database='committed', backup=scheduler.status()))
+                    failure = jsonify(payload)
                     failure.status_code = 507
                     return failure
             return response
