@@ -69,7 +69,7 @@ test('candidate Inspector routes frozen rows/cells/detail and review callbacks w
   assert.deepEqual(selections.at(-1),['epoch-0','epoch-1']);
   await h.act(()=>h.viewer.treePane.listProps.onToggleInclusion({epoch_uuid:'epoch-0'},false));
   assert.deepEqual(decisions[0].epoch_uuids,['epoch-0']);assert.deepEqual(decisions[0].changes,{included:false});
-  assert.equal(h.viewer.tags.props.children,false);assert.equal(h.viewer.detailExtras,false);
+  assert.equal(h.viewer.tags.props.children,false);assert.equal(h.viewer.detailExtras.props.epoch.epoch_uuid,'epoch-0');
   assert.equal(h.viewer.builder.summaryEnabled,false);assert.deepEqual(h.viewer.builder.readContext,context);
   assert.ok(h.viewer.builder.onAnnotationsChanged);assert.ok(h.viewer.columnTree.onAnnotationsChanged);assert.ok(h.viewer.treePane.treeProps.onAnnotationsChanged);
   assert.ok(h.fixture.requests.some(item=>item.path.startsWith(context.root+'/epochs?')));

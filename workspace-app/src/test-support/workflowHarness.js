@@ -107,7 +107,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
         if(id==='./useImportQueue.js')return '\0workflow-import-queue';
         if(id.endsWith('.jsx')&&!['./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
-      if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
+      if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','./IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
     async load(id){
       if(baseline&&['App.jsx','components/Inspector.jsx','components/AnnotationTags.jsx'].some(name=>id===path.join(rootPath,'src',name))){
@@ -120,7 +120,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
       if(id==='\0workflow-import-queue')return `export default ()=>({busy:false,remaining:0,active:false});`;
       if(id==='\0workflow-child')return generic;
       if(id==='\0workflow-dialog')return `import React from 'react';export default ({children,footer})=>React.createElement('workflow-dialog',null,children,footer);`;
-      if(id==='\0workflow-viewer')return `import React,{useEffect} from 'react';import ProtocolViewFilter from '/src/components/ProtocolViewFilter.jsx';import InspectionCellTree from '/src/components/InspectionCellTree.jsx';const fixture=globalThis[${JSON.stringify(key)}];export default function Viewer(props){useEffect(()=>{fixture.mounts++;return()=>{fixture.unmounts++;};},[]);return React.createElement('workflow-viewer',props,React.createElement(ProtocolViewFilter,{filters:props.viewFilters,onChange:props.onViewFilters,revision:props.filterRevision,disabled:props.filterDisabled}),props.tags,props.before,React.createElement(InspectionCellTree,props.treePane.listProps));}`;
+      if(id==='\0workflow-viewer')return `import React,{useEffect} from 'react';import ProtocolViewFilter from '/src/components/ProtocolViewFilter.jsx';import InspectionCellTree from '/src/components/InspectionCellTree.jsx';const fixture=globalThis[${JSON.stringify(key)}];export default function Viewer(props){useEffect(()=>{fixture.mounts++;return()=>{fixture.unmounts++;};},[]);return React.createElement('workflow-viewer',props,React.createElement(ProtocolViewFilter,{filters:props.viewFilters,onChange:props.onViewFilters,revision:props.filterRevision,disabled:props.filterDisabled}),props.tags,props.before,props.readContext?props.detailExtras:null,React.createElement(InspectionCellTree,props.treePane.listProps));}`;
     },
   }]});
   const {default:App,Protocol}=await server.ssrLoadModule('/src/App.jsx');
