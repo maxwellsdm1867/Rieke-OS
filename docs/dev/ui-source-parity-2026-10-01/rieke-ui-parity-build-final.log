@@ -19,7 +19,7 @@ dist/assets/ColumnTree-CXtAPcvO.js             10.92 kB │ gzip:   4.05 kB
 dist/assets/jsx-runtime-DnYBY9Ps.js            23.24 kB │ gzip:   9.46 kB
 dist/assets/index-BmNtZvAg.js                 683.35 kB │ gzip: 200.43 kB
 
-[plugin builtin:vite-reporter] 
+[plugin builtin:vite-reporter]
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting

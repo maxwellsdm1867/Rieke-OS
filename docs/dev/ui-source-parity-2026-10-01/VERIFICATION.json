@@ -62,8 +62,25 @@
     "fred-theme-picker.png": "fb46f68d14ab0647d406ea40c704c26ac89ee0c296ae7eb0add0265bc71750a7",
     "receipt.json": "dda7b96fa77bfe91e33c61ce32dba0aafa83a8e2e71a460bc2994f46799f5dfa",
     "rieke-ui-parity-branding.log": "ccae27482da3b979e76eaf521b277c601dc76ee2a690508cf6778dc7415bef49",
-    "rieke-ui-parity-build-final.log": "f6dd3cdef51da1963c39524d94203efd624e9bd77bb55571920fc9caf94b0770",
+    "rieke-ui-parity-build-final.log": "f5f06efe2a0190c50a2733db090774a3aa65838ecaf13749cbe6daac9e099cec",
     "rieke-ui-parity-node-final.log": "12ec89710d7c4c19c3b3368d5489f89c3534d953be9cd5d3267eaf19fb5721cb",
-    "rieke-ui-parity-python-final.log": "81aca69ceed52295a5da1b671e96a1b36ef16ecfc190b73f179ecbab00828c26"
+    "rieke-ui-parity-python-final.log": "81aca69ceed52295a5da1b671e96a1b36ef16ecfc190b73f179ecbab00828c26",
+    "integrated-service.json": "271e2d0417e1483edc653569d2800b4a74237e694bd704be836ce7c08084a57f",
+    "SOURCE_PROVENANCE.json": "16e0064a545e97384d03500fd4cb83dfebaecda00774270ec68afd63de953d9a"
+  },
+  "exact_source_commit": "87fa39b05e7eb69a8af2116a7eb44c10e4d84728",
+  "integrated_fixture_tests": 6,
+  "independent_review": {
+    "status": "no substantive source blocker",
+    "reran_tests": false,
+    "source_commit": "87fa39b05e7eb69a8af2116a7eb44c10e4d84728"
+  },
+  "matched_native_baseline": {
+    "commit": "14b9329b0952ca8a1531daf050b78623bb04e5de",
+    "local_branch": "codex/disco-ui-parity-native-baseline-20261002",
+    "focused_tests": 49,
+    "subtests": 54,
+    "performance_measured": false,
+    "same_ui_source": true
   }
 }
