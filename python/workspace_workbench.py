@@ -152,9 +152,9 @@ class ProtocolWorkbench:
         previous = _members(main) if main else _members(result)
         base, proposed = _members(baseline), _members(candidate)
         incoming = {key: value for key, value in proposed.items() if key not in base}
-        conflicts = {key for key in base.keys() & proposed.keys() if base[key] != proposed[key]}
-        conflicts |= {key for key in incoming.keys() & previous.keys() if incoming[key] != previous[key]}
-        conflicts |= {key for key, value in previous.items() if self.service._fingerprints.get(key) != value}
+        base_conflicts = {key for key in base.keys() & proposed.keys() if base[key] != proposed[key]}
+        main_conflicts = {key for key, value in previous.items() if self.service._fingerprints.get(key) != value}
+        conflicts = base_conflicts | main_conflicts | {key for key in incoming.keys() & previous.keys() if incoming[key] != previous[key]}
         # Frozen browse refuses changed/missing rows; it cannot claim current values are old metadata.
         unavailable = {key for key, value in proposed.items() if self.service._fingerprints.get(key) != value}
         scope = self.service.source_scope()
@@ -188,7 +188,8 @@ class ProtocolWorkbench:
         evidence['candidate_scope_revision'] = checksum(evidence)
         return dict(**evidence, summary=summary, baseline=baseline, candidate=candidate, main=main,
             previous=previous, incoming=incoming, pending=pending, decisions=decisions,
-            conflicts=conflicts, unavailable=unavailable, ineligible=ineligible,
+            conflicts=conflicts, base_conflicts=base_conflicts, main_conflicts=main_conflicts,
+            unavailable=unavailable, ineligible=ineligible,
             blocked_main=ineligible_main, annotation_changed=annotation_changed, valid_base=valid_base,
             source_scope=scope, already_present=set(incoming) & set(previous))
 
@@ -198,10 +199,10 @@ class ProtocolWorkbench:
             raise WorkbenchConflict('Candidate, main, sources, annotations or draft changed; reload the frozen context')
 
     @staticmethod
-    def publishable(context):
-        if context['unavailable'] or context['conflicts']:
+    def publishable(context, selected):
+        if context['base_conflicts'] or context['main_conflicts'] or selected & (context['unavailable'] | context['conflicts']):
             raise WorkbenchConflict('Frozen epoch fingerprints changed or are unavailable; explicit reconciliation required')
-        if context['ineligible'] or context['blocked_main']:
+        if selected & context['ineligible'] or context['blocked_main']:
             raise WorkbenchConflict('Source eligibility blocks publication; reconcile excluded sources explicitly')
         if context['annotation_changed']:
             raise WorkbenchConflict('Candidate predicate annotations changed; save and review a fresh proposal')
@@ -219,7 +220,8 @@ class ProtocolWorkbench:
     def selection(self, context, mode):
         if mode not in ('all', 'selected') or mode != context['selection_mode']:
             raise ValueError('Preview mode must agree with the saved draft selection_mode')
-        selected = {key for key in context['incoming'] if not self.decision(context, key)['excluded']
+        selected = {key for key in context['incoming'] if key not in context['ineligible'] | context['unavailable']
+                    and not self.decision(context, key)['excluded']
                     and (mode == 'all' or all(self.decision(context, key)[field] for field in ('selected', 'reviewed')))}
         return selected
 
@@ -267,9 +269,11 @@ class ProtocolWorkbench:
         self.check_scope(context, body['expected_candidate_scope_revision'])
         if type(body['expected_draft_version']) is not int or body['expected_draft_version'] != context['draft_version']:
             raise WorkbenchConflict('Review draft changed')
-        self.publishable(context)
         selected = self.selection(context, body['mode'])
+        self.publishable(context, selected)
         if not selected:
+            if context['ineligible']:
+                raise WorkbenchConflict('No eligible incoming additions remain; excluded sources require reconciliation')
             raise ValueError('Choose reviewed incoming additions before publication')
         require_protocol_compatibility(self.service, context['protocol_uuid'], selected)
         accepted = selected - context['previous'].keys()
@@ -341,7 +345,10 @@ class ProtocolWorkbench:
                 saved = dict(version=context['expected_binding_version'], revision_uuid=main['revision_uuid'], event_uuid=None)
             self.verify_sources(context, selected | context['previous'].keys())
             receipt = dict(**preview, operation_uuid=str(uuid.UUID(body['operation_uuid'])), protocol_uuid=protocol,
-                candidate_revision_uuid=revision, actor=actor, binding=saved, event_uuid=saved['event_uuid'],
+                candidate_revision_uuid=revision, actor=actor, binding=saved, event_uuid=str(uuid.uuid4()),
+                candidate_recipe_sha256=context['candidate_recipe_sha256'],
+                baseline_revision_uuid=context['baseline_revision_uuid'], baseline_recipe_sha256=context['baseline_recipe_sha256'],
+                binding_event_uuid=saved['event_uuid'],
                 resulting_recipe_sha256=record['recipe']['content_sha256'],
                 accepted_epoch_uuids=sorted(accepted), selected_epoch_uuids=sorted(selected),
                 accepted_fingerprints={key: context['incoming'][key] for key in sorted(accepted)},
@@ -349,18 +356,20 @@ class ProtocolWorkbench:
             self.tables[2].insert1(dict(project_uuid=self.project, operation_uuid=receipt['operation_uuid'],
                 protocol_uuid=protocol, candidate_revision_uuid=revision, actor=actor,
                 request_sha256=request_hash, receipt=receipt))
-            self._event(actor, 'workbench_additions_accepted', receipt, receipt['operation_uuid'])
+            self._event(actor, 'workbench_additions_accepted', receipt, receipt['operation_uuid'], event_uuid=receipt['event_uuid'])
         return receipt
 
     @staticmethod
     def accept_request_hash(protocol, revision, actor, body):
         return checksum(dict(protocol_uuid=protocol, candidate_revision_uuid=revision, actor=actor, **body))
 
-    def _event(self, actor, action, payload, operation):
-        self.history.Event.insert1(dict(project_uuid=self.project, event_uuid=str(uuid.uuid4()),
+    def _event(self, actor, action, payload, operation, *, event_uuid=None):
+        event_uuid = event_uuid or str(uuid.uuid4())
+        self.history.Event.insert1(dict(project_uuid=self.project, event_uuid=event_uuid,
             occurred_at=dt.datetime.now(dt.timezone.utc).replace(tzinfo=None), actor=actor, action=action,
             payload=build_audit_payload(action, actor, payload, operation_uuid=operation,
                 context={'project_uuid': self.project})))
+        return event_uuid
 
     def verify_sources(self, context, identities):
         scope = self.service.source_scope()
@@ -406,7 +415,7 @@ class ProtocolWorkbench:
             raise KeyError('Unknown protocol')
         records = (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
         records.sort(key=lambda row: (row['summary']['created_at'], row['suggestion_uuid']), reverse=True)
-        items, pending, witnesses = [], set(), []
+        items, pending, eligible_union, cell_ids, witnesses = [], set(), set(), {}, []
         for row in records:
             revision = row['summary']['candidate_revision_uuid']
             context = self.context(protocol, revision, actor)
@@ -419,9 +428,18 @@ class ProtocolWorkbench:
                       'accepted' if not context['pending'] and accepted_receipts else
                       'covered' if not context['pending'] else 'deferred' if context['deferred'] else
                       'pending' if context['main_revision_uuid'] == context['baseline_revision_uuid'] else 'pending_rebased')
+            unmerged = {key for key in context['pending'] if not self.decision(context, key)['excluded']}
+            pending |= unmerged
+            for key in unmerged:
+                saved_cell = row['summary'].get('incoming_cell_uuids', {}).get(key)
+                if saved_cell:
+                    cell_ids[key] = saved_cell
+                elif key not in context['unavailable']:
+                    cell_ids[key] = self.service.rows[key]['cell_uuid']
             if not blocked:
-                pending |= eligible
-            items.append(dict(**row['summary'], status=status, pending_epoch_count=len(eligible) if not blocked else 0,
+                eligible_union |= eligible
+            items.append(dict(**{key: value for key, value in row['summary'].items() if key != 'incoming_cell_uuids'},
+                status=status, pending_epoch_count=len(unmerged), eligible_pending_epoch_count=len(eligible) if not blocked else 0,
                 candidate_scope_revision=context['candidate_scope_revision'], draft_version=context['draft_version']))
             witnesses.append(context['candidate_scope_revision'])
         revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor,
@@ -442,9 +460,12 @@ class ProtocolWorkbench:
         end = offset + limit
         next_cursor = base64.urlsafe_b64encode(json.dumps(dict(revision=revision, offset=end)).encode()).decode() if end < len(items) else None
         return dict(contract_version=1, candidates=items[offset:end], pending_epoch_count=len(pending),
-            pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in pending}),
+            pending_cell_count=len(set(cell_ids.values())) if pending <= cell_ids.keys() else None,
+            pending_cell_count_available=pending <= cell_ids.keys(), eligible_pending_epoch_count=len(eligible_union),
+            eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
             queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
-            capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True, incoming_export=False))
+            capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
+                incoming_export=getattr(self, 'incoming_export', False)))
 
 
 def public_receipt(receipt):
@@ -495,6 +516,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             predicates = []
             if revision:
                 predicates.append(manager.proposal(protocol, revision)[2]['predicate'])
+            else:
+                # Queue summaries read every candidate's annotation witness.
+                records = (suggestions.Table & dict(project_uuid=manager.project, protocol_uuid=protocol)).to_dicts()
+                predicates.extend(history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate'] for row in records)
             for field in ('metadata_predicate', 'tag_predicate'):
                 if (filters or {}).get(field):
                     value = filters[field]
@@ -549,7 +574,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 pending_cells=len({service.rows[key]['cell_uuid'] for key in context['pending']}),
                 already_present_epochs=len(context['already_present']), conflicting_epochs=len(context['conflicts']),
                 excluded_epochs=sum(manager.decision(context, key)['excluded'] for key in context['incoming'])),
-            publication_blocked=bool(context['conflicts'] or context['unavailable'] or context['ineligible']
+            ineligible_incoming_epoch_count=len(context['ineligible']),
+            publication_blocked=bool(context['base_conflicts'] or context['main_conflicts']
                 or context['blocked_main'] or context['annotation_changed'] or not context['valid_base'])))
 
     @app.errorhandler(WorkbenchConflict)

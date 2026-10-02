@@ -149,6 +149,17 @@ class WorkspaceAPITests(unittest.TestCase):
         self.explorer_revisions = Table(('project_uuid', 'revision_uuid'))
         self.protocol_bindings = Table(('project_uuid', 'protocol_uuid'))
         self.connection.tables.extend([self.explorer_revisions, self.protocol_bindings])
+        self.workbench_tables = (
+            Table(('project_uuid', 'protocol_uuid', 'candidate_revision_uuid', 'actor')),
+            Table(('project_uuid', 'protocol_uuid', 'candidate_revision_uuid', 'actor', 'epoch_uuid')),
+            Table(('project_uuid', 'operation_uuid')))
+        self.connection.tables.extend(self.workbench_tables)
+        # Some API tests expose a noncallable Schema sentinel to activate the
+        # recovery hook. Supply explicit transactional Workbench relations for
+        # these SQL doubles; production still declares real native tables.
+        workbench_schema = patch('workspace_workbench.workbench_tables', return_value=self.workbench_tables)
+        workbench_schema.start()
+        self.addCleanup(workbench_schema.stop)
         self.explorer_history = ExplorerHistory(self.service.dj, self.service.project['project_uuid'],
             event_table=self.events, revision_table=self.explorer_revisions, binding_table=self.protocol_bindings)
         self.data_store_states = Table(('project_uuid', 'source_sha256'))

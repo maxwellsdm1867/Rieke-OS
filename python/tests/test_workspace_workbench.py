@@ -169,6 +169,47 @@ class WorkbenchTests(unittest.TestCase):
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
         self.assertFalse(context['valid_base'])
 
+    def test_noop_accept_has_acceptance_audit_event_without_rebinding(self):
+        first = self.accept(self.accepted_request()).get_json()
+        version = first['binding']['version']
+        request = self.accepted_request()
+        second = self.accept(request).get_json()
+        self.assertEqual(second['accepted_epoch_count'], 0)
+        self.assertEqual(second['binding']['version'], version)
+        self.assertIsNone(second['binding_event_uuid'])
+        self.assertTrue(second['event_uuid'])
+        event = next(row for row in self.case.events.rows if row['event_uuid'] == second['event_uuid'])
+        self.assertEqual(event['action'], 'workbench_additions_accepted')
+
+    def test_blocked_pending_counts_are_not_fabricated_empty_and_selected_eligible_addition_can_publish(self):
+        self.fixture.source_sha = 'd' * 64
+        eligible = self.fixture.add_recording()
+        baseline = self.case.explorer_history.protocol_binding(self.protocol)
+        result = self.case.protocol_suggestions.rerun([dict(protocol_uuid=self.protocol, protocol_name='Fixture',
+            binding_version=baseline['version'], revision_uuid=baseline['revision_uuid'], recipe=baseline['recipe'])],
+            'd' * 64, 'next.h5', 'actor-one')
+        revision = result['suggestions'][0]['candidate_revision_uuid']
+        source = self.case.service.rows[self.added]['source_sha256']
+        self.case.data_store_states.insert1(dict(project_uuid=self.case.service.project['project_uuid'], source_sha256=source,
+            query_excluded=True, archived=False, frozen=False, version=1, updated_at=None,
+            actor='actor-one', server_actor='actor-one', reason='test'))
+        queue = self.case.client.get(self.case.base + '/workbench').get_json()
+        self.assertEqual(queue['pending_epoch_count'], 2)
+        self.assertEqual(queue['eligible_pending_epoch_count'], 1)
+        root = self.case.base + '/workbench/candidates/' + revision
+        context = self.get_context(root)
+        saved = self.case.client.patch(root + '/draft', json=dict(expected_version=0,
+            expected_candidate_scope_revision=context['candidate_scope_revision'], selection_mode='selected',
+            decisions=[dict(epoch_uuid=eligible, selected=True, reviewed=True)]), headers=self.case.headers).get_json()
+        request = dict(expected_candidate_scope_revision=saved['candidate_scope_revision'], expected_draft_version=1, mode='selected')
+        preview = self.case.client.post(root + '/preview', json=request, headers=self.case.headers)
+        self.assertEqual(preview.status_code, 200, preview.get_json())
+        request.update(**{field: preview.get_json()[field] for field in
+            ('preview_sha256', 'expected_binding_version', 'expected_query_revision')}, operation_uuid=str(uuid.uuid4()))
+        accepted = self.accept(request, root)
+        self.assertEqual(accepted.status_code, 200, accepted.get_json())
+        self.assertEqual(accepted.get_json()['accepted_epoch_uuids'], [eligible])
+
     def test_cumulative_overlapping_history_distinct_counts_stable_cursor_and_proven_lineage(self):
         # A later immutable proposal includes the earlier incoming row, plus another epoch on that SAME cell.
         baseline = self.case.explorer_history.protocol_binding(self.protocol)
@@ -261,6 +302,58 @@ class WorkbenchTests(unittest.TestCase):
             item = recovery.inspect(folder)
             self.assertEqual(canonical(recovery.load_database(item['path'])), canonical(state))
 
+    def test_real_restore_control_flow_enforces_fk_order_and_migrates_legacy_to_empty_review_state(self):
+        import contextlib
+        import tempfile
+        from pathlib import Path
+        from workspace_state_snapshot import restore, serialized, TABLES, LEGACY_TABLES
+        project = self.case.service.project['project_uuid']
+        class FKConnection:
+            def __init__(self, populated):
+                self.values = {'workbench_draft': [1] if populated else [], 'workbench_decision': [1] if populated else []}
+                self.answer = []
+            def query(self, sql, args=None):
+                if 'information_schema.tables' in sql:
+                    self.answer = [(table,) for table in self.values]
+                elif sql.startswith('SHOW COLUMNS'):
+                    self.answer = [('project_uuid', 'varchar'), ('id', 'int')]
+                else:
+                    table = next(name for name in self.values if '`' + name + '`' in sql)
+                    if sql.startswith('DELETE'):
+                        if table == 'workbench_draft' and self.values['workbench_decision']:
+                            raise ValueError('FK child still exists')
+                        self.values[table] = []
+                    elif sql.startswith('INSERT'):
+                        if table == 'workbench_decision' and not self.values['workbench_draft']:
+                            raise ValueError('FK parent missing')
+                        self.values[table].append(args[1])
+                return self
+            def fetchall(self): return self.answer
+            @property
+            @contextlib.contextmanager
+            def transaction(self): yield
+        for populated in (False, True):
+            for legacy in (False, True):
+                with self.subTest(populated=populated, legacy=legacy), tempfile.TemporaryDirectory() as folder:
+                    root = Path(folder)
+                    (root / 'protocols').mkdir()
+                    (root / 'backups/app-state').mkdir(parents=True)
+                    state = dict(format='rieke-app-state', version=1, project={'project_uuid': project},
+                        source_sha256s=[], source_references=[], protocols={}, tables={table: [] for table in TABLES})
+                    current = copy.deepcopy(state)
+                    current['tables']['workbench_draft'] = [dict(project_uuid=project, id=1)]
+                    current['tables']['workbench_decision'] = [dict(project_uuid=project, id=1)]
+                    if legacy:
+                        state['tables'] = {table: [] for table in LEGACY_TABLES}
+                    else:
+                        state = copy.deepcopy(current)
+                    snapshot = root / 'snapshot.json'
+                    snapshot.write_text(serialized(state))
+                    connection = FKConnection(populated)
+                    with patch('workspace_state_snapshot.capture', return_value=current), patch('workspace_state_snapshot.save', return_value='saved'):
+                        self.assertEqual(restore(root, connection, snapshot), 'saved')
+                    self.assertEqual(connection.values, {'workbench_draft': [] if legacy else [1], 'workbench_decision': [] if legacy else [1]})
+
     def test_stale_preview_source_block_changed_values_wrong_protocol_and_replacement_ancestry_reject(self):
         request = self.accepted_request()
         context = self.get_context()
@@ -279,7 +372,7 @@ class WorkbenchTests(unittest.TestCase):
             source_sha256=source, query_excluded=True, archived=False, frozen=False, version=1,
             updated_at=None, actor='actor-one', server_actor='actor-one', reason='test'))
         context = self.get_context()
-        self.assertTrue(context['publication_blocked'])
+        self.assertEqual(context['ineligible_incoming_epoch_count'], 1)
         self.assertEqual(self.case.client.get(self.root + '/epochs', query_string={'candidate_scope_revision': context['candidate_scope_revision']}).status_code, 200)
         preview = self.case.client.post(self.root + '/preview', json=dict(expected_candidate_scope_revision=context['candidate_scope_revision'],
             expected_draft_version=context['draft']['draft_version'], mode='all'), headers=self.case.headers)

@@ -59,6 +59,15 @@ def restore_table_order(tables):
                                            'workbench_draft', 'workbench_decision') if table in tables]
 
 
+def migrate_restore_tables(state):
+    """Legacy restore deliberately restores a pre-Workbench, empty review state."""
+    known = set(state.get('tables', {}))
+    if known == set(LEGACY_TABLES):
+        state['tables'].update({table: [] for table in TABLES if table not in LEGACY_TABLES})
+    elif known != set(TABLES):
+        raise ValueError('Restore snapshot table set is unsupported')
+
+
 def capture(project_dir, connection, *, include_tables=True, ordered=True):
     root = Path(project_dir).resolve()
     project = json.loads((root/'project.json').read_text())
@@ -405,6 +414,7 @@ def _restore(project_dir, connection, snapshot):
     are replaced within one transaction. Source recordings are never modified.
     """
     root=Path(project_dir).resolve(); state=load(snapshot)
+    migrate_restore_tables(state)
     current=capture(root,connection)
     if (state['project']['project_uuid'] != current['project']['project_uuid'] or
             state['source_sha256s'] != current['source_sha256s']):

@@ -123,6 +123,7 @@ class ProtocolSuggestions:
                         'created_at': timestamp, 'source_scope_revision': preview['source_scope']['revision'],
                         'diff_counts': {name: len(values) for name, values in diff.items()},
                         'diff_summary': summarize_diff(self.service.rows, previous, proposed),
+                        'incoming_cell_uuids': {key: self.service.rows[key]['cell_uuid'] for key in diff['added']},
                         'previous_count': len(previous), 'next_count': len(proposed)}
                     occurred = dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None)
                     table.insert1({'project_uuid': self.project_uuid, 'suggestion_uuid': suggestion_uuid,
