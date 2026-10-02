@@ -1,0 +1,43 @@
+{
+  "schema": "disco.source-checkpoint.v1",
+  "source_commit": "dfc0382444e6f5825678fc7f0cad5ba88c512f7c",
+  "source_clean": true,
+  "base_commit": "6dc6e888e992ea931c8972ead94036bea7091736",
+  "checks": {
+    "python": {
+      "passed": 1228,
+      "subtests_passed": 3639,
+      "skipped": 33,
+      "failed": 0
+    },
+    "frontend": {
+      "passed": 445,
+      "failed": 0
+    },
+    "desktop": {
+      "total": 119,
+      "passed": 118,
+      "skipped": 1,
+      "failed": 0
+    },
+    "production_build": "passed",
+    "application_closure": {
+      "modules": 83,
+      "tracked_paths_checked": 1291,
+      "excluded_source_paths": []
+    }
+  },
+  "log_sha256": {
+    "python": "32890e03140b24ced66b336710f6fa48dbd4a2fca7ef1671550847ac78d19ccb",
+    "frontend": "0af14bdb0302741c77a491e2791c183f026587c4f90b86dee3962178acbd6fb8",
+    "desktop": "a3f74cf7c641f7e24ab5cd6ee0819f19230f635ae34c8c7666a4f786a728d577",
+    "build": "1227476a53ccbb98355d91814462fdbc0334a83eafc21f61a4c7c4ac6cb904ac"
+  },
+  "limits": [
+    "Offline source/component/fixture checks only; no native persistence or packaged certification.",
+    "Native opt-in and unavailable pinned-parser tests remain skipped.",
+    "Incoming-export reuse route and frozen-context refresh after external/annotation changes were found by independent review and remain pending at this checkpoint.",
+    "Additional frozen generation datetime regression uncovered in backend owner follow-up remains pending.",
+    "No new numeric benchmark, original data mutation, Docker, release or push."
+  ]
+}
