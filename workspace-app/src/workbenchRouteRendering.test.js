@@ -12,6 +12,6 @@ for(const entry of ['tab','restored session','reused Workbench route'])test(`Pro
   await h.waitFor(()=>h.fixture.requests.some(r=>r.path==='/protocols/protocol-A/workbench?limit=20'));
   await h.settle();
   assert.equal(h.root.findByProps({className:'incoming-workbench'}).findByType('h1').children.join(''),'Needs review');
-  assert.ok(h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No incoming recordings currently await review')));
+  assert.ok(h.root.findAllByProps({role:'status'}).some(n=>n.children.join('').includes('No pending incoming recordings')));
  }finally{await h.close();}
 });
