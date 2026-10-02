@@ -72,3 +72,12 @@ test('a preview cannot dispatch under a different project after it was captured'
  const target=await previewTreeGroup({scope,path,revision,count:1857,profileUuid:'author',request});recovery.project('later');
  await assert.rejects(target.groupMutation.save({tag:'tag',profileUuid:'author'}),/original project/);assert.equal(writes,0);assert.equal(target.groupMutation.canPublish(),false);recovery.project(previous);
 });
+
+
+test('a dismissed refused operation cannot dispatch from a retained editor handle',async()=>{
+ const {groupAnnotationRecovery:recovery,retainGroupOperation,runGroupOperation}=await import('./groupAnnotationRecovery.js');let dispatched=0;
+ const record=retainGroupOperation({body:{operation_uuid:'terminal',selection_uuid:'original',profile_uuid:'author',tag:'tag'},count:1857,request:async()=>{dispatched++;throw Object.assign(Error('Definite refusal'),{status:409});},confirm:()=>{}});
+ await assert.rejects(runGroupOperation(record),/Definite refusal/);assert.equal(dispatched,1);
+ await assert.rejects(runGroupOperation(record),/terminal/);recovery.dismiss('terminal');
+ await assert.rejects(runGroupOperation(record),/terminal/);assert.equal(dispatched,1);assert.equal(recovery.view().length,0);
+});

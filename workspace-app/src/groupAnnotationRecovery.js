@@ -27,6 +27,7 @@ export function retainGroupOperation({body,count,request,confirm,onTerminal}){
 export async function runGroupOperation(record){return run(record,false);}
 async function run(record,recovery){
  if(record.result)return record.result;
+ if(record.status==='rejected'||records.get(record.body.operation_uuid)!==record)throw Error('This refused operation is terminal. Reopen the group for a new preview.');
  if(record.project!==project)throw Error('Return to the original project to retry this group operation.');
  if(record.pending)return record.pending;
  const token=undoEnabled?mutationUndo.begin():null;
