@@ -61,3 +61,9 @@
 .protocol-match-actions button{justify-content:center;white-space:nowrap}
 .protocol-match-actions small{font-size:11px;line-height:1.5;color:var(--muted,#68746d);max-width:210px;margin:3px 2px}
 @media(max-width:1050px){.protocol-match-summary{grid-template-columns:minmax(0,1fr)}.protocol-match-actions{max-width:none;flex-direction:row;flex-wrap:wrap;align-items:center;padding:0}.protocol-match-actions small{max-width:260px}}
+.import-review-button{position:relative}
+.import-review-button.has-pending{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:650}
+.import-review-button.has-pending:hover{background:var(--accent);color:var(--on-accent);border-color:var(--border-strong)}
+.import-review-dot{position:absolute;right:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--warning-ink);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--warning-ink)}
+.import-review-button:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
+@media(forced-colors:active){.import-review-button.has-pending{border:2px solid Highlight}.import-review-dot{background:Highlight;border-color:Canvas;forced-color-adjust:none}}
