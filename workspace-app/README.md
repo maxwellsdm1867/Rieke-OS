@@ -13,7 +13,7 @@ Use the dedicated Disco development source:
 
 ```sh
 git clone https://github.com/maxwellsdm1867/Rieke-OS.git
-cd disco
+cd Rieke-OS
 ```
 
 Disco is a separate application with web plotting, curation and data export.

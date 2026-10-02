@@ -1,0 +1,599 @@
+{
+  "application_source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+  "actual_native_mysql": true,
+  "production_flask_routes": true,
+  "mocked_routes": false,
+  "distinct_copy": true,
+  "performance_claim": false,
+  "browser_certified": false,
+  "phases": {
+    "smoke": {
+      "application_source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+      "actual_native_mysql": true,
+      "production_flask_routes": true,
+      "mocked_routes": false,
+      "distinct_copied_project": true,
+      "seeded_annotation_fixture": true,
+      "browser_certified": false,
+      "performance_claim": false,
+      "phase": "smoke",
+      "timing_label": "backend route through synchronous recovery flush; background iCloud and playground",
+      "cases": [
+        {
+          "id": "G01-server-complete-real1857-preview",
+          "passed": true,
+          "real_epochs": 1857,
+          "registered_project_epochs": 2781,
+          "target_ids_sent_by_client": 0
+        },
+        {
+          "id": "G02-native1857-one-operation",
+          "passed": true,
+          "changed": 1856,
+          "unchanged": 1,
+          "response_bytes": 544
+        },
+        {
+          "id": "G03-all1857-authoritative-tags",
+          "passed": true
+        },
+        {
+          "id": "G04-global-tag-filter-exact1857",
+          "passed": true
+        },
+        {
+          "id": "G05-forward-receipt-first-replay",
+          "passed": true
+        },
+        {
+          "id": "G06-changed-only-native-inverse",
+          "passed": true
+        },
+        {
+          "id": "G07-preexisting-and-other-author-preserved",
+          "passed": true
+        },
+        {
+          "id": "G08-tag-filter-after-undo-exact-seeded-two",
+          "passed": true
+        },
+        {
+          "id": "G09-inverse-same-operation-replay",
+          "passed": true
+        },
+        {
+          "id": "G10-receipt-audit-recovery17-includes-inverse",
+          "passed": true,
+          "receipt_json_bytes": 210978
+        },
+        {
+          "id": "G19-frozen-Main-exact371-preserved",
+          "passed": true
+        }
+      ],
+      "observations": [
+        {
+          "route": "/tree-pages",
+          "status": 200,
+          "milliseconds": 30.79891699599102,
+          "response_bytes": 30745,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group-preview",
+          "status": 200,
+          "milliseconds": 517.3937089857645,
+          "response_bytes": 452,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group",
+          "status": 200,
+          "milliseconds": 1297.9844579822384,
+          "response_bytes": 513,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 290.83837498910725,
+          "response_bytes": 195086,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 117.6672910223715,
+          "response_bytes": 195118,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 121.38866703025997,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 125.6612500292249,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 134.16549999965355,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 123.22516599670053,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 118.31416696077213,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 121.0124579956755,
+          "response_bytes": 195089,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 134.15375002659857,
+          "response_bytes": 195088,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 123.86916700052097,
+          "response_bytes": 195083,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 130.71270799264312,
+          "response_bytes": 195093,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 211.02004096610472,
+          "response_bytes": 195123,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 124.98795898864046,
+          "response_bytes": 195088,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 125.35458302590996,
+          "response_bytes": 195118,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 121.58791598631069,
+          "response_bytes": 195157,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 123.82383295334876,
+          "response_bytes": 195110,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 120.9457500372082,
+          "response_bytes": 195098,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 122.90083401603624,
+          "response_bytes": 195106,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 122.69183300668374,
+          "response_bytes": 195101,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 124.3977919803001,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 117.38570797024295,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 122.27795796934515,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 210.86445898981765,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 123.28220898052678,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 122.80533299781382,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 131.1051250086166,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 145.51595802186057,
+          "response_bytes": 195158,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 127.53737496677786,
+          "response_bytes": 195070,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 123.66229202598333,
+          "response_bytes": 195046,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 126.65104196639732,
+          "response_bytes": 195029,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 131.3582079601474,
+          "response_bytes": 184529,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group",
+          "status": 200,
+          "milliseconds": 40.88391695404425,
+          "response_bytes": 512,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group/<operation>/undo",
+          "status": 200,
+          "milliseconds": 2164.5977910375223,
+          "response_bytes": 403,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/explore/page",
+          "status": 200,
+          "milliseconds": 94.81620899168774,
+          "response_bytes": 6891,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group/<operation>/undo",
+          "status": 200,
+          "milliseconds": 42.398457997478545,
+          "response_bytes": 402,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/protocols/<protocol>",
+          "status": 200,
+          "milliseconds": 163.15304196905345,
+          "response_bytes": 6571,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/revisions/<revision>",
+          "status": 200,
+          "milliseconds": 2.769207989331335,
+          "response_bytes": 61719,
+          "synchronous_flush_included": false
+        }
+      ],
+      "status": "passed",
+      "clean_native_shutdown": true
+    },
+    "faults": {
+      "application_source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+      "actual_native_mysql": true,
+      "production_flask_routes": true,
+      "mocked_routes": false,
+      "distinct_copied_project": true,
+      "seeded_annotation_fixture": true,
+      "browser_certified": false,
+      "performance_claim": false,
+      "phase": "faults",
+      "timing_label": "backend route through synchronous recovery flush; background iCloud and playground",
+      "cases": [
+        {
+          "id": "G11-native-late-failure-full-rollback-no-hook",
+          "passed": true
+        },
+        {
+          "id": "G12-recovery507-reports-committed-authority",
+          "passed": true
+        },
+        {
+          "id": "G13-identical507-operation-repairs-flush",
+          "passed": true
+        },
+        {
+          "id": "G14-recovery-operation-full-inverse",
+          "passed": true
+        },
+        {
+          "id": "G19-frozen-Main-exact371-preserved",
+          "passed": true
+        }
+      ],
+      "observations": [
+        {
+          "route": "/tree-pages",
+          "status": 200,
+          "milliseconds": 28.981833020225167,
+          "response_bytes": 33145,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group-preview",
+          "status": 200,
+          "milliseconds": 744.1570000373758,
+          "response_bytes": 452,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group",
+          "status": 500,
+          "milliseconds": 3534.364499966614,
+          "response_bytes": 130,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/tree-pages",
+          "status": 200,
+          "milliseconds": 8.87195800896734,
+          "response_bytes": 33145,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group-preview",
+          "status": 200,
+          "milliseconds": 336.6260409820825,
+          "response_bytes": 452,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/annotations/group",
+          "status": 507,
+          "milliseconds": 2018.6126249609515,
+          "response_bytes": 416,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group",
+          "status": 200,
+          "milliseconds": 435.5498329969123,
+          "response_bytes": 509,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group/<operation>/undo",
+          "status": 200,
+          "milliseconds": 2501.119374996051,
+          "response_bytes": 403,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/protocols/<protocol>",
+          "status": 200,
+          "milliseconds": 126.94837502203882,
+          "response_bytes": 6571,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/revisions/<revision>",
+          "status": 200,
+          "milliseconds": 2.9119160026311874,
+          "response_bytes": 61719,
+          "synchronous_flush_included": false
+        }
+      ],
+      "status": "passed",
+      "clean_native_shutdown": true
+    },
+    "reopen": {
+      "application_source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+      "actual_native_mysql": true,
+      "production_flask_routes": true,
+      "mocked_routes": false,
+      "distinct_copied_project": true,
+      "seeded_annotation_fixture": true,
+      "browser_certified": false,
+      "performance_claim": false,
+      "phase": "reopen",
+      "timing_label": "backend route through synchronous recovery flush; background iCloud and playground",
+      "cases": [
+        {
+          "id": "G15-forward-restart-replay",
+          "passed": true
+        },
+        {
+          "id": "G16-inverse-restart-replay",
+          "passed": true
+        },
+        {
+          "id": "G15-recovery_forward-restart-replay",
+          "passed": true
+        },
+        {
+          "id": "G16-recovery_inverse-restart-replay",
+          "passed": true
+        },
+        {
+          "id": "G17-restart-all-target-and-other-author-truth",
+          "passed": true
+        },
+        {
+          "id": "G19-frozen-Main-exact371-preserved",
+          "passed": true
+        }
+      ],
+      "observations": [
+        {
+          "route": "/annotations/group",
+          "status": 200,
+          "milliseconds": 53.326958033721894,
+          "response_bytes": 546,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group/<operation>/undo",
+          "status": 200,
+          "milliseconds": 54.72295795334503,
+          "response_bytes": 402,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group",
+          "status": 200,
+          "milliseconds": 48.989249975420535,
+          "response_bytes": 543,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/annotations/group/<operation>/undo",
+          "status": 200,
+          "milliseconds": 48.3830840094015,
+          "response_bytes": 402,
+          "synchronous_flush_included": true
+        },
+        {
+          "route": "/protocols/<protocol>",
+          "status": 200,
+          "milliseconds": 127.4372500483878,
+          "response_bytes": 6571,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/revisions/<revision>",
+          "status": 200,
+          "milliseconds": 2.8195829945616424,
+          "response_bytes": 61719,
+          "synchronous_flush_included": false
+        }
+      ],
+      "status": "passed",
+      "clean_native_shutdown": true
+    },
+    "recovery": {
+      "application_source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+      "actual_native_mysql": true,
+      "production_flask_routes": true,
+      "mocked_routes": false,
+      "distinct_copied_project": true,
+      "seeded_annotation_fixture": true,
+      "browser_certified": false,
+      "performance_claim": false,
+      "phase": "recovery",
+      "timing_label": "backend route through synchronous recovery flush; background iCloud and playground",
+      "cases": [
+        {
+          "id": "G18-real17-table-receipt-and-inverse-restore",
+          "passed": true
+        },
+        {
+          "id": "G19-frozen-Main-exact371-preserved",
+          "passed": true
+        }
+      ],
+      "observations": [
+        {
+          "route": "/protocols/<protocol>",
+          "status": 200,
+          "milliseconds": 125.24512503296137,
+          "response_bytes": 6571,
+          "synchronous_flush_included": false
+        },
+        {
+          "route": "/explore/revisions/<revision>",
+          "status": 200,
+          "milliseconds": 2.9447500128299,
+          "response_bytes": 61719,
+          "synchronous_flush_included": false
+        }
+      ],
+      "status": "passed",
+      "clean_native_shutdown": true
+    }
+  },
+  "passed_phase_checks": 24,
+  "limits": [
+    "One real2781-epoch project,1857-member group; seeded annotation profiles/tags",
+    "No native browser/click-to-paint certificate yet",
+    "Timing includes synchronous mutation flush; iCloud/manual load disclosed",
+    "Project10000/scope64MiB/retained budgets remain admissions, not scale or RSS qualifications"
+  ]
+}

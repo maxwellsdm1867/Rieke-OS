@@ -1,0 +1,34 @@
+{
+  "application_source": "ceec3bb390b5608521959f9b93593618ee577d9a",
+  "actual_native_mysql": true,
+  "production_flask_routes": true,
+  "mocked_routes": false,
+  "distinct_copied_project": true,
+  "seeded_annotation_fixture": true,
+  "browser_certified": false,
+  "performance_claim": false,
+  "phase": "smoke",
+  "timing_label": "backend route through synchronous recovery flush; background iCloud and playground",
+  "cases": [],
+  "observations": [
+    {
+      "route": "/tree-pages",
+      "status": 200,
+      "milliseconds": 21.488291036803275,
+      "response_bytes": 30745,
+      "synchronous_flush_included": true
+    },
+    {
+      "route": "/annotations/group-preview",
+      "status": 400,
+      "milliseconds": 29.524208046495914,
+      "response_bytes": 51,
+      "synchronous_flush_included": true
+    }
+  ],
+  "status": "failed",
+  "error_type": "AssertionError",
+  "error": "HTTP400 KeyError in AnnotationGroups.preview: empty path looked up an epoch in legitimately empty projected values; no group write",
+  "production_group_writes": 0,
+  "clean_native_shutdown": true
+}

@@ -15,7 +15,10 @@
     "qc_composed_backend": "70651bc4f14901b616f1aea8dadc0adfca0d1842",
     "workbench_binding_fix": "f7e8b4d94dfd8dc30d47b1602f919ab3926d54d5",
     "workbench_route_tests": "0066c5ded961e7f63b15221f04b713ae310edd1d",
-    "actual_publication_frontend": "22becd64b2d4ea00dfcd26f04378d6206318fee1"
+    "actual_publication_frontend": "22becd64b2d4ea00dfcd26f04378d6206318fee1",
+    "candidate_continuity_composed_frontend": "8b6a6207046cfc028ad1a4a87e0af3d007661488",
+    "manual_continuity_frontend": "057578d7e2ca9669eadc69d72f87ef3f1dd580d7",
+    "final_combined_browser": "f0428e38ecd1d893285246dd04f67883cd184cf7"
   },
   "focused_validation": {
     "qc_tests": 20,
@@ -53,9 +56,9 @@
     "retained_main_epochs": 369,
     "download_bytes": 307998,
     "artifact_sha256": "495044a5ff0bab2e6bac21fa8eee1468c7f42eecb5bc14ecdcd603d98e8260a4",
-    "native_independent_gates": 8,
+    "native_independent_gates": 10,
     "native_replay": "Identical full-payload acceptance and export retries returned identical receipts; no additional operation created",
-    "native_oracle": "Complete Main and pending UUID sets, all24 metadata parameters, full stream descriptors and source/cell identity match; prior export hash unchanged"
+    "native_oracle": "Complete Main and pending UUID sets, all 24 metadata parameters, full stream descriptors and source/cell identity match; prior export hash unchanged. Both recorded sample-index1 values independently match the bounded raw H5 samples."
   },
   "qc_diagnostic_ms": {
     "entry_before": [
@@ -82,10 +85,108 @@
   "limits": [
     "Timing is diagnostic, not a quiet-window benchmark: cloud synchronization and other correctness work continued.",
     "Fresh owned browser checks do not certify every long-lived user-session behavior. Existing user tabs were inspected passively without navigation or reload.",
-    "First-entry cumulative preparation required Retry on the pinned publication frontend; lifecycle fix awaits actual served retest.",
-    "A same-cohort incoming draft save dropped focus and collapsed branches on the pinned frontend; continuity fix remains separately gated.",
-    "The1857-epoch whole-group tag/undo and inherited-cell-tag browser gates remain pending.",
-    "Optional hidden-mounted QC-return work was excluded because hidden dialogs and async authority require further work."
+    "First-entry cumulative preparation required Retry on the pinned publication frontend; zero-pending/history and nonempty443 served retakes now pass without Retry.",
+    "A same-cohort incoming draft save dropped focus and collapsed branches on the pinned frontend; the composed continuity fix now passes the native browser retake.",
+    "Optional hidden-mounted QC-return work was excluded because hidden dialogs and async authority require further work.",
+    "Final combined browser gates are complete on the disposable copy; manual runtime deployment and read-only post-rollout smoke remain coordinated by the runtime owner."
   ],
-  "privacy": "Private paths, author identities, epoch rows, request payloads, scope tokens and operation identifiers are omitted. Full private receipts remain with the runtime owners."
+  "privacy": "Private paths, author identities, epoch rows, request payloads, scope tokens and operation identifiers are omitted. Full private receipts remain with the runtime owners.",
+  "preparation_retake": {
+    "source": "abbf2868f6916666b5c5935777211be26d0bd1de",
+    "served_ui": "3dbb963da2de0b3004fefae2c91f3aab4e18f201",
+    "zero_pending_with_history": "PASS: first entry and two returns prepare without Retry or interrupted warning",
+    "nonempty_queue": "PASS on actual incoming443: first entry and two returns without Retry/warning; exact candidate source, stream and sample-index1 agree.",
+    "nonempty_751": "PASS on composed continuity frontend: first entry, two returns and owned reload without Retry."
+  },
+  "candidate_continuity_retake": {
+    "frontend": "8b6a6207046cfc028ad1a4a87e0af3d007661488",
+    "backend": "70651bc4f14901b616f1aea8dadc0adfca0d1842",
+    "pending": 751,
+    "main": 371,
+    "first_entry_and_two_returns": "PASS without Retry or interrupted preparation",
+    "reversible_draft_mark_clear": "PASS; final unmarked decision persisted across owned browser reload",
+    "same_cohort_identity": "Focused epoch, expanded date/cell, all 60 row nodes and trace canvas retained; fresh scope metadata and trace read after each save",
+    "visual_frames": 625,
+    "maximum_sampled_position_variation_px": 0.28125,
+    "outer_scroll_before_after": 787,
+    "scientific_identity": "Source SHA, epoch, stream and exact recorded sample index 1 remain identical",
+    "publication_export_group_writes": 0,
+    "http_errors": 0,
+    "javascript_errors": 0,
+    "request_cancellation": "Expected route/effect cleanup aborts observed separately",
+    "probe_cleanup": "Owned browser closed; Node exited 0",
+    "served_manual_readonly": "PASS on actual443: first entry and two returns, same candidate/scope, exact scientific sample identity; no manual scientific writes."
+  },
+  "retained_user_session": {
+    "observation": "Two original tabs fully rendered protocol overview and search presets, with the same tab identities and history positions; actual loaded App, Workbench and preparation modules captured",
+    "control": "Read-only CDP inspection and screenshots; no tab navigation, reload or close",
+    "limit": "Passive observation does not certify all long-lived session interactions.",
+    "served_frontend": "057578d7e2ca9669eadc69d72f87ef3f1dd580d7"
+  },
+  "group_browser_retake": {
+    "source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+    "environment": "Distinct native copy; fresh owned Chrome profile",
+    "global_predicate_match": 1857,
+    "gestures": [
+      "Global Protocol ID predicate preview",
+      "Open and edit tree",
+      "Visible Tag this level icon",
+      "Right-click recorded cell branch"
+    ],
+    "group_apply": {
+      "target_count": 1857,
+      "changed": 1857,
+      "unchanged": 0,
+      "request_shape": "Server selection reference, fixed profile, tag and operation; no epoch-ID array"
+    },
+    "group_filter_count": 1857,
+    "group_undo": {
+      "changed": 1857,
+      "same_filter_after_undo": 0
+    },
+    "cell_choice": {
+      "matching_branch_epochs": 601,
+      "actual_target_cells": 1,
+      "all_inherited_cell_epochs": 617
+    },
+    "cell_apply_changed": 1,
+    "inherited_chip": "Visible on the inspected epoch",
+    "global_cell_tag_filter_count": 617,
+    "cell_undo_changed": 1,
+    "same_cell_filter_after_undo": 0,
+    "main": 371,
+    "pending": 751,
+    "publication_export_writes": 0,
+    "javascript_errors": 0,
+    "authority_read_guard": "One stale-tree 409 during mutation refresh; current-root 200 followed 217 ms later. No write refusal or bypass.",
+    "native_backend_qualification": "Runtime owner reports 24 independent native apply/undo/fault/restart/restore gates passed; post-browser ledger/oracle comparison handed back at closed boundary.",
+    "probe_cleanup": "Owned browser closed; Node exited 0"
+  },
+  "group_diagnostic_ms": {
+    "preview_to_editor_ready": 1356,
+    "apply_to_receipt": 2754,
+    "first_fresh_tree_response_after_apply_receipt": 112,
+    "undo_to_receipt": 2234,
+    "first_fresh_tree_response_after_undo_receipt": 338,
+    "zero_result_visual_confirmation_and_screenshot_after_undo_receipt_upper_bound": 385,
+    "cell_apply_to_receipt": 99,
+    "cell_undo_to_receipt": 101,
+    "measurement_limits": "Background load continued. Response chronology measures data arrival, not exact first paint; visual upper bound includes automation and screenshot."
+  },
+  "final_combined_navigation": {
+    "source": "f0428e38ecd1d893285246dd04f67883cd184cf7",
+    "result": "PASS",
+    "flow": [
+      "Project overview",
+      "VHN epoch A/B/C/A with exact source/stream identity",
+      "Inspect reselection three times",
+      "Three QC families, two rounds, exact sample-index1 values",
+      "QC return restores selected epoch",
+      "VMN overview",
+      "Workbench 751 first entry without Retry",
+      "Main 371 overview"
+    ],
+    "screenshots": "Private local screenshots captured for group/filter/undo, cell inheritance, Inspector, QC, Workbench and final Main overview.",
+    "harness_corrections": "Preserved locator timeouts for implicit combobox roles, label casing and refreshed tree paths; final navigation receipt matcher corrected for protocol_uuid query strings and adjacent metadata prefetch. These were harness corrections, not product fixes."
+  }
 }
