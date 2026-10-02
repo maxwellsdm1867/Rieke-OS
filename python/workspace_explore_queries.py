@@ -161,31 +161,42 @@ def _native_summaries(service, context, cancelled):
     definitions = {field['id'] for field in catalog['fields']}
     annotation_fields = {field for field in context['summary_fields'] if field.startswith(('annotations/', 'curation/'))}
     annotations = TagPredicates(service).snapshot(annotation_fields)[0] if annotation_fields else {}
-    summaries = {}
+    summaries, seen = {}, {}
     for field in context['summary_fields']:
         if field not in definitions and field not in annotations:
             raise ValueError('Unknown native summary field')
-        buckets, present, seen, truncated = [], 0, {}, False
-        for identity in identities:
+        summaries[field] = {'values': [], 'present_count': 0,
+            'missing_count': len(identities), 'values_truncated': False}
+        seen[field] = {}
+    metadata_fields = definitions.intersection(summaries) - annotations.keys()
+    # The disk mapping has a small row LRU. Walking the entire identity scope
+    # once per field evicts every row before its next use. Borrow one full native
+    # value row at a time; keep only the first 60 buckets for each requested field.
+    for identity in identities if summaries else ():
+        if cancelled():
+            raise InterruptedError('Summary cancelled')
+        current = values[identity] if metadata_fields else {}
+        for field, summary in summaries.items():
             if cancelled():
                 raise InterruptedError('Summary cancelled')
-            current = {field: annotations[field].get(identity, [])} if field in annotations else values[identity]
-            if field not in current:
+            if field in annotations:
+                value = annotations[field].get(identity, [])
+            elif field in current:
+                value = current[field]
+            else:
                 continue
-            value = current[field]
-            present += 1
+            summary['present_count'] += 1
+            summary['missing_count'] -= 1
             key = equality_key(value)
-            bucket = seen.get(key)
+            bucket = seen[field].get(key)
             if bucket is None:
-                if len(buckets) >= 60:
-                    truncated = True
+                if len(summary['values']) >= 60:
+                    summary['values_truncated'] = True
                     continue
                 bucket = {'value': copy.deepcopy(value), 'type': kind(value), 'count': 0}
-                seen[key] = bucket
-                buckets.append(bucket)
+                seen[field][key] = bucket
+                summary['values'].append(bucket)
             bucket['count'] += 1
-        summaries[field] = {'values': buckets[:60], 'present_count': present,
-            'missing_count': len(identities) - present, 'values_truncated': truncated}
     return {'matched_count': len(identities), 'summaries': summaries}
 
 

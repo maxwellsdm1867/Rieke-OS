@@ -1,0 +1,244 @@
+{
+  "status": "narrow_native_checkpoint_not_release_qualification",
+  "recorded_utc": "2026-10-02T03:31:46.241083+00:00",
+  "base_commit": "26f8be933b5b6886d49b868ae1de04c61209fa97",
+  "ui_source_sha256": "87c6594de83591c73b1e2e168882915c9dfd7b9f656fc313aa4103a62c49ba7a",
+  "fixture": {
+    "epochs": 2781,
+    "cells": 13,
+    "recordings": 3,
+    "actual_recordings": true,
+    "isolated_native_sql": true,
+    "original_database_updates": false
+  },
+  "native_summary": {
+    "before": {
+      "status": "censored",
+      "completed_samples": 0,
+      "cap_ms": 45000,
+      "epochs": 2781,
+      "cells": 13,
+      "native_backend": true,
+      "actual_rendered_ui": true,
+      "mocked_routes": false,
+      "foreground": true,
+      "request_acknowledged": true,
+      "fields_requested": 150,
+      "cancellation": "actual UI cancel; subsequent registry native200",
+      "cause_observation": "native fallback loops fields then identities; full native value mapping reread after64-entry eviction",
+      "million_status": "not_run"
+    },
+    "after": {
+      "status": "passed",
+      "fields": 150,
+      "event_to_stable_ms": 3345.699999988079,
+      "completed_samples": 1,
+      "independent_complete_ordered_result_equal": true,
+      "semantic_payload_sha256": "284afa3fb2bae86483ad8f0291946df62dba6279add9e94978546646ff7e8414",
+      "all_generation_dimensions_unchanged": true,
+      "network": [
+        {
+          "route": "/api/explore/summaries",
+          "method": "POST",
+          "status": 202,
+          "state": "pending",
+          "decoded_bytes": 5085,
+          "request_bytes": 5077
+        },
+        {
+          "route": "/api/explore/summaries/request",
+          "method": "GET",
+          "status": 200,
+          "state": "pending",
+          "decoded_bytes": 5085,
+          "request_bytes": 0
+        },
+        {
+          "route": "/api/explore/summaries/request",
+          "method": "GET",
+          "status": 200,
+          "state": "ready",
+          "decoded_bytes": 87742,
+          "request_bytes": 0
+        }
+      ],
+      "observed_renderer_long_tasks": [],
+      "comparison": "before same current UI action censored at45s; one after-fix observation; not paired million or certified UI SLO"
+    },
+    "correctness_tests": {
+      "total": 37,
+      "passed": 37,
+      "independent_io_oracle_tests": 6,
+      "before_read_count": 160,
+      "after_read_count": 80,
+      "scoped_matched_order_preserved": true
+    },
+    "limit": "Native fallback still holds authority locks; 2MiB is publication budget, not aggregate peak memory."
+  },
+  "native_proxy": {
+    "status": "passed",
+    "cases": [
+      {
+        "id": "valid_same_origin",
+        "status": 200,
+        "passed": true
+      },
+      {
+        "id": "foreign_origin",
+        "status": 403,
+        "passed": true
+      },
+      {
+        "id": "missing_workspace_header",
+        "status": 403,
+        "passed": true
+      }
+    ],
+    "native_backend": true,
+    "mocked_routes": false,
+    "host_preserved": true,
+    "origin_rewritten": false,
+    "workspace_header_rewritten": false,
+    "original_preferences_unchanged": true,
+    "private_author_unchanged": true,
+    "scientific_sql_writes": false
+  },
+  "native_cancellation": {
+    "status": "passed",
+    "native_backend": true,
+    "mocked_routes": false,
+    "actual_ui_cancel": true,
+    "cancel_ack": "cancelled",
+    "poll": "cancelled; no partial result",
+    "same_request_and_generation": true,
+    "navigation_after_cancel": "rendered hierarchy",
+    "epochs": 2781,
+    "performance_claim": false,
+    "background_contention": "Other owner permitted focused frontend tests; correctness only",
+    "native_lock_limit": "Fallback still holds native authority locks during accumulation; uncancelled poll/navigation can wait",
+    "million_status": "not_run"
+  },
+  "native_themes": {
+    "cases": [
+      {
+        "id": "native_theme_dark",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "native_theme_fred",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "native_theme_system",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "native_theme_light",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "native_theme_system",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "system_browser_media_event",
+        "status": "pass",
+        "scope": "browser OS media emulation; no Mac setting changed"
+      },
+      {
+        "id": "native_theme_dark",
+        "status": "pass",
+        "persisted": true
+      },
+      {
+        "id": "native_theme_reload",
+        "status": "pass"
+      },
+      {
+        "id": "native_failed_save_rolls_back",
+        "status": "pass",
+        "fault": "private preference symlink rejected by native backend"
+      },
+      {
+        "id": "isolated_author_unchanged_by_themes",
+        "status": "pass"
+      }
+    ],
+    "responses": [
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "status": 200
+      },
+      {
+        "method": "POST",
+        "status": 400
+      }
+    ],
+    "mocked_routes": false,
+    "original_preferences_hashes_unchanged": true
+  },
+  "native_tag_ten": {
+    "status": "passed",
+    "preflight_and_write": [
+      {
+        "route": "/api/annotations/read",
+        "status": 200,
+        "target_count": 10
+      },
+      {
+        "route": "/api/annotations",
+        "status": 200,
+        "target_count": 10
+      }
+    ],
+    "exact_ten_immutable_uuid_targets_verified": true,
+    "actor_ownership_verified": true,
+    "undo_removed_all_ten_verified": true,
+    "event_to_stable_ms": 129.30000001192093,
+    "completed_samples": 1,
+    "comparison": "one warm current-source observation; no paired baseline or UI SLO",
+    "generation_transition": "annotation only"
+  },
+  "open_gates": [
+    "same latest UI/native-before and candidate serial action measurements",
+    "next60sibling-cell native fixture",
+    "full native million app replay/storage/RSS",
+    "complete export/trace/MAT/profile/source-exclusion/migration rollback/restart matrix",
+    "packaged native smoke"
+  ],
+  "ui_workflow_revision": "Legacy all-field diagnostic; accepted follow-up removes normal all-field control and narrows preview catalog work",
+  "private_material": "Raw records, UUIDs, project paths, preferences, credentials, screenshots and SQL readbacks retained locally; excluded from publication"
+}
