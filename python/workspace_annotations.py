@@ -392,7 +392,7 @@ class SharedAnnotations:
                 self._batch_transaction.reset(reset)
 
     def _apply_batch_locked(self,operations,actor,profiles=None,audit_context=None,
-                            external_receipt=None,include_undo=False):
+                            external_receipt=None,include_undo=False,_group_budget=None):
         """Mutate inside an already guarded transaction; never commit or notify.
 
         Private native callers acquire DB/registration/shared/sorted protocol
@@ -411,7 +411,8 @@ class SharedAnnotations:
         if active is not True and not (active is None and public):
             raise RuntimeError('Annotation batch requires an active native transaction')
         actor=text(actor)
-        if not isinstance(operations,list) or not (0 if external_receipt else 1)<=len(operations)<=MAX_OPERATIONS:raise ValueError('Use 1–2000 annotation operations')
+        maximum=10_000 if _group_budget is not None else MAX_OPERATIONS
+        if not isinstance(operations,list) or not (0 if external_receipt else 1)<=len(operations)<=maximum:raise ValueError(f'Use 1–{maximum} annotation operations')
         if profiles is not None and not isinstance(profiles,list):raise ValueError('Profiles must be an array')
         parsed=[];seen=set()
         for operation in operations:
@@ -423,7 +424,9 @@ class SharedAnnotations:
             if set(add)&set(remove):raise ValueError('Cannot add and remove the same tag')
             key=(kind,target,author)
             if key in seen:raise ValueError('Duplicate target/author operation')
-            seen.add(key);parsed.append((key,revision,add,remove))
+            item=(key,revision,add,remove)
+            if _group_budget is not None:_group_budget.charge(item)
+            seen.add(key);parsed.append(item)
         before=[];after=[];changed=0;event=None
         incoming=list(profiles or [])
         if any(not isinstance(p,dict) for p in incoming):raise ValueError('Invalid profile definition')
@@ -436,6 +439,7 @@ class SharedAnnotations:
                 incoming.append(profile)
         pending_profiles=[]
         authors=self._ensure_profiles(incoming,actor,pending_profiles)
+        if _group_budget is not None:_group_budget.charge(pending_profiles)
         # The transaction only needs the explicitly targeted author sets.
         # Other targets/profiles cannot affect these optimistic revisions.
         relation=self.Annotation&{'project_uuid':self.project_uuid}
@@ -443,6 +447,7 @@ class SharedAnnotations:
         saved={}
         for offset in range(0,len(requested),250):
             for row in (relation&requested[offset:offset+250]).to_dicts():
+                if _group_budget is not None:_group_budget.charge(row)
                 saved[(row['target_kind'],row['target_uuid'],row['profile_uuid'])]=row
         pending_rows=[]
         for key,expected,add,remove in parsed:
@@ -456,9 +461,15 @@ class SharedAnnotations:
             row={'project_uuid':self.project_uuid,'target_kind':key[0],'target_uuid':key[1],
                  'profile_uuid':key[2],'tags':current,'author_name':authors[key[2]]['display_name'],
                  'revision':revision+1,'updated_at':dt.datetime.now(dt.timezone.utc).replace(tzinfo=None)}
-            before.append({**{k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name')},'revision':revision,'tags':previous})
-            after.append({k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')})
+            prior={**{k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name')},'revision':revision,'tags':previous}
+            current={k:row[k] for k in ('target_kind','target_uuid','profile_uuid','author_name','revision','tags')}
+            if _group_budget is not None:_group_budget.charge((row,prior,current))
+            before.append(prior);after.append(current)
             pending_rows.append((old,row))
+        if _group_budget is not None:
+            # Audit construction copies before/after facts. Reserve its retained
+            # evidence before any annotation write, including native JSON input.
+            _group_budget.charge({'before':before,'after':after})
         # Validate every target/profile and tag limit before the first write.
         for old,row in pending_rows:
             if old:self.Annotation.update1(row)
