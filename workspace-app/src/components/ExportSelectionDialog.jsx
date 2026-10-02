@@ -7,8 +7,8 @@ import {exportProtocolGroups,pinProtocolPreference} from '../exportProtocolTarge
 import {useProjectPreference} from '../useProjectPreference.js';
 import './ExportSelectionDialog.css';
 
-export default function ExportSelectionDialog({candidate,protocols,projectId,initialProtocolId,defaultName,defaultFormat,disabled,onClose,onApplied,onChanged}){
-  const dialog=useRef(null),[mode,setMode]=useState(null),[busy,setBusy]=useState(false),[pinError,setPinError]=useState(''),[appliedId,setAppliedId]=useState(null);
+export default function ExportSelectionDialog({candidate,protocols,projectId,directOnly=false,initialProtocolId,defaultName,defaultFormat,disabled,onClose,onApplied,onChanged}){
+  const dialog=useRef(null),[mode,setMode]=useState(directOnly?'direct':null),[busy,setBusy]=useState(false),[pinError,setPinError]=useState(''),[appliedId,setAppliedId]=useState(null);
   const shortcuts=useProjectPreference(projectId,'protocol_shortcuts');
   const groups=exportProtocolGroups(protocols,shortcuts.value,initialProtocolId);
   useEffect(()=>{const el=dialog.current;el.showModal();return()=>el.close();},[]);
@@ -24,7 +24,7 @@ export default function ExportSelectionDialog({candidate,protocols,projectId,ini
   }
   return <dialog ref={dialog} className="export-selection-dialog" aria-labelledby="export-selection-title" onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
     <header><h2 id="export-selection-title"><Download size={17}/> Export selection</h2><button className="icon-button" disabled={busy} aria-label="Close export options" onClick={onClose}><X size={17}/></button></header>
-    <nav aria-label="Export destination"><button disabled={busy} aria-pressed={mode==='direct'} className={mode==='direct'?'active':''} onClick={()=>setMode('direct')}><Download size={18}/><span><strong>Export directly</strong><small>SQLite or MATLAB data (.mat)</small></span></button><button disabled={busy} aria-pressed={mode==='protocol'} className={mode==='protocol'?'active':''} onClick={()=>setMode('protocol')}><Pin size={18}/><span><strong>Update pinned protocol</strong><small>Match Protocol ID, then review changes</small></span></button><button disabled={busy} aria-pressed={mode==='new'} className={mode==='new'?'active':''} onClick={()=>setMode('new')}><FolderPlus size={18}/><span><strong>Create pinned protocol</strong><small>Keep this selection as a new dataset</small></span></button></nav>
+    <nav aria-label="Export destination"><button disabled={busy} aria-pressed={mode==='direct'} className={mode==='direct'?'active':''} onClick={()=>setMode('direct')}><Download size={18}/><span><strong>Export directly</strong><small>SQLite or MATLAB data (.mat)</small></span></button>{!directOnly&&<><button disabled={busy} aria-pressed={mode==='protocol'} className={mode==='protocol'?'active':''} onClick={()=>setMode('protocol')}><Pin size={18}/><span><strong>Update pinned protocol</strong><small>Match Protocol ID, then review changes</small></span></button><button disabled={busy} aria-pressed={mode==='new'} className={mode==='new'?'active':''} onClick={()=>setMode('new')}><FolderPlus size={18}/><span><strong>Create pinned protocol</strong><small>Keep this selection as a new dataset</small></span></button></>}</nav>
     <div className="export-selection-body">
       {!mode&&<p className="export-choice-hint">Choose a destination for these matching epochs.</p>}
       {mode==='direct'&&<CandidateExportPanel candidate={candidate} defaultName={defaultName} defaultFormat={defaultFormat} disabled={disabled} onBusyChange={setBusy} onExported={onChanged}/>}

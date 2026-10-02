@@ -4,7 +4,7 @@ import { humanize } from '../api.js';
 import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShortcutSection } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
 import './ProtocolSidebar.css';
-import {suggestionBadge} from '../protocolSuggestions.js';
+import {currentProposalCellBadge} from '../incomingReview.js';
 import {useProjectPreference} from '../useProjectPreference.js';
 
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };
@@ -78,7 +78,7 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
             aria-label={`Reorder ${name}`} aria-describedby={helpId} title="Drag to reorder or change section · Alt + ↑ / ↓"
             onKeyDown={event=>{if(event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();reorder(items,index,event.key==='ArrowUp'?-1:1);}}}><GripVertical size={14}/></button>}
           <button className={`nav-item protocol-nav ${activeId===id?'active':''}`} onClick={()=>onNavigate(id)} aria-current={activeId===id?'page':undefined} title={name}>
-            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{suggestion&&<small className="shortcut-update-badge" title="New data matches this saved query. Review the proposed update before applying it.">{suggestionBadge(suggestion)}</small>}
+            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{suggestion&&<small className="shortcut-update-badge" title="Distinct affected cells in the current saved proposal. Earlier pending proposals are not included. Open Workbench to review.">{currentProposalCellBadge(suggestion)}</small>}
           </button>
         </div>
         {organizing&&<div className="protocol-shortcut-actions" role="group" aria-label={`Organize ${name}`}>
