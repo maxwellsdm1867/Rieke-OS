@@ -1,0 +1,171 @@
+{
+  "schema_version": 1,
+  "status": "bounded_local_navigation_qualification_passed",
+  "implementation_source": "a616055d2868fea297666c611016eaf1a1079f0b",
+  "base_checkpoint": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
+  "prior_native_evidence_commit": "7efcce9cd2ad0b1525b8bcdfdfd0dd9e65165063",
+  "this_checkpoint_contains": "documentation and sanitized evidence only",
+  "release_update": false,
+  "published": false,
+  "live_deployment": false,
+  "cache_scope": "bounded GlobalSearch navigation intent only",
+  "native_diagnostic_comparison": {
+    "samples_per_variant": 20,
+    "additional_search_GETs": {
+      "checkpoint": 20,
+      "pilot": 0
+    },
+    "useful_frame_p95_ms": {
+      "checkpoint": 403.9,
+      "pilot": 8.0
+    },
+    "method": "RAF observation of visible enabled DOM rows in diagnostic component shell; sequential checkpoint-first; not compositor, INP, full App or packaged latency",
+    "cold_query_samples_per_variant": 1,
+    "memory": {
+      "additional_warm_reopens": 100,
+      "retained_entries": 16,
+      "estimated_retained_bytes": 12678,
+      "forced_GC_heap_MiB_range": [
+        14.57,
+        14.76
+      ],
+      "renderer_working_set_MiB_range": [
+        136.61,
+        137.39
+      ],
+      "long_duration_plateau_qualified": false
+    }
+  },
+  "source_App": {
+    "passed_checks": 21,
+    "checks": [
+      "full production App and source preload",
+      "App-shell warm search reopen",
+      "cached cell intent mounts actual CellQC with fresh GET",
+      "real project switch to B",
+      "real project switch to C",
+      "real project switch to B",
+      "real project switch to A",
+      "same UUID different path switch",
+      "genuine preload status IPC retires App cache",
+      "real source DraftBarrier and App lifecycle acknowledgement",
+      "owned native close/reopen resets cache and reads fresh",
+      "actual profile preference selection loading retires cache and rejects retained callback",
+      "selected existing native profile gets separate fresh search namespace",
+      "actual profile preference read failure uses isolated browsing namespace and rejects retained callback",
+      "explicit profile retry restores selected actor with empty cache",
+      "cached exact epoch mounts actual protocol inspector with fresh matching identity and membership receipt",
+      "cached typed predicate opens actual App editor with fresh catalog and separate native read-only membership proof",
+      "Chromium offline/online reconnect observed trusted event retires cache and rejects callback",
+      "real document reload/pageshow starts empty App cache and fresh search",
+      "retained callback while search has fresh rows in loading actor namespace is rejected",
+      "native minimize/restore observed trusted focus or visible event retires cache and rejects callback"
+    ],
+    "fresh_epoch_identity_checks": {
+      "epoch_uuid_matches_native_member": true,
+      "cell_uuid_matches_native_member": true,
+      "source_revision_matches_native_member": true,
+      "selected_epoch_present_in_fresh_membership": true,
+      "fresh_query_revision_present": true,
+      "fresh_binding_version_present": true
+    },
+    "native_focus_event_trusted": true,
+    "Chromium_online_event_trusted": true,
+    "OS_suspend_resume_qualified": false,
+    "separate_visible_visibilitychange_qualified": false,
+    "initial_predicate_UI_policy": "owned read-only harness rejected query-history endpoint; not an approval-reviewer/tool denial"
+  },
+  "packaged": {
+    "passed_checks": 24,
+    "application_version": "0.1.6",
+    "platform": "macOS arm64",
+    "local_test_package": true,
+    "exact_clean_source_verified": true,
+    "runtime_manifest_sha256": "b33013c9496f87b434472021dff7055b582b5bd175a6a4d0ddeaccf7419ef464",
+    "app_archive_sha256": "c30d9a38c4baccb7731666bbb0c5e2ac42aea6038ec9501736bcf2cb858e6186",
+    "python_modules_verified": 86,
+    "frontend_source_files_verified": 410,
+    "renderer_assets_verified": 14,
+    "ad_hoc_seal_verified": true,
+    "source_checkout_or_Vite_required": false,
+    "cache_reopen": {
+      "completed_keyboard_reopens": 5,
+      "additional_search_GETs": 0,
+      "latency_measured": false
+    },
+    "destinations": {
+      "cached_cell_fresh_matching_UUID_GET": true,
+      "cached_epoch_fresh_matching_UUID_GET": true,
+      "actual_typed_predicate_UI_run": true,
+      "exact_predicate_membership": 579,
+      "browser_pages_verified": 10,
+      "independent_native_UUID_truth_equal": true,
+      "recent_search_values_restored": true,
+      "query_run_history_update_retained": true
+    },
+    "lifecycle": {
+      "stored_actor_retirement_and_callback_rejection": true,
+      "trusted_owned_window_focus_retirement": true,
+      "Chromium_only_online_retirement": true,
+      "document_reload_empty_owner": true,
+      "cold_packaged_reopen_empty_owner": true,
+      "actual_ServiceSupervisor_graceful_root_stop": true,
+      "actual_preload_Recovery_retires_cache_to_zero_entries": true,
+      "actual_Retry_startup_new_root_PID_source_identity": true,
+      "actual_preload_Current_after_retry": true,
+      "recovered_project_empty_cache_and_fresh_read": true,
+      "packaged_BC_same_project_UUID_different_paths_and_native_instances": true
+    },
+    "renderer_errors": 0,
+    "unexpected_HTTP_errors": 0,
+    "expected_guard_responses": 48,
+    "harness_errors_retained": 4,
+    "remaining_blockers": []
+  },
+  "scientific_preservation": {
+    "projects": 3,
+    "table_checks": 82,
+    "dataset_revision_rows_verified": 15,
+    "dataset_delta_only_artifact_path": true,
+    "frozen_recipes_memberships_metadata_checksums_and_artifact_bytes_unchanged": true,
+    "expected_deltas": "A only: authorized query-run receipt changed, plus source/project/artifact path relocation and recovery bookkeeping. B/C only: project directory relocation and runtime recovery instance. All annotation/curation/decision/draft/frozen selection/protocol binding/search preset tables unchanged. A dataset_revision all15rows differ only inartifact_path; everyothercolumn and artifactfile hash identical.",
+    "present_protected_tables_unchanged": {
+      "A": 11,
+      "B": 9,
+      "C": 9
+    },
+    "search_preset_and_search_preset_version_absent_before_and_after": {
+      "B": true,
+      "C": true
+    },
+    "native_scientific_mutation_import_invalidation_certified": false
+  },
+  "handed_sources_unchanged": true,
+  "release_checkpoint_bundle_unchanged": true,
+  "installed_original_preservation": {
+    "captured_files_checked": 40051,
+    "captured_files_unchanged": 40050,
+    "installed_binaries_and_captured_originals_unchanged": true,
+    "qualification": "One volatile global updater-status receipt changed; exact writer unobserved. It was neither restored nor edited."
+  },
+  "owned_resources": {
+    "remaining_process_count": 0,
+    "all_recorded_ports_released": true,
+    "all_fixture_databases_clean_shutdown": true
+  },
+  "limits": [
+    "Actual OS suspend/resume and a separate trusted visible-visibilitychange wake are unqualified; no system-wide sleep/network/settings changes performed.",
+    "Silent backend replacement without an observed lifecycle/reconnect event can retain locally fresh clickable navigation rows until30s expiry. This cache supplies navigation intent only; destination reads and scientific mutation authority remain separate.",
+    "No compositor/INP/packaged latency, long-duration memory, large-payload, broader-page or all-page100ms claim.",
+    "Unsigned-testing macOSarm64 local package with ad-hoc seal; no Developer ID/notarization/clean-machine installation qualification.",
+    "Automatic tag-import scans intentionally blocked by test guard. Scientific imports/saves/annotation/curation/decisions/frozen revisions/protocol binds remained blocked.",
+    "Raw harness errors retained; corrected synchronization/TTL/compact-response/guard-read endpoint/path-switch waits passed without product source changes.",
+    "Native scientific mutation/import invalidation was guarded rather than certified. B/C had nine present protected tables; both search-preset tables were absent before and after."
+  ],
+  "suite_counts_overlap": true,
+  "broader_page_cache_or_adaptive_indexing_implemented": false,
+  "final_independent_review": {
+    "status": "CLEAR",
+    "scope": "bounded GlobalSearch pilot at a616 and its isolated qualification checkpoint only"
+  }
+}
