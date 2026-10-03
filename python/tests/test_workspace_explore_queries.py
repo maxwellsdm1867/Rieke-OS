@@ -96,6 +96,88 @@ class RequestedSummaryTests(unittest.TestCase):
                     self.assertNotIn('result', response)
                     self.assertIn('response budget', response['error'])
 
+    def test_registry_attests_response_boundaries_but_reads_each_generation_live(self):
+        from types import SimpleNamespace
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(SimpleNamespace(_conn=object(), in_transaction=False), self.service.project['project_uuid'])
+        tracker.ready = True
+        attestations, scopes = [], []
+        tracker._attest_contract = lambda: attestations.append(True) or 'verified authority'
+        tracker._scope = lambda kind, identity: scopes.append((kind, identity)) or ('scope epoch', 1)
+        self.service._explore_state_generation = tracker
+        for request_number in (1, 2):
+            response = self.client.get('/api/explore/field-registry')
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertIn('fields', response.get_json())
+            self.assertEqual(len(attestations), 2 * request_number, 'opening and closing attestations are fresh for every response')
+            self.assertEqual(len(scopes), 2 * request_number, 'both boundary generations must read live scope counters')
+            self.assertIsNone(tracker._response_contract.get())
+
+    def registry_native_tracker(self):
+        from types import SimpleNamespace
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(SimpleNamespace(_conn=object(), in_transaction=False), self.service.project['project_uuid'])
+        tracker.ready = True
+        tracker._attest_contract = lambda: 'verified authority'
+        tracker._scope = lambda kind, identity: ('scope epoch', 1)
+        self.service._explore_state_generation = tracker
+        return tracker
+
+    def test_registry_generation_race_discards_fields_and_releases_contract(self):
+        tracker = self.registry_native_tracker()
+        calls = []
+        def racing_scope(kind, identity):
+            calls.append(True)
+            return ('scope epoch', len(calls))
+        tracker._scope = racing_scope
+        response = self.client.get('/api/explore/field-registry')
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('fields', response.get_json())
+        self.assertIn('generation changed', response.get_json()['error'])
+        self.assertEqual(len(calls), 2)
+        self.assertIsNone(tracker._response_contract.get())
+
+    def test_registry_closing_contract_change_invalidates_complete_reply(self):
+        tracker = self.registry_native_tracker()
+        calls = []
+        tracker._attest_contract = lambda: calls.append(True) or ('opening' if len(calls) == 1 else 'closing')
+        incarnation = tracker._connection_epoch
+        response = self.client.get('/api/explore/field-registry')
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('fields', response.get_json())
+        self.assertIn('contract changed', response.get_json()['error'])
+        self.assertNotEqual(tracker._connection_epoch, incarnation)
+        self.assertIsNone(tracker._verified_read_token)
+        self.assertIsNone(tracker._response_contract.get())
+
+    def test_registry_failed_opening_attestation_stays_fail_closed(self):
+        tracker = self.registry_native_tracker()
+        def unavailable():
+            raise ValueError('DDL observer unavailable')
+        tracker._attest_contract = unavailable
+        response = self.client.get('/api/explore/field-registry')
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('fields', response.get_json())
+        self.assertIsNone(tracker._verified_read_token)
+        self.assertIsNone(tracker._response_contract.get())
+
+    def test_registry_missing_and_custom_trackers_keep_existing_fresh_fallback(self):
+        from types import SimpleNamespace
+        self.service._explore_state_generation = None
+        response = self.client.get('/api/explore/field-registry')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        fields = response.get_json()['fields']
+        calls = []
+        def forbidden_contract():
+            self.fail('custom trackers must not receive native contract reuse')
+        self.service._explore_state_generation = SimpleNamespace(
+            token=lambda protocol: calls.append(protocol) or 'custom fresh token',
+            response_contract=forbidden_contract)
+        response = self.client.get('/api/explore/field-registry')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['fields'], fields)
+        self.assertEqual(calls, [None, None])
+
     def test_registry_complete_types_and_tree_definitions_without_distributions(self):
         response = self.client.get('/api/explore/field-registry')
         self.assertEqual(response.status_code, 200, response.get_json())

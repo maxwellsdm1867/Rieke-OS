@@ -9,7 +9,7 @@ import json
 import threading
 import uuid
 from collections import OrderedDict
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import asdict, is_dataclass
 
 from workspace_predicates import OPERATORS, equality_key, kind
@@ -492,7 +492,14 @@ def register_explore_query_routes(app, service, db_lock, registration_locks, rea
         if request.args:
             raise ValueError('Field registry describes the registered catalog')
         with db_lock, registration_locks():
-            return jsonify(field_registry(service))
+            from workspace_state_generation import StateGenerationAuthority
+            tracker = getattr(service, '_explore_state_generation', None)
+            contract = (tracker.response_contract() if type(tracker) is StateGenerationAuthority
+                        else nullcontext())
+            # Only schema/DDL attestation is reused within this response. Both
+            # generation reads stay live, and closing failure discards the reply.
+            with contract:
+                return jsonify(field_registry(service))
 
     @app.post('/api/explore/page')
     def explorer_query_page():
