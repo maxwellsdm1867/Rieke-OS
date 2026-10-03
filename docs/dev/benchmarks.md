@@ -1,0 +1,112 @@
+# Fixed version-attached benchmark suite
+
+The single registry is [benchmarks/registry.json](../../benchmarks/registry.json).
+The runner is [tools/benchmark.py](../../tools/benchmark.py). It writes
+`benchmark.json`, `benchmark.md`, raw subrunner outputs and correctness logs into
+a new, never-overwritten output directory. These artifacts are associated with
+exact source commit/tree, dirty state before and after, release/database versions,
+schema format versions and implementation source hashes, suite source hashes, fixture version/seal, OS, hardware,
+Python/SQLite/Node versions and frontend dependency lock. Never copy the result to
+another commit and call it current. A documentation commit also changes HEAD.
+
+## Run and compare
+
+Use the repository Python runtime containing the existing backend test dependencies
+and Node compatible with the frontend lock (CI uses Node 22.12). First install
+frontend dependencies with `npm ci --prefix workspace-app`. Then, from repo root:
+
+```sh
+python -B tools/benchmark.py run --output benchmarks/results/unique-run
+python -B tools/benchmark.py gate benchmarks/results/unique-run/benchmark.json \
+  --commit "$(git rev-parse HEAD)" --app-version "$(python -c 'import json; print(json.load(open("rieke-release.json"))["version"])')"
+python -B tools/benchmark.py compare baseline/benchmark.json \
+  benchmarks/results/unique-run/benchmark.json --output comparison.md
+```
+
+`run` returns nonzero for missing/failed/invalid core cases. Correctness failures,
+skips, timeouts and missing samples cannot produce a green receipt. Dirty local
+runs remain useful but cannot pass the clean-commit gate or comparison. `compare`
+returns nonzero with reasons if suite, fixture, schema format versions or environment differ,
+including an OS upgrade. There is no comparison against pre-macOS-27.0.1 results
+without an explicit noncomparable label. No arbitrary speed threshold is supplied:
+four raw samples and medians are observations, not percentiles or a speed guarantee.
+Calibrated budgets need reviewed repeated evidence and a future versioned policy.
+
+The Python and Node workers are serial and capped at 180 seconds each. The runner
+kills only its own worker process group on timeout. Database files live in an owned
+temporary directory, removed by the worker on normal exit. A killed worker may
+leave a `rieke-core-benchmark-*` temporary directory; cleanup is unconfirmed and
+that receipt fails. The renderer harness does not connect to a live backend.
+Core measured wall time is recorded in every receipt; a verified runtime will be
+added below after the first successful post-update execution.
+
+First integrated development smoke: **13.1 seconds** on macOS 27.0.1 arm64,
+Python 3.11.13, Node 24.13.0. This dirty-source run verifies bounded runtime only;
+it is not a clean release receipt or calibrated latency baseline. The owned local
+benchmark environment used SciPy 1.17.1 because the pre-update shared SciPy native
+binary failed to load. Actual Python package versions are captured per run; the
+shared application runtime was not modified.
+
+## What the first slice measures
+
+Six real SQLite operation cases reuse `tools/metadata_qualification` CoreAdapter
+and sealed native truth. Exact source-derived results are checked before timing
+and after each sample; the check itself is excluded. Four serial fresh-reader /
+same-reader pairs measure detail, scoped first/deep page batches, filter batches,
+exact membership batches and requested facets (two/all eligible fields). One
+untimed smoke is excluded. Cold means a fresh typed reader, **not** dropped OS disk
+cache, new native server or cold H5. Reader initialization and fixture construction
+are separately reported setup work. Fixed small batches are not per-row timings.
+
+Mounted App/Protocol/Inspector cases measure first mount and recent Overview →
+Inspect return on a fixed 500-row mock API. Content and current-membership gates
+are separate. Module transforms are excluded; React work and mock request handling
+are included. One fresh-harness smoke is excluded, then four fresh harnesses.
+Trace child rendering, native browser layout/scroll/paint, H5 and server latency
+are absent. Polling granularity can affect short timings. This supplementary UI
+measurement cannot fulfill `ui.native.navigation`.
+
+Selected tests separately check scoped restoration, cache reuse/invalidation,
+StrictMode, lazy trace context, current page membership/tag changes, frozen export,
+real disposable SQLite roundtrip and small synthetic import identity/collision guards. Their total test
+execution time is not application latency. Native SQL tag throughput, ingestion
+throughput and waveform portability are not inferred from transactional doubles.
+
+## Release integration and deliberate blockers
+
+The desktop candidate workflow runs the core after its runtime/dependencies exist
+and packages JSON/Markdown receipts. `tools/desktop_release.py promote` requires
+those files and calls the exact-commit **release** gate before any publication
+mutation. It also adds the validated report files to the published asset set.
+Local test/dev commands are unaffected. Missing, dirty, stale or failed results
+are rejected. Changing a report's top-level status cannot replace its case evidence.
+
+The initial release gate intentionally refuses complete qualification because the
+registry still lists native navigation, native tag latency and end-to-end ingest
+throughput as unsupported. Resolve those with actual owned fixture adapters and
+reviewed registry changes; do not remove the requirement merely to release.
+The reusable [native observer](../../benchmarks/navigation-probe.mjs) has no launch
+side effects; [its contract](../../benchmarks/NATIVE-CONTRACT.md) explains the
+missing launcher, fixtures, independent authority, H5 and lifecycle checks.
+Historical restoration results do not qualify a different commit or this suite.
+
+Retain reviewed run artifacts with each release, and link changed cases to the
+release notes explaining addressed bottlenecks. Generated files are ignored under
+`benchmarks/results`; attach CI artifacts before publication. Avoid committing a
+receipt into the very source commit it claims to measure (a self-reference).
+
+## Database and field-access design
+
+[Database portability and benchmark spec](schema-portability-benchmark-spec.md)
+contains the code-backed design and proposed stress/adaptive cases. Registry IDs
+are authoritative; the note's proposed names are advisory. Universal field access,
+slow correct fallback, extraction-incomplete status, generalized JSON import,
+metadata-only export and Attach Traces remain explicit gaps. Current 164 eligible
+fields are not all raw fields: depth/length/type discovery limits remain. Index
+tiers may change speed, never whether scientific fields are accessible. No engine
+replacement or adaptive implementation is part of this benchmark slice.
+
+[Stress track](../../benchmarks/stress.md) stays separate. Project/workspace
+organization is a deferred follow-up; this work does not reorganize user projects.
+
+Schema-changing work must bump the relevant FORMAT/SCHEMA_VERSION and fixture/suite semantics as appropriate. Implementation source hashes are provenance, not automatically schema incompatibility; ordinary query optimizations remain comparable when formats, fixtures, harness and environment match.

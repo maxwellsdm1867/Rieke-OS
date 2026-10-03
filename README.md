@@ -228,3 +228,11 @@ of this repository. Parser revisions and Python package hashes are pinned in
 `packaging/native-osx-arm64.lock`; other targets resolve conda-forge packages.
 The installed package receipt is under
 `.rieke-runtime/native/conda-meta/`.
+
+### Versioned benchmarks
+
+Run and compare the fixed frontend/database core using
+[the benchmark guide](docs/dev/benchmarks.md). The
+[case registry](benchmarks/registry.json) records supported cases and open gates;
+[AGENTS.md](AGENTS.md) gives fresh coding agents the entry point. Release promotion
+requires exact-commit benchmark evidence; native qualification gaps remain visible.

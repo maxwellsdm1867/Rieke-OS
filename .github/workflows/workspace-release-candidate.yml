@@ -47,6 +47,10 @@ jobs:
           RIEKE_TEST_NATIVE_TRANSFER: '1'
       - run: npm test && npm run build
         working-directory: workspace-app
+      - name: Require fixed core and complete benchmark qualification
+        run: |
+          .rieke-runtime/venv/bin/python -B tools/benchmark.py run --output benchmarks/results/source-candidate
+          .rieke-runtime/venv/bin/python -B tools/benchmark.py gate benchmarks/results/source-candidate/benchmark.json --commit "$(git rev-parse HEAD)" --app-version "$(node -p "require('./rieke-release.json').version")" --release
       - name: Sign candidate with protected release key
         env:
           RELEASE_SIGNING_PRIVATE_KEY: ${{ secrets.RELEASE_SIGNING_PRIVATE_KEY }}
@@ -60,6 +64,7 @@ jobs:
               key.chmod(0o600)
               subprocess.run([sys.executable, 'tools/build_release.py', '--private-key', str(key), '--output', os.environ['RUNNER_TEMP'] + '/rieke-candidate'], check=True)
           PY
+      - run: cp benchmarks/results/source-candidate/benchmark.json benchmarks/results/source-candidate/benchmark.md "$RUNNER_TEMP/rieke-candidate/"
       - uses: actions/upload-artifact@v4
         with:
           name: signed-rieke-release-candidate

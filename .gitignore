@@ -80,3 +80,6 @@ docs/legacy/old_epochtree/
 docs/dev/desktop-smoke-e2e.json
 docs/dev/desktop-native-database-e2e.json
 docs/dev/desktop-verification-provenance.json
+
+# Version-attached local benchmark receipts (publish reviewed run artifacts separately)
+/benchmarks/results/

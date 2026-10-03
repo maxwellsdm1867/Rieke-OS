@@ -1,0 +1,40 @@
+{
+  "format": "rieke-benchmark-registry",
+  "version": 1,
+  "suite_version": "1.0.0",
+  "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
+  "samples": 4,
+  "method": {
+    "database": "One untimed smoke, then four serial pairs: fresh typed reader (cold-reader, OS cache uncontrolled) followed by same-reader repeat (warm-reader). Setup and correctness excluded. No p95/p99 claims.",
+    "frontend": "Four fresh mounted product harnesses; first Inspector mount and recent Overview-to-Inspector return. Fixed 500-row mock API, content and current membership readiness separate; no browser paint claim.",
+    "budgets": "Uncalibrated: timings are observations, never a latency pass. Correctness is mandatory. No invented numerical target."
+  },
+  "cases": [
+    {"id":"db.typed.detail","kind":"latency","runner":"database","action":"E01-01","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"db.typed.page.scope","kind":"latency","runner":"database","action":"E01-07","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"db.typed.filter.matrix","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"db.typed.membership.exact","kind":"latency","runner":"database","action":"E01-05","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"db.typed.facets.two","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"db.typed.facets.all_eligible","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
+    {"id":"ui.mounted.inspector.first","kind":"latency","runner":"frontend","action":"E01-01","metrics":["content_ms","authority_ms"]},
+    {"id":"ui.mounted.inspector.return","kind":"latency","runner":"frontend","action":"E01-03","metrics":["content_ms","authority_ms"]},
+    {"id":"correctness.navigation","kind":"correctness","runner":"frontend-tests","action":"E01-03"},
+    {"id":"correctness.frozen_export_tags_ingest","kind":"correctness","runner":"database-tests","action":"E01-08"}
+  ],
+  "release_requirements": [
+    {"id":"ui.native.navigation","status":"unsupported","reason":"Owned native fixture launch and independent rendered authority adapter are not yet integrated. Mounted timings do not prove scroll/layout restoration, trace drawing, native latency or zero H5 reads."},
+    {"id":"db.native.tag_latency","status":"unsupported","reason":"Transactional doubles prove correctness only; no owned native MySQL timing fixture in this core."},
+    {"id":"db.ingest.throughput","status":"unsupported","reason":"Small H5 parsing/import identity tests are correctness only, not end-to-end native ingestion throughput."}
+  ],
+  "gaps": [
+    {"id":"db.fields.complete","reason":"Current eligible-field oracle excludes some deep paths, long arrays/strings and ticks. Independent all-raw-field inventory required; all fields must remain accessible regardless acceleration tier."},
+    {"id":"db.fields.fallback","reason":"Tier promotion/demotion with exact membership/order/types/units and slow correct fallback not implemented."},
+    {"id":"db.fields.incomplete","reason":"Explicit unavailable/extraction-incomplete semantics for arbitrary raw fields not implemented; never infer empty success."},
+    {"id":"db.adaptive.workload","reason":"Design only: compare static, instrumented-fixed, adaptive, manually tuned; count telemetry/build/refresh/contention cost."},
+    {"id":"db.adaptive.shift-budget","reason":"Design only: workload shift, rare export, updates, deduplication, hysteresis, cooldown, manual pins."},
+    {"id":"db.adaptive.publish-fault","reason":"Design only: cancellation/crash/revision/partial-publication refusal."},
+    {"id":"db.import.general_json","reason":"Generalized metadata JSON importer not implemented."},
+    {"id":"db.export.metadata_vnext_attach_traces","reason":"Metadata-only export vNext and Attach Traces not implemented. Current SQLite export has source pointers, not portable raw data."},
+    {"id":"db.stress.scale","reason":"Core is 12 sealed metadata records and 500 mocked frontend rows, not representative large acquisition scale; separate stress plan applies."}
+  ]
+}

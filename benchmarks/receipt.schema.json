@@ -1,0 +1,29 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "title":"Rieke fixed core benchmark receipt v1",
+  "type":"object",
+  "required":["format","schema_version","created_at","source_start","source_end","suite_version","suite","fixture","environment","method","samples","cases","release_requirements","gaps","fixture_cleaned","wall_seconds"],
+  "properties":{
+    "format":{"const":"rieke-core-benchmark"},
+    "schema_version":{"const":1},
+    "created_at":{"type":"string","format":"date-time"},
+    "suite_version":{"type":"string"},
+    "suite":{"type":"object","required":["sha256","files"],"properties":{"sha256":{"$ref":"#/$defs/sha"},"files":{"type":"object","additionalProperties":{"$ref":"#/$defs/sha"}}}},
+    "fixture":{"type":"object","required":["version","sha256"],"properties":{"version":{"type":"string"},"sha256":{"$ref":"#/$defs/sha"}}},
+    "source_start":{"$ref":"#/$defs/source"},
+    "source_end":{"$ref":"#/$defs/source"},
+    "environment":{"type":"object","required":["os","architecture","cpu","logical_cpus","memory_bytes","machine_id","python","sqlite","node","dependencies","python_packages","frontend_packages"]},
+    "method":{"type":"object"},
+    "samples":{"type":"integer","minimum":1},
+    "cases":{"type":"array","items":{"type":"object","required":["id","status"],"properties":{"id":{"type":"string"},"status":{"enum":["passed","failed","incomplete"]},"metrics":{"type":"object","additionalProperties":{"type":"array","items":{"type":"number","minimum":0}}}}}},
+    "release_requirements":{"type":"array"},
+    "gaps":{"type":"array"},
+    "fixture_cleaned":{"type":"boolean"},
+    "wall_seconds":{"type":"number","minimum":0}
+  },
+  "$defs":{
+    "sha":{"type":"string","pattern":"^[a-f0-9]{64}$"},
+    "source":{"type":"object","required":["commit","tree","dirty","status_sha256","application_version","database_compatibility","workspace_formats","schema_versions","schema_sources"],"properties":{"commit":{"type":"string","pattern":"^[a-f0-9]{40}$"},"tree":{"type":"string","pattern":"^[a-f0-9]{40}$"},"dirty":{"type":"boolean"},"status_sha256":{"$ref":"#/$defs/sha"},"application_version":{"type":"string"},"schema_versions":{"type":"object"},"schema_sources":{"type":"object"}}}
+  },
+  "$comment":"tools/benchmark.py additionally enforces the exact registry, case uniqueness, metric/sample counts, no skips, source stability, fixture cleanup, and release requirements. Schema shape alone never qualifies release."
+}

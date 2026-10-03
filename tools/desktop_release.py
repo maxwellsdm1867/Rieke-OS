@@ -159,6 +159,20 @@ def promote(directory, tag, evidence_path):
     artifacts = artifact_inventory(directory)
     verify_metadata(directory, expected_version)
     evidence = validate_evidence(json.loads(evidence_path.read_text()), artifacts, expected_version)
+    # Benchmarks are independent of scientific artifact qualification and required
+    # before any remote release mutation. Missing native requirements fail closed.
+    from benchmark import gate as benchmark_gate, report as benchmark_report
+    benchmark_path = directory / 'benchmark.json'
+    benchmark_receipt = json.loads(benchmark_path.read_text())
+    benchmark_gate(benchmark_receipt, expected_commit=evidence['source_commit'],
+                   expected_version=expected_version, release=True, root=ROOT)
+    report_path = directory / 'benchmark.md'
+    if report_path.read_text() != benchmark_report(benchmark_receipt):
+        raise ValueError('Benchmark report differs from validated receipt')
+    for file in (benchmark_path, report_path):
+        if file.is_symlink():
+            raise ValueError('Benchmark artifacts must not be symlinks')
+        artifacts[file.name] = {'sha256': digest(file).hex(), 'size': file.stat().st_size}
     remote_tag = gh_json(f'repos/{repository}/git/ref/tags/{tag}')['object']
     if remote_tag['type'] == 'tag':
         remote_tag = gh_json(remote_tag['url'])['object']
