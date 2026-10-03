@@ -27,6 +27,15 @@ DB_TESTS = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_i
             'test_workspace_epoch_page_performance']
 
 
+def frontend_command(*, correctness=False):
+    # Fixed committed preload: its bytes are included by suite_identity.
+    command = ['node', '--import', str(ROOT / 'workspace-app/src/test-support/reactTestEnvironment.js')]
+    if correctness:
+        return command + ['--test', '--test-reporter=tap', '--test-concurrency=1',
+                          *[str(ROOT / f'workspace-app/src/{n}.test.js') for n in NAV_TESTS]]
+    return command + [str(ROOT / 'workspace-app/src/benchmarkNavigation.mjs')]
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False).encode()
 
@@ -311,7 +320,7 @@ def run(output):
                'cases': [], 'release_requirements': reg['release_requirements'], 'gaps': reg['gaps'], 'fixture_cleaned': False}
     try:
         for name, command in [('database', [sys.executable, '-B', str(ROOT / 'benchmarks/database.py')]),
-                              ('frontend', ['node', str(ROOT / 'workspace-app/src/benchmarkNavigation.mjs')])]:
+                              ('frontend', frontend_command())]:
             result_path = output / f'{name}.json'
             duration = execute(command + [str(reg['samples']), str(result_path)], output / f'{name}.log')
             result = json.loads(result_path.read_text())
@@ -319,7 +328,7 @@ def run(output):
             receipt['cases'].extend(result['cases'])
             receipt[name] = {k:v for k,v in result.items() if k != 'cases'}
             receipt[name]['execution_ms'] = duration
-        node_ms = execute(['node', '--test', '--test-reporter=tap', '--test-concurrency=1', *[str(ROOT / f'workspace-app/src/{n}.test.js') for n in NAV_TESTS]], output / 'frontend-tests.log')
+        node_ms = execute(frontend_command(correctness=True), output / 'frontend-tests.log')
         log = (output / 'frontend-tests.log').read_text()
         count = re.search(r'^# tests (\d+)$', log, re.M)
         skipped = re.search(r'^# skipped (\d+)$', log, re.M)

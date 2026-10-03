@@ -13,6 +13,9 @@ Before changing release tooling or claiming a performance improvement, read
 - Release promotion requires exact clean candidate evidence. Do not bypass the
   gate or relabel missing/native cases as passed. The initial native navigation
   launcher, native tags and ingest-throughput requirements remain incomplete.
+- Native research evidence can be hash-bound with `tools/benchmark_native.py`;
+  read the benchmark guide before attaching it. Attachments never grant release
+  qualification or change the measured commit.
 - Use only owned disposable fixtures. Never point benchmarks at user projects,
   installed apps, live API ports or scientific databases. Coordinate load when
   another benchmark is running; stress runs are separate and opt-in.

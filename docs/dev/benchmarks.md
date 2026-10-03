@@ -139,3 +139,35 @@ Schema-changing work must bump the relevant FORMAT/SCHEMA_VERSION and fixture/su
 Legacy source-candidate diagnostics upload with `if: always()` before the complete release gate and signing. An expected unsupported-native failure therefore still preserves the run JSON, report and logs.
 
 `RIEKE_TEST_DOM_MODULE` must be **unset** for benchmark runs (even an empty value is rejected). The runner refuses to launch any worker with that override and retains a failed diagnostic receipt. A dynamically imported external DOM module is not covered by the committed suite or installed-jsdom version and cannot silently qualify.
+
+
+## React 19 and native research attachments
+
+Suite 1.0.3 runs both frontend commands with the committed
+`workspace-app/src/test-support/reactTestEnvironment.js` preload. Its exact bytes
+are part of the suite hash; environment overrides remain prohibited.
+
+Native research receipts remain attributed to the commit actually measured.
+Create a separate attachment (never edit or retrofit the native receipt):
+
+```sh
+python tools/benchmark_native.py --evidence-root /owned/research \
+  --measured-commit <full-measured-sha> --candidate-commit <full-candidate-sha> \
+  --source-receipt source.json --report report.md --output native-attachment.json
+python tools/benchmark_native.py --evidence-root /owned/research --verify native-attachment.json
+```
+
+The source receipt must contain its original `commit`. Every selected file is
+hashed, path escapes and symlinks fail, and Git must show only the fixed list of
+infrastructure/test/documentation changes between commits. The tool checks byte
+integrity and restricted source equivalence, **not** scientific assertions in the
+reports. The attachment is separate from the core receipt and has no power to
+satisfy release requirements. Native tag latency, ingestion throughput and full
+navigation qualification remain unsupported. Retain private ledgers privately;
+explicitly select sanitized reports for any distributable attachment.
+
+Packaged test launchers now select the configured `Disco.app` output beneath
+`desktop/dist/mac-arm64`, verify the bundle/executable path, and clone it into the
+owned test HOME. They do not search installed applications or fall back to stale
+`Rieke OS.app` builds. This path check is not packaged-content qualification;
+`verifyPackagedSource` and an explicitly coordinated package smoke remain required.

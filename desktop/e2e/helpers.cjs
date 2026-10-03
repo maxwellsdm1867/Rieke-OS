@@ -6,6 +6,7 @@ const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const {_electron} = require('playwright');
 const run = promisify(execFile);
+const {packagedSource} = require('./packaged-path.cjs');
 async function createFixture({reuse = true} = {}) {
   if (reuse && process.env.RIEKE_E2E_FIXTURE_ROOT) {
     const root = await fs.realpath(process.env.RIEKE_E2E_FIXTURE_ROOT);
@@ -19,7 +20,7 @@ async function createFixture({reuse = true} = {}) {
   const bundle = path.join(home, 'Applications', 'Rieke OS.app');
   const userData = path.join(home, 'state');
   await fs.mkdir(path.dirname(bundle), {recursive: true}); await fs.mkdir(userData, {recursive: true});
-  await run('/usr/bin/ditto', [path.resolve(__dirname, '../dist/mac-arm64/Rieke OS.app'), bundle]);
+  await run('/usr/bin/ditto', [packagedSource(path.resolve(__dirname, '..'), require('../package.json').build), bundle]);
   return {root, home, bundle, userData, executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};
 }
 async function launch(fixture) {
