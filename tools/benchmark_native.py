@@ -25,7 +25,9 @@ def evidence_file(root, name):
 def attach(repo, evidence, measured, candidate, source, reports):
     measured = git(repo, 'rev-parse', '--verify', '--end-of-options', measured + '^{commit}')
     candidate = git(repo, 'rev-parse', '--verify', '--end-of-options', candidate + '^{commit}')
-    changed = git(repo, 'diff', '--name-only', measured, candidate).splitlines()
+    # Inspect deletions and additions separately: rename detection can hide a
+    # production source path when its destination is an allowed docs/test path.
+    changed = git(repo, 'diff', '--no-renames', '--name-only', measured, candidate).splitlines()
     if any(not infrastructure(name) for name in changed):
         raise ValueError('Production differs from measured commit; native evidence cannot transfer')
     if json.loads(evidence_file(evidence, source).read_text()).get('commit') != measured:
