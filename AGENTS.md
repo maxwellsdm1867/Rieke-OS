@@ -4,8 +4,9 @@ Before changing release tooling or claiming a performance improvement, read
 [docs/dev/benchmarks.md](docs/dev/benchmarks.md) and the fixed
 [benchmarks/registry.json](benchmarks/registry.json).
 
-- Run `python tools/benchmark.py run --output benchmarks/results/<unique-run>`
-  with the project's Python runtime and pinned frontend dependencies installed.
+- Install the pinned benchmark environment from the guide, then run
+  `.rieke-runtime/benchmark-python/bin/python tools/benchmark.py run --output benchmarks/results/<unique-run>`
+  with the exact documented Python/Node profile and frontend dependencies.
   Local development remains possible; a dirty run is diagnostic only.
 - Preserve raw JSON, logs and Markdown. Compare with `tools/benchmark.py compare`;
   a different suite/fixture/schema/runtime/OS/hardware is not a valid baseline.

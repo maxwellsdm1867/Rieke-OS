@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.0",
+  "suite_version": "1.0.1",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {

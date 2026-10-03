@@ -47,10 +47,23 @@ jobs:
           RIEKE_TEST_NATIVE_TRANSFER: '1'
       - run: npm test && npm run build
         working-directory: workspace-app
-      - name: Require fixed core and complete benchmark qualification
+      - name: Install pinned benchmark Python dependencies
         run: |
-          .rieke-runtime/venv/bin/python -B tools/benchmark.py run --output benchmarks/results/source-candidate
-          .rieke-runtime/venv/bin/python -B tools/benchmark.py gate benchmarks/results/source-candidate/benchmark.json --commit "$(git rev-parse HEAD)" --app-version "$(node -p "require('./rieke-release.json').version")" --release
+          uv venv --python 3.11.13 .rieke-runtime/benchmark-python
+          uv pip install --python .rieke-runtime/benchmark-python/bin/python -r benchmarks/requirements-py311.txt
+      - name: Run fixed core benchmarks
+        run: |
+          .rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py run --output benchmarks/results/source-candidate
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: source-core-benchmark-diagnostics
+          path: benchmarks/results/source-candidate/
+          if-no-files-found: error
+          retention-days: 90
+      - name: Require complete benchmark qualification
+        run: |
+          .rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py gate benchmarks/results/source-candidate/benchmark.json --commit "$(git rev-parse HEAD)" --app-version "$(node -p "require('./rieke-release.json').version")" --release
       - name: Sign candidate with protected release key
         env:
           RELEASE_SIGNING_PRIVATE_KEY: ${{ secrets.RELEASE_SIGNING_PRIVATE_KEY }}

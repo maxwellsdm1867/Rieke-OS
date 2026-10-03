@@ -36,25 +36,36 @@ def sha(data):
 
 
 def git(*args, root=ROOT):
-    return subprocess.check_output(['git', '-C', str(root), *args], text=True).strip()
+    return subprocess.check_output(['git', '-C', str(root), *args], text=True, stderr=subprocess.DEVNULL).strip()
 
 
 def registry(root=ROOT):
     return json.loads((root / 'benchmarks/registry.json').read_text())
 
 
-def suite_identity(root=ROOT):
-    paths = ['tools/benchmark.py', 'benchmarks/registry.json', 'benchmarks/receipt.schema.json', 'benchmarks/database.py',
+def committed_bytes(revision, name, root=ROOT):
+    return subprocess.check_output(['git', '-C', str(root), 'show', f'{revision}:{name}'], stderr=subprocess.DEVNULL)
+
+
+def resolve_commit(value, root=ROOT):
+    try:
+        return git('rev-parse', '--verify', '--end-of-options', str(value) + '^{commit}', root=root)
+    except subprocess.CalledProcessError as exc:
+        raise ValueError('Expected commit cannot be resolved in this repository') from exc
+
+
+def suite_identity(root=ROOT, revision=None):
+    paths = ['tools/benchmark.py', 'benchmarks/requirements-py311.txt', 'benchmarks/registry.json', 'benchmarks/receipt.schema.json', 'benchmarks/database.py',
              'workspace-app/src/benchmarkNavigation.mjs', 'workspace-app/isolatedViteCache.js',
              'tools/metadata_qualification/core_adapter.py', 'tools/metadata_qualification/truth.py',
              'tools/metadata_qualification/native-truth.json', 'tools/metadata_qualification/native-truth.seal.json']
     paths += [f'workspace-app/src/{name}.test.js' for name in NAV_TESTS]
     paths += [f'python/tests/{name}.py' for name in DB_TESTS]
-    paths += [str(p.relative_to(root)) for p in (root / 'workspace-app/src/test-support').rglob('*') if p.is_file()]
+    paths += (git('ls-tree', '-r', '--name-only', revision, '--', 'workspace-app/src/test-support', root=root).splitlines() if revision else [str(p.relative_to(root)) for p in (root / 'workspace-app/src/test-support').rglob('*') if p.is_file()])
     # Test fixture helpers transitively define the scientific data being exercised.
     paths += ['python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
               'python/tests/test_workspace_matlab.py']
-    files = {name: sha((root / name).read_bytes()) for name in sorted(set(paths))}
+    files = {name: sha(committed_bytes(revision, name, root) if revision else (root / name).read_bytes()) for name in sorted(set(paths))}
     return {'sha256': sha(canonical(files)), 'files': files}
 
 
@@ -74,12 +85,55 @@ def source(root=ROOT):
                                ['workspace_disk_index.py', 'workspace_typed_index.py', 'workspace_sqlite.py']}}
 
 
+def committed_source(commit, root=ROOT):
+    """Independent identity reconstructed from Git objects, never receipt fields."""
+    commit = resolve_commit(commit, root)
+    release = json.loads(committed_bytes(commit, 'rieke-release.json', root))
+    schemas, versions = {}, {}
+    for name, symbol in [('workspace_disk_index.py', 'FORMAT'), ('workspace_typed_index.py', 'FORMAT'), ('workspace_sqlite.py', 'SCHEMA_VERSION')]:
+        raw = committed_bytes(commit, 'python/' + name, root)
+        match = re.search(r'^' + symbol + r'\s*=\s*(\d+)', raw.decode(), re.M)
+        if not match: raise ValueError(f'Missing committed schema version: {name}')
+        versions[name], schemas[name] = int(match[1]), sha(raw)
+    return {'commit': commit, 'tree': git('rev-parse', commit + '^{tree}', root=root),
+            'dirty': False, 'status_sha256': sha(b''), 'schema_versions': versions,
+            'schema_sources': schemas, 'application_version': release['version'],
+            'database_compatibility': release['database_compatibility'],
+            'workspace_formats': release['workspace_formats']}
+
+
+def provenance_errors(receipt, expected_commit, root=ROOT):
+    try:
+        trusted = committed_source(expected_commit, root)
+        errors = [f'Committed provenance differs: {key}' for key in ('source_start', 'source_end') if receipt.get(key) != trusted]
+        if receipt.get('suite') != suite_identity(root, trusted['commit']):
+            errors.append('Suite differs from committed benchmark source')
+        if receipt.get('fixture', {}).get('sha256') != sha(committed_bytes(trusted['commit'], 'tools/metadata_qualification/native-truth.json', root)):
+            errors.append('Fixture differs from committed frozen truth')
+        return errors
+    except (ValueError, OSError, subprocess.CalledProcessError, KeyError) as exc:
+        return [f'Cannot verify committed provenance: {exc}']
+
+
+def hardware_errors(env):
+    unknown = {'', 'unknown', 'unavailable', 'missing', 'n/a', 'none', 'null'}
+    errors = []
+    if not isinstance(env.get('cpu'), str) or env['cpu'].strip().lower() in unknown:
+        errors.append('CPU hardware is unknown; diagnostic only')
+    if type(env.get('logical_cpus')) is not int or env['logical_cpus'] <= 0:
+        errors.append('CPU count is unknown; diagnostic only')
+    memory = env.get('memory_bytes')
+    if type(memory) not in (str, int) or not str(memory).isdigit() or int(memory) <= 0:
+        errors.append('Memory hardware is unknown; diagnostic only')
+    return errors
+
+
 def environment():
     def command(*args):
         try: return subprocess.check_output(args, text=True, stderr=subprocess.DEVNULL).strip()
         except (OSError, subprocess.CalledProcessError): return 'unavailable'
-    memory = command('sysctl', '-n', 'hw.memsize') if sys.platform == 'darwin' else str(os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES'))
-    cpu = command('sysctl', '-n', 'machdep.cpu.brand_string') if sys.platform == 'darwin' else platform.processor()
+    memory = command('/usr/sbin/sysctl', '-n', 'hw.memsize') if sys.platform == 'darwin' else str(os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES'))
+    cpu = command('/usr/sbin/sysctl', '-n', 'machdep.cpu.brand_string') if sys.platform == 'darwin' else platform.processor()
     packages = {}
     for name in ('numpy', 'scipy', 'h5py', 'flask', 'datajoint'):
         try: packages[name] = importlib.metadata.version(name)
@@ -172,10 +226,12 @@ def validate(receipt, reg=None):
 
 def gate(receipt, *, expected_commit, expected_version, release=False, root=ROOT):
     errors = validate(receipt, registry(root))
+    errors += provenance_errors(receipt, expected_commit, root)
+    errors += hardware_errors(receipt.get('environment', {}))
     if errors: raise ValueError('; '.join(errors))
     identity = receipt['source_start']
     if identity['dirty'] or receipt['source_end']['dirty']: errors.append('Dirty-source receipts cannot qualify')
-    if identity['commit'] != expected_commit: errors.append('Stale/wrong candidate commit')
+    if identity['commit'] != resolve_commit(expected_commit, root): errors.append('Stale/wrong candidate commit')
     if identity['application_version'] != expected_version: errors.append('Wrong application version')
     if receipt['suite'] != suite_identity(root): errors.append('Stale/changed benchmark harness or fixtures')
     if receipt['fixture']['sha256'] != sha((root / 'tools/metadata_qualification/native-truth.json').read_bytes()): errors.append('Wrong frozen fixture seal')
@@ -184,12 +240,14 @@ def gate(receipt, *, expected_commit, expected_version, release=False, root=ROOT
             if requirement.get('status') != 'passed': errors.append(f"Release requirement incomplete: {requirement['id']}")
     if errors: raise ValueError('; '.join(errors))
     return {'core_execution': 'passed', 'release_qualified': release,
-            'performance_budget': 'uncalibrated', 'source_commit': expected_commit}
+            'performance_budget': 'uncalibrated', 'source_commit': identity['commit']}
 
 
-def compare(before, after):
+def compare(before, after, root=ROOT):
     reasons = [f'{label}: {error}' for label, receipt in [('baseline', before), ('candidate', after)] for error in validate(receipt)]
     for receipt in (before, after):
+        reasons += hardware_errors(receipt.get('environment', {}))
+        reasons += provenance_errors(receipt, receipt.get('source_start', {}).get('commit', ''), root)
         if receipt.get('source_start', {}).get('dirty'): reasons.append('Dirty source is not a comparable baseline/candidate')
     for key in ('suite_version', 'suite', 'fixture', 'method', 'samples', 'environment'):
         if before.get(key) != after.get(key): reasons.append(f'Noncomparable {key}')
@@ -213,6 +271,7 @@ def report(receipt, comparison=None):
     lines = ['# Core benchmark report', '', f"Commit: `{receipt.get('source_start', {}).get('commit', 'unknown')}`",
              f"Application: {receipt.get('source_start', {}).get('application_version', 'unknown')}; suite: {receipt.get('suite_version')}",
              f"Core execution: {'INCOMPLETE/FAILED' if errors else 'passed'}; release qualification: INCOMPLETE.",
+             f"Hardware qualification: {'diagnostic only' if hardware_errors(receipt.get('environment', {})) else 'identified; provenance gate still required'}.",
              f"Wall runtime: {receipt.get('wall_seconds', 0):.3f} s. Performance budget: uncalibrated.",
              '', 'These are actual operation timings; correctness-test duration is listed separately. Mounted UI is not native browser paint.', '',
              '| Case / metric | Median ms | Raw samples ms |', '|---|---:|---|']

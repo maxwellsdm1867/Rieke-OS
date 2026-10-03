@@ -11,23 +11,44 @@ another commit and call it current. A documentation commit also changes HEAD.
 
 ## Run and compare
 
-Use the repository Python runtime containing the existing backend test dependencies
-and Node compatible with the frontend lock (CI uses Node 22.12). First install
-frontend dependencies with `npm ci --prefix workspace-app`. Then, from repo root:
+Reference backend profile: **CPython 3.11.13** and the fully pinned
+[requirements-py311.txt](../../benchmarks/requirements-py311.txt). Create an owned
+benchmark environment; do not upgrade the user's application runtime. With `uv`
+available, a fresh checkout can use:
 
 ```sh
-python -B tools/benchmark.py run --output benchmarks/results/unique-run
-python -B tools/benchmark.py gate benchmarks/results/unique-run/benchmark.json \
-  --commit "$(git rev-parse HEAD)" --app-version "$(python -c 'import json; print(json.load(open("rieke-release.json"))["version"])')"
-python -B tools/benchmark.py compare baseline/benchmark.json \
+uv venv --python 3.11.13 .rieke-runtime/benchmark-python
+uv pip install --python .rieke-runtime/benchmark-python/bin/python -r benchmarks/requirements-py311.txt
+npm ci --prefix workspace-app
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py run --output benchmarks/results/unique-run
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py gate benchmarks/results/unique-run/benchmark.json \
+  --commit "$(git rev-parse HEAD)" --app-version "$(node -p "require('./rieke-release.json').version")"
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py compare baseline/benchmark.json \
   benchmarks/results/unique-run/benchmark.json --output comparison.md
 ```
+
+The local diagnostic runs used **Node 24.13.0**; select that exact version to
+reproduce their runtime profile. CI retains its existing **Node 22.12.0** profile;
+those results are not comparable to the local Node 24 profile. `npm ci` uses the
+committed frontend lock. Both candidate workflows now install the same dedicated
+Python benchmark environment from the pinned requirements, including SciPy 1.17.1.
+If `uv` is unavailable, provision CPython 3.11.13 explicitly, create its venv and
+use that venv's `python -m pip install -r benchmarks/requirements-py311.txt`.
+Do not substitute an unversioned system Python and call the result equivalent.
 
 `run` returns nonzero for missing/failed/invalid core cases. Correctness failures,
 skips, timeouts and missing samples cannot produce a green receipt. Dirty local
 runs remain useful but cannot pass the clean-commit gate or comparison. `compare`
 returns nonzero with reasons if suite, fixture, schema format versions or environment differ,
-including an OS upgrade. There is no comparison against pre-macOS-27.0.1 results
+including an OS upgrade. The gate independently resolves the expected commit
+and reconstructs tree, release metadata, schema versions and source hashes from
+Git objects. Matching start/end declarations alone are insufficient. Comparison
+also verifies both recorded commits; keep the necessary Git history available.
+CPU identity, positive logical CPU count and numeric positive RAM size must be
+known for gate/comparison qualification. Matching `unavailable` values are not
+hardware equivalence. Sandbox-denied hardware reads yield diagnostic-only evidence;
+use an appropriately permitted read-only execution context for a fresh run, never
+retrofit facts into a previous receipt. There is no comparison against pre-macOS-27.0.1 results
 without an explicit noncomparable label. No arbitrary speed threshold is supplied:
 four raw samples and medians are observations, not percentiles or a speed guarantee.
 Calibrated budgets need reviewed repeated evidence and a future versioned policy.
@@ -40,12 +61,16 @@ that receipt fails. The renderer harness does not connect to a live backend.
 Core measured wall time is recorded in every receipt; a verified runtime will be
 added below after the first successful post-update execution.
 
-First integrated development smoke: **13.1 seconds** on macOS 27.0.1 arm64,
+Historical integrated development smoke: **13.1 seconds** on macOS 27.0.1 arm64,
 Python 3.11.13, Node 24.13.0. This dirty-source run verifies bounded runtime only;
 it is not a clean release receipt or calibrated latency baseline. The owned local
 benchmark environment used SciPy 1.17.1 because the pre-update shared SciPy native
 binary failed to load. Actual Python package versions are captured per run; the
-shared application runtime was not modified.
+shared application runtime was not modified. The subsequent abff764 runs took
+11.13 and 10.43 seconds, but both recorded CPU/RAM as unavailable. Independent
+review rejected their qualified comparison. Preserve their raw evidence as
+**diagnostic only**; their prior gate result/comparison is superseded. Fresh
+permitted-read runs on the corrected commit are required for qualification.
 
 ## What the first slice measures
 
@@ -110,3 +135,5 @@ replacement or adaptive implementation is part of this benchmark slice.
 organization is a deferred follow-up; this work does not reorganize user projects.
 
 Schema-changing work must bump the relevant FORMAT/SCHEMA_VERSION and fixture/suite semantics as appropriate. Implementation source hashes are provenance, not automatically schema incompatibility; ordinary query optimizations remain comparable when formats, fixtures, harness and environment match.
+
+Legacy source-candidate diagnostics upload with `if: always()` before the complete release gate and signing. An expected unsupported-native failure therefore still preserves the run JSON, report and logs.
