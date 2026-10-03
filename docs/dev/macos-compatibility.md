@@ -11,7 +11,7 @@ all intermediate OS versions.
 | macOS 14.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
 | macOS 15.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
 | macOS 26.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
-| macOS 27.0.1 arm64 | Failed: packaged SciPy native wheel import | Pending repaired full-package test | Available runtime test host |
+| macOS 27.0.1 arm64 | Failed: packaged SciPy native wheel import | 146132c: startup, project restart/quit, injected backend failure/quit, scientific workflows passed | Available runtime test host |
 | All listed OS versions, Intel | No build | No build | Unsupported |
 
 The baseline failure concerns the original SciPy wheel's native TLS load behavior.
@@ -68,3 +68,32 @@ paths still need relocated application tests. A release needs startup/shutdown,
 Python scientific imports, MySQL operations and scientific workflows on macOS 14
 and the other OS versions it claims. No macOS 14 runtime test has been established
 by this audit. Preserve previous failed artifacts and diagnostics separately.
+
+## Retained local repair qualification
+
+The local evidence directory `benchmarks/results/packaging-146132c/` binds the
+assembled package to clean source `146132c4ec8072ae1eafc0b58deb6df9b74d02cb`.
+It records six packaged UI smoke checks, failed-backend recovery and ordinary
+quit, 87 scientific unit tests using the packaged interpreter, and real native
+MySQL import/export/restart/portable-transfer checks on a disposable 129-epoch
+synthetic source. The independent analytic oracle checks exact trace values.
+Original H5 and packaged resource inventories remained unchanged; owned services
+exited. This is correctness evidence, not an ingestion-speed benchmark.
+
+The whole-bundle audit corrected in `21d3356` finds 813 Mach-O files with no known
+static blockers. The original audit's path-context failures are retained beside
+the corrected report. Bare loader paths resolve to the current image;
+executable-relative paths use an MH_EXECUTE image's own directory. For libraries,
+containment is checked against every inventoried same-architecture executable,
+while actual loader selection and dynamic resolution remain unverified. The 284
+regular app.asar entries contain no Mach-O magic; nested compressed payloads are
+outside that check. Retain `native-compatibility-corrected.json`, the ASAR inventory,
+full runtime manifest and source receipt together.
+
+The preserved c72b190 package's actual backend traceback confirms the same
+PROPACK Mach-O zero-fill-offset error reproduced with the pristine official
+macOS 14 wheel. The repaired macOS 12 wheel keeps SciPy 1.15.0 and NumPy 2.2.6;
+post-relocation imports pass. The prior isolated diagnostic quit hang did not
+reproduce in the repaired package's failure suite; no shutdown policy was changed.
+These results do not qualify later combined commits: run exact-candidate core,
+relevant regression, native navigation and packaged startup checks after integration.
