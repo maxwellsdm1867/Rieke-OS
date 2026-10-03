@@ -1,2 +1,22 @@
 .tree-design-controls{display:flex;align-items:center;flex-shrink:0;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface)}
 .tree-design-controls button{display:inline-flex;align-items:center;gap:7px;font-size:12px;white-space:nowrap}
+.tree-design-controls{justify-content:space-between}
+.tree-design-content{display:grid;grid-template-rows:minmax(0,1fr);min-width:0;min-height:0;overflow:hidden}
+.tree-design-content.with-recording{grid-template-rows:minmax(180px,.8fr) minmax(300px,1.2fr)}
+.tree-recording-preview{display:flex;flex-direction:column;min-width:0;min-height:0;border-top:1px solid var(--border);background:var(--surface)}
+.tree-recording-preview[hidden]{display:none}
+.tree-recording-preview>header{display:flex;align-items:center;gap:12px;min-height:35px;padding:4px 12px;border-bottom:1px solid var(--border);font-size:11px;color:var(--ink-muted);flex-shrink:0}
+.tree-recording-preview>header strong{display:flex;align-items:center;gap:6px;color:var(--ink-secondary)}
+.tree-recording-preview>header button{margin-left:auto}
+.tree-recording-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,290px);min-width:0;min-height:0;flex:1}
+.tree-recording-body>.tree-preview-detail{padding:12px;min-width:0;min-height:0;overflow:auto}
+.tree-preview-tags{min-width:0;min-height:0;overflow:auto;padding:12px;border-left:1px solid var(--border)}
+.tree-preview-tags .annotation-author{max-width:150px}
+.tree-preview-detail .tv-plot{height:220px}
+.tree-preview-detail .epoch-heading{margin-bottom:8px}
+.tree-preview-detail .epoch-heading h2{font-size:15px}
+.tree-preview-detail .epoch-heading p{font-size:11px}
+.tree-preview-identity{display:flex;align-items:baseline;flex-wrap:wrap;gap:5px 12px;margin-bottom:9px;font-size:12px;color:var(--ink-secondary)}
+.tree-preview-identity span{color:var(--ink-muted);font-size:11px}
+.tree-design-content{container-type:inline-size}
+@container(max-width:650px){.tree-recording-body{display:flex;flex-direction:column;overflow:auto}.tree-recording-body>.tree-preview-detail,.tree-preview-tags{overflow:visible;flex-shrink:0}.tree-preview-tags{border-left:0;border-top:1px solid var(--border)}}

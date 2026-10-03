@@ -130,6 +130,6 @@ export default function ColumnTree(props){
       {state.loading&&!state.columns.length?<div className="tp-prompt" role="status">{showLoading?'Loading tree…':''}</div>:last?.kind!=='epochs'&&!state.error&&<div className="tp-prompt"><GitBranch size={24}/><strong>Choose a group</strong><p>Its next split opens alongside this column.</p></div>}
     </div>
     {showLoading&&!!state.columns.length&&<div className="tp-loading-notice" role="status">Updating tree…</div>}
-    <footer className="tp-footer"><span>Tree splits preserve the full selection.</span><span>Scroll left or right between levels. Select an epoch here, then use Back to epochs to inspect it.</span></footer>
+    <footer className="tp-footer"><span>Tree splits preserve the full selection.</span><span>Scroll between levels. Select an epoch to preview its recording and tags.</span></footer>
   </section>;
 }

@@ -1,5 +1,6 @@
 import ScientificContext from './ScientificContext.jsx';
-import {ArrowLeft} from 'lucide-react';
+import {useState} from 'react';
+import {Activity,ArrowLeft,X} from 'lucide-react';
 import './EpochViewer.css';
 import {EpochBrowserToolbar,EpochNavigation} from './EpochBrowserChrome.jsx';
 import EpochBrowserLayout from './EpochBrowserLayout.jsx';
@@ -15,22 +16,25 @@ import SelectionOverview from './SelectionOverview.jsx';
 import ProtocolViewFilter from './ProtocolViewFilter.jsx';
 import {clearTagFilters,tagFilterLabel} from '../protocolViewFilter.js';
 import {Empty} from './Common.jsx';
+import {datedCellLabel} from '../recordingIdentity.js';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
 export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,readContext=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
-  const detail=<StableContent {...resource} data={epoch}>{targets.length?<SelectionOverview count={targets.length}/>:epoch?<>
-    <EpochDetailHeading epoch={epoch} disabled={detailDisabled} onQC={onQC}/>
-    {navigation&&<EpochNavigation {...navigation}/>}
+  const [previewOpen,setPreviewOpen]=useState(true);
+  const showPreview=designMode&&previewOpen&&!!(epoch||columnTree?.selected);
+  const detail=<StableContent {...resource} data={epoch}>{!designMode&&targets.length?<SelectionOverview count={targets.length}/>:epoch?<>
+    {designMode?<div className="tree-preview-identity"><strong>{datedCellLabel(epoch)}</strong><span>Epoch {epoch.epoch_number??'—'} · {epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'Time not recorded'}</span></div>:<EpochDetailHeading epoch={epoch} disabled={detailDisabled} onQC={onQC}/>}
+    {navigation&&!designMode&&<EpochNavigation {...navigation}/>}
     <Trace epoch={epoch} revision={traceRevision} readContext={readContext}/>
-    <div className="curation-bar">{inclusion&&<EpochAnalysisInclusion epoch={epoch} {...inclusion}/>} {!layout.metadataOpen&&(!layout.treeOpen||treePane?.treeMode)&&tags}</div>
+    <div className="curation-bar">{inclusion&&<EpochAnalysisInclusion epoch={epoch} {...inclusion}/>} {!designMode&&!layout.metadataOpen&&(!layout.treeOpen||treePane?.treeMode)&&tags}</div>
     {detailExtras}
   </>:<Empty title="Choose an epoch">Select an epoch from the tree to inspect its response and metadata.</Empty>}</StableContent>;
   return <div className={`inspector ${className}`} tabIndex={0} aria-label={ariaLabel} onKeyDown={onKeyDown}>
     {toolbar&&<EpochBrowserToolbar {...toolbar} filterControl={hideFilterControl?null:onViewFilters?<ProtocolViewFilter filters={viewFilters} onChange={onViewFilters} revision={filterRevision} disabled={filterDisabled}/>:toolbar.filterControl} treeControlsInPane>{toolbarChildren}{!designMode&&onViewFilters&&tagFilterLabel(viewFilters)&&<span className="inspection-filter-summary">{tagFilterLabel(viewFilters)}<button disabled={filterDisabled} onClick={()=>onViewFilters(Object.fromEntries(Object.entries(clearTagFilters(viewFilters)).filter(([key])=>key!=='metadata_predicate')))}>Clear filter</button></span>}</EpochBrowserToolbar>}
     {before}
     <EpochBrowserLayout {...layout} editing={designMode}
-      tree={designMode?<><nav className="tree-design-controls" aria-label="Tree editing"><button onClick={toolbar?.onBrowse}><ArrowLeft size={15}/> Back to epochs</button></nav><TreeBuilder {...builder}/></>:<EpochTreePane {...treePane} childrenInTree={false}>{!layout.metadataOpen&&<StableContent {...resource} className="stable-tag-dock" data={epoch}>{tags}</StableContent>}</EpochTreePane>}
-      detail={designMode?<PagedTree {...columnTree} presentation="columns" design/>:detail}
+      tree={designMode?<><nav className="tree-design-controls" aria-label="Tree editing"><button onClick={toolbar?.onBrowse}><ArrowLeft size={15}/> Back to epochs</button>{!previewOpen&&columnTree?.selected&&<button aria-label="Show raw recording preview" onClick={()=>setPreviewOpen(true)}><Activity size={15}/></button>}</nav><TreeBuilder {...builder}/>{treePane?.selectionTools}</>:<EpochTreePane {...treePane} childrenInTree={false}>{!layout.metadataOpen&&<StableContent {...resource} className="stable-tag-dock" data={epoch}>{tags}</StableContent>}</EpochTreePane>}
+      detail={designMode?<div className={`tree-design-content ${showPreview?'with-recording':''}`}><PagedTree {...columnTree} onSelectEpoch={(...args)=>{setPreviewOpen(true);columnTree?.onSelectEpoch?.(...args);}} presentation="columns" design/>{designMode&&!!(epoch||columnTree?.selected)&&<section hidden={!previewOpen} className="tree-recording-preview" aria-label="Raw recording preview"><header><strong><Activity size={14}/> Raw recording</strong><span>Selected epoch · shared tags</span><button className="icon-button" aria-label="Close raw recording preview" onClick={()=>setPreviewOpen(false)}><X size={15}/></button></header><div className="tree-recording-body"><div className="inspection-detail tree-preview-detail">{detail}</div><aside className="tree-preview-tags"><StableContent {...resource} data={epoch}>{tags}</StableContent></aside></div></section>}</div>:detail}
       metadata={metadata&&<StableContent {...resource} className="stable-metadata" data={epoch}><MetadataPanel {...metadata} epoch={epoch} tags={tags} context={epoch&&<ScientificContext epoch={epoch}/>}/></StableContent>}/>
   </div>;
 }

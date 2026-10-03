@@ -29,7 +29,11 @@ test('visible draft actions save exact selection separately from review, exclusi
   assert.deepEqual(calls[1].decisions,[{epoch_uuid:'a',reviewed:true}]);assert.equal(merge().props.disabled,false);
   await act(async()=>inspector().props.draftSelection.onSave(['a'],false));
   assert.deepEqual(calls[2].decisions,[{epoch_uuid:'a',selected:false}]);assert.equal(inspector().props.draftSelection.savedCount,1);assert.equal(context.draft.decisions[0].reviewed,true);assert.equal(context.draft.decisions[0].excluded,false);
-  assert.equal(calls.length,3);await act(async()=>renderer.unmount());
+  await act(async()=>inspector().props.draftSelection.onReplace(['a']));
+  assert.deepEqual(calls[3].decisions,[{epoch_uuid:'a',selected:true},{epoch_uuid:'b',selected:false}]);
+  assert.equal(context.draft.decisions.find(value=>value.epoch_uuid==='a').reviewed,true);
+  assert.equal(context.draft.decisions.find(value=>value.epoch_uuid==='b').reviewed,false,'replacing a filtered selection must not review its targets');
+  assert.equal(calls.length,4);await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -448,7 +452,7 @@ test('compact action bar keeps authoritative positive, zero and unavailable coun
   const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
   const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},scopeKind:'cumulative_pending',capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true},onDefer:()=>left++};
   const mount=async counts=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,pendingCounts:counts}));});};
-  const metrics=()=>renderer.root.findByProps({'aria-label':'Distinct pending incoming counts'}).findAllByType('strong').map(label);
+  const metrics=()=>renderer.root.findByProps({'aria-label':'Distinct pending incoming counts'}).findAll(node=>node.type==='strong'&&node.parent.type==='span'&&!node.parent.props.className).map(label);
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
   await mount({pending_cell_count:2,pending_epoch_count:30});assert.deepEqual(metrics(),['+2','+30']);
   await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:null,pending_epoch_count:30}})));assert.deepEqual(metrics(),['Unavailable','+30']);

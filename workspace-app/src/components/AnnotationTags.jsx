@@ -8,18 +8,23 @@ import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from '../resourceCache.js';
 
-export default function AnnotationTags({epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget,groupMutation}){
+export default function AnnotationTags({composer=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget,groupMutation}){
   const {profileUuid,profileName,openProfile,loading:profileLoading,error:profileError}=useAnnotationProfile();
   const [refreshAfter,setRefreshAfter]=useState(null);
   const [tabLocked,setTabLocked]=useState(()=>{try{return localStorage.getItem('workspace.tags.tabNavigation')!=='false';}catch{return true;}});
   const handledEpochFocus=useRef(0),restoreInput=useRef(false);
   function toggleTabLock(checked){setTabLocked(checked);try{localStorage.setItem('workspace.tags.tabNavigation',String(checked));}catch{}input.current?.focus();}
-  const [manualScope,setScope]=useState('epoch'),[value,setValue]=useState(''),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
-  useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
+  const [manualScope,setScope]=useState('epoch'),[localValue,setLocalValue]=useState(''),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   const scope=targetScope||manualScope;
   const selectedCount=groupMutation?.count??selectedEpochs.length;
   const composerDirty=useRef(false);
   const input=useRef(null),handledFocus=useRef(0),listId=useId(),identity=epoch?.epoch_uuid,currentIdentity=useRef(identity);currentIdentity.current=identity;
+  // Changing temporary highlights must retain unfinished text. The mutation
+  // scope below still fences the exact target IDs before any durable write.
+  const draftKey=JSON.stringify([identity,epoch?.cell_uuid,scope]);
+  const value=composer?(composer.values[draftKey]||''):localValue;
+  function setValue(next){if(composer)composer.onChange(draftKey,next);else setLocalValue(next);}
+  useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
   const refreshPending=refreshAfter?.identity===identity&&refreshAfter.annotations===epoch?.annotations;
   const remoteNeeded=!epoch?.annotations||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending);
   const awaitingEpoch=refreshWithEpoch&&!refreshAfter?.force&&refreshPending;
@@ -37,7 +42,7 @@ export default function AnnotationTags({epoch,revision,disabled=false,onChange,o
   const groups=annotationGroups(annotationData),items=suggestions.data?.tags||[];
   const editingLocked=disabled||busy||awaitingEpoch||(remoteNeeded&&annotations.loading)||!!annotations.error||!annotationData;
   const locked=editingLocked||profileLoading||!profileUuid;
-  useEffect(()=>{composerDirty.current=false;setValue('');setQuery('');setActive(-1);setMessage('');setError('');setOpen(false);setScope('epoch');setRefreshAfter(null);},[identity]);
+  useEffect(()=>{composerDirty.current=false;if(!composer)setValue('');setQuery(composer?value.trim():'');setActive(-1);setMessage('');setError('');setOpen(false);setScope('epoch');setRefreshAfter(null);},[identity]);
   // One request debounce; clear the active choice immediately when the text changes.
   useEffect(()=>{if(focusRequest&&focusRequest!==handledFocus.current&&!editingLocked&&!profileLoading){setScope(selectedEpochs.length?'selected':'epoch');if(!profileUuid){openProfile?.();return;}handledFocus.current=focusRequest;input.current?.focus();setOpen(true);}},[focusRequest,editingLocked,profileLoading,profileUuid,selectedEpochs.length]);
   useEffect(()=>{

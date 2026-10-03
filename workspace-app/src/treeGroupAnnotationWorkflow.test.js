@@ -4,6 +4,20 @@ import {createWorkflowHarness} from './test-support/workflowHarness.js';
 
 const editor=h=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag 2 selected epochs');
 const props={epoch:{epoch_uuid:'epoch-0',cell_uuid:'cell-0',annotations:{cell_tags:[],epoch_tags:[],revisions:{cell:{},epoch:{}}}},selectedEpochs:['epoch-0','epoch-1'],targetScope:'selected',revision:0};
+test('viewer-owned unsaved tag drafts survive remount and remain isolated by exact target identity',async()=>{
+ const h=await createWorkflowHarness(),values={};
+ try{
+  const Tags=await h.component('AnnotationTags'),composer={values,onChange:(key,value)=>{if(value)values[key]=value;else delete values[key];}};
+  const a={...props,composer,targetScope:'epoch',selectedEpochs:[]};
+  const input=()=>h.root.findAllByType('input').find(row=>row.props['aria-label']==='Tag this epoch');
+  await h.mount(Tags,a);await h.waitFor(()=>input()&&!input().props.disabled);
+  await h.act(()=>input().props.onChange({target:{value:'unfinished A'}}));await h.render(Tags,a);
+  assert.equal(input().props.value,'unfinished A');await h.render(()=>null,{});await h.render(Tags,a);assert.equal(input().props.value,'unfinished A');
+  const b={...a,epoch:{...props.epoch,epoch_uuid:'epoch-2'}};await h.render(Tags,b);assert.equal(input().props.value,'');
+  await h.act(()=>input().props.onChange({target:{value:'unfinished B'}}));await h.render(Tags,b);assert.equal(input().props.value,'unfinished B');
+  await h.render(Tags,a);assert.equal(input().props.value,'unfinished A');assert.equal(h.fixture.requests.filter(row=>row.path==='/annotations').length,0);
+ }finally{await h.close();}
+});
 async function save(h){
   await h.waitFor(()=>editor(h)&&!editor(h).props.disabled);
   await h.act(()=>editor(h).props.onChange({target:{value:'group tag'}}));

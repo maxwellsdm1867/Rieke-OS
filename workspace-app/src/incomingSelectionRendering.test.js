@@ -26,6 +26,17 @@ test('cell addition survives its first trace loading but rejects a changed cell 
   await act(async()=>{void button('Select all').props.onClick();});
   await act(async()=>renderer.update(React.createElement(Tools,{...browsing,epoch:{epoch_uuid:'a1'}})));
   await act(async()=>release());assert.deepEqual(selected,[[],['a1','a2']],'loading metadata for the same focused UUID must not cancel whole-view selection');assert.equal(saved.length,1);
+  const replaced=[],filtered={...browsing,filtered:true,onReplace:ids=>{replaced.push(ids);return true;}};
+  await act(async()=>renderer.update(React.createElement(Tools,filtered)));
+  await act(async()=>{void button('Use only this view in draft').props.onClick();});
+  await act(async()=>renderer.update(React.createElement(Tools,{...filtered,disabled:true})));
+  await act(async()=>release());assert.deepEqual(replaced,[],'an invalidated receipt must not replace saved decisions');
+  assert.match(label(renderer.root),/Incoming view changed/,'cancellation must offer a visible retry instead of silently doing nothing');
+  await act(async()=>renderer.update(React.createElement(Tools,filtered)));
+  await act(async()=>{void button('Use only this view in draft').props.onClick();});
+  await act(async()=>release());assert.deepEqual(replaced,[['a1','a2']]);
+  await act(async()=>renderer.update(React.createElement(Tools,{...filtered,cells:[],freshCells:[]})));
+  assert.equal(button('Use only this view in draft').props.disabled,true);assert.equal(button('Select all').props.disabled,true);
   await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
 });
