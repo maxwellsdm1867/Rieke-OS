@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "release_version": "0.1.6",
-  "record_type": "source_checkpoint",
+  "record_type": "source_checkpoint_and_local_packaged_preview",
   "tested_source_commit": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
   "prior_packaged_source_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
   "checkpoint_repository": "https://github.com/maxwellsdm1867/Rieke-OS",
@@ -63,7 +63,9 @@
     "tracked_file_mismatches": 0,
     "recorded_acceptance_identity_and_count_consistency": "passed",
     "tests_rerun": false,
-    "runtime_started": false
+    "runtime_started": false,
+    "packaged_receipt_consistency": "19 passing check records; exact accepted set and durable receipt equality; matching source/version and built/packaged asset inventories",
+    "package_rebuilt_or_launched": false
   },
   "publication_scan": {
     "baseline_published_commit": "6dc6e888e992ea931c8972ead94036bea7091736",
@@ -80,13 +82,107 @@
     "final-build.txt": "c630dd2c2fbe1c0c6efbd8fdc89c6d0d87636974a63cd3cf852fd8fddb96c497",
     "native-final-proof.json": "e0a587472318ce83424109f4bf946533c7bfa9e04b0875823cae275cf1a78701",
     "native-acceptance-proof.json": "653713afced747845b63c6c0868ac8ee8d29454982a36ef28e7434cd3a8adf50",
-    "final-preservation-audit.json": "22a7b682bbd970233bda5b0533ae827d50e5b671cd45b9fb9c5b4201d986bbbf"
+    "final-preservation-audit.json": "22a7b682bbd970233bda5b0533ae827d50e5b671cd45b9fb9c5b4201d986bbbf",
+    "PACKAGING-READY-3d9f15f.json": "ebd9cec579fb30861fc412a98f6bb33de091f59d7151ebdc66e0086c1208704f",
+    "source-bundle-proof-3d9f15f.json": "5c1cd3042d42d3eb5ac34b7fde249c7146c967bc1bdb7bc3cbb323faed99f98e",
+    "packaged-smoke-receipt-3d9f15f.json": "1441114cf7a7b194a9afbdcb956f68ed1419e69b9c2a384050709bfed1ac3b2d",
+    "selected-acceptance-proof-3d9f15f.json": "e35d3a3dad350c7d14d53983642ed91a973f1e5b329135706d5b126e8060b031",
+    "edit-tree-tagged-export-proof-3d9f15f.json": "06388707223f18d3f2efac3e321b07eddea672e851f9c8a1625cd00375f62914",
+    "preservation-qualified-3d9f15f.json": "e7eb409e0cb082d0cfd5af656c07c66caa11a03ef0b8992348797e3c34656de0",
+    "seed-preservation-qualified-3d9f15f.json": "62401db4a0da122e07259275fb1a9e04e31380955117062dfd4c0fc25104c899"
   },
   "boundaries": [
     "No release tag, GitHub Release or binary upload.",
-    "Final selected-only package smoke remains with packaging owner.",
+    "Local unsigned-testing preview only; verified ad-hoc seal is not Developer ID signing or notarization.",
+    "Package identity hashes identify app.asar and runtime manifest, not a whole-bundle archive.",
+    "Packaged metadata-summary HTTP 409 recovered after read-only reopen; harness corrections and failed strict-zero-HTTP assertion retained.",
+    "Preservation excludes one new empty seed ownership lock and one changed installed updater-status receipt of unobserved origin.",
     "No new backend, schema or dependency changes in final UI delta.",
-    "Native evidence was reviewed from owner receipts, not rerun by publication reviewer.",
+    "Native and packaged evidence was reviewed from owner receipts, not rerun by publication reviewer.",
     "No cache implementation in checkpoint or documentation follow-up."
-  ]
+  ],
+  "packaged_preview": {
+    "evidence_basis": "packaging-owner receipts; independently checked for consistency, not rerun",
+    "status": "ready_for_parent_handoff",
+    "source_commit": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
+    "source_clean": true,
+    "application_version": "0.1.6",
+    "platform": "macOS arm64",
+    "signing": "unsigned-testing with verified ad-hoc seal",
+    "seal_verified": true,
+    "artifact_identity": {
+      "asar_sha256": "c30d9a38c4baccb7731666bbb0c5e2ac42aea6038ec9501736bcf2cb858e6186",
+      "runtime_manifest_sha256": "eab9b5283ea471ccd0dd33f1e6b58aeed31bfdcca80e880c54606680b44f9f10"
+    },
+    "provenance": {
+      "python_modules": 86,
+      "renderer_assets": 14,
+      "frontend_source_files": 402,
+      "renderer_source_inventory_sha256": "5fa1717af11f33f0e57a65700364f945957b07408b2264a75bbe96eabc1ca144",
+      "renderer_asset_inventory_sha256": "b7e27aaa9c9bcbe3f286410f4fb0f0ade648f419b891bc6e49f2936dfb228c27",
+      "built_and_packaged_asset_inventories_match": true,
+      "runtime_and_dependency_pins_unchanged": true,
+      "source_checkout_or_vite_required": false
+    },
+    "checks_passed": 19,
+    "fresh_copy_acceptance": {
+      "selected_epochs": 2,
+      "main_epochs_before": 520,
+      "main_epochs_after": 522,
+      "pending_epochs_before": 20,
+      "pending_epochs_after": 18,
+      "binding_versions": [
+        6,
+        7
+      ],
+      "accept_requests": 1,
+      "review_preview_confirmation_separate": true,
+      "same_durable_receipt_on_reopen_without_acceptance_replay": true
+    },
+    "tagged_sqlite_export": {
+      "integrity": "ok",
+      "foreign_keys": "ok",
+      "exact_selected_epochs": 1,
+      "cells": 1,
+      "streams": 2,
+      "frozen_metadata_and_source_references_verified": true,
+      "tag_and_export_persist_after_reopen": true,
+      "waveform_storage": "lazy H5 references; no sampled waveform rows"
+    },
+    "error_qualification": {
+      "renderer_errors": 0,
+      "unexpected_http_errors": 0,
+      "metadata_summary_generation_guard_http_status": 409,
+      "recovered_after_read_only_reopen": true,
+      "source_fix_required": false,
+      "harness_selector_or_timing_corrections": 3,
+      "strict_zero_http_assertion_failure_retained": true,
+      "raw_errors_retained_in_private_evidence": true
+    },
+    "preservation": {
+      "seed_baseline_files_unchanged": 389,
+      "new_zero_byte_ownership_lock_files": 1,
+      "seed_launched": false,
+      "captured_global_original_files_compared": 40051,
+      "captured_files_unchanged": 40050,
+      "captured_files_missing": 0,
+      "installed_app_and_captured_scientific_originals_unchanged": true,
+      "sole_changed_file_class": "installed 0.1.5 updater-status receipt",
+      "changed_receipt_writer_observed": false,
+      "preview_updater_coordinator_enabled": false,
+      "global_files_restored_or_edited_by_qualification_owner": false,
+      "all_files_byte_identical": false
+    },
+    "owned_fixture_services_stopped": true,
+    "owned_ports_released": true,
+    "remaining_blockers_reported_by_owner": [],
+    "not_performed": [
+      "Developer ID signing",
+      "notarization",
+      "clean-machine validation",
+      "public binary upload",
+      "installed-app replacement",
+      "update activation"
+    ]
+  }
 }
