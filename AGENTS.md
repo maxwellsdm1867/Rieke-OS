@@ -19,6 +19,10 @@ Before changing release tooling or claiming a performance improvement, read
 - Use only owned disposable fixtures. Never point benchmarks at user projects,
   installed apps, live API ports or scientific databases. Coordinate load when
   another benchmark is running; stress runs are separate and opt-in.
+- Before desktop packaging, read [the macOS compatibility matrix](docs/dev/macos-compatibility.md).
+  Preserve the hash-pinned desktop wheel policy and run native imports after
+  relocation. Audit the entire assembled bundle; a wheel tag or core benchmark
+  pass does not establish macOS 14 runtime support or Intel support.
 - All metadata must remain accessible regardless acceleration tier. Current
   eligible-field checks do not prove universal field access. Adaptive indexing
   and generalized import/export changes are design only; see the linked spec.

@@ -37,6 +37,37 @@ def digest(path):
         return hashlib.file_digest(handle, 'sha256').hexdigest()
 
 
+def install_runtime_dependencies(interpreter, env):
+    # A direct, hash-locked requirement prevents newer build hosts preferring
+    # the same-version macOS 14 SciPy wheel with invalid PROPACK Mach-O sections.
+    run(['uv', 'pip', 'install', '--python', interpreter, '--system', '--require-hashes',
+         '-r', ROOT / 'python/workspace-runtime.lock',
+         '-r', ROOT / 'desktop/requirements.lock',
+         '-r', ROOT / 'desktop/scientific-wheels.lock'], env=env)
+
+
+def scientific_preflight(interpreter):
+    """Exercise actual relocated native imports, without user state or services."""
+    script = '''import sys,json,importlib.metadata as metadata
+from pathlib import Path
+import numpy,scipy
+assert sys.version_info[:3] == (3,11,13), 'Unexpected desktop Python version'
+assert numpy.__version__ == '2.2.6', 'Unexpected desktop NumPy version'
+assert scipy.__version__ == '1.15.0', 'Unexpected desktop SciPy version'
+wheel = metadata.distribution('scipy').read_text('WHEEL')
+tag = 'cp311-cp311-macosx_12_0_arm64'
+assert ('Tag: ' + tag) in wheel.splitlines(), 'Desktop SciPy wheel policy mismatch'
+runtime = Path(sys.executable).resolve().parents[2]
+for module in (numpy,scipy):
+    assert Path(module.__file__).resolve().is_relative_to(runtime), 'Scientific import escapes runtime'
+import scipy.signal,scipy.stats,scipy.sparse.linalg,scipy.ndimage,scipy.io
+print(json.dumps({'python':'.'.join(map(str,sys.version_info[:3])),
+ 'numpy':numpy.__version__,'scipy':scipy.__version__,'scipy_wheel_tag':tag,
+ 'native_imports':'passed','modules':['scipy.signal','scipy.stats','scipy.sparse.linalg','scipy.ndimage','scipy.io']}))'''
+    return json.loads(subprocess.check_output([interpreter, '-I', '-B', '-c', script],
+                                              text=True, timeout=60))
+
+
 def patch_parser(checkout):
     """Patch only config ownership, leaving parser algorithms byte-identical."""
     path = checkout / 'src/retinanalysis/config/settings.py'
@@ -322,8 +353,7 @@ def build(output, skip_frontend=False):
                         raise ValueError('Standalone Python archive link escape')
             tar.extractall(output)
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1')
-    run(['uv', 'pip', 'install', '--python', interpreter, '--system', '--require-hashes',
-         '-r', ROOT / 'python/workspace-runtime.lock', '-r', ROOT / 'desktop/requirements.lock'], env=env)
+    install_runtime_dependencies(interpreter, env)
     with tempfile.TemporaryDirectory(prefix='parser-wheel-', dir=cache) as temporary:
         staged = Path(temporary) / 'parser'
         stage_tracked_parser(checkout, staged)
@@ -376,6 +406,7 @@ def build(output, skip_frontend=False):
     frontend = ROOT / 'workspace-app/dist' if skip_frontend else build_frontend()
     copy_application(ROOT, output, frontend)
     relocated = relocate_native(output)
+    scientific = scientific_preflight(interpreter)
     dependency_inventory(output)
     refresh_native_license_inventory(output)
     exclusions = exclude_optional_features(output)
@@ -384,7 +415,9 @@ def build(output, skip_frontend=False):
                'parser_patch': patch, 'parser_wheel_sha256': digest(parser_wheel),
                'vision_wheel_sha256': digest(vision_wheel),
                'python_lock_sha256': digest(ROOT / 'python/workspace-runtime.lock'),
-               'desktop_requirements_sha256': digest(ROOT / 'desktop/requirements.lock')}
+               'desktop_requirements_sha256': digest(ROOT / 'desktop/requirements.lock'),
+               'scientific_wheels_lock_sha256': digest(ROOT / 'desktop/scientific-wheels.lock'),
+               'scientific_runtime': scientific}
     receipt['relocated_native_files'] = relocated
     receipt['excluded_optional_features'] = exclusions
     (output / 'build-receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
@@ -398,9 +431,15 @@ def main():
     parser.add_argument('--refresh-application', action='store_true')
     args = parser.parse_args()
     if args.refresh_application:
+        receipt_path = args.output.resolve() / 'build-receipt.json'
+        receipt = json.loads(receipt_path.read_text())
+        if receipt.get('scientific_wheels_lock_sha256') != digest(ROOT / 'desktop/scientific-wheels.lock'):
+            raise ValueError('Runtime wheel policy differs; rebuild the pinned runtime before refreshing')
+        receipt['scientific_runtime'] = scientific_preflight(args.output.resolve() / 'python/bin/python3.11')
         frontend = ROOT / 'workspace-app/dist' if args.skip_frontend else build_frontend()
         copy_application(ROOT, args.output.resolve(), frontend)
         refresh_native_license_inventory(args.output.resolve())
+        receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')
         run([sys.executable, ROOT / 'tools/desktop_runtime_manifest.py', '--runtime', args.output.resolve(), '--write'])
     else:
         build(args.output.resolve(), args.skip_frontend)

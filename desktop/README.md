@@ -6,6 +6,12 @@ closure currently requires a macOS 14.0 floor; support on that minimum still
 needs real-device qualification. Other platforms are not advertised. The optional
 debugpy PID attachment helper is excluded with provenance in the runtime receipt.
 
+Read the [macOS compatibility matrix](../docs/dev/macos-compatibility.md) before
+packaging. `scientific-wheels.lock` selects an official hash-pinned SciPy 1.15.0
+wheel without changing scientific dependency versions. A post-relocation native
+import preflight and whole-bundle audit are required; neither substitutes for
+scientific workflow tests or runtime qualification on macOS 14.
+
 Native signing applies the existing `allow-jit` entitlement only to the bundled
 Python executable. The signed scientific and JIT workflow remains unqualified
 without Developer ID credentials and independent final-artifact evidence.

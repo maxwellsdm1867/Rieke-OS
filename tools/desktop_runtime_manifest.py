@@ -95,6 +95,8 @@ def make_manifest(runtime, root=ROOT):
             'mysql_version': mysql['mysql_version'], 'workspace_formats': release['workspace_formats'],
             'database_compatibility': release['database_compatibility'],
             'excluded_optional_features': receipt.get('excluded_optional_features', []),
+            'scientific_wheels_lock_sha256': receipt.get('scientific_wheels_lock_sha256'),
+            'scientific_runtime': receipt.get('scientific_runtime'),
             'application_scope': application_scope,
             'resources': inventory(runtime)}
 
