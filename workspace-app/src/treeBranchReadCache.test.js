@@ -179,8 +179,8 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
 });
 
 test('one retained tree keeps mounted rows while hidden, aborts reads, fences actions, and freshly validates return',async()=>{
- const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0,selected=0,hold=null,lastSignal;const statuses=[];
- const key='__retainedTreeFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'owner-A'},api:async(_,{body:request,signal})=>{lastSignal=signal;calls++;if(hold)return hold.promise;return request.anchor_uuid?leaf:ancestor(request);}};
+ const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0,selected=0,hold=null,lastSignal;const requests=[];const statuses=[];
+ const key='__retainedTreeFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'owner-A'},api:async(_,{body:request,signal})=>{lastSignal=signal;calls++;requests.push(request);if(hold)return hold.promise;return request.anchor_uuid||request.path.length===2?{...leaf,offset:request.offset,has_more:!request.offset,total:120,epochs:[{epoch_uuid:request.anchor_uuid||'epoch-A'}]}:ancestor(request);}};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'retained-fixture',enforce:'pre',resolveId(id,importer){
    if(id==='../treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
@@ -190,7 +190,10 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
    if(id==='\0retained-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
  }]});const dom=new JSDOM('<div id="root"></div>',{url:'http://localhost'}),priorWindow=globalThis.window,priorDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;const container=document.getElementById('root');const view=createRoot(container);
- const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
+ const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;const frames=new Map();let frameId=0;globalThis.requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
+ const flushFrames=async()=>domAct(async()=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn());});
+ Object.defineProperty(dom.window.HTMLElement.prototype,'clientHeight',{get:()=>50,configurable:true});
+ dom.window.HTMLElement.prototype.getBoundingClientRect=function(){const pane=this.closest('.tp-column-content');const top=this.matches('.tp-epoch,.tp-branch')?7-(pane?.scrollTop||0):0;return {top,bottom:top+20,left:0,right:100,width:100,height:20};};
  try{
   const {default:Host}=await server.ssrLoadModule('/src/components/RetainedTreePresentation.jsx');
   const {default:Layout}=await server.ssrLoadModule('/src/components/EpochBrowserLayout.jsx');
@@ -198,7 +201,8 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   const committedLabels=[];function LabelProbe({active}){React.useLayoutEffect(()=>{if(active)committedLabels.push(container.querySelector('[data-retained-tree-status]')?.textContent||'');});return null;}
   const render=async(active,changes={})=>domAct(async()=>{view.render(React.createElement(Layout,{retainDetail:true,editing:active,sizes:{},treeOpen:false,metadataOpen:false,detail:React.createElement(React.Fragment,null,React.createElement(Host,{active,tree:{...tree,...changes}}),React.createElement(LabelProbe,{active}))}));await new Promise(resolve=>setImmediate(resolve));});
   await render(true);for(let retry=0;retry<30&&!container.querySelector('[data-epoch-uuid="epoch-A"]');retry++)await domAct(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
-  const row=container.querySelector('[data-epoch-uuid="epoch-A"]'),count=calls;assert.ok(row,container.innerHTML);
+  const row=container.querySelector('[data-epoch-uuid="epoch-A"]'),count=calls;assert.ok(row,container.innerHTML);await flushFrames();
+  await domAct(async()=>{[...container.querySelectorAll('.tp-column-content')].forEach((pane,i)=>{pane.scrollTop=[40,60,120][i];pane.dispatchEvent(new dom.window.Event('scroll',{bubbles:true}));});});
   await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(calls,count);
   assert.equal(container.querySelector('.tree-view-workspace').style.display,'none','Activity hides retained DOM');
   await domAct(async()=>row.click());assert.equal(selected,0);
@@ -206,7 +210,21 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   assert.match(container.textContent,/previous view/);await domAct(async()=>row.click());assert.equal(selected,0);
   const pendingSignal=lastSignal;await render(false);assert.equal(pendingSignal.aborted,true);const statusCount=statuses.length;
   await domAct(async()=>{hold.resolve(leaf);hold=null;await new Promise(resolve=>setImmediate(resolve));});assert.equal(statuses.length,statusCount,'hidden late success cannot publish');
-  await render(true);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]').disabled,false);
+  await render(true);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]').disabled,false);await flushFrames();
+  assert.deepEqual([...container.querySelectorAll('.tp-column-content')].map(p=>p.scrollTop),[40,60,120],'exact return preserves manual offsets after canceled work and selected-row RAF');
+  // A newer manual scroll during revalidation takes precedence over its snapshot.
+  await render(false);hold=deferred();await render(true);
+  await domAct(async()=>{const pane=container.querySelectorAll('.tp-column-content')[2];pane.scrollTop=180;pane.dispatchEvent(new dom.window.Event('scroll',{bubbles:true}));});
+  await domAct(async()=>{hold.resolve({...leaf,has_more:true,total:120});hold=null;await new Promise(resolve=>setImmediate(resolve));});await flushFrames();
+  assert.equal(container.querySelectorAll('.tp-column-content')[2].scrollTop,180,'pending refresh must not override newer manual scroll');
+  // Explicit pagination must reset; it is not a return restoration.
+  await domAct(async()=>container.querySelector('[aria-label="Next page in column 3"]').click());await flushFrames();
+  assert.equal(requests.at(-1).offset,60);assert.equal(container.querySelectorAll('.tp-column-content')[2].scrollTop,0);
+  await render(false);await render(true,{selected:'epoch-B'});await flushFrames();
+  assert.ok(container.querySelector('[data-epoch-uuid="epoch-B"]'));assert.equal(container.querySelectorAll('.tp-column-content')[2].scrollTop,0,'new focus must not inherit prior offsets');
+  await render(false,{selected:'epoch-B'});await render(true,{selected:'epoch-B',filters:{cell_type:'new'}});await flushFrames();
+  assert.equal(container.querySelectorAll('.tp-column-content')[2].scrollTop,0,'changed scope must not inherit prior offsets');
+
   await render(false);globalThis[key].owner={...globalThis[key].owner,identity:'owner-B'};await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
   await render(true);await render(false,{filters:{cell_type:'other'}});assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
  }finally{await domAct(async()=>view.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;dom.window.close();globalThis.window=priorWindow;globalThis.document=priorDocument;}

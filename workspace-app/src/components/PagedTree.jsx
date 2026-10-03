@@ -1,5 +1,5 @@
-import {lazy,Suspense,useCallback,useRef,useState,useLayoutEffect} from 'react';
-const ColumnTree=lazy(()=>import('./ColumnTree.jsx'));
+import {useCallback,useRef,useState,useLayoutEffect} from 'react';
+import ColumnTree from './ColumnTree.jsx';
 import {api} from '../api.js';
 import {treePageRequest} from '../pagedTreeRequest.js';
 import {mergeEpochSelection,toggleEpochSelection} from '../epochSelection.js';
@@ -79,5 +79,5 @@ export default function PagedTree(props){
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
   const selectionProps={onSelectEpoch:selectEpoch,onSelectBranch:props.design?undefined:selectCell};
-  return <div className="tree-view-workspace">{selectionError&&<p role="alert">{selectionError}</p>}{!props.presentation&&<div className="tree-view-switch" role="group" aria-label="Tree presentation"><button aria-pressed={view==='tree'} className={view==='tree'?'active':''} onClick={()=>changeView('tree')}>Expandable tree</button><button aria-pressed={view==='columns'} className={view==='columns'?'active':''} onClick={()=>changeView('columns')}>Columns</button></div>}{view==='tree'?<HierarchyTree {...props} {...selectionProps} initialNavigation={remembered.current.hierarchyNavigation} onNavigationChange={remember}/>:<Suspense fallback={<div className="pt-page-heading" role="status">Loading column view…</div>}><ColumnTree {...props} {...selectionProps} initialNavigation={remembered.current.columnNavigation} onNavigationChange={remember}/></Suspense>}</div>;
+  return <div className="tree-view-workspace">{selectionError&&<p role="alert">{selectionError}</p>}{!props.presentation&&<div className="tree-view-switch" role="group" aria-label="Tree presentation"><button aria-pressed={view==='tree'} className={view==='tree'?'active':''} onClick={()=>changeView('tree')}>Expandable tree</button><button aria-pressed={view==='columns'} className={view==='columns'?'active':''} onClick={()=>changeView('columns')}>Columns</button></div>}{view==='tree'?<HierarchyTree {...props} {...selectionProps} initialNavigation={remembered.current.hierarchyNavigation} onNavigationChange={remember}/>:<ColumnTree {...props} {...selectionProps} initialNavigation={remembered.current.columnNavigation} onNavigationChange={remember}/>}</div>;
 }
