@@ -6,6 +6,18 @@ not make the full application an Intel build. The available runtime test host is
 macOS 27.0.1 arm64. A successful run there does not establish macOS 14 behavior or
 all intermediate OS versions.
 
+| OS / architecture | Baseline c72b190 packaged runtime | Repaired runtime | Support statement |
+| --- | --- | --- | --- |
+| macOS 14.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
+| macOS 15.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
+| macOS 26.x arm64 | Not run; host unavailable | Pending; host unavailable | Target, not a verified runtime guarantee |
+| macOS 27.0.1 arm64 | Failed: packaged SciPy native wheel import | Pending repaired full-package test | Available runtime test host |
+| All listed OS versions, Intel | No build | No build | Unsupported |
+
+The baseline failure concerns the original SciPy wheel's native TLS load behavior.
+A successful isolated replacement-wheel import on the current host is narrower
+evidence than a repaired full application run. Keep those results separate.
+
 Run the read-only audit against the **assembled application**, after runtime
 repair and final packaging, and retain its JSON outside the bundle:
 
@@ -24,6 +36,13 @@ macOS version, SDK declaration, library dependencies and rpaths in the report.
 Wheel tags, file names, build-host versions and dependency pins are not substitutes
 for version metadata in the installed native bytes. SDK versions are not minimum
 OS versions.
+
+Discovery uses file magic regardless of extension. This includes extensionless
+executables and `.so`, `.dylib` and `.node` files when they contain Mach-O bytes.
+Archives, compressed files, ASAR contents and embedded binary payloads are not
+unpacked or scanned internally. Native libraries must be present as regular
+unpacked files in the final application for this evidence to cover them; retain
+the packaging manifest and native-unpacking configuration alongside the report.
 
 A passing static report requires a regular arm64 slice in every discovered Mach-O
 file with a known macOS minimum no later than 14.0. Unknown or malformed native
