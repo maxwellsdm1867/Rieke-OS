@@ -82,3 +82,29 @@ class TreeReadIdentityTests(unittest.TestCase):
             response = self.client.post('/api/tree-pages', json=self.body)
         self.assertEqual(response.status_code, 409)
         self.assertNotIn('read_identity', response.get_json())
+
+    def test_native_response_contract_attests_twice_while_reading_live_scope_counters(self):
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(SimpleNamespace(_conn=object(), in_transaction=False), self.service.project['project_uuid'])
+        tracker.ready = True
+        attestations, scopes = [], []
+        tracker._attest_contract = lambda: attestations.append(True) or 'verified contract'
+        tracker._scope = lambda kind, identity: (scopes.append((kind, identity)) or ('verified epoch', 1))
+        self.service._explore_state_generation = tracker
+        self.assertIn('read_identity', self.read())
+        self.assertEqual(len(attestations), 2)
+        self.assertEqual(len(scopes), 6, 'shared and protocol generations remain fresh at both boundaries')
+        self.assertIsNone(tracker._response_contract.get())
+
+    def test_native_closing_contract_change_discards_complete_response(self):
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(SimpleNamespace(_conn=object(), in_transaction=False), self.service.project['project_uuid'])
+        tracker.ready = True
+        calls = []
+        tracker._attest_contract = lambda: calls.append(True) or ('before' if len(calls) == 1 else 'after')
+        tracker._scope = lambda kind, identity: ('verified epoch', 1)
+        self.service._explore_state_generation = tracker
+        response = self.client.post('/api/tree-pages', json=self.body)
+        self.assertEqual(response.status_code, 400)
+        self.assertNotIn('read_identity', response.get_json())
+        self.assertIsNone(tracker._response_contract.get())

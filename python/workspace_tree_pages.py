@@ -6,6 +6,7 @@ missing marker. They are navigation keys, never queries or scientific IDs.
 from __future__ import annotations
 
 import re
+import contextlib
 import sys
 import uuid
 from itertools import chain
@@ -562,7 +563,13 @@ def witnessed_tree_page(pager, body):
         return pager.page(body)
     from workspace_explore_queries import generation, context_annotation_locks, StaleQuery
     context = {'protocol_uuid': str(uuid.UUID(body['protocol_uuid']))}
-    with context_annotation_locks(service, context):
+    from workspace_state_generation import StateGenerationAuthority
+    tracker = service._explore_state_generation
+    contract = (tracker.response_contract() if type(tracker) is StateGenerationAuthority
+                else contextlib.nullcontext())
+    # Reuse only schema/DDL attestation within this response. Scope counters
+    # remain live at both boundaries; closing contract failure discards it.
+    with context_annotation_locks(service, context), contract:
         try:
             before = generation(service, context)
         except StaleQuery:

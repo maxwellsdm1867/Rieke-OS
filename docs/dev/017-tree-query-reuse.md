@@ -60,3 +60,34 @@ Primary references:
 Lease expiry is a recoverable StaleTreeReadError, distinct from cancellation.
 A mounted ColumnTree regression advances an ancestor read beyond its lease,
 checks loading clears with Reload, then verifies retry obtains a new witness.
+
+## Native regression follow-up
+
+The immutable d8727cf native comparison proves warm eligible tree POST reduction
+3 to 1, but not faster authoritative navigation. Cold authority regressed and
+warm authority did not improve. Keep performance/deployment qualification on hold.
+The import-default `metadata/cell/start_time` split remains excluded.
+
+A subsequent serial API-only cProfile replay of the same owned fixture and
+recorded three-request bodies attributed the added server cost to native tracker
+schema/DDL contract attestations: eight attestations per response, about 83–86 ms
+in the initial candidate profiles; the actual page construction remained about
+17 ms on the initial anchor, similar to baseline. Catalog access was about 1.2 ms.
+These instrumented, uncontended requests do not measure Electron critical paths.
+
+Tree responses now use the existing native `response_contract()` boundary: two
+schema/DDL attestations per complete response while all shared/protocol generation
+reads remain live before and after page construction. The contract is confined to
+the native tracker type, thread, connection/socket and autocommit interval. Closing
+contract failure discards the response. No cross-response contract cache or TTL
+is introduced. Unsupported trackers preserve their original fresh-token behavior.
+
+Diagnostic profiles of the fix measured approximately 47 ms for the first anchor
+and 28–30 ms per ancestor (versus 113 ms and 91–92 ms before). The remaining cost is
+real; these observations are not a qualified before/after navigation improvement.
+Both added route regressions failed before the fix and pass afterward; existing
+tracker thread/transaction/closing-failure tests remain part of the 73-test suite.
+
+ColumnTree saved-scroll versus selected-row reveal remains a hypothesis requiring
+normal-persistence native validation: the original benchmark denied layout writes.
+No scroll or field-eligibility behavior is changed by this measured backend fix.
