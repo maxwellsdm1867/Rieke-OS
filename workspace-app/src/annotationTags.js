@@ -50,3 +50,11 @@ export function compactAnnotationTags(record={},level='epoch'){
 }
 
 export function annotationTagColor(tag){let hash=0;for(const char of tag)hash=(hash*31+char.codePointAt(0))>>>0;return hash%6;}
+
+// Incoming row highlighting describes shared annotations only, never dataset tags.
+export function incomingRowAnnotation(record={},level='effective'){
+  const groups=annotationGroups(record?.annotations);
+  const describe=(row,kind)=>`${kind}: ${row.tag} · ${row.author_name||'Author not recorded'}${row.profile_uuid?` (${row.profile_uuid})`:''}`;
+  const tags=[...groups.cell.map(row=>describe(row,level==='cell'?'Cell tag':'Inherited cell tag')),...(level==='cell'?[]:groups.epoch.map(row=>describe(row,'Direct epoch tag')))];
+  return tags.length?`Shared tags. ${tags.join('; ')}`:undefined;
+}

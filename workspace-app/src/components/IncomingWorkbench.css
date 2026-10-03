@@ -164,6 +164,25 @@
 .incoming-tag-summary>header{display:flex;align-items:center;gap:5px}.incoming-tag-summary>header>span{margin-left:auto;color:var(--ink-muted);font-size:10px}
 .incoming-tag-summary>small{display:block;color:var(--ink-secondary);font-size:10px;margin:3px 0;line-height:1.4}.incoming-tag-totals{font-size:11px;margin:4px 0}
 .incoming-tag-list{display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow:auto}.incoming-tag-list>button{display:flex;align-items:center;gap:5px;max-width:100%;min-height:25px;border-radius:12px;padding:3px 7px;font-size:10px}.incoming-tag-list>button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.incoming-tag-list>button>small{font-size:9px;white-space:nowrap;flex-shrink:0}
-.incoming-browser .cell-tree-epoch.has-shared-tags:not(.active):not(.bulk-selected),.incoming-browser .ht-leaf.has-shared-tags:not([aria-selected=true]),.incoming-browser .tp-epoch.has-shared-tags:not(.selected){box-shadow:inset 2px 0 var(--info-border)}
-.incoming-browser .cell-tree-cell.has-shared-tags>summary:not(.selected-cell){box-shadow:inset 2px 0 var(--info-border)}
-.incoming-browser .cell-tree-cell>summary .annotation-row-pills{margin-left:5px}.incoming-browser .ht-value+.annotation-row-pills{margin-left:auto}
+/* Shared tags fill incoming rows; blue selection and focus stay independent. */
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags,
+.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary,
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags,
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags,
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:hover:not(:has(>button:first-child:disabled)),
+.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:hover,
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:hover:not(:has(>button:first-child:disabled)),
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:hover:not(:disabled),
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:hover:not(:disabled){background:color-mix(in srgb,var(--success-soft) 80%,var(--success-border))}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:is(.active,.bulk-selected),
+.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary.selected-cell,
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags[aria-selected=true],
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags.selected,
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{background:var(--accent-soft);box-shadow:inset 3px 0 var(--success-ink),inset 0 0 0 1px var(--accent)}
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags>button:first-child{background:transparent}
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{border-left-color:transparent}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:has(>button:first-child:disabled),
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:has(>button:first-child:disabled),
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:disabled,
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:disabled{opacity:.6}
