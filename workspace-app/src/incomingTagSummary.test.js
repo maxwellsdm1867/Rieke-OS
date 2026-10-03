@@ -64,7 +64,7 @@ test('incoming rows expose shared tag descriptions without pills and retain expl
   assert.equal(button.props['aria-pressed'],false);assert.equal(button.props['aria-current'],undefined);
   assert.match(branch.findByType('summary').props['aria-description'],/Cell tag: Quality · Alice \(alice\)/);
   assert.deepEqual(selected,[]);assert.deepEqual(focused,[]);
-  await act(async()=>button.props.onClick({}));assert.equal(focused[0][0],'a');assert.deepEqual(selected,[[]]);
+  await act(async()=>button.props.onClick({}));assert.equal(focused[0][0],'a');assert.deepEqual(selected,[],'inspection must not change incoming selection');
   await act(async()=>renderer.update(React.createElement(Tree,{...props,disabled:true,navigationDisabled:true})));
   assert.equal(renderer.root.findByProps({'aria-label':'Inspect 2026-10-01 · Cell1 epoch 1'}).props.disabled,true);
   assert.ok(requests.length>0);assert.ok(requests.every(r=>r.method==='GET'));

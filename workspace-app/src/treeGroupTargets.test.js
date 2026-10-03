@@ -65,3 +65,5 @@ test('native bulk body covers every initial target and only the selected actor r
   assert.equal(body.profile_uuid,'alice');assert.deepEqual(body.expected_revisions,{'epoch-0':3,'epoch-1':3});assert.deepEqual(body.target_uuids,target.ids);
   delete read.targets['epoch-1'];assert.throws(()=>bulkAnnotationChange({targetUuids:target.ids,profileUuid:'alice',tag:'reviewed',read}),/could not be verified/);
 });
+
+test('frozen group selection uses only candidate tree pages and all revision fences',async()=>{const seen=[],frozen={...scope,readContext:{root:'/candidate',candidate_scope_revision:'frozen'}};const target=await resolveTreeGroup({scope:frozen,path,revision,count:137,request:async(route,options)=>{assert.equal(route,'/candidate/tree/page');assert.equal(options.body.candidate_scope_revision,'frozen');assert.equal(options.body.protocol_uuid,undefined);return requestFor(rows(137),seen)(route,options);}});assert.equal(target.ids.length,137);assert.deepEqual(seen.map(value=>value.offset),[0,60,120,0]);});

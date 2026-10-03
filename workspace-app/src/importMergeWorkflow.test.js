@@ -15,15 +15,17 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
  const calls=[],receiptBodies=[],receipts=new Map();let generation=1,mode='selected',previews=0,accepts=0,lastNavigation,revision=0;
  const caps={cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true};
- const context=()=>({candidate_revision_uuid:'union',candidate_recipe_sha256:'immutable-recipe',expected_binding_version:7,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:`scope-${generation}`,draft:{draft_version:generation,selection_mode:mode,decisions:[{epoch_uuid:'excluded',selected:false,reviewed:false,excluded:true}],decisions_total:1,decisions_truncated:false},counts:{pending_epochs:pending,pending_cells:2}});
+ let decisions=[{epoch_uuid:'excluded',selected:false,reviewed:false,excluded:true}];
+ const chosen=Array.from({length:pending>1?pending-1:pending},(_,i)=>`epoch-${i}`);
+ const context=()=>({candidate_revision_uuid:'union',candidate_recipe_sha256:'immutable-recipe',expected_binding_version:7,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:`scope-${generation}`,draft:{draft_version:generation,selection_mode:mode,decisions,decisions_total:decisions.length,decisions_truncated:false},counts:{pending_epochs:pending,pending_cells:2}});
  const queue=()=>({contract_version:1,queue_revision:'queue-one',pending_epoch_count:pending,pending_cell_count:2,total_candidate_count:1,candidates:[{candidate_revision_uuid:'original-proposal',protocol_uuid:protocol}],capabilities:caps});
  const fetch=async(path,options={})=>{
   const endpoint=String(path).replace(/^\/api/,''),body=options.body&&JSON.parse(options.body);calls.push({endpoint,body,method:options.method||'GET'});
   if(endpoint.startsWith(base+'?'))return failQueue?response({error:'Queue unavailable'},503):response(queue());
   if(endpoint===base+'/prepare'){if(prepareGate)await prepareGate.promise;if(failPrepare-->0)return response({error:'An unmerged original proposal has stale authority or conflicting fingerprints; reconcile it before cumulative preparation'},409);return response({contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:'union',root:candidate,candidate_scope_revision:context().candidate_scope_revision,queue_revision:body.expected_queue_revision,context:context()});}
   if(endpoint===candidate+'/context')return response(context());
-  if(endpoint===candidate+'/draft'){assert.equal(body.expected_version,generation);assert.equal(body.expected_candidate_scope_revision,context().candidate_scope_revision);assert.deepEqual(body.decisions,[],'all preview must not change reviewed/excluded flags');mode=body.selection_mode;generation++;return response(context());}
-  if(endpoint===candidate+'/preview'){previews++;if(failPreview)return response({error:'Queue changed: preview again'},409);return response({preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',selected_epoch_count:pending,accepted_epoch_count:Math.max(0,pending-1),already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:36+Math.max(0,pending-1),accepted_cell_count:pending>1?2:0});}
+  if(endpoint===candidate+'/draft'){assert.equal(body.expected_version,generation);assert.equal(body.expected_candidate_scope_revision,context().candidate_scope_revision);for(const next of body.decisions){const index=decisions.findIndex(value=>value.epoch_uuid===next.epoch_uuid),value={selected:false,reviewed:false,excluded:false,...decisions[index],...next};if(index<0)decisions.push(value);else decisions[index]=value;}assert.equal(decisions.find(v=>v.epoch_uuid==='excluded').excluded,true);mode=body.selection_mode||mode;generation++;return response(context());}
+  if(endpoint===candidate+'/preview'){previews++;if(failPreview)return response({error:'Queue changed: preview again'},409);return response({preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',selected_epoch_count:chosen.length,accepted_epoch_count:Math.max(0,pending-1),already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:36+Math.max(0,pending-1),accepted_cell_count:pending>1?2:0});}
   if(endpoint===candidate+'/accept'){
    receiptBodies.push(options.body);if(!receipts.has(body.operation_uuid)){accepts++;receipts.set(body.operation_uuid,{operation_uuid:body.operation_uuid,candidate_revision_uuid:'union',event_uuid:'acceptance-event',binding:{version:8,revision_uuid:'main-eight'}});}
    if(failAccept&&receiptBodies.length===1)return response({error:'Reply lost after commit'},503);return response(receipts.get(body.operation_uuid));
@@ -33,7 +35,7 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
  const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,IS_REACT_ACT_ENVIRONMENT:true,fetch};
  const old=new Map(Object.keys(globals).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
  for(const [key,value] of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
- const server=await createServer({root,configFile:false,plugins:[{name:'merge-browser-probes',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(id))return '\0merge-'+id;},load(id){if(id==='\0merge-./Inspector.jsx')return "import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default ({readContext})=>React.createElement('div',{'data-frozen-scope':readContext.candidate_scope_revision});";if(id==='\0merge-./ProtocolViewFilter.jsx')return 'export default ()=>null;';}}],optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
+ const server=await createServer({root,configFile:false,plugins:[{name:'merge-browser-probes',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(id))return '\0merge-'+id;},load(id){if(id==='\0merge-./Inspector.jsx')return "import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default props=>React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision},React.createElement('button',{disabled:props.draftSelection.disabled,onClick:()=>props.onSelectionChange("+JSON.stringify(chosen)+")},'Select fixture epochs'),React.createElement('button',{disabled:props.draftSelection.disabled,onClick:()=>props.draftSelection.onMerge(props.draftSelection.selected)},'Merge selection'));";if(id==='\0merge-./ProtocolViewFilter.jsx')return 'export default ()=>null;';}}],optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  const {default:Suggestion}=await server.ssrLoadModule('/src/components/ProtocolSuggestion.jsx');
  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
  const {default:useNavigation}=await server.ssrLoadModule('/src/useWorkspaceNavigation.js');
@@ -51,6 +53,7 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
  return {container,calls,receiptBodies,get accepts(){return accepts;},get previews(){return previews;},get saved(){return saved;},get navigation(){return lastNavigation;},
   button(label){return [...container.querySelectorAll('button')].find(button=>button.textContent.trim()===label);},
   async click(label,twice=false){const button=this.button(label);assert.ok(button,`Missing ${label}: ${container.textContent}`);assert.equal(button.disabled,false,label);await act(async()=>{button.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));if(twice)button.dispatchEvent(new window.MouseEvent('click',{bubbles:true}));});},
+  async selectAndPreview(){const inspect=this.container.querySelector('[data-frozen-scope]');assert.ok(inspect);await this.click('Select fixture epochs');await this.click('Merge selection');await this.click('Mark selected reviewed & preview');},
   async rerender(){revision++;await render();},async restore(route){await act(async()=>lastNavigation.restore(route));},
   async close(){await act(async()=>mounted.unmount());await server.close();dom.window.close();for(const [key,value] of old)value?Object.defineProperty(globalThis,key,value):delete globalThis[key];}
  };
@@ -66,19 +69,19 @@ test('expanded match visual has one comparison and right-side actions; Inspect o
 });
 test('StrictMode double click prepares once and previews eligible additions once; confirmation uses exact fences',async()=>{
  const h=await harness();try{
-  await h.click('Merge matched data',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,1);assert.equal(h.accepts,0);
+  await h.click('Merge matched data',true);assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,1);assert.equal(h.previews,0,'opening never previews all');await h.selectAndPreview();assert.equal(h.previews,1);assert.equal(h.accepts,0);
   const preview=h.container.querySelector('[aria-label="Additive acceptance preview"]');assert.ok(preview);assert.match(preview.textContent,/New epochs to add2/);assert.match(preview.textContent,/Existing main epochs retained36/);
   assert.equal(h.navigation.route.workbench.merge_intent,undefined);assert.equal(window.history.state.riekeWorkspace.route.workbench.merge_intent,undefined);
   await h.click('Add these additions to main',true);assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);
-  const body=JSON.parse(h.receiptBodies[0]);assert.deepEqual({...body,operation_uuid:'operation'},{expected_candidate_scope_revision:'scope-2',expected_draft_version:2,mode:'all',preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',operation_uuid:'operation'});
+  const body=JSON.parse(h.receiptBodies[0]);assert.deepEqual({...body,operation_uuid:'operation'},{expected_candidate_scope_revision:'scope-2',expected_draft_version:2,mode:'selected',preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',operation_uuid:'operation'});
   assert.ok(h.calls.every(c=>!c.endpoint.includes('/apply-to-protocol')));
  }finally{await h.close();}
 });
 test('cancel preview preserves exclusions and history restoration does not replay merge intent',async()=>{
  const h=await harness();try{
-  await h.click('Merge matched data');const route=h.navigation.route;await h.click('Cancel merge preview');assert.equal(h.accepts,0);assert.equal(h.previews,1);
+  await h.click('Merge matched data');await h.selectAndPreview();const route=h.navigation.route;await h.click('Cancel merge preview');assert.equal(h.accepts,0);assert.equal(h.previews,1);
   await h.restore({page:'overview',key:'back'});await h.restore(route);assert.equal(h.previews,1);assert.equal(h.accepts,0);assert.equal(h.container.querySelector('[aria-label="Additive acceptance preview"]'),null);
-  assert.ok(h.calls.filter(c=>c.endpoint.endsWith('/draft')).every(c=>c.body.decisions.length===0));
+  assert.ok(h.calls.filter(c=>c.endpoint.endsWith('/draft')).every(c=>c.body.decisions.every(d=>!Object.hasOwn(d,'excluded'))));
  }finally{await h.close();}
 });
 test('cancel while preparation is pending prevents late completion from previewing or accepting',async()=>{
@@ -105,20 +108,20 @@ test('explicit preparation retry recovers browsing without replaying the failed 
   assert.equal(h.previews,0,'the failed preview request was consumed');assert.equal(h.accepts,0);
   assert.equal(h.calls.filter(c=>c.endpoint===base+'/prepare').length,2);
   assert.ok(h.calls.every(c=>c.method==='GET'||c.endpoint===base+'/prepare'));
-  await h.click('Merge all');assert.equal(h.previews,1,'a new explicit request can preview');assert.equal(h.accepts,0);
+  await h.selectAndPreview();assert.equal(h.previews,1,'a new explicit request can preview');assert.equal(h.accepts,0);
  }finally{await h.close();}
 });
 for(const [label,options] of [['zero pending',{pending:0}],['unavailable queue',{failQueue:true}],['stale preview',{failPreview:true}],['zero eligible',{pending:1}]])test(`${label} never silently accepts`,async()=>{
  const h=await harness(options);try{
   await h.click('Merge matched data');assert.equal(h.accepts,0);
-  if(options.failPreview){assert.match(h.container.textContent,/Queue changed/);await h.rerender();assert.equal(h.previews,1,'failure never auto-retries');}
-  else if(options.pending===1){assert.equal(h.button('Add these additions to main').disabled,true);assert.match(h.container.textContent,/No eligible new epochs/);}
+  if(options.failPreview){await h.selectAndPreview();assert.match(h.container.textContent,/Queue changed/);await h.rerender();assert.equal(h.previews,1,'failure never auto-retries');}
+  else if(options.pending===1){await h.selectAndPreview();assert.equal(h.button('Add these additions to main').disabled,true);assert.match(h.container.textContent,/No eligible new epochs/);}
   else assert.equal(h.previews,0);
  }finally{await h.close();}
 });
 test('lost acceptance response retains the exact operation; repeated click recovers one durable mutation',async()=>{
  const h=await harness({failAccept:true});try{
-  await h.click('Merge matched data');await h.click('Add these additions to main');assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
+  await h.click('Merge matched data');await h.selectAndPreview();await h.click('Add these additions to main');assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
   assert.equal(h.button('Cancel merge preview'),undefined);await h.rerender();assert.equal(h.previews,1);assert.equal(h.receiptBodies.length,1);
   await h.click('Recover acceptance receipt');assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,2);assert.equal(h.receiptBodies[0],h.receiptBodies[1]);
  }finally{await h.close();}

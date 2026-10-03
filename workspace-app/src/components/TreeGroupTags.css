@@ -11,3 +11,16 @@
 .tree-group-tags-dialog>p{font-size:12px;line-height:1.5;margin:12px 0}
 .tree-group-tag-choices{display:flex;flex-wrap:wrap;gap:8px}
 .tree-group-tag-choices small{width:100%;line-height:1.5;color:var(--ink-secondary)}
+.incoming-tree-actions{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
+.incoming-explicit-select,.incoming-tree-actions>.tree-group-tag-button{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-height:26px;padding:4px 6px;font-size:10px;white-space:nowrap;flex-shrink:0}
+.incoming-explicit-select[aria-pressed=true]{background:var(--success-soft);color:var(--success-ink);border-color:var(--success-border)}
+.incoming-tree-actions>.tree-group-tag-button{color:var(--ink);border-color:var(--border-strong,var(--border));font-weight:600}
+.incoming-explicit-select:focus-visible{outline:2px solid var(--success-ink);outline-offset:2px}
+.tp-group-tag-wrap>.incoming-tree-actions{position:absolute;right:9px;bottom:8px}
+.tp-group-tag-wrap:has(>.incoming-tree-actions)>.tp-branch{padding-bottom:40px}
+.tp-level-heading>.incoming-tree-actions{margin-left:auto;flex-wrap:wrap;justify-content:flex-end;max-width:120px}
+.hierarchy-tree .ht-branch>.incoming-tree-actions{position:absolute;right:3px;top:4px}
+.hierarchy-tree .ht-branch:has(>.incoming-tree-actions)>button:first-child{padding-right:130px!important}
+.tree-split-item .incoming-tree-actions{margin-left:auto}
+.incoming-tree-feedback{font-size:11px;padding:6px 10px;color:var(--ink-secondary)}
+.incoming-tree-feedback[role=alert]{color:var(--error-ink)}

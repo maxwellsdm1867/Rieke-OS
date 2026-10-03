@@ -6,7 +6,7 @@ import {ExportDestination} from './ProtocolExports.jsx';
 import {exportDownloadLabel} from '../exportFormats.js';
 import './ExportSelectionDialog.css';
 
-export default function WorkbenchExportDialog({protocolId,item,accept=false,state={},onState,onClose,onChanged,acceptReceipt=null,externalBusy=false}){
+export default function WorkbenchExportDialog({selectedOnly=false,protocolId,item,accept=false,state={},onState,onClose,onChanged,acceptReceipt=null,externalBusy=false}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid),dialog=useRef(null),inFlight=useRef(false),saved=useRef(state);
   saved.current=state;
   const accepting=state.workflow?state.workflow==='accept-export':accept;
@@ -28,6 +28,7 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
     try{
       let preview=saved.current.preview;
       if(!receipt&&!saved.current.prepared&&!preview){
+        if(selectedOnly)throw Error('Close this dialog and choose Export again to verify the current exact selection.');
         preview=await previewWorkbench(root,context,mode,api,setContext);workbenchPreviewCounts(preview);publish({preview,phase:'previewed'});return;
       }
       if(accepting&&!receipt){
@@ -58,12 +59,13 @@ export default function WorkbenchExportDialog({protocolId,item,accept=false,stat
       {state.error&&<p role="alert">{committed?'Acceptance succeeded; export has not been confirmed. ':''}{state.error}</p>}
       {state.phase==='acceptance-unconfirmed'&&<p>Acceptance may have committed. Retry the same saved operation to recover its receipt before exporting.</p>}
       {state.phase==='export-unconfirmed'&&<p>Export may have committed. Retry the same export operation to recover its artifact.</p>}
+      {selectedOnly&&!committed&&!state.prepared&&!state.preview&&<p role="status">Close this dialog and choose Export again to verify the current exact selection.</p>}
       {!state.exported&&<form onSubmit={submit}>
-        {!committed&&<fieldset disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>{setMode('selected');publish({preview:null});}}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>{setMode('all');publish({preview:null});}}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
+        {!committed&&!selectedOnly&&<fieldset disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>{setMode('selected');publish({preview:null});}}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>{setMode('all');publish({preview:null});}}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
         {state.preview&&!committed&&<dl aria-label="Incoming export preview counts">{workbenchPreviewCounts(state.preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl>}
         <label>Export name (optional)<input value={name} maxLength={120} disabled={locked} onChange={event=>setName(event.target.value)}/></label>
         <ExportDestination value={format} onChange={setFormat} disabled={locked}/>
-        <button className="primary" disabled={busy||externalBusy||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
+        <button className="primary" disabled={busy||externalBusy||selectedOnly&&!committed&&!state.prepared&&!state.preview||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
       </form>}
       {state.exported&&<p role="status">{state.exported.name||'Export saved'} · {number(state.exported.epoch_count)} new epochs <a className="button" href={state.exported.download_url} download>Download {exportDownloadLabel(state.exported.format)}</a></p>}
     </div>

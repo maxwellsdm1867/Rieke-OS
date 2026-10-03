@@ -130,20 +130,22 @@
 .incoming-preview-actions>button{font-size:11px;min-height:30px;padding:6px 10px}
 .incoming-preview-actions>p{flex-basis:100%;font-size:12px}
 
-/* Draft membership actions live beside the epoch tree, outside the merge bar. */
-.incoming-draft-tools{position:relative;flex-shrink:0;padding:9px;border-top:1px solid color-mix(in srgb,var(--accent) 45%,var(--border));background:var(--accent-soft);font-size:11px;min-width:0}
-.incoming-draft-summary,.incoming-draft-controls{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+/* One draft-control instance is portaled into the shared action bar. */
+.incoming-review>.incoming-action-bar{padding-block:4px}
+.incoming-draft-host{flex:0 0 auto;min-width:190px}
+.incoming-draft-tools{display:flex;align-items:center;gap:4px;min-width:0;font-size:11px}
+.incoming-draft-tools>button.primary{min-width:144px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.incoming-selection-menu>summary{display:flex;align-items:center;justify-content:center;gap:3px;min-height:32px;padding:6px;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;list-style:none}
+.incoming-selection-menu>summary::-webkit-details-marker{display:none}
+.incoming-selection-menu>summary:focus-visible{outline:2px solid var(--success-ink);outline-offset:2px}
+.incoming-selection-menu>div{position:absolute;top:calc(100% + 6px);right:14px;width:min(330px,calc(100% - 28px));max-height:calc(100dvh - 180px);overflow:auto;z-index:65;display:flex;flex-direction:column;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 8px 24px color-mix(in srgb,var(--shadow-base) 15%,transparent)}
+.incoming-draft-summary,.incoming-draft-controls{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
 .incoming-draft-summary{justify-content:space-between;color:var(--ink-secondary)}
-.incoming-draft-summary strong{color:var(--accent);font-weight:600}
-.incoming-draft-controls:last-of-type{margin-bottom:0}
-.incoming-draft-controls button{font-size:10px;min-height:27px;padding:4px 6px}
-.incoming-draft-controls>.primary{flex:1}
-.incoming-draft-controls>details>summary{display:grid;place-items:center;cursor:pointer;padding:5px;list-style:none;border:1px solid var(--border);border-radius:5px;background:var(--surface)}
-.incoming-draft-controls>details>summary::-webkit-details-marker{display:none}
-.incoming-draft-controls>details>summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.incoming-draft-controls>details>div{position:absolute;bottom:44px;left:8px;right:8px;z-index:65;display:flex;flex-direction:column;gap:7px;padding:10px;border:1px solid var(--border);border-radius:7px;background:var(--surface);box-shadow:0 8px 24px color-mix(in srgb,var(--shadow-base) 15%,transparent)}
-.incoming-draft-tools p{font-size:11px;line-height:1.5;color:var(--ink-muted);margin:6px 0 0}
-.incoming-draft-tools [role=alert]{color:var(--error-ink)}
+.incoming-draft-summary strong{color:var(--ink);font-weight:600}
+.incoming-draft-controls>button{flex:1}
+.incoming-draft-tools p{font-size:11px;line-height:1.5;color:var(--ink-muted);margin:0}
+.incoming-draft-tools .incoming-draft-feedback{position:absolute;top:100%;left:14px;right:14px;z-index:70;padding:9px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);box-shadow:0 5px 15px color-mix(in srgb,var(--shadow-base) 12%,transparent)}
+.incoming-draft-tools [role=alert]{color:var(--error-ink);border-color:var(--error-border)}
 .incoming-cell-types{font-size:11px;min-width:0;max-width:100%}
 .incoming-action-bar .incoming-bar-metrics{flex:1 1 340px;flex-wrap:nowrap}
 .incoming-action-bar .incoming-bar-metrics>span{flex-shrink:0}
@@ -164,37 +166,36 @@
 .incoming-tag-summary>header{display:flex;align-items:center;gap:5px}.incoming-tag-summary>header>span{margin-left:auto;color:var(--ink-muted);font-size:10px}
 .incoming-tag-summary>small{display:block;color:var(--ink-secondary);font-size:10px;margin:3px 0;line-height:1.4}.incoming-tag-totals{font-size:11px;margin:4px 0}
 .incoming-tag-list{display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow:auto}.incoming-tag-list>button{display:flex;align-items:center;gap:5px;max-width:100%;min-height:25px;border-radius:12px;padding:3px 7px;font-size:10px}.incoming-tag-list>button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.incoming-tag-list>button>small{font-size:9px;white-space:nowrap;flex-shrink:0}
-/* Shared tags, selection and keyboard focus share the incoming green palette. */
+/* The primary draft-entry action is visible in every incoming browser mode. */
+.incoming-review .incoming-draft-tools>button.primary{min-height:36px;padding:7px 10px;font-size:11px;font-weight:650;background:var(--success-ink);border-color:var(--success-ink);color:var(--success-soft)}
+.incoming-review .incoming-draft-tools>button.primary:hover:not(:disabled){background:color-mix(in srgb,var(--success-ink) 88%,var(--ink));border-color:var(--success-ink)}
+.incoming-review .incoming-draft-tools>button.primary:focus-visible{outline:2px solid var(--success-ink);outline-offset:3px}
+.incoming-review .incoming-draft-tools>button.primary:disabled{background:var(--surface-subtle);border-color:var(--border);color:var(--ink-muted);opacity:.65;cursor:not-allowed}
+/* Explicit selection owns green; tagged-only rows keep a quiet side marker. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags,
 .incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary,
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags,
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:hover:not(.active):not(.bulk-selected):not(:has(>button:first-child:disabled)),
-.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:hover:not(.selected-cell),
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:hover:not([aria-selected=true]):not(:has(>button:first-child:disabled)),
-.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:hover:not(.selected):not(:disabled),
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:hover:not(.selected):not(:disabled){background:color-mix(in srgb,var(--success-soft) 80%,var(--success-border))}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:is(.active,.bulk-selected),
-.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary.selected-cell,
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags[aria-selected=true],
-.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags.selected,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{background:color-mix(in srgb,var(--success-soft) 55%,var(--success-border));box-shadow:inset 4px 0 var(--success-ink);color:var(--ink)}
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags>button:first-child{background:transparent}
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{border-left-color:transparent}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:has(>button:first-child:disabled),
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:has(>button:first-child:disabled),
-.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:disabled,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:disabled{opacity:.6}
-
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags>button:first-child:focus-visible,
-.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:focus-visible,
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags>button:first-child:focus-visible,
-.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:focus-visible,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:focus-visible{outline:2px solid var(--success-ink);outline-offset:-3px}
-
-/* The draft-entry action stays visible alongside the selection controls. */
-.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary{min-height:36px;padding:7px 10px;font-size:11px;font-weight:650;background:var(--success-ink);border-color:var(--success-ink);color:var(--success-soft)}
-.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:hover:not(:disabled){background:color-mix(in srgb,var(--success-ink) 88%,var(--ink));border-color:var(--success-ink)}
-.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:focus-visible{outline:2px solid var(--success-ink);outline-offset:3px}
-.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:disabled{background:var(--surface-subtle);border-color:var(--border);color:var(--ink-muted);opacity:.65;cursor:not-allowed}
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:transparent;box-shadow:inset 2px 0 var(--ink-muted)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.bulk-selected,
+.incoming-browser .hierarchy-tree .ht-leaf[aria-selected=true],
+.incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink);color:var(--ink)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected){background:var(--surface-subtle);outline:0}
+.incoming-browser .column-tree .tp-branch.selected{background:var(--surface-subtle);box-shadow:none;border-color:var(--border)}
+.incoming-browser .inspection-cell-tree .cell-tree-cell>summary{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.incoming-browser .inspection-cell-tree .cell-tree-cell>summary>.incoming-tree-actions{margin-left:auto}
+.incoming-browser .inspection-cell-tree .cell-tree-epoch>button:first-child{flex:1;min-width:0}
+.incoming-browser .inspection-cell-tree .cell-tree-epoch .incoming-explicit-select{padding:3px;min-width:25px}
+.incoming-browser .inspection-cell-tree .cell-tree-epoch .incoming-explicit-select>span{display:none}
+.incoming-draft-host{min-width:0;max-width:100%}
+.incoming-draft-tools{flex-wrap:wrap}
+.incoming-selection-review{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:12px 14px;background:var(--surface-subtle);border-bottom:1px solid var(--border);font-size:12px}
+.incoming-selection-review>p{width:100%;color:var(--ink-secondary);font-size:11px;margin:0}
+.incoming-review .incoming-bar-metrics{flex-basis:270px}
+@container(max-width:700px){.incoming-bar-actions{margin-left:0}.incoming-draft-tools>button{flex:1}.incoming-draft-host{flex-basis:100%}}
+.incoming-browser .tree-builder .tb-steps>li{display:grid;grid-template-columns:25px 20px minmax(0,1fr);gap:4px 5px}
+.incoming-browser .tree-builder .tb-step-actions{grid-column:3;justify-content:flex-start;gap:8px}
+.incoming-browser .tree-builder .tb-step-actions .incoming-tree-actions{gap:7px}
+.incoming-browser .column-tree .tp-level-heading>.incoming-tree-actions{width:auto;height:auto;display:flex;background:transparent;max-width:none;flex-wrap:nowrap;margin-left:0;grid-column:2}
+.incoming-browser .column-tree .tp-level-heading{display:grid;grid-template-columns:23px minmax(0,1fr);gap:5px 8px;padding:9px 12px}
+.incoming-browser .tree-design-content.with-recording{grid-template-rows:minmax(320px,1fr) minmax(260px,1fr)}

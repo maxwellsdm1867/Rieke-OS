@@ -2,19 +2,21 @@ import {treePageRequest} from './pagedTreeRequest.js';
 
 export const TREE_TAG_LIMIT=1000;
 const samePath=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
-function assertScope(scope){
-  if(scope.readContext)throw new Error('Shared group tags are not supported in Incoming Workbench yet.');
+function endpoint(scope){
+  if(!scope.readContext)return '/tree-pages';
+  if(!scope.readContext.root||!scope.readContext.candidate_scope_revision)throw Error('A complete frozen Incoming Workbench scope is required.');
+  return `${scope.readContext.root}/tree/page`;
 }
 export async function verifyTreeGroup(scope,revision,request,{signal}={}){
-  assertScope(scope);
-  const page=await request('/tree-pages',{method:'POST',signal,body:treePageRequest(scope,{currentRevision:revision})});
+  const route=endpoint(scope);
+  const page=await request(route,{method:'POST',signal,body:treePageRequest(scope,{currentRevision:revision})});
   if(page.revision!==revision)throw new Error('Tree changed. Reopen Tag this group before saving.');
 }
 
 // Navigation keys retain the server's typed null/missing/joint semantics. Never
 // reconstruct a predicate from display labels or borrow the visible leaf page.
 export async function resolveTreeGroup({scope,path,revision,count,cellUuid=null,request,signal,onProgress}){
-  assertScope(scope);
+  const route=endpoint(scope);
   if(!revision||!Number.isSafeInteger(count)||count<1)throw new Error('The exact group count is unavailable. Refresh the tree.');
   if(!cellUuid&&count>TREE_TAG_LIMIT)throw new Error(`This group contains ${count.toLocaleString()} epochs. Shared group tags support at most 1,000 epochs; nothing was tagged.`);
   const rows=[],seen=new Set();
@@ -22,7 +24,7 @@ export async function resolveTreeGroup({scope,path,revision,count,cellUuid=null,
     let offset=0;
     do{
       if(signal?.aborted)throw new DOMException('Group loading cancelled','AbortError');
-      const page=await request('/tree-pages',{method:'POST',signal,body:treePageRequest(scope,{path:currentPath,offset,currentRevision:revision})});
+      const page=await request(route,{method:'POST',signal,body:treePageRequest(scope,{path:currentPath,offset,currentRevision:revision})});
       if(page.revision!==revision||!samePath(page.path,currentPath)||page.offset!==offset||!Number.isSafeInteger(page.total)||page.total<0||page.limit!==60)throw new Error('Tree changed or the complete group could not be verified. Reopen Tag this group.');
       if(offset===0&&samePath(currentPath,path)&&page.selection?.count!==count)throw new Error('Group count changed. Refresh the tree.');
       const entries=page.kind==='epochs'?page.epochs:page.kind==='branches'?page.branches:null;

@@ -31,7 +31,7 @@ test('blocked combined preparation exposes explicit fresh-proposal review withou
   const actions=recovery.findAllByType('button').filter(button=>label(button)==='Review eligible proposal');assert.equal(actions.length,1);
   await act(async()=>actions[0].props.onClick());
   assert.equal(view.root.findByProps({'data-root':'/protocols/protocol/workbench/candidates/fresh'}).type,'div');
-  assert.ok(view.root.findAllByType('button').some(button=>label(button)==='Merge all'&&!button.props.disabled));
+  assert.ok(!view.root.findAllByType('button').some(button=>label(button)==='Merge all'),'opening independent review must not offer an all-mode bypass');
   assert.deepEqual(saved.cumulative.drafts,cumulative.drafts);assert.equal(saved.active,'fresh');
   assert.deepEqual(requests.map(r=>r.method),['POST','GET']);assert.ok(requests.every(r=>!r.path.endsWith('/preview')&&!r.path.endsWith('/accept')&&!r.path.endsWith('/draft')));
  }finally{if(view)await act(()=>view.unmount());globalThis.fetch=oldFetch;await server.close();}

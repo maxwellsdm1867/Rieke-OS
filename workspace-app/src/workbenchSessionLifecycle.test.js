@@ -30,10 +30,10 @@ async function harness(){
  // visual children that require browser layout or canvas.
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{
   name:'session-view-presentation',enforce:'pre',resolveId(source,importer){
-   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./NavigationLoading.jsx','./Common.jsx'].includes(source))return `\0session-${source}`;
+   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./NavigationLoading.jsx','./Common.jsx','./IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
    if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='./ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
-   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session');}`;
+   if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before);}`;
    if(id==='\0session-./TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
    if(id.startsWith('\0session-'))return 'export default function(){return null;}';
   }
@@ -61,5 +61,29 @@ test('real Inspector session effects settle inside cumulative Workbench and pres
   assert.equal(h.calls.filter(call=>call.path===base+'/prepare').length,1);
   assert.deepEqual(h.calls.filter(call=>call.method!=='GET').map(call=>call.path),[base+'/prepare'],'browsing must not save a draft or accept/export');
   assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+test('one draft control instance stays in the top action bar through normal and tree-design modes',async()=>{
+ const h=await harness();try{
+  await h.render();await h.settle();
+  const controls=h.container.querySelector('.incoming-draft-tools'),host=h.container.querySelector('.incoming-draft-host');
+  assert.ok(controls);assert.equal(controls.parentElement,host);assert.ok(host.closest('.incoming-action-bar'));
+  assert.equal(h.container.querySelector('.incoming-browser .incoming-draft-tools'),null);
+  const button=()=>controls.querySelector('button.primary');assert.equal(button().textContent.trim(),'Merge (0 epochs)');assert.equal(button().disabled,true);
+  await act(async()=>h.fixture.viewer.treePane.listProps.onSelectCell(cells[0],epochs[0]));await h.settle();
+  assert.equal(button().textContent.trim(),'Merge (0 epochs)','cell inspection is not selection');
+  await act(async()=>h.fixture.viewer.treePane.listProps.setTargets(['epoch-1','epoch-2']));await h.settle();
+  assert.equal(button().textContent.trim(),'Merge (2 epochs)');
+  for(let i=0;i<3;i++){
+   await act(async()=>h.fixture.viewer.toolbar.onDesign());await h.settle();assert.equal(h.fixture.viewer.designMode,true);
+   assert.equal(h.container.querySelector('.incoming-draft-tools'),controls);assert.equal(button().textContent.trim(),'Merge (2 epochs)');
+   await act(async()=>h.fixture.viewer.toolbar.onBrowse());await h.settle();assert.equal(h.fixture.viewer.designMode,false);
+   assert.equal(h.container.querySelectorAll('.incoming-draft-tools').length,1);assert.equal(h.container.querySelector('.incoming-draft-tools'),controls);
+  }
+  await act(async()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();assert.equal(button().textContent.trim(),'Merge (2 epochs)','inspection preserves explicit selection');
+  await act(async()=>controls.querySelector('button[aria-pressed]').click());await h.settle();assert.equal(button().textContent.trim(),'Merge (2 epochs)');assert.equal(controls.querySelector('button[aria-pressed]').textContent.trim(),'Return to all');
+  await act(async()=>controls.querySelector('button[aria-pressed]').click());await h.settle();assert.equal(button().textContent.trim(),'Merge (2 epochs)');
+  assert.deepEqual(h.calls.filter(call=>call.method!=='GET').map(call=>call.path),[base+'/prepare']);assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });

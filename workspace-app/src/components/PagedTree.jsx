@@ -17,7 +17,7 @@ export default function PagedTree(props){
   function changeView(next){setView(next);callbacks.current.onNavigationChange?.({...remembered.current,treeView:next});}
   const anchor=useRef(null),selectionRequest=useRef(null);
   const [selectionError,setSelectionError]=useState('');
-  const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,expectedRevision:props.expectedRevision});
+  const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision});
   const selectionScope=useRef(null),generation=useRef(0);
   // Invalidate at commit, before a deferred request can publish into the new
   // scope. Cleanup also covers unmount and React's StrictMode effect replay.
@@ -32,12 +32,12 @@ export default function PagedTree(props){
     const token=generation.current,isCurrent=()=>token===generation.current&&selectionRequest.current===request&&!request.signal.aborted;
     setSelectionError('');anchor.current=null;
     try{
-      let page=await api('/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:item.path,currentRevision:revision})});
+      let page=await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:item.path,currentRevision:revision})});
       if(!isCurrent())return;
       const pinned=props.expectedRevision||revision||page.revision;
       if(page.revision!==pinned)throw new Error('Tree changed. Select the cell again.');
       while(page.kind!=='epochs'&&page.branches?.length){
-        page=await api('/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.branches[0].path,currentRevision:pinned})});
+        page=await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.branches[0].path,currentRevision:pinned})});
         if(!isCurrent())return;
         if(page.revision!==pinned)throw new Error('Tree changed. Select the cell again.');
       }
@@ -61,7 +61,7 @@ export default function PagedTree(props){
         request=new AbortController();selectionRequest.current=request;const ids=[];
         const before=JSON.stringify(props.selectedEpochs||[]);
         for(let offset=Math.floor(lo/60)*60;offset<=hi;offset+=60){
-          const part=offset===page.offset?page:await api('/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.path,offset,currentRevision:page.revision})});
+          const part=offset===page.offset?page:await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.path,offset,currentRevision:page.revision})});
           if(!isCurrent())return;
           if(part.revision!==page.revision||part.kind!=='epochs')throw new Error('Tree changed. Select the range again.');
           for(let n=Math.max(lo,offset);n<=Math.min(hi,offset+59);n++){
@@ -74,7 +74,7 @@ export default function PagedTree(props){
         callbacks.current.setSelectedEpochs?.(mergeEpochSelection(callbacks.current.selectedEpochs||[],ids));
       }else{
         anchor.current=target;
-        props.setSelectedEpochs(event.metaKey||event.ctrlKey?toggleEpochSelection(props.selectedEpochs||[],uuid):[]);
+        if(event.metaKey||event.ctrlKey)props.setSelectedEpochs(toggleEpochSelection(props.selectedEpochs||[],uuid));else if(!props.readContext)props.setSelectedEpochs([]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }

@@ -1,3 +1,6 @@
+import {IncomingEpochSelect} from './IncomingTreeSelection.jsx';
+import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';
+import {loadIncomingSelection} from '../incomingSelection.js';
 import {frozenPresentationScope} from '../frozenReadContext.js';
 import StableContent from './StableContent.jsx';
 import {epochIncluded} from '../incomingReviewDecision.js';
@@ -13,16 +16,17 @@ import {incomingRowAnnotation} from '../annotationTags.js';
 import './InspectionCellTree.css';
 import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 
-function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch}){
+function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disabled,navigationDisabled=disabled,onToggleInclusion,inclusionForEpoch,setTargets,onTagEpoch}){
   const [offset,setOffset]=useState(0);
   const page=useEpochBrowserPage(source,{cellUuid:cell.cell_uuid,offset},JSON.stringify([revision,source.queryRevision,source.treeRevision]));
   const content=<>
     {(page.data?.epochs||[]).map((record,index)=>{const epoch=inclusionForEpoch?inclusionForEpoch(record):record,tags=source.readContext?incomingRowAnnotation(epoch):undefined;return <div key={epoch.epoch_uuid} className={`epoch-row cell-tree-epoch ${tags?'has-shared-tags':''} ${focused===epoch.epoch_uuid?'active':''} ${targets.includes(epoch.epoch_uuid)?'bulk-selected':''} ${epochIncluded(epoch,!!source.readContext)===false?'analysis-excluded':''}`}>
-      <button aria-description={tags} title={tags} disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={targets.includes(epoch.epoch_uuid)||(!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
+      <button aria-description={tags} title={tags} disabled={navigationDisabled||page.loading} aria-current={focused===epoch.epoch_uuid?'true':undefined} aria-pressed={targets.includes(epoch.epoch_uuid)||(!source.readContext&&!targets.length&&focused===epoch.epoch_uuid)} onMouseDown={event=>{if(event.shiftKey)event.preventDefault();}} onClick={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data)} aria-label={`Inspect ${datedCellLabel(cell,true)} epoch ${offset+index+1}`}>
         <strong>{offset+index+1}</strong>
         <time>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</time>
         <span className="epoch-short-protocol" title={humanize(epoch.protocol_name?.split('.').at(-1))}>{humanize(epoch.protocol_name?.split('.').at(-1))||'—'}</span>
       </button>
+      {source.readContext&&<><IncomingEpochSelect epoch={epoch} selected={targets} onSelect={setTargets} disabled={disabled||page.loading}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={disabled||page.loading} onClick={event=>onTagEpoch(epoch,event)}/></>}
       {onToggleInclusion&&<EpochInclusionToggle incoming={!!source.readContext} epoch={epoch} label={`${datedCellLabel(cell,true)} epoch ${offset+index+1}`} disabled={disabled||page.loading} onToggle={onToggleInclusion}/>}
     </div>;})}
     {page.data&&<div className="pagination"><button aria-label={`Previous epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||!offset} onClick={()=>setOffset(Math.max(0,offset-60))}>Previous</button><span>{page.data.total?offset+1:0}–{Math.min(offset+60,page.data.total)} of {number(page.data.total)}</span><button aria-label={`Next epochs for ${datedCellLabel(cell,true)}`} disabled={navigationDisabled||page.loading||offset+60>=page.data.total} onClick={()=>setOffset(offset+60)}>Next</button></div>}
@@ -30,12 +34,12 @@ function CellEpochs({cell,source,revision,focused,onFocus,targets,onSelect,disab
   if(source.readContext?.cohort_key)return <StableContent loading={page.loading} error={page.error} data={page.data} scope={JSON.stringify([frozenPresentationScope(source.readContext,source.protocolId,source.query),cell.cell_uuid,offset])} retry={page.reload} label="Refreshing incoming epoch list">{content}</StableContent>;
   return <Status {...page} retry={page.reload}>{content}</Status>;
 }
-function CellBranch({cell,dateOpen,onSelectCell,selectedCell,collapseRequest,...props}){
+function CellBranch({cell,dateOpen,onSelectCell,onSelectGroupCell,onTagCell,selectedCell,collapseRequest,...props}){
   const [open,setOpen]=useState(false);
   useEffect(()=>setOpen(false),[collapseRequest]);
   const tags=props.source.readContext?incomingRowAnnotation(cell,'cell'):undefined;
   return <details className={tags?'cell-tree-cell has-shared-tags':'cell-tree-cell'} open={open} onToggle={event=>setOpen(event.currentTarget.open)}>
-    <summary className={selectedCell===cell.cell_uuid?'selected-cell':''} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined} onClick={()=>onSelectCell(cell)}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}</summary>
+    <summary className={selectedCell===cell.cell_uuid?'selected-cell':''} aria-label={datedCellLabel(cell,true)} aria-description={tags} title={[cell.identity_qualifier&&cell.cell_uuid,tags].filter(Boolean).join('\n')||undefined} onClick={()=>onSelectCell(cell)}><strong>{cell.label||cell.cell_label||'Unlabeled cell'}</strong>{cell.identity_qualifier&&<span> · {cell.identity_qualifier}</span>}{props.source.readContext&&<TreeGroupTagButton label="Tag This Cell" count={cell.epochs} disabled={props.disabled} onSelect={event=>onSelectGroupCell(cell,event)} onClick={event=>onTagCell(cell,event)}/>}</summary>
     {dateOpen&&open&&<CellEpochs cell={cell} {...props}/>}
   </details>;
 }
@@ -48,6 +52,7 @@ function DateBranch({group,collapseRequest,...props}){
   </details>;
 }
 export default function InspectionCellTree({cells,targets,setTargets,disabled,navigationDisabled=disabled,onFocus,onSelectCell,...props}){
+  const groupTags=useTreeGroupTags({readContext:props.source.readContext,protocolId:props.source.protocolId,filters:{},revision:props.revision,actionsDisabled:disabled,onAnnotationsChanged:props.onAnnotationsChanged});
   const dates=useMemo(()=>inspectionDates(cells),[cells]);
   const ordered=useMemo(()=>dates.flatMap(group=>group.cells),[dates]);
   const anchor=useRef(null),request=useRef(null),generation=useRef(0),committedScope=useRef(null),callbacks=useRef(null);
@@ -61,7 +66,8 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     return()=>{generation.current++;committedScope.current=null;request.current?.abort();};
   },[scope]);
 
-  async function selectCell(cell){
+  async function selectCell(cell,event=null,tag=false){
+    event?.preventDefault();event?.stopPropagation();
     if(navigationDisabled||committedScope.current!==scope)return;
     anchor.current=null;setError('');setSelecting(true);
     request.current?.abort();const controller=new AbortController();request.current=controller;
@@ -73,9 +79,23 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
       epochPageRevision(props.source,page);
       if(page.epochs?.[0]){
         if(page.offset!==0||page.epochs[0].cell_uuid!==cell.cell_uuid||typeof page.epochs[0].epoch_uuid!=='string'||!page.epochs[0].epoch_uuid)throw new Error('Cell epoch ownership changed. Refresh and select again.');
-        callbacks.current.onSelectCell?.(cell,page.epochs[0]);
+        if(tag)groupTags.openEpoch(page.epochs[0],event,true,{source:props.source,cells:ordered});else callbacks.current.onSelectCell?.(cell,page.epochs[0]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
+    finally{if(isCurrent())setSelecting(false);}
+  }
+  async function selectGroupCell(cell,event){
+    event.preventDefault();event.stopPropagation();
+    if(disabled||committedScope.current!==scope)return;
+    request.current?.abort();const controller=new AbortController();request.current=controller;
+    const token=generation.current,before=JSON.stringify(callbacks.current.targets),isCurrent=()=>token===generation.current&&request.current===controller&&!controller.signal.aborted;
+    setSelecting(true);setError('');
+    try{
+      const ids=await loadIncomingSelection({source:props.source,cells:ordered,cellUuid:cell.cell_uuid,request:api,signal:controller.signal,isCurrent});
+      if(!isCurrent())return;
+      if(JSON.stringify(callbacks.current.targets)!==before)throw Error('Selection changed while loading. Select this cell again.');
+      callbacks.current.setTargets(mergeEpochSelection(callbacks.current.targets,ids));
+    }catch(error){if(isCurrent())setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
   async function select(event,target,epoch,page){
@@ -89,7 +109,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
       target={...target,revision:epochPageRevision(props.source,page)};
       if(!epoch?.epoch_uuid||epoch.epoch_uuid!==target.uuid||epoch.cell_uuid!==target.cellUuid)throw new Error('Epoch selection ownership changed. Refresh and select again.');
       callbacks.current.onFocus?.(target.uuid,epoch);
-      if(!multiple&&!shift)callbacks.current.setTargets([]);
+      if(!multiple&&!shift&&!props.source.readContext)callbacks.current.setTargets([]);
       if(shift&&anchor.current){
         controller=new AbortController();request.current=controller;setSelecting(true);
         const before=JSON.stringify(callbacks.current.targets);
@@ -109,5 +129,5 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
-  return <div className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} targets={targets} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
+  return <div className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} targets={targets} setTargets={setTargets} onTagEpoch={groupTags.openEpoch} onSelectGroupCell={selectGroupCell} onTagCell={(cell,event)=>selectCell(cell,event,true)} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
 }
