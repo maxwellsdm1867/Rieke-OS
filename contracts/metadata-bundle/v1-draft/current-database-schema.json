@@ -1,0 +1,3826 @@
+{
+  "status": "Observed source declarations; no live DDL introspection",
+  "baseline_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
+  "retinanalysis_pin": "5dc9018ff754e1a01f60d929ceaf4e7f40815e70",
+  "installed_schema_provenance": "Inspected installed package; exact equality to pinned upstream is not asserted",
+  "tables": [
+    {
+      "schema": "schema",
+      "class": "Protocol",
+      "table": "protocol",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 41,
+      "primary_key": [
+        "protocol_id"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "protocol_id",
+          "declaration": "protocol_id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# protocol information\n    protocol_id: int auto_increment\n    ---\n    name: varchar(255)",
+      "explicit_primary_key_fields": [
+        "protocol_id"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "protocol_id",
+          "declaration": "protocol_id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Experiment",
+      "table": "experiment",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 55,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "exp_name",
+          "declaration": "exp_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "meta_file",
+          "declaration": "meta_file: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "data_file",
+          "declaration": "data_file: varchar(255) # empty if MEA for now, maybe should store \"/Volumes/data/data/sorted\" here?",
+          "in_primary_key": false
+        },
+        {
+          "name": "tags_file",
+          "declaration": "tags_file: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "is_mea",
+          "declaration": "is_mea: bool # 1 if MEA, 0 if not",
+          "in_primary_key": false
+        },
+        {
+          "name": "date_added",
+          "declaration": "date_added: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "experimenter",
+          "declaration": "experimenter = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "institution",
+          "declaration": "institution = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "lab",
+          "declaration": "lab = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "project",
+          "declaration": "project = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "rig",
+          "declaration": "rig = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "rig_type",
+          "declaration": "rig_type = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# experiment metadata, including pointers to files\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    exp_name: varchar(255)\n    meta_file: varchar(255)\n    data_file: varchar(255) # empty if MEA for now, maybe should store \"/Volumes/data/data/sorted\" here?\n    tags_file: varchar(255)\n    is_mea: bool # 1 if MEA, 0 if not\n    date_added: datetime\n    label: varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    experimenter = NULL : varchar(255)\n    institution = NULL : varchar(255)\n    lab = NULL : varchar(255)\n    project = NULL : varchar(255)\n    rig = NULL : varchar(255)\n    rig_type = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "exp_name",
+          "declaration": "exp_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "meta_file",
+          "declaration": "meta_file: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "data_file",
+          "declaration": "data_file: varchar(255) # empty if MEA for now, maybe should store \"/Volumes/data/data/sorted\" here?",
+          "in_primary_key": false
+        },
+        {
+          "name": "tags_file",
+          "declaration": "tags_file: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "is_mea",
+          "declaration": "is_mea: bool # 1 if MEA, 0 if not",
+          "in_primary_key": false
+        },
+        {
+          "name": "date_added",
+          "declaration": "date_added: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "experimenter",
+          "declaration": "experimenter = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "institution",
+          "declaration": "institution = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "lab",
+          "declaration": "lab = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "project",
+          "declaration": "project = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "rig",
+          "declaration": "rig = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "rig_type",
+          "declaration": "rig_type = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Animal",
+      "table": "animal",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 81,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Experiment.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "props_id",
+          "declaration": "props_id = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "description",
+          "declaration": "description = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sex",
+          "declaration": "sex = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "age",
+          "declaration": "age = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "weight",
+          "declaration": "weight = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "dark_adaptation",
+          "declaration": "dark_adaptation = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "species",
+          "declaration": "species = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# animal information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Experiment.proj(experiment_id='id')\n    -> Experiment.proj(parent_id='id')\n    label: varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    props_id = NULL : varchar(255)\n    description = NULL : varchar(255)\n    sex = NULL : varchar(255)\n    age = NULL : varchar(255)\n    weight = NULL : varchar(255)\n    dark_adaptation = NULL : varchar(255)\n    species = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "props_id",
+          "declaration": "props_id = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "description",
+          "declaration": "description = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sex",
+          "declaration": "sex = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "age",
+          "declaration": "age = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "weight",
+          "declaration": "weight = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "dark_adaptation",
+          "declaration": "dark_adaptation = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "species",
+          "declaration": "species = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Preparation",
+      "table": "preparation",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 104,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Animal.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "bath_solution",
+          "declaration": "bath_solution = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "preparation_type",
+          "declaration": "preparation_type = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "region",
+          "declaration": "region = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "array_pitch",
+          "declaration": "array_pitch = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# preparation information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Experiment.proj(experiment_id='id')\n    -> Animal.proj(parent_id='id')\n    label: varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    bath_solution = NULL : varchar(255)\n    preparation_type = NULL : varchar(255)\n    region = NULL : varchar(255)\n    array_pitch = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.animal",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "bath_solution",
+          "declaration": "bath_solution = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "preparation_type",
+          "declaration": "preparation_type = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "region",
+          "declaration": "region = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "array_pitch",
+          "declaration": "array_pitch = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.animal.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Cell",
+      "table": "cell",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 124,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Preparation.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "type",
+          "declaration": "type = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# cell information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Experiment.proj(experiment_id='id')\n    -> Preparation.proj(parent_id='id')\n    label: varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    type = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.preparation",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "type",
+          "declaration": "type = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.preparation.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "EpochGroup",
+      "table": "epoch_group",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 141,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Cell.proj(parent_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Protocol",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# epoch group information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Experiment.proj(experiment_id='id')\n    -> Cell.proj(parent_id='id')\n    -> Protocol\n    label = NULL : varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    end_time = NULL : datetime",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.cell",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.protocol",
+          "local_columns": [
+            "protocol_id"
+          ],
+          "target_columns": [
+            "protocol_id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.cell.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "protocol_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.protocol.protocol_id",
+          "nullable": false,
+          "declaration": "protocol_id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "SortingChunk",
+      "table": "sorting_chunk",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 160,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "chunk_name",
+          "declaration": "chunk_name: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# sorting chunk information: algorithm generated\n    id: int auto_increment\n    ---\n    -> Experiment.proj(experiment_id='id')\n    chunk_name: varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "chunk_name",
+          "declaration": "chunk_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "SortedCell",
+      "table": "sorted_cell",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 172,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "SortingChunk.proj(chunk_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "algorithm",
+          "declaration": "algorithm: varchar(200) # should be directory name",
+          "in_primary_key": false
+        },
+        {
+          "name": "cluster_id",
+          "declaration": "cluster_id: int32",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# sorted cell information: algorithm generated\n    id: int auto_increment\n    ---\n    -> SortingChunk.proj(chunk_id='id')\n    algorithm: varchar(200) # should be directory name\n    cluster_id: int32",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.sorting_chunk",
+          "local_columns": [
+            "chunk_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "algorithm",
+          "declaration": "algorithm: varchar(200) # should be directory name",
+          "in_primary_key": false
+        },
+        {
+          "name": "cluster_id",
+          "declaration": "cluster_id: int32",
+          "in_primary_key": false
+        },
+        {
+          "name": "chunk_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.sorting_chunk.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "CellTypeFile",
+      "table": "cell_type_file",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 197,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "SortingChunk.proj(chunk_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "algorithm",
+          "declaration": "algorithm: varchar(200) # should be directory name",
+          "in_primary_key": false
+        },
+        {
+          "name": "file_name",
+          "declaration": "file_name: varchar(255) # name of sorting file",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# cell typing file: human generated\n    id: int auto_increment\n    ---\n    -> SortingChunk.proj(chunk_id='id')\n    algorithm: varchar(200) # should be directory name\n    file_name: varchar(255) # name of sorting file",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.sorting_chunk",
+          "local_columns": [
+            "chunk_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "algorithm",
+          "declaration": "algorithm: varchar(200) # should be directory name",
+          "in_primary_key": false
+        },
+        {
+          "name": "file_name",
+          "declaration": "file_name: varchar(255) # name of sorting file",
+          "in_primary_key": false
+        },
+        {
+          "name": "chunk_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.sorting_chunk.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "SortedCellType",
+      "table": "sorted_cell_type",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 210,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "SortedCell.proj(sorted_cell_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "CellTypeFile.proj(file_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "cell_type",
+          "declaration": "cell_type: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# sorted cell type information: human generated\n    id: int auto_increment\n    ---\n    -> SortedCell.proj(sorted_cell_id='id')\n    -> CellTypeFile.proj(file_id='id')\n    cell_type: varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.sorted_cell",
+          "local_columns": [
+            "sorted_cell_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.cell_type_file",
+          "local_columns": [
+            "file_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "cell_type",
+          "declaration": "cell_type: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sorted_cell_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.sorted_cell.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "file_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.cell_type_file.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "EpochBlock",
+      "table": "epoch_block",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 222,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "EpochGroup.proj(parent_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "Protocol",
+          "in_primary_key": false
+        },
+        {
+          "expression": "[nullable] SortingChunk.proj(chunk_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "data_dir",
+          "declaration": "data_dir: varchar(255) # only for MEA",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "parameters",
+          "declaration": "parameters = NULL : json",
+          "in_primary_key": false
+        },
+        {
+          "name": "array_pitch",
+          "declaration": "array_pitch = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# epoch block information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    data_dir: varchar(255) # only for MEA\n    -> Experiment.proj(experiment_id='id')\n    -> EpochGroup.proj(parent_id='id')\n    -> Protocol\n    -> [nullable] SortingChunk.proj(chunk_id='id')\n    label = NULL : varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    end_time = NULL : datetime\n    parameters = NULL : json\n    array_pitch = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.epoch_group",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.protocol",
+          "local_columns": [
+            "protocol_id"
+          ],
+          "target_columns": [
+            "protocol_id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.sorting_chunk",
+          "local_columns": [
+            "chunk_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": true,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "data_dir",
+          "declaration": "data_dir: varchar(255) # only for MEA",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "parameters",
+          "declaration": "parameters = NULL : json",
+          "in_primary_key": false
+        },
+        {
+          "name": "array_pitch",
+          "declaration": "array_pitch = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.epoch_group.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "protocol_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.protocol.protocol_id",
+          "nullable": false,
+          "declaration": "protocol_id: int auto_increment"
+        },
+        {
+          "name": "chunk_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.sorting_chunk.id",
+          "nullable": true,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Epoch",
+      "table": "epoch",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 244,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        },
+        {
+          "expression": "EpochBlock.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "parameters",
+          "declaration": "parameters = NULL : json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# epoch information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Experiment.proj(experiment_id='id')\n    -> EpochBlock.proj(parent_id='id')\n    label = NULL : varchar(255)\n    properties: json\n    attributes: json\n    start_time = NULL : datetime\n    end_time = NULL : datetime\n    parameters = NULL : json",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        },
+        {
+          "target_table": "schema.epoch_block",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "properties",
+          "declaration": "properties: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "attributes",
+          "declaration": "attributes: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "start_time",
+          "declaration": "start_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "end_time",
+          "declaration": "end_time = NULL : datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "parameters",
+          "declaration": "parameters = NULL : json",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.epoch_block.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Response",
+      "table": "response",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 262,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Epoch.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "device_name",
+          "declaration": "device_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "h5path",
+          "declaration": "h5path: varchar(511)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sample_rate",
+          "declaration": "sample_rate = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sample_rate_units",
+          "declaration": "sample_rate_units = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "offset_hours",
+          "declaration": "offset_hours = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "offset_ticks",
+          "declaration": "offset_ticks = NULL : varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# response information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Epoch.proj(parent_id='id')\n    device_name: varchar(255)\n    h5path: varchar(511)\n    label = NULL : varchar(255)\n    sample_rate = NULL : varchar(255)\n    sample_rate_units = NULL : varchar(255)\n    offset_hours = NULL : varchar(255)\n    offset_ticks = NULL : varchar(255)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.epoch",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "device_name",
+          "declaration": "device_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "h5path",
+          "declaration": "h5path: varchar(511)",
+          "in_primary_key": false
+        },
+        {
+          "name": "label",
+          "declaration": "label = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sample_rate",
+          "declaration": "sample_rate = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "sample_rate_units",
+          "declaration": "sample_rate_units = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "offset_hours",
+          "declaration": "offset_hours = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "offset_ticks",
+          "declaration": "offset_ticks = NULL : varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.epoch.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Stimulus",
+      "table": "stimulus",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 280,
+      "primary_key": [
+        "id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Epoch.proj(parent_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "device_name",
+          "declaration": "device_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "h5path",
+          "declaration": "h5path: varchar(511)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# stimulus information\n    id: int auto_increment\n    ---\n    h5_uuid: varchar(255)\n    -> Epoch.proj(parent_id='id')\n    device_name: varchar(255)\n    h5path: varchar(511)",
+      "explicit_primary_key_fields": [
+        "id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.epoch",
+          "local_columns": [
+            "parent_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "id",
+          "declaration": "id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "device_name",
+          "declaration": "device_name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "h5path",
+          "declaration": "h5path: varchar(511)",
+          "in_primary_key": false
+        },
+        {
+          "name": "parent_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.epoch.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "schema",
+      "class": "Tags",
+      "table": "tags",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 294,
+      "primary_key": [
+        "tag_id"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "Experiment.proj(experiment_id='id')",
+          "in_primary_key": false
+        }
+      ],
+      "fields": [
+        {
+          "name": "tag_id",
+          "declaration": "tag_id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255) # id of object in h5 file",
+          "in_primary_key": false
+        },
+        {
+          "name": "table_name",
+          "declaration": "table_name: varchar(255) # name of table in database",
+          "in_primary_key": false
+        },
+        {
+          "name": "table_id",
+          "declaration": "table_id: int32 # id of object in database table",
+          "in_primary_key": false
+        },
+        {
+          "name": "user",
+          "declaration": "user: varchar(63) # name of profile who made this tag: could be a name or anything else",
+          "in_primary_key": false
+        },
+        {
+          "name": "tag",
+          "declaration": "tag: varchar(255) # tag: THIS SHOULD CHANGE. For now, comma separated list.",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "# tagging information\n    tag_id: int auto_increment\n    ---\n    h5_uuid: varchar(255) # id of object in h5 file\n    -> Experiment.proj(experiment_id='id')\n    table_name: varchar(255) # name of table in database\n    table_id: int32 # id of object in database table\n    user: varchar(63) # name of profile who made this tag: could be a name or anything else\n    tag: varchar(255) # tag: THIS SHOULD CHANGE. For now, comma separated list.",
+      "explicit_primary_key_fields": [
+        "tag_id"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "schema.experiment",
+          "local_columns": [
+            "experiment_id"
+          ],
+          "target_columns": [
+            "id"
+          ],
+          "nullable": false,
+          "in_primary_key": false
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "tag_id",
+          "declaration": "tag_id: int auto_increment",
+          "in_primary_key": true
+        },
+        {
+          "name": "h5_uuid",
+          "declaration": "h5_uuid: varchar(255) # id of object in h5 file",
+          "in_primary_key": false
+        },
+        {
+          "name": "table_name",
+          "declaration": "table_name: varchar(255) # name of table in database",
+          "in_primary_key": false
+        },
+        {
+          "name": "table_id",
+          "declaration": "table_id: int32 # id of object in database table",
+          "in_primary_key": false
+        },
+        {
+          "name": "user",
+          "declaration": "user: varchar(63) # name of profile who made this tag: could be a name or anything else",
+          "in_primary_key": false
+        },
+        {
+          "name": "tag",
+          "declaration": "tag: varchar(255) # tag: THIS SHOULD CHANGE. For now, comma separated list.",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "in_primary_key": false,
+          "inherited_from": "schema.experiment.id",
+          "nullable": false,
+          "declaration": "id: int auto_increment"
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "AnnotationGroupReceipt",
+      "table": "annotation_group_receipt",
+      "source": "python/workspace_annotation_groups.py",
+      "line": 62,
+      "primary_key": [
+        "project_uuid",
+        "operation_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "operation_uuid",
+          "declaration": "operation_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "request_sha256",
+          "declaration": "request_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "receipt",
+          "declaration": "receipt: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        operation_uuid: varchar(36)\n        ---\n        actor: varchar(255)\n        profile_uuid: varchar(36)\n        request_sha256: char(64)\n        receipt: json\n        created_at: datetime",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "operation_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "operation_uuid",
+          "declaration": "operation_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "request_sha256",
+          "declaration": "request_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "receipt",
+          "declaration": "receipt: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "ProtocolTreeLayout",
+      "table": "protocol_tree_layout",
+      "source": "python/workspace_tree_layouts.py",
+      "line": 12,
+      "primary_key": [
+        "project_uuid",
+        "protocol_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "split_order",
+          "declaration": "split_order: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        protocol_uuid: varchar(36)\n        ---\n        split_order: json\n        version: int unsigned\n        updated_at: datetime\n        actor: varchar(255)",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "protocol_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "split_order",
+          "declaration": "split_order: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "WorkbenchDraft",
+      "table": "workbench_draft",
+      "source": "python/workspace_workbench.py",
+      "line": 31,
+      "primary_key": [
+        "project_uuid",
+        "protocol_uuid",
+        "candidate_revision_uuid",
+        "actor"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "candidate_revision_uuid",
+          "declaration": "candidate_revision_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "selection_mode",
+          "declaration": "selection_mode: varchar(16)",
+          "in_primary_key": false
+        },
+        {
+          "name": "deferred",
+          "declaration": "deferred: bool",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        protocol_uuid: varchar(36)\n        candidate_revision_uuid: varchar(36)\n        actor: varchar(255)\n        ---\n        version: int unsigned\n        selection_mode: varchar(16)\n        deferred: bool",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "protocol_uuid",
+        "candidate_revision_uuid",
+        "actor"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "candidate_revision_uuid",
+          "declaration": "candidate_revision_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "selection_mode",
+          "declaration": "selection_mode: varchar(16)",
+          "in_primary_key": false
+        },
+        {
+          "name": "deferred",
+          "declaration": "deferred: bool",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "WorkbenchDecision",
+      "table": "workbench_decision",
+      "source": "python/workspace_workbench.py",
+      "line": 44,
+      "primary_key": [
+        "project_uuid",
+        "protocol_uuid",
+        "candidate_revision_uuid",
+        "actor",
+        "epoch_uuid"
+      ],
+      "foreign_key_declarations": [
+        {
+          "expression": "WorkbenchDraft",
+          "in_primary_key": true
+        }
+      ],
+      "fields": [
+        {
+          "name": "epoch_uuid",
+          "declaration": "epoch_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "metadata_hash",
+          "declaration": "metadata_hash: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "selected",
+          "declaration": "selected: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "reviewed",
+          "declaration": "reviewed: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "excluded",
+          "declaration": "excluded: bool",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "-> WorkbenchDraft\n        epoch_uuid: varchar(36)\n        ---\n        metadata_hash: char(64)\n        selected: bool\n        reviewed: bool\n        excluded: bool",
+      "explicit_primary_key_fields": [
+        "epoch_uuid"
+      ],
+      "resolved_foreign_keys": [
+        {
+          "target_table": "recording_workspace.workbench_draft",
+          "local_columns": [
+            "project_uuid",
+            "protocol_uuid",
+            "candidate_revision_uuid",
+            "actor"
+          ],
+          "target_columns": [
+            "project_uuid",
+            "protocol_uuid",
+            "candidate_revision_uuid",
+            "actor"
+          ],
+          "nullable": false,
+          "in_primary_key": true
+        }
+      ],
+      "all_fields": [
+        {
+          "name": "epoch_uuid",
+          "declaration": "epoch_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "metadata_hash",
+          "declaration": "metadata_hash: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "selected",
+          "declaration": "selected: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "reviewed",
+          "declaration": "reviewed: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "excluded",
+          "declaration": "excluded: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "project_uuid",
+          "in_primary_key": true,
+          "inherited_from": "recording_workspace.workbench_draft.project_uuid",
+          "nullable": false,
+          "declaration": "project_uuid: varchar(36)"
+        },
+        {
+          "name": "protocol_uuid",
+          "in_primary_key": true,
+          "inherited_from": "recording_workspace.workbench_draft.protocol_uuid",
+          "nullable": false,
+          "declaration": "protocol_uuid: varchar(36)"
+        },
+        {
+          "name": "candidate_revision_uuid",
+          "in_primary_key": true,
+          "inherited_from": "recording_workspace.workbench_draft.candidate_revision_uuid",
+          "nullable": false,
+          "declaration": "candidate_revision_uuid: varchar(36)"
+        },
+        {
+          "name": "actor",
+          "in_primary_key": true,
+          "inherited_from": "recording_workspace.workbench_draft.actor",
+          "nullable": false,
+          "declaration": "actor: varchar(255)"
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "WorkbenchReceipt",
+      "table": "workbench_receipt",
+      "source": "python/workspace_workbench.py",
+      "line": 56,
+      "primary_key": [
+        "project_uuid",
+        "operation_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "operation_uuid",
+          "declaration": "operation_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "candidate_revision_uuid",
+          "declaration": "candidate_revision_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "request_sha256",
+          "declaration": "request_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "receipt",
+          "declaration": "receipt: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        operation_uuid: varchar(36)\n        ---\n        protocol_uuid: varchar(36)\n        candidate_revision_uuid: varchar(36)\n        actor: varchar(255)\n        request_sha256: char(64)\n        receipt: json",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "operation_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "operation_uuid",
+          "declaration": "operation_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "candidate_revision_uuid",
+          "declaration": "candidate_revision_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "request_sha256",
+          "declaration": "request_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "receipt",
+          "declaration": "receipt: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "Curation",
+      "table": "curation",
+      "source": "python/workspace_curation.py",
+      "line": 34,
+      "primary_key": [
+        "project_uuid",
+        "protocol_uuid",
+        "epoch_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "epoch_uuid",
+          "declaration": "epoch_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "included",
+          "declaration": "included: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "tags",
+          "declaration": "tags: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "review_state",
+          "declaration": "review_state: enum('unreviewed', 'approved')",
+          "in_primary_key": false
+        },
+        {
+          "name": "revision",
+          "declaration": "revision: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "metadata_fingerprint",
+          "declaration": "metadata_fingerprint: char(64)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        protocol_uuid: varchar(36)\n        epoch_uuid: varchar(36)\n        ---\n        included: bool\n        tags: json\n        review_state: enum('unreviewed', 'approved')\n        revision: int unsigned\n        metadata_fingerprint: char(64)",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "protocol_uuid",
+        "epoch_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "epoch_uuid",
+          "declaration": "epoch_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "included",
+          "declaration": "included: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "tags",
+          "declaration": "tags: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "review_state",
+          "declaration": "review_state: enum('unreviewed', 'approved')",
+          "in_primary_key": false
+        },
+        {
+          "name": "revision",
+          "declaration": "revision: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "metadata_fingerprint",
+          "declaration": "metadata_fingerprint: char(64)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "DatasetRevision",
+      "table": "dataset_revision",
+      "source": "python/workspace_curation.py",
+      "line": 48,
+      "primary_key": [
+        "project_uuid",
+        "dataset_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "dataset_uuid",
+          "declaration": "dataset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "artifact_path",
+          "declaration": "artifact_path: varchar(2048)",
+          "in_primary_key": false
+        },
+        {
+          "name": "artifact_sha256",
+          "declaration": "artifact_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "epoch_count",
+          "declaration": "epoch_count: int unsigned",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        dataset_uuid: varchar(36)\n        ---\n        protocol_uuid: varchar(36)\n        created_at: datetime\n        actor: varchar(255)\n        recipe: json\n        artifact_path: varchar(2048)\n        artifact_sha256: char(64)\n        epoch_count: int unsigned",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "dataset_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "dataset_uuid",
+          "declaration": "dataset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "artifact_path",
+          "declaration": "artifact_path: varchar(2048)",
+          "in_primary_key": false
+        },
+        {
+          "name": "artifact_sha256",
+          "declaration": "artifact_sha256: char(64)",
+          "in_primary_key": false
+        },
+        {
+          "name": "epoch_count",
+          "declaration": "epoch_count: int unsigned",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "AnnotationProfile",
+      "table": "annotation_profile",
+      "source": "python/workspace_annotations.py",
+      "line": 52,
+      "primary_key": [
+        "project_uuid",
+        "profile_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "display_name",
+          "declaration": "display_name: varchar(120)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_by",
+          "declaration": "created_by: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        profile_uuid: varchar(36)\n        ---\n        display_name: varchar(120)\n        created_at: datetime\n        created_by: varchar(255)",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "profile_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "display_name",
+          "declaration": "display_name: varchar(120)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_by",
+          "declaration": "created_by: varchar(255)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "SharedAnnotation",
+      "table": "shared_annotation",
+      "source": "python/workspace_annotations.py",
+      "line": 62,
+      "primary_key": [
+        "project_uuid",
+        "target_kind",
+        "target_uuid",
+        "profile_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "target_kind",
+          "declaration": "target_kind: enum('cell','epoch')",
+          "in_primary_key": true
+        },
+        {
+          "name": "target_uuid",
+          "declaration": "target_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "tags",
+          "declaration": "tags: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "author_name",
+          "declaration": "author_name: varchar(120)",
+          "in_primary_key": false
+        },
+        {
+          "name": "revision",
+          "declaration": "revision: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        target_kind: enum('cell','epoch')\n        target_uuid: varchar(36)\n        profile_uuid: varchar(36)\n        ---\n        tags: json\n        author_name: varchar(120)\n        revision: int unsigned\n        updated_at: datetime",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "target_kind",
+        "target_uuid",
+        "profile_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "target_kind",
+          "declaration": "target_kind: enum('cell','epoch')",
+          "in_primary_key": true
+        },
+        {
+          "name": "target_uuid",
+          "declaration": "target_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "profile_uuid",
+          "declaration": "profile_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "tags",
+          "declaration": "tags: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "author_name",
+          "declaration": "author_name: varchar(120)",
+          "in_primary_key": false
+        },
+        {
+          "name": "revision",
+          "declaration": "revision: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "SearchPreset",
+      "table": "search_preset",
+      "source": "python/workspace_search_presets.py",
+      "line": 14,
+      "primary_key": [
+        "project_uuid",
+        "preset_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "preset_uuid",
+          "declaration": "preset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(160)",
+          "in_primary_key": false
+        },
+        {
+          "name": "description",
+          "declaration": "description: varchar(2000)",
+          "in_primary_key": false
+        },
+        {
+          "name": "predicate",
+          "declaration": "predicate: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "splits",
+          "declaration": "splits: varchar(4096)",
+          "in_primary_key": false
+        },
+        {
+          "name": "pinned",
+          "declaration": "pinned: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        preset_uuid: varchar(36)\n        ---\n        name: varchar(160)\n        description: varchar(2000)\n        predicate: json\n        splits: varchar(4096)\n        pinned: bool\n        version: int unsigned\n        updated_at: datetime\n        actor: varchar(255)",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "preset_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "preset_uuid",
+          "declaration": "preset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(160)",
+          "in_primary_key": false
+        },
+        {
+          "name": "description",
+          "declaration": "description: varchar(2000)",
+          "in_primary_key": false
+        },
+        {
+          "name": "predicate",
+          "declaration": "predicate: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "splits",
+          "declaration": "splits: varchar(4096)",
+          "in_primary_key": false
+        },
+        {
+          "name": "pinned",
+          "declaration": "pinned: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "SearchPresetVersion",
+      "table": "search_preset_version",
+      "source": "python/workspace_search_presets.py",
+      "line": 30,
+      "primary_key": [
+        "project_uuid",
+        "preset_uuid",
+        "version"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "preset_uuid",
+          "declaration": "preset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": true
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        preset_uuid: varchar(36)\n        version: int unsigned\n        ---\n        recipe: json",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "preset_uuid",
+        "version"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "preset_uuid",
+          "declaration": "preset_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": true
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "SearchQueryLastRun",
+      "table": "search_query_last_run",
+      "source": "python/workspace_search_presets.py",
+      "line": 82,
+      "primary_key": [
+        "project_uuid",
+        "query_sha256"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "query_sha256",
+          "declaration": "query_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "result",
+          "declaration": "result: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        query_sha256: char(64)\n        ---\n        result: json",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "query_sha256"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "query_sha256",
+          "declaration": "query_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "result",
+          "declaration": "result: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "ExplorerRevision",
+      "table": "explorer_revision",
+      "source": "python/workspace_explorer.py",
+      "line": 21,
+      "primary_key": [
+        "project_uuid",
+        "revision_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "revision_uuid",
+          "declaration": "revision_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "parent_revision_uuid",
+          "declaration": "parent_revision_uuid=null: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "summary",
+          "declaration": "summary: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        revision_uuid: varchar(36)\n        ---\n        created_at: datetime\n        name: varchar(255)\n        parent_revision_uuid=null: varchar(36)\n        summary: json\n        recipe: json",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "revision_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "revision_uuid",
+          "declaration": "revision_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "parent_revision_uuid",
+          "declaration": "parent_revision_uuid=null: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "summary",
+          "declaration": "summary: json",
+          "in_primary_key": false
+        },
+        {
+          "name": "recipe",
+          "declaration": "recipe: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "ProtocolBinding",
+      "table": "protocol_binding",
+      "source": "python/workspace_explorer.py",
+      "line": 39,
+      "primary_key": [
+        "project_uuid",
+        "protocol_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "revision_uuid",
+          "declaration": "revision_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "bound_at",
+          "declaration": "bound_at: datetime",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        protocol_uuid: varchar(36)\n        ---\n        revision_uuid: varchar(36)\n        version: int unsigned\n        bound_at: datetime",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "protocol_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "revision_uuid",
+          "declaration": "revision_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "bound_at",
+          "declaration": "bound_at: datetime",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "DataStoreState",
+      "table": "data_store_state",
+      "source": "python/workspace_datastores.py",
+      "line": 142,
+      "primary_key": [
+        "project_uuid",
+        "source_sha256"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "source_sha256",
+          "declaration": "source_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "frozen",
+          "declaration": "frozen: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "archived",
+          "declaration": "archived: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "query_excluded",
+          "declaration": "query_excluded: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor_kind",
+          "declaration": "actor_kind: enum('local_user', 'client_claimed')",
+          "in_primary_key": false
+        },
+        {
+          "name": "server_actor",
+          "declaration": "server_actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "reason",
+          "declaration": "reason: varchar(2000)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        source_sha256: char(64)\n        ---\n        version: int unsigned\n        frozen: bool\n        archived: bool\n        query_excluded: bool\n        updated_at: datetime\n        actor: varchar(255)\n        actor_kind: enum('local_user', 'client_claimed')\n        server_actor: varchar(255)\n        reason: varchar(2000)",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "source_sha256"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "source_sha256",
+          "declaration": "source_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "version",
+          "declaration": "version: int unsigned",
+          "in_primary_key": false
+        },
+        {
+          "name": "frozen",
+          "declaration": "frozen: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "archived",
+          "declaration": "archived: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "query_excluded",
+          "declaration": "query_excluded: bool",
+          "in_primary_key": false
+        },
+        {
+          "name": "updated_at",
+          "declaration": "updated_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor_kind",
+          "declaration": "actor_kind: enum('local_user', 'client_claimed')",
+          "in_primary_key": false
+        },
+        {
+          "name": "server_actor",
+          "declaration": "server_actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "reason",
+          "declaration": "reason: varchar(2000)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "ProtocolSuggestion",
+      "table": "protocol_suggestion",
+      "source": "python/workspace_suggestions.py",
+      "line": 19,
+      "primary_key": [
+        "project_uuid",
+        "suggestion_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "suggestion_uuid",
+          "declaration": "suggestion_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "summary",
+          "declaration": "summary: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        suggestion_uuid: varchar(36)\n        ---\n        protocol_uuid: varchar(36)\n        created_at: datetime\n        summary: json",
+      "explicit_primary_key_fields": [
+        "project_uuid",
+        "suggestion_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "suggestion_uuid",
+          "declaration": "suggestion_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "created_at",
+          "declaration": "created_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "summary",
+          "declaration": "summary: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "Project",
+      "table": "project",
+      "source": "python/recording_workspace.py",
+      "line": 600,
+      "primary_key": [
+        "project_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "directory",
+          "declaration": "directory: varchar(1024)",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "project_uuid: varchar(36)\n        ---\n        name: varchar(255)\n        directory: varchar(1024)",
+      "explicit_primary_key_fields": [
+        "project_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "name",
+          "declaration": "name: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "directory",
+          "declaration": "directory: varchar(1024)",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "Source",
+      "table": "source",
+      "source": "python/recording_workspace.py",
+      "line": 609,
+      "primary_key": [
+        "source_sha256"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "source_sha256",
+          "declaration": "source_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_uuid",
+          "declaration": "experiment_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "declaration": "experiment_id: int",
+          "in_primary_key": false
+        },
+        {
+          "name": "manifest",
+          "declaration": "manifest: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "source_sha256: char(64)\n        ---\n        project_uuid: varchar(36)\n        experiment_uuid: varchar(36)\n        experiment_id: int\n        manifest: json",
+      "explicit_primary_key_fields": [
+        "source_sha256"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "source_sha256",
+          "declaration": "source_sha256: char(64)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_uuid",
+          "declaration": "experiment_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "experiment_id",
+          "declaration": "experiment_id: int",
+          "in_primary_key": false
+        },
+        {
+          "name": "manifest",
+          "declaration": "manifest: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "Event",
+      "table": "event",
+      "source": "python/recording_workspace.py",
+      "line": 620,
+      "primary_key": [
+        "event_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "event_uuid",
+          "declaration": "event_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "occurred_at",
+          "declaration": "occurred_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "action",
+          "declaration": "action: varchar(63)",
+          "in_primary_key": false
+        },
+        {
+          "name": "payload",
+          "declaration": "payload: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "event_uuid: varchar(36)\n        ---\n        project_uuid: varchar(36)\n        occurred_at: datetime\n        actor: varchar(255)\n        action: varchar(63)\n        payload: json",
+      "explicit_primary_key_fields": [
+        "event_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "event_uuid",
+          "declaration": "event_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "occurred_at",
+          "declaration": "occurred_at: datetime",
+          "in_primary_key": false
+        },
+        {
+          "name": "actor",
+          "declaration": "actor: varchar(255)",
+          "in_primary_key": false
+        },
+        {
+          "name": "action",
+          "declaration": "action: varchar(63)",
+          "in_primary_key": false
+        },
+        {
+          "name": "payload",
+          "declaration": "payload: json",
+          "in_primary_key": false
+        }
+      ]
+    },
+    {
+      "schema": "recording_workspace",
+      "class": "ProtocolWorkspace",
+      "table": "protocol_workspace",
+      "source": "python/recording_workspace.py",
+      "line": 632,
+      "primary_key": [
+        "protocol_uuid"
+      ],
+      "foreign_key_declarations": [],
+      "fields": [
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "definition",
+          "declaration": "definition: json",
+          "in_primary_key": false
+        }
+      ],
+      "datajoint_definition": "protocol_uuid: varchar(36)\n        ---\n        project_uuid: varchar(36)\n        definition: json",
+      "explicit_primary_key_fields": [
+        "protocol_uuid"
+      ],
+      "resolved_foreign_keys": [],
+      "all_fields": [
+        {
+          "name": "protocol_uuid",
+          "declaration": "protocol_uuid: varchar(36)",
+          "in_primary_key": true
+        },
+        {
+          "name": "project_uuid",
+          "declaration": "project_uuid: varchar(36)",
+          "in_primary_key": false
+        },
+        {
+          "name": "definition",
+          "declaration": "definition: json",
+          "in_primary_key": false
+        }
+      ]
+    }
+  ],
+  "important_non_fk_links": [
+    {
+      "from": "recording_workspace.source.experiment_id",
+      "to": "schema.experiment.id",
+      "enforcement": "application, plain integer, NOT declared FK"
+    },
+    {
+      "from": "recording_workspace.shared_annotation.target_uuid",
+      "to": "schema.cell.h5_uuid OR schema.epoch.h5_uuid according to target_kind",
+      "enforcement": "application validation, NOT declared FK"
+    },
+    {
+      "from": "recording_workspace.curation.epoch_uuid",
+      "to": "schema.epoch.h5_uuid",
+      "enforcement": "application validation, NOT declared FK"
+    },
+    {
+      "from": "recording_workspace.protocol_binding.revision_uuid",
+      "to": "recording_workspace.explorer_revision.revision_uuid",
+      "enforcement": "application link; inspect raw declaration for FK status"
+    }
+  ],
+  "derived_sql_tables": {
+    "recording_workspace": [
+      "app_shared_tag_lookup",
+      "app_shared_tag_lookup_checkpoint",
+      "app_shared_tag_dictionary",
+      "app_shared_tag_authors",
+      "app_state_generation",
+      "app_annotation_changes"
+    ],
+    "cache/metadata/<generation>.sqlite": [
+      "meta",
+      "epochs",
+      "fields",
+      "field_values",
+      "epoch_values",
+      "sources",
+      "metadata_objects"
+    ],
+    "cache/typed-metadata/<contract>.sqlite": [
+      "typed_core",
+      "typed_values",
+      "typed_receipt",
+      "typed_ranks"
+    ]
+  },
+  "export_sqlite_schema_source": "python/workspace_sqlite.py:29 (schema v2; separate handoff contract)",
+  "store_ownership": [
+    {
+      "store": "project/database/mysql",
+      "role": "primary persistent acquisition + app state",
+      "owner": "project private native MySQL",
+      "schemas": [
+        "schema",
+        "recording_workspace"
+      ],
+      "evidence": "python/workspace_native_mysql.py:55,288"
+    },
+    {
+      "store": "project/imports/<stem>-<H5SHA12>/metadata.raw.json,metadata.catalog.json,parse-manifest.json,import-manifest.json",
+      "role": "retained parser/normalized metadata and provenance, checked against SQL manifest and recording",
+      "owner": "project",
+      "evidence": "python/recording_workspace.py:413,555"
+    },
+    {
+      "store": "project/cache/source-projections/*.json.zlib + .sha256",
+      "role": "discardable sealed source projections",
+      "owner": "project",
+      "evidence": "python/workspace_service.py:209;workspace_projection_cache.py:116"
+    },
+    {
+      "store": "project/cache/metadata/<generation>.sqlite + seal",
+      "role": "discardable metadata query index",
+      "owner": "project",
+      "evidence": "python/workspace_service.py:500;workspace_disk_index.py:93"
+    },
+    {
+      "store": "project/cache/typed-metadata/<contract>.sqlite + seal",
+      "role": "discardable typed scalar/index sidecar",
+      "owner": "project",
+      "evidence": "python/workspace_typed_lifecycle.py:49;workspace_typed_index.py:129"
+    },
+    {
+      "store": "project/app-state.json -> backups/app-state/current-<uuidhex>.sqlite;checkpoint-v2-YYYY-MM-DD.sqlite",
+      "role": "recoverable mirror/checkpoints of current app state; no waveform bytes",
+      "owner": "project",
+      "evidence": "python/workspace_recovery_store.py:345,364,449"
+    },
+    {
+      "store": "project/protocols/*.json and protocols/ui-state/project-preferences.json",
+      "role": "protocol definition manifests and portable project search/shortcut preferences",
+      "owner": "project",
+      "evidence": "python/workspace_project_preferences.py:13;recording_workspace.py:875"
+    },
+    {
+      "store": "OS user ~/.rieke-os/project-index.json,annotation-author.json,appearance.json (environment overrides supported)",
+      "role": "discovery, selected tag author and appearance preferences; no scientific primary store",
+      "owner": "local OS user",
+      "evidence": "python/workspace_startup_registry.py:60;workspace_author_preferences.py:16,90"
+    },
+    {
+      "store": "selected workspace root/.rieke-os.json",
+      "role": "legacy/local launcher selection/order",
+      "owner": "launcher workspace root",
+      "evidence": "python/workspace_startup_registry.py:12"
+    },
+    {
+      "store": "export .sqlite (recording-workspace schema v2), .mat, reference JSON",
+      "role": "immutable frozen handoff snapshots",
+      "owner": "export recipient; project records recipe/artifact checksum",
+      "evidence": "python/workspace_sqlite.py:23;workspace_curation.py:48"
+    }
+  ],
+  "derived_table_ddl_source_literals": [
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 305,
+      "source_literal": "f'''CREATE TABLE IF NOT EXISTS `{SCHEMA}`.`{TABLE}` (\n                project_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                target_kind varchar(8) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                target_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                profile_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                tag varbinary(1020) NOT NULL,PRIMARY KEY(project_uuid,target_kind,target_uuid,profile_uuid,tag),\n                KEY {INDEX}(project_uuid,tag,profile_uuid,target_kind,target_uuid)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 312,
+      "source_literal": "f'''CREATE TABLE IF NOT EXISTS `{SCHEMA}`.`{MARKER}` (\n                project_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                version int NOT NULL,proof json NOT NULL,dirty tinyint unsigned NOT NULL,PRIMARY KEY(project_uuid)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 315,
+      "source_literal": "f'''CREATE TABLE `{SCHEMA}`.`{DICTIONARY}` (\n                project_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                tag varbinary(1020) NOT NULL,target_count bigint unsigned NOT NULL,fold_key varbinary({FOLD_BYTES}) NULL,\n                PRIMARY KEY(project_uuid,tag),KEY by_prefix(project_uuid,fold_key,tag),\n                KEY by_rank(project_uuid,target_count DESC,fold_key,tag)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 320,
+      "source_literal": "f'''CREATE TABLE `{SCHEMA}`.`{AUTHORS}` (\n                project_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                tag varbinary(1020) NOT NULL,profile_uuid varchar(36) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,\n                membership_count bigint unsigned NOT NULL,PRIMARY KEY(project_uuid,tag,profile_uuid)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 305,
+      "source_literal": "CREATE TABLE IF NOT EXISTS `"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 312,
+      "source_literal": "CREATE TABLE IF NOT EXISTS `"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 315,
+      "source_literal": "CREATE TABLE `"
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "line": 320,
+      "source_literal": "CREATE TABLE `"
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "line": 286,
+      "source_literal": "f'''CREATE TABLE IF NOT EXISTS `{SCHEMA}`.`{GENERATION}` (\n                    project_uuid varchar(36) NOT NULL,scope_kind varchar(32) NOT NULL,scope_uuid varchar(36) NOT NULL,\n                    scope_epoch char(36) NOT NULL,generation bigint unsigned NOT NULL,\n                    PRIMARY KEY(project_uuid,scope_kind,scope_uuid)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "line": 291,
+      "source_literal": "f'''CREATE TABLE IF NOT EXISTS `{SCHEMA}`.`{CHANGES}` (\n                    project_uuid varchar(36) NOT NULL,target_kind varchar(16) NOT NULL,target_uuid varchar(36) NOT NULL,\n                    profile_uuid varchar(36) NOT NULL,last_generation bigint unsigned NOT NULL,deleted tinyint unsigned NOT NULL,\n                    PRIMARY KEY(project_uuid,target_kind,target_uuid,profile_uuid),KEY changed(project_uuid,last_generation)) ENGINE=InnoDB'''"
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "line": 286,
+      "source_literal": "CREATE TABLE IF NOT EXISTS `"
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "line": 291,
+      "source_literal": "CREATE TABLE IF NOT EXISTS `"
+    },
+    {
+      "source": "python/workspace_disk_index.py",
+      "line": 91,
+      "source_literal": "'''\n                PRAGMA journal_mode=DELETE; PRAGMA synchronous=FULL;\n                CREATE TABLE meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);\n                CREATE TABLE epochs(epoch_id INTEGER PRIMARY KEY,epoch_uuid TEXT UNIQUE NOT NULL,\n                    source_sha TEXT,cell_uuid TEXT,row_json TEXT NOT NULL,detail_blob BLOB NOT NULL,fingerprint TEXT NOT NULL);\n                CREATE INDEX epochs_source ON epochs(source_sha);\n                CREATE TABLE fields(field_no INTEGER PRIMARY KEY,field_id TEXT UNIQUE NOT NULL,definition_json TEXT NOT NULL);\n                CREATE TABLE field_values(value_id INTEGER PRIMARY KEY,field_no INTEGER NOT NULL,value_json TEXT NOT NULL,\n                    UNIQUE(field_no,value_json));\n                CREATE TABLE epoch_values(epoch_id INTEGER,field_no INTEGER,value_id INTEGER,\n                    PRIMARY KEY(epoch_id,field_no)) WITHOUT ROWID;\n                CREATE INDEX values_reverse ON epoch_values(field_no,value_id,epoch_id);\n                CREATE TABLE sources(source_sha TEXT PRIMARY KEY,source_json TEXT NOT NULL);\n            '''"
+    },
+    {
+      "source": "python/workspace_typed_index.py",
+      "line": 128,
+      "source_literal": "'''\n            CREATE TABLE typed_core(\n                epoch_id INTEGER PRIMARY KEY,sort_rank INTEGER,epoch_uuid TEXT NOT NULL,\n                source_sha256 TEXT,cell_uuid TEXT,block_uuid TEXT,group_uuid TEXT,\n                protocol_name TEXT,date TEXT,start_time TEXT,block_start_time TEXT,\n                epoch_number INTEGER,duration_seconds REAL,cell_label TEXT,cell_type TEXT,group_label TEXT);\n            CREATE TABLE typed_values(\n                value_id INTEGER PRIMARY KEY,field_no INTEGER NOT NULL,\n                kind TEXT NOT NULL,numeric_value,numeric_class TEXT,text_value TEXT,\n                equality_json TEXT NOT NULL,value_json TEXT NOT NULL);\n            CREATE TABLE typed_receipt(key TEXT PRIMARY KEY,value_json TEXT NOT NULL);\n        '''"
+    },
+    {
+      "source": "python/workspace_typed_index.py",
+      "line": 152,
+      "source_literal": "'CREATE TABLE typed_ranks AS SELECT epoch_id,ROW_NUMBER() OVER (ORDER BY COALESCE(date,\\'\\'),COALESCE(start_time,\\'\\'),epoch_uuid) AS sort_rank FROM typed_core'"
+    },
+    {
+      "source": "python/workspace_metadata_objects.py",
+      "line": 97,
+      "source_literal": "'CREATE TABLE metadata_objects ('\n            'object_id INTEGER PRIMARY KEY,source_sha TEXT COLLATE BINARY NOT NULL,'\n            'kind TEXT COLLATE BINARY NOT NULL,object_uuid TEXT COLLATE BINARY NOT NULL,'\n            'payload BLOB NOT NULL,sha256 BLOB NOT NULL,UNIQUE(source_sha,kind,object_uuid))'"
+    },
+    {
+      "source": "python/workspace_recovery_store.py",
+      "line": 364,
+      "source_literal": "'CREATE TABLE recovery_header (payload BLOB NOT NULL,sha256 BLOB NOT NULL)'"
+    },
+    {
+      "source": "python/workspace_recovery_store.py",
+      "line": 365,
+      "source_literal": "'CREATE TABLE recovery_rows (table_name INTEGER NOT NULL,row_key BLOB NOT NULL,'\n                    'payload BLOB NOT NULL,sha256 BLOB NOT NULL,PRIMARY KEY(table_name,row_key)) WITHOUT ROWID'"
+    }
+  ],
+  "frozen_export_sqlite_v2_ddl": "\nCREATE TABLE export_metadata (\n export_uuid TEXT PRIMARY KEY, project_uuid TEXT NOT NULL, protocol_uuid TEXT NOT NULL,\n format TEXT NOT NULL, schema_version INTEGER NOT NULL, created_at TEXT NOT NULL,\n actor TEXT NOT NULL, catalog_ref TEXT NOT NULL, recipe_json TEXT NOT NULL,\n query_json TEXT NOT NULL, recipe_sha256 TEXT NOT NULL, package_sha256 TEXT NOT NULL,\n compatibility TEXT NOT NULL, waveforms TEXT NOT NULL);\nCREATE TABLE sources (source_sha256 TEXT PRIMARY KEY, source_path TEXT NOT NULL);\nCREATE TABLE cells (cell_uuid TEXT PRIMARY KEY, source_sha256 TEXT NOT NULL REFERENCES sources,\n cell_label TEXT, cell_type TEXT, recording_date TEXT, metadata_json TEXT NOT NULL);\nCREATE TABLE epoch_groups (group_uuid TEXT PRIMARY KEY, cell_uuid TEXT NOT NULL REFERENCES cells,\n group_label TEXT, metadata_json TEXT NOT NULL);\nCREATE TABLE epoch_blocks (block_uuid TEXT PRIMARY KEY, group_uuid TEXT NOT NULL REFERENCES epoch_groups,\n acquisition_protocol TEXT NOT NULL, start_time TEXT, end_time TEXT, metadata_json TEXT NOT NULL);\nCREATE TABLE parameter_sets (parameter_set_sha256 TEXT PRIMARY KEY, parameters_json TEXT NOT NULL);\nCREATE TABLE parameter_values (parameter_set_sha256 TEXT NOT NULL REFERENCES parameter_sets,\n field_id TEXT NOT NULL, json_type TEXT NOT NULL, value_json TEXT NOT NULL, numeric_value REAL, text_value TEXT,\n PRIMARY KEY(parameter_set_sha256,field_id)) WITHOUT ROWID;\nCREATE TABLE epochs (epoch_uuid TEXT PRIMARY KEY, block_uuid TEXT NOT NULL REFERENCES epoch_blocks,\n export_uuid TEXT NOT NULL REFERENCES export_metadata,\n source_sha256 TEXT NOT NULL REFERENCES sources, epoch_number INTEGER,\n start_time TEXT, end_time TEXT, duration_seconds REAL,\n metadata_fingerprint TEXT NOT NULL, metadata_fingerprint_version INTEGER NOT NULL,\n included INTEGER NOT NULL CHECK(included=1), review_state TEXT NOT NULL, curation_revision INTEGER NOT NULL,\n curation_json TEXT NOT NULL, metadata_json TEXT NOT NULL,\n parameter_set_sha256 TEXT NOT NULL REFERENCES parameter_sets);\nCREATE TABLE frozen_records (epoch_uuid TEXT PRIMARY KEY REFERENCES epochs,\n codec TEXT NOT NULL CHECK(codec='zlib-json'), raw_size INTEGER NOT NULL CHECK(raw_size>0),\n record_sha256 TEXT NOT NULL, payload BLOB NOT NULL);\nCREATE TABLE streams (stream_uuid TEXT PRIMARY KEY, epoch_uuid TEXT NOT NULL REFERENCES epochs,\n kind TEXT NOT NULL CHECK(kind IN ('responses','stimuli')), device TEXT NOT NULL,\n h5_path TEXT NOT NULL, data_path TEXT, sample_rate REAL, sample_rate_units TEXT,\n sample_count INTEGER, units TEXT, metadata_json TEXT NOT NULL);\nCREATE TABLE epoch_tags (epoch_uuid TEXT NOT NULL REFERENCES epochs, tag TEXT NOT NULL,\n PRIMARY KEY(epoch_uuid,tag));\nCREATE TABLE shared_annotations (target_kind TEXT NOT NULL CHECK(target_kind IN ('cell','epoch')),\n target_uuid TEXT NOT NULL, profile_uuid TEXT NOT NULL, author_name TEXT NOT NULL,\n tag TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision>0),\n PRIMARY KEY(target_kind,target_uuid,profile_uuid,tag));\nCREATE TABLE annotation_revisions (target_kind TEXT NOT NULL CHECK(target_kind IN ('cell','epoch')),\n target_uuid TEXT NOT NULL, profile_uuid TEXT NOT NULL, revision INTEGER NOT NULL CHECK(revision>0),\n PRIMARY KEY(target_kind,target_uuid,profile_uuid));\nCREATE VIEW epoch_parameters AS SELECT e.epoch_uuid,p.field_id,p.json_type,p.value_json,p.numeric_value,p.text_value\n FROM epochs e JOIN parameter_values p USING(parameter_set_sha256);\nCREATE INDEX epochs_parameters ON epochs(parameter_set_sha256);\nCREATE INDEX epochs_block ON epochs(block_uuid);\nCREATE INDEX blocks_group ON epoch_blocks(group_uuid);\nCREATE INDEX groups_cell ON epoch_groups(cell_uuid);\nCREATE INDEX cells_type ON cells(cell_type);\nCREATE INDEX streams_epoch ON streams(epoch_uuid);\nCREATE INDEX parameters_field_value ON parameter_values(field_id,numeric_value,text_value);\nCREATE TABLE example_queries (name TEXT PRIMARY KEY, description TEXT NOT NULL, sql TEXT NOT NULL);\nCREATE TABLE documentation (name TEXT PRIMARY KEY, content TEXT NOT NULL);\nCREATE VIEW epoch_overview AS\n SELECT e.epoch_uuid,c.cell_uuid,c.cell_label,c.cell_type,c.recording_date,\n g.group_uuid,g.group_label,b.block_uuid,b.acquisition_protocol,e.start_time,\n e.duration_seconds,e.epoch_number,e.review_state,c.source_sha256,s.source_path\n FROM epochs e JOIN epoch_blocks b USING(block_uuid) JOIN epoch_groups g USING(group_uuid)\n JOIN cells c USING(cell_uuid) JOIN sources s USING(source_sha256);\n",
+  "read_method": "Static source inspection only; no DataJoint imports, database connections, live DDL queries or migrations.",
+  "field_catalog_note": "fields are explicit declarations; all_fields also lists FK-inherited columns. primary_key expands FK inheritance; resolved_foreign_keys gives numeric/UUID local-target columns. Physical index/FK constraint names are not introspected."
+}

@@ -1,0 +1,205 @@
+{
+  "contract_version": "1.0.0-draft.1",
+  "review_status": "Independent review GO; checker exit-status caveat fixed with offline positive/negative regression",
+  "production_importer_supported": false,
+  "original_kit_manifest_sha256": "cf93b9f33ad7fc73139052d2fd2206b0ea083c9868b44f64fa435fbc300c058f",
+  "original_baseline_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
+  "implementation_comparison_commit": "fafb826ee00cfa14b657e91ecae5db0c1eda4a84",
+  "recommended_repo_destination": "contracts/metadata-bundle/v1-draft",
+  "files": [
+    {
+      "path": "disco-metadata-bundle.schema.json",
+      "origin": "reviewed-adapter-kit/disco-metadata-bundle.schema.json",
+      "original_sha256": "75dd17ac935ccf64e2081ba504aad60ddf7c6bd228b6c7c5f9f14c61164fdff9",
+      "staged_sha256": "75dd17ac935ccf64e2081ba504aad60ddf7c6bd228b6c7c5f9f14c61164fdff9",
+      "change": "unchanged"
+    },
+    {
+      "path": "public-to-storage-map.json",
+      "origin": "reviewed-adapter-kit/public-to-storage-map.json",
+      "original_sha256": "83affab79c2967d7e2c715ad57aebda2899089286c79fad0c13f323443360888",
+      "staged_sha256": "83affab79c2967d7e2c715ad57aebda2899089286c79fad0c13f323443360888",
+      "change": "unchanged"
+    },
+    {
+      "path": "mapping-report.template.json",
+      "origin": "reviewed-adapter-kit/mapping-report.template.json",
+      "original_sha256": "5e5cac4d13cedadcd78ca46d284de02adf50c9c6aa9ebc62b448ac3e209ab4f8",
+      "staged_sha256": "5e5cac4d13cedadcd78ca46d284de02adf50c9c6aa9ebc62b448ac3e209ab4f8",
+      "change": "unchanged"
+    },
+    {
+      "path": "validate_bundle.py",
+      "origin": "reviewed-adapter-kit/validate_bundle.py",
+      "original_sha256": "8275985b13efd6dd45060e59c4caf2595280ac699f49978338830dc6f2bfe674",
+      "staged_sha256": "8275985b13efd6dd45060e59c4caf2595280ac699f49978338830dc6f2bfe674",
+      "change": "unchanged"
+    },
+    {
+      "path": "test_adapter_kit.py",
+      "origin": "reviewed-adapter-kit/test_adapter_kit.py",
+      "original_sha256": "fea0996435ee4212cbc5c376110bdf8f6629e5ad74364358096114fcb8724f03",
+      "staged_sha256": "fea0996435ee4212cbc5c376110bdf8f6629e5ad74364358096114fcb8724f03",
+      "change": "unchanged"
+    },
+    {
+      "path": "AGENT_PROMPT.md",
+      "origin": "reviewed-adapter-kit/AGENT_PROMPT.md",
+      "original_sha256": "eda3d64c45952cedad03c4a7b0d3181c20828143ca4dee5a6c9379b8209ad863",
+      "staged_sha256": "1259703b694b35850ec291c09857fdc0277608544e505f725a5f497ada0b6903",
+      "change": "sanitized documentation; AGENT prompt also adds complete-field inventory requirement"
+    },
+    {
+      "path": "json-metadata-import-design.md",
+      "origin": "reviewed-adapter-kit/json-metadata-import-design.md",
+      "original_sha256": "d08f5d4e54950bfd562bd6a0e4e18d37a80d944c301d8a80281c9516b331fc61",
+      "staged_sha256": "e69578411966da6ccb1f0dd61ad7acca0314fa531dc619dd5c7f5a72131459d0",
+      "change": "sanitized local path/thread references only"
+    },
+    {
+      "path": "VALIDATION_CHECKLIST.md",
+      "origin": "reviewed-adapter-kit/VALIDATION_CHECKLIST.md",
+      "original_sha256": "dff5ea94561a57d9e8b905cf9cc19df7d0acc13b5f4c751db33aeee7e7b5ba4d",
+      "staged_sha256": "dff5ea94561a57d9e8b905cf9cc19df7d0acc13b5f4c751db33aeee7e7b5ba4d",
+      "change": "unchanged"
+    },
+    {
+      "path": "REVIEW-RESOLUTION.md",
+      "origin": "reviewed-adapter-kit/REVIEW-RESOLUTION.md",
+      "original_sha256": "67ace5ff88e60362fc158ffd3f1831da32b3e7fe7fa7180ecf9b68219b9d3854",
+      "staged_sha256": "00c58e85a993a519fdd391f3ac72a61b12676009edafc966c714a84574d2fd30",
+      "change": "sanitized local path/thread references only"
+    },
+    {
+      "path": "examples/metadata-only.json",
+      "origin": "reviewed-adapter-kit/examples/metadata-only.json",
+      "original_sha256": "1d1b683eeca76993fdec1e824855a653fda83698584ed5f93cb9c2499fed7947",
+      "staged_sha256": "1d1b683eeca76993fdec1e824855a653fda83698584ed5f93cb9c2499fed7947",
+      "change": "unchanged"
+    },
+    {
+      "path": "examples/with-raw-reference.json",
+      "origin": "reviewed-adapter-kit/examples/with-raw-reference.json",
+      "original_sha256": "783e7f31c6dbd95a4765e56f7955a3710ec9fe2948c84fcd4d0ef0c783a1764c",
+      "staged_sha256": "783e7f31c6dbd95a4765e56f7955a3710ec9fe2948c84fcd4d0ef0c783a1764c",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/bad-unit.json",
+      "origin": "reviewed-adapter-kit/invalid/bad-unit.json",
+      "original_sha256": "9ea9e87e8d741d78c1be269689b1459e720a09232707efdd3284a85641eea36b",
+      "staged_sha256": "9ea9e87e8d741d78c1be269689b1459e720a09232707efdd3284a85641eea36b",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/duplicate-id.json",
+      "origin": "reviewed-adapter-kit/invalid/duplicate-id.json",
+      "original_sha256": "611c281b065be99e0494a409739b7148b0247d37e7dba2992db34f93bebe6ed4",
+      "staged_sha256": "611c281b065be99e0494a409739b7148b0247d37e7dba2992db34f93bebe6ed4",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/expected-errors.json",
+      "origin": "reviewed-adapter-kit/invalid/expected-errors.json",
+      "original_sha256": "a274332a94520fcbe7a4de79bf043356bd697001c3a2fcb92f73e32b47f0df53",
+      "staged_sha256": "a274332a94520fcbe7a4de79bf043356bd697001c3a2fcb92f73e32b47f0df53",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/fake-verified.json",
+      "origin": "reviewed-adapter-kit/invalid/fake-verified.json",
+      "original_sha256": "5c99aa02e5294d9763774c5b42631772240da82384d798fcd23ff7f4c90ac55a",
+      "staged_sha256": "5c99aa02e5294d9763774c5b42631772240da82384d798fcd23ff7f4c90ac55a",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/missing-value.json",
+      "origin": "reviewed-adapter-kit/invalid/missing-value.json",
+      "original_sha256": "a8ee843b4420aef759e96104f11e2b8c3ee586dac49f32bed5d04ec77d2501e2",
+      "staged_sha256": "a8ee843b4420aef759e96104f11e2b8c3ee586dac49f32bed5d04ec77d2501e2",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/orphan-epoch.json",
+      "origin": "reviewed-adapter-kit/invalid/orphan-epoch.json",
+      "original_sha256": "4dfe47e9c5ede21bd208bcb83a3a2e25b51041c510ca9769f034d2a1167d0e49",
+      "staged_sha256": "4dfe47e9c5ede21bd208bcb83a3a2e25b51041c510ca9769f034d2a1167d0e49",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/unknown-field.json",
+      "origin": "reviewed-adapter-kit/invalid/unknown-field.json",
+      "original_sha256": "f9ca25ea73962020d8b4b3ac03a7705869776f2ba4d23581399324dd52672df9",
+      "staged_sha256": "f9ca25ea73962020d8b4b3ac03a7705869776f2ba4d23581399324dd52672df9",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/unknown-version.json",
+      "origin": "reviewed-adapter-kit/invalid/unknown-version.json",
+      "original_sha256": "1a43734c05ff4bfdb61b68ffdd5e8a4922639509d63657136a02539859e6394c",
+      "staged_sha256": "1a43734c05ff4bfdb61b68ffdd5e8a4922639509d63657136a02539859e6394c",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/wrong-field-type.json",
+      "origin": "reviewed-adapter-kit/invalid/wrong-field-type.json",
+      "original_sha256": "c605b06717b0c7e18b9841433e51ee724fc66f8be3be4dc083d5766fb8dedca0",
+      "staged_sha256": "c605b06717b0c7e18b9841433e51ee724fc66f8be3be4dc083d5766fb8dedca0",
+      "change": "unchanged"
+    },
+    {
+      "path": "invalid/wrong-uuid5.json",
+      "origin": "reviewed-adapter-kit/invalid/wrong-uuid5.json",
+      "original_sha256": "e67125a62be5ed64d31c9514f8fffc0215c3dcb372f9340a6fa285683dff0b06",
+      "staged_sha256": "e67125a62be5ed64d31c9514f8fffc0215c3dcb372f9340a6fa285683dff0b06",
+      "change": "unchanged"
+    },
+    {
+      "path": "current-database-schema.json",
+      "origin": "reviewed-adapter-kit/current-database-schema.json",
+      "original_sha256": "089647474c4e612435570e17188bc20f29be6b570d617d9f5e42396f8b47feec",
+      "staged_sha256": "b3876dd51b513719cffe021ff12e5c5af1d2abfd7584324f3361d848fb5f668d",
+      "change": "Only tables[*].source paths sanitized; original baseline and all definitions/keys/DDL retained"
+    }
+  ],
+  "catalog_note": "Historical catalog retained, sanitized paths only; source-comparison records current declaration parity without implying live DDL or pinned dependency verification.",
+  "generated_files": [
+    {
+      "path": "DIFF-FROM-REVIEWED-KIT.md",
+      "sha256": "eec78bade2a94341bdf492d28180d7a1f621a306767d157477f15f4515e9ca3f"
+    },
+    {
+      "path": "FILELIST.txt",
+      "sha256": "bc8491ab88b12dd447c6a48301bd7fe8a794c3629bdfa4cbe8d99f0cc0e951d3"
+    },
+    {
+      "path": "README.md",
+      "sha256": "89fcb817630b1e78ff26727f5d179e18286b206530bb2a9f34ef757e5032cb83"
+    },
+    {
+      "path": "changes-from-reviewed-kit.patch",
+      "sha256": "533d44e530c216648f8160c7494a4018873c0ba7b652194950b1c2917a85885a"
+    },
+    {
+      "path": "mapping-verification.json",
+      "sha256": "697d9512e097bfb5bcbcdf19b3f784f34ab259564f4a652132cf7df138dc2bfe"
+    },
+    {
+      "path": "source-comparison.json",
+      "sha256": "ebc345286a6a9e000fce6e2d693724e404b04d179ebadf842626da777044066f"
+    },
+    {
+      "path": "test_source_catalog.py",
+      "sha256": "24d4063d237bdab13bf509646f9b198563f8e3f9bcf99634d77f1a3dbeaabb53"
+    },
+    {
+      "path": "validation-evidence.json",
+      "sha256": "7668aa841f2258e2645cd5d9ad6b101f8c2e26392c8e16d88c79571bc4b1a986"
+    },
+    {
+      "path": "verify_source_catalog.py",
+      "sha256": "7131db123efc0fd907c0edb1d05edcd822b6dc69f70afe73cf035475d7532efa"
+    }
+  ],
+  "package_revision": "handoff.2"
+}

@@ -1,0 +1,133 @@
+{
+  "format": "disco-metadata-bundle",
+  "schema_version": "1.0.0-draft.1",
+  "bundle_id": "e27a860e-d78c-490c-bbbf-5d67c307ca81",
+  "exported_at": "2026-10-03T05:00:00Z",
+  "authority": {
+    "namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682",
+    "name": "Synthetic Example Lab"
+  },
+  "producer": {
+    "name": "SyntheticAdapter",
+    "version": "0.1",
+    "adapter_revision": "demo-1"
+  },
+  "dataset": {
+    "id": "3214cdf3-3fbb-589f-b8c0-3d52b21407e2",
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "metadata-demo"
+    },
+    "label": "Synthetic metadata catalog",
+    "revision": "demo-revision-1",
+    "membership_scope": "subset"
+  },
+  "sources": [
+    {
+      "id": "ed73eabf-d938-509a-9f2c-c42d82f1aa76",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:demo-001"
+      },
+      "metadata_revision": "lab-export-revision-1",
+      "label": "Synthetic recording"
+    }
+  ],
+  "protocols": [
+    {
+      "id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "CurrentStep/v1"
+      },
+      "name": "CurrentStep",
+      "implementation_revision": "synthetic-v1"
+    }
+  ],
+  "field_definitions": [
+    {
+      "id": "demo:step_amplitude",
+      "label": "Step amplitude",
+      "type": "number",
+      "scope": "epoch",
+      "unit": "pA"
+    },
+    {
+      "id": "demo:temperature",
+      "label": "Bath temperature",
+      "type": "number",
+      "scope": "epoch",
+      "unit": "Cel"
+    }
+  ],
+  "cells": [
+    {
+      "id": "01be5bc3-03c1-56e1-8087-6b85456db17d",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "renamed-cell"
+      },
+      "source_id": "ed73eabf-d938-509a-9f2c-c42d82f1aa76",
+      "label": "Cell1",
+      "cell_type": null,
+      "start_time": {
+        "status": "unknown",
+        "original": "2026-10-01 10:15:00"
+      }
+    }
+  ],
+  "epochs": [
+    {
+      "id": "9e43eee0-1a96-5dd1-9ec9-1bcdf0d370d7",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:demo-001/epoch:1"
+      },
+      "source_id": "ed73eabf-d938-509a-9f2c-c42d82f1aa76",
+      "cell_id": "01be5bc3-03c1-56e1-8087-6b85456db17d",
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "epoch_number": 1,
+      "duration_seconds": 0.5,
+      "fields": {
+        "demo:step_amplitude": {
+          "status": "present",
+          "value": 50
+        },
+        "demo:temperature": {
+          "status": "not_recorded"
+        }
+      }
+    }
+  ],
+  "streams": [
+    {
+      "id": "35da7393-d829-54c0-b620-2e27062ce291",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:demo-001/epoch:1/Amplifier"
+      },
+      "epoch_id": "9e43eee0-1a96-5dd1-9ec9-1bcdf0d370d7",
+      "kind": "response",
+      "device": "Amplifier",
+      "trace_state": "absent"
+    }
+  ],
+  "annotations": {
+    "profiles": [
+      {
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "author_name": "Synthetic Reviewer"
+      }
+    ],
+    "entries": [
+      {
+        "target_kind": "cell",
+        "target_id": "01be5bc3-03c1-56e1-8087-6b85456db17d",
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "tags": [
+          "candidate"
+        ]
+      }
+    ]
+  }
+}

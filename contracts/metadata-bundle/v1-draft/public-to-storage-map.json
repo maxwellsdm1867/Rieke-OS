@@ -1,0 +1,78 @@
+{
+  "status": "DRAFT adapter mapping; proposed tables do not exist",
+  "baseline_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
+  "mappings": [
+    {
+      "public_path": "dataset.id/revision",
+      "observed_current_mapping": "No current external-dataset registration equivalent",
+      "proposed_adapter_target": "PROPOSED metadata_dataset + metadata_dataset_revision",
+      "rule": "Keeps a publisher dataset distinct from project/dataset_revision curation"
+    },
+    {
+      "public_path": "sources[].id/metadata_revision",
+      "observed_current_mapping": "recording_workspace.source.source_sha256 currently H5 BYTE hash; source.experiment_id plain integer -> schema.experiment.id",
+      "proposed_adapter_target": "PROPOSED metadata_source_revision(source_id, metadata_revision, metadata_hash, authority)",
+      "rule": "Never write JSON checksum to source_sha256"
+    },
+    {
+      "public_path": "sources[].acquisition_uuid",
+      "observed_current_mapping": "schema.experiment.h5_uuid; source.experiment_uuid",
+      "proposed_adapter_target": "Verified legacy acquisition alias / optional claim until attachment",
+      "rule": "Experiment label/path are display/locator metadata"
+    },
+    {
+      "public_path": "ancestry[].id/source_id/parent_id",
+      "observed_current_mapping": "schema.animal/preparation/epoch_group/epoch_block.h5_uuid; numeric experiment_id/parent_id links",
+      "proposed_adapter_target": "PROPOSED metadata_ancestor with explicit UUID links",
+      "rule": "Preserve real ancestors; omitted ancestry stays unknown, no synthetic SQL rows"
+    },
+    {
+      "public_path": "cells[].id/source_id/preparation_id/cell_type",
+      "observed_current_mapping": "schema.cell.h5_uuid, experiment_id,parent_id,type,label,start_time",
+      "proposed_adapter_target": "PROPOSED metadata_cell; service cell_uuid/cell_type/cell_label fields",
+      "rule": "Recorded type is metadata; authored classification remains a tag"
+    },
+    {
+      "public_path": "protocols[].id/name/implementation_revision",
+      "observed_current_mapping": "schema.protocol.protocol_id/name; group and block numeric protocol_id",
+      "proposed_adapter_target": "PROPOSED metadata_protocol with public stable UUID; service protocol_name",
+      "rule": "Acquisition protocol distinct from recording_workspace.protocol_workspace.protocol_uuid"
+    },
+    {
+      "public_path": "epochs[].id/cell_id/source_id/block_id/protocol_id",
+      "observed_current_mapping": "schema.epoch.h5_uuid,parent_id,experiment_id,parameters,start_time,end_time",
+      "proposed_adapter_target": "PROPOSED metadata_epoch; service epoch_uuid/cell_uuid/group_uuid/block_uuid/protocol_name",
+      "rule": "Current cell relationship derives through block->group->cell; adapter validates entire chain"
+    },
+    {
+      "public_path": "streams[].id/epoch_id/kind/device",
+      "observed_current_mapping": "schema.response/stimulus.h5_uuid,parent_id,device_name",
+      "proposed_adapter_target": "PROPOSED metadata_stream; service streams[].uuid/kind/device",
+      "rule": "Current service uses responses/stimuli plural; public contract uses singular enums"
+    },
+    {
+      "public_path": "streams[].sample_rate_hz/sample_count/unit/data_reference",
+      "observed_current_mapping": "response.sample_rate/sample_rate_units are varchar; response/stimulus.h5path object path; actual units/count read from H5",
+      "proposed_adapter_target": "PROPOSED raw_asset_binding + per-stream object mapping; verified resolver projections",
+      "rule": "Incoming claims do not prove data shape/units/rate or access"
+    },
+    {
+      "public_path": "field_definitions + entity.fields",
+      "observed_current_mapping": "schema entity parameters/properties/attributes JSON; cache/metadata fields/field_values/epoch_values; cache/typed-metadata typed_core/typed_values",
+      "proposed_adapter_target": "Public field registry -> typed index projection keyed by field ID+type+unit+scope",
+      "rule": "No numeric/string coercion; retain exact JSON or decimal/integer strings"
+    },
+    {
+      "public_path": "annotations.profiles/entries",
+      "observed_current_mapping": "recording_workspace.annotation_profile(project_uuid,profile_uuid);shared_annotation(project_uuid,target_kind,target_uuid,profile_uuid)",
+      "proposed_adapter_target": "Generalized exact UUID target registry; existing tag-exchange additive semantics",
+      "rule": "Project author attribution is a claim, not authentication; importer actor separate"
+    },
+    {
+      "public_path": "server shopping/selection state (not imported in bundle)",
+      "observed_current_mapping": "recording_workspace.curation,explorer_revision,protocol_binding,dataset_revision",
+      "proposed_adapter_target": "Existing state over generalized registry/fingerprints; new export version required",
+      "rule": "Frozen membership/metadata/annotation snapshot remain independent of current tags and raw availability"
+    }
+  ]
+}

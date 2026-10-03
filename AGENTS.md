@@ -22,3 +22,5 @@ Before changing release tooling or claiming a performance improvement, read
 
 This instruction adds benchmark discovery; other task-specific instructions and
 scientific authority/qualification requirements continue to apply.
+
+For external metadata mapping, read [the reviewed draft contract](contracts/metadata-bundle/v1-draft/README.md) and its AGENT_PROMPT.md. The offline validator is a handoff check; production import is unsupported. Preserve the packaged provenance and public identity rules.

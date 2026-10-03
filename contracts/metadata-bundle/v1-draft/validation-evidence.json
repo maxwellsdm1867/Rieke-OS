@@ -1,0 +1,54 @@
+{
+  "status": "passed_lightweight_offline_checks",
+  "python": "3.14.3",
+  "commands": [
+    {
+      "command": "python3 -B validate_bundle.py examples/metadata-only.json",
+      "exit_code": 0,
+      "valid": true,
+      "database_checked": false,
+      "raw_assets_verified": 0
+    },
+    {
+      "command": "python3 -B validate_bundle.py examples/with-raw-reference.json",
+      "exit_code": 0,
+      "valid": true,
+      "database_checked": false,
+      "raw_assets_verified": 0
+    },
+    {
+      "command": "python3 -B test_adapter_kit.py",
+      "exit_code": 0,
+      "tests": 25,
+      "result": "OK"
+    },
+    {
+      "command": "python3 -B test_source_catalog.py",
+      "exit_code": 0,
+      "test_methods": 2,
+      "positive_cases": 1,
+      "negative_cases": 6,
+      "result": "OK"
+    },
+    {
+      "command": "python3 -B verify_source_catalog.py --kit . --repo CHECKOUT --retinanalysis-schema INSTALLED_SCHEMA --output source-comparison.json",
+      "exit_code": 0,
+      "passed": true
+    }
+  ],
+  "source_comparison": {
+    "tables": 35,
+    "equal": 35,
+    "repository_tables": 20,
+    "installed_dependency_tables": 15,
+    "derived_ddl_literals": 18,
+    "equal_ddl_literals": 18,
+    "export_ddl_equal": true
+  },
+  "limitations": [
+    "No production importer, DB load, performance run or raw verification.",
+    "Installed dependency is not proven equal to pinned upstream.",
+    "Initial fixture test invocation from staging root failed due wrong working directory; corrected package-directory run passed."
+  ],
+  "review": "Independent review GO; nonblocking checker exit-status caveat fixed and covered by offline fixtures."
+}

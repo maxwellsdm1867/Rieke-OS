@@ -1,0 +1,98 @@
+{
+  "implementation_commit": "fafb826ee00cfa14b657e91ecae5db0c1eda4a84",
+  "mapping_bytes_unchanged": true,
+  "method": "Source declaration parity plus bounded read-only inspection of code paths; no DB or production receiver test",
+  "entries": [
+    {
+      "public_path": "dataset.id/revision",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "recording_workspace.py:595",
+      "note": "No external dataset registry in current inspected declarations",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "sources[].id/metadata_revision",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "recording_workspace.py:609",
+      "note": "H5 SHA Source declaration unchanged",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "sources[].acquisition_uuid",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:55",
+      "note": "Experiment UUID plus Source UUID",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "ancestry[].id/source_id/parent_id",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:81-244",
+      "note": "Numeric hierarchy dependencies and recorded UUIDs",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "cells[].id/source_id/preparation_id/cell_type",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:124",
+      "note": "Cell declaration matches catalog",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "protocols[].id/name/implementation_revision",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:41",
+      "note": "Protocol and group/block declarations match catalog",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "epochs[].id/cell_id/source_id/block_id/protocol_id",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:244",
+      "note": "Epoch numeric links match catalog",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "streams[].id/epoch_id/kind/device",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:262-280",
+      "note": "Response/Stimulus declarations match catalog",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "streams[].sample_rate_hz/sample_count/unit/data_reference",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "dependency/retinanalysis/config/schema.py:262-280",
+      "note": "H5 pointers and declared sample rate fields; raw verification separate",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "field_definitions + entity.fields",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "workspace_disk_index.py:93;workspace_typed_index.py:129;workspace_tree.py:213",
+      "note": "Derived tables exist, but full-field discovery/fallback does not",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "annotations.profiles/entries",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "workspace_annotations.py:49",
+      "note": "Profile/SharedAnnotation declaration parity; generalized targets proposed",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    },
+    {
+      "public_path": "server shopping/selection state (not imported in bundle)",
+      "current_mapping_assessment": "consistent_with_inspected_source_with_listed_limitations",
+      "evidence": "workspace_recipes.py:26;workspace_sqlite.py:23",
+      "note": "Frozen recipe and v2 export exist; metadata-capable export proposed",
+      "proposed_adapter_target_status": "design_only_not_implemented"
+    }
+  ],
+  "status": {
+    "production_json_importer": "unsupported",
+    "universal_field_access": "gap",
+    "adaptive_acceleration": "proposed",
+    "live_schema": "not_inspected",
+    "pinned_acquisition_dependency_equivalence": "not_proven"
+  }
+}

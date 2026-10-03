@@ -1,0 +1,78 @@
+{
+  "format": "disco-adapter-mapping-report",
+  "version": "1.0.0-draft.1",
+  "status": "TEMPLATE \u2014 fill from inspected evidence; not a source data report",
+  "source_description": "<origin database instance/export and inspected revision>",
+  "authority_namespace_uuid": "<persisted UUID>",
+  "authority_owner": "<who controls this namespace>",
+  "source_schema_revision": "<known revision or explicit unknown>",
+  "adapter_revision": "<version of your mapper>",
+  "parser_revision": "<known revision, not_used, or explicit unknown>",
+  "dataset_native_key": "<immutable catalog key>",
+  "dataset_revision": "<publisher revision>",
+  "id_ledger_path": "<persistent ledger if required>",
+  "entity_mappings": [
+    {
+      "source_entity": "<e.g. Cell>",
+      "source_primary_key": "<immutable PK with acquisition/database scope>",
+      "public_entity": "cells",
+      "identity_mode": "<native_uuid or uuid5>",
+      "native_key_rule": "<exact stable key construction>",
+      "parent_link_rule": "<actual FK/UUID relationship>",
+      "evidence": "<schema/code path and line or approved description>"
+    }
+  ],
+  "field_mappings": [
+    {
+      "source_path": "<table.field or JSON path>",
+      "public_path": "<e.g. epochs[].fields.lab:amplitude>",
+      "public_field_id": "<namespaced ID>",
+      "declared_type": "<number/integer/integer_string/decimal/string/boolean/array/object>",
+      "scope": "<source/cell/epoch/protocol/ancestry>",
+      "unit": null,
+      "unit_evidence": "<known original unit evidence or explicit unknown>",
+      "missingness_rule": "<omitted/unknown/not_recorded/not_applicable/present>",
+      "transform": "<none or documented explicit conversion>",
+      "evidence": "<source evidence>"
+    }
+  ],
+  "effective_parameter_precedence": "<observed block defaults / epoch override, or not_used>",
+  "timestamps": [
+    {
+      "source_path": "<time field>",
+      "original_format": "<source format>",
+      "timezone_evidence": "<known IANA zone/offset evidence or explicit unknown>",
+      "mapping": "<known instant or unknown/ambiguous with original retained>",
+      "precision_loss": "<none or exact retained extension>"
+    }
+  ],
+  "raw_references": {
+    "status": "<absent or unverified_claims>",
+    "locator_origin": "<source evidence; no validation-time file access>",
+    "checksum_origin": "<known byte checksum source or unknown; omit asset if missing>",
+    "waveforms_embedded": false
+  },
+  "tag_mapping": {
+    "recorded_keywords": "<metadata field mapping>",
+    "authored_annotations": "<profile/target mapping or absent>",
+    "authorship_status": "claimed",
+    "deletions_requested": false
+  },
+  "unsupported_fields": [
+    {
+      "source_path": "<unmapped field>",
+      "reason": "<why>",
+      "retention": "<omitted with report or explicit namespaced extension>"
+    }
+  ],
+  "conflicts": [],
+  "assumptions": [],
+  "blockers": [],
+  "counts": {
+    "sources": 0,
+    "cells": 0,
+    "epochs": 0,
+    "streams": 0
+  },
+  "validation_report_path": "validation-report.json"
+}
