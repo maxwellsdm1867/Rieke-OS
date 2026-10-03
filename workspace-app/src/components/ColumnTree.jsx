@@ -22,13 +22,16 @@ import {treeCellUuid} from '../useTreeCellSelection.js';
 // Preserve the column interaction while loading at most one 60-row page per level.
 export default function ColumnTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
+  const active=props.active!==false;
   const readOwner=useTreeBranchReads(),ownerIdentity=readOwner?.identity||'';
   const [state,setState]=useState({columns:[],loading:true,error:null,ownerIdentity:null});
-  const ownerBlocked=state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
+  const ownerBlocked=!active||state.activation!==props.presentationActivation||state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
   const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked};
   const groupTags=useTreeGroupTags(actionProps),groupSelection=useIncomingTreeSelection(actionProps);
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity});
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity,active,activation:props.presentationActivation});
   const callbacks=useRef(props);callbacks.current=props;
+  const visible=useRef(active),permitted=useRef(false);permitted.current=active&&!ownerBlocked&&!state.loading&&!state.error&&!props.actionsDisabled;
+  const canAct=()=>visible.current&&permitted.current&&(!readOwner||readOwner.active());
   const saved=useRef(initialNavigation),initialScope=useRef(scopeKey),restored=useRef(false);
   const showLoading=useDelayedLoading(state.loading&&!state.error);
   const current=useRef([]),controller=useRef(null),serial=useRef(0),pending=useRef(true);
@@ -52,6 +55,7 @@ export default function ColumnTree(props){
     return()=>element.removeEventListener('wheel',wheel);
   },[]);
   const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null}={})=>{
+    if(!active||!visible.current)return;
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;
     const prior=current.current,priorPositions=prior.map(page=>({offset:page.offset,scrollTop:panes.current.get(page.depth)?.scrollTop||0}));
     if(reset)current.current=[];
@@ -65,34 +69,35 @@ export default function ColumnTree(props){
       if(request.signal.aborted||token!==serial.current)return;
       current.current=columns;restored.current=true;
       scrollRestore.current={vertical:columns.map((column,depth)=>depth===page.path.length?scrollTop:(columnPositions[depth]?.scrollTop??priorPositions[depth]?.scrollTop??0)),horizontal:scrollLeft};
-      pending.current=false;setState({columns,loading:false,error:null,ownerIdentity});callbacks.current.onStatus?.({loading:false,error:null});callbacks.current.onMetadata?.({...page,count:page.total_epochs});
+      pending.current=false;setState({columns,loading:false,error:null,ownerIdentity,activation:props.presentationActivation});callbacks.current.onStatus?.({loading:false,error:null});callbacks.current.onMetadata?.({...page,count:page.total_epochs});
     }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
     finally{if(token===serial.current)pending.current=false;}
   },[scopeKey,readOwner]);
-  useLayoutEffect(()=>{controller.current?.abort();serial.current++;return()=>{controller.current?.abort();serial.current++;};},[scopeKey]);
+  useLayoutEffect(()=>{visible.current=active;controller.current?.abort();serial.current++;return()=>{visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[scopeKey]);
   useEffect(()=>{
+    if(!active){pending.current=true;setState(old=>({...old,loading:true}));return;}
     const start=!restored.current&&initialScope.current===scopeKey?treeNavigationStart(saved.current,splits):null;
     const navigation=start?{...start,columnPositions:saved.current?.columnPositions||[],scrollLeft:saved.current?.scrollLeft??null}:{reset:true};
     // Mount/presentation changes follow the externally focused epoch. Ordinary
     // branch clicks below never trigger this selection effect again.
-    if(initialScope.current===scopeKey&&latestSelected.current)navigation.anchor=latestSelected.current;
+    if((initialScope.current===scopeKey||props.presentationActivation!==undefined)&&latestSelected.current)navigation.anchor=latestSelected.current;
     load(navigation);
     return()=>controller.current?.abort();
   },[load]);
   useEffect(()=>{
-    if(previousSelected.current===selected)return;
+    if(!active||previousSelected.current===selected)return;
     previousSelected.current=selected;
     if(columnSelectionNeedsAnchor(current.current,selected,pending.current))load({anchor:selected});
-  },[selected,load]);
+  },[active,selected,load]);
   useEffect(()=>{
-    if(state.loading||!scrollRestore.current)return;
+    if(!active||state.loading||!scrollRestore.current)return;
     const target=scrollRestore.current;scrollRestore.current=null;
     target.vertical.forEach((value,depth)=>{const pane=panes.current.get(depth);if(pane)pane.scrollTop=Number.isFinite(value)?Math.max(0,value):0;});
     if(strip.current)strip.current.scrollLeft=Number.isFinite(target.horizontal)?Math.max(0,target.horizontal):strip.current.scrollWidth;
     remember();
   },[state.columns,state.loading]);
   useEffect(()=>{
-    if(state.loading||state.error||!selected)return;
+    if(!active||state.loading||state.error||!selected)return;
     const frame=requestAnimationFrame(()=>{
       const leaf=current.current.at(-1),pane=panes.current.get(leaf?.depth);
       const element=Array.from(pane?.querySelectorAll('[data-epoch-uuid]')||[]).find(item=>item.dataset.epochUuid===selected);
@@ -108,7 +113,8 @@ export default function ColumnTree(props){
   const last=state.columns.at(-1),root=state.columns[0],path=last?.path||[];
   const ancestors=last?.ancestors||path.map((key,depth)=>state.columns[depth]?.branches?.find(branch=>branch.key===key)).filter(Boolean);
   return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading}>
-    {groupTags.dialog}{groupSelection.feedback}
+    {active&&!ownerBlocked&&groupTags.dialog}{active&&groupSelection.feedback}
+    {active&&state.loading&&state.columns.length>0&&<p role="status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
     {props.design&&<header className="tp-total"><strong>{root?`${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><span>{root?`${number(root.cells)} cells · ${duration(root.duration_seconds)}`:''}</span><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>}
     {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:[]})}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:path.slice(0,index+1)})} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
     {state.error&&<div className="pt-error" role="alert">{state.error}<button onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true})}>Reload tree overview</button></div>}
@@ -118,7 +124,7 @@ export default function ColumnTree(props){
         return <section className={`tp-column ${terminal?'tp-terminal':''} ${combined?'tp-combined-column':''}`} key={`${depth}:${page.path.join(':')}`} aria-label={`${depth+1}. ${terminal?'Epochs':readableField(field?.label,field?.field)}`}>
           <header className="tp-level-heading"><span>{terminal?<Activity size={14}/>:depth+1}</span><div><strong title={field?.field}>{terminal?'Epochs':readableField(field?.label,field?.field)}</strong><small>{number(page.total)} {terminal?'epochs':'groups'} · {number(page.selection?.count??page.total_epochs)} epochs in scope</small></div><TreeGroupTagButton onSelect={groupSelection.select?event=>groupSelection.select({path:page.path,count:page.selection?.count},page,event):undefined} label="Tag this level" disabled={blocked||props.actionsDisabled} count={page.selection?.count} onClick={event=>groupTags.open({path:page.path,count:page.selection?.count},field||{label:"Epochs"},page,event,{level:true})}/></header>
           <div className="tp-column-content" ref={element=>{if(element)panes.current.set(depth,element);else panes.current.delete(depth);}} onScroll={remember}>
-            {entries.map((item,index)=>{const tags=readContext&&(terminal||field?.field==='cell')?incomingRowAnnotation(terminal?item:props.cells?.find(cell=>cell.cell_uuid===item.value),terminal?'effective':'cell'):undefined;return terminal?<div key={item.epoch_uuid} style={{display:'flex',alignItems:'center'}}><button style={{flex:1,minWidth:0}} className={`tp-epoch ${tags?'has-shared-tags':''} ${(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'selected':''}`} data-epoch-uuid={item.epoch_uuid} aria-current={(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'true':undefined} key={item.epoch_uuid} disabled={blocked} aria-description={tags} title={[item.epoch_uuid,tags].filter(Boolean).join('\n')} onClick={event=>{remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item,event,page,index);}}><strong>{epochLeafLabel(item)} {epochIncluded(item,!!props.readContext)===false&&<small className="tree-analysis-excluded">{props.readContext?'Excluded from incoming draft':'Excluded from analysis'}</small>}</strong><span className="column-epoch-protocol" title={item.protocol_name}>{item.protocol_name?.split('.').at(-1)}</span></button>{readContext&&<><IncomingEpochSelect epoch={item} selected={props.selectedEpochs} onSelect={props.setSelectedEpochs} disabled={blocked||props.actionsDisabled}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={blocked||props.actionsDisabled} onClick={event=>groupTags.openEpoch(item,event)}/></>}{props.onToggleInclusion&&<EpochInclusionToggle incoming={!!props.readContext} epoch={item} label={`epoch ${epochLeafLabel(item)}`} disabled={blocked||props.actionsDisabled} onToggle={props.onToggleInclusion}/>}</div>:<div className={`tp-group-tag-wrap ${props.onToggleCell&&treeCellUuid(item,field)?'tp-cell-selectable':''}`} key={item.key}>{props.onToggleCell&&treeCellUuid(item,field)&&<input className="tp-cell-select" type="checkbox" aria-label={`Select cell ${branchLabel(item,field.field)} for shared tags`} checked={props.selectedCells?.includes(item.value)||false} disabled={blocked||props.actionsDisabled||(!props.selectedCells?.includes(item.value)&&props.selectedCells?.length>=1000)} onChange={event=>props.onToggleCell({cell_uuid:item.value,label:branchLabel(item,field.field)},page.revision,event.target.checked)}/>}<button className={`tp-branch ${tags?'has-shared-tags':''} ${path[depth]===item.key?'selected':''}`} aria-description={tags} key={item.key} aria-expanded={path[depth]===item.key} disabled={blocked} onContextMenu={event=>groupTags.open(item,field,page,event)} onKeyDown={event=>{if(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10')groupTags.open(item,field,page,event);}} title={[branchTooltip(item,field?.field),tags].filter(Boolean).join('\n')} onClick={()=>{const navigation=columnBranchNavigation(page,item,path[depth]);load(navigation);if(navigation.opening)callbacks.current.onSelectBranch?.(item,field,page.revision);}}>
+            {entries.map((item,index)=>{const tags=readContext&&(terminal||field?.field==='cell')?incomingRowAnnotation(terminal?item:props.cells?.find(cell=>cell.cell_uuid===item.value),terminal?'effective':'cell'):undefined;return terminal?<div key={item.epoch_uuid} style={{display:'flex',alignItems:'center'}}><button style={{flex:1,minWidth:0}} className={`tp-epoch ${tags?'has-shared-tags':''} ${(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'selected':''}`} data-epoch-uuid={item.epoch_uuid} aria-current={(props.selectedEpochs?.includes(item.epoch_uuid)||(!readContext&&!props.selectedCell&&selected===item.epoch_uuid))?'true':undefined} key={item.epoch_uuid} disabled={blocked} aria-description={tags} title={[item.epoch_uuid,tags].filter(Boolean).join('\n')} onClick={event=>{if(!canAct())return;remember();callbacks.current.onSelectEpoch?.(item.epoch_uuid,item,event,page,index);}}><strong>{epochLeafLabel(item)} {epochIncluded(item,!!props.readContext)===false&&<small className="tree-analysis-excluded">{props.readContext?'Excluded from incoming draft':'Excluded from analysis'}</small>}</strong><span className="column-epoch-protocol" title={item.protocol_name}>{item.protocol_name?.split('.').at(-1)}</span></button>{readContext&&<><IncomingEpochSelect epoch={item} selected={props.selectedEpochs} onSelect={props.setSelectedEpochs} disabled={blocked||props.actionsDisabled}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={blocked||props.actionsDisabled} onClick={event=>groupTags.openEpoch(item,event)}/></>}{props.onToggleInclusion&&<EpochInclusionToggle incoming={!!props.readContext} epoch={item} label={`epoch ${epochLeafLabel(item)}`} disabled={blocked||props.actionsDisabled} onToggle={(...args)=>{if(canAct())callbacks.current.onToggleInclusion?.(...args);}}/>}</div>:<div className={`tp-group-tag-wrap ${props.onToggleCell&&treeCellUuid(item,field)?'tp-cell-selectable':''}`} key={item.key}>{props.onToggleCell&&treeCellUuid(item,field)&&<input className="tp-cell-select" type="checkbox" aria-label={`Select cell ${branchLabel(item,field.field)} for shared tags`} checked={props.selectedCells?.includes(item.value)||false} disabled={blocked||props.actionsDisabled||(!props.selectedCells?.includes(item.value)&&props.selectedCells?.length>=1000)} onChange={event=>canAct()&&callbacks.current.onToggleCell({cell_uuid:item.value,label:branchLabel(item,field.field)},page.revision,event.target.checked)}/>}<button className={`tp-branch ${tags?'has-shared-tags':''} ${path[depth]===item.key?'selected':''}`} aria-description={tags} key={item.key} aria-expanded={path[depth]===item.key} disabled={blocked} onContextMenu={event=>groupTags.open(item,field,page,event)} onKeyDown={event=>{if(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10')groupTags.open(item,field,page,event);}} title={[branchTooltip(item,field?.field),tags].filter(Boolean).join('\n')} onClick={()=>{if(!canAct())return;const navigation=columnBranchNavigation(page,item,path[depth]);load(navigation);if(navigation.opening)callbacks.current.onSelectBranch?.(item,field,page.revision);}}>
               <div className="tp-branch-title"><FolderOpen size={15}/><strong>{item.components?.length?'Matching combination':branchLabel(item,field?.field)}</strong><ChevronRight size={14}/></div>
               {!!item.components?.length&&<dl className="tp-combination">{item.components.map((part,index)=><div key={part.field} className={`joint-color-${index%3}`}><dt title={part.field}>{componentLabel(part)}</dt><dd>{componentValue(part)}</dd></div>)}</dl>}
               {!readContext&&field?.field==='cell'&&<AnnotationIndicator epoch={props.cells?.find(cell=>cell.cell_uuid===item.value)} level="cell"/>}{field?.field!=='cell'&&<div className="tp-branch-counts"><span><b>{number(item.count)}</b> epochs</span><span>{number(item.cells)} {item.cells===1?'cell':'cells'}</span></div>}

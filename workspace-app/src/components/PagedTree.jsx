@@ -17,7 +17,7 @@ export default function PagedTree(props){
   function changeView(next){setView(next);callbacks.current.onNavigationChange?.({...remembered.current,treeView:next});}
   const anchor=useRef(null),selectionRequest=useRef(null);
   const [selectionError,setSelectionError]=useState('');
-  const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision});
+  const scopeKey=JSON.stringify({protocolId:props.protocolId,predicate:props.predicate,filters:props.filters||{},splits:props.splits||'',revision:props.revision??0,readContext:props.readContext,expectedRevision:props.expectedRevision,active:props.active,actionsDisabled:props.actionsDisabled});
   const selectionScope=useRef(null),generation=useRef(0);
   // Invalidate at commit, before a deferred request can publish into the new
   // scope. Cleanup also covers unmount and React's StrictMode effect replay.
@@ -27,7 +27,7 @@ export default function PagedTree(props){
     return()=>{generation.current++;selectionScope.current=null;selectionRequest.current?.abort();};
   },[scopeKey]);
   async function selectCell(item,field,revision){
-    if(selectionScope.current!==scopeKey||field?.field!=='cell'||!props.onSelectCell)return;
+    if(props.active===false||props.actionsDisabled||selectionScope.current!==scopeKey||field?.field!=='cell'||!props.onSelectCell)return;
     const request=new AbortController();selectionRequest.current?.abort();selectionRequest.current=request;
     const token=generation.current,isCurrent=()=>token===generation.current&&selectionRequest.current===request&&!request.signal.aborted;
     setSelectionError('');anchor.current=null;
@@ -45,7 +45,7 @@ export default function PagedTree(props){
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
   async function selectEpoch(uuid,item,event,page,index){
-    if(selectionScope.current!==scopeKey)return;
+    if(props.active===false||props.actionsDisabled||selectionScope.current!==scopeKey)return;
     selectionRequest.current?.abort();setSelectionError('');
     props.onSelectEpoch?.(uuid,item);
     if(!props.setSelectedEpochs||!event)return;

@@ -10,12 +10,14 @@ export async function createInspectorHarness(){
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'inspector-fixtures',enforce:'pre',
     resolveId(id,importer){if(importer?.endsWith('/components/Inspector.jsx')){
+      if(id==='../treeBranchReads.jsx')return '\0inspector-tree-owner';
       if(id==='../api.js')return '\0inspector-api';
       if(id==='./NavigationLoading.jsx')return '\0inspector-loading';
       if(id==='./Common.jsx')return '\0inspector-common';
       if(id.endsWith('.jsx'))return '\0inspector-child:'+id;
     }},
     load(id){
+      if(id==='\0inspector-tree-owner')return 'export const useTreeBranchReads=()=>null;';
       if(id==='\0inspector-api')return `
         const fixture=globalThis[${JSON.stringify(key)}];
         export const api=(...args)=>fixture.api(...args);

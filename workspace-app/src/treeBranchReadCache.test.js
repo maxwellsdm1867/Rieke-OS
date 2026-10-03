@@ -126,7 +126,9 @@ test('last observer cancellation consumes the query signal and removes inactive 
  hold.resolve(page);await new Promise(resolve=>setImmediate(resolve));assert.equal(cache.stats().inflight,0);assert.equal(cache.stats().entries,0);
 });
 
-import React from 'react';
+import React,{act as domAct} from 'react';
+import {createRoot} from 'react-dom/client';
+import {JSDOM} from 'jsdom';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
@@ -155,4 +157,38 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
   assert.equal(witnesses,2);assert.equal(view.root.findAllByProps({role:'alert'}).length,0);
   assert.equal(view.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy'],false);
  }finally{await act(async()=>view?.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;}
+});
+
+test('one retained tree keeps mounted rows while hidden, aborts reads, fences actions, and freshly validates return',async()=>{
+ const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0,selected=0,hold=null,lastSignal;const statuses=[];
+ const key='__retainedTreeFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'owner-A'},api:async(_,{body:request,signal})=>{lastSignal=signal;calls++;if(hold)return hold.promise;return request.anchor_uuid?leaf:ancestor(request);}};
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
+  name:'retained-fixture',enforce:'pre',resolveId(id,importer){
+   if(id==='../treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
+   if(id==='../api.js'&&/\/(ColumnTree|PagedTree)\.jsx$/.test(importer||''))return '\0retained-api';
+   if(importer?.endsWith('/components/ColumnTree.jsx')&&(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx'))return '\0retained-actions';
+  },load(id){if(id==='\0retained-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
+   if(id==='\0retained-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
+   if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
+ }]});const dom=new JSDOM('<div id="root"></div>',{url:'http://localhost'}),priorWindow=globalThis.window,priorDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;const container=document.getElementById('root');const view=createRoot(container);
+ const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
+ try{
+  const {default:Host}=await server.ssrLoadModule('/src/components/RetainedTreePresentation.jsx');
+  const {default:Layout}=await server.ssrLoadModule('/src/components/EpochBrowserLayout.jsx');
+  const tree={protocolId:protocol,splits:'date,cell',revision:1,selected:'epoch-A',onSelectEpoch:()=>selected++,onStatus:value=>statuses.push(value)};
+  const render=async(active,changes={})=>domAct(async()=>{view.render(React.createElement(Layout,{retainDetail:true,editing:active,sizes:{},treeOpen:false,metadataOpen:false,detail:React.createElement(Host,{active,tree:{...tree,...changes}})}));await new Promise(resolve=>setImmediate(resolve));});
+  await render(true);for(let retry=0;retry<30&&!container.querySelector('[data-epoch-uuid="epoch-A"]');retry++)await domAct(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
+  const row=container.querySelector('[data-epoch-uuid="epoch-A"]'),count=calls;assert.ok(row,container.innerHTML);
+  await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(calls,count);
+  assert.equal(container.querySelector('.tree-view-workspace').style.display,'none','Activity hides retained DOM');
+  await domAct(async()=>row.click());assert.equal(selected,0);
+  hold=deferred();await render(true);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(row.disabled,true);assert.equal(calls,count+1);
+  assert.match(container.textContent,/previous view/);await domAct(async()=>row.click());assert.equal(selected,0);
+  const pendingSignal=lastSignal;await render(false);assert.equal(pendingSignal.aborted,true);const statusCount=statuses.length;
+  await domAct(async()=>{hold.resolve(leaf);hold=null;await new Promise(resolve=>setImmediate(resolve));});assert.equal(statuses.length,statusCount,'hidden late success cannot publish');
+  await render(true);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]').disabled,false);
+  await render(false);globalThis[key].owner={...globalThis[key].owner,identity:'owner-B'};await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
+  await render(true);await render(false,{filters:{cell_type:'other'}});assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
+ }finally{await domAct(async()=>view.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;dom.window.close();globalThis.window=priorWindow;globalThis.document=priorDocument;}
+
 });

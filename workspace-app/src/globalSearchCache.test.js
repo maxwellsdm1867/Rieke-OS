@@ -96,7 +96,7 @@ test('same UUID with a different open identity and desktop backend lifecycle ret
 
 test('freshness expiry while mounted refreshes once with previous content inert',async()=>{
  const h=await createGlobalSearchHarness({cacheOptions:{freshMs:40,retainMs:5000}}),held=deferred();
- try{await h.render();await open(h);await query(h,'CellA');await settle(h,1);h.fixture.respond=()=>held.promise;
+ try{h.fixture.at=0;await h.render();await open(h);await query(h,'CellA');await settle(h,1);h.fixture.respond=()=>held.promise;h.fixture.at=41;
    const obsolete=rows(h)[0].props.onClick;await h.waitFor(()=>h.fixture.requests.length===2);
    assert.equal(rows(h).length,1);assert.equal(rows(h)[0].props.disabled,true);await h.act(obsolete);
    held.resolve(result('renewed'));await settle(h,2);assert.equal(rows(h)[0].findByType('strong').children[0],'Synthetic renewed');

@@ -8,7 +8,8 @@ test('protocol and search adapters delegate their entire viewer assembly to one 
   for(const component of ['EpochBrowserLayout','EpochBrowserToolbar','EpochTreePane','EpochDetailHeading','EpochAnalysisInclusion','MetadataPanel','TreeBuilder','PagedTree','ProtocolViewFilter'])assert.doesNotMatch(source,new RegExp(`<${component}\\b`),`${adapter} must not assemble ${component} independently`);
  }
  const shared=await readFile(new URL('./components/EpochViewer.jsx',import.meta.url),'utf8');
- for(const component of ['EpochBrowserLayout','EpochBrowserToolbar','EpochTreePane','EpochDetailHeading','EpochAnalysisInclusion','MetadataPanel','TreeBuilder','PagedTree','ProtocolViewFilter'])assert.match(shared,new RegExp(`<${component}\\b`),`${component} belongs to the common renderer`);
+ for(const component of ['EpochBrowserLayout','EpochBrowserToolbar','EpochTreePane','EpochDetailHeading','EpochAnalysisInclusion','MetadataPanel','TreeBuilder','RetainedTreePresentation','ProtocolViewFilter'])assert.match(shared,new RegExp(`<${component}\\b`),`${component} belongs to the common renderer`);
+ const retained=await readFile(new URL('./components/RetainedTreePresentation.jsx',import.meta.url),'utf8');assert.match(retained,/<Activity\b/);assert.match(retained,/<PagedTree\b/);
 });
 
 test('search designer delegates to the shared viewer and both adapters supply local filters',async()=>{

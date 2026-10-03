@@ -30,7 +30,7 @@ async function harness(){
  // visual children that require browser layout or canvas.
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{
   name:'session-view-presentation',enforce:'pre',resolveId(source,importer){
-   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./NavigationLoading.jsx','./Common.jsx','./IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
+   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['../treeBranchReads.jsx','./NavigationLoading.jsx','./Common.jsx','./IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
    if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='./ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
    if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before);}`;
