@@ -12,15 +12,24 @@ export function toggleInspectionBranch(values,key,open){return [...values.filter
 
 // Two ready layout frames, with a fresh membership/page predicate on BOTH.
 // The caller cancels this operation on scope changes and newer user intent.
-export function restoreInspectionScroll({pane,top,ready,requestFrame=requestAnimationFrame,cancelFrame=cancelAnimationFrame,onRestored}){
-  let frame,stopped=false,settled=0;
+export function restoreInspectionScroll({pane,top,ready,requestFrame=requestAnimationFrame,cancelFrame=cancelAnimationFrame,observe,onRestored}){
+  let frame=null,stopped=false,settled=0,disconnect=()=>{};
+  const stop=()=>{stopped=true;if(frame!==null)cancelFrame(frame);frame=null;disconnect();};
+  const schedule=()=>{if(!stopped&&frame===null)frame=requestFrame(tick);};
   const tick=()=>{
-    if(stopped)return;
-    settled=ready()?settled+1:0;
-    if(settled<2){frame=requestFrame(tick);return;}
+    frame=null;if(stopped)return;
+    // Pending/error states sleep until membership or child DOM changes. A
+    // failed request must not leave a 60Hz loop running for the life of a tab.
+    if(!ready()){settled=0;return;}
+    if(++settled<2){schedule();return;}
     pane.scrollTop=Math.min(Math.max(0,top),Math.max(0,pane.scrollHeight-pane.clientHeight));
-    onRestored?.(pane.scrollTop);
+    stop();onRestored?.(pane.scrollTop);
   };
-  frame=requestFrame(tick);
-  return()=>{stopped=true;cancelFrame(frame);};
+  const watch=observe||((changed)=>{
+    const observer=new MutationObserver(changed);
+    observer.observe(pane,{subtree:true,childList:true,attributes:true});
+    return()=>observer.disconnect();
+  });
+  disconnect=watch(()=>{settled=0;schedule();});
+  schedule();return stop;
 }

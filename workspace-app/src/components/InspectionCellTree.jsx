@@ -53,7 +53,7 @@ function DateBranch({group,navigation,changeNavigation,...props}){
     {group.cells.map(cell=><CellBranch navigation={navigation} changeNavigation={changeNavigation} key={cell.cell_uuid} cell={cell} dateOpen={open} {...props}/>)}
   </details>;
 }
-export default function InspectionCellTree({cells,targets,setTargets,disabled,navigationDisabled=disabled,onFocus,onSelectCell,navigationScope,initialNavigation,onNavigationChange,membershipReady=true,collapseRequest,...props}){
+export default function InspectionCellTree({cells,targets,setTargets,disabled,navigationDisabled=disabled,onFocus,onSelectCell,navigationScope,initialNavigation,onNavigationChange,membershipReady=true,navigationRequest=0,collapseRequest,...props}){
   const groupTags=useTreeGroupTags({readContext:props.source.readContext,protocolId:props.source.protocolId,filters:{},revision:props.revision,actionsDisabled:disabled,onAnnotationsChanged:props.onAnnotationsChanged});
   const dates=useMemo(()=>inspectionDates(cells),[cells]);
   const ordered=useMemo(()=>dates.flatMap(group=>group.cells),[dates]);
@@ -67,6 +67,9 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   const rememberNavigation=value=>{navigationRef.current=value;setNavigation(value);viewCallbacks.current?.(value);};
   function cancelRestore(){cancelScroll.current?.();cancelScroll.current=null;pendingScroll.current=null;}
   function changeNavigation(update){cancelRestore();rememberNavigation(inspectionNavigation(update(navigationRef.current),viewScope));}
+  const intent=JSON.stringify([navigationRequest,props.focused]);
+  const previousIntent=useRef(intent);
+  useLayoutEffect(()=>{if(previousIntent.current!==intent){previousIntent.current=intent;cancelRestore();}},[intent]);
   const previousViewScope=useRef(viewScope),previousCollapse=useRef(collapseRequest);
   useLayoutEffect(()=>{
     if(previousViewScope.current!==viewScope){previousViewScope.current=viewScope;cancelRestore();rememberNavigation(inspectionNavigation(null,viewScope));}
@@ -159,5 +162,5 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
-  return <div ref={treeElement} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} navigation={navigation} changeNavigation={changeNavigation} targets={targets} setTargets={setTargets} onTagEpoch={groupTags.openEpoch} onSelectGroupCell={selectGroupCell} onTagCell={(cell,event)=>selectCell(cell,event,true)} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
+  return <div ref={treeElement} data-inspection-membership-ready={membershipReady} className="inspection-cell-tree" aria-label="All matching dates, cells and epochs" title="⌘/Ctrl-click to select epochs; Shift-click for a range">{groupTags.dialog}{error&&<p role="alert">{error}</p>}{selecting&&<p role="status">Selecting epoch range…</p>}{!dates.length&&<p role="status">No epochs match the current filters.</p>}{dates.map(group=><DateBranch key={group.date} group={group} {...props} navigation={navigation} changeNavigation={changeNavigation} targets={targets} setTargets={setTargets} onTagEpoch={groupTags.openEpoch} onSelectGroupCell={selectGroupCell} onTagCell={(cell,event)=>selectCell(cell,event,true)} onFocus={onFocus} onSelectCell={selectCell} onSelect={select} disabled={disabled||selecting} navigationDisabled={navigationDisabled||selecting}/>)}</div>;
 }

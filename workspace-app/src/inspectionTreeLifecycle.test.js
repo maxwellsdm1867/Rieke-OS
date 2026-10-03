@@ -112,3 +112,32 @@ test('return restores date/cell expansion and page only after fresh matching mem
   assert.equal(h.details[0].open,false);assert.equal(h.details[1].open,false);
  }finally{await h.close();}
 });
+
+
+test('external and same-target navigation intents cancel delayed scroll; errors sleep and retry restores',async()=>{
+ const prior={requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame,MutationObserver:globalThis.MutationObserver};
+ const frames=new Map(),observers=new Set(),listeners=new Map();let serial=0,childPending=true;
+ globalThis.requestAnimationFrame=callback=>{frames.set(++serial,callback);return serial;};
+ globalThis.cancelAnimationFrame=id=>frames.delete(id);
+ globalThis.MutationObserver=class{constructor(callback){this.callback=callback;}observe(){observers.add(this);}disconnect(){observers.delete(this);}};
+ const pane={scrollTop:0,scrollHeight:660,clientHeight:100,addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name)};
+ const element={closest:()=>pane,querySelector:()=>childPending?{}:null};
+ const h=await createInspectionHarness({treeElement:element});
+ const props={...base,navigationScope:'scope-A',navigationRequest:0,membershipReady:false,setTargets(){},initialNavigation:{scope:'scope-A',dates:['2026-06-11'],cells:['cell-A'],offsets:{'cell-A':0},scrollTop:180}};
+ const frame=async()=>h.act(()=>{const work=[...frames.values()];frames.clear();work.forEach(fn=>fn());});
+ const changed=()=>{for(const observer of [...observers])observer.callback();};
+ try{
+  await h.render(props);await frame();assert.equal(frames.size,0,'failed membership sleeps');
+  await h.render({...props,membershipReady:true});changed();await frame();assert.equal(frames.size,0,'failed child page sleeps');
+  await h.render({...props,membershipReady:true,navigationRequest:1});
+  childPending=false;changed();await frame();await frame();
+  assert.equal(pane.scrollTop,0,'same-target explicit intent beats prior scroll');
+  assert.equal(observers.size,0,'canceled operation releases observer');
+  await h.unmount();assert.equal(frames.size,0);assert.equal(listeners.size,0);
+  childPending=true;await h.render({...props,membershipReady:true});await frame();assert.equal(frames.size,0);
+  childPending=false;changed();await frame();assert.equal(pane.scrollTop,0);await frame();assert.equal(pane.scrollTop,180,'retry restores once child page settles');
+  assert.equal(observers.size,0);
+  await h.unmount();pane.scrollTop=0;childPending=true;await h.render({...props,membershipReady:true});await frame();
+  await h.render({...props,membershipReady:true,focused:'new-epoch'});childPending=false;changed();await frame();await frame();assert.equal(pane.scrollTop,0,'external focus change also cancels');
+ }finally{await h.close();Object.assign(globalThis,prior);}
+});

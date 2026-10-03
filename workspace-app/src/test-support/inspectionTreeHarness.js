@@ -12,7 +12,7 @@ export function pageAt(cell='cell-A',offset=0,revision='query-A',kind='protocol'
   return {offset,total,...(kind==='protocol'?{query_revision:revision}:{revision}),
     epochs:Array.from({length:Math.min(60,total-offset)},(_,index)=>({epoch_uuid:`${cell}-${offset+index}`,cell_uuid:cell,start_time:'06/11/2026 12:00:00:000000'}))};
 }
-export async function createInspectionHarness(){
+export async function createInspectionHarness({treeElement=null}={}){
   const key=`__inspectionTest${Math.random().toString(36).slice(2)}`;
   const network={api:()=>{throw Error('Unexpected API call');},page:(source,request)=>({loading:false,error:null,reload(){},
     data:pageAt(request.cellUuid,request.offset,source.kind==='protocol'?source.queryRevision:source.treeRevision,source.kind)})};
@@ -37,7 +37,7 @@ export async function createInspectionHarness(){
   let root;
   const branches=()=>root.root.findAll(node=>node.type?.name==='CellBranch');
   return {network,
-    async render(props){await act(async()=>{const element=React.createElement(InspectionCellTree,props);if(root)root.update(element);else root=TestRenderer.create(element);});},
+    async render(props){await act(async()=>{const element=React.createElement(InspectionCellTree,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:node=>node.props.className==='inspection-cell-tree'?treeElement:null});});},
     get branch(){return branches()[0].props;},
     get details(){return root.root.findAllByType('details').map(node=>node.props);},
     async toggle(index,open){await act(()=>root.root.findAllByType('details')[index].props.onToggle({currentTarget:{open}}));},

@@ -177,3 +177,19 @@ test('reselecting the active Inspect tab returns from design without remounting 
   assert.equal(h.fixture.requests.slice(start).filter(r=>r.path.includes('/epochs?')).length,0);
  }finally{await h.close();}
 });
+
+test('Inspector emits new list intent for same-target focus, outside-pane next and keyboard navigation',async()=>{
+ const h=await createInspectorHarness();
+ try{
+  h.fixture.page=page;await h.render(props);
+  let before=h.viewer.treePane.listProps.navigationRequest;
+  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-A',epochs[0]));
+  assert.notEqual(h.viewer.treePane.listProps.navigationRequest,before,'same target is a new intent');
+  before=h.viewer.treePane.listProps.navigationRequest;
+  await h.act(()=>h.viewer.navigation.onMove(1));
+  assert.notEqual(h.viewer.treePane.listProps.navigationRequest,before,'Next outside pane');
+  before=h.viewer.treePane.listProps.navigationRequest;
+  await h.act(()=>h.viewer.onKeyDown({key:'s',target:{tagName:'DIV',closest:()=>null},currentTarget:{hasAttribute:()=>false},preventDefault(){},stopPropagation(){}}));
+  assert.notEqual(h.viewer.treePane.listProps.navigationRequest,before,'parent keyboard');
+ }finally{await h.close();}
+});
