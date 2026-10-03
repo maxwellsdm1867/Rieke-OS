@@ -114,6 +114,36 @@ class NativeCompatibilityTests(unittest.TestCase):
         (self.root / 'alias').symlink_to('bin/app')
         self.assertEqual(self.report()['problems'], [])
 
+    def test_bare_loader_path_and_nested_executable_context(self):
+        self.put('Contents/Resources/runtime/lib/library', thin(extra=path_command(0x8000001c, '@loader_path')))
+        self.put('Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt',
+                 thin(extra=path_command(0x8000001c, '@executable_path/../../../..')))
+        self.assertEqual(self.report()['problems'], [])
+
+    def test_executable_context_uses_real_location_and_rejects_escape(self):
+        self.put('app', thin(extra=path_command(0x8000001c, '@executable_path/..')))
+        self.assertIn('external_rpath', self.codes())
+
+    def test_dylib_executable_context_fails_closed_without_candidates(self):
+        library = bytearray(thin(extra=path_command(0x8000001c, '@executable_path/../lib')))
+        struct.pack_into('<I', library, 12, 6)
+        self.put('Contents/lib/library', library)
+        self.assertIn('unresolved_executable_context', self.codes())
+
+    def test_dylib_checks_every_matching_executable_candidate(self):
+        library = bytearray(thin(extra=path_command(0x8000001c, '@executable_path/../lib')))
+        struct.pack_into('<I', library, 12, 6)
+        self.put('Contents/lib/library', library)
+        self.put('Contents/MacOS/app', thin())
+        report = self.report()
+        self.assertEqual(report['problems'], [])
+        record = next(item for item in report['files'] if item['path'] == 'Contents/lib/library')
+        evidence = record['slices'][0]['executable_path_containment'][0]
+        self.assertEqual(evidence['candidate_executables'], ['Contents/MacOS/app'])
+        self.assertFalse(evidence['actual_loader_verified'])
+        self.put('other-app', thin())
+        self.assertIn('external_rpath', self.codes())
+
     def test_system_path_prefix_cannot_hide_parent_escape(self):
         for index, value in enumerate(['/usr/lib/../../tmp/libbad.dylib',
                                        '/System/Library/../../tmp/libbad.dylib']):

@@ -120,6 +120,7 @@ def audit_bundle(bundle, *, max_files=200000, max_native_bytes=16 * 1024**3, tim
         raise ValueError('Bundle must be a directory')
     started = time.monotonic()
     files, links, problems = [], [], []
+    executable_paths, deferred_paths = {}, []
     visited, hashed = 0, 0
 
     def issue(path, code, **details):
@@ -191,6 +192,8 @@ def audit_bundle(bundle, *, max_files=200000, max_native_bytes=16 * 1024**3, tim
                         issue(relative, 'missing_required_architecture', required='arm64')
                     for native in slices:
                         arch = native['architecture']
+                        if native['file_type'] == 2:  # MH_EXECUTE
+                            executable_paths.setdefault(arch, set()).add(relative)
                         if native['platform'] not in (None, 1):
                             issue(relative, 'non_macos_slice', architecture=arch, platform=native['platform'])
                         if native['minimum_macos'] is None:
@@ -205,16 +208,17 @@ def audit_bundle(bundle, *, max_files=200000, max_native_bytes=16 * 1024**3, tim
                                     continue
                                 if value.startswith('/'):
                                     issue(relative, code, architecture=arch, value=value)
-                                elif value.startswith('@loader_path/'):
-                                    if not inside(path.parent / value[len('@loader_path/'):]):
+                                elif value == '@loader_path' or value.startswith('@loader_path/'):
+                                    suffix = value[len('@loader_path'):].lstrip('/')
+                                    if not inside(path.parent / suffix):
                                         issue(relative, code, architecture=arch, value=value)
-                                elif value.startswith('@executable_path/'):
-                                    # Containment relative to the enclosing app's main
-                                    # executable. Loader-chain resolution remains unverified.
-                                    app = next((p for p in path.parents if p.suffix == '.app'), root)
-                                    anchor = app / 'Contents/MacOS'
-                                    if not inside(anchor / value[len('@executable_path/'):]):
-                                        issue(relative, code, architecture=arch, value=value)
+                                elif value == '@executable_path' or value.startswith('@executable_path/'):
+                                    suffix = value[len('@executable_path'):].lstrip('/')
+                                    if native['file_type'] == 2:
+                                        if not inside(path.parent / suffix):
+                                            issue(relative, code, architecture=arch, value=value)
+                                    else:
+                                        deferred_paths.append((relative, native, code, value, suffix))
                                 elif value.startswith('@rpath/'):
                                     # Exact resolution depends on the loader chain. Reject
                                     # upward escapes from these symbolic roots conservatively.
@@ -226,6 +230,22 @@ def audit_bundle(bundle, *, max_files=200000, max_native_bytes=16 * 1024**3, tim
                                             break
                                 else:
                                     issue(relative, 'unknown_native_path', architecture=arch, value=value)
+        for relative, native, code, value, suffix in deferred_paths:
+            check_time()
+            arch = native['architecture']
+            candidates = sorted(executable_paths.get(arch, set()))
+            # A library does not determine the main executable. Prove containment
+            # for every inventoried same-architecture executable, without claiming
+            # that any one of them is the actual loader or resolves the dependency.
+            native.setdefault('executable_path_containment', []).append({
+                'value': value, 'candidate_executables': candidates,
+                'actual_loader_verified': False})
+            if not candidates:
+                issue(relative, 'unresolved_executable_context', architecture=arch, value=value)
+            for candidate in candidates:
+                check_time()
+                if not inside((root / candidate).parent / suffix):
+                    issue(relative, code, architecture=arch, value=value, executable_candidate=candidate)
     except TimeoutError as error:
         issue('.', 'audit_limit_exceeded', detail=str(error))
     except (OSError, RuntimeError) as error:
