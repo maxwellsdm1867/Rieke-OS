@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "release_version": "0.1.6",
+  "record_type": "source_checkpoint",
+  "tested_source_commit": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
+  "prior_packaged_source_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
+  "checkpoint_repository": "https://github.com/maxwellsdm1867/Rieke-OS",
+  "checkpoint_branch": "codex/disco-checkpoint-20261003",
+  "verified_remote_commit": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
+  "remote_main_unchanged": "a8fac2c293ccf4fa73a4eb5e93673b41620b1d13",
+  "documentation_followup": {
+    "product_changes": false,
+    "status": "prepared_for_parent_review",
+    "tested_application_sha_is_separate": true
+  },
+  "version_checks": {
+    "desktop/package.json": "0.1.6",
+    "desktop/package-lock.json": "0.1.6",
+    "workspace-app/package.json": "0.1.6",
+    "workspace-app/package-lock.json": "0.1.6"
+  },
+  "owner_reported_validation": {
+    "frontend_tests": {
+      "passed": 576,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "production_build": "passed; existing bundle-size warning",
+    "native_complete_selection": {
+      "epochs": 443,
+      "page_offsets": [
+        0,
+        60,
+        120,
+        180,
+        240,
+        300,
+        360,
+        420
+      ]
+    },
+    "separate_native_acceptance": {
+      "selected_epochs": 2,
+      "main_epochs_before": 520,
+      "main_epochs_after": 522,
+      "pending_epochs_before": 20,
+      "pending_epochs_after": 18,
+      "binding_versions": [
+        6,
+        7
+      ],
+      "accept_requests": 1,
+      "durable_receipt_verified": true
+    },
+    "temporary_tag_and_decision_values_restored": true,
+    "expected_audit_history_retained": true,
+    "fixtures_stopped": true
+  },
+  "independent_review": {
+    "source_clear": true,
+    "tracked_files_compared": 1367,
+    "tracked_file_mismatches": 0,
+    "recorded_acceptance_identity_and_count_consistency": "passed",
+    "tests_rerun": false,
+    "runtime_started": false
+  },
+  "publication_scan": {
+    "baseline_published_commit": "6dc6e888e992ea931c8972ead94036bea7091736",
+    "new_reachable_blob_versions": 583,
+    "new_blob_bytes": 8374025,
+    "largest_new_blob_bytes": 130244,
+    "high_confidence_secret_pattern_matches": 0,
+    "new_private_artifact_path_matches": 0,
+    "scope": "pattern and artifact scan of reachable unpublished history; not a comprehensive security audit"
+  },
+  "evidence_sha256": {
+    "FINAL-HANDOFF.json": "ed36bb58bf00ab2e1ec7d5b9b22c6677daee7fb312b43baeb40a563273aa83bf",
+    "aggregate-tests.txt": "fb236d4bec825711220993fb8b9d3e9ebbf938c0d58be0c756b3d78afaae6651",
+    "final-build.txt": "c630dd2c2fbe1c0c6efbd8fdc89c6d0d87636974a63cd3cf852fd8fddb96c497",
+    "native-final-proof.json": "e0a587472318ce83424109f4bf946533c7bfa9e04b0875823cae275cf1a78701",
+    "native-acceptance-proof.json": "653713afced747845b63c6c0868ac8ee8d29454982a36ef28e7434cd3a8adf50",
+    "final-preservation-audit.json": "22a7b682bbd970233bda5b0533ae827d50e5b671cd45b9fb9c5b4201d986bbbf"
+  },
+  "boundaries": [
+    "No release tag, GitHub Release or binary upload.",
+    "Final selected-only package smoke remains with packaging owner.",
+    "No new backend, schema or dependency changes in final UI delta.",
+    "Native evidence was reviewed from owner receipts, not rerun by publication reviewer.",
+    "No cache implementation in checkpoint or documentation follow-up."
+  ]
+}
