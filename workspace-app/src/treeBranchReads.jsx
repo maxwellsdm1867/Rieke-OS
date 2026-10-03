@@ -22,7 +22,7 @@ export function TreeBranchReadOwner({projectId,projectPath,revision,children,cac
  },[cache]);
  const value=useMemo(()=>({identity:JSON.stringify(scope),active:()=>!scope||cache.isActive(scope),
   attest:(body,page)=>scope?cache.attest(scope,body,page):null,
-  read:(...args)=>cache.read(...args),current:lease=>cache.isCurrent(lease)}),[cache,scope]);
+  read:(...args)=>cache.read(...args),current:lease=>cache.assertCurrent(lease)}),[cache,scope]);
  return <QueryClientProvider client={cache.client}><Context.Provider value={value}>{children}</Context.Provider></QueryClientProvider>;
 }
 export function useTreeBranchReads(){return useContext(Context);}

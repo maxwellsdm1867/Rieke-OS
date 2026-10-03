@@ -43,7 +43,7 @@ test('annotation, backend incarnation, project path, actor and binding changes c
 });
 
 import {loadColumnTreePages} from './columnTreeReads.js';
-const ownerFor=cache=>({active:()=>cache.isActive(scope),attest:(request,response)=>cache.attest(scope,request,response),read:(...args)=>cache.read(...args),current:lease=>cache.isCurrent(lease)});
+const ownerFor=cache=>({active:()=>cache.isActive(scope),attest:(request,response)=>cache.attest(scope,request,response),read:(...args)=>cache.read(...args),current:lease=>cache.assertCurrent(lease)});
 function ancestor(request,readIdentity=identity){return {...page,path:request.path,depth:request.path.length,offset:request.offset,read_identity:readIdentity,branches:[{...page.branches[0],key:hex(7+request.path.length),path:[...request.path,hex(7+request.path.length)]}]};}
 const leaf={...page,kind:'epochs',path:[hex(7),hex(8)],depth:2,branches:[],epochs:[{epoch_uuid:'epoch-A'}],ancestors:[{parent_offset:0},{parent_offset:0}]};
 
@@ -87,7 +87,7 @@ test('entry/byte/age/lease bounds, LRU and oversized responses cannot leave old 
  let clock=0;const cache=createTreeBranchReadCache({entries:1,bytes:10000,retainMs:20,leaseMs:10,now:()=>clock});cache.activate(scope);
  await cache.read(attest(cache),body,{load:async()=>page});
  await cache.read(attest(cache),{...body,offset:60},{load:async()=>({...page,offset:60})});assert.equal(cache.stats().entries,1);assert.equal(cache.stats().evictions,1);
- const old=attest(cache);clock=11;await assert.rejects(cache.read(old,body,{load:async()=>page}),{name:'AbortError'});
+ const old=attest(cache);clock=11;await assert.rejects(cache.read(old,body,{load:async()=>page}),{name:'StaleTreeReadError'});
  clock=21;assert.equal(cache.stats().entries,0);
  await cache.read(attest(cache),body,{load:async()=>({...page,note:'x'.repeat(11000)})});assert.equal(cache.stats().entries,0);assert.equal(cache.stats().oversized,1);assert.ok(cache.stats().bytes<=10000);
 });
@@ -124,4 +124,35 @@ test('last observer cancellation consumes the query signal and removes inactive 
  controller.abort();await assert.rejects(result,{name:'AbortError'});assert.equal(transportSignal.aborted,true);
  assert.equal(cache.client.getQueryCache().getAll().length,0);assert.equal(cache.stats().inflight,1);
  hold.resolve(page);await new Promise(resolve=>setImmediate(resolve));assert.equal(cache.stats().inflight,0);assert.equal(cache.stats().entries,0);
+});
+
+import React from 'react';
+import TestRenderer,{act} from 'react-test-renderer';
+import {createServer} from './test-support/isolatedVite.js';
+import {fileURLToPath} from 'node:url';
+test('mounted current lease expiry clears loading and explicit retry obtains a fresh witness',async()=>{
+ let clock=0,calls=0,witnesses=0;const hold=deferred(),cache=createTreeBranchReadCache({now:()=>clock});cache.activate(scope);
+ const key='__treeLeaseFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'fixture',attest:(request,response)=>{witnesses++;return cache.attest(scope,request,response);}},
+  api:async(_,{body:request})=>{calls++;return calls===1?leaf:calls===2?hold.promise:request.path.length===2?leaf:ancestor(request);}};
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
+  name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
+   if(id==='../api.js')return '\0lease-api';if(id==='../treeBranchReads.jsx')return '\0lease-owner';
+   if(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx')return '\0lease-actions';
+  }},load(id){if(id==='\0lease-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
+   if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
+   if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
+ }]});let view;
+ const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
+ globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
+ try{
+  const {default:ColumnTree}=await server.ssrLoadModule('/src/components/ColumnTree.jsx');
+  await act(async()=>{view=TestRenderer.create(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',selected:'epoch-A'}));});
+  assert.equal(calls,3);clock=10001;
+  await act(async()=>{hold.resolve(ancestor(body));await new Promise(resolve=>setImmediate(resolve));});
+  assert.equal(view.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy'],false);
+  assert.match(view.root.findByProps({role:'alert'}).children[0],/expired/);
+  await act(async()=>{view.root.findByProps({role:'alert'}).findByType('button').props.onClick();});
+  assert.equal(witnesses,2);assert.equal(view.root.findAllByProps({role:'alert'}).length,0);
+  assert.equal(view.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy'],false);
+ }finally{await act(async()=>view?.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;}
 });

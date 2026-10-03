@@ -51,7 +51,7 @@ export function createTreeBranchReadCache(options={}){
   const identity=identityFor(scope,request,response);if(!identity)return null;
   const lease=Object.freeze({});leases.set(lease,{owner,generation,identity,protocol:request.protocol_uuid,splits:request.splits,revision:response.revision,at:now()});return lease;
  }
- function check(lease){const value=leases.get(lease);if(!value||value.owner!==owner||value.generation!==generation||now()-value.at>=limits.leaseMs)throw aborted();return value;}
+ function check(lease){const value=leases.get(lease);if(!value||value.owner!==owner||value.generation!==generation)throw aborted();if(now()-value.at>=limits.leaseMs)throw Object.assign(Error('Tree read witness expired; reload the current tree'),{name:'StaleTreeReadError'});return value;}
  function read(lease,body,{load,signal}={}){
   let proof,key;
   try{
@@ -91,5 +91,5 @@ export function createTreeBranchReadCache(options={}){
    unsubscribe=observer.subscribe(receive);if(finished)unsubscribe();else receive(observer.getCurrentResult());
   });
  }
- return {client,activate,retire,attest,read,isActive:scope=>owner===canonical(scope),isCurrent(lease){try{check(lease);return true;}catch{return false;}},stats(){prune();return {...counters,entries:ledger.size,bytes:used,inflight:physical.size,generation};}};
+ return {client,activate,retire,attest,read,assertCurrent:lease=>!!check(lease),isActive:scope=>owner===canonical(scope),isCurrent(lease){try{check(lease);return true;}catch{return false;}},stats(){prune();return {...counters,entries:ledger.size,bytes:used,inflight:physical.size,generation};}};
 }

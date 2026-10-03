@@ -39,11 +39,11 @@ read but are not retained. Cancellation does not release physical capacity until
 the underlying transport actually settles. These are cache bounds, not claims
 about total renderer heap or active DOM memory.
 
-Validation: ten adapter/loader regressions include identical two-ancestor
+Validation: eleven adapter/loader regressions include identical two-ancestor
 first=3 POSTs / return=1 fresh-anchor POST, missing/mismatched witness, identity
 isolation, independent cancellation, abort-ignoring work, bounds, local offline,
 focus/reconnect and explicit error retry. Backend witness and existing related
-suites pass 65 tests. The full frontend suite passes 617 tests and the production build passes
+suites pass 65 tests. The full frontend suite passes 618 tests and the production build passes
 (with the existing large-chunk warning). These synthetic request counts are not native Electron latency results.
 
 Qualification gaps: recorded-field Protocol ancestor reuse only; filtered,
@@ -56,3 +56,7 @@ Primary references:
 - https://tanstack.com/query/v5/docs/framework/react/guides/important-defaults
 - https://tanstack.com/query/v5/docs/framework/react/guides/query-cancellation
 - https://tanstack.com/query/v5/docs/framework/react/guides/network-mode
+
+Lease expiry is a recoverable StaleTreeReadError, distinct from cancellation.
+A mounted ColumnTree regression advances an ancestor read beyond its lease,
+checks loading clears with Reload, then verifies retry obtains a new witness.
