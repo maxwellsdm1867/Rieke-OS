@@ -37,11 +37,11 @@ export async function navigateAfterTagSave({draft,save,isCurrent,navigate,direct
 
 // Colors are stable by tag text, independent of author or current row order.
 export function compactAnnotationTags(record={},level='epoch'){
-  const groups=annotationGroups(record.annotations),rows=level==='cell'?groups.cell:groups.epoch;
+  const groups=annotationGroups(record.annotations),rows=level==='cell'?groups.cell:level==='effective'?[...groups.cell.map(row=>({...row,tag_scope:'Inherited cell'})),...groups.epoch.map(row=>({...row,tag_scope:'Direct epoch'}))]:groups.epoch;
   const tags=new Map();
   for(const row of rows){
     const authors=tags.get(row.tag)||[];
-    authors.push(row.author_name||'Author not recorded');tags.set(row.tag,authors);
+    authors.push(level==='effective'?`${row.tag_scope}: ${row.author_name||'Author not recorded'}${row.profile_uuid?` (${row.profile_uuid})`:''}`:row.author_name||'Author not recorded');tags.set(row.tag,authors);
   }
   if(level==='epoch')for(const tag of record.curation?.tags||[])tags.set(tag,[...(tags.get(tag)||[]),'Dataset tag']);
   return [...tags].map(([tag,authors])=>{

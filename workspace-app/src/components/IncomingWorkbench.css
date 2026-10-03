@@ -149,7 +149,7 @@
 .incoming-action-bar .incoming-bar-metrics>span{flex-shrink:0}
 .incoming-action-bar .incoming-cell-types{flex:1 1 150px;min-width:80px}
 .incoming-type-chips{display:flex;align-items:center;gap:5px;min-width:0;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;scrollbar-width:thin}
-.incoming-type-chips:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.incoming-type-chip:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .incoming-type-chip{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;border:1px solid var(--border);border-radius:5px;padding:4px 5px;white-space:nowrap;background:var(--surface-subtle);color:var(--ink-secondary)}
 .incoming-action-bar .incoming-type-chip strong{font-size:12px;letter-spacing:0}
 .incoming-type-chip svg{color:var(--type-color)}
@@ -159,3 +159,11 @@
 .incoming-filtered-export{display:flex;flex-direction:column;gap:5px;margin-top:7px}
 .incoming-filtered-export button{font-size:10px;min-height:26px;padding:4px 5px}
 .incoming-filtered-export small{font-size:10px;line-height:1.4;color:var(--ink-secondary)}
+
+.incoming-tag-summary{padding:8px 10px;border-top:1px solid var(--border);font-size:11px;flex-shrink:0;background:var(--surface)}
+.incoming-tag-summary>header{display:flex;align-items:center;gap:5px}.incoming-tag-summary>header>span{margin-left:auto;color:var(--ink-muted);font-size:10px}
+.incoming-tag-summary>small{display:block;color:var(--ink-secondary);font-size:10px;margin:3px 0;line-height:1.4}.incoming-tag-totals{font-size:11px;margin:4px 0}
+.incoming-tag-list{display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow:auto}.incoming-tag-list>button{display:flex;align-items:center;gap:5px;max-width:100%;min-height:25px;border-radius:12px;padding:3px 7px;font-size:10px}.incoming-tag-list>button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.incoming-tag-list>button>small{font-size:9px;white-space:nowrap;flex-shrink:0}
+.incoming-browser .cell-tree-epoch.has-shared-tags:not(.active):not(.bulk-selected),.incoming-browser .ht-leaf.has-shared-tags:not([aria-selected=true]),.incoming-browser .tp-epoch.has-shared-tags:not(.selected){box-shadow:inset 2px 0 var(--info-border)}
+.incoming-browser .cell-tree-cell.has-shared-tags>summary:not(.selected-cell){box-shadow:inset 2px 0 var(--info-border)}
+.incoming-browser .cell-tree-cell>summary .annotation-row-pills{margin-left:5px}.incoming-browser .ht-value+.annotation-row-pills{margin-left:auto}

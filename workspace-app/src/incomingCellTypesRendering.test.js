@@ -14,7 +14,8 @@ test('inline type counts expose distinct frozen cells without a popup or hover-o
   assert.match(html,/aria-label="Frozen proposal cell types"/);
   assert.match(html,/<strong>2<\/strong> ON-midget/);
   assert.match(html,/<strong>1<\/strong> Unclassified/);
-  assert.match(html,/role="list" tabindex="0"/,'the inline overflow remains keyboard reachable');
+  assert.match(html,/role="listitem" tabindex="0"/,'individual pills remain keyboard reachable without an outer frame');
+  assert.doesNotMatch(html,/role="list" tabindex=/);
   assert.doesNotMatch(html,/<details|<summary|title=|role="dialog"|incoming-type-disclosure|999/);
   const filtered=renderToStaticMarkup(React.createElement(Types,{cells:[a],count:1,scope:'Filtered incoming view',compact:true}));
   assert.match(filtered,/Filtered incoming view · 1 cell/);
