@@ -1,6 +1,6 @@
 # Bounded GlobalSearch cache pilot
 
-Base: `3d9f15fffb8c36e24b799656b073fec45552c2cf`. Branch: `codex/cache-research-20261003`. This is an isolated, one-view pilot for independent review. No push, deployment, browser/native benchmark, scientific fixture access, data write, authority caching or broader page cache was performed.
+Base: `3d9f15fffb8c36e24b799656b073fec45552c2cf`. Branch: `codex/cache-research-20261003`. This is an isolated, one-view pilot. Implementation milestone `a616055d2868fea297666c611016eaf1a1079f0b` passed independent source review and the subsequently granted bounded native qualification below. No push, deployment, scientific mutation, authority caching or broader page cache was performed.
 
 ## Behavior and ownership
 
@@ -53,4 +53,8 @@ The first full run exposed an App test harness that stubbed the newly imported p
 
 Before making latency or memory claims, obtain an exclusive slot for the parent's existing packaged/native fixture; do not duplicate its H5s or operate services concurrently. Measure cold/warm dialog opens, first useful paint and input responsiveness with recorded project/backend identity, request counts, query cost and errors. Repeat close/reopen and query/project/actor changes long enough to observe retained entries/bytes and heap/RSS settling. Exercise suspended/resumed desktop and backend recovery, real focus and keyboard behavior, and destination validation after source/author changes. Preserve failure/conflict correctness while measuring.
 
-The proposed warm-page p95 ≤100ms goal remains unqualified. No native slot was requested or used for this milestone. Broader page caching and adaptive indexing wait for independent review and evidence from this bounded pilot.
+The parent subsequently granted an exclusive slot. The actual checkpoint/pilot components were compared in an owned Electron/profile diagnostic shell against an isolated native API/MySQL clone; see [CACHE_NAVIGATION_NATIVE_QUALIFICATION.md](CACHE_NAVIGATION_NATIVE_QUALIFICATION.md) and its sanitized receipt. Twenty fresh reopens made 20 search GETs at the checkpoint and zero in the pilot; observed useful-frame p95 was 403.9ms versus 8.0ms under the explicitly limited RAF/DOM method. Keyboard, fresh destination GETs, controlled failures, real mounted expiry and actual owned API recovery passed. One hundred additional reopens retained 16 entries / 12,678 estimated bytes; short memory observations do not establish a production plateau. Granted source files and scientific tables were unchanged; owned processes/ports stopped cleanly.
+
+The unobserved-backend test confirmed that locally fresh cached rows remain clickable until expiry or an observed lifecycle/reconnect event. Client response time is not a server-generation witness. Cached selection issued a fresh destination GET and failed while the backend was down. This is acceptable only for navigation intent with separate destination reads/mutation authority, never membership or decision caching without server witnesses.
+
+The proposed all-page warm p95 ≤100ms goal remains unqualified. Full packaged App lifecycle, a real second-project switch, large payloads, long-duration memory and compositor/INP measurements remain separate qualification work. Broader page caching and adaptive indexing wait for the parent's evidence review.

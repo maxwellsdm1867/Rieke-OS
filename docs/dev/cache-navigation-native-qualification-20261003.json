@@ -1,0 +1,451 @@
+{
+  "checkpoint": "3d9f15fffb8c36e24b799656b073fec45552c2cf",
+  "pilot": "a616055d2868fea297666c611016eaf1a1079f0b",
+  "method": "Owned Electron 44.5.0/Playwright 1.63.0 window and profile; isolated native MySQL/API clone; actual GlobalSearch sources mounted in identical diagnostic shell",
+  "versions": {
+    "electron": "44.5.0",
+    "playwright": "1.63.0",
+    "node": "v24.13.0"
+  },
+  "measurements": [
+    {
+      "variant": "checkpoint",
+      "interaction": "client-cold query",
+      "search_requests": 1,
+      "frames": 44,
+      "blankFrames": 43,
+      "inertFrames": 0,
+      "usefulFrameMs": 353.2000000476837,
+      "confirmedFrameMs": 365.89999997615814
+    },
+    {
+      "variant": "checkpoint",
+      "interaction": "fresh close/reopen",
+      "samples": 20,
+      "search_requests": 20,
+      "useful_frame": {
+        "n": 20,
+        "min_ms": 289.39999997615814,
+        "median_ms": 312.2000000476837,
+        "p95_ms": 403.89999997615814,
+        "max_ms": 530.6999999284744
+      },
+      "confirmed_frame": {
+        "n": 20,
+        "min_ms": 303.7000000476837,
+        "median_ms": 329.2000000476837,
+        "p95_ms": 420.5,
+        "max_ms": 547.3999999761581
+      },
+      "blank_frames_total": 803,
+      "inert_frames_total": 0
+    },
+    {
+      "variant": "pilot",
+      "interaction": "client-cold query",
+      "search_requests": 1,
+      "frames": 37,
+      "blankFrames": 36,
+      "inertFrames": 0,
+      "usefulFrameMs": 304.7999999523163,
+      "confirmedFrameMs": 320.6999999284744
+    },
+    {
+      "variant": "pilot",
+      "interaction": "fresh close/reopen",
+      "samples": 20,
+      "search_requests": 0,
+      "useful_frame": {
+        "n": 20,
+        "min_ms": 3.200000047683716,
+        "median_ms": 7.200000047683716,
+        "p95_ms": 8,
+        "max_ms": 8.099999904632568
+      },
+      "confirmed_frame": {
+        "n": 20,
+        "min_ms": 21,
+        "median_ms": 23.5,
+        "p95_ms": 25.600000023841858,
+        "max_ms": 26.700000047683716
+      },
+      "blank_frames_total": 0,
+      "inert_frames_total": 0
+    }
+  ],
+  "checks": [
+    {
+      "variant": "checkpoint",
+      "kind": "keyboard",
+      "arrow_down_focus": true,
+      "arrow_up_focus": true,
+      "escape_closes": true,
+      "command_k_reopens_with_input_focus": true,
+      "enter_selects": true,
+      "fresh_destination_gets": 1
+    },
+    {
+      "variant": "pilot",
+      "kind": "keyboard",
+      "arrow_down_focus": true,
+      "arrow_up_focus": true,
+      "escape_closes": true,
+      "command_k_reopens_with_input_focus": true,
+      "enter_selects": true,
+      "fresh_destination_gets": 1
+    },
+    {
+      "kind": "cached selection repeats a fresh native QC GET",
+      "reads": 2,
+      "cached_destination": false
+    },
+    {
+      "kind": "controlled stale + 503",
+      "compatible_rows": 4,
+      "disabled_while_refreshing": true,
+      "keyboard_cannot_choose": true,
+      "automatic_retries": 0,
+      "explicit_retry_success": true
+    },
+    {
+      "kind": "controlled 409",
+      "rows_cleared": true,
+      "retained_entries": 0,
+      "automatic_retries": 0,
+      "explicit_retry_success": true
+    },
+    {
+      "kind": "scope transition: actor",
+      "old_rows_hidden": true,
+      "additional_native_search_gets": 1,
+      "entries": 1
+    },
+    {
+      "kind": "scope transition: same UUID/open identity",
+      "old_rows_hidden": true,
+      "additional_native_search_gets": 1,
+      "entries": 1
+    },
+    {
+      "kind": "scope transition: reconnect",
+      "old_rows_hidden": true,
+      "additional_native_search_gets": 1,
+      "entries": 1
+    },
+    {
+      "kind": "native distinct-query retention bound",
+      "unique_queries": 20,
+      "hits": 23,
+      "misses": 28,
+      "networkReads": 28,
+      "coalesced": 0,
+      "cancelled": 0,
+      "invalidations": 11,
+      "evicted": 5,
+      "oversized": 0,
+      "errors": 2,
+      "entries": 16,
+      "bytes": 11236,
+      "inflight": 0,
+      "generation": 11
+    },
+    {
+      "kind": "real stopped backend and observed reconnect",
+      "unobserved_stop_keeps_locally_fresh_navigation": true,
+      "fresh_destination_request_fails": true,
+      "reconnect_revokes_old_rows": true
+    },
+    {
+      "kind": "real native API recovery",
+      "explicit_retry_success": true,
+      "new_fresh_destination_read": true
+    }
+  ],
+  "memory": [
+    {
+      "cycles_completed": 20,
+      "search_requests_in_batch": 0,
+      "heap_used_before_gc": 24564588,
+      "heap_used_after_gc": 15281856,
+      "heap_total_after_gc": 16809984,
+      "rss": [
+        {
+          "type": "Browser",
+          "working_set_kib": 121184,
+          "peak_working_set_kib": 138352
+        },
+        {
+          "type": "GPU",
+          "working_set_kib": 71024,
+          "peak_working_set_kib": 77856
+        },
+        {
+          "type": "Utility",
+          "working_set_kib": 43536,
+          "peak_working_set_kib": 47696
+        },
+        {
+          "type": "Tab",
+          "working_set_kib": 139888,
+          "peak_working_set_kib": 183552
+        }
+      ],
+      "cache": {
+        "hits": 43,
+        "misses": 29,
+        "networkReads": 29,
+        "coalesced": 0,
+        "cancelled": 0,
+        "invalidations": 11,
+        "evicted": 6,
+        "oversized": 0,
+        "errors": 2,
+        "entries": 16,
+        "bytes": 12678,
+        "inflight": 0,
+        "generation": 11
+      }
+    },
+    {
+      "cycles_completed": 40,
+      "search_requests_in_batch": 0,
+      "heap_used_before_gc": 18264224,
+      "heap_used_after_gc": 15418424,
+      "heap_total_after_gc": 16285696,
+      "rss": [
+        {
+          "type": "Browser",
+          "working_set_kib": 121728,
+          "peak_working_set_kib": 138352
+        },
+        {
+          "type": "GPU",
+          "working_set_kib": 70864,
+          "peak_working_set_kib": 77856
+        },
+        {
+          "type": "Utility",
+          "working_set_kib": 43184,
+          "peak_working_set_kib": 47696
+        },
+        {
+          "type": "Tab",
+          "working_set_kib": 140688,
+          "peak_working_set_kib": 183552
+        }
+      ],
+      "cache": {
+        "hits": 63,
+        "misses": 29,
+        "networkReads": 29,
+        "coalesced": 0,
+        "cancelled": 0,
+        "invalidations": 11,
+        "evicted": 6,
+        "oversized": 0,
+        "errors": 2,
+        "entries": 16,
+        "bytes": 12678,
+        "inflight": 0,
+        "generation": 11
+      }
+    },
+    {
+      "cycles_completed": 60,
+      "search_requests_in_batch": 0,
+      "heap_used_before_gc": 18107864,
+      "heap_used_after_gc": 15400948,
+      "heap_total_after_gc": 16285696,
+      "rss": [
+        {
+          "type": "Browser",
+          "working_set_kib": 122880,
+          "peak_working_set_kib": 138352
+        },
+        {
+          "type": "GPU",
+          "working_set_kib": 70848,
+          "peak_working_set_kib": 77856
+        },
+        {
+          "type": "Utility",
+          "working_set_kib": 42592,
+          "peak_working_set_kib": 47696
+        },
+        {
+          "type": "Tab",
+          "working_set_kib": 140016,
+          "peak_working_set_kib": 183552
+        }
+      ],
+      "cache": {
+        "hits": 83,
+        "misses": 29,
+        "networkReads": 29,
+        "coalesced": 0,
+        "cancelled": 0,
+        "invalidations": 11,
+        "evicted": 6,
+        "oversized": 0,
+        "errors": 2,
+        "entries": 16,
+        "bytes": 12678,
+        "inflight": 0,
+        "generation": 11
+      }
+    },
+    {
+      "cycles_completed": 80,
+      "search_requests_in_batch": 0,
+      "heap_used_before_gc": 17758524,
+      "heap_used_after_gc": 15443344,
+      "heap_total_after_gc": 16285696,
+      "rss": [
+        {
+          "type": "Browser",
+          "working_set_kib": 123072,
+          "peak_working_set_kib": 138352
+        },
+        {
+          "type": "GPU",
+          "working_set_kib": 70816,
+          "peak_working_set_kib": 77856
+        },
+        {
+          "type": "Utility",
+          "working_set_kib": 42272,
+          "peak_working_set_kib": 47696
+        },
+        {
+          "type": "Tab",
+          "working_set_kib": 140080,
+          "peak_working_set_kib": 183552
+        }
+      ],
+      "cache": {
+        "hits": 103,
+        "misses": 29,
+        "networkReads": 29,
+        "coalesced": 0,
+        "cancelled": 0,
+        "invalidations": 11,
+        "evicted": 6,
+        "oversized": 0,
+        "errors": 2,
+        "entries": 16,
+        "bytes": 12678,
+        "inflight": 0,
+        "generation": 11
+      }
+    },
+    {
+      "cycles_completed": 100,
+      "search_requests_in_batch": 0,
+      "heap_used_before_gc": 17811052,
+      "heap_used_after_gc": 15479368,
+      "heap_total_after_gc": 16285696,
+      "rss": [
+        {
+          "type": "Browser",
+          "working_set_kib": 122880,
+          "peak_working_set_kib": 138352
+        },
+        {
+          "type": "GPU",
+          "working_set_kib": 70768,
+          "peak_working_set_kib": 77856
+        },
+        {
+          "type": "Utility",
+          "working_set_kib": 42192,
+          "peak_working_set_kib": 47696
+        },
+        {
+          "type": "Tab",
+          "working_set_kib": 139984,
+          "peak_working_set_kib": 183552
+        }
+      ],
+      "cache": {
+        "hits": 123,
+        "misses": 29,
+        "networkReads": 29,
+        "coalesced": 0,
+        "cancelled": 0,
+        "invalidations": 11,
+        "evicted": 6,
+        "oversized": 0,
+        "errors": 2,
+        "entries": 16,
+        "bytes": 12678,
+        "inflight": 0,
+        "generation": 11
+      }
+    }
+  ],
+  "limits": [
+    "One GlobalSearch view, not a full packaged App benchmark.",
+    "Search-frame timing uses RAF and visible/enabled DOM geometry, not compositor presentation timestamps or end-to-end INP.",
+    "Backend metadata/index startup is complete before samples. Client-cold search is not process-cold startup.",
+    "Stale/error/409 and actor/open-identity transitions are controlled client faults/scopes on the same native project.",
+    "Memory samples include the diagnostic shell, DevTools and Vite client; forced-GC observations do not prove a sustained production plateau.",
+    "Backend session incarnation is not available; locally fresh rows remain clickable until expiry or an observed lifecycle/reconnect event. Only navigation intent is reused; destination reads and authority remain separate.",
+    "One sequential run, checkpoint before pilot; no randomized ordering, long-duration stability claim, or other-device qualification.",
+    "Native destination proof is the existing CellQC GET path invoked after navigation intent in the diagnostic shell; it does not mount the entire CellQC workflow or prove mutation authority."
+  ],
+  "request_totals": {
+    "search": 53,
+    "destination": 5,
+    "setup": 4,
+    "writes": 0
+  },
+  "completed": true,
+  "mounted_expiry": {
+    "frames": 3657,
+    "inertFrames": 41,
+    "blankFrames": 0,
+    "elapsedMs": 30336.799999952316,
+    "done": true,
+    "stats": {
+      "hits": 0,
+      "misses": 2,
+      "networkReads": 2,
+      "coalesced": 0,
+      "cancelled": 0,
+      "invalidations": 3,
+      "evicted": 0,
+      "oversized": 0,
+      "errors": 0,
+      "entries": 1,
+      "bytes": 2127,
+      "inflight": 0,
+      "generation": 3
+    },
+    "method": "One real 30s mounted freshness expiry, without clock injection; native search GET refresh observed by RAF"
+  },
+  "safety": {
+    "granted_source_files_checked": 390,
+    "granted_source_files_unchanged": true,
+    "source_clean_shutdown": true,
+    "clone_clean_shutdown": true,
+    "last_owned_processes_stopped": {
+      "api_pid": true,
+      "mysql_pid": true
+    },
+    "owned_ports_released": {
+      "5187": true,
+      "8831": true
+    },
+    "science_tables_unchanged_all_runs": true,
+    "science_tables_per_run": [
+      9,
+      9,
+      9
+    ],
+    "owned_electron_frontend_api_mysql_processes_remaining": 0
+  },
+  "machine": {
+    "platform": "darwin",
+    "architecture": "arm64"
+  }
+}
