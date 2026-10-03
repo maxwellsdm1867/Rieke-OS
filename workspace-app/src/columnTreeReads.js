@@ -5,11 +5,17 @@ import {reusableTreeBody} from './treeBranchReadCache.js';
 
 // Every operation starts with a current server page. Only its nonterminal
 // ancestors may use attested JSON. Selection/range/tag loaders never call this.
-export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,revisionOverride=null,columnPositions=[],readOwner,load,signal,isCurrent=()=>true}){
+export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,revisionOverride=null,columnPositions=[],freshContinuation=false,readOwner,load,signal,isCurrent=()=>true}){
  const endpoint=scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages';
+ const current=()=>!signal?.aborted&&isCurrent()&&(!readOwner||readOwner.active());
+ if(freshContinuation&&!scope.readContext&&!anchor&&(path.length||offset)){
+  const rootBody=treePageRequest(scope,{path:[],offset:0,reset:true});
+  const root=await load(endpoint,{method:'POST',body:rootBody,signal});
+  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
+  revisionOverride=root.revision;
+ }
  const body=treePageRequest(scope,{path,offset,anchor,currentRevision:revisionOverride,reset:!revisionOverride});
  const page=await load(endpoint,{method:'POST',body,signal});
- const current=()=>!signal?.aborted&&isCurrent()&&(!readOwner||readOwner.active());
  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  const lease=!scope.readContext&&endpoint==='/tree-pages'?readOwner?.attest(body,page):null;
  const targets=columnAncestorPages(page,{anchor:!!anchor,columnPositions});

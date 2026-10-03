@@ -55,7 +55,7 @@ export default function ColumnTree(props){
     element.addEventListener('wheel',wheel,{passive:false});
     return()=>element.removeEventListener('wheel',wheel);
   },[]);
-  const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null}={})=>{
+  const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false}={})=>{
     if(!active||!visible.current)return;
     retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;
@@ -66,7 +66,7 @@ export default function ColumnTree(props){
     setState(old=>({columns:old.columns,loading:true,error:null}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey);
     try{
-      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
       const page=columns.at(-1);
       if(request.signal.aborted||token!==serial.current)return;
       current.current=columns;restored.current=true;
@@ -80,7 +80,7 @@ export default function ColumnTree(props){
     const intent=retryIntent.current;
     if(intent?.scopeKey!==scopeKey)return;
     if(expectedRevision){callbacks.current.onRefreshPreview?.();return;}
-    load({...intent.options,reset:true,revisionOverride:null});
+    load({...intent.options,reset:true,revisionOverride:null,freshContinuation:true});
   }
   useLayoutEffect(()=>{visible.current=active;controller.current?.abort();serial.current++;return()=>{retryIntent.current=null;visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[scopeKey]);
   useEffect(()=>{

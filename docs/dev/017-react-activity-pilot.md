@@ -100,3 +100,11 @@ React 19.3.0 packages and required test-harness compatibility, preserving b60's
 unmounting product code. React 18 unmount versus React 19 unmount estimates the
 framework contribution; React 19 unmount versus this pilot still includes the
 layout/gating/retention treatment and must not be called an Activity-only effect.
+
+Independent review caught a continuation-grammar error in c909: native path or
+nonzero-offset pages require a revision. The corrected retry first reads a fresh
+root, checks current scope/cancellation, then requests the saved continuation with
+that root revision. Anchored retries remain direct and revision-free. The mock
+now rejects unversioned continuations, and tests cover both branch paths and
+pagination, including supersession while root authority is pending. c909 remains
+an immutable rejected checkpoint, not a native-qualified fix.

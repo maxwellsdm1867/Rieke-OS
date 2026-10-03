@@ -135,7 +135,7 @@ import {fileURLToPath} from 'node:url';
 test('mounted current lease expiry clears loading and explicit retry obtains a fresh witness',async()=>{
  let clock=0,calls=0,witnesses=0;const retryBodies=[];const hold=deferred(),cache=createTreeBranchReadCache({now:()=>clock});cache.activate(scope);
  const key='__treeLeaseFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'fixture',attest:(request,response)=>{witnesses++;return cache.attest(scope,request,response);}},
-  api:async(_,{body:request})=>{retryBodies.push(request);calls++;return calls===1?leaf:calls===2?hold.promise:request.anchor_uuid||request.path.length===2?leaf:ancestor(request);}};
+  api:async(_,{body:request})=>{retryBodies.push(request);if((request.path.length||request.offset)&&!request.revision)throw Error('A tree revision is required for continuation pages');calls++;return calls===1?leaf:calls===2?hold.promise:request.anchor_uuid||request.path.length===2?leaf:ancestor(request);}};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
    if(id==='../api.js')return '\0lease-api';if(id==='../treeBranchReads.jsx')return '\0lease-owner';
@@ -159,11 +159,11 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
   assert.equal(view.root.findByProps({'data-epoch-uuid':'epoch-A'}).props.disabled,false);
   const successfulApi=globalThis[key].api;let failedBody;
   globalThis[key].api=async(_,{body:request})=>{failedBody=request;retryBodies.push(request);throw Error('fixture 503');};
-  await act(async()=>view.root.findAll(node=>node.type==='button'&&node.props.className?.includes('tp-branch'))[0].props.onClick());
+  await act(async()=>view.root.findAll(node=>node.type==='button'&&node.props.className?.includes('tp-branch')).at(-1).props.onClick());
   assert.equal(failedBody.anchor_uuid,undefined,'deliberate branch navigation is not selected-epoch navigation');
   const deliberatePath=failedBody.path;globalThis[key].api=successfulApi;const retryStart=retryBodies.length;
   await act(async()=>view.root.findByProps({role:'alert'}).findByType('button').props.onClick());
-  assert.deepEqual(retryBodies[retryStart].path,deliberatePath);assert.equal(retryBodies[retryStart].anchor_uuid,undefined);assert.equal(retryBodies[retryStart].revision,undefined);
+  assert.deepEqual(retryBodies[retryStart].path,[]);assert.equal(retryBodies[retryStart].revision,undefined);assert.deepEqual(retryBodies[retryStart+1].path,deliberatePath);assert.equal(retryBodies[retryStart+1].anchor_uuid,undefined);assert.equal(retryBodies[retryStart+1].revision,hex(1));
   globalThis[key].api=async(_,{body:request})=>{retryBodies.push(request);throw Error('fixture 503');};
   await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',selected:'epoch-B'})));
   const obsoleteRetry=view.root.findByProps({role:'alert'}).findByType('button').props.onClick;
@@ -211,4 +211,17 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   await render(true);await render(false,{filters:{cell_type:'other'}});assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
  }finally{await domAct(async()=>view.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;dom.window.close();globalThis.window=priorWindow;globalThis.document=priorDocument;}
 
+});
+
+
+test('fresh continuation retry obtains root revision before branch/pagination and stops on supersession',async()=>{
+ for(const continuation of [{path:[hex(7)],offset:0},{path:[],offset:60}]){
+  const requests=[];const load=async(_,{body:request})=>{requests.push(request);if((request.path.length||request.offset)&&!request.revision)throw Error('A tree revision is required for continuation pages');return ancestor(request);};
+  await loadColumnTreePages({scope:{protocolId:protocol,splits:'date,cell'},...continuation,freshContinuation:true,load});
+  assert.deepEqual(requests[0].path,[]);assert.equal(requests[0].offset,0);assert.equal(requests[0].revision,undefined);
+  assert.deepEqual(requests[1].path,continuation.path);assert.equal(requests[1].offset,continuation.offset);assert.equal(requests[1].revision,hex(1));
+ }
+ const hold=deferred();let current=true,calls=0;
+ const work=loadColumnTreePages({scope:{protocolId:protocol,splits:'date,cell'},path:[hex(7)],freshContinuation:true,isCurrent:()=>current,load:()=>{calls++;return hold.promise;}});
+ current=false;hold.resolve(page);await assert.rejects(work,{name:'AbortError'});assert.equal(calls,1);
 });
