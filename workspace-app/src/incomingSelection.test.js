@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {loadIncomingSelection} from './incomingSelection.js';
+import {loadIncomingSelection,incomingSelectionCount} from './incomingSelection.js';
 const source={kind:'protocol',protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope'},query:'tag=chosen',queryRevision:'revision'};
 const cells=[{cell_uuid:'a',epochs:65},{cell_uuid:'b',epochs:3}];
 const page=(cell,offset)=>({query_revision:'revision',offset,total:cell.epochs,epochs:Array.from({length:Math.min(60,cell.epochs-offset)},(_,index)=>({cell_uuid:cell.cell_uuid,epoch_uuid:cell.cell_uuid+(offset+index)}))});
@@ -20,4 +20,12 @@ test('selection cancellation and limit stop before publishing a partial range',a
  await assert.rejects(loadIncomingSelection({source,cells,request:async()=>{calls++;current=false;return page(cells[0],0);},isCurrent:()=>current}),{name:'AbortError'});assert.equal(calls,1);
  calls=0;await assert.rejects(loadIncomingSelection({source,cells:[{cell_uuid:'large',epochs:1001}],request:async()=>{calls++;}}),/1,000/);assert.equal(calls,0);
  await assert.rejects(loadIncomingSelection({source,cells,cellUuid:'missing',request:async()=>{calls++;}}),/no longer/);assert.equal(calls,0);
+});
+
+test('Import count deduplicates explicit UUIDs and never substitutes global or unavailable totals',()=>{
+ assert.equal(incomingSelectionCount({targets:['a','a','b'],cells,cell:{cell_uuid:'a'}}),2);
+ assert.equal(incomingSelectionCount({targets:['']}),null);
+ for(const count of [null,undefined,-1,1.2,NaN])assert.equal(incomingSelectionCount({cells:[{cell_uuid:'a',epochs:count}],cell:{cell_uuid:'a'}}),null);
+ assert.equal(incomingSelectionCount({cells:[cells[0],cells[0]],cell:{cell_uuid:'a'}}),null);
+ assert.equal(incomingSelectionCount({cells,cell:{cell_uuid:'b',epochs:1000}}),3);
 });

@@ -1,6 +1,16 @@
 import {epochPageRequest,epochPageRevision} from './epochBrowserSource.js';
 import {MAX_SELECTED_EPOCHS} from './epochSelection.js';
 
+// Use the same scoped cells as loadIncomingSelection; never use Main cell totals.
+export function incomingSelectionCount({targets=[],cells=[],cell=null,epoch=null}){
+  if(targets.length)return targets.every(id=>typeof id==='string'&&id)?new Set(targets).size:null;
+  if(cell){
+    const matching=cells.filter(item=>item.cell_uuid===cell.cell_uuid),count=matching[0]?.epochs;
+    return matching.length===1&&Number.isSafeInteger(count)&&count>=0?count:null;
+  }
+  return epoch?(typeof epoch.epoch_uuid==='string'&&epoch.epoch_uuid?1:null):0;
+}
+
 // Capture the complete filtered frozen view before publishing any selection.
 // Neither a loaded page nor a global cell query is a complete candidate set.
 export async function loadIncomingSelection({source,cells,cellUuid=null,request,signal,isCurrent=()=>true}){

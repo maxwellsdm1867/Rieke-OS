@@ -164,25 +164,37 @@
 .incoming-tag-summary>header{display:flex;align-items:center;gap:5px}.incoming-tag-summary>header>span{margin-left:auto;color:var(--ink-muted);font-size:10px}
 .incoming-tag-summary>small{display:block;color:var(--ink-secondary);font-size:10px;margin:3px 0;line-height:1.4}.incoming-tag-totals{font-size:11px;margin:4px 0}
 .incoming-tag-list{display:flex;flex-wrap:wrap;gap:4px;max-height:100px;overflow:auto}.incoming-tag-list>button{display:flex;align-items:center;gap:5px;max-width:100%;min-height:25px;border-radius:12px;padding:3px 7px;font-size:10px}.incoming-tag-list>button>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.incoming-tag-list>button>small{font-size:9px;white-space:nowrap;flex-shrink:0}
-/* Shared tags fill incoming rows; blue selection and focus stay independent. */
+/* Shared tags, selection and keyboard focus share the incoming green palette. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags,
 .incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary,
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags,
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags,
 .incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:hover:not(:has(>button:first-child:disabled)),
-.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:hover,
-.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:hover:not(:has(>button:first-child:disabled)),
-.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:hover:not(:disabled),
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:hover:not(:disabled){background:color-mix(in srgb,var(--success-soft) 80%,var(--success-border))}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:hover:not(.active):not(.bulk-selected):not(:has(>button:first-child:disabled)),
+.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:hover:not(.selected-cell),
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:hover:not([aria-selected=true]):not(:has(>button:first-child:disabled)),
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:hover:not(.selected):not(:disabled),
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:hover:not(.selected):not(:disabled){background:color-mix(in srgb,var(--success-soft) 80%,var(--success-border))}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:is(.active,.bulk-selected),
 .incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary.selected-cell,
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags[aria-selected=true],
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags.selected,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{background:var(--accent-soft);box-shadow:inset 3px 0 var(--success-ink),inset 0 0 0 1px var(--accent)}
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{background:color-mix(in srgb,var(--success-soft) 55%,var(--success-border));box-shadow:inset 4px 0 var(--success-ink);color:var(--ink)}
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags>button:first-child{background:transparent}
 .incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags.selected{border-left-color:transparent}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags:has(>button:first-child:disabled),
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags:has(>button:first-child:disabled),
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:disabled,
 .incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:disabled{opacity:.6}
+
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags>button:first-child:focus-visible,
+.incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary:focus-visible,
+.incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags>button:first-child:focus-visible,
+.incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags:focus-visible,
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags:focus-visible{outline:2px solid var(--success-ink);outline-offset:-3px}
+
+/* The draft-entry action stays visible alongside the selection controls. */
+.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary{min-height:36px;padding:7px 10px;font-size:11px;font-weight:650;background:var(--success-ink);border-color:var(--success-ink);color:var(--success-soft)}
+.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:hover:not(:disabled){background:color-mix(in srgb,var(--success-ink) 88%,var(--ink));border-color:var(--success-ink)}
+.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:focus-visible{outline:2px solid var(--success-ink);outline-offset:3px}
+.incoming-browser .incoming-draft-tools .incoming-draft-controls>button.primary:disabled{background:var(--surface-subtle);border-color:var(--border);color:var(--ink-muted);opacity:.65;cursor:not-allowed}
