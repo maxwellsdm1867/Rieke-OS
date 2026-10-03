@@ -28,3 +28,28 @@ test('real macOS ditto preserves a quarantined app without writing or clearing c
   assert.equal(quarantinePreserved(before,after),true);assert.equal((await run('/usr/bin/xattr',['-p','com.apple.quarantine',source])).stdout.trim(),original);
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
+
+test('quarantine normalization allows unchanged flags only with exact or fully redacted metadata pairs',()=>{
+ for(const flags of ['0083','0283']){
+  for(const metadata of ['66000000;Rieke-E2E','00000000;'])
+   assert.equal(quarantinePreserved(hex(original),hex(`${flags};${metadata};00000000-0000-4000-8000-000000000001`)),true);
+  for(const metadata of ['66000000;','00000000;Rieke-E2E','66000001;','00000000;Changed'])
+   assert.equal(quarantinePreserved(hex(original),hex(`${flags};${metadata};00000000-0000-4000-8000-000000000001`)),false);
+ }
+});
+test('quarantine rejects every other added or removed flag, missing identity and malformed equal records',()=>{
+ const flags=0x0083,uuid='00000000-0000-4000-8000-000000000001';
+ for(let bit=0;bit<16;bit++){
+  const mask=1<<bit,changed=(flags&mask)?flags&~mask:flags|mask;
+  if(mask===0x0200)continue;
+  for(const metadata of ['66000000;Rieke-E2E','00000000;'])
+   assert.equal(quarantinePreserved(hex(original),hex(`${changed.toString(16).padStart(4,'0')};${metadata};${uuid}`)),false,`flag ${mask}`);
+ }
+ for(const malformed of ['',undefined,'zz','ff',hex('garbage'),hex('0083;66000000;Rieke-E2E;'),hex('0083;66000000;Rieke-E2E;not-a-uuid')])
+  assert.equal(quarantinePreserved(malformed,malformed),false);
+ for(const missing of [null,undefined,'']){
+  assert.equal(quarantinePreserved(hex(original),missing),false);
+  assert.equal(quarantinePreserved(missing,hex(original)),false);
+ }
+ assert.equal(quarantinePreserved(null,null),true);
+});

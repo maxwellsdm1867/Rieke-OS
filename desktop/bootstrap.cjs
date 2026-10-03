@@ -45,7 +45,7 @@ async function quarantineAttribute(bundle, run) {
   }
 }
 function quarantinePreserved(source, copied) {
-  if (source === copied) return true;
+  if (source === null && copied === null) return true;
   const decode = value => {
     if (typeof value !== 'string' || !/^(?:[a-f0-9]{2})+$/.test(value)) return null;
     const text = Buffer.from(value, 'hex').toString('utf8');
@@ -54,17 +54,17 @@ function quarantinePreserved(source, copied) {
     return fields && {flags: parseInt(fields[1], 16), timestamp: fields[2], agent: fields[3], uuid: fields[4]};
   };
   const original = decode(source), destination = decode(copied);
-  // Native ditto/copyfile propagation was observed to add only 0x0200 and
-  // redact timestamp/agent. Do not write attributes or accept approval bits,
-  // dropped source protections, or a different quarantine event identity.
-  // Apple documents copy propagation adding QTN_FLAG_DO_NOT_TRANSLOCATE:
+  // Native copies may preserve flags or add only DO_NOT_TRANSLOCATE (0x0200).
+  // Apple copyfile makes that addition conditional on COPYFILE_RUN_IN_PLACE:
   // https://github.com/apple-oss-distributions/copyfile/blob/main/copyfile.3
-  // The precise accepted flags/metadata transformation is bounded by our
-  // real native ditto regression; it does not qualify manual OS approval.
-  return Boolean(original && destination && destination.flags === (original.flags | 0x0200) &&
+  // Owned never-launched copies also preserve flags while fully redacting the
+  // timestamp/agent pair. Accept only those bounded observed forms. This does
+  // not authorize launch, change attributes, or replace macOS approval.
+  return Boolean(original && destination &&
+    (destination.flags === original.flags || destination.flags === (original.flags | 0x0200)) &&
     destination.uuid === original.uuid &&
-    (destination.timestamp === original.timestamp || destination.timestamp === '00000000') &&
-    (destination.agent === original.agent || destination.agent === ''));
+    ((destination.timestamp === original.timestamp && destination.agent === original.agent) ||
+     (destination.timestamp === '00000000' && destination.agent === '')));
 }
 async function bundleDigest(bundle) {
   const info = await fs.lstat(bundle);
