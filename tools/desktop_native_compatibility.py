@@ -76,10 +76,11 @@ def parse_slice(handle, offset, size, expected_cpu=None):
             result.update(platform=platform, version_command=name, sdk=version(sdk),
                           minimum_macos=version(minimum) if platform == 1 and minimum else None)
         elif command in LOADS or command == 0x8000001c:
-            if length < 12:
+            path_header_size = 12 if command == 0x8000001c else 24
+            if length < path_header_size:
                 raise ValueError('Truncated native path command')
             start = struct.unpack_from(endian + 'I', block, 8)[0]
-            if start < 12 or start >= length or b'\0' not in block[start:]:
+            if start < path_header_size or start >= length or b'\0' not in block[start:]:
                 raise ValueError('Invalid native path string')
             value = block[start:].split(b'\0', 1)[0].decode('utf-8')
             result['rpaths' if command == 0x8000001c else 'dependencies'].append(value)
@@ -198,7 +199,9 @@ def audit_bundle(bundle, *, max_files=200000, max_native_bytes=16 * 1024**3, tim
                             issue(relative, 'minimum_above_target', architecture=arch, minimum=native['minimum_macos'])
                         for field, code in [('rpaths', 'external_rpath'), ('dependencies', 'external_native_dependency')]:
                             for value in native[field]:
-                                if value.startswith(SYSTEM):
+                                # Normalize dot segments before trusting system roots.
+                                # Preserve the original load-command value as evidence.
+                                if os.path.normpath(value).startswith(SYSTEM):
                                     continue
                                 if value.startswith('/'):
                                     issue(relative, code, architecture=arch, value=value)

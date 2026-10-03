@@ -28,8 +28,12 @@ def fat(*slices):
 
 def path_command(command, value):
     payload = value.encode() + b'\0'
-    size = 12 + len(payload)
-    return struct.pack('<III', command, size, 12) + payload
+    header_size = 12 if command == 0x8000001c else 24
+    size = header_size + len(payload)
+    header = struct.pack('<III', command, size, header_size)
+    if header_size == 24:
+        header += struct.pack('<III', 0, 0, 0)
+    return header + payload
 
 
 class NativeCompatibilityTests(unittest.TestCase):
@@ -78,6 +82,27 @@ class NativeCompatibilityTests(unittest.TestCase):
         self.put('liar', fat((0x100000c, thin(cpu=0x1000007))))
         self.assertIn('invalid_macho', self.codes())
 
+    def test_fat64_and_big_endian_legacy_macho(self):
+        value = thin()
+        self.put('fat64', struct.pack('>II', 0xcafebabf, 1) +
+                 struct.pack('>IIQQII', 0x100000c, 0, 40, len(value), 0, 0) + value)
+        legacy = struct.pack('>IIIIIII', 0xfeedface, 0x100000c, 0, 2, 1, 16, 0)
+        self.put('big', legacy + struct.pack('>IIII', 0x24, 16, 0x000b0000, 0))
+        self.assertEqual(self.report()['problems'], [])
+
+    def test_arm64e_alone_does_not_satisfy_regular_arm64(self):
+        value = bytearray(thin())
+        struct.pack_into('<I', value, 8, 2)
+        self.put('arm64e', value)
+        self.assertIn('missing_required_architecture', self.codes())
+
+    def test_hash_budget_and_deadline_cannot_return_pass(self):
+        self.put('app', thin())
+        for limits in [{'max_native_bytes': 1}, {'timeout': -1}]:
+            result = audit.audit_bundle(self.root, **limits)
+            self.assertEqual(result['status'], 'blocked')
+            self.assertIn('audit_limit_exceeded', {p['code'] for p in result['problems']})
+
     def test_symlink_escape_and_dependency_escape(self):
         self.put('bin/app', thin(extra=path_command(0x8000001c, '@loader_path/../../../outside')))
         self.put('lib/external', thin(extra=path_command(0xc, '/opt/homebrew/lib/libbad.dylib')))
@@ -88,6 +113,24 @@ class NativeCompatibilityTests(unittest.TestCase):
         self.put('bin/app', thin(extra=path_command(0xc, '/usr/lib/libSystem.B.dylib')))
         (self.root / 'alias').symlink_to('bin/app')
         self.assertEqual(self.report()['problems'], [])
+
+    def test_system_path_prefix_cannot_hide_parent_escape(self):
+        for index, value in enumerate(['/usr/lib/../../tmp/libbad.dylib',
+                                       '/System/Library/../../tmp/libbad.dylib']):
+            for command in (0xc, 0x8000001c):
+                self.put(f'escape-{index}-{command}', thin(extra=path_command(command, value)))
+        result = self.report()
+        self.assertEqual(sum(p['code'] == 'external_native_dependency' for p in result['problems']), 2)
+        self.assertEqual(sum(p['code'] == 'external_rpath' for p in result['problems']), 2)
+
+    def test_dylib_header_requires_24_bytes_and_string_after_header(self):
+        short = struct.pack('<III', 0xc, 16, 12) + b'x\0\0\0'
+        offset = bytearray(path_command(0xc, '/usr/lib/libSystem.B.dylib'))
+        struct.pack_into('<I', offset, 8, 12)
+        for name, command in [('short', short), ('offset', offset)]:
+            self.put(name, thin(extra=command))
+        result = self.report()
+        self.assertEqual(sum(p['code'] == 'invalid_macho' for p in result['problems']), 2)
 
     def test_no_native_files_and_bounds_fail_closed(self):
         self.assertIn('no_native_binaries', self.codes())

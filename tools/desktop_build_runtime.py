@@ -46,8 +46,11 @@ def install_runtime_dependencies(interpreter, env):
          '-r', ROOT / 'desktop/scientific-wheels.lock'], env=env)
 
 
-def scientific_preflight(interpreter):
+def scientific_preflight(interpreter, output):
     """Exercise actual relocated native imports, without user state or services."""
+    output = Path(output).resolve()
+    if not Path(interpreter).resolve().is_relative_to(output):
+        raise ValueError('Scientific interpreter is outside the expected output root')
     script = '''import sys,json,importlib.metadata as metadata
 from pathlib import Path
 import numpy,scipy
@@ -57,14 +60,15 @@ assert scipy.__version__ == '1.15.0', 'Unexpected desktop SciPy version'
 wheel = metadata.distribution('scipy').read_text('WHEEL')
 tag = 'cp311-cp311-macosx_12_0_arm64'
 assert ('Tag: ' + tag) in wheel.splitlines(), 'Desktop SciPy wheel policy mismatch'
-runtime = Path(sys.executable).resolve().parents[2]
+runtime = Path(sys.argv[1]).resolve(strict=True)
+assert Path(sys.executable).resolve().is_relative_to(runtime), 'Interpreter escapes expected runtime'
 for module in (numpy,scipy):
     assert Path(module.__file__).resolve().is_relative_to(runtime), 'Scientific import escapes runtime'
 import scipy.signal,scipy.stats,scipy.sparse.linalg,scipy.ndimage,scipy.io
 print(json.dumps({'python':'.'.join(map(str,sys.version_info[:3])),
  'numpy':numpy.__version__,'scipy':scipy.__version__,'scipy_wheel_tag':tag,
  'native_imports':'passed','modules':['scipy.signal','scipy.stats','scipy.sparse.linalg','scipy.ndimage','scipy.io']}))'''
-    return json.loads(subprocess.check_output([interpreter, '-I', '-B', '-c', script],
+    return json.loads(subprocess.check_output([interpreter, '-I', '-B', '-c', script, str(output)],
                                               text=True, timeout=60))
 
 
@@ -406,7 +410,7 @@ def build(output, skip_frontend=False):
     frontend = ROOT / 'workspace-app/dist' if skip_frontend else build_frontend()
     copy_application(ROOT, output, frontend)
     relocated = relocate_native(output)
-    scientific = scientific_preflight(interpreter)
+    scientific = scientific_preflight(interpreter, output)
     dependency_inventory(output)
     refresh_native_license_inventory(output)
     exclusions = exclude_optional_features(output)
@@ -435,7 +439,7 @@ def main():
         receipt = json.loads(receipt_path.read_text())
         if receipt.get('scientific_wheels_lock_sha256') != digest(ROOT / 'desktop/scientific-wheels.lock'):
             raise ValueError('Runtime wheel policy differs; rebuild the pinned runtime before refreshing')
-        receipt['scientific_runtime'] = scientific_preflight(args.output.resolve() / 'python/bin/python3.11')
+        receipt['scientific_runtime'] = scientific_preflight(args.output.resolve() / 'python/bin/python3.11', args.output.resolve())
         frontend = ROOT / 'workspace-app/dist' if args.skip_frontend else build_frontend()
         copy_application(ROOT, args.output.resolve(), frontend)
         refresh_native_license_inventory(args.output.resolve())

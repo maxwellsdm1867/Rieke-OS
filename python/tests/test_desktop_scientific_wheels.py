@@ -25,14 +25,22 @@ class ScientificWheelTests(unittest.TestCase):
     def test_native_preflight_uses_owned_interpreter_and_real_native_modules(self):
         interpreter=Path('/owned/runtime/python/bin/python3.11')
         with patch.object(build.subprocess, 'check_output', return_value='{"native_imports":"passed"}') as call:
-            self.assertEqual(build.scientific_preflight(interpreter), {'native_imports':'passed'})
+            self.assertEqual(build.scientific_preflight(interpreter, Path('/owned/runtime')), {'native_imports':'passed'})
         command=call.call_args.args[0]
         self.assertEqual(command[:4], [interpreter, '-I', '-B', '-c'])
         for module in ('scipy.signal', 'scipy.stats', 'scipy.sparse.linalg', 'scipy.ndimage', 'scipy.io'):
             self.assertIn(module, command[4])
         self.assertIn('macosx_12_0_arm64', command[4])
+        self.assertEqual(command[5], '/owned/runtime')
+        self.assertIn('sys.argv[1]', command[4])
 
     def test_native_import_error_is_not_a_pass(self):
         with patch.object(build.subprocess, 'check_output', side_effect=build.subprocess.CalledProcessError(1,['owned-python'])):
             with self.assertRaises(build.subprocess.CalledProcessError):
-                build.scientific_preflight(Path('/owned/runtime/python/bin/python3.11'))
+                build.scientific_preflight(Path('/owned/runtime/python/bin/python3.11'), Path('/owned/runtime'))
+
+    def test_preflight_rejects_interpreter_outside_explicit_output_before_execution(self):
+        with patch.object(build.subprocess, 'check_output') as call:
+            with self.assertRaisesRegex(ValueError, 'outside'):
+                build.scientific_preflight(Path('/foreign/python3.11'), Path('/owned/runtime'))
+        call.assert_not_called()
