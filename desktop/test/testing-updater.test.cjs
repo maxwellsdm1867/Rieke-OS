@@ -31,9 +31,9 @@ async function fixture(t,options={}){
     const official=new URL(url);
     http.get({hostname:'127.0.0.1',port:server.address().port,path:official.pathname+official.search},response=>resolve({statusCode:response.statusCode,headers:response.headers,body:response})).on('error',reject);
   });
-  const app={isPackaged:true,getPath:name=>name==='exe'?path.join(root,'Installed.app/Contents/MacOS/Rieke OS'):root};
-  await fs.mkdir(path.join(root,'Installed.app/Contents/Resources/runtime'),{recursive:true});
-  await fs.writeFile(path.join(root,'Installed.app/Contents/Resources/runtime/runtime-manifest.json'),JSON.stringify(current));
+  const app={isPackaged:true,getPath:name=>name==='exe'?path.join(root,'Rieke OS.app/Contents/MacOS/Rieke OS'):root};
+  await fs.mkdir(path.join(root,'Rieke OS.app/Contents/Resources/runtime'),{recursive:true});
+  await fs.writeFile(path.join(root,'Rieke OS.app/Contents/Resources/runtime/runtime-manifest.json'),JSON.stringify(current));
   const coordinator=createTestingUpdateCoordinator({app,manifest:current,distribution,transport,hostVersion:'14.2',
     timers:{setTimeout:()=>({unref(){}}),clearTimeout(){}},
     verifyCandidate:async args=>{validationCalls++;const directory=await fs.mkdtemp(path.join(args.cacheDirectory,'candidate-'));const bundle=path.join(directory,'Rieke OS.app');await fs.mkdir(bundle);return {version:args.descriptor.application_version,downloadedFile:args.downloadedFile,bundle_path:bundle,candidate_directory:directory,bundle_sha256:'c'.repeat(64),archive_sha256:descriptor.archive.sha256,runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true};},
@@ -189,7 +189,7 @@ test('real ZIP preflight/extraction uses installed interpreter and never execute
   try{await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
   catch{
     // Small source unit-test fixture only. Packaged E2E always uses real bundled Python.
-    installedBundle=path.join(f.root,'Current.app');
+    installedBundle=path.join(f.root,'Rieke OS.app');
     const hostPython=(await run('/usr/bin/which',['python3'])).stdout.trim();
     const bin=path.join(installedBundle,'Contents/Resources/runtime/python/bin');await fs.mkdir(bin,{recursive:true});
     await fs.symlink(hostPython,path.join(bin,'python3.11'));
@@ -237,4 +237,10 @@ test('Disco candidate uses its declared executable and rejects mismatched legacy
  await assert.rejects(inspectTestingBundle(options),/property list/);
  await fs.writeFile(file,original.replace('<string>Rieke OS</string>','<string>Disco</string>'));
  assert.equal((await inspectTestingBundle(options)).validated,true);
+});
+
+test('legacy-name update offered to Disco requests manual installation before any download',async t=>{
+ const f=await fixture(t,{installedBundle:'/owned/Applications/Disco.app'});await f.coordinator.start();
+ assert.equal(f.coordinator.getStatus().state,'Deferred');assert.match(f.coordinator.getStatus().message,/Install and Open manually/);
+ assert.equal(f.archiveCalls(),0);assert.equal(f.drains(),0);assert.equal(f.helperCalls(),0);
 });

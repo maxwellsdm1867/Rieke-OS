@@ -83,6 +83,7 @@ async function validatePrepared({receiptPath,currentExecutable,run=runFile,requi
  await verifyResources(path.join(installed,'Contents/Resources/runtime'),current.resources);
  await verifyResources(path.join(bundle,'Contents/Resources/runtime'),candidate.resources);
  await verifyTestingBundle(bundle,run);
+ await require('./install-name.cjs').assertBundleDestination(bundle,installed,run);
  if(requireParent){
   const identity=await processCreationIdentity(receipt.current_pid,executable,run);
   if(!identity.alive||identity.created_at!==receipt.current_created_at||await fs.realpath(identity.executable)!==executable)throw new Error('Current app process ownership changed');

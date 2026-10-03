@@ -146,6 +146,7 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
   const quarantine = unsignedTesting ? await quarantineAttribute(source, run) : null;
   if (expectedBundleSha256 !== undefined && sourceDigest !== expectedBundleSha256) throw new Error('Downloaded application bundle checksum differs');
   const sourceIdentity = await bundleIdentity(source, distribution, run);
+  await require('./install-name.cjs').assertBundleDestination(source, destination, run);
   const sourceManifest = await readBundleManifest(source);
   if (unsignedTesting) await verifyTestingBundle(source, run);
   stableVersion(sourceManifest.application_version);

@@ -106,6 +106,7 @@ async function inspectTestingBundle({bundle,descriptor,manifest,hostVersion,run=
   return {version:descriptor.application_version,bundle_path:bundle,bundle_sha256:await bundleDigest(bundle),runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true,source_dirty:candidate.source_dirty,trust:'official-repository-https-checksums',developer_id_verified:false,native_staging_verified:false,startup_health_verified:false};
 }
 async function validateTestingCandidate({downloadedFile,descriptor,manifest,cacheDirectory,installedBundle,hostVersion,run=runFile,bundleDigest}){
+  require('./install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
   await verifyArchive(downloadedFile,descriptor);
   const temporary=await fs.mkdtemp(path.join(cacheDirectory,'candidate-'));
   try{

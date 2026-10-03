@@ -95,6 +95,7 @@ async function validateDownloadedCandidate({downloadedFile, version, manifest, c
     const bundle = path.join(temporary, bundles[0]);
     const identity = await signingIdentity(bundle, run);
     if (identity.team !== installed.team || identity.identifier !== installed.identifier) throw new Error('Update signer or application identity differs.');
+    await require('./install-name.cjs').assertBundleDestination(bundle, installedBundle, run);
     const plist = path.join(bundle, 'Contents', 'Info.plist');
     const declared = await run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', plist]);
     if (declared.stdout.trim() !== version) throw new Error('App version differs from update metadata.');

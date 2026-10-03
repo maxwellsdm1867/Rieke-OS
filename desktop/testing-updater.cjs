@@ -132,7 +132,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
           const match=/^(?:v|desktop-test-v)(\d+\.\d+\.\d+)$/.exec(release.tag_name);
           try{return match&&compareVersions(match[1],manifest.application_version)>0;}catch{return false;}
         }).sort((a,b)=>compareVersions(b.tag_name.replace(/^(?:v|desktop-test-v)/,''),a.tag_name.replace(/^(?:v|desktop-test-v)/,'')));
-        let candidate=null,rejections=0;
+        let candidate=null,rejections=0,manualTransition=null;
         for(const release of relevant.slice(0,20)){
           const assets=release.assets;
           if(!Array.isArray(assets))continue;
@@ -140,20 +140,21 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
           if(descriptors.length!==1)continue;
           try{
             const descriptor=validateDescriptor(await jsonAt(transport,assetURL(descriptors[0],release.tag_name,'desktop-release.json')),manifest,hostVersion);
+            require('./install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
             if(release.tag_name!==`v${descriptor.application_version}`&&release.tag_name!==`desktop-test-v${descriptor.application_version}`)throw new Error('Release tag differs from app version.');
             const archives=assets.filter(asset=>asset?.name===descriptor.archive.filename);
             if(archives.length!==1||archives[0].size!==descriptor.archive.size)throw new Error('Archive metadata differs from descriptor.');
             const url=assetURL(archives[0],release.tag_name,descriptor.archive.filename);
             const repository=new URL(url).pathname.split('/').slice(1,3).join('/');
             candidate={descriptor,url,release_url:`https://github.com/${repository}/releases/tag/${encodeURIComponent(release.tag_name)}`};break;
-          }catch{rejections++;}
+          }catch(error){rejections++;if(error.code==='MANUAL_APP_NAME_TRANSITION')manualTransition=error.message;}
         }
         if(stopped)return {...status};
         if(candidate){
           offered=candidate;set('Available',{available:candidate.descriptor.application_version,release_url:candidate.release_url,source_dirty:null,message:`Disco ${candidate.descriptor.application_version} testing update is available. Download when ready.`,check_error:null});
           if(!await resumePrepared(candidate)&&!stopped)set('Available',{message:'Testing update available. Download when ready; any missing or changed cached update will be replaced.'});
         }
-        else if(rejections)deferred('Published testing update metadata was rejected. The installed app remains usable.');
+        else if(rejections)deferred(manualTransition||'Published testing update metadata was rejected. The installed app remains usable.');
         else{offered=null;set('Current',{available:null,message:'The installed testing version is current.',check_error:null});}
       }catch{deferred('Testing update check unavailable. The installed app remains usable.');}
       return {...status};

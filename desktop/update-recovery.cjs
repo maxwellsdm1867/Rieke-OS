@@ -16,6 +16,7 @@ async function verifyPriorBundle({app, manifest, run = execFile}) {
   const currentIdentity = await signingIdentity(installedBundle, run);
   const priorIdentity = await signingIdentity(previous, run);
   if (currentIdentity.team !== priorIdentity.team || currentIdentity.identifier !== priorIdentity.identifier || receipt.team !== priorIdentity.team || receipt.identifier !== priorIdentity.identifier) throw new Error('Previous app signing identity differs.');
+  await require('./install-name.cjs').assertBundleDestination(previous, installedBundle, run);
   const runtime = path.join(previous, 'Contents', 'Resources', 'runtime');
   const previousManifest = JSON.parse(await fs.readFile(path.join(runtime, 'runtime-manifest.json'), 'utf8'));
   if (!compatibleManifest(previousManifest, manifest) || previousManifest.mysql_version !== manifest.mysql_version || receipt.application_version !== previousManifest.application_version || receipt.source_commit !== previousManifest.source_commit) throw new Error('Previous app is incompatible with the current data contract.');

@@ -181,7 +181,7 @@ test('prepared archive changed after readiness cannot replace current app',async
 test('helper readiness must match its spawned PID, current process, target version and archive before quit can proceed',async()=>{
  const f=await updateFixture();try{
   const directory=path.join(f.destination,'Contents/Resources/app.asar');await fs.mkdir(directory);
-  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
+  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
   const helper=require(await fs.realpath(path.join(directory,'testing-install.cjs')));
   const {EventEmitter}=require('node:events'),{PassThrough}=require('node:stream');
   const spawnHelper=()=>{
@@ -218,7 +218,7 @@ test('actual Electron main and RUN_AS_NODE hash physical ASAR bytes and copy and
     const patchedVirtual=(await patched.lstat(archive)).isDirectory();
     const digest=await bootstrap.bundleDigest(source);const archiveSHA=await helper.sha256(archive);
     const run=async(command,args,options)=>command==='/usr/bin/codesign'?{stdout:'',stderr:''}:native(command,args,options);
-    const installed=await bootstrap.installCompleteBundle({source,home,run,distribution:{channel:'unsigned-testing'},expectedBundleSha256:digest});
+    const installed=await bootstrap.installCompleteBundle({source,destination:path.join(home,'Applications','Rieke OS.app'),run,distribution:{channel:'unsigned-testing'},expectedBundleSha256:digest});
     const copied=(await physical.lstat(path.join(installed.destination,'Contents/Resources/app.asar'))).isFile();
     const copiedDigest=await bootstrap.bundleDigest(installed.destination);
     await physical.rm(installed.destination,{recursive:true,force:true});
@@ -242,7 +242,7 @@ test('actual Electron main and RUN_AS_NODE hash physical ASAR bytes and copy and
 test('native helper CLI loads from a real ASAR under Electron RUN_AS_NODE and safely defers an invalid private receipt',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rieke-native-helper-cli-'));try{
   const contents=path.join(root,'helper-content');await fs.mkdir(contents);
-  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs'])
+  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])
    await fs.copyFile(path.join(__dirname,'..',file),path.join(contents,file));
   const archive=path.join(root,'app.asar');await require('@electron/asar').createPackage(contents,archive);
   const home=path.join(root,'home'),cache=path.join(home,'profile/updates/unsigned-testing');await fs.mkdir(cache,{recursive:true});
@@ -272,4 +272,37 @@ test('Disco Install and Open preserves a separate legacy installation and accept
   assert.equal(await fs.readFile(path.join(destination,'Contents/MacOS/Disco'),'utf8'),'native executable fixture');
   assert.equal(await require('../bootstrap.cjs').bundleDigest(legacy),before);
  }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});
+test('cross-name installation and rollback are refused before any destination copy in both directions',async()=>{
+ for(const modern of [false,true]){
+  const f=await fixture();try{
+   if(modern){
+    await fs.rename(path.join(f.source,'Contents/MacOS/Rieke OS'),path.join(f.source,'Contents/MacOS/Disco'));
+    const p=path.join(f.source,'Contents/Info.plist');await fs.writeFile(p,(await fs.readFile(p,'utf8')).replace('<string>Rieke OS</string>','<string>Disco</string>'));
+   }
+   const destination=path.join(f.root,'Applications',modern?'Rieke OS.app':'Disco.app');
+   for(const allowRollback of [false,true]){
+    await assert.rejects(installCompleteBundle({...f,destination,allowRollback,distribution:{channel:'unsigned-testing'}}),error=>error.code==='MANUAL_APP_NAME_TRANSITION');
+    await assert.rejects(fs.stat(destination),{code:'ENOENT'});
+   }
+   assert.equal(f.commands.some(([cmd])=>cmd==='/usr/bin/ditto'),false);
+  }finally{await fs.rm(f.root,{recursive:true,force:true});}
+ }
+});
+test('Disco same-name update and explicit rollback retain the normal startup destination',async()=>{
+ const original=await fixture('0.1.0'),fresh=await fixture('0.1.1');
+ try{
+  for(const f of [original,fresh]){
+   await fs.rename(path.join(f.source,'Contents/MacOS/Rieke OS'),path.join(f.source,'Contents/MacOS/Disco'));
+   const p=path.join(f.source,'Contents/Info.plist');await fs.writeFile(p,(await fs.readFile(p,'utf8')).replace('<string>Rieke OS</string>','<string>Disco</string>'));
+  }
+  const destination=path.join(original.root,'Applications','Disco.app'),{readBundleManifest}=require('../bootstrap.cjs');
+  await installCompleteBundle({...original,destination,distribution:{channel:'unsigned-testing'}});
+  await installCompleteBundle({...fresh,destination,distribution:{channel:'unsigned-testing'}});
+  assert.equal((await readBundleManifest(destination)).application_version,'0.1.1');
+  await installCompleteBundle({...original,destination,allowRollback:true,distribution:{channel:'unsigned-testing'}});
+  assert.equal((await readBundleManifest(destination)).application_version,'0.1.0');
+  assert.equal(path.basename(destination),'Disco.app');
+  assert.equal(await fs.readFile(path.join(destination,'Contents/MacOS/Disco'),'utf8'),'native executable fixture');
+ }finally{await fs.rm(original.root,{recursive:true,force:true});await fs.rm(fresh.root,{recursive:true,force:true});}
 });

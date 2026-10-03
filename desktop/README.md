@@ -191,10 +191,8 @@ is required. Source and artifact audits enforce this boundary. See
 The visible product name, `CFBundleName`, and `CFBundleDisplayName` are `Disco`.
 Electron's helper executables follow the product name (`Disco Helper`), which
 must agree with `CFBundleName` for Chromium child processes to launch.
-`mac.executableName` deliberately remains `Rieke OS`, preserving the existing
-on-disk app/executable paths, archive layout, updater checks, and recovery paths.
-`branding.cjs` also preserves the existing Electron profile. Do not change only
-`CFBundleName` without aligning the product/helper name.
+The shipping executable and bundle are also named Disco. `branding.cjs` preserves
+the existing Electron profile. Keep the product and helper names aligned.
 
 ## Product name and compatibility identifiers
 
@@ -210,8 +208,10 @@ an existing differently named app in place; the preserved profile and
 single-instance ownership rules continue to protect shared state. The repository
 and historical release URLs remain `maxwellsdm1867/Rieke-OS`.
 
-The new updater accepts exact legacy and Disco archive naming schemas and checks
-the matching executable. Existing old clients may require a manual Install and
+The updater recognizes exact legacy and Disco archive schemas, checks the matching
+executable, and refuses automatic update or restore across installation names.
+Same-name updates and rollback remain supported; a cross-name transition requires
+a manual Install and Open into the matching app destination. Existing old clients may require a manual Install and
 Open of the new Disco download because their archive validators required the old
 bundle name. This change does not rewrite prior published releases or install
 anything on the user's computer.
