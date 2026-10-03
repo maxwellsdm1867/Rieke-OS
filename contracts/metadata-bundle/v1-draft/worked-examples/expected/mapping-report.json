@@ -1,0 +1,1861 @@
+{
+  "adapter_revision": "worked-1",
+  "all_field_receiver_readiness": "blocked_unimplemented_query_paths",
+  "assumptions": [
+    "Only source temperature null is explicitly defined as not_recorded in this synthetic source. Never infer this for another lab."
+  ],
+  "authority_namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682",
+  "authority_owner": "Synthetic Example Lab (tutorial only)",
+  "blockers": [],
+  "conflicts": [],
+  "counts": {
+    "cells": 3,
+    "epochs": 4,
+    "sources": 1,
+    "streams": 1
+  },
+  "coverage_test_status": "not_run_in_mapping_operation",
+  "coverage_version": "1.0.0-draft.1",
+  "dataset_native_key": "worked-collection",
+  "dataset_revision": "synthetic-r1",
+  "effective_parameter_precedence": "block defaults then epoch override; original input retained verbatim in demo:source_snapshot",
+  "entity_mappings": [
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A"
+      },
+      "kind": "source",
+      "public_uuid": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307",
+      "source_key": "session:synthetic-A",
+      "uuid5_name": "[\"disco-id-v1\",\"source\",\"session:synthetic-A\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "worked-collection"
+      },
+      "kind": "dataset",
+      "public_uuid": "9f154d40-3cb1-5fe5-90c4-18e779bbebe3",
+      "source_key": "worked-collection",
+      "uuid5_name": "[\"disco-id-v1\",\"dataset\",\"worked-collection\"]"
+    },
+    {
+      "identity": {
+        "mode": "native_uuid",
+        "native_key": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351"
+      },
+      "kind": "cell",
+      "public_uuid": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "source_key": "session:synthetic-A/cell:1",
+      "uuid5_name": null
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1"
+      },
+      "kind": "group",
+      "public_uuid": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "source_key": "session:synthetic-A/cell:1/group:1",
+      "uuid5_name": "[\"disco-id-v1\",\"group\",\"session:synthetic-A/cell:1/group:1\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "CurrentStep/v1"
+      },
+      "kind": "protocol",
+      "public_uuid": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_key": "CurrentStep/v1",
+      "uuid5_name": "[\"disco-id-v1\",\"protocol\",\"CurrentStep/v1\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1"
+      },
+      "kind": "block",
+      "public_uuid": "f7030d18-7df9-5881-8a8c-1e6bcd4c64cb",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:1",
+      "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:1/group:1/block:1\"]"
+    },
+    {
+      "identity": {
+        "mode": "native_uuid",
+        "native_key": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152"
+      },
+      "kind": "epoch",
+      "public_uuid": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1",
+      "uuid5_name": null
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier"
+      },
+      "kind": "stream",
+      "public_uuid": "efe9b820-a2cf-5a70-9926-0dab3fc999e7",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier",
+      "uuid5_name": "[\"disco-id-v1\",\"stream\",\"session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:2"
+      },
+      "kind": "epoch",
+      "public_uuid": "ed05a7fc-3447-588a-b974-670eef2b520f",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:2",
+      "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:1/group:1/block:1/epoch:2\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "Noise/v2"
+      },
+      "kind": "protocol",
+      "public_uuid": "d99c33ac-5a76-507f-8443-0fc7810c6f51",
+      "source_key": "Noise/v2",
+      "uuid5_name": "[\"disco-id-v1\",\"protocol\",\"Noise/v2\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:2"
+      },
+      "kind": "block",
+      "public_uuid": "615d3fa7-2516-5b12-9495-fe9d0c574540",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:2",
+      "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:1/group:1/block:2\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:2/epoch:3"
+      },
+      "kind": "epoch",
+      "public_uuid": "359e389c-4164-5f17-b327-de6c209db051",
+      "source_key": "session:synthetic-A/cell:1/group:1/block:2/epoch:3",
+      "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:1/group:1/block:2/epoch:3\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2"
+      },
+      "kind": "cell",
+      "public_uuid": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+      "source_key": "session:synthetic-A/cell:2",
+      "uuid5_name": "[\"disco-id-v1\",\"cell\",\"session:synthetic-A/cell:2\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2"
+      },
+      "kind": "group",
+      "public_uuid": "0c837501-55e3-549d-bea9-88f9223d477a",
+      "source_key": "session:synthetic-A/cell:2/group:2",
+      "uuid5_name": "[\"disco-id-v1\",\"group\",\"session:synthetic-A/cell:2/group:2\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2/block:3"
+      },
+      "kind": "block",
+      "public_uuid": "b57eac88-0c68-5f25-8b71-31fdbcd76866",
+      "source_key": "session:synthetic-A/cell:2/group:2/block:3",
+      "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:2/group:2/block:3\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2/block:3/epoch:4"
+      },
+      "kind": "epoch",
+      "public_uuid": "afe89e98-3bb6-5e30-ae84-8b197544c83f",
+      "source_key": "session:synthetic-A/cell:2/group:2/block:3/epoch:4",
+      "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:2/group:2/block:3/epoch:4\"]"
+    },
+    {
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:empty"
+      },
+      "kind": "cell",
+      "public_uuid": "629d15e0-2c4e-5fb8-a7df-e52cee34328a",
+      "source_key": "session:synthetic-A/cell:empty",
+      "uuid5_name": "[\"disco-id-v1\",\"cell\",\"session:synthetic-A/cell:empty\"]"
+    }
+  ],
+  "field_mappings": [
+    {
+      "declared_type": "number",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:amplitude",
+      "public_path": "epochs[].fields.demo:amplitude",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.amplitude or epochs[].parameters.amplitude",
+      "transform": "block default then epoch override; no coercion",
+      "unit": "pA",
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    },
+    {
+      "declared_type": "number",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:temperature",
+      "public_path": "epochs[].fields.demo:temperature",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.temperature or epochs[].parameters.temperature",
+      "transform": "block default then epoch override; no coercion",
+      "unit": "Cel",
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    },
+    {
+      "declared_type": "boolean",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:enabled",
+      "public_path": "epochs[].fields.demo:enabled",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.enabled or epochs[].parameters.enabled",
+      "transform": "block default then epoch override; no coercion",
+      "unit": "1",
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    },
+    {
+      "declared_type": "integer_string",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:seed",
+      "public_path": "epochs[].fields.demo:seed",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.seed or epochs[].parameters.seed",
+      "transform": "block default then epoch override; no coercion",
+      "unit": "1",
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    },
+    {
+      "declared_type": "string",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:rare_note",
+      "public_path": "epochs[].fields.demo:rare_note",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.rareNote or epochs[].parameters.rareNote",
+      "transform": "block default then epoch override; no coercion",
+      "unit": null,
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    },
+    {
+      "declared_type": "array",
+      "missingness_rule": "omission makes no assertion; null uses explicit null_status only",
+      "public_field_id": "demo:levels",
+      "public_path": "epochs[].fields.demo:levels",
+      "scope": "epoch",
+      "source_path": "epochBlocks[].parameters.levels or epochs[].parameters.levels",
+      "transform": "block default then epoch override; no coercion",
+      "unit": "1",
+      "unit_evidence": "explicit synthetic parameter_definitions"
+    }
+  ],
+  "format": "disco-adapter-mapping-report",
+  "id_ledger_path": "identity-ledger.json",
+  "losslessness_inventory": [
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/authority_namespace_uuid",
+      "source_path": "$/authority_namespace_uuid",
+      "source_pointer": "/authority_namespace_uuid",
+      "target_pointers": [
+        "/authority/namespace_uuid"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "canonical_uuid"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/dataset_key",
+      "source_path": "$/dataset_key",
+      "source_pointer": "/dataset_key",
+      "target_pointers": [
+        "/dataset/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_exact_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/parameters/amplitude",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/parameters/amplitude",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/parameters/amplitude",
+      "target_pointers": [
+        "/epochs/0/fields/demo:amplitude/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "pA",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/h5path",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/h5path",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/h5path",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleCount",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleCount",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleCount",
+      "target_pointers": [
+        "/streams/0/sample_count"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRate",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRate",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRate",
+      "target_pointers": [
+        "/streams/0/sample_rate_hz"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRateUnits",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRateUnits",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/sampleRateUnits",
+      "target_pointers": [
+        "/streams/0/sample_rate_hz"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "assert_Hz_no_conversion"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/units",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/units",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/responses/Amplifier/units",
+      "target_pointers": [
+        "/streams/0/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/tags/0",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/tags/0",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/tags/0",
+      "target_pointers": [
+        "/annotations/entries/1/tags/0"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/uuid",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/uuid",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/0/uuid",
+      "target_pointers": [
+        "/epochs/0/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "native_uuid_preserved"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/key",
+      "target_pointers": [
+        "/epochs/1/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/rareNote",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/rareNote",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/rareNote",
+      "target_pointers": [
+        "/epochs/1/fields/demo:rare_note/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": null,
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "number",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/temperature",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/temperature",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/parameters/temperature",
+      "target_pointers": [
+        "/epochs/1/fields/demo:temperature/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "Cel",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "object",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/responses",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/responses",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/responses",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "array",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/tags",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/tags",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/epochs/1/tags",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/key",
+      "target_pointers": [
+        "/ancestry/1/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "target_pointers": [
+        "/epochs/1/fields/demo:amplitude/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "inherited_block_default"
+      ],
+      "unit": "pA",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "boolean",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/enabled",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/enabled",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/enabled",
+      "target_pointers": [
+        "/epochs/0/fields/demo:enabled/value",
+        "/epochs/1/fields/demo:enabled/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "inherited_block_default"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "not_recorded",
+      "observed_shape": [],
+      "observed_type": "null",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "target_pointers": [
+        "/epochs/0/fields/demo:temperature/status"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "explicit_source_null_policy"
+      ],
+      "unit": "Cel",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/0/protocolID",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/0/protocolID",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/0/protocolID",
+      "target_pointers": [
+        "/protocols/0/name"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/key",
+      "target_pointers": [
+        "/epochs/2/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/0",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/0",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/0",
+      "target_pointers": [
+        "/epochs/2/fields/demo:levels/value/0"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/1",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/1",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/1",
+      "target_pointers": [
+        "/epochs/2/fields/demo:levels/value/1"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/2",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/2",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/parameters/levels/2",
+      "target_pointers": [
+        "/epochs/2/fields/demo:levels/value/2"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "object",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/responses",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/responses",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/responses",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/tags/0",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/tags/0",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/epochs/0/tags/0",
+      "target_pointers": [
+        "/annotations/entries/2/tags/0"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/key",
+      "target_pointers": [
+        "/ancestry/2/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/seed",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/seed",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/seed",
+      "target_pointers": [
+        "/epochs/2/fields/demo:seed/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "inherited_block_default"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "not_recorded",
+      "observed_shape": [],
+      "observed_type": "null",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/temperature",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/temperature",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/parameters/temperature",
+      "target_pointers": [
+        "/epochs/2/fields/demo:temperature/status"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "explicit_source_null_policy"
+      ],
+      "unit": "Cel",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/epochBlocks/1/protocolID",
+      "source_path": "$/experiment/cells/0/epochGroups/0/epochBlocks/1/protocolID",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/epochBlocks/1/protocolID",
+      "target_pointers": [
+        "/protocols/1/name"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/epochGroups/0/key",
+      "source_path": "$/experiment/cells/0/epochGroups/0/key",
+      "source_pointer": "/experiment/cells/0/epochGroups/0/key",
+      "target_pointers": [
+        "/ancestry/0/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/key",
+      "source_path": "$/experiment/cells/0/key",
+      "source_pointer": "/experiment/cells/0/key",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/label",
+      "source_path": "$/experiment/cells/0/label",
+      "source_pointer": "/experiment/cells/0/label",
+      "target_pointers": [
+        "/cells/0/label"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/tags/0",
+      "source_path": "$/experiment/cells/0/tags/0",
+      "source_pointer": "/experiment/cells/0/tags/0",
+      "target_pointers": [
+        "/annotations/entries/0/tags/0"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/0/uuid",
+      "source_path": "$/experiment/cells/0/uuid",
+      "source_pointer": "/experiment/cells/0/uuid",
+      "target_pointers": [
+        "/cells/0/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "native_uuid_preserved"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/key",
+      "target_pointers": [
+        "/epochs/3/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "boolean",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/parameters/enabled",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/parameters/enabled",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/parameters/enabled",
+      "target_pointers": [
+        "/epochs/3/fields/demo:enabled/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "epoch_override"
+      ],
+      "unit": "1",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "object",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/responses",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/responses",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/responses",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "array",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/tags",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/tags",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/epochs/0/tags",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/key",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/key",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/key",
+      "target_pointers": [
+        "/ancestry/4/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "integer",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/amplitude",
+      "target_pointers": [
+        "/epochs/3/fields/demo:amplitude/value"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "inherited_block_default"
+      ],
+      "unit": "pA",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "not_recorded",
+      "observed_shape": [],
+      "observed_type": "null",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/parameters/temperature",
+      "target_pointers": [
+        "/epochs/3/fields/demo:temperature/status"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "explicit_source_null_policy"
+      ],
+      "unit": "Cel",
+      "unit_evidence": "explicit_source_parameter_definition"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/epochBlocks/0/protocolID",
+      "source_path": "$/experiment/cells/1/epochGroups/0/epochBlocks/0/protocolID",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/epochBlocks/0/protocolID",
+      "target_pointers": [
+        "/protocols/0/name"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/epochGroups/0/key",
+      "source_path": "$/experiment/cells/1/epochGroups/0/key",
+      "source_pointer": "/experiment/cells/1/epochGroups/0/key",
+      "target_pointers": [
+        "/ancestry/3/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/key",
+      "source_path": "$/experiment/cells/1/key",
+      "source_pointer": "/experiment/cells/1/key",
+      "target_pointers": [
+        "/cells/1/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/label",
+      "source_path": "$/experiment/cells/1/label",
+      "source_pointer": "/experiment/cells/1/label",
+      "target_pointers": [
+        "/cells/1/label"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/1/tags/0",
+      "source_path": "$/experiment/cells/1/tags/0",
+      "source_pointer": "/experiment/cells/1/tags/0",
+      "target_pointers": [
+        "/annotations/entries/3/tags/0"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "array",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/2/epochGroups",
+      "source_path": "$/experiment/cells/2/epochGroups",
+      "source_pointer": "/experiment/cells/2/epochGroups",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/2/key",
+      "source_path": "$/experiment/cells/2/key",
+      "source_pointer": "/experiment/cells/2/key",
+      "target_pointers": [
+        "/cells/2/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_scoped_key_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/2/label",
+      "source_path": "$/experiment/cells/2/label",
+      "source_pointer": "/experiment/cells/2/label",
+      "target_pointers": [
+        "/cells/2/label"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": {
+        "length": 0
+      },
+      "observed_type": "array",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/cells/2/tags",
+      "source_path": "$/experiment/cells/2/tags",
+      "source_pointer": "/experiment/cells/2/tags",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/key",
+      "source_path": "$/experiment/key",
+      "source_pointer": "/experiment/key",
+      "target_pointers": [
+        "/sources/0/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "uuid5_exact_tuple_utf8"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/label",
+      "source_path": "$/experiment/label",
+      "source_pointer": "/experiment/label",
+      "target_pointers": [
+        "/sources/0/label"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/experiment/start_time",
+      "source_path": "$/experiment/start_time",
+      "source_pointer": "/experiment/start_time",
+      "target_pointers": [
+        "/sources/0/start_time/original"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "unknown_time_original_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/format",
+      "source_path": "$/format",
+      "source_pointer": "/format",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "retained_only",
+      "retention_pointer": "/extensions/demo:source_snapshot/notice",
+      "source_path": "$/notice",
+      "source_pointer": "/notice",
+      "target_pointers": [],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "snapshot_only"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/amplitude/id",
+      "source_path": "$/parameter_definitions/amplitude/id",
+      "source_pointer": "/parameter_definitions/amplitude/id",
+      "target_pointers": [
+        "/field_definitions/0/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/amplitude/type",
+      "source_path": "$/parameter_definitions/amplitude/type",
+      "source_pointer": "/parameter_definitions/amplitude/type",
+      "target_pointers": [
+        "/field_definitions/0/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/amplitude/unit",
+      "source_path": "$/parameter_definitions/amplitude/unit",
+      "source_pointer": "/parameter_definitions/amplitude/unit",
+      "target_pointers": [
+        "/field_definitions/0/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/enabled/id",
+      "source_path": "$/parameter_definitions/enabled/id",
+      "source_pointer": "/parameter_definitions/enabled/id",
+      "target_pointers": [
+        "/field_definitions/2/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/enabled/type",
+      "source_path": "$/parameter_definitions/enabled/type",
+      "source_pointer": "/parameter_definitions/enabled/type",
+      "target_pointers": [
+        "/field_definitions/2/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/enabled/unit",
+      "source_path": "$/parameter_definitions/enabled/unit",
+      "source_pointer": "/parameter_definitions/enabled/unit",
+      "target_pointers": [
+        "/field_definitions/2/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/levels/id",
+      "source_path": "$/parameter_definitions/levels/id",
+      "source_pointer": "/parameter_definitions/levels/id",
+      "target_pointers": [
+        "/field_definitions/5/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/levels/type",
+      "source_path": "$/parameter_definitions/levels/type",
+      "source_pointer": "/parameter_definitions/levels/type",
+      "target_pointers": [
+        "/field_definitions/5/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/levels/unit",
+      "source_path": "$/parameter_definitions/levels/unit",
+      "source_pointer": "/parameter_definitions/levels/unit",
+      "target_pointers": [
+        "/field_definitions/5/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/rareNote/id",
+      "source_path": "$/parameter_definitions/rareNote/id",
+      "source_pointer": "/parameter_definitions/rareNote/id",
+      "target_pointers": [
+        "/field_definitions/4/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/rareNote/type",
+      "source_path": "$/parameter_definitions/rareNote/type",
+      "source_pointer": "/parameter_definitions/rareNote/type",
+      "target_pointers": [
+        "/field_definitions/4/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "explicit_null_uninterpreted",
+      "observed_shape": [],
+      "observed_type": "null",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/rareNote/unit",
+      "source_path": "$/parameter_definitions/rareNote/unit",
+      "source_pointer": "/parameter_definitions/rareNote/unit",
+      "target_pointers": [
+        "/field_definitions/4/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/seed/id",
+      "source_path": "$/parameter_definitions/seed/id",
+      "source_pointer": "/parameter_definitions/seed/id",
+      "target_pointers": [
+        "/field_definitions/3/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/seed/type",
+      "source_path": "$/parameter_definitions/seed/type",
+      "source_pointer": "/parameter_definitions/seed/type",
+      "target_pointers": [
+        "/field_definitions/3/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/seed/unit",
+      "source_path": "$/parameter_definitions/seed/unit",
+      "source_pointer": "/parameter_definitions/seed/unit",
+      "target_pointers": [
+        "/field_definitions/3/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/temperature/id",
+      "source_path": "$/parameter_definitions/temperature/id",
+      "source_pointer": "/parameter_definitions/temperature/id",
+      "target_pointers": [
+        "/field_definitions/1/id"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/temperature/null_status",
+      "source_path": "$/parameter_definitions/temperature/null_status",
+      "source_pointer": "/parameter_definitions/temperature/null_status",
+      "target_pointers": [
+        "/epochs/0/fields/demo:temperature/status",
+        "/epochs/2/fields/demo:temperature/status",
+        "/epochs/3/fields/demo:temperature/status"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "explicit_source_null_policy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/temperature/type",
+      "source_path": "$/parameter_definitions/temperature/type",
+      "source_pointer": "/parameter_definitions/temperature/type",
+      "target_pointers": [
+        "/field_definitions/1/type"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/parameter_definitions/temperature/unit",
+      "source_path": "$/parameter_definitions/temperature/unit",
+      "source_pointer": "/parameter_definitions/temperature/unit",
+      "target_pointers": [
+        "/field_definitions/1/unit"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/reviewer/author_name",
+      "source_path": "$/reviewer/author_name",
+      "source_pointer": "/reviewer/author_name",
+      "target_pointers": [
+        "/annotations/profiles/0/author_name"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/reviewer/profile_uuid",
+      "source_path": "$/reviewer/profile_uuid",
+      "source_pointer": "/reviewer/profile_uuid",
+      "target_pointers": [
+        "/annotations/profiles/0/profile_uuid"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    },
+    {
+      "missingness": "present",
+      "observed_shape": [],
+      "observed_type": "string",
+      "query_execution": "unsupported_receiver",
+      "query_support": "mapped",
+      "retention_pointer": "/extensions/demo:source_snapshot/revision",
+      "source_path": "$/revision",
+      "source_pointer": "/revision",
+      "target_pointers": [
+        "/dataset/revision",
+        "/sources/0/metadata_revision"
+      ],
+      "test_case": "WorkedExamples.test_typed_coverage",
+      "test_status": "not_run",
+      "transformations": [
+        "copy"
+      ],
+      "unit": null,
+      "unit_evidence": "not_applicable_or_not_declared"
+    }
+  ],
+  "parser_revision": "not_used",
+  "raw_references": {
+    "status": "absent",
+    "waveforms_embedded": false
+  },
+  "source_description": "source.json synthetic nested parser-shaped metadata, NOT an actual parser export",
+  "source_schema_revision": "synthetic-parser-shaped-v1",
+  "status": "mapped_valid_draft",
+  "tag_mapping": {
+    "authorship_status": "claimed",
+    "deletions_requested": false
+  },
+  "timestamps": [
+    {
+      "mapping": "source.start_time status unknown, original retained",
+      "source_path": "experiment.start_time",
+      "timezone_evidence": "unknown"
+    }
+  ],
+  "unsupported_fields": [],
+  "version": "1.0.0-draft.1"
+}

@@ -1,0 +1,172 @@
+[
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A"
+    },
+    "kind": "source",
+    "public_uuid": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307",
+    "source_key": "session:synthetic-A",
+    "uuid5_name": "[\"disco-id-v1\",\"source\",\"session:synthetic-A\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "worked-collection"
+    },
+    "kind": "dataset",
+    "public_uuid": "9f154d40-3cb1-5fe5-90c4-18e779bbebe3",
+    "source_key": "worked-collection",
+    "uuid5_name": "[\"disco-id-v1\",\"dataset\",\"worked-collection\"]"
+  },
+  {
+    "identity": {
+      "mode": "native_uuid",
+      "native_key": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351"
+    },
+    "kind": "cell",
+    "public_uuid": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+    "source_key": "session:synthetic-A/cell:1",
+    "uuid5_name": null
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1"
+    },
+    "kind": "group",
+    "public_uuid": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+    "source_key": "session:synthetic-A/cell:1/group:1",
+    "uuid5_name": "[\"disco-id-v1\",\"group\",\"session:synthetic-A/cell:1/group:1\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "CurrentStep/v1"
+    },
+    "kind": "protocol",
+    "public_uuid": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+    "source_key": "CurrentStep/v1",
+    "uuid5_name": "[\"disco-id-v1\",\"protocol\",\"CurrentStep/v1\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1/block:1"
+    },
+    "kind": "block",
+    "public_uuid": "f7030d18-7df9-5881-8a8c-1e6bcd4c64cb",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:1",
+    "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:1/group:1/block:1\"]"
+  },
+  {
+    "identity": {
+      "mode": "native_uuid",
+      "native_key": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152"
+    },
+    "kind": "epoch",
+    "public_uuid": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1",
+    "uuid5_name": null
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier"
+    },
+    "kind": "stream",
+    "public_uuid": "efe9b820-a2cf-5a70-9926-0dab3fc999e7",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier",
+    "uuid5_name": "[\"disco-id-v1\",\"stream\",\"session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:2"
+    },
+    "kind": "epoch",
+    "public_uuid": "ed05a7fc-3447-588a-b974-670eef2b520f",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:2",
+    "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:1/group:1/block:1/epoch:2\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "Noise/v2"
+    },
+    "kind": "protocol",
+    "public_uuid": "d99c33ac-5a76-507f-8443-0fc7810c6f51",
+    "source_key": "Noise/v2",
+    "uuid5_name": "[\"disco-id-v1\",\"protocol\",\"Noise/v2\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1/block:2"
+    },
+    "kind": "block",
+    "public_uuid": "615d3fa7-2516-5b12-9495-fe9d0c574540",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:2",
+    "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:1/group:1/block:2\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:1/group:1/block:2/epoch:3"
+    },
+    "kind": "epoch",
+    "public_uuid": "359e389c-4164-5f17-b327-de6c209db051",
+    "source_key": "session:synthetic-A/cell:1/group:1/block:2/epoch:3",
+    "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:1/group:1/block:2/epoch:3\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:2"
+    },
+    "kind": "cell",
+    "public_uuid": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+    "source_key": "session:synthetic-A/cell:2",
+    "uuid5_name": "[\"disco-id-v1\",\"cell\",\"session:synthetic-A/cell:2\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:2/group:2"
+    },
+    "kind": "group",
+    "public_uuid": "0c837501-55e3-549d-bea9-88f9223d477a",
+    "source_key": "session:synthetic-A/cell:2/group:2",
+    "uuid5_name": "[\"disco-id-v1\",\"group\",\"session:synthetic-A/cell:2/group:2\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:2/group:2/block:3"
+    },
+    "kind": "block",
+    "public_uuid": "b57eac88-0c68-5f25-8b71-31fdbcd76866",
+    "source_key": "session:synthetic-A/cell:2/group:2/block:3",
+    "uuid5_name": "[\"disco-id-v1\",\"block\",\"session:synthetic-A/cell:2/group:2/block:3\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:2/group:2/block:3/epoch:4"
+    },
+    "kind": "epoch",
+    "public_uuid": "afe89e98-3bb6-5e30-ae84-8b197544c83f",
+    "source_key": "session:synthetic-A/cell:2/group:2/block:3/epoch:4",
+    "uuid5_name": "[\"disco-id-v1\",\"epoch\",\"session:synthetic-A/cell:2/group:2/block:3/epoch:4\"]"
+  },
+  {
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "session:synthetic-A/cell:empty"
+    },
+    "kind": "cell",
+    "public_uuid": "629d15e0-2c4e-5fb8-a7df-e52cee34328a",
+    "source_key": "session:synthetic-A/cell:empty",
+    "uuid5_name": "[\"disco-id-v1\",\"cell\",\"session:synthetic-A/cell:empty\"]"
+  }
+]

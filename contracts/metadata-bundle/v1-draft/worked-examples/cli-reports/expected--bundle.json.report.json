@@ -1,0 +1,22 @@
+{
+  "valid": true,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 4,
+    "streams": 1
+  },
+  "errors": [],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "d9f47b22eca7ef73af5c6151cc61fce22e30de6bb94cf2f37ee9aaa3dbda59ad"
+}

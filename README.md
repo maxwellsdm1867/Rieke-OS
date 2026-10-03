@@ -217,6 +217,14 @@ The recording stays unchanged and is never included in a release. See
 [packaging and validation](packaging/README.md) for the distribution boundaries
 and verification receipt.
 
+## Metadata handoff contract (draft)
+
+The [reviewed metadata bundle handoff kit](contracts/metadata-bundle/v1-draft/README.md)
+provides the public `1.0.0-draft.1` schema, mapping guidance, synthetic examples
+and offline validation tools. **The application does not accept this bundle.**
+Its source catalog records the pinned `fafb826` comparison and installed
+RetinAnalysis evidence; it does not certify live database or current-main compatibility.
+
 ## Dependencies and license
 
 Disco application source is available under the [MIT license](LICENSE). The installer

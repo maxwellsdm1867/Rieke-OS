@@ -1,0 +1,11 @@
+{
+  "format": "tutorial-frozen-selection-NOT-A-DISCO-IMPORT",
+  "notice": "Synthetic sidecar illustrating exact membership only. This is NOT an implemented DISCO recipe/export schema; never insert it into the metadata bundle.",
+  "dataset_id": "9f154d40-3cb1-5fe5-90c4-18e779bbebe3",
+  "dataset_revision": "synthetic-r1",
+  "source_metadata_revisions": {"a1bb3f6b-6198-5eee-89d0-7cbd5b74d307": "synthetic-r1"},
+  "epoch_ids": ["36f1dd9e-9201-4e7a-bd22-42f4b04d6152", "afe89e98-3bb6-5e30-ae84-8b197544c83f"],
+  "annotation_snapshot": [
+    {"target_kind": "epoch", "target_id": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152", "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18", "tags": ["keep"]}
+  ]
+}

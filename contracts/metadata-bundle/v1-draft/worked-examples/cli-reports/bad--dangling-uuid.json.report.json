@@ -1,0 +1,38 @@
+{
+  "valid": false,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 4,
+    "streams": 1
+  },
+  "errors": [
+    {
+      "code": "broken_link",
+      "path": "$/epochs/0/cell_id",
+      "message": "unresolved cells ID"
+    },
+    {
+      "code": "ownership",
+      "path": "$/epochs/0",
+      "message": "block/group chain differs from epoch cell/group"
+    },
+    {
+      "code": "ownership",
+      "path": "$/epochs/0",
+      "message": "group differs from epoch cell"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "b7373b2bfbebc7071e30459e8937200f3cca5393b48f5c1fce4ed9411ff1f949"
+}

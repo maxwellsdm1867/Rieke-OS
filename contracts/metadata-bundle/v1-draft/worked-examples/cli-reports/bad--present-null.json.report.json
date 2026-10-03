@@ -1,0 +1,28 @@
+{
+  "valid": false,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 4,
+    "streams": 1
+  },
+  "errors": [
+    {
+      "code": "field_type",
+      "path": "$/epochs/0/fields/demo:temperature",
+      "message": "value differs from declared type; present null is forbidden"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "3e47df6c16a300154a81152fb840b3819f1e6632346fdb73a5146e675b590b37"
+}

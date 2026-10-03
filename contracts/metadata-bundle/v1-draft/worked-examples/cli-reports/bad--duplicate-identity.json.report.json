@@ -1,0 +1,28 @@
+{
+  "valid": false,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 5,
+    "streams": 1
+  },
+  "errors": [
+    {
+      "code": "duplicate_id",
+      "path": "$/epochs/4/id",
+      "message": "ID already used at $/epochs/0"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "dc5b51429387f175d7d25e87cc9613465b33745a194cdb4e1a8608d2dc554e61"
+}

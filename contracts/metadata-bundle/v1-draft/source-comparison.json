@@ -1,0 +1,347 @@
+{
+  "method": "AST string comparison, whitespace-normalized definitions; no application imports or SQL",
+  "catalog_baseline_commit": "4383b2ae866441228fe2ea2dabacb6ed13836440",
+  "comparison_commit": "fafb826ee00cfa14b657e91ecae5db0c1eda4a84",
+  "tables": [
+    {
+      "table": "schema.protocol",
+      "class": "Protocol",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 41,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.experiment",
+      "class": "Experiment",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 55,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.animal",
+      "class": "Animal",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 81,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.preparation",
+      "class": "Preparation",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 104,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.cell",
+      "class": "Cell",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 124,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.epoch_group",
+      "class": "EpochGroup",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 141,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.sorting_chunk",
+      "class": "SortingChunk",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 160,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.sorted_cell",
+      "class": "SortedCell",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 172,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.cell_type_file",
+      "class": "CellTypeFile",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 197,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.sorted_cell_type",
+      "class": "SortedCellType",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 210,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.epoch_block",
+      "class": "EpochBlock",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 222,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.epoch",
+      "class": "Epoch",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 244,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.response",
+      "class": "Response",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 262,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.stimulus",
+      "class": "Stimulus",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 280,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "schema.tags",
+      "class": "Tags",
+      "source": "dependency/retinanalysis/config/schema.py",
+      "line": 294,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.annotation_group_receipt",
+      "class": "AnnotationGroupReceipt",
+      "source": "python/workspace_annotation_groups.py",
+      "line": 62,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.protocol_tree_layout",
+      "class": "ProtocolTreeLayout",
+      "source": "python/workspace_tree_layouts.py",
+      "line": 12,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.workbench_draft",
+      "class": "WorkbenchDraft",
+      "source": "python/workspace_workbench.py",
+      "line": 31,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.workbench_decision",
+      "class": "WorkbenchDecision",
+      "source": "python/workspace_workbench.py",
+      "line": 44,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.workbench_receipt",
+      "class": "WorkbenchReceipt",
+      "source": "python/workspace_workbench.py",
+      "line": 56,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.curation",
+      "class": "Curation",
+      "source": "python/workspace_curation.py",
+      "line": 34,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.dataset_revision",
+      "class": "DatasetRevision",
+      "source": "python/workspace_curation.py",
+      "line": 48,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.annotation_profile",
+      "class": "AnnotationProfile",
+      "source": "python/workspace_annotations.py",
+      "line": 52,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.shared_annotation",
+      "class": "SharedAnnotation",
+      "source": "python/workspace_annotations.py",
+      "line": 62,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.search_preset",
+      "class": "SearchPreset",
+      "source": "python/workspace_search_presets.py",
+      "line": 14,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.search_preset_version",
+      "class": "SearchPresetVersion",
+      "source": "python/workspace_search_presets.py",
+      "line": 30,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.search_query_last_run",
+      "class": "SearchQueryLastRun",
+      "source": "python/workspace_search_presets.py",
+      "line": 82,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.explorer_revision",
+      "class": "ExplorerRevision",
+      "source": "python/workspace_explorer.py",
+      "line": 21,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.protocol_binding",
+      "class": "ProtocolBinding",
+      "source": "python/workspace_explorer.py",
+      "line": 39,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.data_store_state",
+      "class": "DataStoreState",
+      "source": "python/workspace_datastores.py",
+      "line": 142,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.protocol_suggestion",
+      "class": "ProtocolSuggestion",
+      "source": "python/workspace_suggestions.py",
+      "line": 19,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.project",
+      "class": "Project",
+      "source": "python/recording_workspace.py",
+      "line": 600,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.source",
+      "class": "Source",
+      "source": "python/recording_workspace.py",
+      "line": 609,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.event",
+      "class": "Event",
+      "source": "python/recording_workspace.py",
+      "line": 620,
+      "definition_equal_ignoring_indentation": true
+    },
+    {
+      "table": "recording_workspace.protocol_workspace",
+      "class": "ProtocolWorkspace",
+      "source": "python/recording_workspace.py",
+      "line": 632,
+      "definition_equal_ignoring_indentation": true
+    }
+  ],
+  "additional_definition_classes": [],
+  "derived_ddl_literals": [
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_native_tag_lookup.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_state_generation.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_disk_index.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_typed_index.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_typed_index.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_metadata_objects.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_recovery_store.py",
+      "literal_present": true
+    },
+    {
+      "source": "python/workspace_recovery_store.py",
+      "literal_present": true
+    }
+  ],
+  "frozen_export_ddl_equal": true,
+  "source_sha256": {
+    "dependency/retinanalysis/config/schema.py": "13abf98c831dd4906e8e3c1fe3c79e2e0b28269ef329f5682def12beb82cb5bb",
+    "python/workspace_annotation_groups.py": "e641b96de76021f3b2191f82e40062305d572832f783d2e4ccfaef75b717c179",
+    "python/workspace_tree_layouts.py": "e804f9039acbf86a38ff9b9592a33cabef5f69794c25bcca9e032006a15fa9e0",
+    "python/workspace_workbench.py": "03256e55b6b38158e2b0de5dc3b8a8955b72f83135363a8812fe3ff1bfb1c308",
+    "python/workspace_curation.py": "c5fe6e3ea4b0dcda7219e032a42eb62bc2d6467b68271ddb6eb94c9c5fd16712",
+    "python/workspace_annotations.py": "a8ba7c75e7aaebd90de46ec45e74e0c0ff2c069c3eb747c5d3655303ecfe4729",
+    "python/workspace_search_presets.py": "8ab5c84a507eac16be284a106af8cb2cc8d006ee9c715d787ef5b2f481ab0420",
+    "python/workspace_explorer.py": "b88f600d0b20c231897cf090baa0914c16572c82f7d1a718523691396de5680e",
+    "python/workspace_datastores.py": "c22f35c7187bcdaa894f2f0cc9cbe3edf8d5e84b1b0aff1cfb37a9a45db405d8",
+    "python/workspace_suggestions.py": "38262a6000f0be85b3e120910b40375f52f3484c352e051611346df357581eb9",
+    "python/recording_workspace.py": "970e2fdbce22394bc58bd92cf566a034621fda3d33752022d53aa13e8fec43ba"
+  },
+  "limitations": [
+    "Acquisition definitions compared to installed dependency, not proven identical to pinned upstream.",
+    "No live DDL/index introspection.",
+    "Additional definition scan is static; generated/runtime declarations cannot be excluded."
+  ],
+  "passed": true
+}

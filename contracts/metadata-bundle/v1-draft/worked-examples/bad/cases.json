@@ -1,0 +1,32 @@
+[
+  {
+    "expected_code": "broken_link",
+    "file": "bad/dangling-uuid.json",
+    "repair": "Restore epochs[0].cell_id to cells[0].id; never invent a replacement identity.",
+    "repaired_file": "expected/bundle.json"
+  },
+  {
+    "expected_code": "duplicate_id",
+    "file": "bad/duplicate-identity.json",
+    "repair": "Remove accidental duplicate row; distinct real records need distinct stable source keys, never random UUID patches.",
+    "repaired_file": "expected/bundle.json"
+  },
+  {
+    "expected_code": "unit",
+    "file": "bad/bad-unit.json",
+    "repair": "Restore explicit pA from source evidence; do not infer or silently convert.",
+    "repaired_file": "expected/bundle.json"
+  },
+  {
+    "expected_code": "field_type",
+    "file": "bad/wrong-type.json",
+    "repair": "Restore numeric 0 rather than string \"0\".",
+    "repaired_file": "expected/bundle.json"
+  },
+  {
+    "expected_code": "field_type",
+    "file": "bad/present-null.json",
+    "repair": "Restore temperature status not_recorded with no value, based on explicit source null policy.",
+    "repaired_file": "expected/bundle.json"
+  }
+]

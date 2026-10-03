@@ -1,0 +1,1172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:disco:metadata-bundle:1.0.0-draft.1",
+  "title": "DISCO metadata adapter bundle (DRAFT; not accepted by current importer)",
+  "type": "object",
+  "properties": {
+    "format": {
+      "const": "disco-metadata-bundle"
+    },
+    "schema_version": {
+      "const": "1.0.0-draft.1"
+    },
+    "bundle_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "format": "uuid"
+    },
+    "exported_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "authority": {
+      "type": "object",
+      "properties": {
+        "namespace_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      },
+      "required": [
+        "namespace_uuid",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "producer": {
+      "$ref": "#/$defs/producer"
+    },
+    "dataset": {
+      "$ref": "#/$defs/dataset"
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "maxItems": 1000
+    },
+    "protocols": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/protocol"
+      },
+      "maxItems": 2000
+    },
+    "field_definitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fieldDefinition"
+      },
+      "maxItems": 2000
+    },
+    "ancestry": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ancestor"
+      },
+      "maxItems": 10000
+    },
+    "cells": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/cell"
+      },
+      "maxItems": 10000
+    },
+    "epochs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/epoch"
+      },
+      "maxItems": 10000
+    },
+    "streams": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stream"
+      },
+      "maxItems": 20000
+    },
+    "annotations": {
+      "$ref": "#/$defs/annotations"
+    },
+    "extensions": {
+      "$ref": "#/$defs/extensions"
+    }
+  },
+  "required": [
+    "format",
+    "schema_version",
+    "bundle_id",
+    "exported_at",
+    "authority",
+    "producer",
+    "dataset",
+    "sources",
+    "protocols",
+    "field_definitions",
+    "cells",
+    "epochs",
+    "streams"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "jsonValue": {
+      "anyOf": [
+        {
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "maxItems": 1024
+        },
+        {
+          "type": "object",
+          "maxProperties": 1024,
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          }
+        }
+      ]
+    },
+    "extensions": {
+      "type": "object",
+      "maxProperties": 100,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_.-]*:[a-zA-Z0-9_.-]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/jsonValue"
+      }
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "enum": [
+            "native_uuid",
+            "uuid5"
+          ]
+        },
+        "native_key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        }
+      },
+      "required": [
+        "mode",
+        "native_key"
+      ],
+      "additionalProperties": false
+    },
+    "time": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "known"
+            },
+            "instant": {
+              "type": "string",
+              "format": "date-time",
+              "maxLength": 64
+            },
+            "original": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "timezone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "status",
+            "instant"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "unknown",
+                "ambiguous",
+                "not_recorded"
+              ]
+            },
+            "original": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "timezone": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fieldValue": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "const": "present"
+            },
+            "value": {
+              "$ref": "#/$defs/jsonValue"
+            }
+          },
+          "required": [
+            "status",
+            "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "enum": [
+                "unknown",
+                "not_recorded",
+                "not_applicable"
+              ]
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "fields": {
+      "type": "object",
+      "maxProperties": 2000,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_.-]*:[a-zA-Z0-9_.-]+$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/fieldValue"
+      }
+    },
+    "fieldDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "type": {
+          "enum": [
+            "number",
+            "integer",
+            "integer_string",
+            "decimal",
+            "string",
+            "boolean",
+            "array",
+            "object"
+          ]
+        },
+        "scope": {
+          "enum": [
+            "source",
+            "cell",
+            "epoch",
+            "protocol",
+            "ancestry"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 80
+        },
+        "item_type": {
+          "enum": [
+            "number",
+            "integer",
+            "string",
+            "boolean"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "type",
+        "scope",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2048,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(^|/)\\.\\.?(/|$))(?!.*[\\u0000-\\u001f])[^:]+$"
+    },
+    "locator": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "managed_asset"
+            },
+            "library_uuid": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "asset_key": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "kind",
+            "library_uuid",
+            "asset_key"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "project_local"
+            },
+            "relative_path": {
+              "$ref": "#/$defs/relativePath"
+            }
+          },
+          "required": [
+            "kind",
+            "relative_path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "external"
+            },
+            "root_uuid": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "relative_path": {
+              "$ref": "#/$defs/relativePath"
+            }
+          },
+          "required": [
+            "kind",
+            "root_uuid",
+            "relative_path"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "const": "external"
+            },
+            "absolute_path_hint": {
+              "type": "string",
+              "pattern": "^/[^\\u0000-\\u001f]*$",
+              "maxLength": 2048
+            }
+          },
+          "required": [
+            "kind",
+            "absolute_path_hint"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "rawAsset": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "format": {
+          "enum": [
+            "hdf5",
+            "nwb",
+            "opaque"
+          ]
+        },
+        "locator": {
+          "$ref": "#/$defs/locator"
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "sha256",
+        "size_bytes",
+        "format",
+        "locator"
+      ],
+      "additionalProperties": false
+    },
+    "dataset": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "membership_scope": {
+          "enum": [
+            "full",
+            "subset"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "revision",
+        "membership_scope"
+      ],
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "metadata_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "acquisition_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "start_time": {
+          "$ref": "#/$defs/time"
+        },
+        "raw_assets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rawAsset"
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "metadata_revision"
+      ],
+      "additionalProperties": false
+    },
+    "protocol": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "implementation_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "ancestor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "kind": {
+          "enum": [
+            "animal",
+            "preparation",
+            "group",
+            "block"
+          ]
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "parent_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "protocol_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "start_time": {
+          "$ref": "#/$defs/time"
+        },
+        "end_time": {
+          "$ref": "#/$defs/time"
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "kind",
+        "source_id"
+      ],
+      "additionalProperties": false
+    },
+    "cell": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "preparation_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "cell_type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 255
+        },
+        "start_time": {
+          "$ref": "#/$defs/time"
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "source_id"
+      ],
+      "additionalProperties": false
+    },
+    "epoch": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "fields": {
+          "$ref": "#/$defs/fields"
+        },
+        "extensions": {
+          "$ref": "#/$defs/extensions"
+        },
+        "source_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "cell_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "protocol_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "group_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "block_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "epoch_number": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "start_time": {
+          "$ref": "#/$defs/time"
+        },
+        "end_time": {
+          "$ref": "#/$defs/time"
+        },
+        "duration_seconds": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "identity",
+        "source_id",
+        "cell_id",
+        "protocol_id"
+      ],
+      "additionalProperties": false
+    },
+    "dataReference": {
+      "type": "object",
+      "properties": {
+        "asset_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "object_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096,
+          "pattern": "^/[^\\u0000-\\u001f]*$"
+        }
+      },
+      "required": [
+        "asset_id",
+        "object_path"
+      ],
+      "additionalProperties": false
+    },
+    "generator": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "parameters": {
+          "$ref": "#/$defs/fields"
+        },
+        "seed": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255,
+              "pattern": "^-?(0|[1-9][0-9]*)$"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "revision"
+      ],
+      "additionalProperties": false
+    },
+    "stream": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "identity": {
+              "$ref": "#/$defs/identity"
+            },
+            "epoch_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "kind": {
+              "enum": [
+                "response",
+                "stimulus"
+              ]
+            },
+            "device": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sample_rate_hz": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "sample_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            },
+            "trace_state": {
+              "const": "absent"
+            }
+          },
+          "required": [
+            "id",
+            "identity",
+            "epoch_id",
+            "kind",
+            "device",
+            "trace_state"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "identity": {
+              "$ref": "#/$defs/identity"
+            },
+            "epoch_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "kind": {
+              "enum": [
+                "response",
+                "stimulus"
+              ]
+            },
+            "device": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sample_rate_hz": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "sample_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            },
+            "trace_state": {
+              "const": "referenced"
+            },
+            "data_reference": {
+              "$ref": "#/$defs/dataReference"
+            }
+          },
+          "required": [
+            "id",
+            "identity",
+            "epoch_id",
+            "kind",
+            "device",
+            "trace_state",
+            "data_reference"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "identity": {
+              "$ref": "#/$defs/identity"
+            },
+            "epoch_id": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+              "format": "uuid"
+            },
+            "kind": {
+              "const": "stimulus"
+            },
+            "device": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sample_rate_hz": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "sample_count": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 80
+            },
+            "extensions": {
+              "$ref": "#/$defs/extensions"
+            },
+            "trace_state": {
+              "const": "generator_only"
+            },
+            "generator": {
+              "$ref": "#/$defs/generator"
+            }
+          },
+          "required": [
+            "id",
+            "identity",
+            "epoch_id",
+            "kind",
+            "device",
+            "trace_state",
+            "generator"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "profile": {
+      "type": "object",
+      "properties": {
+        "profile_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "author_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        }
+      },
+      "required": [
+        "profile_uuid",
+        "author_name"
+      ],
+      "additionalProperties": false
+    },
+    "annotation": {
+      "type": "object",
+      "properties": {
+        "target_kind": {
+          "enum": [
+            "cell",
+            "epoch"
+          ]
+        },
+        "target_id": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "profile_uuid": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "format": "uuid"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "maxItems": 100
+        }
+      },
+      "required": [
+        "target_kind",
+        "target_id",
+        "profile_uuid",
+        "tags"
+      ],
+      "additionalProperties": false
+    },
+    "annotations": {
+      "type": "object",
+      "properties": {
+        "profiles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/profile"
+          },
+          "maxItems": 100
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/annotation"
+          },
+          "maxItems": 2000
+        }
+      },
+      "required": [
+        "profiles",
+        "entries"
+      ],
+      "additionalProperties": false
+    },
+    "producer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "adapter_revision": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "parser": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "revision": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "name",
+            "revision"
+          ],
+          "additionalProperties": false
+        },
+        "mapping_report_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "adapter_revision"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

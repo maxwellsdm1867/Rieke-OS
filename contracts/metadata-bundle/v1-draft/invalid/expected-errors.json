@@ -1,0 +1,11 @@
+{
+  "unknown-version": "version",
+  "duplicate-id": "duplicate_id",
+  "orphan-epoch": "broken_link",
+  "wrong-field-type": "field_type",
+  "unknown-field": "unknown_field",
+  "fake-verified": "schema",
+  "missing-value": "schema",
+  "bad-unit": "schema",
+  "wrong-uuid5": "identity"
+}

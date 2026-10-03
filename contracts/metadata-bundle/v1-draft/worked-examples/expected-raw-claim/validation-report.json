@@ -1,0 +1,25 @@
+{
+  "contract_version": "1.0.0-draft.1",
+  "counts": {
+    "cells": 3,
+    "epochs": 4,
+    "protocols": 2,
+    "sources": 1,
+    "streams": 1
+  },
+  "database_checked": false,
+  "draft_only": true,
+  "errors": [],
+  "raw_assets_verified": 0,
+  "valid": true,
+  "warnings": [
+    {
+      "code": "unverified_raw_claims",
+      "message": "Raw checksums/locators are producer claims. This validator opens no assets and enables no traces or QC."
+    },
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ]
+}

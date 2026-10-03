@@ -1,0 +1,28 @@
+{
+  "valid": false,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 4,
+    "streams": 1
+  },
+  "errors": [
+    {
+      "code": "unit",
+      "path": "$/field_definitions/0/unit",
+      "message": "unit is a printable label or null; never an empty sentinel"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "c5d2028af41119954c6634c084d7de0d21ced076c55ad12692bd4479d82b3d72"
+}

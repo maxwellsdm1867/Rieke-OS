@@ -1,0 +1,28 @@
+{
+  "valid": false,
+  "contract_version": "1.0.0-draft.1",
+  "draft_only": true,
+  "database_checked": false,
+  "raw_assets_verified": 0,
+  "counts": {
+    "sources": 1,
+    "protocols": 2,
+    "cells": 3,
+    "epochs": 4,
+    "streams": 1
+  },
+  "errors": [
+    {
+      "code": "field_type",
+      "path": "$/epochs/0/fields/demo:amplitude",
+      "message": "value differs from declared type; present null is forbidden"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_only",
+      "message": "Current DISCO H5 importer does not accept this draft bundle."
+    }
+  ],
+  "input_sha256": "f6f6d534a24f2eda26e96f288f48b60281e35fc34be40565be59bd57f228b5ae"
+}
