@@ -536,6 +536,48 @@ class TreePages:
         return payload
 
 
+def witnessed_tree_page(pager, body):
+    """Attest a narrow recorded-field Protocol read using existing generations.
+
+    No persisted token, new schema, cache permission or mutation receipt. The
+    client still obtains this witness from an uncached target/anchor request.
+    Older/untracked backends and other tree sources keep the ordinary response.
+    """
+    service = pager.service
+    from workspace_disk_index import DiskMetadataIndex
+    index = getattr(service, 'disk_index', None)
+    recorded = {'date', 'cell', 'cell type', 'group', 'block', 'protocol', 'source'}
+    eligible = (isinstance(body, dict) and isinstance(body.get('protocol_uuid'), str)
+                and body.get('filters', {}) == {} and 'predicate' not in body
+                and isinstance(body.get('splits'), str) and body['splits']
+                and all(field in recorded or field.startswith(('parameters/', 'properties/'))
+                        for field in body['splits'].split(','))
+                and getattr(service, '_explore_state_generation', None) is not None
+                and isinstance(index, DiskMetadataIndex) and _structural_contract(service))
+    if not eligible:
+        return pager.page(body)
+    definitions = {field['id']: field for field in index.catalog()['fields']}
+    if any(field not in definitions or definitions[field].get('annotation_scope')
+           or definitions[field].get('components') for field in body['splits'].split(',')):
+        return pager.page(body)
+    from workspace_explore_queries import generation, context_annotation_locks, StaleQuery
+    context = {'protocol_uuid': str(uuid.UUID(body['protocol_uuid']))}
+    with context_annotation_locks(service, context):
+        try:
+            before = generation(service, context)
+        except StaleQuery:
+            return pager.page(body)  # Unverifiable native tracker: fresh canonical reader only.
+        result = pager.page(body)
+        if generation(service, context) != before:
+            raise StaleTreePage('Tree read generation changed; retry the current scope')
+        result['read_identity'] = {'version': 1,
+            'project_uuid': service.project['project_uuid'],
+            'project_path': str(service.project_dir.resolve()),
+            'protocol_uuid': context['protocol_uuid'],
+            'tree_revision': result['revision'], 'generation': before}
+        return result
+
+
 def register_tree_page_routes(app, service, db_lock, registration_locks):
     from flask import jsonify, request
     pager = TreePages(service)
@@ -551,6 +593,6 @@ def register_tree_page_routes(app, service, db_lock, registration_locks):
             raise ValueError('Tree page JSON nesting or numeric value exceeds limits') from error
         with db_lock, registration_locks():
             try:
-                return jsonify(pager.page(body))
+                return jsonify(witnessed_tree_page(pager, body))
             except StaleTreePage as error:
                 return jsonify(error=str(error),code='stale_tree_revision'),409

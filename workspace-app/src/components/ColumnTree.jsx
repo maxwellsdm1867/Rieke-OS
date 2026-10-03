@@ -2,12 +2,14 @@ import {epochIncluded} from '../incomingReviewDecision.js';
 import EpochInclusionToggle from './EpochInclusionToggle.jsx';
 import {useDelayedLoading} from './NavigationLoading.jsx';
 import {revealWithin} from '../epochListScroll.js';
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
 import {ArrowLeft,ArrowRight,ChevronRight,FolderOpen,Home,Activity,GitBranch} from 'lucide-react';
 import {api,number,duration} from '../api.js';
-import {treePageRequest,treeNavigationStart,treeNavigationSnapshot} from '../pagedTreeRequest.js';
+import {useTreeBranchReads} from '../treeBranchReads.jsx';
+import {loadColumnTreePages} from '../columnTreeReads.js';
+import {treeNavigationStart,treeNavigationSnapshot} from '../pagedTreeRequest.js';
 import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from '../treeBranchPresentation.js';
-import {columnAncestorPages,canReuseColumn,columnSelectionNeedsAnchor,columnBranchNavigation,columnWheelDelta} from '../columnTreeNavigation.js';
+import {columnSelectionNeedsAnchor,columnBranchNavigation,columnWheelDelta} from '../columnTreeNavigation.js';
 import {datedCellLabel} from '../recordingIdentity.js';
 import './TreePreview.css';
 import './ColumnTree.css';
@@ -20,11 +22,14 @@ import {treeCellUuid} from '../useTreeCellSelection.js';
 // Preserve the column interaction while loading at most one 60-row page per level.
 export default function ColumnTree(props){
   const {protocolId,readContext,predicate,filters={},splits='',revision=0,expectedRevision,initialNavigation,selected}=props;
-  const groupTags=useTreeGroupTags(props),groupSelection=useIncomingTreeSelection(props);
-  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision});
+  const readOwner=useTreeBranchReads(),ownerIdentity=readOwner?.identity||'';
+  const [state,setState]=useState({columns:[],loading:true,error:null,ownerIdentity:null});
+  const ownerBlocked=state.ownerIdentity!==ownerIdentity||!!readOwner&&!readOwner.active();
+  const actionProps={...props,actionsDisabled:props.actionsDisabled||ownerBlocked};
+  const groupTags=useTreeGroupTags(actionProps),groupSelection=useIncomingTreeSelection(actionProps);
+  const scopeKey=JSON.stringify({protocolId,readContext,predicate,filters,splits,revision,expectedRevision,annotationRevision:groupTags.revision,ownerIdentity});
   const callbacks=useRef(props);callbacks.current=props;
   const saved=useRef(initialNavigation),initialScope=useRef(scopeKey),restored=useRef(false);
-  const [state,setState]=useState({columns:[],loading:true,error:null});
   const showLoading=useDelayedLoading(state.loading&&!state.error);
   const current=useRef([]),controller=useRef(null),serial=useRef(0),pending=useRef(true);
   const latestSelected=useRef(selected),previousSelected=useRef(selected);latestSelected.current=selected;
@@ -54,23 +59,17 @@ export default function ColumnTree(props){
     // cannot act on the previous revision. Commit the replacement atomically.
     setState(old=>({columns:old.columns,loading:true,error:null}));callbacks.current.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey);
-    const fetchPage=(pagePath,pageOffset,pageRevision,pageAnchor=null)=>api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(scope,{path:pagePath,offset:pageOffset,anchor:pageAnchor,reset:reset&&!pageRevision,currentRevision:pageRevision})});
     try{
-      const page=await fetchPage(path,offset,revisionOverride||(!reset?prior.at(-1)?.revision:null),anchor);
-      // Restore ancestors against the SAME revision, never a fresh membership.
-      const targets=columnAncestorPages(page,{anchor:!!anchor,columnPositions});
-      const parents=await Promise.all(targets.map(target=>{
-        const cached=prior[target.depth];
-        if(!reset&&canReuseColumn(cached,target))return cached;
-        return fetchPage(target.path,target.offset,page.revision);
-      }));
+      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      const page=columns.at(-1);
       if(request.signal.aborted||token!==serial.current)return;
-      const columns=[...parents,page];current.current=columns;restored.current=true;
+      current.current=columns;restored.current=true;
       scrollRestore.current={vertical:columns.map((column,depth)=>depth===page.path.length?scrollTop:(columnPositions[depth]?.scrollTop??priorPositions[depth]?.scrollTop??0)),horizontal:scrollLeft};
-      pending.current=false;setState({columns,loading:false,error:null});callbacks.current.onStatus?.({loading:false,error:null});callbacks.current.onMetadata?.({...page,count:page.total_epochs});
-    }catch(error){if(!request.signal.aborted&&token===serial.current){setState(old=>({...old,loading:false,error:error.message}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
+      pending.current=false;setState({columns,loading:false,error:null,ownerIdentity});callbacks.current.onStatus?.({loading:false,error:null});callbacks.current.onMetadata?.({...page,count:page.total_epochs});
+    }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
     finally{if(token===serial.current)pending.current=false;}
-  },[scopeKey]);
+  },[scopeKey,readOwner]);
+  useLayoutEffect(()=>{controller.current?.abort();serial.current++;return()=>{controller.current?.abort();serial.current++;};},[scopeKey]);
   useEffect(()=>{
     const start=!restored.current&&initialScope.current===scopeKey?treeNavigationStart(saved.current,splits):null;
     const navigation=start?{...start,columnPositions:saved.current?.columnPositions||[],scrollLeft:saved.current?.scrollLeft??null}:{reset:true};
@@ -111,11 +110,11 @@ export default function ColumnTree(props){
   return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading}>
     {groupTags.dialog}{groupSelection.feedback}
     {props.design&&<header className="tp-total"><strong>{root?`${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><span>{root?`${number(root.cells)} cells · ${duration(root.duration_seconds)}`:''}</span><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>}
-    {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={state.loading} onClick={()=>load({path:[]})}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={state.loading} onClick={()=>load({path:path.slice(0,index+1)})} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
+    {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:[]})}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:path.slice(0,index+1)})} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
     {state.error&&<div className="pt-error" role="alert">{state.error}<button onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true})}>Reload tree overview</button></div>}
     <div className="tp-columns" ref={strip} onScroll={remember} aria-busy={state.loading}>
       {state.columns.map((page,depth)=>{
-        const terminal=page.kind==='epochs',entries=terminal?page.epochs.map(item=>props.inclusionForEpoch?props.inclusionForEpoch(item):item):page.branches,field=page.levels?.[depth],combined=entries.some(item=>item.components?.length),blocked=state.loading||!!state.error;
+        const terminal=page.kind==='epochs',entries=terminal?page.epochs.map(item=>props.inclusionForEpoch?props.inclusionForEpoch(item):item):page.branches,field=page.levels?.[depth],combined=entries.some(item=>item.components?.length),blocked=state.loading||!!state.error||ownerBlocked;
         return <section className={`tp-column ${terminal?'tp-terminal':''} ${combined?'tp-combined-column':''}`} key={`${depth}:${page.path.join(':')}`} aria-label={`${depth+1}. ${terminal?'Epochs':readableField(field?.label,field?.field)}`}>
           <header className="tp-level-heading"><span>{terminal?<Activity size={14}/>:depth+1}</span><div><strong title={field?.field}>{terminal?'Epochs':readableField(field?.label,field?.field)}</strong><small>{number(page.total)} {terminal?'epochs':'groups'} · {number(page.selection?.count??page.total_epochs)} epochs in scope</small></div><TreeGroupTagButton onSelect={groupSelection.select?event=>groupSelection.select({path:page.path,count:page.selection?.count},page,event):undefined} label="Tag this level" disabled={blocked||props.actionsDisabled} count={page.selection?.count} onClick={event=>groupTags.open({path:page.path,count:page.selection?.count},field||{label:"Epochs"},page,event,{level:true})}/></header>
           <div className="tp-column-content" ref={element=>{if(element)panes.current.set(depth,element);else panes.current.delete(depth);}} onScroll={remember}>
