@@ -6,7 +6,7 @@ const {verifyPackagedSource, assertTypedPublication} = require('../e2e/preview-a
 async function fixture(t) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'preview-assertions-'));
   t.after(() => fs.rm(root, {recursive:true, force:true}));
-  const bundle = path.join(root, 'Rieke OS.app'), source = path.join(root, 'source'), project = path.join(root, 'project');
+  const bundle = path.join(root, 'Disco.app'), source = path.join(root, 'source'), project = path.join(root, 'project');
   const runtime = path.join(bundle, 'Contents/Resources/runtime'), commit = 'a'.repeat(40);
   const renderer = path.join(source, 'desktop/build/renderer');
   const modules = ['workspace_typed_index.py','workspace_typed_query.py','workspace_typed_lifecycle.py','workspace_explore_queries.py'];

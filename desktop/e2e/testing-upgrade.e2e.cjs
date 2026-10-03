@@ -168,11 +168,11 @@ async function main(){
  receipt.qualification_harness_sha256=createHash('sha256').update(await fs.readFile(__filename)).digest('hex');
  receipt.qualification_helper_sha256=createHash('sha256').update(await fs.readFile(path.join(__dirname,'helper-result.cjs'))).digest('hex');
  await write();
- const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');
+ const published=path.resolve(__dirname,'../dist/mac-arm64/Disco.app');
  const sourceManifest=await fs.readFile(path.join(published,'Contents/Resources/runtime/runtime-manifest.json'));
  const {candidateVersion,priorVersion}=releaseVersions(JSON.parse(sourceManifest).application_version,process.env.RIEKE_E2E_PRIOR_VERSION);
  assert.equal(JSON.parse(asar.extractFile(path.join(published,'Contents/Resources/app.asar'),'package.json')).version,candidateVersion,'Packaged version must match candidate manifest');
- const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`);
+ const zip=path.resolve(__dirname,`../dist/Disco-${candidateVersion}-arm64.zip`);
  receipt.candidate_version=candidateVersion;receipt.synthetic_prior={version:priorVersion,authentic_published_release:false,construction:'Candidate clone with version metadata overlaid; documented launch and driver seams remain test-only'};
  receipt.runtime_manifest_sha256=createHash('sha256').update(sourceManifest).digest('hex');
  receipt.asar_sha256=createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex');

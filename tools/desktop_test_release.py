@@ -55,15 +55,17 @@ def build_descriptor(bundle,archive):
     app_info=bundle/'Contents/Info.plist';app_info_bytes=app_info.read_bytes();plist=plistlib.loads(app_info_bytes)
     if plist.get('CFBundleIdentifier')!='org.riekeos.desktop' or plist.get('CFBundleShortVersionString')!=version:raise ValueError('App identity or version differs')
     if plist.get('CFBundleDisplayName')!='Disco' or plist.get('CFBundleName')!='Disco':raise ValueError('App display or bundle name differs from Disco')
+    executable=bundle/'Contents/MacOS/Disco'
+    if bundle.name!='Disco.app' or plist.get('CFBundleExecutable')!='Disco' or not executable.is_file() or not os.access(executable,os.X_OK) or not executable.resolve().is_relative_to(bundle.resolve()):raise ValueError('Shipping app filename or executable differs from Disco')
     helper_executable,helper_info=electron_helper(bundle,plist)
-    if archive.name!=f'Rieke-OS-{version}-arm64.zip':raise ValueError('Archive name differs from version')
+    if archive.name!=f'Disco-{version}-arm64.zip':raise ValueError('Archive name differs from version')
     asar=hashes(bundle/'Contents/Resources/app.asar')[0]
     with zipfile.ZipFile(archive) as z:
-        archived_manifest=z.read('Rieke OS.app/Contents/Resources/runtime/runtime-manifest.json')
-        archived_asar=hashlib.sha256(z.read('Rieke OS.app/Contents/Resources/app.asar')).hexdigest()
+        archived_manifest=z.read('Disco.app/Contents/Resources/runtime/runtime-manifest.json')
+        archived_asar=hashlib.sha256(z.read('Disco.app/Contents/Resources/app.asar')).hexdigest()
         if archived_manifest!=raw or archived_asar!=asar:raise ValueError('Archive is not the inspected app')
         try:
-            for file in [app_info,helper_info,helper_executable]:
+            for file in [app_info,executable,helper_info,helper_executable]:
                 archived=z.read(bundle.name+'/'+file.relative_to(bundle).as_posix())
                 if hashlib.sha256(archived).hexdigest()!=hashes(file)[0]:raise ValueError('Archive app/helper identity differs from the inspected app')
         except KeyError as error:

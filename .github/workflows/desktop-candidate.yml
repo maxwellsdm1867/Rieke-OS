@@ -197,14 +197,14 @@ jobs:
           test -n "$APPLE_API_KEY_ID"
           test -n "$APPLE_API_ISSUER"
           NODE_OPTIONS="--require=$RUNNER_TEMP/rieke-packaging-fs.cjs" npm run dist
-          codesign --verify --deep --strict 'dist/mac-arm64/Rieke OS.app'
-          spctl --assess --type execute 'dist/mac-arm64/Rieke OS.app'
-          xcrun stapler validate 'dist/mac-arm64/Rieke OS.app'
+          codesign --verify --deep --strict 'dist/mac-arm64/Disco.app'
+          spctl --assess --type execute 'dist/mac-arm64/Disco.app'
+          xcrun stapler validate 'dist/mac-arm64/Disco.app'
       - name: Create exact-byte unsigned release metadata
         if: ${{ !(github.event_name == 'push' && startsWith(github.ref_name, 'v')) && !inputs.signed }}
         run: |
           VERSION=$(node -p "require('./desktop/package.json').version")
-          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" --output desktop/dist/desktop-release.json
+          python3 tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Disco.app' --archive "desktop/dist/Disco-${VERSION}-arm64.zip" --output desktop/dist/desktop-release.json
       - name: Inventory exact candidate bytes
         id: candidate_inventory
         run: |
@@ -310,13 +310,13 @@ jobs:
               with file.open('rb') as stream:
                   assert hashlib.file_digest(stream, 'sha256').hexdigest() == expected['sha256']
           version = baseline['application_version']
-          archive = dist/f'Rieke-OS-{version}-arm64.zip'
+          archive = dist/f'Disco-{version}-arm64.zip'
           assert archive.name in inventory
           # Generated and checksummed by the trusted build job in this same run.
           destination = dist/'mac-arm64'
           destination.mkdir()
           subprocess.run(['ditto','-x','-k',str(archive),str(destination)], check=True)
-          app = destination/'Rieke OS.app'
+          app = destination/'Disco.app'
           runtime = app/'Contents/Resources/runtime'
           manifest = json.loads((runtime/'runtime-manifest.json').read_text())
           assert manifest['source_commit'] == baseline['source_commit'] and manifest['source_dirty'] is False
@@ -352,7 +352,7 @@ jobs:
           from pathlib import Path
           sys.path.insert(0, 'tools')
           from desktop_artifact_e2e import isolated_database_probe
-          resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()
+          resources = Path('desktop/dist/mac-arm64/Disco.app/Contents/Resources').resolve()
           with tempfile.TemporaryDirectory(prefix='rieke-release-database-') as scratch:
               result = isolated_database_probe(resources, Path(scratch))
           output = Path('docs/dev/desktop-native-database-e2e.json')
@@ -365,7 +365,7 @@ jobs:
           CHANNEL=$(node -p "require('./desktop/build/candidate-source/desktop/distribution.json').channel")
           if [ "$CHANNEL" = unsigned-testing ]; then
             node desktop/e2e/bootstrap.e2e.cjs
-            uv run --no-project --python 3.11.13 python tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Rieke OS.app' --output docs/dev/desktop-artifact-e2e.json
+            uv run --no-project --python 3.11.13 python tools/desktop_artifact_e2e.py --installed 'desktop/dist/mac-arm64/Disco.app' --output docs/dev/desktop-artifact-e2e.json
           fi
           node desktop/e2e/backend-failure.e2e.cjs
       - name: Extended packaged UI regression

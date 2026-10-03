@@ -10,7 +10,7 @@ const {installCompleteBundle, signatureIdentity, readBundleManifest, enclosingAp
 async function main() {
   const [pidText, previous, destination] = process.argv.slice(2);
   const pid = Number(pidText);
-  const expected = path.join(os.homedir(), 'Applications', 'Rieke OS.app');
+  const expected = path.join(os.homedir(), 'Applications', 'Disco.app');
   if (!Number.isSafeInteger(pid) || pid <= 0 || destination !== expected || enclosingApp(process.execPath) !== destination || !previous.endsWith(path.join('updates', 'previous', 'Rieke OS.app'))) throw new Error('Invalid recovery request.');
   const current = await signatureIdentity(destination), prior = await signatureIdentity(previous);
   if (current.team !== prior.team) throw new Error('Recovery signature differs.');

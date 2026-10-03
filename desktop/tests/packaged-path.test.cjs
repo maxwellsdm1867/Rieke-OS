@@ -24,9 +24,9 @@ test('mac executableName controls the bundle name in the pinned builder', () => 
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'packaged-path-'));
   try {
     const build = require('../package.json').build;
-    const bundle = path.join(root, 'dist/mac-arm64/Rieke OS.app');
+    const bundle = path.join(root, 'dist/mac-arm64/Disco.app');
     fs.mkdirSync(path.join(bundle, 'Contents/MacOS'), {recursive:true});
-    fs.writeFileSync(path.join(bundle, 'Contents/MacOS/Rieke OS'), 'fixture');
+    fs.writeFileSync(path.join(bundle, 'Contents/MacOS/Disco'), 'fixture');
     assert.equal(packagedSource(root, build), fs.realpathSync(bundle));
   } finally { fs.rmSync(root, {recursive:true, force:true}); }
 });

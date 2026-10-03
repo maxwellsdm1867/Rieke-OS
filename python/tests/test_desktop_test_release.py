@@ -13,18 +13,20 @@ module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
 
 class TestUnsignedReleaseDescriptor(unittest.TestCase):
     def fixture(self, root, helper_name='Disco Helper', internal_name='Disco'):
-        app=root/'Rieke OS.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)
+        app=root/'Disco.app';resources=app/'Contents/Resources';runtime=resources/'runtime';runtime.mkdir(parents=True)
         manifest={'format':'rieke-desktop-runtime','version':1,'application_version':'0.1.3','platform':'darwin','architecture':'arm64','workspace_formats':[1],'database_compatibility':1,'mysql_version':'8.4.2','minimum_macos_version':'14.0','source_commit':'a'*40,'source_dirty':True}
         (runtime/'runtime-manifest.json').write_text(json.dumps(manifest))
         (resources/'app.asar').write_bytes(b'candidate shell fixture')
-        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'Disco'}))
+        (app/'Contents/Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop','CFBundleShortVersionString':'0.1.3','CFBundleName':internal_name,'CFBundleDisplayName':'Disco','CFBundleExecutable':'Disco'}))
+        (app/'Contents/MacOS').mkdir()
+        main=app/'Contents/MacOS/Disco';main.write_bytes(b'main fixture');main.chmod(0o755)
         helper=app/'Contents/Frameworks'/(helper_name+'.app')/'Contents'
         (helper/'MacOS').mkdir(parents=True)
         executable=helper/'MacOS'/helper_name;executable.write_bytes(b'isolated helper fixture');executable.chmod(0o755)
         # Helper CFBundleName need not match the executable: real Electron
         # builder preserves Electron Helper here while renaming the executable.
         (helper/'Info.plist').write_bytes(plistlib.dumps({'CFBundleIdentifier':'org.riekeos.desktop.helper','CFBundleExecutable':helper_name,'CFBundleName':'Electron Helper'}))
-        archive=root/'Rieke-OS-0.1.3-arm64.zip';self.pack(app,archive)
+        archive=root/'Disco-0.1.3-arm64.zip';self.pack(app,archive)
         return app,archive,helper,executable
 
     def pack(self, app, archive):
@@ -89,3 +91,15 @@ class TestUnsignedReleaseDescriptor(unittest.TestCase):
                     if p.is_file() and p!=executable:z.write(p,p.relative_to(app.parent))
             with self.assertRaisesRegex(ValueError,'Archive omits'):
                 module.build_descriptor(app,archive)
+
+    def test_shipping_filename_executable_and_archive_are_disco(self):
+        for fault in ['bundle','declaration','entry','archive']:
+            with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
+                app,archive,_,_=self.fixture(Path(tmp))
+                if fault=='bundle':
+                    renamed=app.with_name('Rieke OS.app');app.rename(renamed);app=renamed
+                elif fault=='declaration':self.update_plist(app/'Contents/Info.plist',{'CFBundleExecutable':'Rieke OS'})
+                elif fault=='entry':(app/'Contents/MacOS/Disco').unlink()
+                else:
+                    renamed=archive.with_name('Rieke-OS-0.1.3-arm64.zip');archive.rename(renamed);archive=renamed
+                with self.assertRaises(ValueError):module.build_descriptor(app,archive)

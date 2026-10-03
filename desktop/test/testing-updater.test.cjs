@@ -162,7 +162,7 @@ async function bundleFixture(t){
   const candidate={...current,format:'rieke-desktop-runtime',version:1,application_version:'0.1.3',minimum_macos_version:'14.0',source_dirty:true,source_commit:'a'.repeat(40),parser_commit:'b'.repeat(40),python_version:'3.11.13',resources};
   const manifestFile=path.join(runtime,'runtime-manifest.json');await fs.writeFile(manifestFile,JSON.stringify(candidate));
   await fs.mkdir(path.join(bundle,'Contents/MacOS'));await fs.writeFile(path.join(bundle,'Contents/MacOS/Rieke OS'),'do not execute',{mode:0o755});
-  const plist='<?xml version="1.0"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleShortVersionString</key><string>0.1.3</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>';
+  const plist='<?xml version="1.0"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleExecutable</key><string>Rieke OS</string><key>CFBundleIdentifier</key><string>org.riekeos.desktop</string><key>CFBundleShortVersionString</key><string>0.1.3</string><key>LSMinimumSystemVersion</key><string>14.0</string></dict></plist>';
   await fs.writeFile(path.join(bundle,'Contents/Info.plist'),plist);
   await fs.writeFile(path.join(bundle,'Contents/Resources/app.asar'),'test asar');
   const next={...descriptor,asar_sha256:crypto.createHash('sha256').update('test asar').digest('hex'),runtime_manifest_sha256:crypto.createHash('sha256').update(JSON.stringify(candidate)).digest('hex')};
@@ -221,4 +221,20 @@ test('default feed discovers and downloads the existing repository release and k
  assert.equal(f.coordinator.getStatus().state,'Available');
  assert.equal(f.coordinator.getStatus().release_url,'https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.3');
  await f.coordinator.download();assert.equal(f.coordinator.getStatus().state,'Ready');assert.equal(f.archiveCalls(),1);
+});
+
+test('Disco archive schema is accepted alongside exact legacy release names',()=>{
+ for(const name of ['Disco-0.1.3-arm64.zip','Rieke-OS-0.1.3-arm64.zip'])
+  assert.equal(validateDescriptor({...descriptor,archive:{...descriptor.archive,filename:name}},current,'14.2').archive.filename,name);
+ for(const name of ['Disco-0.1.3-x64.zip','Disco-0.1.4-arm64.zip','Other-0.1.3-arm64.zip'])
+  assert.throws(()=>validateDescriptor({...descriptor,archive:{...descriptor.archive,filename:name}},current,'14.2'));
+});
+test('Disco candidate uses its declared executable and rejects mismatched legacy declaration',{skip:process.platform!=='darwin'},async t=>{
+ const f=await bundleFixture(t);
+ await fs.rename(path.join(f.bundle,'Contents/MacOS/Rieke OS'),path.join(f.bundle,'Contents/MacOS/Disco'));
+ const file=path.join(f.bundle,'Contents/Info.plist'),original=await fs.readFile(file,'utf8');
+ const options={bundle:f.bundle,descriptor:{...f.descriptor,archive:{...f.descriptor.archive,filename:'Disco-0.1.3-arm64.zip'}},manifest:current,hostVersion:'14.2',bundleDigest:f.bundleDigest,run:f.run};
+ await assert.rejects(inspectTestingBundle(options),/property list/);
+ await fs.writeFile(file,original.replace('<string>Rieke OS</string>','<string>Disco</string>'));
+ assert.equal((await inspectTestingBundle(options)).validated,true);
 });

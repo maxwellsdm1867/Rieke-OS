@@ -91,7 +91,7 @@ async function validateDownloadedCandidate({downloadedFile, version, manifest, c
     await run(interpreter, ['-I', '-B', '-c', ARCHIVE_CHECK, downloadedFile], {timeout: 30000});
     await run('/usr/bin/ditto', ['-x', '-k', downloadedFile, temporary], {timeout: 180000});
     const bundles = (await fs.readdir(temporary)).filter(name => name.endsWith('.app'));
-    if (bundles.length !== 1 || bundles[0] !== 'Rieke OS.app') throw new Error('Update must contain exactly the expected app.');
+    if (bundles.length !== 1 || !['Disco.app', 'Rieke OS.app'].includes(bundles[0])) throw new Error('Update must contain exactly the expected app.');
     const bundle = path.join(temporary, bundles[0]);
     const identity = await signingIdentity(bundle, run);
     if (identity.team !== installed.team || identity.identifier !== installed.identifier) throw new Error('Update signer or application identity differs.');

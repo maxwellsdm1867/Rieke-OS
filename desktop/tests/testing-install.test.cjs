@@ -259,3 +259,17 @@ test('native helper CLI loads from a real ASAR under Electron RUN_AS_NODE and sa
   assert.ok(!(await fs.readdir(home)).includes('Applications'));
  }finally{await fs.rm(root,{recursive:true,force:true});}
 });
+
+test('Disco Install and Open preserves a separate legacy installation and accepts the new executable',async()=>{
+ const f=await fixture();try{
+  const legacy=f.destination;
+  await installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}});
+  const before=await require('../bootstrap.cjs').bundleDigest(legacy);
+  await fs.rename(path.join(f.source,'Contents/MacOS/Rieke OS'),path.join(f.source,'Contents/MacOS/Disco'));
+  const plist=path.join(f.source,'Contents/Info.plist');await fs.writeFile(plist,(await fs.readFile(plist,'utf8')).replace('<string>Rieke OS</string>','<string>Disco</string>'));
+  const destination=path.join(f.root,'Applications','Disco.app');
+  await installCompleteBundle({...f,destination,distribution:{channel:'unsigned-testing'}});
+  assert.equal(await fs.readFile(path.join(destination,'Contents/MacOS/Disco'),'utf8'),'native executable fixture');
+  assert.equal(await require('../bootstrap.cjs').bundleDigest(legacy),before);
+ }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});

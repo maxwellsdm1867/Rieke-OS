@@ -14,13 +14,13 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function write(){await fs.mkdir(path.dirname(output),{recursive:true});await fs.writeFile(output,JSON.stringify({...receipt,requests:counts},null,2)+'\n');}
 async function check(name,fn){const start=Date.now();try{const evidence=await fn();receipt.checks.push({name,passed:true,elapsed_ms:Date.now()-start,evidence});console.log('PASS '+name);}catch(error){receipt.failures.push({name,message:error.message});await write();throw error;}await write();}
 async function main(){
- const published=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app'),sourceManifestFile=path.join(published,'Contents/Resources/runtime/runtime-manifest.json'),sourceBytes=await fs.readFile(sourceManifestFile),sourceManifest=JSON.parse(sourceBytes);
+ const published=path.resolve(__dirname,'../dist/mac-arm64/Disco.app'),sourceManifestFile=path.join(published,'Contents/Resources/runtime/runtime-manifest.json'),sourceBytes=await fs.readFile(sourceManifestFile),sourceManifest=JSON.parse(sourceBytes);
  receipt.source_manifest_sha256=createHash('sha256').update(sourceBytes).digest('hex');receipt.source_app_asar_sha256=createHash('sha256').update(await fs.readFile(path.join(published,'Contents/Resources/app.asar'))).digest('hex');
  const {candidateVersion,priorVersion}=releaseVersions(sourceManifest.application_version,process.env.RIEKE_E2E_PRIOR_VERSION);
  assert.equal(JSON.parse(asar.extractFile(path.join(published,'Contents/Resources/app.asar'),'package.json')).version,candidateVersion,'Packaged version must match candidate manifest');
  receipt.candidate_version=candidateVersion;receipt.synthetic_prior={version:priorVersion,authentic_published_release:false,construction:'Candidate clone with version metadata overlaid; documented transport seam remains test-only'};
  fixture=await createFixture({reuse:false});receipt.fixture_root=fixture.root;
- const zip=path.resolve(__dirname,`../dist/Rieke-OS-${candidateVersion}-arm64.zip`),descriptorPath=path.join(fixture.root,'desktop-release.json');
+ const zip=path.resolve(__dirname,`../dist/Disco-${candidateVersion}-arm64.zip`),descriptorPath=path.join(fixture.root,'desktop-release.json');
  await run(path.join(fixture.bundle,'Contents/Resources/runtime/python/bin/python3.11'),['-B',path.resolve(__dirname,'../../tools/desktop_test_release.py'),'--app',published,'--archive',zip,'--output',descriptorPath],{env:{...process.env,PYTHONDONTWRITEBYTECODE:'1'}});
  const descriptorBytes=await fs.readFile(descriptorPath),descriptor=JSON.parse(descriptorBytes);receipt.candidate_archive_sha256=descriptor.archive.sha256;
  assert.equal(descriptor.application_version,candidateVersion);assert.equal(descriptor.archive.filename,path.basename(zip));

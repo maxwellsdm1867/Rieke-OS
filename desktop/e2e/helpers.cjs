@@ -11,17 +11,17 @@ async function createFixture({reuse = true} = {}) {
   if (reuse && process.env.RIEKE_E2E_FIXTURE_ROOT) {
     const root = await fs.realpath(process.env.RIEKE_E2E_FIXTURE_ROOT);
     if (!root.startsWith(await fs.realpath(os.tmpdir()) + path.sep) || !path.basename(root).startsWith('rieke-packaged-ui-e2e-')) throw new Error('Reusable fixture must be an owned isolated test directory');
-    const home = path.join(root, 'home'), bundle = path.join(home, 'Applications', 'Rieke OS.app');
+    const home = path.join(root, 'home'), bundle = path.join(home, 'Applications', 'Disco.app');
     if ((await fs.stat(root)).uid !== process.getuid()) throw new Error('Test directory owner mismatch');
-    return {root, home, bundle, userData: path.join(home, 'state'), executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};
+    return {root, home, bundle, userData: path.join(home, 'state'), executable: path.join(bundle, 'Contents/MacOS/Disco'), projects: path.join(home, 'projects')};
   }
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'rieke-packaged-ui-e2e-')));
   const home = path.join(root, 'home');
-  const bundle = path.join(home, 'Applications', 'Rieke OS.app');
+  const bundle = path.join(home, 'Applications', 'Disco.app');
   const userData = path.join(home, 'state');
   await fs.mkdir(path.dirname(bundle), {recursive: true}); await fs.mkdir(userData, {recursive: true});
   await run('/usr/bin/ditto', [packagedSource(path.resolve(__dirname, '..'), require('../package.json').build), bundle]);
-  return {root, home, bundle, userData, executable: path.join(bundle, 'Contents/MacOS/Rieke OS'), projects: path.join(home, 'projects')};
+  return {root, home, bundle, userData, executable: path.join(bundle, 'Contents/MacOS/Disco'), projects: path.join(home, 'projects')};
 }
 async function launch(fixture) {
   const application = await _electron.launch({executablePath: fixture.executable, args: [`--user-data-dir=${fixture.userData}`],

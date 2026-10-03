@@ -56,9 +56,10 @@ async function main(){
  assert.equal(manifest.format,'rieke-desktop-runtime');assert.equal(typeof manifest.application_version,'string');assert.ok(manifest.application_version);
  receipt.application_version=manifest.application_version;receipt.manifest_sha256=initial.manifest_sha256;receipt.asar_sha256=initial.asar_sha256;
  await check('packaged launcher starts with matching app and backend versions',async()=>{
-  await start();const version=await application.evaluate(({app})=>app.getVersion());assert.equal(version,manifest.application_version);
+  await start();const brand=await application.evaluate(({app,Menu})=>({name:app.getName(),version:app.getVersion(),executable:process.execPath,menu:Menu.getApplicationMenu().items[0].label,quit:Menu.getApplicationMenu().items[0].submenu.items.at(-1).label}));
+  const version=brand.version;assert.equal(version,manifest.application_version);assert.equal(brand.name,'Disco');assert.equal(brand.menu,'Disco');assert.equal(brand.quit,'Quit Disco');assert.equal(path.basename(brand.executable),'Disco');assert.equal(path.basename(fixture.bundle),'Disco.app');
   const health=await bounded(ownedControl(fixture,'health'),'Root readiness');assert.equal(health.ready,true);assert.equal(health.application_version,version);
-  return{app_version:version,root_ready:true,isolated_home_and_profile:true};
+  return{app_version:version,root_ready:true,isolated_home_and_profile:true,branding:brand};
  });
  await check('explicit update Check returns an honest valid result',async()=>{
   await page.getByRole('button',{name:/^App Updates(?: —|$)/}).first().click();const dialog=page.getByRole('dialog',{name:'App Updates',exact:true}),button=dialog.getByRole('button',{name:'Check for updates',exact:true});

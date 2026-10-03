@@ -40,7 +40,7 @@ jobs:
         run: |
           VERSION=$(node -p "require('./desktop/package.json').version")
           mkdir -p desktop/dist
-          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "Rieke-OS-${VERSION}-arm64.zip" --pattern desktop-release.json --dir desktop/dist
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "Disco-${VERSION}-arm64.zip" --pattern desktop-release.json --dir desktop/dist
       - name: Check archive identity and bounds before extraction
         run: |
           uv run --no-project --python 3.11.13 python - <<'PY'
@@ -53,7 +53,7 @@ jobs:
           assert d['source_commit'] == subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
           assert d['source_dirty'] is False and d['production_ready'] is False
           assert d['application_version'] == version and d['platform'] == 'darwin' and d['architecture'] == 'arm64'
-          assert d['archive']['filename'] == f'Rieke-OS-{version}-arm64.zip'
+          assert d['archive']['filename'] == f'Disco-{version}-arm64.zip'
           p = Path('desktop/dist') / d['archive']['filename']
           assert 0 < p.stat().st_size == d['archive']['size'] <= 2 * 1024**3
           with p.open('rb') as stream: assert hashlib.file_digest(stream, 'sha256').hexdigest() == d['archive']['sha256']
@@ -65,13 +65,13 @@ jobs:
         run: |
           VERSION=$(node -p "require('./desktop/package.json').version")
           mkdir -p desktop/dist/mac-arm64
-          ditto -x -k "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" desktop/dist/mac-arm64
-          uv run --no-project --python 3.11.13 python tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Rieke OS.app' --archive "desktop/dist/Rieke-OS-${VERSION}-arm64.zip" --output "$RUNNER_TEMP/recomputed-descriptor.json"
+          ditto -x -k "desktop/dist/Disco-${VERSION}-arm64.zip" desktop/dist/mac-arm64
+          uv run --no-project --python 3.11.13 python tools/desktop_test_release.py --app 'desktop/dist/mac-arm64/Disco.app' --archive "desktop/dist/Disco-${VERSION}-arm64.zip" --output "$RUNNER_TEMP/recomputed-descriptor.json"
           cmp desktop/dist/desktop-release.json "$RUNNER_TEMP/recomputed-descriptor.json"
-          codesign --verify --deep --strict 'desktop/dist/mac-arm64/Rieke OS.app'
+          codesign --verify --deep --strict 'desktop/dist/mac-arm64/Disco.app'
           node - <<'JS'
           const fs=require('fs'), path=require('path');
-          const runtime=path.resolve('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources/runtime');
+          const runtime=path.resolve('desktop/dist/mac-arm64/Disco.app/Contents/Resources/runtime');
           require('./desktop/updater-validation.cjs').verifyResources(runtime,JSON.parse(fs.readFileSync(path.join(runtime,'runtime-manifest.json'))).resources)
             .then(()=>console.log('Published runtime resources verified')).catch(error=>{console.error(error);process.exitCode=1;});
           JS
@@ -83,7 +83,7 @@ jobs:
           from pathlib import Path
           sys.path.insert(0, 'tools')
           from desktop_artifact_e2e import isolated_database_probe, inventory
-          resources = Path('desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources').resolve()
+          resources = Path('desktop/dist/mac-arm64/Disco.app/Contents/Resources').resolve()
           before = inventory(resources / 'runtime')
           with tempfile.TemporaryDirectory(prefix='rieke-published-native-') as scratch:
               result = isolated_database_probe(resources, Path(scratch))

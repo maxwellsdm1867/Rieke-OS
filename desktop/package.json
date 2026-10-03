@@ -30,7 +30,7 @@
   "build": {
     "appId": "org.riekeos.desktop",
     "productName": "Disco",
-    "artifactName": "Rieke-OS-${version}-${arch}.${ext}",
+    "artifactName": "Disco-${version}-${arch}.${ext}",
     "asar": true,
     "directories": {
       "output": "dist",
@@ -83,7 +83,7 @@
         "CFBundleDisplayName": "Disco",
         "CFBundleName": "Disco"
       },
-      "executableName": "Rieke OS"
+      "executableName": "Disco"
     },
     "dmg": {
       "sign": false,
@@ -98,7 +98,7 @@
           "x": 280,
           "y": 180,
           "type": "file",
-          "name": "Rieke OS.app"
+          "name": "Disco.app"
         }
       ]
     },

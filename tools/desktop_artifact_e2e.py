@@ -61,7 +61,7 @@ def inspect_bundle(bundle):
         raise ValueError('App identity/version differs from runtime')
     if plist.get('LSMinimumSystemVersion') != manifest.get('minimum_macos_version'):
         raise ValueError('App/runtime OS minimums differ')
-    if not os.access(bundle / 'Contents/MacOS/Rieke OS', os.X_OK):
+    if not os.access(bundle / 'Contents/MacOS/Disco', os.X_OK):
         raise ValueError('App entry is not executable')
     escaping = []
     for file in bundle.rglob('*'):
@@ -91,7 +91,7 @@ def inspect_bundle(bundle):
         raise ValueError('Python has editable/external/venv path state')
     application_scope = audit_application(application, load_profile())
     signature = subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict',str(bundle)], capture_output=True)
-    shell_paths = ('Contents/Info.plist', 'Contents/MacOS/Rieke OS', 'Contents/Resources/app.asar',
+    shell_paths = ('Contents/Info.plist', 'Contents/MacOS/Disco', 'Contents/Resources/app.asar',
                    'Contents/Frameworks/Electron Framework.framework/Versions/A/Electron Framework')
     shell_hashes = {name:digest(bundle / name).hex() for name in shell_paths}
     return {'manifest_sha256':digest(runtime/'runtime-manifest.json').hex(), 'runtime_resources':len(actual),
@@ -272,7 +272,7 @@ def fault_checks(directory, manifest, scratch, bundle):
     original=(directory/'latest-mac.yml').read_text()
     variants={'wrong metadata version':original.replace('version: '+manifest['application_version'],'version: 9.9.9'),
               'metadata checksum corruption':original.replace('sha512:','sha512: invalid',1),
-              'unsafe metadata artifact path':original.replace('url: Rieke-OS','url: ../Rieke-OS',1),
+              'unsafe metadata artifact path':original.replace('url: Disco','url: ../Disco',1),
               'metadata size mismatch':original.replace('size:','size: 1 #',1)}
     for name,text in variants.items():
         (faultdir/'latest-mac.yml').write_text(text)
@@ -304,7 +304,7 @@ function reject(name,fn,reason){assert.throws(fn,error=>error.message===reason);
 reject('unsupported host OS',()=>v.compatibleMacMinimum('15.0','14.2'),'Update requires a newer macOS version.');
 reject('runtime traversal path',()=>v.safeResource('/tmp','../escape'),'Unsafe runtime resource path.');
 (async()=>{try{await v.signingIdentity(process.argv[3]);throw Error('unsigned app accepted')}catch(e){if(e.message==='unsigned app accepted')throw e;tests.push({case:'unsigned real app rejected by update signing gate',rejected:true});}
-const installer=require(process.argv[4]);try{await installer.installCompleteBundle({source:process.argv[3],destination:p.join(process.argv[5],'must not install','Rieke OS.app')});throw Error('unsigned install accepted')}catch(e){if(e.message==='unsigned install accepted')throw e;tests.push({case:'unsigned real app rejected by first-open signed installer',rejected:true});}
+const installer=require(process.argv[4]);try{await installer.installCompleteBundle({source:process.argv[3],destination:p.join(process.argv[5],'must not install','Disco.app')});throw Error('unsigned install accepted')}catch(e){if(e.message==='unsigned install accepted')throw e;tests.push({case:'unsigned real app rejected by first-open signed installer',rejected:true});}
 process.stdout.write(JSON.stringify(tests));})();
 '''
     result=execute(['node','-e',javascript,ROOT/'desktop/updater-validation.cjs',bundle/'Contents/Resources/runtime/runtime-manifest.json',bundle,ROOT/'desktop/bootstrap.cjs',scratch],text=True)
@@ -335,7 +335,7 @@ def run(args):
     report={'format':'rieke-desktop-artifact-e2e','version':1,'production_ready':False,'local_host_only':True,
             'checks':[],'failures':[],'not_validated':['Developer ID signing/notarization','real signed old-to-new update',
             'another user/clean machine','minimum supported macOS 14.0 device','source-user migration']}
-    report['installation_reference_kind']=('built-candidate' if reference == (ROOT/'desktop/dist/mac-arm64/Rieke OS.app').resolve()
+    report['installation_reference_kind']=('built-candidate' if reference == (ROOT/'desktop/dist/mac-arm64/Disco.app').resolve()
                                            else 'provided-readonly-bundle')
     report['user_installation_updated']=False
     artifacts=artifact_inventory(directory);report['artifacts']=artifacts
@@ -349,14 +349,14 @@ def run(args):
         report['checks'].append('actual updater ZIP path/link/bounds audit')
         ziproot=scratch/"ZIP extracted ' relocated";ziproot.mkdir()
         execute(['/usr/bin/ditto','-x','-k',zipfile_path,ziproot],timeout=180)
-        bundles['zip']=ziproot/'Rieke OS.app'
+        bundles['zip']=ziproot/'Disco.app'
         execute(['/usr/bin/hdiutil','verify',dmg],timeout=180)
         mount=scratch/'read-only DMG mount';mount.mkdir()
         execute(['/usr/bin/hdiutil','attach','-readonly','-nobrowse','-mountpoint',mount,dmg],timeout=180)
         try:
             dmgroot=scratch/'DMG copied relocated';dmgroot.mkdir()
-            execute(['/usr/bin/ditto','--rsrc','--extattr','--acl',mount/'Rieke OS.app',dmgroot/'Rieke OS.app'],timeout=180)
-            bundles['dmg']=dmgroot/'Rieke OS.app'
+            execute(['/usr/bin/ditto','--rsrc','--extattr','--acl',mount/'Disco.app',dmgroot/'Disco.app'],timeout=180)
+            bundles['dmg']=dmgroot/'Disco.app'
         finally:execute(['/usr/bin/hdiutil','detach',mount],timeout=30)
         report['checks'].append('actual DMG integrity/mount/copy preserving bundle')
         bundles['reference']=reference
@@ -411,7 +411,7 @@ def run(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--directory',type=Path,default=ROOT/'desktop/dist')
-    parser.add_argument('--installed',type=Path,default=Path.home()/'Applications/Rieke OS.app')
+    parser.add_argument('--installed',type=Path,default=Path.home()/'Applications/Disco.app')
     parser.add_argument('--recording',type=Path)
     parser.add_argument('--output',type=Path,default=ROOT/'docs/dev/desktop-artifact-e2e.json')
     parser.add_argument('--keep-scratch',action='store_true')

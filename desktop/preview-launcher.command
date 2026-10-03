@@ -5,7 +5,7 @@ set -eu
 umask 077
 preview_root="${0:A:h}"
 preview_home="$preview_root/home"
-preview_bundle="$preview_home/Applications/Rieke OS.app"
+preview_bundle="$preview_home/Applications/Disco.app"
 preview_profile="$preview_root/profile"
 preview_tmp="$preview_root/tmp"
 fail() { print -u2 -- "DISCO Preview could not open: $1"; exit 1; }
@@ -27,4 +27,4 @@ print -- "DISCO Preview · $preview_version · source $preview_commit"
 print -- "Using this preview folder's isolated settings and copied projects."
 exec /usr/bin/env -i HOME="$preview_home" TMPDIR="$preview_tmp" LANG=en_US.UTF-8 \
   PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  "$preview_bundle/Contents/MacOS/Rieke OS" "--user-data-dir=$preview_profile"
+  "$preview_bundle/Contents/MacOS/Disco" "--user-data-dir=$preview_profile"

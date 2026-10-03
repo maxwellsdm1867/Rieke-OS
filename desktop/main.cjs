@@ -24,7 +24,7 @@ const windows = new Set();
 const scientificWindows = new Set();
 const recoveryPage = path.join(__dirname, 'recovery.html');
 const sourceApp = enclosingApp(process.execPath);
-const destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app');
+const destination = path.join(os.homedir(), 'Applications', 'Disco.app');
 const bootstrap = app.isPackaged && process.platform === 'darwin' && sourceApp !== destination;
 const installedUserData = app.getPath('userData');
 if (bootstrap) {

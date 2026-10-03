@@ -671,7 +671,7 @@ def fault_recovery(h, recording):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')
+    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Disco.app/Contents/Resources')
     parser.add_argument('--recording', type=Path, required=True,
                         help='Existing scientific H5 fixture; never copied into the application bundle')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/dev/desktop-scientific-e2e.json')

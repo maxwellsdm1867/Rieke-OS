@@ -107,7 +107,9 @@ async function bundleIdentity(bundle, distribution, run, {verifyTestingSeal = tr
   const declared = await run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleIdentifier', plist]);
   if (declared.stdout.trim() !== APP_ID) throw new Error('Unsigned testing app identifier differs');
   const executable = await run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleExecutable', plist]);
-  if (executable.stdout.trim() !== 'Rieke OS' || !(await fs.stat(path.join(bundle, 'Contents', 'MacOS', 'Rieke OS'))).isFile()) throw new Error('Unsigned testing app executable is missing');
+  const executableName = executable.stdout.trim();
+  // Legacy retained installations are verified in place; new shipping builds use Disco.
+  if (!['Disco', 'Rieke OS'].includes(executableName) || !(await fs.stat(path.join(bundle, 'Contents', 'MacOS', executableName))).isFile()) throw new Error('Unsigned testing app executable is missing');
   return {identifier: APP_ID, team: null, channel: 'unsigned-testing'};
 }
 async function verifyTestingBundle(bundle, run = runFile) {
@@ -132,7 +134,7 @@ function compatibleManifest(candidate, current) {
     candidate.database_compatibility === current.database_compatibility &&
     JSON.stringify(candidate.workspace_formats) === JSON.stringify(current.workspace_formats);
 }
-async function installCompleteBundle({source, destination = path.join(os.homedir(), 'Applications', 'Rieke OS.app'), run = runFile, allowRollback = false, ignorePid = null, distribution, expectedBundleSha256}) {
+async function installCompleteBundle({source, destination = path.join(os.homedir(), 'Applications', 'Disco.app'), run = runFile, allowRollback = false, ignorePid = null, distribution, expectedBundleSha256}) {
   const unsignedTesting = testingDistribution(distribution);
   if (ignorePid !== null && (!allowRollback || ignorePid !== process.pid)) throw new Error('Only the dedicated current recovery helper may be exempted from running-app checks');
   if (!source || !source.endsWith('.app')) throw new Error('A complete app bundle is required');

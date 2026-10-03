@@ -28,7 +28,7 @@ Assemble the portable preview folder using real directories owned by the user:
 DISCO Preview/
   Open DISCO Preview.command   # copy desktop/preview-launcher.command; executable
   home/
-    Applications/Rieke OS.app # copy the complete newly packaged marked app
+    Applications/Disco.app # copy the complete newly packaged marked app
     .rieke-os/                # isolated author and appearance, created on use
   profile/                    # isolated Electron state and drafts
     backend/preferences/      # isolated project index and workspace selection

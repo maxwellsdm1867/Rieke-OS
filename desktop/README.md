@@ -45,14 +45,14 @@ CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist --prefix desktop
 ```
 
 The artifacts are in `desktop/dist`, including the complete
-`mac-arm64/Rieke OS.app`, DMG, updater ZIP, blockmaps and `latest-mac.yml`.
+`mac-arm64/Disco.app`, DMG, updater ZIP, blockmaps and `latest-mac.yml`.
 Build caches and artifacts are ignored by Git. Parser and native dependency pins,
 license inventory, source provenance and resource hashes are carried inside the
 runtime; recordings, scientific projects and credentials are excluded.
 
 For development against the assembled runtime, run `npm start --prefix desktop`.
 For local icon-based testing, place the complete unsigned app at
-`~/Applications/Rieke OS.app` without overwriting an existing installation.
+`~/Applications/Disco.app` without overwriting an existing installation.
 The complete app at that fixed location runs independently of the checkout.
 This build explicitly selects the `unsigned-testing` distribution. Its Install
 and Open action verifies the complete app and installs a user-owned copy while
@@ -195,3 +195,23 @@ must agree with `CFBundleName` for Chromium child processes to launch.
 on-disk app/executable paths, archive layout, updater checks, and recovery paths.
 `branding.cjs` also preserves the existing Electron profile. Do not change only
 `CFBundleName` without aligning the product/helper name.
+
+## Product name and compatibility identifiers
+
+New packages ship as **Disco.app**, execute **Disco**, and use **Disco** for the
+Dock, application menu, About panel and installer. New archive files are named
+`Disco-<version>-arm64.zip`/`.dmg`. Build and qualification scripts use these names.
+
+The existing `org.riekeos.desktop` bundle identifier, `Rieke OS` Electron profile,
+`.rieke-os` preferences, project paths, receipt formats, hidden install lock and
+verified rollback storage remain compatibility identities. They are not renamed
+or deleted. Explicit profile overrides remain respected. Installing Disco leaves
+an existing differently named app in place; the preserved profile and
+single-instance ownership rules continue to protect shared state. The repository
+and historical release URLs remain `maxwellsdm1867/Rieke-OS`.
+
+The new updater accepts exact legacy and Disco archive naming schemas and checks
+the matching executable. Existing old clients may require a manual Install and
+Open of the new Disco download because their archive validators required the old
+bundle name. This change does not rewrite prior published releases or install
+anything on the user's computer.

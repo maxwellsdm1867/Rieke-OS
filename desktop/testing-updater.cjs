@@ -89,7 +89,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
       bundle_relative_path:path.relative(cache,candidate.bundle_path).split(path.sep).join('/'),
       archive_sha256:descriptor.archive.sha256,bundle_sha256:candidate.bundle_sha256,runtime_manifest_sha256:descriptor.runtime_manifest_sha256};
     await hintPath(cache,hint.archive_relative_path,'download',descriptor.archive.filename);
-    await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');
+    await hintPath(cache,hint.bundle_relative_path,'candidate',descriptor.archive.filename.startsWith('Disco-')?'Disco.app':'Rieke OS.app');
     await atomicHint(cache,hint);
   }
   async function resumePrepared(selected){
@@ -102,7 +102,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
       const descriptor=selected.descriptor;
       if(hint.format!=='rieke-desktop-testing-prepared-hint'||hint.version!==1||hint.installed_version!==manifest.application_version||hint.available_version!==descriptor.application_version||hint.archive_sha256!==descriptor.archive.sha256||hint.runtime_manifest_sha256!==descriptor.runtime_manifest_sha256||!/^[a-f0-9]{64}$/.test(hint.bundle_sha256||''))throw new Error('Prepared hint differs from fresh official metadata.');
       const downloadedFile=await hintPath(cache,hint.archive_relative_path,'download',descriptor.archive.filename);
-      const bundle=await hintPath(cache,hint.bundle_relative_path,'candidate','Rieke OS.app');
+      const bundle=await hintPath(cache,hint.bundle_relative_path,'candidate',descriptor.archive.filename.startsWith('Disco-')?'Disco.app':'Rieke OS.app');
       candidate={version:descriptor.application_version,downloadedFile,bundle_path:bundle,bundle_sha256:hint.bundle_sha256,
         archive_sha256:descriptor.archive.sha256,runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true,descriptor,candidate_directory:path.dirname(bundle)};
       set('Validating',{message:'Rechecking the previously downloaded testing update against current GitHub metadata.'});

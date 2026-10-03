@@ -8,12 +8,12 @@ function fixture(t) {
   const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'disco preview ')));
   t.after(() => fs.rmSync(root, {recursive:true, force:true}));
   const home = path.join(root, 'home'), profile = path.join(root, 'profile'), tmp = path.join(root, 'tmp');
-  const bundle = path.join(home, 'Applications/Rieke OS.app');
+  const bundle = path.join(home, 'Applications/Disco.app');
   for (const dir of [bundle, profile, tmp, path.join(bundle, 'Contents/Resources/runtime')]) fs.mkdirSync(dir, {recursive:true});
   const manifestPath = path.join(bundle, 'Contents/Resources/runtime/runtime-manifest.json');
   const manifest = {format:'rieke-desktop-runtime', version:1, application_version:'0.1.6', source_dirty:false, source_commit:'6'.repeat(40)};
   fs.writeFileSync(manifestPath, JSON.stringify(manifest));
-  const executable = path.join(bundle, 'Contents/MacOS/Rieke OS');
+  const executable = path.join(bundle, 'Contents/MacOS/Disco');
   const app = {isPackaged:true, getPath:() => profile, getVersion:() => '0.1.6'};
   const options = {app, executable, platform:'darwin', env:{HOME:home, TMPDIR:tmp},
     argv:[executable, '--user-data-dir=' + profile], readPlist:() => ({DiscoLocalPreview:true})};
@@ -39,7 +39,7 @@ test('marked package rejects Finder/default-profile launches, overrides, ambiguo
     {env:{...f.options.env, RIEKE_PREFERENCES_DIR:'/real/preferences'}},
     {env:{...f.options.env, RIEKE_PROJECT_INDEX:'/real/catalog'}},
     {env:{...f.options.env, RECORDING_WORKSPACE_ROOT:'/real/project'}},
-    {executable:path.join(f.root, 'Moved.app/Contents/MacOS/Rieke OS')},
+    {executable:path.join(f.root, 'Moved.app/Contents/MacOS/Disco')},
     {readPlist:() => ({DiscoLocalPreview:'true'})}
   ]) assert.throws(() => localPreview({...f.options, ...change}), /Open this DISCO Preview/);
 });

@@ -24,7 +24,7 @@ function validateDescriptor(value,current,hostVersion){
   if(value.mysql_version!==current.mysql_version||value.database_compatibility!==current.database_compatibility||!Array.isArray(value.workspace_formats)||!Array.isArray(current.workspace_formats)||!current.workspace_formats.every(f=>value.workspace_formats.includes(f)))throw new Error('Testing update requires a data migration.');
   compatibleMacMinimum(value.minimum_macos_version,hostVersion);
   const archive=value.archive;
-  if(!archive||archive.filename!==`Rieke-OS-${value.application_version}-arm64.zip`||!Number.isSafeInteger(archive.size)||archive.size<=0||archive.size>2*1024**3||!/^[a-f0-9]{64}$/.test(archive.sha256||'')||!/^[A-Za-z0-9+/]{86}==$/.test(archive.sha512||'')||Buffer.from(archive.sha512,'base64').length!==64)throw new Error('Invalid testing archive metadata.');
+  if(!archive||![`Disco-${value.application_version}-arm64.zip`,`Rieke-OS-${value.application_version}-arm64.zip`].includes(archive.filename)||!Number.isSafeInteger(archive.size)||archive.size<=0||archive.size>2*1024**3||!/^[a-f0-9]{64}$/.test(archive.sha256||'')||!/^[A-Za-z0-9+/]{86}==$/.test(archive.sha512||'')||Buffer.from(archive.sha512,'base64').length!==64)throw new Error('Invalid testing archive metadata.');
   if(!/^[a-f0-9]{64}$/.test(value.asar_sha256||'')||!/^[a-f0-9]{64}$/.test(value.runtime_manifest_sha256||''))throw new Error('Incomplete testing app checksums.');
   return value;
 }
@@ -76,14 +76,15 @@ async function inspectTestingBundle({bundle,descriptor,manifest,hostVersion,run=
   }
   await links(bundle);
   const plist=await regularContained(bundle,'Contents/Info.plist');
-  const entry=await regularContained(bundle,'Contents/MacOS/Rieke OS');
+  const executableName=descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS';
+  const entry=await regularContained(bundle,'Contents/MacOS/'+executableName);
   if(!((await fs.stat(entry)).mode&0o111))throw new Error('App entry is not executable.');
   const asar=await regularContained(bundle,'Contents/Resources/app.asar');
   const manifestPath=await regularContained(bundle,'Contents/Resources/runtime/runtime-manifest.json');
   if(await hashFile(asar)!==descriptor.asar_sha256||await hashFile(manifestPath)!==descriptor.runtime_manifest_sha256)throw new Error('Testing app identity checksums differ.');
   const candidate=JSON.parse(await fs.readFile(manifestPath,'utf8'));
   if(candidate.format!=='rieke-desktop-runtime'||candidate.version!==1||candidate.application_version!==descriptor.application_version||candidate.platform!==descriptor.platform||candidate.architecture!==descriptor.architecture||candidate.mysql_version!==descriptor.mysql_version||candidate.database_compatibility!==descriptor.database_compatibility||JSON.stringify(candidate.workspace_formats)!==JSON.stringify(descriptor.workspace_formats)||candidate.minimum_macos_version!==descriptor.minimum_macos_version||!/^[a-f0-9]{40}$/.test(candidate.source_commit||'')||!/^[a-f0-9]{40}$/.test(candidate.parser_commit||'')||typeof candidate.source_dirty!=='boolean'||!candidate.resources||typeof candidate.resources!=='object'||Array.isArray(candidate.resources)||!Object.keys(candidate.resources).length)throw new Error('Testing runtime differs from its descriptor.');
-  for(const [key,expected] of [['CFBundleIdentifier','org.riekeos.desktop'],['CFBundleShortVersionString',descriptor.application_version],['LSMinimumSystemVersion',descriptor.minimum_macos_version]]){
+  for(const [key,expected] of [['CFBundleExecutable',executableName],['CFBundleIdentifier','org.riekeos.desktop'],['CFBundleShortVersionString',descriptor.application_version],['LSMinimumSystemVersion',descriptor.minimum_macos_version]]){
     const result=await run('/usr/libexec/PlistBuddy',['-c',`Print :${key}`,plist]);
     if(result.stdout.trim()!==expected)throw new Error('App property list differs from testing metadata.');
   }
@@ -113,7 +114,8 @@ async function validateTestingCandidate({downloadedFile,descriptor,manifest,cach
     await run(python,['-I','-B','-c',ARCHIVE_CHECK,downloadedFile],{timeout:30000});
     await run('/usr/bin/ditto',['-x','-k',downloadedFile,temporary],{timeout:180000});
     const entries=await fs.readdir(temporary);
-    if(entries.length!==1||entries[0]!=='Rieke OS.app')throw new Error('Testing archive must contain exactly Rieke OS.app.');
+    const expectedBundle=descriptor.archive.filename.startsWith('Disco-')?'Disco.app':'Rieke OS.app';
+    if(entries.length!==1||entries[0]!==expectedBundle)throw new Error('Testing archive must contain exactly '+expectedBundle+'.');
     const validated=await inspectTestingBundle({bundle:path.join(temporary,entries[0]),descriptor,manifest,hostVersion,run,bundleDigest});
     await verifyArchive(downloadedFile,descriptor);
     return {...validated,downloadedFile,archive_sha256:descriptor.archive.sha256,candidate_directory:temporary};

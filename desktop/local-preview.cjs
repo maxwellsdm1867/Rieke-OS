@@ -18,7 +18,7 @@ function localPreview({app, executable = process.execPath, platform = process.pl
   if (info.DiscoLocalPreview !== true) fail();
   const root = path.resolve(bundle, '../../..'), home = path.join(root, 'home');
   const profile = path.join(root, 'profile'), temporary = path.join(root, 'tmp');
-  if (bundle !== path.join(home, 'Applications/Rieke OS.app') ||
+  if (bundle !== path.join(home, 'Applications/Disco.app') ||
       env.HOME !== home || env.TMPDIR !== temporary || app.getPath('userData') !== profile ||
       argv.filter(value => value === '--user-data-dir' || value.startsWith('--user-data-dir=')).length !== 1 ||
       !argv.includes('--user-data-dir=' + profile) ||

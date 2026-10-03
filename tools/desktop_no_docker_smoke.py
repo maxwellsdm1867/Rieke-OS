@@ -150,7 +150,7 @@ def run(args):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--resources',type=Path,default=Path(__file__).resolve().parents[1]/'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')
+    parser.add_argument('--resources',type=Path,default=Path(__file__).resolve().parents[1]/'desktop/dist/mac-arm64/Disco.app/Contents/Resources')
     parser.add_argument('--recording',type=Path,required=True)
     parser.add_argument('--output',type=Path,default=Path(__file__).resolve().parents[1]/'docs/dev/desktop-no-docker-e2e.json')
     raise SystemExit(run(parser.parse_args()))

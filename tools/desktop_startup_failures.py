@@ -10,7 +10,7 @@ from desktop_scientific_e2e import Harness, ROOT, sha
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Rieke OS.app/Contents/Resources')
+    parser.add_argument('--resources', type=Path, default=ROOT / 'desktop/dist/mac-arm64/Disco.app/Contents/Resources')
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/dev/desktop-startup-failures.json')
     args = parser.parse_args()
     harness = Harness(args.resources)

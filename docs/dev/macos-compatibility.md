@@ -23,7 +23,7 @@ repair and final packaging, and retain its JSON outside the bundle:
 
 ```sh
 python3 tools/desktop_native_compatibility.py \
-  --bundle 'desktop/dist/mac-arm64/Rieke OS.app' \
+  --bundle 'desktop/dist/mac-arm64/Disco.app' \
   --output /owned/evidence/native-compatibility.json
 ```
 
