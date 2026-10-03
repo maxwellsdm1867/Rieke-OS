@@ -34,6 +34,7 @@ export default function ColumnTree(props){
   const canAct=()=>visible.current&&permitted.current&&(!readOwner||readOwner.active());
   const saved=useRef(initialNavigation),initialScope=useRef(scopeKey),restored=useRef(false);
   const showLoading=useDelayedLoading(state.loading&&!state.error);
+  const retryIntent=useRef(null);
   const current=useRef([]),controller=useRef(null),serial=useRef(0),pending=useRef(true);
   const latestSelected=useRef(selected),previousSelected=useRef(selected);latestSelected.current=selected;
   const strip=useRef(null),panes=useRef(new Map()),scrollRestore=useRef(null);
@@ -56,6 +57,7 @@ export default function ColumnTree(props){
   },[]);
   const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null}={})=>{
     if(!active||!visible.current)return;
+    retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;
     const prior=current.current,priorPositions=prior.map(page=>({offset:page.offset,scrollTop:panes.current.get(page.depth)?.scrollTop||0}));
     if(reset)current.current=[];
@@ -73,7 +75,14 @@ export default function ColumnTree(props){
     }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
     finally{if(token===serial.current)pending.current=false;}
   },[scopeKey,readOwner]);
-  useLayoutEffect(()=>{visible.current=active;controller.current?.abort();serial.current++;return()=>{visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[scopeKey]);
+  function retry(){
+    if(!visible.current||!active||readOwner&&!readOwner.active())return;
+    const intent=retryIntent.current;
+    if(intent?.scopeKey!==scopeKey)return;
+    if(expectedRevision){callbacks.current.onRefreshPreview?.();return;}
+    load({...intent.options,reset:true,revisionOverride:null});
+  }
+  useLayoutEffect(()=>{visible.current=active;controller.current?.abort();serial.current++;return()=>{retryIntent.current=null;visible.current=false;permitted.current=false;controller.current?.abort();serial.current++;};},[scopeKey]);
   useEffect(()=>{
     if(!active){pending.current=true;setState(old=>({...old,loading:true}));return;}
     const start=!restored.current&&initialScope.current===scopeKey?treeNavigationStart(saved.current,splits):null;
@@ -112,13 +121,13 @@ export default function ColumnTree(props){
   },[selected,state.columns,state.loading,state.error]);
   const last=state.columns.at(-1),root=state.columns[0],path=last?.path||[];
   const ancestors=last?.ancestors||path.map((key,depth)=>state.columns[depth]?.branches?.find(branch=>branch.key===key)).filter(Boolean);
-  return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading}>
+  return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
     {active&&!ownerBlocked&&groupTags.dialog}{active&&groupSelection.feedback}
-    {active&&state.loading&&state.columns.length>0&&<p role="status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
+    {active&&!props.refreshingLabelOwned&&(state.loading||!state.error&&ownerBlocked)&&state.columns.length>0&&<p role="status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
     {props.design&&<header className="tp-total"><strong>{root?`${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><span>{root?`${number(root.cells)} cells · ${duration(root.duration_seconds)}`:''}</span><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>}
     {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:[]})}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:path.slice(0,index+1)})} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
-    {state.error&&<div className="pt-error" role="alert">{state.error}<button onClick={()=>expectedRevision?callbacks.current.onRefreshPreview?.():load({reset:true})}>Reload tree overview</button></div>}
-    <div className="tp-columns" ref={strip} onScroll={remember} aria-busy={state.loading}>
+    {state.error&&<div className="pt-error" role="alert">{state.error}<button onClick={retry}>Reload tree overview</button></div>}
+    <div className="tp-columns" ref={strip} onScroll={remember} aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
       {state.columns.map((page,depth)=>{
         const terminal=page.kind==='epochs',entries=terminal?page.epochs.map(item=>props.inclusionForEpoch?props.inclusionForEpoch(item):item):page.branches,field=page.levels?.[depth],combined=entries.some(item=>item.components?.length),blocked=state.loading||!!state.error||ownerBlocked;
         return <section className={`tp-column ${terminal?'tp-terminal':''} ${combined?'tp-combined-column':''}`} key={`${depth}:${page.path.join(':')}`} aria-label={`${depth+1}. ${terminal?'Epochs':readableField(field?.label,field?.field)}`}>

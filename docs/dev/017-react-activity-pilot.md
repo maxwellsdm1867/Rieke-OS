@@ -69,3 +69,34 @@ The framework upgrade changes dependency identity: older benchmark receipts do
 not qualify this commit, and cross-runtime measurements must label that treatment.
 
 Primary API documentation: https://react.dev/reference/react/Activity
+
+## Follow-up after 422 native qualification
+
+The native comparison qualified earlier retained presentation only: median first
+previous rows 15.2 ms versus 82.5 ms, with fresh warm content 96.65 ms versus
+94.7 ms. Cold content was 420.4 ms versus 220.7 ms; framework upgrade and Activity
+implementation remain confounded. Corrected endpoint heap samples were about
+8.48–8.49 MiB versus 7.83–7.96 MiB; these are not universal memory budgets.
+Admission is any owner-backed view without readContext, broader than the selected
+Protocol route that was native-tested. Other routes remain unqualified.
+
+The follow-up renders a parent-derived readPending label and busy state outside
+the Activity boundary on the first visible commit. The child's busy state also
+includes pending activation/owner validation, rather than waiting for a passive
+loading effect. An error is fenced with Reload rather than labeled as an ongoing
+refresh. Existing disabled controls and scientific validation are unchanged.
+
+Reload now replays one saved navigation descriptor (anchor or deliberately chosen
+path, offset and scroll positions), bound to the exact owner/scope/activation.
+It requests fresh authority without the failed revision. Hidden/scope cleanup
+clears the descriptor; stale callbacks cannot replay it. Frozen expectedRevision
+continues to delegate to onRefreshPreview. No page payload or mutation receipt is
+stored in this descriptor. Mounted tests first reproduced missing anchor and
+missing first-commit label, then passed, including deliberate branch navigation,
+stale-filter retry refusal and frozen refresh delegation.
+
+Proposed cold-cost control, not yet implemented: a b60 branch with only matching
+React 19.3.0 packages and required test-harness compatibility, preserving b60's
+unmounting product code. React 18 unmount versus React 19 unmount estimates the
+framework contribution; React 19 unmount versus this pilot still includes the
+layout/gating/retention treatment and must not be called an Activity-only effect.

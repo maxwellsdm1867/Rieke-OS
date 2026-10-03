@@ -133,9 +133,9 @@ import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 test('mounted current lease expiry clears loading and explicit retry obtains a fresh witness',async()=>{
- let clock=0,calls=0,witnesses=0;const hold=deferred(),cache=createTreeBranchReadCache({now:()=>clock});cache.activate(scope);
+ let clock=0,calls=0,witnesses=0;const retryBodies=[];const hold=deferred(),cache=createTreeBranchReadCache({now:()=>clock});cache.activate(scope);
  const key='__treeLeaseFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'fixture',attest:(request,response)=>{witnesses++;return cache.attest(scope,request,response);}},
-  api:async(_,{body:request})=>{calls++;return calls===1?leaf:calls===2?hold.promise:request.path.length===2?leaf:ancestor(request);}};
+  api:async(_,{body:request})=>{retryBodies.push(request);calls++;return calls===1?leaf:calls===2?hold.promise:request.anchor_uuid||request.path.length===2?leaf:ancestor(request);}};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
    if(id==='../api.js')return '\0lease-api';if(id==='../treeBranchReads.jsx')return '\0lease-owner';
@@ -154,8 +154,27 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
   assert.equal(view.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy'],false);
   assert.match(view.root.findByProps({role:'alert'}).children[0],/expired/);
   await act(async()=>{view.root.findByProps({role:'alert'}).findByType('button').props.onClick();});
-  assert.equal(witnesses,2);assert.equal(view.root.findAllByProps({role:'alert'}).length,0);
+  assert.equal(witnesses,2);assert.equal(retryBodies[3].anchor_uuid,'epoch-A','retry preserves the failed anchored intent');assert.equal(retryBodies[3].revision,undefined,'retry requests fresh authority');assert.equal(view.root.findAllByProps({role:'alert'}).length,0);
   assert.equal(view.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy'],false);
+  assert.equal(view.root.findByProps({'data-epoch-uuid':'epoch-A'}).props.disabled,false);
+  const successfulApi=globalThis[key].api;let failedBody;
+  globalThis[key].api=async(_,{body:request})=>{failedBody=request;retryBodies.push(request);throw Error('fixture 503');};
+  await act(async()=>view.root.findAll(node=>node.type==='button'&&node.props.className?.includes('tp-branch'))[0].props.onClick());
+  assert.equal(failedBody.anchor_uuid,undefined,'deliberate branch navigation is not selected-epoch navigation');
+  const deliberatePath=failedBody.path;globalThis[key].api=successfulApi;const retryStart=retryBodies.length;
+  await act(async()=>view.root.findByProps({role:'alert'}).findByType('button').props.onClick());
+  assert.deepEqual(retryBodies[retryStart].path,deliberatePath);assert.equal(retryBodies[retryStart].anchor_uuid,undefined);assert.equal(retryBodies[retryStart].revision,undefined);
+  globalThis[key].api=async(_,{body:request})=>{retryBodies.push(request);throw Error('fixture 503');};
+  await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',selected:'epoch-B'})));
+  const obsoleteRetry=view.root.findByProps({role:'alert'}).findByType('button').props.onClick;
+  await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',filters:{cell_type:'changed'},selected:'epoch-C'})));
+  const beforeObsolete=retryBodies.length;await act(async()=>obsoleteRetry());assert.equal(retryBodies.length,beforeObsolete,'old scope retry cannot replay into a new filter');
+  let frozenRefreshes=0;
+  await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',expectedRevision:'frozen',readContext:{root:'/frozen'},onRefreshPreview:()=>frozenRefreshes++})));
+  const beforeFrozen=retryBodies.length;await act(async()=>view.root.findByProps({role:'alert'}).findByType('button').props.onClick());assert.equal(frozenRefreshes,1);assert.equal(retryBodies.length,beforeFrozen,'frozen refresh stays delegated');
+  const obsoleteFrozen=view.root.findByProps({role:'alert'}).findByType('button').props.onClick;
+  await act(async()=>view.update(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',filters:{cell_type:'live'},onRefreshPreview:()=>frozenRefreshes++})));
+  const beforeOldFrozen=retryBodies.length;await act(async()=>obsoleteFrozen());assert.equal(frozenRefreshes,1);assert.equal(retryBodies.length,beforeOldFrozen,'old frozen refresh cannot target a replacement scope');
  }finally{await act(async()=>view?.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;}
 });
 
@@ -176,13 +195,14 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   const {default:Host}=await server.ssrLoadModule('/src/components/RetainedTreePresentation.jsx');
   const {default:Layout}=await server.ssrLoadModule('/src/components/EpochBrowserLayout.jsx');
   const tree={protocolId:protocol,splits:'date,cell',revision:1,selected:'epoch-A',onSelectEpoch:()=>selected++,onStatus:value=>statuses.push(value)};
-  const render=async(active,changes={})=>domAct(async()=>{view.render(React.createElement(Layout,{retainDetail:true,editing:active,sizes:{},treeOpen:false,metadataOpen:false,detail:React.createElement(Host,{active,tree:{...tree,...changes}})}));await new Promise(resolve=>setImmediate(resolve));});
+  const committedLabels=[];function LabelProbe({active}){React.useLayoutEffect(()=>{if(active)committedLabels.push(container.querySelector('[data-retained-tree-status]')?.textContent||'');});return null;}
+  const render=async(active,changes={})=>domAct(async()=>{view.render(React.createElement(Layout,{retainDetail:true,editing:active,sizes:{},treeOpen:false,metadataOpen:false,detail:React.createElement(React.Fragment,null,React.createElement(Host,{active,tree:{...tree,...changes}}),React.createElement(LabelProbe,{active}))}));await new Promise(resolve=>setImmediate(resolve));});
   await render(true);for(let retry=0;retry<30&&!container.querySelector('[data-epoch-uuid="epoch-A"]');retry++)await domAct(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
   const row=container.querySelector('[data-epoch-uuid="epoch-A"]'),count=calls;assert.ok(row,container.innerHTML);
   await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(calls,count);
   assert.equal(container.querySelector('.tree-view-workspace').style.display,'none','Activity hides retained DOM');
   await domAct(async()=>row.click());assert.equal(selected,0);
-  hold=deferred();await render(true);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(row.disabled,true);assert.equal(calls,count+1);
+  hold=deferred();await render(true,{readPending:true});assert.match(committedLabels.at(-1),/Refreshing/,'first visible commit must label retained rows before passive effects');assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),row);assert.equal(row.disabled,true);assert.equal(calls,count+1);
   assert.match(container.textContent,/previous view/);await domAct(async()=>row.click());assert.equal(selected,0);
   const pendingSignal=lastSignal;await render(false);assert.equal(pendingSignal.aborted,true);const statusCount=statuses.length;
   await domAct(async()=>{hold.resolve(leaf);hold=null;await new Promise(resolve=>setImmediate(resolve));});assert.equal(statuses.length,statusCount,'hidden late success cannot publish');
