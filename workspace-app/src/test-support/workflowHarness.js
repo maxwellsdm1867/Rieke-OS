@@ -16,7 +16,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
   const old={fetch:globalThis.fetch,window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage};
   const memory=new Map();memory.set('rieke.undo.enabled',String(enableUndo));
   globalThis.localStorage={getItem:name=>memory.get(name)??null,setItem:(name,value)=>memory.set(name,value)};
-  globalThis.window={innerWidth:1400,location:{href:'http://localhost/'}};
+  globalThis.window={innerWidth:1400,location:{href:'http://localhost/'},addEventListener(){},removeEventListener(){}};
   globalThis.document={title:'',getElementById:()=>null,addEventListener:()=>{},removeEventListener:()=>{}};
   const targetReceipt=(kind,identity)=>({target_kind:kind,target_uuid:identity,
     tags:[...((kind==='cell'?fixture.cellAnnotations:fixture.annotations).get(identity)||[])].map(tag=>({tag,profile_uuid:'author',author_name:'Scientist',target_kind:kind,target_uuid:identity,revision:fixture.annotationVersions.get(`${kind}:${identity}`)||0})),
@@ -107,7 +107,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
         if(id==='./useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./useProtocolTreeLayout.js')return '\0workflow-layout';
         if(id==='./useImportQueue.js')return '\0workflow-import-queue';
-        if(id.endsWith('.jsx')&&!['./components/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
+        if(id.endsWith('.jsx')&&!['./navigationReadCache.jsx','./components/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
       if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','./IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
