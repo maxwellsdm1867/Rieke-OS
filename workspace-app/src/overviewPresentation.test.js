@@ -58,6 +58,11 @@ test('main infographic retains exact type counts and unavailable pending scope i
   assert.equal(h.root.findAllByProps({className:'cell-type-group'}).length,3);
   const known=h.root.findByProps({className:'pi-pending-review'});assert(known.findAllByType('strong').some(node=>node.children.join('')==='7'));
   await act(()=>known.findByType('button').props.onClick());assert.deepEqual(workbench,['open']);
+  await h.render(h.ProtocolInfographic,{data:main,pendingReviewCells:2,onWorkbench:()=>workbench.push('open')});
+  assert.equal(h.root.findAllByProps({className:'pi-pending-review'}).length,1,'partial merge keeps the remaining pending entry');
+  await h.render(h.ProtocolInfographic,{data:main,pendingReviewCells:0,onWorkbench:()=>workbench.push('open')});
+  assert.equal(h.root.findAllByProps({className:'pi-pending-review'}).length,0,'confirmed zero pending cells removes the review entry');
+  assert.equal(h.root.findAllByProps({className:'cell-type-group'}).length,3,'Main cell groups remain visible');
 });
 
 test('type disclosure starts collapsed, retains details and routes exact main cell UUIDs',async t=>{

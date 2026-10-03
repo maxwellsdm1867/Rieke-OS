@@ -20,3 +20,8 @@
 .tree-preview-identity span{color:var(--ink-muted);font-size:11px}
 .tree-design-content{container-type:inline-size}
 @container(max-width:650px){.tree-recording-body{display:flex;flex-direction:column;overflow:auto}.tree-recording-body>.tree-preview-detail,.tree-preview-tags{overflow:visible;flex-shrink:0}.tree-preview-tags{border-left:0;border-top:1px solid var(--border)}}
+
+.tree-cell-selection{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:11px}
+.tree-cell-selection>button{margin-left:auto;padding:3px 5px;font-size:10px}
+.tree-cell-selection>div{display:flex;flex-wrap:wrap;gap:4px;width:100%}
+.tree-cell-selection>div>span{padding:3px 5px;border:1px solid var(--border);border-radius:4px;color:var(--ink-secondary)}

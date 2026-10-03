@@ -6,3 +6,7 @@
 .column-tree .tp-loading-notice{position:absolute;right:12px;top:10px;pointer-events:none;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:11px;color:var(--ink-secondary)}
 
 .column-tree[aria-busy=true] .tp-branch:disabled,.column-tree[aria-busy=true] .tp-epoch:disabled,.column-tree[aria-busy=true] .tp-path button:disabled{opacity:1}
+
+.column-tree .tp-cell-selectable{padding-left:24px}
+.column-tree .tp-cell-select{position:absolute;left:5px;top:14px;width:14px;height:14px;margin:0;accent-color:var(--accent)}
+.column-tree .tp-cell-select:focus-visible{outline:2px solid var(--accent);outline-offset:3px}

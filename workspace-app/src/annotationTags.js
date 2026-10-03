@@ -20,10 +20,11 @@ export function annotationPredicate(scope,tag){
   if(!['cell','epoch','effective'].includes(scope)||typeof tag!=='string')throw new Error('Unknown annotation filter.');
   return {all:[{field:`annotations/${scope}/tags`,operator:'contains',value:tag}]};
 }
-export function bulkAnnotationChange({targetUuids,profileUuid,read,tag}){
-  const ids=[...new Set(targetUuids)];if(!ids.length||ids.length>1000||!profileUuid||!tag.trim())throw new Error('Choose 1–1,000 epochs and a local profile.');
-  const expected={};for(const uuid of ids){const row=read?.targets?.[uuid];if(!row||row.target_kind!=='epoch'||row.target_uuid!==uuid)throw new Error('Selected epoch annotations could not be verified.');const revision=row.revisions?.[profileUuid]??0;if(!Number.isSafeInteger(revision)||revision<0)throw new Error('Reload selected annotations before editing.');expected[uuid]=revision;}
-  return {target_kind:'epoch',target_uuids:ids,profile_uuid:profileUuid,tags_add:[tag.trim()],tags_remove:[],expected_revisions:expected};
+export function bulkAnnotationChange({targetKind='epoch',targetUuids,profileUuid,read,tag}){
+  if(!['cell','epoch'].includes(targetKind))throw new Error('Unknown annotation target kind.');
+  const ids=[...new Set(targetUuids)];if(!ids.length||ids.length>1000||!profileUuid||!tag.trim())throw new Error(`Choose 1–1,000 ${targetKind}s and a local profile.`);
+  const expected={};for(const uuid of ids){const row=read?.targets?.[uuid];if(!row||row.target_kind!==targetKind||row.target_uuid!==uuid)throw new Error(`Selected ${targetKind} annotations could not be verified.`);const revision=row.revisions?.[profileUuid]??0;if(!Number.isSafeInteger(revision)||revision<0)throw new Error('Reload selected annotations before editing.');expected[uuid]=revision;}
+  return {target_kind:targetKind,target_uuids:ids,profile_uuid:profileUuid,tags_add:[tag.trim()],tags_remove:[],expected_revisions:expected};
 }
 
 // Await the save receipt and retain the epoch if saving failed or focus changed.

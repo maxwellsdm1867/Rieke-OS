@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../api.js';
-import {Activity,Download,GitMerge,History,Layers,RefreshCw,X} from 'lucide-react';
+import {Activity,CircleDot,Download,GitMerge,History,Layers,RefreshCw,X} from 'lucide-react';
 import NeuronIcon from './NeuronIcon.jsx';
 import {clearTagFilters} from '../protocolViewFilter.js';
 import IncomingCellTypes from './IncomingCellTypes.jsx';
@@ -124,7 +124,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const noReviewedSelection=contextFresh&&context.draft.selection_mode==='selected'&&context.draft.decisions_truncated===false&&Array.isArray(context.draft.decisions)&&!context.draft.decisions.some(value=>value.selected&&value.reviewed&&!value.excluded);
   return <section className="incoming-review">
     <div className="incoming-action-bar" aria-label="Incoming review actions">
-      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className={`incoming-bar-scope ${epochs>0?'is-pending':''}`} title={epochs>0&&notReviewed?'Your current draft has no reviewed incoming epochs':'Unmerged incoming recordings; review and merge remain separate'}>{incomingStatus}</span>
+      <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className={`incoming-bar-scope ${epochs>0?'is-pending':''}`} title={epochs>0&&notReviewed?'Your current draft has no reviewed incoming epochs':'Unmerged incoming recordings; review and merge remain separate'}>{epochs>0&&notReviewed&&<CircleDot size={11} aria-hidden="true"/>}{incomingStatus}</span>
         <span><NeuronIcon size={18}/><strong>{incomingCount(cells)}</strong><small>cells</small></span>
         <span><Activity size={18} aria-hidden="true"/><strong>{incomingCount(epochs)}</strong><small>epochs</small></span>
         <IncomingCellTypes cells={contextFresh&&!busy&&!externalBusy?context.protocol?.cells:null} count={contextFresh?context.protocol?.counts?.cells:null} scope="Frozen proposal"/>
