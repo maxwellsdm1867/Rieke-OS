@@ -166,8 +166,10 @@ satisfy release requirements. Native tag latency, ingestion throughput and full
 navigation qualification remain unsupported. Retain private ledgers privately;
 explicitly select sanitized reports for any distributable attachment.
 
-Packaged test launchers now select the configured `Disco.app` output beneath
+Packaged test launchers select the configured output beneath
 `desktop/dist/mac-arm64`, verify the bundle/executable path, and clone it into the
-owned test HOME. They do not search installed applications or fall back to stale
-`Rieke OS.app` builds. This path check is not packaged-content qualification;
+owned test HOME. Pinned electron-builder gives `mac.executableName` precedence
+over `executableName` and `productName`: the current configuration produces
+`Rieke OS.app`, with the displayed product name Disco. The launcher does not search
+installed applications or fall back to a differently named bundle. This path check is not packaged-content qualification;
 `verifyPackagedSource` and an explicitly coordinated package smoke remain required.
