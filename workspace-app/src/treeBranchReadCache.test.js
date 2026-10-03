@@ -225,8 +225,17 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   await render(false,{selected:'epoch-B'});await render(true,{selected:'epoch-B',filters:{cell_type:'new'}});await flushFrames();
   assert.equal(container.querySelectorAll('.tp-column-content')[2].scrollTop,0,'changed scope must not inherit prior offsets');
 
-  await render(false);globalThis[key].owner={...globalThis[key].owner,identity:'owner-B'};await render(false);assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
-  await render(true);await render(false,{filters:{cell_type:'other'}});assert.equal(container.querySelector('[data-epoch-uuid="epoch-A"]'),null);
+  const currentView={selected:'epoch-B',filters:{cell_type:'new'}};
+  const retainedRow=container.querySelector('[data-epoch-uuid="epoch-B"]');assert.ok(retainedRow);
+  await render(false,currentView);
+  assert.equal(container.querySelector('[data-epoch-uuid="epoch-B"]'),retainedRow,'same view must retain its row immediately before owner eviction');
+  globalThis[key].owner={...globalThis[key].owner,identity:'owner-B'};
+  await render(false,currentView);
+  assert.equal(container.querySelector('[data-epoch-uuid="epoch-B"]'),null,'changing only owner evicts the retained row');
+  await render(true,currentView);
+  assert.ok(container.querySelector('[data-epoch-uuid="epoch-B"]'),'new owner mounts the current view before the independent filter eviction');
+  await render(false,{...currentView,filters:{cell_type:'other'}});
+  assert.equal(container.querySelector('[data-epoch-uuid="epoch-B"]'),null);
  }finally{await domAct(async()=>view.unmount());await server.close();delete globalThis[key];globalThis.requestAnimationFrame=oldRaf;globalThis.cancelAnimationFrame=oldCancel;dom.window.close();globalThis.window=priorWindow;globalThis.document=priorDocument;}
 
 });
