@@ -94,3 +94,21 @@ test('cell ownership, unmount cancellation, and duplicate-label UUID qualifiers 
   pending.resolve(pageAt());await late.work;assert.deepEqual(published,[]);
  }finally{await h.close();}
 });
+
+
+test('return restores date/cell expansion and page only after fresh matching membership',async()=>{
+ const h=await createInspectionHarness();let saved;
+ const props={...base,navigationScope:'project-A/protocol-A/filter-A',membershipReady:true,onNavigationChange:value=>{saved=value;},setTargets(){}};
+ try{
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await h.act(()=>h.buttons.find(button=>button['aria-label']?.startsWith('Next epochs')).onClick());
+  await h.unmount();
+  await h.render({...props,cells:[],membershipReady:false,initialNavigation:saved});
+  await h.render({...props,initialNavigation:saved});
+  assert.equal(h.details[0].open,true);assert.equal(h.details[1].open,true);
+  assert.ok(h.buttons.some(button=>button['aria-label']?.endsWith('epoch 61')));
+  await h.unmount();
+  await h.render({...props,navigationScope:'project-A/protocol-A/filter-B',initialNavigation:saved});
+  assert.equal(h.details[0].open,false);assert.equal(h.details[1].open,false);
+ }finally{await h.close();}
+});
