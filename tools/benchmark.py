@@ -148,6 +148,10 @@ def environment():
 
 def execute(command, log, timeout=180):
     """Serial owned subprocess; timeout kills only its new process group."""
+    # This override can import untracked JavaScript while installed dependency
+    # metadata still reports jsdom. Never silently qualify a different harness.
+    if 'RIEKE_TEST_DOM_MODULE' in os.environ:
+        raise ValueError('RIEKE_TEST_DOM_MODULE must be unset for benchmark runs; external DOM modules are not qualified')
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', PYTHONPATH=str(ROOT / 'python') + os.pathsep + str(ROOT / 'python/tests'))
     started = time.perf_counter()
     with log.open('w') as stream:

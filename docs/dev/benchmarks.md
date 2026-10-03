@@ -137,3 +137,5 @@ organization is a deferred follow-up; this work does not reorganize user project
 Schema-changing work must bump the relevant FORMAT/SCHEMA_VERSION and fixture/suite semantics as appropriate. Implementation source hashes are provenance, not automatically schema incompatibility; ordinary query optimizations remain comparable when formats, fixtures, harness and environment match.
 
 Legacy source-candidate diagnostics upload with `if: always()` before the complete release gate and signing. An expected unsupported-native failure therefore still preserves the run JSON, report and logs.
+
+`RIEKE_TEST_DOM_MODULE` must be **unset** for benchmark runs (even an empty value is rejected). The runner refuses to launch any worker with that override and retains a failed diagnostic receipt. A dynamically imported external DOM module is not covered by the committed suite or installed-jsdom version and cannot silently qualify.

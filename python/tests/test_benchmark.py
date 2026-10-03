@@ -2,6 +2,7 @@
 import copy
 import importlib.util
 import json
+import os
 from pathlib import Path
 import tempfile
 import shutil
@@ -150,6 +151,28 @@ class BenchmarkTests(unittest.TestCase):
             path=Path(tmp);(path/'evidence.json').write_text('{}')
             with self.assertRaises(FileNotFoundError):desktop_release.promote(path,'v0.1.6',path/'evidence.json')
             remote.assert_not_called()
+
+
+class BenchmarkEnvironmentTests(unittest.TestCase):
+    def test_dom_override_is_rejected_before_worker_launch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            for override in ('/untracked/external-dom.mjs', 'jsdom', ''):
+                with self.subTest(override=override), patch.dict(os.environ, {'RIEKE_TEST_DOM_MODULE':override}), patch.object(bench.subprocess, 'Popen') as launch:
+                    with self.assertRaisesRegex(ValueError, 'RIEKE_TEST_DOM_MODULE must be unset'):
+                        bench.execute(['node', '--test'], Path(temporary)/'worker.log')
+                    launch.assert_not_called()
+
+    def test_dom_override_produces_failed_receipt_not_a_qualified_run(self):
+        identity=bench.source()
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(os.environ, {'RIEKE_TEST_DOM_MODULE':'/untracked/external-dom.mjs'}), patch.object(bench, 'source', return_value=identity), patch.object(bench, 'environment', return_value={}), patch.object(bench, 'suite_identity', return_value={'sha256':'a'*64,'files':{}}), patch.object(bench.subprocess, 'Popen') as launch:
+            output=Path(temporary)/'run'
+            receipt=bench.run(output)
+            launch.assert_not_called()
+            self.assertIn('RIEKE_TEST_DOM_MODULE must be unset', receipt['error'])
+            self.assertIn('Runner reported failure', receipt['validation_errors'])
+            self.assertEqual(receipt['cases'], [])
+            self.assertFalse(receipt['fixture_cleaned'])
+            self.assertTrue((output/'benchmark.json').is_file())
 
 
 if __name__=='__main__':unittest.main()
