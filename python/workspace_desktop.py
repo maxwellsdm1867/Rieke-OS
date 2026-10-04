@@ -778,12 +778,15 @@ def main(argv=None):
     if manifest_path != (runtime / 'runtime-manifest.json').resolve():
         raise ValueError('Desktop manifest must be the owned runtime manifest')
     from workspace_bootstrap import validate_desktop_runtime, prepare_desktop_parser_config
-    manifest = validate_desktop_runtime(runtime, verify_hashes=True)
+    # Full artifact verification belongs to packaging, staged installation/update
+    # and explicit Verify. Normal launches check compatibility and required paths;
+    # project ownership, recovery and scientific source validation remain separate.
+    manifest = validate_desktop_runtime(runtime)
     prepare_desktop_parser_config(user_state)
-    # Runtime validation checks the interpreter, resource hashes and installed
-    # parser. Probe all native executables before exposing the chooser.
+    # The chooser does not need the scientific parser or a database. Project
+    # children must prove those capabilities before opening data or advertising ready.
     from workspace_mysql_runtime import mysql_runtime
-    lazy_root = os.environ.get('DISCO_LAZY_ROOT_EXPERIMENT') == '1' and args.project_dir is None
+    lazy_root = args.project_dir is None
     if not lazy_root:
         initialize_before_project_database(args, manifest, mysql_runtime)
     from workspace_bootstrap import runtime_paths

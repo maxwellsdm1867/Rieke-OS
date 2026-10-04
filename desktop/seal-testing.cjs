@@ -7,9 +7,14 @@ const {promisify}=require('node:util');
 const {distributionPolicy}=require('./distribution.cjs');
 module.exports=async context=>{
   const distribution=distributionPolicy(require('./distribution.json'));
-  if(distribution.channel!=='unsigned-testing'||context.electronPlatformName!=='darwin')return;
+  if(context.electronPlatformName!=='darwin')return;
   const app=path.join(context.appOutDir,`${context.packager.appInfo.productFilename}.app`);
   const runtime=path.join(app,'Contents/Resources/runtime');
+  // Verify the copied artifact before signing/staging; do not regenerate its
+  // inventory here to silently accept copy corruption or a mixed runtime.
+  const manifest=await require('./bootstrap.cjs').readBundleManifest(app);
+  await require('./updater-validation.cjs').verifyResources(runtime,manifest.resources);
+  if(distribution.channel!=='unsigned-testing')return;
   const {signAsync}=require('@electron/osx-sign');
   await signAsync({app,identity:'-',identityValidation:false,platform:'darwin',type:'development',
     preAutoEntitlements:false,preEmbedProvisioningProfile:false,gatekeeperAssess:false,

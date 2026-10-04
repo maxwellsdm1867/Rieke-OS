@@ -163,8 +163,18 @@ def prepare_desktop_parser_config(user_state):
 
 @diagnostic_measured('workspace_bootstrap.validate_desktop_runtime')
 def validate_desktop_runtime(runtime, verify_hashes=False):
-    """Validate resource identity; signed app authority is enforced by Electron/macOS."""
+    """Check launch compatibility; optionally audit bytes against the local inventory.
+
+    The inventory is not publisher authentication. Distribution signing and
+    staged install validation are separate; ordinary launch does not detect all
+    post-install corruption. Scientific source and live ownership checks are not
+    replaced by either form of application verification.
+    """
     runtime = Path(runtime).resolve(strict=True)
+    for name in ('runtime-manifest.json', 'application/rieke-release.json', 'application/python/workspace-source.json'):
+        path = runtime / name
+        if not path.is_file() or not path.resolve(strict=True).is_relative_to(runtime):
+            raise ValueError(f'Required packaged declaration is absent or outside desktop resources: {name}')
     manifest = json.loads((runtime / 'runtime-manifest.json').read_text())
     if (manifest.get('format') != 'rieke-desktop-runtime' or manifest.get('version') != 1
             or manifest.get('platform') != sys.platform or manifest.get('architecture') != os.uname().machine):
@@ -182,6 +192,8 @@ def validate_desktop_runtime(runtime, verify_hashes=False):
     for name in ('python/bin/python3.11', 'mysql/bin/mysqld', 'application/python/workspace_desktop.py', 'frontend/index.html'):
         if not (runtime / name).is_file() or name not in resources:
             raise ValueError(f'Required packaged resource is absent: {name}')
+        if not (runtime / name).resolve(strict=True).is_relative_to(runtime):
+            raise ValueError(f'Required packaged resource escapes desktop resources: {name}')
     if verify_hashes:
         actual_names = {path.relative_to(runtime).as_posix() for path in runtime.rglob('*')
                         if (path.is_symlink() or path.is_file())

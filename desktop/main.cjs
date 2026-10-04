@@ -47,7 +47,24 @@ if (bootstrap) {
 }
 let supervisor, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false;
-let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Verifying the complete app and its private runtime.'};
+let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Opening your workspace.'};
+let applicationVerification;
+async function verifyApplicationFiles() {
+  if (applicationVerification) return applicationVerification;
+  applicationVerification = (async () => {
+    try {
+      await require('./verify-application.cjs').verifyApplication({bundle:sourceApp, signed:distribution.channel==='signed'});
+      await dialog.showMessageBox({type:'info', title:'Application verification complete',
+        message:'Application files match the installed inventory and app seal.',
+        detail:distribution.channel==='signed' ? 'Developer ID signature verification also passed. This does not verify project data.' : 'This unsigned testing build does not establish publisher identity. This does not verify project data.'});
+    } catch {
+      await dialog.showMessageBox({type:'error', title:'Application verification failed',
+        message:'The complete application could not be verified.',
+        detail:'Quit Disco and reinstall a complete copy from the trusted release source. Keep your project folders. Verification has not changed application files or project data, and does not authorize continued scientific work.'});
+    }
+  })().finally(() => {applicationVerification=null;});
+  return applicationVerification;
+}
 
 const draftBarrier = new DraftBarrier();
 function previewStatus(value) {
@@ -297,11 +314,13 @@ else {
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});
     startupSession=new StartupSession(app.getPath('userData'),app.getVersion()+':view-v1');
     await startupSession.load();
-    if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Verifying the application and project before loading scientific data.'};
+    if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
-      {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
+      {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()},
+      {label:'Verify Application Files…', enabled:app.isPackaged, click:()=>void verifyApplicationFiles()},
+      {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 
     {label: 'Window', submenu: [{label:'Resume Last Workspace at Startup',type:'checkbox',checked:startupSession.value?.mode!=='chooser',click:item=>{(item.checked?startupSession.resume():startupSession.choose()).catch(()=>broadcast({...status(),message:'Startup preference could not be saved.'}));}},{role: 'minimize'}, {role: 'zoom'}]}]));
