@@ -444,14 +444,18 @@ class TreePages:
                 bucket = buckets.setdefault((present, canonical), {'row':row, 'value':value,
                     'missing':not present, 'rows':[]})
                 bucket['rows'].append(row)
-            def sorting(bucket):
+            def sorting(key):
+                bucket = buckets[key]
                 if field == 'block' and not bucket['missing']:
                     row = bucket['row']; stamp = row.get('block_start_time')
                     # Same source chronology as the full-tree renderer.
                     from workspace_service import _date
                     return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(bucket['value']))
-                return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value']))
-            result = sorted(buckets.values(), key=sorting)
+                return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value'],canonical=key[1]))
+            # Reuse grouping keys; do not encode every distinct value again.
+            result = sorted(buckets, key=sorting)
+            for index, key in enumerate(result):
+                result[index] = buckets[key]
             if isinstance(values, _NavigationValues):
                 values.remember_groups(cache_key, current, result)
             return result

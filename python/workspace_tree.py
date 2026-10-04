@@ -99,7 +99,11 @@ def joint_value(current, components):
             for field in components]
 
 
-def field_value_order(field, value):
+def field_value_order(field, value, *, canonical=None):
+    """canonical, if supplied, must be the exact already-validated value_key(value).
+
+    Joint component ordering deliberately retains its original recursive keys.
+    """
     if field.startswith('joint/'):
         def component_order(current):
             if isinstance(current,list):
@@ -108,7 +112,7 @@ def field_value_order(field, value):
                 return (5,value_key(current))
             return value_order(current)
         return tuple((0, component_order(part['value'])) if part['present'] else (1,) for part in value)
-    return value_order(value)
+    return value_order(value, canonical=canonical)
 
 
 def component_display(field, value, missing=False):
@@ -199,16 +203,20 @@ def value_label(value):
     return value_key(value)
 
 
-def value_order(value):
+def value_order(value, *, canonical=None):
+    """Order a value; canonical must be its exact already-validated value_key string.
+
+    This internal reuse option does not validate an arbitrary caller-supplied key.
+    """
     if value is None:
         return (4, '')
     if type(value) in (int, float):
-        return (0, value, value_key(value))
+        return (0, value, value_key(value) if canonical is None else canonical)
     if isinstance(value, bool):
         return (1, int(value))
     if isinstance(value, str):
         return (2, value)
-    return (3, value_key(value))
+    return (3, value_key(value) if canonical is None else canonical)
 
 
 def _leaves(value, path, depth=0):
