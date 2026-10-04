@@ -1,6 +1,9 @@
 # Stable behavioral ports for evolving Disco implementations
 
-**Status: proposed architecture, not an implementation or approved refactor.**
+**Status: proposed architecture with two bounded 0.1.8 slices implemented.**
+See the [adoption record](0.1.8-first-port-slices.md) for their real interfaces and
+verification. Complete ports below remain proposals; adoption is not blanket
+refactor authorization.
 Audited application baseline: `fa7ed3e913903dec260e6cb1427120139996ffc1`, verified
 against GitHub `main` on 2026-10-04. This document changes no runtime contract.
 Port IDs below are documentation labels, not published protocol versions or
@@ -191,8 +194,9 @@ unified snapshot interface are not fully implemented.
 
 ### P03 — Tree read session
 
-**Maturity:** strongest first candidate; established semantics with dispersed
-routing, lifetime and optimization policy.
+**Maturity:** a [selection-reader slice](0.1.8-first-port-slices.md#tree-selection-reader)
+is implemented. The complete session and backend provider remain proposed;
+routing, lifetime and optimization policy still span other tree modules.
 
 - **Responsibility:** one frontend session and one backend reader hide route/page
   mechanics, scoped tree membership and safe ancestor reuse.
@@ -242,8 +246,9 @@ still requires changing views, the extraction has not yet established the port.
 
 ### P04 — Annotation and curation commands
 
-**Maturity:** established ownership/revision semantics; common outcome vocabulary
-and policy registration are proposed.
+**Maturity:** the existing [HTTP recovery-completion policy](0.1.8-first-port-slices.md#mutation-recovery-completion)
+is extracted. Common command outcomes and a general operation registry remain
+proposed; existing ownership/revision semantics are preserved.
 
 - **Responsibility:** apply scientific decisions to exact identities, preserve
   audit/undo and make persistence stages explicit.
@@ -504,7 +509,8 @@ consumers to learn that mechanism.
 | P07 renderer lifecycle facade | **Worth exploring.** Hides browser/desktop selection, subscriptions and normalized outcomes; existing native coordinators remain behind it. | Small/medium if limited to renderer access; widening IPC or merging all lifecycle modules is not justified. |
 | Universal database/plugin framework | **Speculative; defer.** Generic CRUD either leaks transactions/generations back out or weakens guarantees. | No demonstrated payoff for the complexity. |
 
-First discussion and implementation increments, once separately authorized:
+Original incremental plan (the selection-reader portion of step 2 is now adopted;
+see the [bounded adoption record](0.1.8-first-port-slices.md)):
 
 1. **Document and lock one tree contract.** Reuse existing semantics and tests;
    define shared provider/consumer examples, exact freshness and fallback behavior.

@@ -9,8 +9,10 @@ This entry point describes implemented boundaries at audited application commit
 `fa7ed3e913903dec260e6cb1427120139996ffc1` (2026-10-04). The separate
 [stable behavioral ports proposal](docs/architecture/stable-ports.md) defines
 candidate interfaces, ownership, conformance evidence and an incremental adoption
-plan. **The proposed ports are design guidance, not newly implemented APIs.**
-No application behavior changes with this documentation.
+plan. **The complete proposed ports remain design guidance.** Two bounded internal
+[0.1.8 slices](docs/architecture/0.1.8-first-port-slices.md) now implement tree
+selection reads and mutation recovery completion; that record identifies the
+actual interfaces, preserved behavior, exact correctness evidence and limits.
 
 ## Start here
 
@@ -65,10 +67,10 @@ have different authority and lifecycle from disposable SQLite query sidecars.
 | Canonical catalog | RetinAnalysis acquisition schema, [workspace tables](python/recording_workspace.py), [curation](python/workspace_curation.py), [annotations](python/workspace_annotations.py), [explorer/bindings](python/workspace_explorer.py) | MySQL stores project registrations and authored state; original H5 retains samples. Sealed imported metadata is checked against registered manifests. |
 | Metadata read model | [WorkspaceService](python/workspace_service.py), [disk index](python/workspace_disk_index.py), [metadata objects](python/workspace_metadata_objects.py) | Source identity and eligibility, exact rows/details, immutable generations and bounded caches. |
 | Typed filtering / aggregates | [typed index](python/workspace_typed_index.py), [typed query](python/workspace_typed_query.py), [lifecycle](python/workspace_typed_lifecycle.py), [explore queries](python/workspace_explore_queries.py) | Derived SQLite accelerates supported reads; service adapters retain source, annotation and frozen-binding authority. |
-| Tree navigation | [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
+| Tree navigation | [selection reader](workspace-app/src/treeSelectionReader.js), [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
 | Scientific decisions | [shared annotations](python/workspace_annotations.py), [curation](python/workspace_curation.py), [workbench](python/workspace_workbench.py), [state generation](python/workspace_state_generation.py) | Author/scope/identity and expected revisions; transactionally related audit and generation. |
 | Exports | [recipes](python/workspace_recipes.py), [SQLite writer](python/workspace_sqlite.py), [standalone reader](python/query_workspace_export.py), [MATLAB writer](python/workspace_matlab.py) | Exact frozen membership, metadata, source references, decisions and provenance. |
-| Recovery | [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |
+| Recovery | [HTTP completion policy](python/workspace_mutation_outcomes.py), [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |
 | Display and lifecycle | [API client/hooks](workspace-app/src/api.js), [renderer lifecycle](workspace-app/src/desktopLifecycle.js), [preload](desktop/preload.cjs), [supervisor](desktop/supervisor.cjs), [Python desktop](python/workspace_desktop.py) | Intent/publication fences, project/actor isolation, narrow IPC, process ownership, readiness, draft and close barriers. |
 
 ### The actual H5 and JSON boundary
