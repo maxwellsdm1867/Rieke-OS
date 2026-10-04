@@ -344,6 +344,22 @@ class DesktopBoundary:
         return ClosingIterator(response, finished)
 
 
+def validate_child_startup_receipt(line, record):
+    if not line.startswith(('RIEKE_DESKTOP_BOUND=', 'RIEKE_DESKTOP_STARTUP_FAILED=')) or len(line) > 65536:
+        raise ValueError('Malformed owned child bind receipt')
+    value = json.loads(line.split('=', 1)[1])
+    if not isinstance(value, dict):
+        raise ValueError('Malformed owned child receipt object')
+    required = ('pid', 'session_id', 'port', 'project_uuid', 'project_path', 'application_version', 'source_commit')
+    if any(value.get(name) != record.get(name) for name in required):
+        raise ValueError('Owned child bind receipt identity mismatch')
+    if line.startswith('RIEKE_DESKTOP_STARTUP_FAILED='):
+        if value.get('stage') != 'before_project_database' or value.get('ready') is not False:
+            raise ValueError('Unknown child startup failure stage')
+        return {'valid': False, 'pre_database_failed': True}
+    return {'valid': True}
+
+
 class DesktopServices:
     """Only supervise exact bundled children; never signal a reused PID."""
     def __init__(self, user_state, resources, manifest, session_id, capability, identity):
@@ -570,14 +586,7 @@ class DesktopServices:
                 with os.fdopen(read_fd, 'r') as pipe:
                     line = pipe.readline(65537)
                     try:
-                        if not line.startswith('RIEKE_DESKTOP_BOUND=') or len(line) > 65536:
-                            raise ValueError('Malformed owned child bind receipt')
-                        value = json.loads(line.split('=', 1)[1])
-                        required = ('pid', 'session_id', 'port', 'project_uuid', 'project_path',
-                                    'application_version', 'source_commit')
-                        if any(value.get(name) != record.get(name) for name in required):
-                            raise ValueError('Owned child bind receipt identity mismatch')
-                        packet['valid'] = True
+                        packet.update(validate_child_startup_receipt(line, record))
                     except (ValueError, TypeError):
                         packet['valid'] = False
                     finally:
@@ -586,10 +595,21 @@ class DesktopServices:
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             if process.poll() is not None:
-                # A startup exception does not prove native database recovery.
+                # Observe the already-closed private pipe even if exit wins the
+                # scheduling race. Absence of files is never this authority.
+                bound.wait(1)
+                if packet.get('pre_database_failed'):
+                    with self.lock:
+                        if self.children.get(key, {}).get('process') is process:
+                            del self.children[key]
+                            self._save()
+                # Other startup failures retain the existing recovery-required path.
                 raise ValueError('Project startup failed; inspect its recovery log before retrying')
             if not bound.is_set():
                 bound.wait(.2)
+                continue
+            if packet.get('pre_database_failed'):
+                time.sleep(.05)
                 continue
             if not packet.get('valid'):
                 raise ValueError('Project listener ownership was not acknowledged; service retained')
@@ -694,6 +714,28 @@ def desktop_database_operation(project, operation_id=None, *, failed=False):
     return result['operation_id'] if operation_id is None else operation_id
 
 
+def initialize_before_project_database(args, manifest, initialize):
+    """Report only failure before this child enters native project startup.
+
+    The inherited one-shot pipe binds this outcome to its actual spawned child.
+    It is not a clean-DB receipt and does not authorize stopping a prior service.
+    """
+    try:
+        return initialize()
+    except BaseException:
+        if args.project_dir is not None and args.ready_fd is not None and args.ready_fd >= 3:
+            project = args.project_dir.resolve(strict=True)
+            catalog = json.loads((project / 'catalog.json').read_text())
+            failed = dict(pid=os.getpid(), session_id=str(uuid.UUID(args.session_id)), port=args.port,
+                          project_uuid=catalog['project_uuid'], project_path=str(project),
+                          application_version=manifest['application_version'], source_commit=manifest['source_commit'],
+                          ready=False, stage='before_project_database')
+            with os.fdopen(args.ready_fd, 'w') as pipe:
+                pipe.write('RIEKE_DESKTOP_STARTUP_FAILED=' + json.dumps(failed) + '\n')
+                pipe.flush()
+        raise
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--resources', type=Path, required=True)
@@ -732,7 +774,7 @@ def main(argv=None):
     from workspace_mysql_runtime import mysql_runtime
     lazy_root = os.environ.get('DISCO_LAZY_ROOT_EXPERIMENT') == '1' and args.project_dir is None
     if not lazy_root:
-        mysql_runtime()
+        initialize_before_project_database(args, manifest, mysql_runtime)
     from workspace_bootstrap import runtime_paths
     runtime_config = runtime_paths()
     preference = user_state / 'preferences/workspace-selection.json'
@@ -746,7 +788,7 @@ def main(argv=None):
     retinanalysis = Path(runtime_config['retinanalysis'])
     from recording_workspace import load_parser
     if not lazy_root:
-        load_parser(retinanalysis)
+        initialize_before_project_database(args, manifest, lambda: load_parser(retinanalysis))
     identity = {'pid': os.getpid(), 'session_id': session_id,
                 'application_version': manifest['application_version'],
                 'source_commit': manifest['source_commit'],
