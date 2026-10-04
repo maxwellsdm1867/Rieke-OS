@@ -51,6 +51,7 @@
     "workspace_matlab.py",
     "workspace_metadata_objects.py",
     "workspace_migration.py",
+    "workspace_mutation_outcomes.py",
     "workspace_mysql_profile.py",
     "workspace_mysql_runtime.py",
     "workspace_native_mysql.py",
