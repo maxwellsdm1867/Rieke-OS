@@ -25,10 +25,10 @@ class StartupSession {
   claim(){if(this.claimed)return null;this.claimed=true;this.target=!this.cancelled&&this.value?.mode==='resume'?{...this.value}:null;return this.target;}
   save(value){this.value=value;const next={...value};this.chain=this.chain.catch(()=>{}).then(()=>atomicJSON(this.file,next));return this.chain;}
   remember(projectId,projectPath,view){
-    const value={format:FORMAT,version:1,compatibility:this.compatibility,mode:this.cancelled?'chooser':this.value?.mode||'resume',projectId,projectPath,view:typeof view==='string'?view.slice(0,80):'overview'};
+    const value={format:FORMAT,version:1,compatibility:this.compatibility,mode:this.preference||this.value?.mode||'resume',projectId,projectPath,view:typeof view==='string'?view.slice(0,80):'overview'};
     if(!valid(value,this.compatibility))throw Error('Invalid startup session');return this.save(value);
   }
-  async choose(){this.cancelled=true;if(this.value)await this.save({...this.value,mode:'chooser'});}
-  async resume(){this.cancelled=false;if(this.value)await this.save({...this.value,mode:'resume'});}
+  async choose(){this.cancelled=true;this.preference='chooser';if(this.value)await this.save({...this.value,mode:'chooser'});}
+  async resume(){this.cancelled=false;this.preference='resume';if(this.value)await this.save({...this.value,mode:'resume'});}
 }
 module.exports={StartupSession,viewNamespace,valid};
