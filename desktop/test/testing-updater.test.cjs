@@ -185,11 +185,11 @@ test('actual extracted testing bundle permits declared dirty provenance and reje
 test('real ZIP preflight/extraction uses installed interpreter and never executes candidate code',{skip:process.platform!=='darwin'},async t=>{
   const f=await bundleFixture(t);
   const {promisify}=require('node:util'),run=promisify(require('node:child_process').execFile);
-  let installedBundle=path.resolve(__dirname,'../dist/mac-arm64/Rieke OS.app');
-  try{await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
+  let installedBundle;
+  try{installedBundle=require('../e2e/packaged-path.cjs').packagedSource(path.resolve(__dirname,'..'),require('../package.json').build);await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
   catch{
     // Small source unit-test fixture only. Packaged E2E always uses real bundled Python.
-    installedBundle=path.join(f.root,'Rieke OS.app');
+    installedBundle=path.join(f.root,'installed','Rieke OS.app');
     const hostPython=(await run('/usr/bin/which',['python3'])).stdout.trim();
     const bin=path.join(installedBundle,'Contents/Resources/runtime/python/bin');await fs.mkdir(bin,{recursive:true});
     await fs.symlink(hostPython,path.join(bin,'python3.11'));
