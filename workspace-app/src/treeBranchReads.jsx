@@ -20,7 +20,7 @@ export function TreeBranchReadOwner({projectId,projectPath,revision,children,cac
   let previous;const unsubscribe=window.riekeDesktop?.onStatus?.(status=>{if(previous!==status.state){previous=status.state;revoke();}});
   return()=>{for(const name of events)window.removeEventListener(name,revoke);document.removeEventListener('visibilitychange',revoke);unsubscribe?.();};
  },[cache]);
- const value=useMemo(()=>({identity:JSON.stringify(scope),active:()=>!scope||cache.isActive(scope),
+ const value=useMemo(()=>({identity:JSON.stringify(scope),available:!!scope,active:()=>!scope||cache.isActive(scope),
   attest:(body,page)=>scope?cache.attest(scope,body,page):null,
   read:(...args)=>cache.read(...args),current:lease=>cache.assertCurrent(lease)}),[cache,scope]);
  return <QueryClientProvider client={cache.client}><Context.Provider value={value}>{children}</Context.Provider></QueryClientProvider>;

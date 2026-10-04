@@ -65,6 +65,7 @@ export default function ColumnTree(props){
   },[]);
   const load=useCallback(async({path=[],offset=0,reset=false,revisionOverride=null,columnPositions=[],scrollTop=0,scrollLeft=null,anchor=null,freshContinuation=false,restorePresentation=null}={})=>{
     if(!active||!visible.current)return;
+    const observer=callbacks.current; // Completion belongs to the initiating scope.
     retryIntent.current={scopeKey,options:{path:[...path],offset,anchor,columnPositions:columnPositions.map(position=>({...position})),scrollTop,scrollLeft}};
     controller.current?.abort();const request=new AbortController();controller.current=request;const token=++serial.current;pending.current=true;
     const startedScrollIntent=scrollIntent.current;
@@ -72,7 +73,7 @@ export default function ColumnTree(props){
     if(reset)current.current=[];
     // Retain the last columns visually while the new scope loads; blocked rows
     // cannot act on the previous revision. Commit the replacement atomically.
-    setState(old=>({columns:old.columns,loading:true,error:null}));callbacks.current.onStatus?.({loading:true,error:null});
+    setState(old=>({columns:old.columns,loading:true,error:null}));observer.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey);
     try{
       const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
@@ -83,8 +84,8 @@ export default function ColumnTree(props){
       const returnLeft=preserve?(scrollIntent.current!==startedScrollIntent?strip.current?.scrollLeft:restorePresentation.scrollLeft):null;
       current.current=columns;restored.current=true;
       scrollRestore.current=preserve?{vertical:returnPositions.map(position=>position.scrollTop),horizontal:returnLeft}:{vertical:columns.map((column,depth)=>depth===page.path.length?scrollTop:(columnPositions[depth]?.scrollTop??priorPositions[depth]?.scrollTop??0)),horizontal:scrollLeft};
-      pending.current=false;setState({columns,loading:false,error:null,ownerIdentity,activation:props.presentationActivation,preservedSelection:preserve?latestSelected.current:undefined});callbacks.current.onStatus?.({loading:false,error:null});callbacks.current.onMetadata?.({...page,count:page.total_epochs});
-    }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));callbacks.current.onStatus?.({loading:false,error:error.message});}}
+      pending.current=false;setState({columns,loading:false,error:null,ownerIdentity,activation:props.presentationActivation,preservedSelection:preserve?latestSelected.current:undefined});observer.onStatus?.({loading:false,error:null});observer.onMetadata?.({...page,count:page.total_epochs});
+    }catch(error){if(error.name!=='AbortError'&&!request.signal.aborted&&token===serial.current&&(!readOwner||readOwner.active())){setState(old=>({...old,loading:false,error:error.message}));observer.onStatus?.({loading:false,error:error.message});}}
     finally{if(token===serial.current)pending.current=false;}
   },[scopeKey,readOwner]);
   function retry(){
