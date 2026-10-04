@@ -16,7 +16,34 @@ export const groupAnnotationRecovery={
  onChange(listener){changes.add(listener);return()=>changes.delete(listener);},
  async retry(operation){const record=records.get(operation);if(!record)throw Error('The original operation is no longer pending.');return run(record,true);},
 };
-export function retainGroupOperation({body,count,request,confirm,onTerminal}){
+export function confirmGroupReceipt(result,{operationUuid,profileUuid,count,tag,action='add',forward}){
+  if(result?.format!=='rieke-group-annotation-receipt'||result.version!==1||result.action!==action||result.operation_uuid!==operationUuid||result.target_kind!=='epoch'||result.target_count!==count||result.profile_uuid!==profileUuid||!Number.isSafeInteger(result.changed)||result.changed<0||result.changed>count||result.unchanged!==count-result.changed||result.persistence&&result.persistence.database!=='committed'||action==='add'&&(result.tag!==tag||result.undo?.kind!=='annotation_group'||result.undo.operation_uuid!==operationUuid||result.undo.count!==result.changed)||action==='undo'&&result.forward_operation_uuid!==forward)throw Error('The complete group receipt was not confirmed. Retry the same operation before another tag.');
+  return result;
+}
+
+// The preview supplies the project captured before its request began.
+export function createGroupSaveSession({project:originalProject,selectionUuid,profileUuid,count,request}){
+  let operation=null,releaseRequested=false,released=false;
+  const release=()=>{
+    releaseRequested=true;
+    if(released||operation&&['pending','unconfirmed','ready'].includes(operation.status))return;
+    released=true;
+    return request('/annotations/group-preview-release',{method:'POST',body:{selection_uuid:selectionUuid}}).catch(()=>{});
+  };
+  const mutation={selectionUuid,profileUuid,count,release,canPublish:()=>originalProject===groupAnnotationRecovery.currentProject(),async save({tag,profileUuid:author}){
+    if(originalProject!==groupAnnotationRecovery.currentProject())throw Error('Return to the original project before saving this group.');
+    if(author!==profileUuid)throw Error('The author profile changed. Reopen this group.');
+    if(operation&&operation.body.tag!==tag)throw Error('Retry the original unconfirmed tag or reopen after its refusal before saving another tag.');
+    if(!operation){
+      const body={selection_uuid:selectionUuid,profile_uuid:profileUuid,tag,operation_uuid:crypto.randomUUID()};
+      operation=retainGroupOperation({body,count,request,confirm:receipt=>confirmGroupReceipt(receipt,{operationUuid:body.operation_uuid,profileUuid,count,tag}),onTerminal:()=>{if(releaseRequested)void release();}});
+    }
+    return run(operation,false);
+  }};
+  return Object.freeze(mutation);
+}
+
+function retainGroupOperation({body,count,request,confirm,onTerminal}){
  if(records.size>=MAX_PENDING)throw Error('Resolve an earlier group save before starting another; four unconfirmed operations are retained.');
  const exact=Object.freeze({...body});
  if(JSON.stringify(exact).length*4+4096>MAX_RECORD_BYTES)throw Error('The original group request exceeds recovery memory admission.');
@@ -24,7 +51,6 @@ export function retainGroupOperation({body,count,request,confirm,onTerminal}){
  records.set(exact.operation_uuid,record);emit();
  return record;
 }
-export async function runGroupOperation(record){return run(record,false);}
 async function run(record,recovery){
  if(record.result)return record.result;
  if(record.status==='rejected'||records.get(record.body.operation_uuid)!==record)throw Error('This refused operation is terminal. Reopen the group for a new preview.');
