@@ -22,6 +22,29 @@ RFC3339 = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d
 VOCABULARY = {'$schema','$id','$defs','$ref','title','description','type','enum','const','properties','required','additionalProperties','propertyNames','items','minItems','maxItems','maxProperties','minLength','maxLength','minimum','maximum','exclusiveMinimum','pattern','format','oneOf','anyOf'}
 
 class InvalidInput(ValueError): pass
+class UnsupportedSchema(InvalidInput): pass
+
+def pointer(tokens):
+    """RFC6901 pointer from original tokens, never from legacy display paths."""
+    return ''.join('/'+str(t).replace('~','~0').replace('/','~1') for t in tokens)
+
+class Location(str):
+    """Legacy display string with original instance tokens attached."""
+    def __new__(cls, tokens=()):
+        obj=super().__new__(cls, '$'+''.join('/'+str(t) for t in tokens))
+        obj.tokens=tuple(tokens)
+        return obj
+    def child(self, token):return Location(self.tokens+(token,))
+    def __add__(self, suffix):
+        # Only internal fixed suffixes use +. User-provided keys use child().
+        if isinstance(suffix,str) and suffix.startswith('/'):
+            return Location(self.tokens+tuple(suffix[1:].split('/')))
+        return str(self)+suffix
+
+def fixed_location(path):
+    # Used only for paths built here from fixed names and integer array indexes.
+    return Location(tuple(path[2:].split('/')) if path!='$' else ())
+
 
 def loads(raw):
     if len(raw) > MAX_BYTES: raise InvalidInput('input exceeds 16 MiB')
@@ -71,72 +94,83 @@ def json_equal(a,b):
 def kind(value, name):
     return {'object':isinstance(value,dict),'array':isinstance(value,list),'string':isinstance(value,str),'number':type(value) in (int,float),'integer':type(value) is int or (type(value) is float and value.is_integer()),'boolean':type(value) is bool,'null':value is None}.get(name,False)
 
-def check_schema(value, rule, root, path='$'):
+def check_schema(value, rule, root, path='$', *, _tokens=(), _schema_tokens=(), _locations=None):
     unknown = set(rule) - VOCABULARY
-    if unknown: raise InvalidInput('validator does not implement schema keyword '+','.join(sorted(unknown)))
+    if unknown: raise UnsupportedSchema('validator does not implement schema keyword '+','.join(sorted(unknown)))
     errors = []
-    def error(message):
-        if len(errors)<MAX_ERRORS: errors.append({'code':'schema','path':path,'message':message})
+    def error(message, keyword=None):
+        if len(errors)<MAX_ERRORS:
+            item={'code':'schema','path':path,'message':message};errors.append(item)
+            if _locations is not None:
+                _locations[id(item)]={'stage':'structural','instance_pointer':pointer(_tokens),'schema_pointer':pointer(_schema_tokens+((keyword,) if keyword else ())), 'source_pointer':None}
+    def descend(item, child_rule, child_path, tokens, schema_tokens):
+        return check_schema(item,child_rule,root,child_path,_tokens=tokens,_schema_tokens=schema_tokens,_locations=_locations)
+
     if '$ref' in rule:
-        pointer=rule['$ref']
-        if not pointer.startswith('#/$defs/'): raise InvalidInput('external schema references are forbidden')
-        return check_schema(value,root['$defs'][pointer.split('/')[-1]],root,path)
+        ref=rule['$ref']
+        if not ref.startswith('#/$defs/'): raise UnsupportedSchema('external schema references are forbidden')
+        return descend(value,root['$defs'][ref.split('/')[-1]],path,_tokens,('$defs',ref.split('/')[-1]))
     for keyword in ('oneOf','anyOf'):
         if keyword in rule:
             matched=sum(not check_schema(value,r,root,path) for r in rule[keyword])
-            if (keyword=='oneOf' and matched!=1) or (keyword=='anyOf' and matched<1): error('value does not match '+keyword+' alternatives')
+            if (keyword=='oneOf' and matched!=1) or (keyword=='anyOf' and matched<1): error('value does not match '+keyword+' alternatives',keyword)
     expected=rule.get('type')
     if expected and not any(kind(value,n) for n in ([expected] if isinstance(expected,str) else expected)):
-        error('wrong JSON type');return errors
-    if 'const' in rule and not json_equal(value,rule['const']): error('incorrect constant')
-    if 'enum' in rule and not any(json_equal(value,x) for x in rule['enum']): error('unsupported enum value')
+        error('wrong JSON type','type');return errors
+    if 'const' in rule and not json_equal(value,rule['const']): error('incorrect constant','const')
+    if 'enum' in rule and not any(json_equal(value,x) for x in rule['enum']): error('unsupported enum value','enum')
     if isinstance(value,str):
-        if len(value)<rule.get('minLength',0) or len(value)>rule.get('maxLength',sys.maxsize):error('string length outside limits')
-        if 'pattern' in rule and not re.search(rule['pattern'],value):error('string does not match required pattern')
+        if len(value)<rule.get('minLength',0) or len(value)>rule.get('maxLength',sys.maxsize):error('string length outside limits','minLength' if len(value)<rule.get('minLength',0) else 'maxLength')
+        if 'pattern' in rule and not re.search(rule['pattern'],value):error('string does not match required pattern','pattern')
         try:
             if rule.get('format')=='date-time':instant(value)
             if rule.get('format')=='uuid':
                 if str(uuid.UUID(value))!=value:raise ValueError('UUID must be canonical lowercase')
-        except (ValueError,OverflowError):error('invalid '+rule['format'])
+        except (ValueError,OverflowError):error('invalid '+rule['format'],'format')
     if type(value) in (int,float):
         if not math.isfinite(value):error('nonfinite number')
-        if value<rule.get('minimum',-math.inf) or value>rule.get('maximum',math.inf):error('number outside limits')
-        if 'exclusiveMinimum' in rule and value<=rule['exclusiveMinimum']:error('number must exceed lower bound')
+        if value<rule.get('minimum',-math.inf) or value>rule.get('maximum',math.inf):error('number outside limits','minimum' if value<rule.get('minimum',-math.inf) else 'maximum')
+        if 'exclusiveMinimum' in rule and value<=rule['exclusiveMinimum']:error('number must exceed lower bound','exclusiveMinimum')
     if isinstance(value,list):
-        if len(value)<rule.get('minItems',0) or len(value)>rule.get('maxItems',sys.maxsize):error('array length outside limits')
+        if len(value)<rule.get('minItems',0) or len(value)>rule.get('maxItems',sys.maxsize):error('array length outside limits','minItems' if len(value)<rule.get('minItems',0) else 'maxItems')
         if 'items' in rule:
             for i,item in enumerate(value):
-                errors.extend(check_schema(item,rule['items'],root,f'{path}/{i}'))
+                errors.extend(descend(item,rule['items'],f'{path}/{i}',_tokens+(i,),_schema_tokens+('items',)))
                 if len(errors)>=MAX_ERRORS:break
     if isinstance(value,dict):
-        if len(value)>rule.get('maxProperties',sys.maxsize):error('too many object properties')
+        if len(value)>rule.get('maxProperties',sys.maxsize):error('too many object properties','maxProperties')
         for key in rule.get('required',[]):
-            if key not in value:error('missing required property: '+key)
+            if key not in value:error('missing required property: '+key,'required')
         props=rule.get('properties',{})
         for key,item in value.items():
-            if 'propertyNames' in rule:errors.extend(check_schema(key,rule['propertyNames'],root,path+'/'+key))
-            if key in props:errors.extend(check_schema(item,props[key],root,path+'/'+key))
-            elif rule.get('additionalProperties') is False:error('unknown property: '+key)
-            elif isinstance(rule.get('additionalProperties'),dict):errors.extend(check_schema(item,rule['additionalProperties'],root,path+'/'+key))
+            if 'propertyNames' in rule:errors.extend(descend(key,rule['propertyNames'],path+'/'+key,_tokens+(key,),_schema_tokens+('propertyNames',)))
+            if key in props:errors.extend(descend(item,props[key],path+'/'+key,_tokens+(key,),_schema_tokens+('properties',key)))
+            elif rule.get('additionalProperties') is False:error('unknown property: '+key,'additionalProperties')
+            elif isinstance(rule.get('additionalProperties'),dict):errors.extend(descend(item,rule['additionalProperties'],path+'/'+key,_tokens+(key,),_schema_tokens+('additionalProperties',)))
             if len(errors)>=MAX_ERRORS:break
     return errors[:MAX_ERRORS]
 
-def validate(data,schema):
+def validate(data,schema, *, _locations=None):
     errors=[]; warnings=[]
     def err(code,path,message):
-        if len(errors)<MAX_ERRORS:errors.append(dict(code=code,path=path,message=message))
+        if len(errors)<MAX_ERRORS:
+            item=dict(code=code,path=path,message=message);errors.append(item)
+            if _locations is not None:
+                loc=path if isinstance(path,Location) else fixed_location(path)
+                _locations[id(item)]={'stage':'structural' if code=='version' else 'semantic','instance_pointer':pointer(loc.tokens),'schema_pointer':None,'source_pointer':None}
+
     if isinstance(data,dict) and data.get('schema_version')!=VERSION:err('version','$/schema_version','unsupported draft version')
-    errors.extend(check_schema(data,schema,schema))
+    errors.extend(check_schema(data,schema,schema,_locations=_locations))
     if errors:return report(data,errors[:MAX_ERRORS],warnings)
     by_kind={k:{x['id']:x for x in data.get(k,[])} for k in ('sources','protocols','ancestry','cells','epochs','streams')}
     all_ids={}; assets={}; namespace=uuid.UUID(data['authority']['namespace_uuid'])
-    entities=[('dataset',data['dataset'],'$/dataset')]
+    entities=[('dataset',data['dataset'],Location(('dataset',)))]
     for plural,singular in [('sources','source'),('protocols','protocol'),('ancestry','ancestor'),('cells','cell'),('epochs','epoch'),('streams','stream')]:
         for i,item in enumerate(data.get(plural,[])):
-            entities.append((item.get('kind') if singular=='ancestor' else singular,item,f'$/{plural}/{i}'))
+            entities.append((item.get('kind') if singular=='ancestor' else singular,item,Location((plural,i))))
             if plural=='sources':
                 for j,a in enumerate(item.get('raw_assets',[])):
-                    entities.append(('raw_asset',a,f'$/{plural}/{i}/raw_assets/{j}'));assets[a['id']]=(item['id'],a)
+                    entities.append(('raw_asset',a,Location((plural,i,'raw_assets',j))));assets[a['id']]=(item['id'],a)
     for entity_kind,item,path in entities:
         uid=item['id']; identity=item['identity']
         if uid in all_ids:err('duplicate_id',path+'/id','ID already used at '+all_ids[uid])
@@ -163,7 +197,7 @@ def validate(data,schema):
         return False
     def fields(item,scope,path):
         for key,v in item.get('fields',{}).items():
-            definition=definitions.get(key);p=path+'/fields/'+key
+            definition=definitions.get(key);p=path.child('fields').child(key)
             if definition is None:err('unknown_field',p,'field has no definition');continue
             if definition['scope']!=scope:err('field_scope',p,'field definition scope differs from entity scope')
             if v['status']=='present':
@@ -231,7 +265,7 @@ def validate(data,schema):
         profiles[p['profile_uuid']]=p['author_name']
         if p['author_name']!=p['author_name'].strip() or any(ord(c)<32 for c in p['author_name']):err('author',f'$/annotations/profiles/{i}','author name must be trimmed and printable')
     for i,a in enumerate(annotation.get('entries',[])):
-        path=f'$/annotations/entries/{i}';key=(a['target_kind'],a['target_id'],a['profile_uuid'])
+        path=Location(('annotations','entries',i));key=(a['target_kind'],a['target_id'],a['profile_uuid'])
         if key in seen:err('duplicate_annotation',path,'author-target entry repeated')
         seen.add(key);link('cells' if a['target_kind']=='cell' else 'epochs',a['target_id'],path+'/target_id')
         if a['profile_uuid'] not in profiles:err('broken_link',path+'/profile_uuid','unknown profile')
@@ -246,14 +280,23 @@ def report(data,errors,warnings):
     return {'valid':not errors,'contract_version':VERSION,'draft_only':True,'database_checked':False,'raw_assets_verified':0,'counts':{k:len(data.get(k,[])) for k in ('sources','protocols','cells','epochs','streams')} if isinstance(data,dict) else {},'errors':errors,'warnings':warnings}
 
 def main():
-    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('bundle',type=pathlib.Path);parser.add_argument('--schema',type=pathlib.Path,default=pathlib.Path(__file__).with_name('disco-metadata-bundle.schema.json'));args=parser.parse_args()
+    parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('bundle',type=pathlib.Path);parser.add_argument('--schema',type=pathlib.Path,default=pathlib.Path(__file__).with_name('disco-metadata-bundle.schema.json'));parser.add_argument('--diagnostics',action='store_true');args=parser.parse_args()
     try:
         # Input bundle and schema are explicit user-selected local files. No paths
         # found inside the bundle are ever read, resolved, opened or fetched.
         with args.bundle.open('rb') as h:raw=h.read(MAX_BYTES+1)
+        if args.diagnostics:
+            schema=loads(args.schema.read_bytes())
+            from validation_diagnostics import validate_bytes
+            result=validate_bytes(raw,schema)
+            print(json.dumps(result,indent=2,ensure_ascii=True));return 0 if result['legacy_report']['valid'] else 1
         data=loads(raw);schema=loads(args.schema.read_bytes());result=validate(data,schema)
         result['input_sha256']=hashlib.sha256(raw).hexdigest()
     except (OSError,ValueError,TypeError,KeyError,RecursionError,OverflowError) as e:
+        if args.diagnostics:
+            from validation_diagnostics import failure
+            result=failure(e)
+            print(json.dumps(result,indent=2,ensure_ascii=True));return 1
         result=report(None,[{'code':'input','path':'$','message':str(e)}],[])
     print(json.dumps(result,indent=2,ensure_ascii=True));return 0 if result['valid'] else 1
 if __name__=='__main__':sys.exit(main())

@@ -1,0 +1,168 @@
+{
+  "authority_namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682",
+  "dataset_key": "worked-collection",
+  "experiment": {
+    "cells": [
+      {
+        "epochGroups": [
+          {
+            "epochBlocks": [
+              {
+                "epochs": [
+                  {
+                    "key": "epoch:1",
+                    "parameters": {
+                      "amplitude": 0,
+                      "unmappedScientificField": 123
+                    },
+                    "responses": {
+                      "Amplifier": {
+                        "h5path": "/experiment/epochs/epoch1/responses/Amplifier/data",
+                        "sampleCount": 5000,
+                        "sampleRate": 10000,
+                        "sampleRateUnits": "Hz",
+                        "units": "mV"
+                      }
+                    },
+                    "tags": [
+                      "keep"
+                    ],
+                    "uuid": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152"
+                  },
+                  {
+                    "key": "epoch:2",
+                    "parameters": {
+                      "rareNote": "rare export field",
+                      "temperature": 22.5
+                    },
+                    "responses": {},
+                    "tags": []
+                  }
+                ],
+                "key": "block:1",
+                "parameters": {
+                  "amplitude": 50,
+                  "enabled": false,
+                  "temperature": null
+                },
+                "protocolID": "CurrentStep/v1"
+              },
+              {
+                "epochs": [
+                  {
+                    "key": "epoch:3",
+                    "parameters": {
+                      "levels": [
+                        0,
+                        1,
+                        2
+                      ]
+                    },
+                    "responses": {},
+                    "tags": [
+                      "review"
+                    ]
+                  }
+                ],
+                "key": "block:2",
+                "parameters": {
+                  "seed": "9007199254740993",
+                  "temperature": null
+                },
+                "protocolID": "Noise/v2"
+              }
+            ],
+            "key": "group:1"
+          }
+        ],
+        "key": "cell:1",
+        "label": "Cell1",
+        "tags": [
+          "candidate"
+        ],
+        "uuid": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351"
+      },
+      {
+        "epochGroups": [
+          {
+            "epochBlocks": [
+              {
+                "epochs": [
+                  {
+                    "key": "epoch:4",
+                    "parameters": {
+                      "enabled": true
+                    },
+                    "responses": {},
+                    "tags": []
+                  }
+                ],
+                "key": "block:3",
+                "parameters": {
+                  "amplitude": 50,
+                  "temperature": null
+                },
+                "protocolID": "CurrentStep/v1"
+              }
+            ],
+            "key": "group:2"
+          }
+        ],
+        "key": "cell:2",
+        "label": "Cell1",
+        "tags": [
+          "other acquisition identity"
+        ]
+      },
+      {
+        "epochGroups": [],
+        "key": "cell:empty",
+        "label": "Empty recorded cell",
+        "tags": []
+      }
+    ],
+    "key": "session:synthetic-A",
+    "label": "Synthetic session A",
+    "start_time": "10/01/2026 10:15:00:000000"
+  },
+  "format": "synthetic-parser-shaped-v1",
+  "notice": "SYNTHETIC scientific records. Inspired by inspected nested parsed metadata, not an actual RetinAnalysis export or experiment.",
+  "parameter_definitions": {
+    "amplitude": {
+      "id": "demo:amplitude",
+      "type": "number",
+      "unit": "pA"
+    },
+    "enabled": {
+      "id": "demo:enabled",
+      "type": "boolean",
+      "unit": "1"
+    },
+    "levels": {
+      "id": "demo:levels",
+      "type": "array",
+      "unit": "1"
+    },
+    "rareNote": {
+      "id": "demo:rare_note",
+      "type": "string",
+      "unit": null
+    },
+    "seed": {
+      "id": "demo:seed",
+      "type": "integer_string",
+      "unit": "1"
+    },
+    "temperature": {
+      "id": "demo:temperature",
+      "null_status": "not_recorded",
+      "type": "number",
+      "unit": "Cel"
+    }
+  },
+  "reviewer": {
+    "author_name": "Synthetic Reviewer",
+    "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18"
+  },
+  "revision": "synthetic-r1"
+}

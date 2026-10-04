@@ -1,6 +1,6 @@
 # Agent contract handoff — reviewed public draft, unsupported receiver
 
-Use **AGENT_PROMPT.md** with this directory to map an external lab's metadata into `disco-metadata-bundle.schema.json` **1.0.0-draft.1**. The public schema, validator, mapping and synthetic examples are reused unchanged from the reviewed adapter kit. Independent review approved this draft handoff. The nonblocking source-checker exit-status caveat was fixed and verified offline. No production integration is implied.
+Use **AGENT_PROMPT.md** with this directory to map an external lab's metadata into `disco-metadata-bundle.schema.json` **1.0.0-draft.1**. The public schema, storage mapping and bundle examples retain their reviewed bytes. This revision adds optional validator diagnostics, typed source coverage and non-mutating replay; its independent review passed. See REFINEMENT.md for exact API and limits. No production integration is implied.
 
 **Current DISCO does not accept this metadata bundle.** This is an agent-translatable handoff contract for review, not a production import command. Never write SQL or internal index tables. No proposed metadata-only table exists merely because it appears in the mapping.
 
@@ -44,3 +44,7 @@ Current: project-private MySQL/DataJoint acquisition/app state; H5-byte-hash Sou
 Proposed/unimplemented: generalized metadata-only registration, catalog-aware JSON conflict/apply transaction, full-field fallback, verified raw resolver/binding, metadata-capable export version and complete portable roundtrip. H5 Source PK must never hold a JSON hash. Supplied locators are unverified inert claims; raw-dependent QC stays unavailable until required verified inputs exist. Preserve the current H5 path and immutable identities during future convergence.
 
 Suggested repo destination: `contracts/metadata-bundle/v1-draft/`. This avoids benchmark owner files (`benchmarks/registry.json`, `tools/benchmark.py`, `docs/dev/benchmarks.md`). Parent integrates deliberately after review. No migration/importer/UI/cache implementation is included.
+
+## Concrete source-to-target tutorial
+
+Start with [worked-examples/README.md](worked-examples/README.md), paired source.json and expected/bundle.json, executable mapper, per-field mapping report, full UUID ledger and link walkthrough. The collection has three cells, four epochs, two protocols, tags and a separately labeled teaching frozen-selection sidecar. Revision/raw variants, five invalid bundles with repairs and a blocked source demonstrate exact behavior. All records are SYNTHETIC; the input is parser-shaped teaching JSON, not an actual RetinAnalysis export. See worked-examples/EXECUTION-EVIDENCE.json for the completed offline test/CLI pass. Public schema and core validator remain unchanged.

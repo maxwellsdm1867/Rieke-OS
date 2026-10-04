@@ -1,0 +1,42 @@
+{
+  "format": "synthetic-parser-shaped-v1",
+  "notice": "SYNTHETIC scientific records. Inspired by inspected nested parsed metadata, not an actual RetinAnalysis export or experiment.",
+  "authority_namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682",
+  "dataset_key": "worked-collection",
+  "revision": "synthetic-r1",
+  "experiment": {
+    "key": "session:synthetic-A",
+    "label": "Synthetic session A",
+    "start_time": "10/01/2026 10:15:00:000000",
+    "cells": [
+      {"key": "cell:1", "uuid": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351", "label": "Cell1", "tags": ["candidate"], "epochGroups": [
+        {"key": "group:1", "epochBlocks": [
+          {"key": "block:1", "protocolID": "CurrentStep/v1", "parameters": {"amplitude": 50, "temperature": null, "enabled": false}, "epochs": [
+            {"key": "epoch:1", "uuid": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152", "parameters": {"amplitude": 0}, "tags": ["keep"], "responses": {"Amplifier": {"sampleRate": 10000, "sampleRateUnits": "Hz", "units": "mV", "sampleCount": 5000, "h5path": "/experiment/epochs/epoch1/responses/Amplifier/data"}}},
+            {"key": "epoch:2", "parameters": {"temperature": 22.5, "rareNote": "rare export field"}, "tags": [], "responses": {}}
+          ]},
+          {"key": "block:2", "protocolID": "Noise/v2", "parameters": {"seed": "9007199254740993", "temperature": null}, "epochs": [
+            {"key": "epoch:3", "parameters": {"levels": [0, 1, 2]}, "tags": ["review"], "responses": {}}
+          ]}
+        ]}
+      ]},
+      {"key": "cell:2", "label": "Cell1", "tags": ["other acquisition identity"], "epochGroups": [
+        {"key": "group:2", "epochBlocks": [
+          {"key": "block:3", "protocolID": "CurrentStep/v1", "parameters": {"amplitude": 50, "temperature": null}, "epochs": [
+            {"key": "epoch:4", "parameters": {"enabled": true}, "tags": [], "responses": {}}
+          ]}
+        ]}
+      ]},
+      {"key": "cell:empty", "label": "Empty recorded cell", "tags": [], "epochGroups": []}
+    ]
+  },
+  "parameter_definitions": {
+    "amplitude": {"id": "demo:amplitude", "type": "number", "unit": "pA"},
+    "temperature": {"id": "demo:temperature", "type": "number", "unit": "Cel", "null_status": "not_recorded"},
+    "enabled": {"id": "demo:enabled", "type": "boolean", "unit": "1"},
+    "seed": {"id": "demo:seed", "type": "integer_string", "unit": "1"},
+    "rareNote": {"id": "demo:rare_note", "type": "string", "unit": null},
+    "levels": {"id": "demo:levels", "type": "array", "unit": "1"}
+  },
+  "reviewer": {"profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18", "author_name": "Synthetic Reviewer"}
+}

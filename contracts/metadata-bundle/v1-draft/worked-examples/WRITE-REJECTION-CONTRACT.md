@@ -1,0 +1,29 @@
+# Required receiver behavior: invalid writes must be rejected
+
+**Requirement, not current implemented behavior.** The offline validator rejects invalid draft files today. The production JSON metadata receiver and its database write enforcement do not exist. No DB integration test ran in this package. Do not describe a stub, mocked transaction or offline validator pass as a successful DB write/rejection test.
+
+A future receiver must revalidate the actual payload at the write boundary, regardless of an external agent's claimed validation result. Before canonical commit, enforce supported schema version, structure, declared types and unit consistency, missingness, UUID derivation/uniqueness/referential ownership, logical-source identity versus H5-byte identity, provenance/revision conflicts and honest raw capability state. Schema validation alone cannot establish scientifically correct units or trustworthy provenance; preserve claims and require applicable explicit mapping/verification evidence. Unknown unit null is allowed where the contract allows it, not a guessed unit.
+
+Flow: bounded parse -> structural/semantic validation -> catalog-aware preview -> bind preview to exact payload/schema/adapter and expected generations -> under appropriate write locks revalidate payload and catalog constraints -> transactionally write canonical entities/revisions/annotations/audit/receipts -> commit -> publish complete derived query generation. Never rely on a client validator or stale preview. Any precommit validation/conflict/audit failure rolls back all canonical changes. Database FK/unique/check constraints enforce applicable relationships as defense in depth; application checks still enforce polymorphic targets, same-source ancestry, revisions and capability policy. DDL/migration must not be mixed into the scientific import transaction.
+
+The file's requested schema version is explicitly negotiated: supported version is accepted, unsupported version rejected before writes with a supported-version list. Any upgrade/migration requires its own reviewed mapping and approval flow; no silent coercion or startup migration. Exact replay is idempotent, same revision with different content conflicts, and subset omissions never delete existing records.
+
+An invalid metadata import must leave no partial entities, annotations, revisions, audit-success entries or asset bindings. It must not initiate raw copying/fetching from locators. Future explicit raw attachment uses a separate staged/journaled lifecycle: unpublished staged bytes must not become a leaked registered asset; crash recovery reconciles owned staging without deleting existing/shared assets. SQL rollback alone does not undo filesystem side effects. A postcommit index-build failure leaves canonical truth committed with explicit rebuild-needed status and correct fallback; it must not claim the whole transaction rolled back.
+
+Return deterministic, actionable bounded errors with a stable machine code, JSON-pointer source path, related public UUID where available, reason and correction/retry instruction. For stale state include the expected/current generation witness without leaking private details. Invalid scientific structure is not retryable until corrected; a stale preview requires a new preview. Error ordering and truncation must be deterministic. Exact future API envelope/version is design work, not a new field in the unchanged public bundle.
+
+## Concrete evidence and future tests
+
+- `source-blocked.json` contains undeclared `unmappedScientificField`; the mapper returns exit1, writes a blocker report and emits no bundle. This is a tested offline mapping refusal, not a database rollback.
+- `bad/dangling-uuid.json`, duplicate-identity, bad-unit, wrong-type and present-null are complete files. Actual offline validator reports/exit1 are saved. Repairs point to `expected/bundle.json`; correcting the input produces valid draft output, not a production write.
+- `WRITE-REJECTION-CASES.json` gives required receiver transactions and exact absence/invariant assertions. Every receiver case is `not_run_receiver_unsupported` until tested against a real disposable receiving catalog.
+
+For each future integration case, capture canonical table/revision/annotation/asset-registration state before the request and after failure, verify equality excluding explicitly specified failure telemetry, reopen/recover the catalog, and verify again. Use two concurrent writers for stale-preview/duplicate races, inject failures before commit and between canonical commit/index publication, and test filesystem staging crashes separately. Test an invalid row late in a multi-entity payload to detect partial application. Also send malformed data directly to the receiver without running this kit, proving server enforcement. No production scientific database should be used.
+
+## Connection and error boundaries
+
+All canonical DataJoint writes in an import must use the same connection and transaction. Filesystem staging and derived SQLite publication require their own recorded lifecycle; they are not covered by that transaction. A late statement error must abort the whole canonical import even when InnoDB rolled back only the failed statement. Never catch the error and commit preceding rows as success.
+
+`skip_duplicates` is not a payload-equality check. Exact replay requires explicit identity/revision/content comparison. `ignore_extra_fields` is not lossless import: unknown scientific fields require reviewed preservation and query mappings or rejection. These are receiver requirements. The 13 receiver cases remain `not_run_receiver_unsupported`.
+
+Sources: [DataJoint transactions](https://docs.datajoint.com/explanation/transactions/), [insert options](https://docs.datajoint.com/how-to/insert-data/), [InnoDB error handling](https://dev.mysql.com/doc/refman/8.4/en/innodb-error-handling.html).

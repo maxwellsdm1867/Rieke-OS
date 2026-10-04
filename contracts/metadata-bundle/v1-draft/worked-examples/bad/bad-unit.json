@@ -1,0 +1,525 @@
+{
+  "ancestry": [
+    {
+      "id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1"
+      },
+      "kind": "group",
+      "parent_id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "f7030d18-7df9-5881-8a8c-1e6bcd4c64cb",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1"
+      },
+      "kind": "block",
+      "parent_id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "615d3fa7-2516-5b12-9495-fe9d0c574540",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:2"
+      },
+      "kind": "block",
+      "parent_id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "protocol_id": "d99c33ac-5a76-507f-8443-0fc7810c6f51",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "0c837501-55e3-549d-bea9-88f9223d477a",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2"
+      },
+      "kind": "group",
+      "parent_id": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "b57eac88-0c68-5f25-8b71-31fdbcd76866",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2/block:3"
+      },
+      "kind": "block",
+      "parent_id": "0c837501-55e3-549d-bea9-88f9223d477a",
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    }
+  ],
+  "annotations": {
+    "entries": [
+      {
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "tags": [
+          "candidate"
+        ],
+        "target_id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+        "target_kind": "cell"
+      },
+      {
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "tags": [
+          "keep"
+        ],
+        "target_id": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152",
+        "target_kind": "epoch"
+      },
+      {
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "tags": [
+          "review"
+        ],
+        "target_id": "359e389c-4164-5f17-b327-de6c209db051",
+        "target_kind": "epoch"
+      },
+      {
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18",
+        "tags": [
+          "other acquisition identity"
+        ],
+        "target_id": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+        "target_kind": "cell"
+      }
+    ],
+    "profiles": [
+      {
+        "author_name": "Synthetic Reviewer",
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18"
+      }
+    ]
+  },
+  "authority": {
+    "name": "Synthetic Example Lab",
+    "namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682"
+  },
+  "bundle_id": "e27a860e-d78c-490c-bbbf-5d67c307ca81",
+  "cells": [
+    {
+      "id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "identity": {
+        "mode": "native_uuid",
+        "native_key": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351"
+      },
+      "label": "Cell1",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2"
+      },
+      "label": "Cell1",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "id": "629d15e0-2c4e-5fb8-a7df-e52cee34328a",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:empty"
+      },
+      "label": "Empty recorded cell",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    }
+  ],
+  "dataset": {
+    "id": "9f154d40-3cb1-5fe5-90c4-18e779bbebe3",
+    "identity": {
+      "mode": "uuid5",
+      "native_key": "worked-collection"
+    },
+    "label": "Synthetic worked collection",
+    "membership_scope": "subset",
+    "revision": "synthetic-r1"
+  },
+  "epochs": [
+    {
+      "block_id": "f7030d18-7df9-5881-8a8c-1e6bcd4c64cb",
+      "cell_id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "fields": {
+        "demo:amplitude": {
+          "status": "present",
+          "value": 0
+        },
+        "demo:enabled": {
+          "status": "present",
+          "value": false
+        },
+        "demo:temperature": {
+          "status": "not_recorded"
+        }
+      },
+      "group_id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "id": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152",
+      "identity": {
+        "mode": "native_uuid",
+        "native_key": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152"
+      },
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "block_id": "f7030d18-7df9-5881-8a8c-1e6bcd4c64cb",
+      "cell_id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "fields": {
+        "demo:amplitude": {
+          "status": "present",
+          "value": 50
+        },
+        "demo:enabled": {
+          "status": "present",
+          "value": false
+        },
+        "demo:rare_note": {
+          "status": "present",
+          "value": "rare export field"
+        },
+        "demo:temperature": {
+          "status": "present",
+          "value": 22.5
+        }
+      },
+      "group_id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "id": "ed05a7fc-3447-588a-b974-670eef2b520f",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:2"
+      },
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "block_id": "615d3fa7-2516-5b12-9495-fe9d0c574540",
+      "cell_id": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351",
+      "fields": {
+        "demo:levels": {
+          "status": "present",
+          "value": [
+            0,
+            1,
+            2
+          ]
+        },
+        "demo:seed": {
+          "status": "present",
+          "value": "9007199254740993"
+        },
+        "demo:temperature": {
+          "status": "not_recorded"
+        }
+      },
+      "group_id": "d9637b23-5a7d-5437-a780-86326bb07fb5",
+      "id": "359e389c-4164-5f17-b327-de6c209db051",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:2/epoch:3"
+      },
+      "protocol_id": "d99c33ac-5a76-507f-8443-0fc7810c6f51",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    },
+    {
+      "block_id": "b57eac88-0c68-5f25-8b71-31fdbcd76866",
+      "cell_id": "cf1b8bd1-f76e-5cf6-b41d-b1ebeedc3d24",
+      "fields": {
+        "demo:amplitude": {
+          "status": "present",
+          "value": 50
+        },
+        "demo:enabled": {
+          "status": "present",
+          "value": true
+        },
+        "demo:temperature": {
+          "status": "not_recorded"
+        }
+      },
+      "group_id": "0c837501-55e3-549d-bea9-88f9223d477a",
+      "id": "afe89e98-3bb6-5e30-ae84-8b197544c83f",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:2/group:2/block:3/epoch:4"
+      },
+      "protocol_id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "source_id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307"
+    }
+  ],
+  "exported_at": "2026-10-03T05:00:00Z",
+  "extensions": {
+    "demo:notice": "Synthetic tutorial. Snapshot preserves original input but does not establish universal queryability or raw verification.",
+    "demo:source_snapshot": {
+      "authority_namespace_uuid": "5e0491e1-c451-4f91-9a6a-de7152831682",
+      "dataset_key": "worked-collection",
+      "experiment": {
+        "cells": [
+          {
+            "epochGroups": [
+              {
+                "epochBlocks": [
+                  {
+                    "epochs": [
+                      {
+                        "key": "epoch:1",
+                        "parameters": {
+                          "amplitude": 0
+                        },
+                        "responses": {
+                          "Amplifier": {
+                            "h5path": "/experiment/epochs/epoch1/responses/Amplifier/data",
+                            "sampleCount": 5000,
+                            "sampleRate": 10000,
+                            "sampleRateUnits": "Hz",
+                            "units": "mV"
+                          }
+                        },
+                        "tags": [
+                          "keep"
+                        ],
+                        "uuid": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152"
+                      },
+                      {
+                        "key": "epoch:2",
+                        "parameters": {
+                          "rareNote": "rare export field",
+                          "temperature": 22.5
+                        },
+                        "responses": {},
+                        "tags": []
+                      }
+                    ],
+                    "key": "block:1",
+                    "parameters": {
+                      "amplitude": 50,
+                      "enabled": false,
+                      "temperature": null
+                    },
+                    "protocolID": "CurrentStep/v1"
+                  },
+                  {
+                    "epochs": [
+                      {
+                        "key": "epoch:3",
+                        "parameters": {
+                          "levels": [
+                            0,
+                            1,
+                            2
+                          ]
+                        },
+                        "responses": {},
+                        "tags": [
+                          "review"
+                        ]
+                      }
+                    ],
+                    "key": "block:2",
+                    "parameters": {
+                      "seed": "9007199254740993",
+                      "temperature": null
+                    },
+                    "protocolID": "Noise/v2"
+                  }
+                ],
+                "key": "group:1"
+              }
+            ],
+            "key": "cell:1",
+            "label": "Cell1",
+            "tags": [
+              "candidate"
+            ],
+            "uuid": "7f4e8e7b-3a2d-4c91-8f12-0e9c28a40351"
+          },
+          {
+            "epochGroups": [
+              {
+                "epochBlocks": [
+                  {
+                    "epochs": [
+                      {
+                        "key": "epoch:4",
+                        "parameters": {
+                          "enabled": true
+                        },
+                        "responses": {},
+                        "tags": []
+                      }
+                    ],
+                    "key": "block:3",
+                    "parameters": {
+                      "amplitude": 50,
+                      "temperature": null
+                    },
+                    "protocolID": "CurrentStep/v1"
+                  }
+                ],
+                "key": "group:2"
+              }
+            ],
+            "key": "cell:2",
+            "label": "Cell1",
+            "tags": [
+              "other acquisition identity"
+            ]
+          },
+          {
+            "epochGroups": [],
+            "key": "cell:empty",
+            "label": "Empty recorded cell",
+            "tags": []
+          }
+        ],
+        "key": "session:synthetic-A",
+        "label": "Synthetic session A",
+        "start_time": "10/01/2026 10:15:00:000000"
+      },
+      "format": "synthetic-parser-shaped-v1",
+      "notice": "SYNTHETIC scientific records. Inspired by inspected nested parsed metadata, not an actual RetinAnalysis export or experiment.",
+      "parameter_definitions": {
+        "amplitude": {
+          "id": "demo:amplitude",
+          "type": "number",
+          "unit": "pA"
+        },
+        "enabled": {
+          "id": "demo:enabled",
+          "type": "boolean",
+          "unit": "1"
+        },
+        "levels": {
+          "id": "demo:levels",
+          "type": "array",
+          "unit": "1"
+        },
+        "rareNote": {
+          "id": "demo:rare_note",
+          "type": "string",
+          "unit": null
+        },
+        "seed": {
+          "id": "demo:seed",
+          "type": "integer_string",
+          "unit": "1"
+        },
+        "temperature": {
+          "id": "demo:temperature",
+          "null_status": "not_recorded",
+          "type": "number",
+          "unit": "Cel"
+        }
+      },
+      "reviewer": {
+        "author_name": "Synthetic Reviewer",
+        "profile_uuid": "ef675c7c-1bfb-4db4-bfd5-f3856825ba18"
+      },
+      "revision": "synthetic-r1"
+    }
+  },
+  "field_definitions": [
+    {
+      "id": "demo:amplitude",
+      "label": "amplitude",
+      "scope": "epoch",
+      "type": "number",
+      "unit": " pA "
+    },
+    {
+      "id": "demo:temperature",
+      "label": "temperature",
+      "scope": "epoch",
+      "type": "number",
+      "unit": "Cel"
+    },
+    {
+      "id": "demo:enabled",
+      "label": "enabled",
+      "scope": "epoch",
+      "type": "boolean",
+      "unit": "1"
+    },
+    {
+      "id": "demo:seed",
+      "label": "seed",
+      "scope": "epoch",
+      "type": "integer_string",
+      "unit": "1"
+    },
+    {
+      "id": "demo:rare_note",
+      "label": "rareNote",
+      "scope": "epoch",
+      "type": "string",
+      "unit": null
+    },
+    {
+      "id": "demo:levels",
+      "label": "levels",
+      "scope": "epoch",
+      "type": "array",
+      "unit": "1"
+    }
+  ],
+  "format": "disco-metadata-bundle",
+  "producer": {
+    "adapter_revision": "worked-1",
+    "name": "WorkedTutorialAdapter",
+    "version": "1.0"
+  },
+  "protocols": [
+    {
+      "id": "4dc6e2e1-f609-524e-8a8a-9120d0d2997a",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "CurrentStep/v1"
+      },
+      "name": "CurrentStep/v1"
+    },
+    {
+      "id": "d99c33ac-5a76-507f-8443-0fc7810c6f51",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "Noise/v2"
+      },
+      "name": "Noise/v2"
+    }
+  ],
+  "schema_version": "1.0.0-draft.1",
+  "sources": [
+    {
+      "id": "a1bb3f6b-6198-5eee-89d0-7cbd5b74d307",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A"
+      },
+      "label": "Synthetic session A",
+      "metadata_revision": "synthetic-r1",
+      "start_time": {
+        "original": "10/01/2026 10:15:00:000000",
+        "status": "unknown"
+      }
+    }
+  ],
+  "streams": [
+    {
+      "device": "Amplifier",
+      "epoch_id": "36f1dd9e-9201-4e7a-bd22-42f4b04d6152",
+      "id": "efe9b820-a2cf-5a70-9926-0dab3fc999e7",
+      "identity": {
+        "mode": "uuid5",
+        "native_key": "session:synthetic-A/cell:1/group:1/block:1/epoch:1/response:Amplifier"
+      },
+      "kind": "response",
+      "sample_count": 5000,
+      "sample_rate_hz": 10000,
+      "trace_state": "absent",
+      "unit": "mV"
+    }
+  ]
+}

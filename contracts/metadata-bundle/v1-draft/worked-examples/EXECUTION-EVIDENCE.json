@@ -1,0 +1,96 @@
+{
+  "status": "passed",
+  "scope": "offline synthetic only; no DB/raw reads/performance run",
+  "generation": "build_examples.py completed",
+  "tests": {
+    "worked_example_methods": 14,
+    "original_adapter_methods": 25,
+    "source_checker_methods": 2,
+    "all_passed": true,
+    "golden_replay_methods": 2,
+    "diagnostic_methods": 6,
+    "total_methods": 49
+  },
+  "cli_cases": [
+    {
+      "input": "expected/bundle.json",
+      "exit_code": 0,
+      "report": "cli-reports/expected--bundle.json.report.json",
+      "input_sha256": "d9f47b22eca7ef73af5c6151cc61fce22e30de6bb94cf2f37ee9aaa3dbda59ad"
+    },
+    {
+      "input": "expected-raw-claim/bundle.json",
+      "exit_code": 0,
+      "report": "cli-reports/expected-raw-claim--bundle.json.report.json",
+      "input_sha256": "7acb4541f746b1600f9103716aee3f618ae19a1399c48b8c8734cc3706fd7514"
+    },
+    {
+      "input": "expected-revision-2/bundle.json",
+      "exit_code": 0,
+      "report": "cli-reports/expected-revision-2--bundle.json.report.json",
+      "input_sha256": "c7372ca8516c4f5959a95658d8cdd457ab3bca6fc78bc7e9f4beb41160fa6831"
+    },
+    {
+      "input": "bad/dangling-uuid.json",
+      "exit_code": 1,
+      "report": "cli-reports/bad--dangling-uuid.json.report.json",
+      "input_sha256": "b7373b2bfbebc7071e30459e8937200f3cca5393b48f5c1fce4ed9411ff1f949"
+    },
+    {
+      "input": "bad/duplicate-identity.json",
+      "exit_code": 1,
+      "report": "cli-reports/bad--duplicate-identity.json.report.json",
+      "input_sha256": "dc5b51429387f175d7d25e87cc9613465b33745a194cdb4e1a8608d2dc554e61"
+    },
+    {
+      "input": "bad/bad-unit.json",
+      "exit_code": 1,
+      "report": "cli-reports/bad--bad-unit.json.report.json",
+      "input_sha256": "c5d2028af41119954c6634c084d7de0d21ced076c55ad12692bd4479d82b3d72"
+    },
+    {
+      "input": "bad/wrong-type.json",
+      "exit_code": 1,
+      "report": "cli-reports/bad--wrong-type.json.report.json",
+      "input_sha256": "f6f6d534a24f2eda26e96f288f48b60281e35fc34be40565be59bd57f228b5ae"
+    },
+    {
+      "input": "bad/present-null.json",
+      "exit_code": 1,
+      "report": "cli-reports/bad--present-null.json.report.json",
+      "input_sha256": "3e47df6c16a300154a81152fb840b3819f1e6632346fdb73a5146e675b590b37"
+    }
+  ],
+  "independent_review": {
+    "status": "GO",
+    "confirmed_by_parent": true,
+    "prior_validator_fixture_parity_cases": 19,
+    "pointer_resolution_checks": 21,
+    "diagnostic_tests": 6,
+    "golden_outputs": 34,
+    "replay_tests": 2,
+    "public_schema_and_bundle_bytes_unchanged": true,
+    "scope": "Offline tooling only; no production receiver or DB execution"
+  },
+  "strict_input_fix": {
+    "status": "passed",
+    "completed_utc": "2026-10-03T18:42:46Z",
+    "loader": "unchanged validate_bundle.loads on bounded original source bytes before output creation",
+    "cli_regression_cases": [
+      "duplicate scientific amplitude keys",
+      "NaN",
+      "Infinity",
+      "overflow 1e999"
+    ],
+    "expected_each": "exit1, actionable stderr, no bundle and no output directory",
+    "results": "all passed"
+  },
+  "refinement": {
+    "legacy_parity_cases": 19,
+    "api_and_default_cli_equal": true,
+    "golden_replay_files": 34,
+    "golden_replay_passed": true,
+    "old_library_version_modified": false,
+    "database_cases_run": 0
+  }
+}

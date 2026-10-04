@@ -1,0 +1,98 @@
+{
+  "format": "tutorial-receiver-acceptance-plan-not-an-import-schema",
+  "public_contract_version": "1.0.0-draft.1",
+  "receiver_status": "unsupported",
+  "database_integration_tests_run": false,
+  "baseline_assertion": "For precommit failures, canonical entities/revisions/annotations/asset registrations equal pre-request state after rollback and reopen; no published partial query generation.",
+  "cases": [
+    {
+      "id": "write.version",
+      "input": "../invalid/unknown-version.json",
+      "expect": "Reject unsupported version before writes; list supported versions; no automatic migration",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.links",
+      "input": "bad/dangling-uuid.json",
+      "offline_evidence": "cli-reports/bad--dangling-uuid.json.report.json",
+      "expect": "Reject at epoch cell_id path; no partial source/cell/epoch rows",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.unique",
+      "input": "bad/duplicate-identity.json",
+      "offline_evidence": "cli-reports/bad--duplicate-identity.json.report.json",
+      "expect": "Reject duplicate identity; also enforce native concurrent uniqueness in separate two-writer test",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.type",
+      "input": "bad/wrong-type.json",
+      "offline_evidence": "cli-reports/bad--wrong-type.json.report.json",
+      "expect": "Reject string where declared number before commit; no implicit conversion",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.unit",
+      "input": "bad/bad-unit.json",
+      "offline_evidence": "cli-reports/bad--bad-unit.json.report.json",
+      "expect": "Reject malformed unit; separately test field-registry dimension/unit conflicts without pretending JSON proves scientific units",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.missingness",
+      "input": "bad/present-null.json",
+      "offline_evidence": "cli-reports/bad--present-null.json.report.json",
+      "expect": "Reject present null; zero/false and explicit statuses retain meaning",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.capability",
+      "input": "../invalid/fake-verified.json",
+      "expect": "Reject asserted verification; supplied locators cause no fetch/copy/open/QC pass",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.identity",
+      "input": "../invalid/wrong-uuid5.json",
+      "expect": "Reject wrong derivation; separately test same UUID changed source/ancestry and JSON checksum substituted as H5 Source identity",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.stale-preview",
+      "input": "future two-writer fixture",
+      "expect": "Reject stale payload/generation token after revalidation under lock; no partial records",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.late-failure",
+      "input": "future multi-entity fixture with late invalid row or audit failure",
+      "expect": "All canonical writes roll back; no asset bindings or success receipts leak",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.asset-crash",
+      "input": "future explicit attach fixture with owned staging",
+      "expect": "Crash recovery removes or quarantines unpublished owned staging; no leaked registrations; never deletes pre-existing/shared assets",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.index-after-commit",
+      "input": "future valid import with publication fault",
+      "expect": "Canonical commit remains recorded; index is unpublished/rebuild-needed; correct fallback or explicit incomplete; no false rollback claim",
+      "status": "not_run_receiver_unsupported"
+    },
+    {
+      "id": "write.replay",
+      "input": "expected/bundle.json twice and changed content under same revision",
+      "expect": "Exact replay idempotent; same revision/different content rejected; r2 requires approved expected prior revision",
+      "status": "not_run_receiver_unsupported"
+    }
+  ],
+  "transaction_requirements": [
+    "Canonical DataJoint writes share one connection and transaction; filesystem and SQLite publication are separate observed stages.",
+    "Any statement failure aborts the entire import transaction, even if InnoDB rolled back only that statement.",
+    "skip_duplicates cannot prove payload equality; compare exact replay/revision content explicitly.",
+    "ignore_extra_fields cannot satisfy losslessness; unknown fields require reviewed preservation/query mapping or rejection."
+  ]
+}

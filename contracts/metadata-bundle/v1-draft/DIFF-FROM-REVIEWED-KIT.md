@@ -48,3 +48,7 @@ Catalog normalization changes only source locations, never declarations, fields,
 Original ZIP, handoff guide and historical validation receipts are not repackaged. New evidence is labeled separately. Independent review GO received; in-place Library replacement is authorized after offline fixture validation. Contract version unchanged; package revision handoff.2.
 
 Recommended destination: `contracts/metadata-bundle/v1-draft/`; no benchmark registry or implementation files.
+
+## Worked example revision (package handoff.3, pending independent review)
+
+Adds worked-examples/: executable source mapper, synthetic input/paired output, mapping and losslessness inventory, UUID ledger/tutorial, revision/raw-claim variants, bad bundles/expected errors/repairs, blocked input/report, teaching-only frozen selection and offline regressions. See DELTA-FROM-HANDOFF-2.json outside the kit for exact added/modified paths and hashes. The original 32-file staging tree is untouched. Schema, public mapping, core validator and original tests retain their exact bytes.
