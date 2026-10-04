@@ -33,7 +33,7 @@ test('QC keeps its list and committed frame through a delayed family change, the
   assert.equal(h.root.findByProps({className:'qc-trial-list'}),list);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);
   assert.equal(frame().props['aria-busy'],true);
-  assert.equal(frame().findByProps({className:'stable-content-body'}).props.inert,'');
+  assert.equal(frame().findByProps({className:'stable-content-body'}).props.inert,true);
   assert.equal(h.root.findByProps({className:'qc-trace-identity'}).findByType('code').children.join(''),'epoch-0');
   await h.act(()=>release());await h.waitFor(()=>!frame().props['aria-busy']);
   assert.equal(h.root.findByProps({className:'qc-recording'}),recording);

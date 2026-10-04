@@ -12,13 +12,13 @@ test('predicate catalog refresh preserves the editor node but gates every action
   await h.render(Dialog,{...props,catalog:{...catalog,key:'registry-1',loading:true,data:null}});
   assert.equal(h.root.findByType('fieldset'),builder);
   const body=h.root.findByProps({className:'stable-content-body'});
-  assert.equal(body.props.inert,'');assert.equal(body.props['aria-hidden'],true);
+  assert.equal(body.props.inert,true);assert.equal(body.props['aria-hidden'],true);
   const buttons=h.root.findAllByType('button');
   assert.equal(buttons.find(n=>n.children.includes('View matching epochs')).props.disabled,true);
   assert.equal(buttons.find(n=>n.children.includes('Preview matches')).props.disabled,true);
   await h.render(Dialog,{...props,catalog:{...catalog,key:'registry-1'}});
   assert.equal(h.root.findByType('fieldset'),builder);
-  assert.equal(h.root.findByProps({className:'stable-content-body'}).props.inert,undefined);
+  assert.equal(h.root.findByProps({className:'stable-content-body'}).props.inert,false);
  }finally{await h.close();}
 });
 
@@ -28,7 +28,7 @@ test('predicate refresh errors remain visible and a different project cannot ret
   await h.mount(Dialog,props);
   await h.render(Dialog,{...props,catalog:{...catalog,key:'error',error:'Catalog read failed',data:null}});
   assert.ok(h.root.findAllByProps({role:'alert'}).length>0);
-  assert.equal(h.root.findByProps({className:'stable-content-body'}).props.inert,'');
+  assert.equal(h.root.findByProps({className:'stable-content-body'}).props.inert,true);
   await h.render(Dialog,{...props,projectId:'project-B',catalog:{...catalog,key:'new',data:null,loading:true}});
   assert.equal(h.root.findAllByType('fieldset').length,0);
  }finally{await h.close();}
