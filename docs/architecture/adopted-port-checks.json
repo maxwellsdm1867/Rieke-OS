@@ -49,6 +49,20 @@
         "javascript": [],
         "python": ["python/tests/test_workspace_mutation_outcomes.py", "python/tests/test_workspace_group_recovery.py"]
       }
+    },
+    {
+      "id": "p05-export-materialization",
+      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Export format materialization"},
+      "affected_paths": ["python/**"],
+      "rules": [
+        {"language": "python", "file": "python/workspace_export_artifacts.py", "allow": ["pathlib", "workspace_sqlite", "workspace_external_tags"]},
+        {"language": "python", "file": "python/workspace_api.py", "require": ["workspace_export_artifacts"], "deny": ["workspace_sqlite"]},
+        {"language": "python", "file": "python/workspace_candidate_exports.py", "require": ["workspace_export_artifacts"], "deny": ["workspace_sqlite", "workspace_external_tags"]}
+      ],
+      "tests": {
+        "javascript": [],
+        "python": ["python/tests/test_workspace_export_artifacts.py", "python/tests/test_workspace_export_boundary.py", "python/tests/test_workspace_candidate_exports.py", "python/tests/test_workspace_export_boundaries.py", "python/tests/test_workspace_export_paths.py", "python/tests/test_workspace_recipes.py", "python/tests/test_workspace_sqlite.py", "python/tests/test_workspace_matlab.py", "python/tests/test_workspace_export_reader.py", "python/tests/test_workspace_workbench_exports.py"]
+      }
     }
   ]
 }

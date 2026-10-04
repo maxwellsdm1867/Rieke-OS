@@ -37,6 +37,7 @@
     "workspace_disk_index.py",
     "workspace_explore_queries.py",
     "workspace_explorer.py",
+    "workspace_export_artifacts.py",
     "workspace_export_folder.py",
     "workspace_external_tags.py",
     "workspace_folder_browser.py",

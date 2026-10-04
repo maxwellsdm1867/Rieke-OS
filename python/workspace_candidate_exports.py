@@ -9,12 +9,12 @@ from __future__ import annotations
 import copy
 import contextlib
 import os
-from pathlib import Path
 import uuid
 
 from recording_workspace import digest, now, write_json
 from workspace_recipes import checksum, member_map, prepare_export, save_snapshot, seal
 from workspace_storage import managed_directory
+from workspace_export_artifacts import materialize_export_format
 
 FORMATS = {'reference-json','wheeler-sqlite','matlab-mat'}
 
@@ -123,19 +123,11 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
                 for source in service.sources if source['source_sha256'] in candidate['source_revisions']],
             'export_scope':scope,'waveforms':'references-only; original H5 files must remain accessible'}
         write_json(artifact,package)
-        if format=='wheeler-sqlite':
-            from workspace_sqlite import build_sqlite_export
-            artifact=output/'recordings.sqlite'
-            build_sqlite_export(package,artifact)
-            from workspace_external_tags import prepare_return_folder
-            prepare_return_folder(output,package)
-        elif format=='matlab-mat':
+        def matlab_writer(recipe, output_dir, *, epoch_records):
             from workspace_matlab import build_matlab_export
-            matlab_dir=output/'matlab'
-            matlab=build_matlab_export(service,recipe,matlab_dir,epoch_records=records)
-            write_json(matlab_dir/'export-report.json',{key:value for key,value in matlab.items()
-                if key not in {'mat_path','recipe_path'}})
-            artifact=Path(matlab['mat_path'])
+            return build_matlab_export(service,recipe,output_dir,epoch_records=epoch_records)
+        artifact=materialize_export_format(package,output,format=format,
+            matlab_writer=matlab_writer,write_json=write_json)
         from workspace_tag_predicates import annotation_locks
         with annotation_locks(service,candidate['predicate'],extra_protocols=[scope_uuid]):
             if candidate.get('annotation_scope'):

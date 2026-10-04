@@ -34,6 +34,7 @@ from workspace_diff import summarize_diff
 from workspace_protocol_identity import selection_protocols, protocol_compatibility, require_protocol_compatibility
 from workspace_import_check import classify_source
 from workspace_audit import build_audit_payload, normalize_event, normalize_events, repeat_suggestions
+from workspace_export_artifacts import materialize_export_format
 
 
 class StaleWorkspace(ValueError):
@@ -1457,18 +1458,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             artifact = output / "recordings.json"
             write_json(artifact, package)
             try:
-                if export_format == 'wheeler-sqlite':
-                    from workspace_sqlite import build_sqlite_export
-                    artifact = output / 'recordings.sqlite'
-                    build_sqlite_export(package, artifact)
-                    from workspace_external_tags import prepare_return_folder
-                    prepare_return_folder(output, package)
-                elif export_format == 'matlab-mat':
+                def matlab_writer(recipe, output_dir, *, epoch_records):
                     from workspace_matlab import build_matlab_export
-                    matlab = build_matlab_export(service, recipe, output / 'matlab', epoch_records=package['epochs'])
-                    write_json(output / 'matlab' / 'export-report.json', {key: value for key, value in matlab.items()
-                        if key not in {'mat_path', 'recipe_path'}})
-                    artifact = Path(matlab['mat_path'])
+                    return build_matlab_export(service, recipe, output_dir, epoch_records=epoch_records)
+                artifact = materialize_export_format(package, output, format=export_format,
+                    matlab_writer=matlab_writer, write_json=write_json)
                 saved = store.record_dataset_revision(recipe, actor=os.environ.get("USER", "local-user"),
                     expected_revisions={k: v["revision"] for k, v in curation.items()},
                     artifact_path=str(artifact), artifact_sha256=digest(artifact))
