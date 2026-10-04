@@ -107,3 +107,37 @@ knowledge and preserves same-source revalidation, collisions, rollback, unknown
 commit and partial-success reporting. No generic repository, schema rewrite or
 new importer is proposed. Existing surveys informed this assessment; bounded source
 reads confirmed the current coupling. No import/H5/native fixtures ran.
+
+## Comprehensive core contract review
+
+The structured ledger now contains 59 core module contracts: 14 frontend, 16
+scientific command/recovery/export, 10 import/storage/query/trace, 18 desktop
+(including the lifecycle overview), and one contract-enforcement module. The
+existing overview table above summarizes the largest ownership areas; the JSON
+contains the detailed records. Each record states inputs/outputs, identity/type/
+order/unit/provenance rules, errors and partial success, freshness, transaction/
+idempotency rules, cancellation/lifetime, caller dependencies, integration
+capabilities and change rules. Source pointers and existing tests are separate
+from exact executed evidence. New fault ideas remain labeled unrun.
+
+Four independent read-only area reviews reused the completed survey and inspected
+current source. The ledger records their input hashes. Conceptual dependency edges
+can be reciprocal; they do not claim an acyclic import graph or transfer authority.
+The interactive local HTML is generated from this ledger and the unchanged
+benchmark registry. It is a review artifact, not another contract or benchmark
+registry. Source-qualified evidence remains attached to its original commit.
+
+This review documents current contracts comprehensively; it does not implement
+every proposed separation or close every qualification gap. Open decisions include
+format-neutral intake, the actual importer/catalog transaction seam, complete raw
+field accessibility, conservative query authority, native durability and process
+exit, and performance baselines. Changes beyond the reviewed P07/group-save/
+presentation increments require bounded design review. No generic repository,
+new importer, schema migration or native qualification was performed.
+
+The presentation integration candidate `df40a19` passed 170 mapped renderer tests,
+15 guard CLI tests, nine behavioral fault checks and the frontend build, with zero
+skips. Its immutable 17-case App baseline remains unchanged. Final combined
+source verification is recorded outside the repository under `task-4/evidence`.
+All seven whole-app cost shifts remain unmeasured; benchmark criteria are not
+measured results or calibrated latency targets.
