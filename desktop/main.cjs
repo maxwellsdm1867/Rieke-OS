@@ -13,7 +13,7 @@ const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
 const {StartupSession,viewNamespace}=require('./startup-session.cjs');
-let startupSession;const scopedDraftStores=new Map();
+let startupSession,startupOpening;const scopedDraftStores=new Map();
 function scopedDraftStore(window,projectId){
   const origin=new URL(window.webContents.getURL()).origin;
   if(projectId==='launcher'&&origin===supervisor.origin)return {store:draftStore};
@@ -84,11 +84,15 @@ async function prepareQuit() {
 function orderlyQuit() {
   if (!quitting) {
     coordinator?.stop();
+    if(startupSession)startupSession.cancelled=true;
     quitting = new QuitCoordinator({
       prepareDrafts: timeout => viewUnavailable
         ? Promise.resolve({ready:false,reason:'The scientific page is unavailable. The last saved view is retained; its latest changes could not be confirmed.'})
         : draftBarrier.prepare(scientificWindows, {timeout}),
-      cleanup: options => supervisor ? supervisor.quit(options) : Promise.resolve({ready:true}),
+      cleanup: async options => {
+        if(startupOpening)await startupOpening.catch(()=>{});
+        return supervisor ? supervisor.quit(options) : {ready:true};
+      },
       publish: value => { lifecycleStatus = value; broadcast(value); },
       exit: () => { quitAuthorized = true; app.quit(); }
     });
@@ -204,11 +208,15 @@ function registerIPC() {
   noPayload('desktop:startup-session', window => new URL(window.webContents.getURL()).origin===supervisor.origin?startupSession.claim():null);
   noPayload('desktop:choose-startup',()=>startupSession.choose());
   noPayload('desktop:cancel-startup',()=>{startupSession.cancelled=true;});
-  handle('desktop:finish-startup',async (url,window)=>{
-    if(new URL(window.webContents.getURL()).origin!==supervisor.origin||!startupSession.target||typeof url!=='string'||url.length>2048)throw Error('No startup restoration is active');
+  noPayload('desktop:open-startup',window=>{
+    if(new URL(window.webContents.getURL()).origin!==supervisor.origin||!startupSession.target||startupOpening)throw Error('No startup restoration is active');
+    const expected=startupSession.target;startupSession.target=null;
+    if(startupSession.cancelled)return {restored:false};
+    startupOpening=(async()=>{
+    const opened=await supervisor.api('/api/desktop/open-project',{method:'POST',body:{directory:expected.projectPath,project_uuid:expected.projectId},timeout:90000});
+    const url=opened.url;
     if(!await supervisor.authorizeProjectURL(url))throw Error('Restored project failed ownership verification');
     const origin=new URL(url).origin,record=supervisor.registry.services.find(record=>`http://127.0.0.1:${record.port}`===origin);
-    const expected=startupSession.target;startupSession.target=null;
     const mismatch=record?.project_uuid!==expected.projectId||record?.project_path!==expected.projectPath;
     if(startupSession.cancelled||mismatch||quitting){
       if(!record)throw Error('Restored project ownership is unavailable; Quit to recover');
@@ -218,10 +226,13 @@ function registerIPC() {
       while((await supervisor.api('/api/desktop/health')).services.some(item=>item.pid===record.pid&&item.created_at===record.created_at)){
         if(Date.now()>deadline)throw Error('Cancelled project has not exited. Quit to recover.');await new Promise(resolve=>setTimeout(resolve,100));
       }
+      supervisor.origins.delete(origin);
       if(mismatch)throw Error('The saved project identity changed. Choose its current folder.');
       return {restored:false,closed:true};
     }
     await window.loadURL(origin);return {restored:true};
+    })().finally(()=>{startupOpening=null;});
+    return startupOpening;
   });
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {

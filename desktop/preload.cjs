@@ -9,7 +9,7 @@ function subscribe(channel, callback) {
 contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   protocolVersion: 1,
   cancelStartup:()=>ipcRenderer.invoke('desktop:cancel-startup'),
-  finishStartup:url=>ipcRenderer.invoke('desktop:finish-startup',url),
+  openStartup:()=>ipcRenderer.invoke('desktop:open-startup'),
   startupSession:()=>ipcRenderer.invoke('desktop:startup-session'),
   chooseStartup:()=>ipcRenderer.invoke('desktop:choose-startup'),
   applyAppIcon: variant=>ipcRenderer.invoke('desktop:app-icon',variant),
