@@ -25,6 +25,11 @@ class BenchmarkTests(unittest.TestCase):
         for name in paths:
             target = cls.repo / name; target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)
+        # These commits model two fixed versions independently of the app's
+        # current release; copying that version made a real bump break the gate tests.
+        release = json.loads((cls.repo/'rieke-release.json').read_text())
+        release['version'] = '0.1.6'
+        (cls.repo/'rieke-release.json').write_text(json.dumps(release))
         def git(*args): return bench.git(*args, root=cls.repo)
         git('init', '-q'); git('add', '.')
         git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Benchmark fixture')
