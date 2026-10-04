@@ -6,14 +6,16 @@ export default function useWorkspaceNavigation(){
     const saved=window.history.state?.riekeWorkspace;
     return saved&&validWorkspaceRoute(saved.route)&&Number.isInteger(saved.index)?saved:{route:makeWorkspaceRoute('overview',{},freshKey()),index:0};
   });
+  const intent=useRef(0);
   const current=useRef(location),furthest=useRef(location.index);
   current.current=location;
   useEffect(()=>{
     window.history.replaceState({...window.history.state,riekeWorkspace:current.current},'',routeAddress(current.current.route));
-    const receive=event=>{const next=event.state?.riekeWorkspace;if(next&&validWorkspaceRoute(next.route)&&Number.isInteger(next.index)){furthest.current=Math.max(furthest.current,next.index);setLocation(next);}};
+    const receive=event=>{intent.current++;const next=event.state?.riekeWorkspace;if(next&&validWorkspaceRoute(next.route)&&Number.isInteger(next.index)){furthest.current=Math.max(furthest.current,next.index);setLocation(next);}};
     window.addEventListener('popstate',receive);return()=>window.removeEventListener('popstate',receive);
   },[]);
   const go=useCallback((page,details={})=>{
+    intent.current++;
     const route=makeWorkspaceRoute(page,details,freshKey()),previous=current.current;
     const next={route,index:previous.index+1};
     window.history.pushState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
@@ -34,5 +36,5 @@ export default function useWorkspaceNavigation(){
     window.history.replaceState({...window.history.state,riekeWorkspace:next},'',routeAddress(route));
     setLocation(next);
   },[]);
-  return {route:location.route,go,restore,consumeMergeIntent,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>window.history.back(),forward:()=>window.history.forward()};
+  return {intent:()=>intent.current,route:location.route,go,restore,consumeMergeIntent,canBack:location.index>0,canForward:location.index<furthest.current,back:()=>{intent.current++;window.history.back();},forward:()=>{intent.current++;window.history.forward();}};
 }

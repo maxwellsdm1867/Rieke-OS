@@ -1,6 +1,7 @@
 'use strict';
 const bridge = window.riekeDesktop;
 function display(status) {
+  document.getElementById('chooser').hidden=status.state!=='Starting';
   const testing = status.channel === 'unsigned-testing';
   document.getElementById('title').textContent = status.title || 'Disco recovery';
   document.getElementById('message').textContent = status.message || 'Startup has not completed.';
@@ -21,3 +22,5 @@ for (const [id, action] of [['install', () => bridge.installAndOpen()], ['retry'
     finally { event.target.disabled = false; }
   };
 }
+
+document.getElementById('chooser').onclick=async()=>{try{await bridge.chooseStartup();document.getElementById('message').textContent='The project chooser will open when application verification finishes.';}catch(error){document.getElementById('detail').textContent=error.message;}};

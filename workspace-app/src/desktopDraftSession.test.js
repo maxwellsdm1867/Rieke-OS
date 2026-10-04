@@ -57,3 +57,12 @@ test('a superseded load cannot publish after retry or after project close',async
   loads[2]({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'closed'}});await pending;
   assert.deepEqual(restores,[{route:'new'}]);
 });
+
+test('navigate away then back to the same route still supersedes a delayed restore',async()=>{
+  let intent=0,release,restores=0;
+  const session=createDesktopDraftSession({projectId:'project',navigationIdentity:()=>intent,
+    bridge:{loadDraft:()=>new Promise(resolve=>{release=resolve;}),saveDraft:async()=>{}},snapshot:()=>({route:'same-key'}),restore:()=>restores++,isBusy:()=>false});
+  await new Promise(resolve=>setImmediate(resolve));intent++;intent++;
+  release({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'same-key'}});
+  await session.flush();assert.equal(restores,0);session.close();
+});

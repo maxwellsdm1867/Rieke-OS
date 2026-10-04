@@ -12,6 +12,17 @@ const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
+const {StartupSession,viewNamespace}=require('./startup-session.cjs');
+let startupSession;const scopedDraftStores=new Map();
+function scopedDraftStore(window,projectId){
+  const origin=new URL(window.webContents.getURL()).origin;
+  if(projectId==='launcher'&&origin===supervisor.origin)return {store:draftStore};
+  const record=supervisor.registry?.services?.find(record=>record.bound&&record.project_uuid===projectId&&`http://127.0.0.1:${record.port}`===origin);
+  if(!record)throw Error('Saved view does not belong to this project window');
+  const key=viewNamespace(projectId,record.project_path,app.getVersion()+':view-v1');
+  if(!scopedDraftStores.has(key))scopedDraftStores.set(key,new DraftStore(path.join(app.getPath('userData'),'scoped-views',key)));
+  return {store:scopedDraftStores.get(key),record};
+}
 const {iconPath,applyAppIcon,savedAppIcon}=require('./app-icon.cjs');
 let appIcon='disco';
 const {QuitCoordinator} = require('./quit-coordinator.cjs');
@@ -190,6 +201,28 @@ function registerIPC() {
   noPayload('desktop:undo-text', window=>window.webContents.undo());
 
   noPayload('desktop:status', () => status());
+  noPayload('desktop:startup-session', window => new URL(window.webContents.getURL()).origin===supervisor.origin?startupSession.claim():null);
+  noPayload('desktop:choose-startup',()=>startupSession.choose());
+  noPayload('desktop:cancel-startup',()=>{startupSession.cancelled=true;});
+  handle('desktop:finish-startup',async (url,window)=>{
+    if(new URL(window.webContents.getURL()).origin!==supervisor.origin||!startupSession.target||typeof url!=='string'||url.length>2048)throw Error('No startup restoration is active');
+    if(!await supervisor.authorizeProjectURL(url))throw Error('Restored project failed ownership verification');
+    const origin=new URL(url).origin,record=supervisor.registry.services.find(record=>`http://127.0.0.1:${record.port}`===origin);
+    const expected=startupSession.target;startupSession.target=null;
+    const mismatch=record?.project_uuid!==expected.projectId||record?.project_path!==expected.projectPath;
+    if(startupSession.cancelled||mismatch||quitting){
+      if(!record)throw Error('Restored project ownership is unavailable; Quit to recover');
+      const response=await fetch(origin+'/api/project/close',{method:'POST',headers:{'X-Rieke-Desktop-Capability':supervisor.capability,'X-Workspace-Request':'1','Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(35000)});
+      const value=await response.json();if(!response.ok||value.state!=='closed')throw Error('Restoration cancelled but project cleanup requires recovery. Quit before continuing.');
+      const deadline=Date.now()+10000;
+      while((await supervisor.api('/api/desktop/health')).services.some(item=>item.pid===record.pid&&item.created_at===record.created_at)){
+        if(Date.now()>deadline)throw Error('Cancelled project has not exited. Quit to recover.');await new Promise(resolve=>setTimeout(resolve,100));
+      }
+      if(mismatch)throw Error('The saved project identity changed. Choose its current folder.');
+      return {restored:false,closed:true};
+    }
+    await window.loadURL(origin);return {restored:true};
+  });
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {
     if (preview) throw new Error('Updates are disabled in DISCO Preview.');
@@ -215,13 +248,16 @@ function registerIPC() {
   handle('desktop:drafts-ack', (payload, window) => {
     return draftBarrier.acknowledge(payload, window);
   });
-  handle('desktop:save-draft', async payload => {
-    return draftStore.save(payload);
+  handle('desktop:save-draft', async (payload,window) => {
+    const {store,record}=scopedDraftStore(window,payload?.projectId);
+    const result=await store.save(payload);
+    if(record)await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);
+    return result;
   });
-  handle('desktop:load-draft', async projectId => {
-    return draftStore.load(projectId);
+  handle('desktop:load-draft', async (projectId,window) => {
+    return scopedDraftStore(window,projectId).store.load(projectId);
   });
-  handle('desktop:reset-draft', projectId => draftStore.reset(projectId));
+  handle('desktop:reset-draft', (projectId,window) => scopedDraftStore(window,projectId).store.reset(projectId));
   noPayload('desktop:choose-project-folder', async window => {
     const result = await dialog.showOpenDialog(window, {properties: ['openDirectory', 'createDirectory'], title: 'Choose project folder'});
     return result.canceled ? null : result.filePaths[0];
@@ -251,13 +287,16 @@ else {
     draftStore = new DraftStore(app.getPath('userData'));
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});
+    startupSession=new StartupSession(app.getPath('userData'),app.getVersion()+':view-v1');
+    await startupSession.load();
+    if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Verifying the application and project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
       {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()}, {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 
-    {label: 'Window', submenu: [{role: 'minimize'}, {role: 'zoom'}]}]));
+    {label: 'Window', submenu: [{label:'Resume Last Workspace at Startup',type:'checkbox',checked:startupSession.value?.mode!=='chooser',click:item=>{(item.checked?startupSession.resume():startupSession.choose()).catch(()=>broadcast({...status(),message:'Startup preference could not be saved.'}));}},{role: 'minimize'}, {role: 'zoom'}]}]));
     if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Disco', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Disco GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }
     else await startScientificUI();
   }).catch(error => { console.error('Desktop startup failed:', error.name); app.exit(1); });

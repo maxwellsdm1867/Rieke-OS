@@ -46,3 +46,22 @@ def measured(name):
                 return function(*args, **kwargs)
         return wrapped
     return decorate
+
+
+def install_read_observers():
+    """Opt-in timing wrappers; preserve cache contracts and scientific behavior."""
+    if not os.environ.get('DISCO_LIFECYCLE_DIAGNOSTIC_DIR'):
+        return
+    import workspace_project_database, workspace_api, workspace_service
+    targets = [(workspace_project_database, 'ensure_project_database'),
+               (workspace_api, 'create_app'), (workspace_service, 'read_response_window'),
+               (workspace_service, 'connect'), (workspace_service, 'evaluate_protocol_file')]
+    targets += [(workspace_service.WorkspaceService, name) for name in
+                ('refresh', '_verified_source', '_read_source_metadata', 'epoch', 'trace')]
+    for owner, name in targets:
+        function = getattr(owner, name)
+        if getattr(function, '_disco_observed', False):
+            continue
+        wrapped = measured(getattr(owner, '__name__', type(owner).__name__) + '.' + name)(function)
+        wrapped._disco_observed = True
+        setattr(owner, name, wrapped)

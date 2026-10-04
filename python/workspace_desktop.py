@@ -816,6 +816,8 @@ def main(argv=None):
         if catalog.get('connection', {}).get('credential_provider', {}).get('kind') != 'native-project':
             raise ValueError('Desktop requires a project-owned native database; migrate legacy projects before opening them')
         session_lock = acquire_project_session(project)
+        from lifecycle_diagnostic import install_read_observers
+        install_read_observers()
         from workspace_project_database import ensure_project_database
         ensure_project_database(project)
         from workspace_api import create_app
