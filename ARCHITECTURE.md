@@ -22,6 +22,9 @@ indexes owned dependencies and existing conformance tests. The
 explain commands, CI coverage and the remaining review obligations. The catalog
 is an executable index, not a second behavioral contract.
 
+The [core module ledger](docs/architecture/core-module-ledger.md) records completed
+work, proposals, replacement options and explicitly unmeasured whole-app costs.
+
 ## Start here
 
 - [Domain vocabulary](CONTEXT.md): recorded identity, protocol workspace, source

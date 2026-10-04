@@ -1,0 +1,458 @@
+{
+  "format": "disco-core-module-ledger",
+  "version": 1,
+  "purpose": "Provenance/index for later module map and version comparison; not a benchmark runner or release attestation",
+  "source_baseline": "18975ad8240044273ca1f52783b20b8adbfd9a3f",
+  "published_stable": "e4aefd415dd4061af1d0856ba817628d4400122b",
+  "main": "d47dcab534220fa940f917f66f90e71af4dd2f56",
+  "historical_handoff": "018-core-survey/MODULE-LEDGER.md (preserved outside repository)",
+  "benchmark_registry": "benchmarks/registry.json",
+  "benchmark_suite_version": "1.0.3",
+  "benchmark_fixture_version": "native-truth-v1+mounted-workflow-500-v1",
+  "baseline_metrics": null,
+  "candidate_metrics": null,
+  "whole_app_costs": {
+    "startup": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "first_useful_result": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "memory": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "disk": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "build": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "backup": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    },
+    "shutdown": {
+      "status": "unmeasured",
+      "baseline": null,
+      "candidate": null
+    }
+  },
+  "policy": "Defined observable contracts permit internal rewrites when materially simpler, more efficient or robust is demonstrated. Existing internals are not preservation goals. Compare compatible existing benchmark receipts and whole-app cost shifts; do not invent timings.",
+  "modules": [
+    {
+      "id": "tree-selection",
+      "purpose": "Read exact tree selection/ranges without leaking route and traversal mechanics to views",
+      "owner": "treeSelectionReader",
+      "interfaces": [
+        "P03 adopted selection reader"
+      ],
+      "depends_on": [
+        "renderer-resources",
+        "typed-query"
+      ],
+      "status": "implemented",
+      "implementation_commits": [
+        "9fc8d1b03f9abb757e0a2f82b45728e93933d99f",
+        "75290aa5a3fb241dbdff3421e69b7483ade48453",
+        "1f5bcda6d07345043a155a477a6f681466f65110"
+      ],
+      "correctness_detectors": [
+        "treeSelectionReader.test.js",
+        "pagedTreeLifecycle.test.js",
+        "inspectorTreeAuthority.test.js",
+        "stableContentInert.test.js",
+        "candidateContinuity.test.js"
+      ],
+      "benchmark_case_ids": [
+        "ui.mounted.inspector.first",
+        "ui.mounted.inspector.return",
+        "correctness.navigation"
+      ],
+      "unmeasured_gaps": [
+        "native restoration",
+        "native authority latency",
+        "total retained memory"
+      ],
+      "replacement_option": "Replace traversal internals only when exact order, synchronous/scheduled behavior, cancellation and publication contracts pass; compare mounted and native cost separately.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "mutation-recovery",
+      "purpose": "Classify HTTP mutation completion separately from committed SQL and independent backup",
+      "owner": "register_mutation_recovery",
+      "interfaces": [
+        "P04 adopted completion policy"
+      ],
+      "depends_on": [
+        "typed-query",
+        "desktop-lifecycle"
+      ],
+      "status": "implemented",
+      "implementation_commits": [
+        "0788552849ea6667957b925d6c5968b8e06b2eaf",
+        "8050b4beabea1cdcfa3e43d9feee17b1829f5c29",
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "correctness_detectors": [
+        "test_workspace_mutation_outcomes.py",
+        "test_workspace_group_recovery.py",
+        "test_workspace_registered_recovery_policy.py",
+        "apiCommandPolicy.test.js",
+        "projectUnmount.test.js"
+      ],
+      "benchmark_case_ids": [],
+      "unmeasured_gaps": [
+        "native tag timing",
+        "backup lag",
+        "partial-commit recovery latency"
+      ],
+      "replacement_option": "Keep separate client close and server backup policies; replace dispatch internals if a demonstrably simpler equivalent design emerges, never unify their different read-POST classifications.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      },
+      "release_requirement_refs": [
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported",
+          "kind": "release_requirement"
+        }
+      ]
+    },
+    {
+      "id": "export-materialization",
+      "purpose": "Materialize caller-frozen output while caller retains staging/publication authority",
+      "owner": "workspace_export_artifacts",
+      "interfaces": [
+        "P05 adopted format tail"
+      ],
+      "depends_on": [
+        "typed-query",
+        "mutation-recovery"
+      ],
+      "status": "implemented-native-qualification-deferred",
+      "implementation_commits": [
+        "478330ff3bd6faf25bd2565b865fa13a9bbd01f4",
+        "e8e8383c78a7e4b3f20a65c16c4a8631c23a9b95",
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "correctness_detectors": [
+        "test_workspace_export_artifacts.py",
+        "test_workspace_export_boundary.py",
+        "test_workspace_candidate_exports.py"
+      ],
+      "benchmark_case_ids": [
+        "correctness.frozen_export_tags_ingest"
+      ],
+      "unmeasured_gaps": [
+        "native export qualification",
+        "throughput",
+        "disk staging"
+      ],
+      "replacement_option": "No replacement work selected. H5/Ovation/native export explicitly deferred; mappings grant no permission to run.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "typed-query",
+      "purpose": "Exact typed reads, generation publication, leases and conservative authority proof",
+      "owner": "TypedMetadataIndex / TypedGeneration / CacheNamespace / StateGenerationAuthority",
+      "interfaces": [
+        "existing typed query core",
+        "proposed broad P02 not adopted"
+      ],
+      "depends_on": [],
+      "status": "existing-implemented",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "correctness_detectors": [
+        "typed index/explore/generation/cache lifecycle suites",
+        "test_workspace_tree_read_identity.py"
+      ],
+      "benchmark_case_ids": [
+        "db.typed.detail",
+        "db.typed.page.scope",
+        "db.typed.filter.matrix",
+        "db.typed.membership.exact",
+        "db.typed.facets.two",
+        "db.typed.facets.all_eligible"
+      ],
+      "unmeasured_gaps": [
+        "complete-field inventory",
+        "slow exact fallback",
+        "native authority",
+        "build/open/RSS/disk costs"
+      ],
+      "replacement_option": "Alternative reader/index algorithms welcome after exact typed membership/order/error and conservative custom-policy proof. Never replace proof with a fast-path Boolean.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "renderer-resources",
+      "purpose": "Own request activation, bounded caches and context-specific freshness/publication",
+      "owner": "resourceRequest / pageReadCache / navigation / tree cache / summaries",
+      "interfaces": [
+        "existing request/cache/summary interfaces"
+      ],
+      "depends_on": [
+        "typed-query"
+      ],
+      "status": "existing-implemented",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "correctness_detectors": [
+        "resourceRequest/pageReadCache/navigation/tree/requestedSummaries suites",
+        "correctness.navigation"
+      ],
+      "benchmark_case_ids": [
+        "ui.mounted.inspector.first",
+        "ui.mounted.inspector.return",
+        "correctness.navigation"
+      ],
+      "unmeasured_gaps": [
+        "paint and scroll restoration",
+        "native transport",
+        "hidden retained memory"
+      ],
+      "replacement_option": "Compare simpler cache/request internals under abort-ignoring transport and freshness tests; account for cold start versus warm return, not just warm timing.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "group-save",
+      "purpose": "Own exact retry identity and preview release across editor and recovery panel",
+      "owner": "groupAnnotationRecovery",
+      "interfaces": [
+        "P04 opaque group-save session",
+        "existing recovery panel"
+      ],
+      "depends_on": [
+        "mutation-recovery",
+        "renderer-resources"
+      ],
+      "status": "implemented-reviewed",
+      "implementation_commits": [
+        "f7fc7b6676fc013d53cc8d01b71a271650f6884e"
+      ],
+      "correctness_detectors": [
+        "treeGroupQueryTags.test.js",
+        "treeGroupLifecycleWorkflow.test.js",
+        "treeGroupAnnotationWorkflow.test.js",
+        "test_workspace_annotation_groups.py",
+        "test_workspace_group_recovery.py",
+        "early-release fault",
+        "retry-identity fault",
+        "terminal-redispatch fault",
+        "post-await-project fault"
+      ],
+      "benchmark_case_ids": [],
+      "unmeasured_gaps": [
+        "dedicated retention latency",
+        "whole-heap usage",
+        "native transaction timing"
+      ],
+      "replacement_option": "Opaque session concentrates shared lifetime knowledge; keep-current remains viable. After this interface is verified, compare simpler internal state transitions under the same fault suite; no speed benefit established.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      },
+      "release_requirement_refs": [
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported",
+          "kind": "release_requirement"
+        }
+      ],
+      "integrated_commit": "45904c0"
+    },
+    {
+      "id": "presentation-sessions",
+      "purpose": "Own scoped presentation fallback, checkpoints and pruning",
+      "owner": "App / desktopDraftSession / navigation",
+      "interfaces": [
+        "existing draft/session handles",
+        "session owner proposal"
+      ],
+      "depends_on": [
+        "renderer-resources",
+        "desktop-lifecycle"
+      ],
+      "status": "existing-plus-proposal",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "correctness_detectors": [
+        "desktopDraftSession.test.js",
+        "startupRestore.test.js",
+        "navigation/session/draft/unmount suites"
+      ],
+      "benchmark_case_ids": [
+        "ui.mounted.inspector.return",
+        "correctness.navigation"
+      ],
+      "unmeasured_gaps": [
+        "checkpoint/restore cost",
+        "retained-map memory"
+      ],
+      "replacement_option": "Compare a real session owner with small checkpoint/pruning helpers; select based on removed caller knowledge, not file count. Preserve draft shape and one-shot intent.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "desktop-lifecycle",
+      "purpose": "Own readiness, drafts, exact process identity, strict replacement and bounded Quit",
+      "owner": "Electron / Python coordinators; DraftBarrier / DraftStore / StartupSession / QuitCoordinator",
+      "interfaces": [
+        "P07 existing obligations adopted; universal facade remains proposed"
+      ],
+      "depends_on": [],
+      "status": "implemented-enforcement-adopted",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f",
+        "5d12cf022b7c7ac6bc7a1727a467d14a8fd827b5"
+      ],
+      "correctness_detectors": [
+        "main-startup-restoration.test.cjs",
+        "main-quit-recovery.test.cjs",
+        "quit-coordinator.test.cjs",
+        "supervisor.test.cjs",
+        "draft-barrier.test.cjs",
+        "draft-store.test.cjs",
+        "startup-session.test.cjs",
+        "verification-recovery.test.cjs",
+        "desktopLifecycle.test.js",
+        "test_workspace_desktop.py",
+        "test_workspace_lifecycle.py",
+        "test_workspace_startup_registry.py",
+        "test_workspace_startup.py",
+        "test_lazy_startup_outcome.py"
+      ],
+      "benchmark_case_ids": [],
+      "unmeasured_gaps": [
+        "packaged IPC",
+        "actual native exit",
+        "startup/close benchmarks",
+        "memory/disk retention"
+      ],
+      "replacement_option": "Keep-current owners earn distinct interfaces; composition is characterized. Future internal replacement is welcome if simpler/robuster under exact identity, strict-vs-bounded stop and cancellation tests. Root-mediated cancellation needs cross-language review.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    },
+    {
+      "id": "contract-enforcement",
+      "purpose": "Discover adopted obligations and run affected correctness checks",
+      "owner": "architecture_guard + adopted-port-checks catalog",
+      "interfaces": [
+        "explicit-base plan/check/test",
+        "Python/renderer/desktop execution groups"
+      ],
+      "depends_on": [
+        "tree-selection",
+        "mutation-recovery",
+        "export-materialization",
+        "desktop-lifecycle",
+        "group-save"
+      ],
+      "status": "implemented",
+      "implementation_commits": [
+        "0fe34c3420fecd2213adcaa7689e7e1131e1ee38",
+        "fabb9c691aa26bd56bb794b556dfcb5dda463e5b",
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f",
+        "5d12cf022b7c7ac6bc7a1727a467d14a8fd827b5"
+      ],
+      "correctness_detectors": [
+        "test_architecture_guard.py",
+        "architectureImports.test.js",
+        "in-memory UUID/creation-time fault detector runs"
+      ],
+      "benchmark_case_ids": [],
+      "unmeasured_gaps": [
+        "transitive authority proof",
+        "CI Node22.12 execution"
+      ],
+      "replacement_option": "Maintain one catalog and existing parser. Replace internals when it reduces complexity while retaining fail-closed paths, exact-base provenance and child-failure propagation; no second benchmark framework.",
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "source_commit": "18975ad8240044273ca1f52783b20b8adbfd9a3f",
+      "kind": "historical aggregate correctness",
+      "python_pass": 1471,
+      "python_skip": 36,
+      "frontend_pass": 698,
+      "location": "018-combined-port-evidence",
+      "rerun_here": false
+    },
+    {
+      "source_commit": "5d12cf022b7c7ac6bc7a1727a467d14a8fd827b5",
+      "kind": "focused source correctness",
+      "python_pass": 81,
+      "desktop_pass": 50,
+      "renderer_pass": 105,
+      "skips": 0,
+      "location": "task-4/evidence/p07-clean-*",
+      "limits": [
+        "not full regression",
+        "not packaged/native/CI/performance qualification"
+      ]
+    },
+    {
+      "source_commit": "f7fc7b6676fc013d53cc8d01b71a271650f6884e",
+      "kind": "focused source correctness",
+      "renderer_pass": 25,
+      "skips": 0,
+      "deliberate_faults_detected": 4,
+      "location": "task-4/evidence/group-clean-*",
+      "limits": [
+        "not full regression",
+        "not native/browser/CI/performance qualification"
+      ]
+    }
+  ],
+  "deferred": [
+    "Ovation",
+    "legacy import",
+    "H5 porting/fixtures",
+    "native export qualification"
+  ],
+  "relationship_semantics": "depends_on lists conceptual integration relationships, not a direct import graph; executable direct dependency rules live only in adopted-port-checks.json"
+}

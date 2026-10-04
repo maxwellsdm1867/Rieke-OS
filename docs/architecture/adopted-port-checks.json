@@ -121,6 +121,53 @@
           "desktop/tests/main-startup-restoration.test.cjs"
         ]
       }
+    },
+    {
+      "id": "p04-group-save-session",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Group-save session ownership"
+      },
+      "affected_paths": [
+        "workspace-app/**",
+        "python/workspace_annotation_groups.py",
+        "python/workspace_api.py",
+        "python/workspace_mutation_outcomes.py",
+        "python/tests/test_workspace_annotation_groups.py",
+        "python/tests/test_workspace_group_recovery.py"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/treeGroupQueryTags.js",
+          "allow": [
+            "workspace-app/src/pagedTreeRequest.js",
+            "workspace-app/src/groupAnnotationRecovery.js"
+          ],
+          "require": [
+            "workspace-app/src/groupAnnotationRecovery.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/groupAnnotationRecovery.js",
+          "allow": [
+            "workspace-app/src/mutationUndo.js",
+            "workspace-app/src/resourceCache.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/treeGroupQueryTags.test.js",
+          "workspace-app/src/treeGroupLifecycleWorkflow.test.js",
+          "workspace-app/src/treeGroupAnnotationWorkflow.test.js"
+        ],
+        "python": [
+          "python/tests/test_workspace_annotation_groups.py",
+          "python/tests/test_workspace_group_recovery.py"
+        ]
+      }
     }
   ]
 }
