@@ -206,7 +206,7 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
     if (await this.inspectProcess(record.pid) === record.executable)
       throw new Error('Prior service has not exited after cleanup; retry recovery');
   }
-  async quit({timeout = this.drainTimeout, drafts} = {}) {
+  async quit({timeout = this.drainTimeout, drafts, startup} = {}) {
     const until = Date.now()+timeout, remaining = () => Math.max(1, until-Date.now());
     if (!this.child) {
       try {await fs.access(this.registryPath);return {ready:false,reason:'Previous service cleanup remains unverified. Its ownership and operation records are retained for recovery.'};}
@@ -227,6 +227,16 @@ except (psutil.NoSuchProcess,psutil.AccessDenied,AssertionError,ValueError,KeyEr
       this.registry.services = health.services || [];
       this.registry.bound = this.bound;
       await atomicJSON(this.registryPath, this.registry);
+      if (startup) {
+        // Pause admission and preserve ownership before waiting for accepted
+        // startup. Reserve time to attempt cleanup and record interruption even
+        // when startup never resolves; Electron's exit deadline is independent.
+        await this.api('/api/desktop/pause',{method:'POST',timeout:Math.min(3000,remaining())});
+        const reserve=Math.min(3000,Math.max(20,timeout/4));let timer;
+        try {await Promise.race([Promise.resolve(startup).catch(()=>{}),new Promise(resolve=>{
+          timer=setTimeout(resolve,Math.max(0,remaining()-reserve));
+        })]);} finally {clearTimeout(timer);}
+      }
       const result = await this.api('/api/desktop/quit',{method:'POST',timeout:remaining()});
       if (result.ready!==true) throw new Error('Backend quit cleanup was not acknowledged');
       this.stopping=true;

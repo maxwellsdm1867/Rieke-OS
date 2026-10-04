@@ -89,10 +89,7 @@ function orderlyQuit() {
       prepareDrafts: timeout => viewUnavailable
         ? Promise.resolve({ready:false,reason:'The scientific page is unavailable. The last saved view is retained; its latest changes could not be confirmed.'})
         : draftBarrier.prepare(scientificWindows, {timeout}),
-      cleanup: async options => {
-        if(startupOpening)await startupOpening.catch(()=>{});
-        return supervisor ? supervisor.quit(options) : {ready:true};
-      },
+      cleanup: options => supervisor ? supervisor.quit({...options,startup:startupOpening}) : Promise.resolve({ready:true}),
       publish: value => { lifecycleStatus = value; broadcast(value); },
       exit: () => { quitAuthorized = true; app.quit(); }
     });

@@ -163,3 +163,20 @@ test('verified surviving legacy backend uses strict drain only when its new quit
   else{await assert.rejects(supervisor.reconcilePrevious(),/Accepted work/);assert.deepEqual(operations,['health','quit']);assert.equal(live,true);assert.deepEqual(JSON.parse(await fs.readFile(supervisor.registryPath,'utf8')),previous);}
  }
 });
+
+
+test('stalled startup cannot consume quit before admission pause and interruption receipt',async t=>{
+  const routes=[];
+  const {supervisor}=await fixture(t,(sup,child,url)=>{
+    routes.push(url);
+    if(url.endsWith('/pause'))return response({paused:true,ready:true});
+    if(url.endsWith('/quit'))return response({error:'Startup remains unbound; ownership retained'},false,409);
+    return response({...sup.expectedHealth(),ready:true});
+  });
+  await supervisor.start();
+  const result=await supervisor.quit({timeout:250,drafts:{ready:true},startup:new Promise(()=>{})});
+  assert.equal(result.ready,false);assert.ok(routes.some(url=>url.endsWith('/pause')));assert.ok(routes.some(url=>url.endsWith('/quit')));
+  const record=JSON.parse(await fs.readFile(supervisor.registryPath,'utf8'));
+  assert.equal(record.quit.state,'interrupted');assert.match(record.quit.reason,/unbound/);
+  assert.equal(supervisor.exited,false);assert.equal(supervisor.stopping,false);
+});
