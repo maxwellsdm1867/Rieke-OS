@@ -34,7 +34,7 @@
         }
       ],
       "tests": {
-        "javascript": ["workspace-app/src/treeSelectionReader.test.js", "workspace-app/src/pagedTreeLifecycle.test.js", "workspace-app/src/pagedTreeRequest.test.js"],
+        "javascript": ["workspace-app/src/treeSelectionReader.test.js", "workspace-app/src/pagedTreeLifecycle.test.js", "workspace-app/src/pagedTreeRequest.test.js", "workspace-app/src/inspectorTreeAuthority.test.js", "workspace-app/src/stableContentInert.test.js", "workspace-app/src/candidateContinuity.test.js"],
         "python": []
       }
     },
