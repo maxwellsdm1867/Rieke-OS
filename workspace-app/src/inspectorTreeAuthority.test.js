@@ -279,3 +279,22 @@ test('fresh real provider with unavailable project scope rejects selection despi
   assert.deepEqual(h.fixture.errors,[]);
  }finally{await h.close();}
 });
+
+test('real provider null to available permits its first gesture after ordinary readiness',async()=>{
+ const h=await mountFixture({ownerProjectPath:null});try{
+  await h.open();
+  const start=h.fixture.requests.length;
+  await h.render({ownerProjectPath:'/owned-fixture'});
+  // HierarchyTree's scope key does not include provider ownership: matching
+  // completed flat/tree receipts remain current; no fresh tree load is expected.
+  await h.wait(()=>h.leaf(59)&&!h.leaf(59).disabled,'ordinary rendered selection readiness');
+  assert.ok(h.fixture.requests.some(row=>row.path==='/api/annotation-profiles'&&row.completed),'Valid profile receipt');
+  assert.ok(h.fixture.requests.some(row=>row.path.includes('/protocols/protocol-A/epochs?')&&row.completed),'Completed matching flat receipt');
+  assert.ok(h.fixture.requests.some(row=>row.path==='/api/tree-pages'&&row.body.path.length&&row.completed),'Completed matching tree receipt');
+  assert.equal(h.fixture.requests.some(row=>row.path.includes('anchor_uuid=big-59')),false,'No prior focus gesture');
+  await h.click(h.leaf(59));
+  await h.wait(()=>h.fixture.requests.slice(start).some(row=>row.path.includes('anchor_uuid=big-59')&&row.completed),'First valid gesture starts and completes focus locator');
+  await h.wait(()=>h.leaf(59)?.classList.contains('selected'),'First gesture publishes focus');
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});

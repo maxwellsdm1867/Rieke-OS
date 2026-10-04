@@ -122,7 +122,9 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const selectionReceipt=cellsReady?{key:navigationReadKey,queryRevision,bindingVersion}:confirmedCells.current;
   const selectionNavigationPending=selectionNavigation.current===navigationReadKey&&rows.loading&&!rows.error;
   useLayoutEffect(()=>{if(rows.error||!rows.loading&&!pendingNavigation)selectionNavigation.current=null;},[rows.error,rows.loading,pendingNavigation]);
-  const selectionOwnerReady=!treeReadOwner||treeReadOwner.available&&treeReadOwner.active();
+  // Scope exists during render; its cache activates in the provider layout effect.
+  // Initiation/completion still check the captured owner live via current().
+  const selectionOwnerReady=!treeReadOwner||treeReadOwner.available;
   const selectionAvailable=!readPaused&&!annotationState.dirty&&!busy&&!draftSelection?.disabled&&selectionOwnerReady&&
     selectionReceipt?.key===navigationReadKey&&(cellsReady||selectionNavigationPending)&&!cellPage.error;
   const selectionIdentity=JSON.stringify([navigationReadKey,selectionReceipt?.queryRevision,selectionReceipt?.bindingVersion,treeReadOwner?.identity??null]);
