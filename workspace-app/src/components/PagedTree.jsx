@@ -1,10 +1,11 @@
 import {useCallback,useRef,useState,useLayoutEffect} from 'react';
 import ColumnTree from './ColumnTree.jsx';
-import {api} from '../api.js';
-import {treePageRequest} from '../pagedTreeRequest.js';
+import {createTreeSelectionReader} from '../treeSelectionReader.js';
 import {mergeEpochSelection,toggleEpochSelection} from '../epochSelection.js';
 import HierarchyTree from './HierarchyTree.jsx';
 import './PagedTree.css';
+
+const selectionReader=createTreeSelectionReader();
 
 // Both presentations share exact scope and bounded server pages.
 export default function PagedTree(props){
@@ -32,16 +33,8 @@ export default function PagedTree(props){
     const token=generation.current,isCurrent=()=>token===generation.current&&selectionRequest.current===request&&!request.signal.aborted;
     setSelectionError('');anchor.current=null;
     try{
-      let page=await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:item.path,currentRevision:revision})});
-      if(!isCurrent())return;
-      const pinned=props.expectedRevision||revision||page.revision;
-      if(page.revision!==pinned)throw new Error('Tree changed. Select the cell again.');
-      while(page.kind!=='epochs'&&page.branches?.length){
-        page=await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.branches[0].path,currentRevision:pinned})});
-        if(!isCurrent())return;
-        if(page.revision!==pinned)throw new Error('Tree changed. Select the cell again.');
-      }
-      if(isCurrent()&&page.epochs?.[0])callbacks.current.onSelectCell?.(item.value,page.epochs[0]);
+      const epoch=await selectionReader.firstEpoch(props,{path:item.path,revision,signal:request.signal});
+      if(isCurrent()&&epoch)callbacks.current.onSelectCell?.(item.value,epoch);
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
   async function selectEpoch(uuid,item,event,page,index){
@@ -57,18 +50,11 @@ export default function PagedTree(props){
       if(event.shiftKey&&anchor.current){
         if(JSON.stringify(anchor.current.path)!==JSON.stringify(page.path)||anchor.current.revision!==page.revision)throw new Error('Select a range within one tree branch, or use Command/Ctrl-click across branches.');
         const lo=Math.min(anchor.current.index,target.index),hi=Math.max(anchor.current.index,target.index);
-        if(hi-lo+1>1000)throw new Error('Select at most 1,000 epochs.');
-        request=new AbortController();selectionRequest.current=request;const ids=[];
+        request=new AbortController();selectionRequest.current=request;
         const before=JSON.stringify(props.selectedEpochs||[]);
-        for(let offset=Math.floor(lo/60)*60;offset<=hi;offset+=60){
-          const part=offset===page.offset?page:await api(props.readContext?`${props.readContext.root}/tree/page`:'/tree-pages',{method:'POST',signal:request.signal,body:treePageRequest(props,{path:page.path,offset,currentRevision:page.revision})});
-          if(!isCurrent())return;
-          if(part.revision!==page.revision||part.kind!=='epochs')throw new Error('Tree changed. Select the range again.');
-          for(let n=Math.max(lo,offset);n<=Math.min(hi,offset+59);n++){
-            const row=part.epochs[n-offset];if(!row)throw new Error('Could not load the complete range.');
-            ids.push(row.epoch_uuid);
-          }
-        }
+        const result=selectionReader.rangeEpochIds(props,{page,firstIndex:lo,lastIndex:hi,signal:request.signal});
+        // Same-page selection remains synchronous; fetched ranges await transport.
+        const ids=Array.isArray(result)?result:await result;
         if(!isCurrent())return;
         if(JSON.stringify(callbacks.current.selectedEpochs||[])!==before)throw new Error('Selection changed while loading. Select the range again.');
         callbacks.current.setSelectedEpochs?.(mergeEpochSelection(callbacks.current.selectedEpochs||[],ids));

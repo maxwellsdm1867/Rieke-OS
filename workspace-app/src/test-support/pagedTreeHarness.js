@@ -11,7 +11,9 @@ export async function createPagedTreeHarness(){
   const network={api:()=>{throw Error('Unexpected API request');}};globalThis[key]=network;
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'selection-fixtures',enforce:'pre',
-    resolveId(id,importer){if(importer?.endsWith('/components/PagedTree.jsx')){
+    resolveId(id,importer){
+      if(id==='./api.js'&&importer?.endsWith('/treeSelectionReader.js'))return '\0selection-api';
+      if(importer?.endsWith('/components/PagedTree.jsx')){
       if(id==='../api.js')return '\0selection-api';
       if(id==='./HierarchyTree.jsx'||id==='./ColumnTree.jsx')return '\0selection-tree';
     }},
@@ -20,9 +22,11 @@ export async function createPagedTreeHarness(){
   }]});
   const {default:PagedTree}=await server.ssrLoadModule('/src/components/PagedTree.jsx');
   let root;
+  const element=(props,mode)=>React.createElement(React.Activity,{mode},React.createElement(PagedTree,props));
   return {
     network,
-    async render(props){await act(async()=>{const element=React.createElement(PagedTree,props);if(root)root.update(element);else root=TestRenderer.create(element);});},
+    async render(props,mode='visible'){await act(async()=>{if(root)root.update(element(props,mode));else root=TestRenderer.create(element(props,mode));});},
+    commit(props){act(()=>root.update(element(props,'visible')));},
     get tree(){return root.root.findByType('tree-probe').props;},
     get errors(){return root.root.findAllByProps({role:'alert'}).map(node=>node.children.join(''));},
     async act(callback){await act(callback);},
