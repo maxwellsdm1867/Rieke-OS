@@ -28,7 +28,7 @@ Prepare one owned populated fixture once, save a real inspected epoch/tree/scrol
 
 Smallest restoration slice should consume the existing remembered project and presentation draft, with explicit chooser preference/cancel and a navigation-generation fence. Restore only compatible presentation state; obtain scientific values and action authority through the current service. Missing/moved project, changed H5, incompatible state, partial write, copied project/actor and cancelled old restore must fail or reset visibly without stale data, unsolicited project creation or abandoned owned services. A new trace cache is not justified before the populated baseline.
 
-Runtime coordination is pending: the parent explicitly required a quiet-window request before timing. This turn's former parent-thread messaging tool is unavailable; a quiet-window question was submitted through the available input tool. No window grant has arrived yet, so native baseline/optimization/fault measurements are not claimed. All previously recorded cleanup receipts remain historical; no new owned app/service processes were started.
+At the initial preparation checkpoint, runtime coordination was pending: the parent explicitly required a quiet-window request before timing. This turn's former parent-thread messaging tool is unavailable; a quiet-window question was submitted through the available input tool. That checkpoint preceded the parent grant and native results recorded below. All previously recorded cleanup receipts remain historical; no new owned app/service processes were started.
 
 ## Native baseline and restoration candidate, 2026-10-04
 
@@ -41,3 +41,30 @@ Candidate adds a small versioned startup preference and automatically opens the 
 A monotonic user navigation counter supersedes delayed draft hydration, including away-and-back to an identical route. Unknown/incompatible startup preference opens the chooser; unknown/corrupt renderer drafts retain the existing explicit recovery flow. Draft snapshots remain presentation, not permission/membership/tag/trace authority. Existing draft rename durability is unchanged and is not a latest-view power-loss guarantee.
 
 Source review is required before qualified candidate timing. Unit/build evidence and native smoke do not substitute for that review. No improvement is claimed from merely eliminating the user's project click, and no runtime checksum work has been bypassed.
+
+## Correctness checkpoint: pending-startup shutdown and warm reuse
+
+The `e7d5892` review HOLD was valid: waiting for startup before `supervisor.quit()` could consume the entire outer Quit deadline before recording/attempting cleanup. **`4d09459`** moves the wait inside supervisor cleanup, after durable ownership/recovery recording and admission pause, reserving time to attempt backend Quit. An unresolved startup must never be labelled a clean service exit merely because Electron exited. **`551a83b`** additionally fixes a native-discovered preference bug: transient cancellation during ordinary Quit must not persist a chooser preference.
+
+Native correctness receipts (not qualified before/after timings):
+
+- `autorestore-4d09459-smoke-1`: **05:08:00.732Z–05:08:39.145Z**, automatic project reopen, selected real chart with exact trace oracle, return and ordinary Quit all passed; zero owned processes/sockets. No project click was used.
+- `stall-reply-4d09459-1`: preserved harness RED (`require` unavailable in Electron evaluation). Its early Quit initially retained one starting root; a later read-only observation confirmed zero. Attempted authenticated recovery found no live PID and sent no shutdown command. See `late-cleanup.json`; this is not a passing fault injection.
+- `stall-reply-4d09459-2`: preserved RED detecting that prior ordinary Quit had incorrectly changed next-start mode to chooser; no project started and Quit reached zero. This led to `551a83b`.
+- `stall-reply-551a83b-1`: **05:13:02.525Z–05:13:51.311Z**, PASS. The main-process open-project reply was deliberately replaced by a promise that never resolves, while the real owned project startup proceeded. Quit requested with an unbound registered child at 14.370 s; zero owned Python/MySQL processes/sockets and clean native ownership reached at 48.734 s. The startup promise remained unresolved, so this exercises the review's pending-wait failure. Ordinary Quit preserved the resume preference. This does not simulate a physically hung interpreter or MySQL engine; that distinct case may require explicit interrupted recovery.
+
+The initial `candidate-autorestore-smoke-1` RED and manual authenticated graceful recovery remain preserved separately (recovery ended 04:57:45.229Z; no signals). Never combine manual recovery with normal Quit passes.
+
+Broad desktop testing initially had 98 passes/17 failures/1 skip due missing dependencies and sandbox restrictions. After copied local dependencies and permitted process/listener access, 132 passed and one exposed the suite's missing installed-interpreter fixture (fallback symlink collided with its candidate file). An owned test-only interpreter path under this worktree's ignored `desktop/dist` resolved setup: **134/134 passed, zero skips** including the stalled-startup test. The subsequent next-launch preference regression test also passes. These are correctness tests, not startup benchmarks; no installed user app was replaced.
+
+### Beyond view restoration: smallest next computation experiment
+
+The request includes persistent computed-state reuse, not merely automatic selection. Existing evidence already shows unchanged restart reopens metadata indexes in approximately 6/10 ms, reuses one source projection, and rebuilds zero sources. First trace verifies/reads H5 in milliseconds for this fixture. Native MySQL restart is approximately 0.96 s; it is a new owned process, not recreated project data.
+
+The measured first protocol evaluation takes 3.54 s, while the second takes 0.14 s. Next isolate one-time DataJoint/schema/module preparation from live SQL validation before choosing a cache. A narrowly reusable schema/descriptor artifact would need application/parser implementation plus **live database schema** compatibility keys, project isolation, and invalidation on schema/source revision or incomplete recovery. Live ownership and scientific membership/hash validation must remain. Do not persist arbitrary query results and call them current merely because the app version is unchanged.
+
+The dominant roughly 20 s remains complete runtime hashing in root and child. A persisted manifest/stat receipt cannot silently replace it: eliminating this work requires the separately reviewed verification policy. No such policy change, new persistent scientific cache, or material startup improvement is claimed by this restoration slice. Remaining native matrix: chooser escape, real source mutation/replacement, copied/missing project, actor isolation, and tree/scroll restoration; qualified timing remains held for source review plus correctness completion.
+
+Final native warm-reopen correctness on tested `551a83be9ae51189ce8040230e0a725fe0b89eba`: **2026-10-04T05:14:33.577Z–2026-10-04T05:15:11.156Z**, `autorestore-551a83b-after-stall-1`, automatic correct chart after the stalled-reply shutdown; ordinary Quit zero, resume preference retained. Source/selection oracle uses the known 1024-sample chart response and explicit 127-sample HTTP request. Tree/scroll and actor fault cases are not implied by this pass.
+
+Final applicable broad desktop suite on `551a83b`: **135/135 pass, zero failures/skips**, receipt `benchmarks/results/reopen-preparation/desktop-tests-551a83b.log`. Earlier environment/setup and native RED receipts remain intact.
