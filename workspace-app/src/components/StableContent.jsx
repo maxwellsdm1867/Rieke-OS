@@ -14,7 +14,7 @@ export default function StableContent({data,loading,error,retry,children,label='
   const coordinated=useNavigationLoading(loading&&!error);
   const showLoading=useDelayedLoading(loading&&!coordinated);
   return <div className={`stable-content ${className}`} aria-busy={!!loading}>
-    <div className="stable-content-body" inert={waiting?'':undefined} aria-hidden={waiting?true:undefined}>
+    <div className="stable-content-body" inert={waiting} aria-hidden={waiting?true:undefined}>
       {waiting?(previous||<div className="stable-content-placeholder"/>):children}
     </div>
     {(error||showLoading)&&<div className={`stable-content-notice ${error?'failed':''}`} role={error?'alert':'status'}>

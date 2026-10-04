@@ -59,7 +59,7 @@ test('draft token advance keeps focus/date/cell/row nodes, old rows inert, and u
   assert.equal(h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-date'),nodes.date);
   assert.equal(h.root.findAllByType('details').find(node=>node.props.className==='cell-tree-cell'),nodes.cell);
   assert.equal(nodes.date.props.open,true);assert.equal(nodes.cell.props.open,true);assert.equal(inspectRow(h,9),row);
-  assert.ok(h.root.findAllByType('div').some(node=>node.props.className==='stable-content-body'&&node.props.inert===''));
+  assert.ok(h.root.findAllByType('div').some(node=>node.props.className==='stable-content-body'&&node.props.inert===true));
   assert.equal(h.viewer.treePane.listProps.navigationDisabled,true);assert.equal(h.viewer.epoch,null);
   await h.act(()=>oldReview(true));assert.deepEqual(mutations,[]);
   await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-8'&&!h.viewer.treePane.listProps.disabled);
