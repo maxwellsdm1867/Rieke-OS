@@ -41,13 +41,13 @@
     {
       "id": "p04-mutation-recovery",
       "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Mutation recovery completion"},
-      "affected_paths": ["python/**"],
+      "affected_paths": ["python/**", "workspace-app/**"],
       "rules": [
         {"language": "python", "file": "python/workspace_mutation_outcomes.py", "allow": ["flask"]}
       ],
       "tests": {
-        "javascript": [],
-        "python": ["python/tests/test_workspace_mutation_outcomes.py", "python/tests/test_workspace_group_recovery.py"]
+        "javascript": ["workspace-app/src/apiCommandPolicy.test.js", "workspace-app/src/desktopLifecycle.test.js", "workspace-app/src/projectUnmount.test.js"],
+        "python": ["python/tests/test_workspace_mutation_outcomes.py", "python/tests/test_workspace_group_recovery.py", "python/tests/test_workspace_registered_recovery_policy.py"]
       }
     },
     {
