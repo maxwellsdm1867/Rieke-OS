@@ -48,22 +48,45 @@ if (bootstrap) {
 let supervisor, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false;
 let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Opening your workspace.'};
-let applicationVerification;
+let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
+let integrityFailed=false;
 async function verifyApplicationFiles() {
-  if (applicationVerification) return applicationVerification;
-  applicationVerification = (async () => {
+  if (applicationVerification || integrityFailed || quitting || bootstrap) return;
+  verificationController=new AbortController();
+  const signal=verificationController.signal;
+  const menuItem=Menu.getApplicationMenu()?.getMenuItemById('verify-application');
+  if(menuItem)menuItem.enabled=false;
+  applicationVerification=(async()=>{
+    let checked=0,last=0;
     try {
-      await require('./verify-application.cjs').verifyApplication({bundle:sourceApp, signed:distribution.channel==='signed'});
-      await dialog.showMessageBox({type:'info', title:'Application verification complete',
-        message:'Application files match the installed inventory and app seal.',
-        detail:distribution.channel==='signed' ? 'Developer ID signature verification also passed. This does not verify project data.' : 'This unsigned testing build does not establish publisher identity. This does not verify project data.'});
-    } catch {
-      await dialog.showMessageBox({type:'error', title:'Application verification failed',
-        message:'The complete application could not be verified.',
-        detail:'Quit Disco and reinstall a complete copy from the trusted release source. Keep your project folders. Verification has not changed application files or project data, and does not authorize continued scientific work.'});
+      broadcast({...status(),message:'Verifying application files… Use Cancel Application Verification or Quit to stop.'});
+      await require('./verify-application.cjs').verifyApplication({bundle:sourceApp,signed:distribution.channel==='signed',signal,
+        progress:()=>{checked++;if(Date.now()-last>250){last=Date.now();broadcast({...status(),message:`Verifying application files… ${checked} entries checked.`});}}});
+      if(signal.aborted||quitting)return;
+      void dialog.showMessageBox({type:'info',title:'Application verification complete',message:'Application files match the installed inventory and app seal.',
+        detail:distribution.channel==='signed'?'Developer ID signature verification also passed. This does not verify project data.':'This unsigned testing build does not establish publisher identity. This does not verify project data.'}).catch(()=>{});
+    } catch(error) {
+      if(signal.aborted||quitting)return;
+      verificationRecovery=require('./verification-recovery.cjs').recoverVerificationFailure({
+        blockNewWork:()=>{integrityFailed=true;coordinator?.stop();if(startupSession)startupSession.cancelled=true;broadcast({state:'IntegrityRecovery',title:'Application verification failed',message:'New work is blocked. Finishing accepted operations and saving the last available view.'});},
+        pause:async()=>{if(supervisor?.bound)await supervisor.api('/api/desktop/pause-all',{method:'POST',timeout:5000});},
+        saveDrafts:()=>draftBarrier.prepare(scientificWindows,{timeout:5000}),
+        closeServices:drafts=>supervisor?supervisor.quit({drafts,startup:startupOpening}):{ready:true},
+        showRecovery:result=>{verificationRecoveryResult=result;
+          recovery(result.services.ready?'Application verification failed. Owned services have closed.':'Application verification failed. Service closure is unconfirmed; recovery is required.',require('./verify-application.cjs').repairGuidance(sourceApp));
+          lifecycleStatus={...lifecycleStatus,state:'IntegrityRecovery'};broadcast(lifecycleStatus);}
+      });
+      await verificationRecovery;
+    } finally {
+      if(menuItem)menuItem.enabled=!integrityFailed&&!quitting;
     }
-  })().finally(() => {applicationVerification=null;});
+  })().finally(()=>{applicationVerification=null;verificationController=null;});
   return applicationVerification;
+}
+async function cancelApplicationVerification() {
+  verificationController?.abort();
+  await applicationVerification;
+  if(!quitting&&!integrityFailed)broadcast({...status(),message:'Application verification cancelled. No application files were changed.'});
 }
 
 const draftBarrier = new DraftBarrier();
@@ -99,14 +122,18 @@ async function prepareQuit() {
   return result;
 }
 function orderlyQuit() {
+  verificationController?.abort();
   if (!quitting) {
     coordinator?.stop();
     if(startupSession)startupSession.cancelled=true;
     quitting = new QuitCoordinator({
-      prepareDrafts: timeout => viewUnavailable
+      prepareDrafts: timeout => verificationRecovery ? verificationRecovery.then(result=>result.drafts) : viewUnavailable
         ? Promise.resolve({ready:false,reason:'The scientific page is unavailable. The last saved view is retained; its latest changes could not be confirmed.'})
         : draftBarrier.prepare(scientificWindows, {timeout}),
-      cleanup: options => supervisor ? supervisor.quit({...options,startup:startupOpening}) : Promise.resolve({ready:true}),
+      cleanup: async options => {
+        await cancelApplicationVerification();
+        return supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true};
+      },
       publish: value => { lifecycleStatus = value; broadcast(value); },
       exit: () => { quitAuthorized = true; app.quit(); }
     });
@@ -150,7 +177,7 @@ function configureSession() {
     const localAsset = details.url.startsWith('file:') && (() => {
       try { return require('node:url').fileURLToPath(details.url).startsWith(__dirname + path.sep); } catch { return false; }
     })();
-    callback({cancel: !owned || (!localAsset && !isOwnedURL(details.url, supervisor?.origins))});
+    callback({cancel: (integrityFailed && !localAsset) || !owned || (!localAsset && !isOwnedURL(details.url, supervisor?.origins))});
   });
   ownedSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = {...details.requestHeaders};
@@ -174,7 +201,7 @@ function configureSession() {
   });
 }
 async function startScientificUI() {
-  if (startupInProgress || quitting) return;
+  if (startupInProgress || quitting || integrityFailed) return;
   startupInProgress = true;
   try {
     let origin;
@@ -183,6 +210,7 @@ async function startScientificUI() {
       if (!matchesHealth(health, supervisor.expectedHealth())) throw new Error('Existing backend is not ready for recovery');
       origin = supervisor.origin; supervisor.ready = true; supervisor.origins.add(origin);
     } else origin = await supervisor.start();
+    if (integrityFailed || quitting) return;
     if (!coordinator && !preview) {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
         ? require('./testing-updater.cjs').createTestingUpdateCoordinator
@@ -207,7 +235,7 @@ async function startScientificUI() {
 function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
     const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]);
-    if (quitting && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
+    if ((quitting || integrityFailed) && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
       throw new Error('Disco is closing; new work is paused.');
     return action(payload, window);
   });
@@ -319,7 +347,8 @@ else {
     powerMonitor.on('shutdown', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
     Menu.setApplicationMenu(Menu.buildFromTemplate([{label: 'Disco', submenu: [{role: 'about'}, {type: 'separator'},
       {label: 'Check for Updates', enabled:!preview, click: () => coordinator?.check()},
-      {label:'Verify Application Files…', enabled:app.isPackaged, click:()=>void verifyApplicationFiles()},
+      {id:'verify-application',label:'Verify Application Files…', enabled:app.isPackaged&&!bootstrap, click:()=>void verifyApplicationFiles()},
+      {label:'Cancel Application Verification',click:()=>void cancelApplicationVerification()},
       {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
     {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 

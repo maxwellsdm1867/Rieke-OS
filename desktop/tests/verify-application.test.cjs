@@ -41,3 +41,15 @@ test('assembled build refuses corrupt runtime before signing or rewriting its ma
   await assert.rejects(require('../seal-testing.cjs')({electronPlatformName:'darwin',appOutDir:path.dirname(f.bundle),packager:{appInfo:{productFilename:'Disco'}}}),/checksum/);
   assert.deepEqual(await fs.readFile(f.manifestPath),before);
 });
+test('cancel during inventory verification exits without starting codesign',async t=>{
+  const f=await fixture(t),controller=new AbortController();let commands=0;
+  await assert.rejects(verifyApplication({...f,signed:false,signal:controller.signal,progress:()=>controller.abort(),run:async()=>{commands++;}}),{name:'AbortError'});
+  assert.equal(commands,0);
+});
+test('Quit cancellation waits for its read-only audit child to close',async()=>{
+  const {runAuditCommand}=require('../verify-application.cjs');
+  const controller=new AbortController();
+  const running=runAuditCommand(process.execPath,['-e','setInterval(()=>{},1000)'],{signal:controller.signal});
+  controller.abort();
+  await assert.rejects(running,{name:'AbortError'});
+});

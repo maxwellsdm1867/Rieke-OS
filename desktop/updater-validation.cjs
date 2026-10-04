@@ -41,10 +41,12 @@ function safeResource(root, relative) {
   if (typeof relative !== 'string' || relative.includes('\\') || relative.includes('\0') || relative.split('/').some(part => !part || part === '.' || part === '..') || path.isAbsolute(relative)) throw new Error('Unsafe runtime resource path.');
   return path.join(root, relative);
 }
-async function verifyResources(root, resources) {
+async function verifyResources(root, resources, {signal, progress = () => {}} = {}) {
+  signal?.throwIfAborted();
   const resolvedRoot = await fs.realpath(root);
   const actualPaths = [];
   async function inventory(directory) {
+    signal?.throwIfAborted();
     for (const entry of await fs.readdir(directory, {withFileTypes: true})) {
       const file = path.join(directory, entry.name), relative = path.relative(root, file).split(path.sep).join('/');
       if (entry.isDirectory()) await inventory(file);
@@ -54,6 +56,8 @@ async function verifyResources(root, resources) {
   await inventory(root);
   if (JSON.stringify(actualPaths.sort()) !== JSON.stringify(Object.keys(resources).sort())) throw new Error('Runtime resource inventory is incomplete or contains unexpected files.');
   for (const [relative, expected] of Object.entries(resources)) {
+    signal?.throwIfAborted();
+    progress(relative);
     const file = safeResource(root, relative), stat = await fs.lstat(file);
     const physical = await fs.realpath(file);
     if (!physical.startsWith(resolvedRoot + path.sep)) throw new Error('Runtime resource escapes its bundle.');
@@ -64,7 +68,7 @@ async function verifyResources(root, resources) {
       if (typeof expected.executable === 'boolean' && expected.executable !== Boolean(stat.mode & 0o111)) throw new Error('Runtime executable permissions differ.');
       const actual = crypto.createHash('sha256');
       const handle = await fs.open(file, 'r');
-      try { for await (const chunk of handle.createReadStream()) actual.update(chunk); } finally { await handle.close(); }
+      try { for await (const chunk of handle.createReadStream()) {signal?.throwIfAborted(); actual.update(chunk);} } finally { await handle.close(); }
       if (actual.digest('hex') !== expected.sha256) throw new Error('Runtime resource checksum failed.');
     }
   }

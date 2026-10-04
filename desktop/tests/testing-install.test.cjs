@@ -45,6 +45,21 @@ test('explicit unsigned testing Install and Open copies the whole verified app w
  }finally{await fs.rm(f.root,{recursive:true,force:true});}
 });
 module.exports={fixture};
+test('manual app-only repair preserves projects and validates incoming replacement after damaged app is moved aside',async()=>{
+ const f=await fixture();try{
+  await installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}});
+  const project=path.join(f.root,'projects','owned-scientific-data');await fs.mkdir(path.dirname(project),{recursive:true});await fs.writeFile(project,'retained data');
+  const damaged=path.join(f.destination,'Contents/Resources/runtime/mysql/bin/mysqld');await fs.writeFile(damaged,'damaged');
+  await assert.rejects(installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}}),/metadata|checksum/);
+  const holding=path.join(f.root,'Disabled Applications');await fs.mkdir(holding);const held=path.join(holding,'Rieke OS.app');await fs.rename(f.destination,held);
+  const incoming=path.join(f.source,'Contents/Resources/runtime/mysql/bin/mysqld');const original=await fs.readFile(incoming);await fs.writeFile(incoming,'damaged incoming');
+  await assert.rejects(installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}}),/metadata|checksum/);
+  await assert.rejects(fs.access(f.destination),{code:'ENOENT'});
+  await fs.writeFile(incoming,original);await installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}});
+  assert.deepEqual(await fs.readFile(path.join(f.destination,'Contents/Resources/runtime/mysql/bin/mysqld')),original);
+  assert.equal(await fs.readFile(project,'utf8'),'retained data');assert.equal(await fs.readFile(path.join(held,'Contents/Resources/runtime/mysql/bin/mysqld'),'utf8'),'damaged');
+ }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});
 test('native unsigned update helper rejects an exposed receipt before changing the installed app',async()=>{
  const {applyTestingInstall}=require('../testing-install.cjs');
  const f=await fixture();try{

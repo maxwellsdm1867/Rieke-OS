@@ -41,6 +41,23 @@ class DesktopBoundaryTests(unittest.TestCase):
         for key, expected in self.identity.items():
             self.assertEqual(value[key], expected)
 
+    def test_integrity_recovery_pause_all_blocks_admission_and_quiesces_children(self):
+        services = Mock()
+        services.quiesce.return_value = True
+        self.boundary.services = services
+        self.assertEqual(self.post('pause-all').status_code, 200)
+        services.quiesce.assert_called_once_with()
+        self.assertTrue(self.boundary.quitting)
+        self.assertEqual(self.get('/api/write').status_code, 503)
+
+    def test_integrity_recovery_unconfirmed_child_pause_retains_block_and_reports_failure(self):
+        services = Mock()
+        services.quiesce.return_value = False
+        self.boundary.services = services
+        self.assertEqual(self.post('pause-all').status_code, 409)
+        self.assertTrue(self.boundary.draining)
+        self.assertEqual(self.get('/api/write').status_code, 503)
+
     def test_capability_is_required_for_ui_and_health(self):
         for path in ('/', '/api/desktop/health', '/api/write'):
             self.assertEqual(self.client.get(path, base_url='http://127.0.0.1:8766').status_code, 403)

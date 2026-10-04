@@ -23,4 +23,4 @@ for (const [id, action] of [['install', () => bridge.installAndOpen()], ['retry'
   };
 }
 
-document.getElementById('chooser').onclick=async()=>{try{await bridge.chooseStartup();document.getElementById('message').textContent='The project chooser will open when application verification finishes.';}catch(error){document.getElementById('detail').textContent=error.message;}};
+document.getElementById('chooser').onclick=async()=>{try{await bridge.chooseStartup();document.getElementById('message').textContent='The project chooser will open when startup finishes.';}catch(error){document.getElementById('detail').textContent=error.message;}};

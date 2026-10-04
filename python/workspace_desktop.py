@@ -187,12 +187,15 @@ class DesktopBoundary:
             return jsonify(ready=True, drained=True)
 
         @self.app.post(_CONTROL + 'pause')
+        @self.app.post(_CONTROL + 'pause-all')
         def desktop_pause():
             if not empty_control():
                 return jsonify(error='Pause requires an empty object'), 400
             with self.condition:
                 self.quitting = self.draining = True
             self._pause()
+            if request.path.endswith('/pause-all') and self.services and not self.services.quiesce():
+                return jsonify(ready=False, paused=False, error='Some child admission remains unconfirmed; recovery records are retained.'), 409
             return jsonify(ready=True, paused=True)
 
         @self.app.post(_CONTROL + 'quit')
