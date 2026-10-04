@@ -1,3 +1,4 @@
+import ProjectStartupError from './ProjectStartupError.jsx';
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Activity,ArrowRight,Check,CheckCircle2,ChevronRight,Clock3,Copy,Database,Download,Files,FolderOpen,LoaderCircle,LogOut,Package,Search,ShieldCheck,Tags,X} from 'lucide-react';
@@ -100,7 +101,7 @@ export default function ProjectFolder({project,onClose,onFiles,initialMode='open
       {rootSuggestions&&<div className="project-folder-root-suggestions" role="region" aria-label="Choose the project root"><p>{rootSuggestions.message||'Choose the folder containing the project files.'}</p>{rootSuggestions.candidates?.filter(candidate=>typeof candidate.path==='string').map(candidate=><button key={candidate.path} type="button" disabled={busy} onClick={()=>chooseRoot(candidate.path)}><FolderOpen size={20}/><span><strong>{candidate.name||'Project'}{candidate.kind==='prepared-transfer'&&<small>Portable copy</small>}</strong><code>{candidate.path}</code></span><span className="project-folder-use-root">Use this folder<ArrowRight size={14}/></span></button>)}</div>}
     </section>
     {working&&<div className="project-folder-progress" role="status"><LoaderCircle size={16} className="spin"/><span>{progress}<small>Keep this window open.</small></span></div>}
-    {error&&<p className="project-folder-error" role="alert">{error}</p>}
+    <ProjectStartupError className="project-folder-error" message={error}/>
     <div className="project-folder-bottom"><span>{copied?'Project path copied':'Your project · your files'}</span><button disabled={busy} onClick={onClose}>Done</button></div>
   </dialog>,document.body);
 }

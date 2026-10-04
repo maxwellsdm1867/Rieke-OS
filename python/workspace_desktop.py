@@ -5,6 +5,8 @@ This entry point never installs dependencies or terminates scientific workers.
 """
 from __future__ import annotations
 
+from workspace_startup_failure import RequiredComponentError, safe_component_failure, startup_failure_message
+
 import argparse
 import contextlib
 import fcntl
@@ -359,7 +361,11 @@ def validate_child_startup_receipt(line, record):
     if line.startswith('RIEKE_DESKTOP_STARTUP_FAILED='):
         if value.get('stage') != 'before_project_database' or value.get('ready') is not False:
             raise ValueError('Unknown child startup failure stage')
-        return {'valid': False, 'pre_database_failed': True}
+        outcome = {'valid': False, 'pre_database_failed': True}
+        failure = safe_component_failure(value.get('component_failure'))
+        if failure:
+            outcome['component_failure'] = failure
+        return outcome
     return {'valid': True}
 
 
@@ -618,7 +624,7 @@ class DesktopServices:
                 bound.wait(1)
                 self.records()
                 # Other startup failures retain the existing recovery-required path.
-                raise ValueError('Project startup failed; inspect its recovery log before retrying')
+                raise ValueError(startup_failure_message(log_path, packet.get('component_failure')))
             if not bound.is_set():
                 bound.wait(.2)
                 continue
@@ -736,7 +742,7 @@ def initialize_before_project_database(args, manifest, initialize):
     """
     try:
         return initialize()
-    except BaseException:
+    except BaseException as error:
         if args.project_dir is not None and args.ready_fd is not None and args.ready_fd >= 3:
             project = args.project_dir.resolve(strict=True)
             catalog = json.loads((project / 'catalog.json').read_text())
@@ -744,6 +750,8 @@ def initialize_before_project_database(args, manifest, initialize):
                           project_uuid=catalog['project_uuid'], project_path=str(project),
                           application_version=manifest['application_version'], source_commit=manifest['source_commit'],
                           ready=False, stage='before_project_database')
+            if isinstance(error, RequiredComponentError):
+                failed['component_failure'] = {'component': error.component, 'reason': error.reason}
             with os.fdopen(args.ready_fd, 'w') as pipe:
                 pipe.write('RIEKE_DESKTOP_STARTUP_FAILED=' + json.dumps(failed) + '\n')
                 pipe.flush()

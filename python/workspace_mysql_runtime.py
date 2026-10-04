@@ -6,6 +6,7 @@ already-linked binaries. No PATH search, Homebrew or Docker is used for MySQL.
 """
 from __future__ import annotations
 from lifecycle_diagnostic import measured as diagnostic_measured
+from workspace_startup_failure import RequiredComponentError
 import hashlib
 import json
 import os
@@ -39,12 +40,17 @@ def _probe(prefix, version):
     result = {'root': str(prefix), 'version': version}
     for name in ('mysqld', 'mysql', 'mysqldump'):
         binary = prefix / 'bin' / name
-        if not binary.is_file() or not os.access(binary, os.X_OK):
-            raise ValueError(f'Bundled MySQL is missing {name}; run rieke.py setup')
-        output = subprocess.run([str(binary), '--no-defaults', '--version'], check=True,
-                                capture_output=True, text=True, timeout=20).stdout
+        if not binary.is_file():
+            raise RequiredComponentError(name, 'missing')
+        if not os.access(binary, os.X_OK):
+            raise RequiredComponentError(name, 'unavailable')
+        try:
+            output = subprocess.run([str(binary), '--no-defaults', '--version'], check=True,
+                                    capture_output=True, text=True, timeout=20).stdout
+        except (OSError, subprocess.SubprocessError) as error:
+            raise RequiredComponentError(name, 'unavailable') from error
         if not re.search(r'\b' + re.escape(version) + r'\b', output):
-            raise ValueError(f'Bundled {name} version does not match MySQL {version}')
+            raise RequiredComponentError(name, 'incompatible')
         result[name] = str(binary)
     return result
 
