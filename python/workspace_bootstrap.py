@@ -5,6 +5,7 @@ requires git, uv, Node/npm and a C++ compiler. Setup, init and doctor never
 start a database; opening a project in the launched app prepares its service.
 """
 from __future__ import annotations
+from lifecycle_diagnostic import measured as diagnostic_measured
 import argparse
 import configparser
 import getpass
@@ -160,6 +161,7 @@ def prepare_desktop_parser_config(user_state):
     return target
 
 
+@diagnostic_measured('workspace_bootstrap.validate_desktop_runtime')
 def validate_desktop_runtime(runtime, verify_hashes=False):
     """Validate resource identity; signed app authority is enforced by Electron/macOS."""
     runtime = Path(runtime).resolve(strict=True)
@@ -200,6 +202,9 @@ def validate_desktop_runtime(runtime, verify_hashes=False):
                     actual = hashlib.file_digest(handle, 'sha256').hexdigest()
                 if actual != entry.get('sha256') or path.stat().st_size != entry.get('size'):
                     raise ValueError(f'Packaged resource hash mismatch: {name}')
+    if verify_hashes:
+        from lifecycle_diagnostic import mark
+        mark('runtime.full_hash.completed')
     return manifest
 
 

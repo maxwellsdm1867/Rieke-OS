@@ -5,6 +5,7 @@ Connection secrets are read from the configured local container, never saved in
 protocol files. This first importer supports single-cell Symphony recordings.
 """
 from __future__ import annotations
+from lifecycle_diagnostic import measured as diagnostic_measured
 
 import argparse
 import contextlib
@@ -60,6 +61,7 @@ def json_scalar(value):
     raise TypeError(f"Unsupported metadata type: {type(value).__name__}")
 
 
+@diagnostic_measured('recording_workspace.load_parser')
 def load_parser(repository):
     path = Path(repository) / "src/retinanalysis/utils/parse_data.py"
     spec = importlib.util.spec_from_file_location("workspace_symphony_parser", path)

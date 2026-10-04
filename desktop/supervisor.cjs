@@ -67,6 +67,8 @@ class ServiceSupervisor {
     const env = {HOME: process.env.HOME, TMPDIR: process.env.TMPDIR, LANG: 'en_US.UTF-8',
       PYTHONDONTWRITEBYTECODE: '1', PYTHONNOUSERSITE: '1', RIEKE_DESKTOP_CAPABILITY: this.capability,
       RIEKE_PARSER_CONFIG: path.join(backendState, 'parser', 'config.ini')};
+    if (process.env.DISCO_LAZY_ROOT_EXPERIMENT === '1') env.DISCO_LAZY_ROOT_EXPERIMENT = '1';
+    if (process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR) env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR = process.env.DISCO_LIFECYCLE_DIAGNOSTIC_DIR;
     this.child = this.spawnProcess(this.executable, ['-B', this.entry, '--host', '127.0.0.1', '--port', String(port),
       '--resources', this.resourcesPath, '--user-state', backendState,
       '--manifest', path.join(this.resourcesPath, 'runtime', 'runtime-manifest.json'), '--session-id', this.sessionId],

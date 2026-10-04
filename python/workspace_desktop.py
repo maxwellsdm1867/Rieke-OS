@@ -730,7 +730,9 @@ def main(argv=None):
     # Runtime validation checks the interpreter, resource hashes and installed
     # parser. Probe all native executables before exposing the chooser.
     from workspace_mysql_runtime import mysql_runtime
-    mysql_runtime()
+    lazy_root = os.environ.get('DISCO_LAZY_ROOT_EXPERIMENT') == '1' and args.project_dir is None
+    if not lazy_root:
+        mysql_runtime()
     from workspace_bootstrap import runtime_paths
     runtime_config = runtime_paths()
     preference = user_state / 'preferences/workspace-selection.json'
@@ -743,7 +745,8 @@ def main(argv=None):
         runtime_config['managed_root'] = selected['managed_root']
     retinanalysis = Path(runtime_config['retinanalysis'])
     from recording_workspace import load_parser
-    load_parser(retinanalysis)
+    if not lazy_root:
+        load_parser(retinanalysis)
     identity = {'pid': os.getpid(), 'session_id': session_id,
                 'application_version': manifest['application_version'],
                 'source_commit': manifest['source_commit'],

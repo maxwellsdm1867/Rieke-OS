@@ -5,6 +5,7 @@ micromamba bootstrap. Prefix relocation is done at installation, not by copying
 already-linked binaries. No PATH search, Homebrew or Docker is used for MySQL.
 """
 from __future__ import annotations
+from lifecycle_diagnostic import measured as diagnostic_measured
 import hashlib
 import json
 import os
@@ -33,6 +34,7 @@ def runtime_spec(root=ROOT):
     return value, value['platforms'][key]
 
 
+@diagnostic_measured('workspace_mysql_runtime._probe')
 def _probe(prefix, version):
     result = {'root': str(prefix), 'version': version}
     for name in ('mysqld', 'mysql', 'mysqldump'):
