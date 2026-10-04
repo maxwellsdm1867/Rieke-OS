@@ -1888,45 +1888,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         app.extensions['backup_scheduler']=scheduler
         if shared_annotations is not None:shared_annotations.on_commit=scheduler.request
 
-        @app.after_request
-        def backup_saved_state(response):
-            if request.endpoint in {'annotation_update','annotation_undo'} and 200<=response.status_code<300:
-                # Rows and their immutable event are already committed together.
-                # The post-commit callback queued the independent recovery mirror.
-                result=response.get_json()
-                result['persistence']={'database':'committed','backup':scheduler.status()}
-                response.set_data(app.json.dumps(result))
-                return response
-            # These POST handlers only read state. Default to checkpointing all
-            # other writes, including idempotent/no-op mutations: a previous
-            # committed write may still need protection after a backup failure.
-            # In particular, explore/run records last-run state and is a write.
-            read_posts = {'explorer_preview', 'explorer_summaries', 'explorer_summary_cancel', 'explorer_query_page', 'tree_page', 'matching_epochs',
-                'annotation_batch_read', 'curation_batch_read', 'tag_import_preview',
-                'preview_source_propagation', 'resolve_search_preset',
-                'compare_protocol_revision'}
-            read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary'})
-            read_posts.update({'group_annotation_preview', 'group_annotation_preview_release'})
-            readonly = request.method == 'POST' and request.endpoint in read_posts
-            desktop_control = os.environ.get('RIEKE_DESKTOP_MODE') == '1' and request.path.startswith('/api/desktop/')
-            if not readonly and not desktop_control and request.path not in {'/api/project/close', '/api/projects/unmount'} and request.method in {'POST', 'PUT', 'PATCH', 'DELETE'} and 200 <= response.status_code < 300:
-                try:
-                    scheduler.flush()
-                except Exception:
-                    app.logger.exception('App state was saved to SQL but its recovery snapshot failed')
-                    payload = dict(error='Saved to the database, but the app-state backup failed. '
-                        'Check project disk space and permissions before closing the app.', saved=True)
-                    if request.endpoint in {'group_annotation_apply', 'group_annotation_undo'}:
-                        # A receipt exists in SQL even if the independent mirror
-                        # failed. Keep exact-operation recovery unambiguous;
-                        # replay must traverse this same synchronous flush hook.
-                        payload.update(code='recovery_unconfirmed',
-                            operation_uuid=request.get_json()['operation_uuid'],
-                            persistence=dict(database='committed', backup=scheduler.status()))
-                    failure = jsonify(payload)
-                    failure.status_code = 507
-                    return failure
-            return response
+        from workspace_mutation_outcomes import register_mutation_recovery
+        register_mutation_recovery(app, scheduler,
+            desktop_mode=lambda: os.environ.get('RIEKE_DESKTOP_MODE') == '1')
 
     if service.config.get('connection', {}).get('credential_provider', {}).get('kind') == 'native-project':
         from workspace_lifecycle import register_project_lifecycle
