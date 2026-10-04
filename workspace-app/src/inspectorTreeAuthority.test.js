@@ -8,7 +8,7 @@ import {createServer} from './test-support/isolatedVite.js';
 
 // Actual Inspector, viewer, PagedTree, HierarchyTree, hooks and selection reader.
 // Only HTTP and browser platform are fixtures; no component or hook replacement.
-async function mountFixture(){
+async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
  const dom=new JSDOM('<div id="root"></div>',{url:'http://fixture/',pretendToBeVisual:true}),saved=new Map();
  const put=(key,value)=>{saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});};
  for(const key of ['window','document','navigator','localStorage','HTMLElement','MutationObserver'])put(key,dom.window[key]);
@@ -48,7 +48,7 @@ async function mountFixture(){
  const cache=createTreeBranchReadCache();
  const props={projectId:'project',protocol:{definition:{protocol_uuid:'protocol-A',name:'Fixture'},query_revision:'query-1',expected_binding_version:2,cells},filters:{},revision:0,splitRecipe:['cell'],initialNavigation:{treeMode:true}};
  const root=createRoot(document.getElementById('root'));
- const render=async(extra={})=>{await act(async()=>root.render(React.createElement(AnnotationProfileProvider,{projectId:'project'},React.createElement(TreeBranchReadOwner,{projectId:'project',projectPath:extra.ownerProjectPath||'/owned-fixture',revision:extra.revision??0,cache},React.createElement(React.Activity,{mode:extra.hidden?'hidden':'visible'},React.createElement(Inspector,{...props,...extra}))))));};
+ const render=async(extra={})=>{await act(async()=>root.render(React.createElement(AnnotationProfileProvider,{projectId:'project'},React.createElement(TreeBranchReadOwner,{projectId:'project',projectPath:Object.hasOwn(extra,'ownerProjectPath')?extra.ownerProjectPath:ownerProjectPath,revision:extra.revision??0,cache},React.createElement(React.Activity,{mode:extra.hidden?'hidden':'visible'},React.createElement(Inspector,{...props,...extra}))))));};
  const settle=async()=>act(async()=>{await new Promise(resolve=>setTimeout(resolve,20));});
  const wait=async(predicate,label)=>{for(let i=0;i<100;i++){if(predicate())return;await settle();}assert.fail(label+'; alerts='+[...document.querySelectorAll('[role=alert]')].map(node=>node.textContent)+'; unexpected='+fixture.errors);};
  const click=async(node,shiftKey=false)=>{assert.ok(node,'Rendered control exists');assert.equal(node.disabled,false,'Rendered control enabled');await act(async()=>node.dispatchEvent(new dom.window.MouseEvent('click',{bubbles:true,shiftKey})));};
@@ -201,15 +201,25 @@ for(const change of ['unchanged','revision','binding','owner-replaced','owner-re
    if(change==='revision')await h.render({revision:1});
    if(change==='binding')await h.render({protocol:{...h.props.protocol,expected_binding_version:3}});
    if(change==='owner-replaced')await h.render({ownerProjectPath:'/replacement-fixture'});
-   if(change==='owner-retired'){await h.wait(()=>!document.querySelector('.column-tree .tree-group-tag-button').disabled,'settled design before synchronous retirement');await h.settle();h.cache.retire();}
+   if(change==='owner-retired'){
+    await h.wait(()=>!document.querySelector('.column-tree .tree-group-tag-button').disabled&&document.querySelector('.tree-preview-tags .annotation-composer input')&&document.querySelector('.tree-preview-identity')?.textContent.includes('Epoch 61'),'settled design detail before synchronous retirement');
+    await h.settle();h.cache.retire();
+   }
    if(change.startsWith('hide'))await h.click([...document.querySelectorAll('button')].find(node=>node.textContent===' Back to epochs'));
    release();await h.settle();await h.settle();
+   if(change==='owner-retired'){
+    const target=document.querySelector('.tree-preview-tags .annotation-composer input');
+    assert.ok(target,'Visible design tag target exists');
+    assert.equal(target.closest('[hidden]'),null,'Assertion uses the active design preview, not hidden metadata');
+    assert.equal(target.getAttribute('aria-label'),'Tag this epoch','Retired owner must not publish 61 selected tag targets');
+   }
    if(change==='unchanged'){
     await h.wait(()=>leaf(60)?.classList.contains('selected'),'selected target');
     const actual=[...document.querySelectorAll('.column-tree [data-epoch-uuid].selected')].map(node=>node.dataset.epochUuid);
     h.fixture.hold=null;await h.click(h.button('Previous page in column 2'));await h.wait(()=>leaf(0)&&!leaf(0).disabled,'selected first page');
     actual.unshift(...[...document.querySelectorAll('.column-tree [data-epoch-uuid].selected')].map(node=>node.dataset.epochUuid));
     assert.deepEqual(actual,Array.from({length:61},(_,i)=>`big-${i}`));
+    assert.equal(document.querySelector('.tree-preview-tags .annotation-composer input')?.getAttribute('aria-label'),'Tag 61 selected epochs','Visible target label detects the positive selection');
    }else {
     assert.ok(document.querySelectorAll('.column-tree [data-epoch-uuid].selected').length<=1,'Only display focus may remain');
     // A published 61-range has only one selected row on page60. Inspect the
@@ -252,4 +262,20 @@ test('old design locator completion cannot relabel metadata or release replaceme
   releaseNew();await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),'replacement locator publishes its own result');
   assert.deepEqual(h.fixture.errors,[]);
  }finally{releaseOld?.();releaseNew?.();await h.close();}
+});
+
+test('fresh real provider with unavailable project scope rejects selection despite valid page and profile receipts',async()=>{
+ const h=await mountFixture({ownerProjectPath:null});try{
+  await h.open();
+  assert.ok(h.fixture.requests.some(row=>row.path==='/api/annotation-profiles'&&row.completed),'Real profile receipt completed');
+  assert.ok(h.fixture.requests.some(row=>row.path.includes('/protocols/protocol-A/epochs?')&&row.completed),'Fresh flat authority receipt completed');
+  assert.ok(h.fixture.requests.some(row=>row.path==='/api/tree-pages'&&row.body.path.length&&row.completed),'Real tree page completed');
+  await h.click(h.leaf(59));
+  await h.click(h.button('Next Epochs page'));await h.wait(()=>h.leaf(60)&&!h.leaf(60).disabled,'next tree page');
+  await h.click(h.leaf(60),true);await h.settle();
+  assert.equal(document.querySelectorAll('.hierarchy-tree [data-epoch-uuid].selected').length,0,'Unavailable owner cannot grant focus or range selection');
+  assert.equal(h.fixture.requests.some(row=>row.path.includes('anchor_uuid=')),false,'Unavailable provider cannot initiate focus locator');
+  assert.match(document.body.textContent,/Choose an epoch/);
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
 });
