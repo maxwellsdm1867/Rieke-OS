@@ -14,6 +14,12 @@ plan. **The complete proposed ports remain design guidance.** Two bounded intern
 selection reads and mutation recovery completion; that record identifies the
 actual interfaces, preserved behavior, exact correctness evidence and limits.
 
+The [adopted-slice check catalog](docs/architecture/adopted-port-checks.json)
+indexes owned dependencies and existing conformance tests. The
+[operational checks](docs/architecture/0.1.8-first-port-slices.md#operational-architecture-checks)
+explain commands, CI coverage and the remaining review obligations. The catalog
+is an executable index, not a second behavioral contract.
+
 ## Start here
 
 - [Domain vocabulary](CONTEXT.md): recorded identity, protocol workspace, source

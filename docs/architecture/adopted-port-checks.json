@@ -1,0 +1,54 @@
+{
+  "format": "disco-adopted-port-checks",
+  "version": 1,
+  "discovery": [
+    {"from": "AGENTS.md", "to": "ARCHITECTURE.md"},
+    {"from": "ARCHITECTURE.md", "to": "docs/architecture/0.1.8-first-port-slices.md"},
+    {"from": "ARCHITECTURE.md", "to": "docs/architecture/adopted-port-checks.json"},
+    {"from": "docs/architecture/0.1.8-first-port-slices.md", "to": "docs/architecture/stable-ports.md"},
+    {"from": "docs/architecture/0.1.8-first-port-slices.md", "to": "docs/architecture/adopted-port-checks.json"}
+  ],
+  "shared_paths": [
+    "AGENTS.md", "ARCHITECTURE.md", "docs/architecture/**",
+    "tools/architecture_guard.py", "python/tests/test_architecture_guard.py",
+    "workspace-app/architectureImports.mjs", "workspace-app/src/architectureImports.test.js",
+    ".github/workflows/**", "rieke-release.json", "python/rieke-release.json",
+    "desktop/package.json", "desktop/package-lock.json", "desktop/application-profile.json"
+  ],
+  "contracts": [
+    {
+      "id": "p03-selection-reader",
+      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Tree selection reader"},
+      "affected_paths": ["workspace-app/**"],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/components/PagedTree.jsx",
+          "deny": ["workspace-app/src/api.js", "workspace-app/src/pagedTreeRequest.js", "workspace-app/src/treeBranchReadCache.js", "node:module", "module"],
+          "require": ["workspace-app/src/treeSelectionReader.js"]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/treeSelectionReader.js",
+          "allow": ["workspace-app/src/api.js", "workspace-app/src/pagedTreeRequest.js"]
+        }
+      ],
+      "tests": {
+        "javascript": ["workspace-app/src/treeSelectionReader.test.js", "workspace-app/src/pagedTreeLifecycle.test.js", "workspace-app/src/pagedTreeRequest.test.js"],
+        "python": []
+      }
+    },
+    {
+      "id": "p04-mutation-recovery",
+      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Mutation recovery completion"},
+      "affected_paths": ["python/**"],
+      "rules": [
+        {"language": "python", "file": "python/workspace_mutation_outcomes.py", "allow": ["flask"]}
+      ],
+      "tests": {
+        "javascript": [],
+        "python": ["python/tests/test_workspace_mutation_outcomes.py", "python/tests/test_workspace_group_recovery.py"]
+      }
+    }
+  ]
+}

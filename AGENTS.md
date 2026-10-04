@@ -5,6 +5,13 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) for the implemented module map and
 changing cross-module contracts. Proposed ports are not implemented APIs or a
 broad refactor authorization. Preserve scientific behavior and exact qualification.
 
+For changes affecting the adopted slices, follow the operational checks linked
+from ARCHITECTURE.md. Run `python tools/architecture_guard.py check` after the
+existing frontend dependencies are available; use its explicit-base plan/mapped
+tests or `--all` local diagnostic as documented. CI is the repository execution
+path; an optional local hook does not replace it. Contract/authority changes need
+review and an update to the existing adoption record, not just a green guard.
+
 # Repository benchmark entry point
 
 Before changing release tooling or claiming a performance improvement, read

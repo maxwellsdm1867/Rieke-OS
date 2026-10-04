@@ -132,7 +132,11 @@ jobs:
           else
             python3 tools/desktop_release.py baseline-testing --tag "$RELEASE_TAG" --repository "$RELEASE_REPOSITORY" --output "$RUNNER_TEMP/desktop-baseline.json"
           fi
-      - run: npm ci && npm test && npm run build
+      - run: npm ci
+        working-directory: workspace-app
+      - name: Validate adopted architecture boundaries
+        run: python3 -B tools/architecture_guard.py check
+      - run: npm test && npm run build
         working-directory: workspace-app
       - run: npm ci && npm test
         working-directory: desktop
@@ -142,6 +146,8 @@ jobs:
         run: |
           desktop/build/runtime/python/bin/python3.11 -m unittest discover -s python/tests -p 'test_*desktop*.py' -v
           desktop/build/runtime/python/bin/python3.11 -m unittest discover -s python/tests -p test_workspace_bootstrap.py -v
+          desktop/build/runtime/python/bin/python3.11 -B -m unittest python.tests.test_architecture_guard -v
+          desktop/build/runtime/python/bin/python3.11 -B tools/architecture_guard.py test --all --language python
           python3 tools/desktop_runtime_manifest.py
         env:
           PYTHONPATH: python
