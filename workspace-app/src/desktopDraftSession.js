@@ -1,21 +1,24 @@
-export function createDesktopDraftSession({bridge,projectId,snapshot,restore,isBusy,onState=()=>{}}){
+export function createDesktopDraftSession({bridge,projectId,snapshot,restore,isBusy,navigationIdentity=()=>null,onState=()=>{}}){
+  let loadGeneration=0;
   let alive=true,phase='loading',allowPreservedClose=false,resetAllowed=false,loading,saveChain=Promise.resolve();
   function publish(next,message=''){
     phase=next;if(alive)onState({projectId,phase,message,resetAllowed});
   }
   function load(){
+    const generation=++loadGeneration,startedNavigation=navigationIdentity();
     allowPreservedClose=false;resetAllowed=false;publish('loading');
     loading=Promise.resolve().then(()=>bridge.loadDraft(projectId)).then(saved=>{
-      if(!alive)return;
+      if(!alive||generation!==loadGeneration)return;
       if(saved?.format==='rieke-draft-recovery'){
         resetAllowed=true;publish('recovery','The saved view could not be read. A copy will be kept if you start with a new view.');return;
       }
       if(saved){
         if(saved.format!=='rieke-renderer-draft'||saved.version!==1||saved.projectId!==projectId||!saved.value||typeof saved.value!=='object')throw new Error('Saved view identity is invalid.');
-        restore(saved.value);
+        // A saved view is a navigation suggestion, never a later user intent.
+        if(navigationIdentity()===startedNavigation)restore(saved.value);
       }
       publish('ready');
-    }).catch(()=>{if(alive)publish('recovery','The saved view could not be loaded. Retry before continuing.');});
+    }).catch(()=>{if(alive&&generation===loadGeneration)publish('recovery','The saved view could not be loaded. Retry before continuing.');});
     return loading;
   }
   load();

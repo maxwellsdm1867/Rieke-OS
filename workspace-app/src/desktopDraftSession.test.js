@@ -32,3 +32,28 @@ test('navigation flush waits behind an in-flight autosave and commits the curren
   assert.deepEqual(saves,['overview','files']);
   session.close();
 });
+
+
+test('new navigation while loading wins over the saved view',async()=>{
+  let release,route='initial',restores=0,stored;
+  const session=createDesktopDraftSession({projectId:'project',navigationIdentity:()=>route,
+    bridge:{loadDraft:()=>new Promise(resolve=>{release=resolve;}),saveDraft:async payload=>{stored=payload.value.value;}},
+    snapshot:()=>({route}),restore:()=>restores++,isBusy:()=>false});
+  await new Promise(resolve=>setImmediate(resolve));route='new-user-navigation';
+  release({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'old-saved-view'}});
+  await session.flush();assert.equal(restores,0);assert.equal(stored.route,'new-user-navigation');session.close();
+});
+test('a superseded load cannot publish after retry or after project close',async()=>{
+  const loads=[],restores=[];let state;
+  const session=createDesktopDraftSession({projectId:'project',
+    bridge:{loadDraft:()=>new Promise(resolve=>loads.push(resolve)),saveDraft:async()=>{}},
+    snapshot:()=>({}),restore:value=>restores.push(value),isBusy:()=>false,onState:value=>{state=value;}});
+  await new Promise(resolve=>setImmediate(resolve));const retried=session.retry();
+  await new Promise(resolve=>setImmediate(resolve));
+  loads[1]({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'new'}});await retried;
+  loads[0]({format:'rieke-draft-recovery'});await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(state.phase,'ready');assert.deepEqual(restores,[{route:'new'}]);
+  const pending=session.retry();await new Promise(resolve=>setImmediate(resolve));session.close();
+  loads[2]({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'closed'}});await pending;
+  assert.deepEqual(restores,[{route:'new'}]);
+});

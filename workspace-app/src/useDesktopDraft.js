@@ -6,7 +6,7 @@ export function useDesktopDraft({projectId,snapshot,restore,busy}){
   const session=useRef(null),[state,setState]=useState({phase:'inactive'});
   useEffect(()=>{
     const bridge=desktopBridge();if(!bridge||!projectId)return;
-    const draft=createDesktopDraftSession({bridge,projectId,snapshot:()=>current.current.snapshot(),restore:value=>current.current.restore(value),isBusy:()=>current.current.busy,onState:setState});
+    const draft=createDesktopDraftSession({bridge,projectId,snapshot:()=>current.current.snapshot(),navigationIdentity:()=>current.current.snapshot()?.route?.key,restore:value=>current.current.restore(value),isBusy:()=>current.current.busy,onState:setState});
     session.current=draft;
     const stop=registerDraftSaver(()=>draft.flush());
     const timer=setInterval(()=>{if(!current.current.busy)draft.flush().catch(()=>{});},3000);
