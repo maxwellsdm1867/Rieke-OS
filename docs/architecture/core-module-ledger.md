@@ -110,9 +110,12 @@ reads confirmed the current coupling. No import/H5/native fixtures ran.
 
 ## Comprehensive core contract review
 
-The structured ledger now contains 59 core module contracts: 14 frontend, 16
-scientific command/recovery/export, 10 import/storage/query/trace, 18 desktop
-(including the lifecycle overview), and one contract-enforcement module. The
+The structured ledger contains 59 contract records grouped into five review areas:
+14 frontend, 16 scientific command/recovery/export, 10 import/storage/query/trace,
+18 desktop (including the lifecycle overview), and one contract-enforcement record.
+These are four product areas plus one cross-cutting engineering area, not a formal
+module hierarchy. Records cover runtime owners, shared contracts, overviews and
+qualification obligations; they are not 59 independently replaceable modules. The
 existing overview table above summarizes the largest ownership areas; the JSON
 contains the detailed records. Each record states inputs/outputs, identity/type/
 order/unit/provenance rules, errors and partial success, freshness, transaction/
