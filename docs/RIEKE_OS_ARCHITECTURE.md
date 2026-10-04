@@ -1,5 +1,9 @@
 # Disco application boundary
 
+For the implemented module map and proposed stable behavioral ports, start at
+[ARCHITECTURE.md](../ARCHITECTURE.md). This document owns the application and
+distribution boundary.
+
 Disco is an independent application for organizing recordings, browsing
 metadata and waveforms, tagging cells and epochs, saving queries and selections,
 and exporting reproducible data. Its canonical source and releases are in

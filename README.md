@@ -155,7 +155,7 @@ workspace issues. Keep the exact error when asking for help.
 - [Tags, authors and scope](docs/TAGGING.md)
 - [Reusable searches](docs/SEARCH_PRESETS.md)
 - [Browser workspace reference](workspace-app/README.md)
-- [Application architecture](docs/RIEKE_OS_ARCHITECTURE.md)
+- [Application architecture](ARCHITECTURE.md)
 
 ## Your files
 

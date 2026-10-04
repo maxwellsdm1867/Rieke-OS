@@ -1,3 +1,10 @@
+# Architecture entry point
+
+Read [ARCHITECTURE.md](ARCHITECTURE.md) for the implemented module map and
+[stable behavioral ports proposal](docs/architecture/stable-ports.md) before
+changing cross-module contracts. Proposed ports are not implemented APIs or a
+broad refactor authorization. Preserve scientific behavior and exact qualification.
+
 # Repository benchmark entry point
 
 Before changing release tooling or claiming a performance improvement, read
