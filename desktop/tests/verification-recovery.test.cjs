@@ -2,6 +2,13 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {recoverVerificationFailure}=require('../verification-recovery.cjs');
 const {QuitCoordinator}=require('../quit-coordinator.cjs');
+test('ordinary Quit retries only absent or unconfirmed verification cleanup',async()=>{
+  const {cleanupAfterVerificationRecovery}=require('../verification-recovery.cjs');
+  let retries=0;
+  for(const result of [undefined,{services:{ready:false}},{services:{ready:'true'}}])
+    assert.equal(await cleanupAfterVerificationRecovery(result,()=>{retries++;return 'retried';}),'retried');
+  assert.equal(retries,3);
+});
 test('failure blocks new work immediately, preserves accepted work, and shows recovery only after cleanup',async()=>{
   const events=[];let acceptWrite;
   const acceptedWrite=new Promise(resolve=>{acceptWrite=resolve;});

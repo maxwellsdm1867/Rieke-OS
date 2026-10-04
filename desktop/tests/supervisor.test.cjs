@@ -100,6 +100,28 @@ test('explicit quit waits for clean receipts and process exit, then removes owne
  await assert.rejects(fs.readFile(supervisor.registryPath),{code:'ENOENT'});
  child.kill=()=>assert.fail('Quit never kills accepted writers');
 });
+test('failed Verify draft acknowledgement survives successful closure and subsequent ordinary Quit',async t=>{
+ const {recoverVerificationFailure,cleanupAfterVerificationRecovery}=require('../verification-recovery.cjs');
+ const {QuitCoordinator}=require('../quit-coordinator.cjs');
+ const {supervisor}=await fixture(t,(sup,worker,url)=>{
+  if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));
+  return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});
+ });
+ await supervisor.start();
+ const recovered=await recoverVerificationFailure({blockNewWork:()=>{},pause:async()=>{},
+  saveDrafts:async()=>({ready:false,reason:'Latest view unavailable'}),
+  closeServices:drafts=>supervisor.quit({timeout:1000,drafts}),showRecovery:()=>{}});
+ assert.equal(recovered.services.ready,true);assert.equal(supervisor.exited,true);
+ const before=await fs.readFile(supervisor.registryPath,'utf8');
+ assert.equal(JSON.parse(before).quit.state,'services_closed');assert.equal(JSON.parse(before).quit.drafts_saved,false);
+ let retries=0,exited=false;
+ const ordinaryQuit=new QuitCoordinator({prepareDrafts:async()=>recovered.drafts,
+  cleanup:options=>cleanupAfterVerificationRecovery(recovered,()=>{retries++;return supervisor.quit(options);}),
+  exit:()=>{exited=true;}});
+ const result=await ordinaryQuit.quit();
+ assert.equal(result.services_closed,true);assert.equal(result.drafts_saved,false);assert.equal(result.clean,false);
+ assert.equal(exited,true);assert.equal(retries,0);assert.equal(await fs.readFile(supervisor.registryPath,'utf8'),before);
+});
 test('failed explicit cleanup retains interrupted evidence with no capability or false clean receipt',async t=>{
  const routes=[];
  const {supervisor,child}=await fixture(t,(sup,_worker,url)=>{routes.push(url);return url.endsWith('/quit')?response({error:'Accepted job still active'},false,409):response({...sup.expectedHealth(),ready:true,services:[]});});

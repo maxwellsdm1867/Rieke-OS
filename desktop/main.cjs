@@ -132,7 +132,8 @@ function orderlyQuit() {
         : draftBarrier.prepare(scientificWindows, {timeout}),
       cleanup: async options => {
         await cancelApplicationVerification();
-        return supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true};
+        return require('./verification-recovery.cjs').cleanupAfterVerificationRecovery(verificationRecoveryResult,
+          () => supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true});
       },
       publish: value => { lifecycleStatus = value; broadcast(value); },
       exit: () => { quitAuthorized = true; app.quit(); }

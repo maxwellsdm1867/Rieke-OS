@@ -12,4 +12,9 @@ async function recoverVerificationFailure({blockNewWork,pause,saveDrafts,closeSe
   showRecovery(result);
   return result;
 }
-module.exports={recoverVerificationFailure};
+function cleanupAfterVerificationRecovery(result, retryCleanup) {
+  // Successful closure already persisted any failed draft acknowledgement.
+  // Calling supervisor.quit again on an exited service would erase that record.
+  return result?.services?.ready === true ? result.services : retryCleanup();
+}
+module.exports={recoverVerificationFailure,cleanupAfterVerificationRecovery};
