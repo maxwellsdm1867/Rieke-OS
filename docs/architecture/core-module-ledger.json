@@ -296,23 +296,28 @@
     {
       "id": "presentation-sessions",
       "purpose": "Own scoped presentation fallback, checkpoints and pruning",
-      "owner": "App / desktopDraftSession / navigation",
+      "owner": "workspacePresentationSessions; App composes navigation/draft/unmount calls",
       "interfaces": [
-        "existing draft/session handles",
-        "session owner proposal"
+        "remember / read / checkpoint / restore / pruneDeleted"
       ],
       "depends_on": [
         "renderer-resources",
         "desktop-lifecycle"
       ],
-      "status": "existing-plus-proposal",
+      "status": "implemented-reviewed",
       "implementation_commits": [
-        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+        "48c2c47c2b55cf613a3dff95d59f6c4d371033a1",
+        "5e0452531c77bf12c5fb3af9c40b78f97abf0008"
       ],
       "correctness_detectors": [
+        "presentationSessionsApp.test.js (17 immutable baseline cases)",
+        "workspacePresentationSessions.test.js",
+        "presentationSessionsIntegration.test.js",
+        "workspaceNavigation.test.js",
+        "deletedSourceSelections.test.js",
         "desktopDraftSession.test.js",
-        "startupRestore.test.js",
-        "navigation/session/draft/unmount suites"
+        "projectUnmount.test.js",
+        "eight baseline behavioral faults; candidate rejection-before-mutation fault prepared, execution pending exact candidate"
       ],
       "benchmark_case_ids": [
         "ui.mounted.inspector.return",
@@ -322,7 +327,7 @@
         "checkpoint/restore cost",
         "retained-map memory"
       ],
-      "replacement_option": "Compare a real session owner with small checkpoint/pruning helpers; select based on removed caller knowledge, not file count. Preserve draft shape and one-shot intent.",
+      "replacement_option": "Owner removes coordinated store knowledge from App. Keep-current and pure helpers were considered. Internal replacement is welcome under unchanged public contracts; no speed improvement established.",
       "metrics": {
         "baseline": null,
         "candidate": null,
@@ -385,7 +390,8 @@
         "mutation-recovery",
         "export-materialization",
         "desktop-lifecycle",
-        "group-save"
+        "group-save",
+        "presentation-sessions"
       ],
       "status": "implemented",
       "implementation_commits": [
@@ -410,6 +416,126 @@
         "candidate": null,
         "status": "not measured for this increment"
       }
+    },
+    {
+      "status": "existing-coupled-proposed-separation",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      },
+      "id": "acquisition-ingestion",
+      "purpose": "Prepare source metadata and orchestrate verified catalog population; currently H5/RetinAnalysis-specific",
+      "owner": "recording_workspace.prepare / import_catalog; workspace_api HTTP/job orchestration",
+      "interfaces": [
+        "existing prepare and import_catalog operations",
+        "generic acquisition intake remains proposed"
+      ],
+      "depends_on": [
+        "catalog-storage",
+        "mutation-recovery"
+      ],
+      "source_pointers": [
+        "python/recording_workspace.py:412",
+        "python/recording_workspace.py:754",
+        "python/workspace_api.py:1633",
+        "python/workspace_recording_files.py:9",
+        "contracts/metadata-bundle/v1-draft/README.md"
+      ],
+      "actual_coupling": [
+        "prepare invokes Symphony2Reader and emits RetinAnalysis-shaped metadata.catalog.json",
+        "import_catalog directly binds RetinAnalysis schema/population, DataJoint tables, advisory lock, source deduplication, transaction and post-commit files",
+        "same source hash still requires identity validation; equal display names never establish duplicate acquisition"
+      ],
+      "contract_gaps": [
+        "no implemented generic acquisition bundle import port",
+        "units/provenance/identity compatibility across another acquisition format remains to be specified and qualified",
+        "database commit and later file/protocol finalization can succeed or fail separately"
+      ],
+      "correctness_detectors": [
+        "test_workspace_import_identities.py",
+        "test_workspace_catalog_identity.py",
+        "test_workspace_catalog_collision.py",
+        "test_workspace_import_progress_failures.py"
+      ],
+      "benchmark_case_ids": [
+        "correctness.frozen_export_tags_ingest"
+      ],
+      "release_requirement_refs": [
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported",
+          "kind": "release_requirement"
+        }
+      ],
+      "unmeasured_gaps": [
+        "new importer conformance",
+        "native transaction/finalization failure qualification for any new seam",
+        "ingest throughput and disk cost"
+      ],
+      "replacement_option": "Keep current implementation while deferred. Next read-only design may assess one catalog-ingest transaction owner behind current import_catalog; do not add a generic repository, schema rewrite or new format port."
+    },
+    {
+      "status": "existing-coupled-proposed-separation",
+      "implementation_commits": [
+        "18975ad8240044273ca1f52783b20b8adbfd9a3f"
+      ],
+      "metrics": {
+        "baseline": null,
+        "candidate": null,
+        "status": "not measured for this increment"
+      },
+      "id": "catalog-storage",
+      "purpose": "Persist acquisition and authored state in project MySQL/DataJoint; retain separate derived read indexes and exact project database ownership",
+      "owner": "RetinAnalysis schema/population plus recording_workspace transaction composition; workspace_project_database/native_mysql lifecycle; typed query owners for derived reads",
+      "interfaces": [
+        "existing DataJoint tables and project database lifecycle operations",
+        "existing typed query core; no universal storage facade"
+      ],
+      "depends_on": [
+        "typed-query",
+        "desktop-lifecycle"
+      ],
+      "source_pointers": [
+        "python/recording_workspace.py:574",
+        "python/recording_workspace.py:598",
+        "python/recording_workspace.py:754",
+        "python/workspace_catalog_identity.py:65",
+        "python/workspace_catalog_collision.py:26",
+        "python/workspace_project_database.py:21",
+        "python/workspace_native_mysql.py",
+        "python/workspace_service.py:608"
+      ],
+      "actual_coupling": [
+        "source deduplication and transaction scope still live inside importer orchestration",
+        "population and relationship verification depend on concrete RetinAnalysis/DataJoint schema and SQL collation",
+        "project database provisioning/ownership differs from transaction semantics and disposable typed SQLite query acceleration"
+      ],
+      "contract_gaps": [
+        "no separate catalog write owner currently hides import lock, collision lookup lifetime, transactional population and post-population identity proof",
+        "authoritative SQL commit is distinct from file finalization, backup completion and derived-index publication",
+        "a substitute adapter cannot claim native transaction/DDL/lock fidelity from stand-ins"
+      ],
+      "correctness_detectors": [
+        "test_workspace_catalog_identity.py",
+        "test_workspace_catalog_collision.py",
+        "test_workspace_catalog_batching.py",
+        "test_workspace_registered_recovery_policy.py",
+        "existing typed generation/query lifecycle suites"
+      ],
+      "benchmark_case_ids": [
+        "db.typed.detail",
+        "db.typed.page.scope"
+      ],
+      "unmeasured_gaps": [
+        "native ingestion commit/rollback and cleanup matrix for new owner",
+        "backend replacement compatibility",
+        "combined database/index/build/backup/shutdown cost"
+      ],
+      "replacement_option": "Retain existing deep typed index/generation/lease modules. Consider a purpose-specific catalog-ingest transaction owner only if it removes actual importer knowledge; preserve native DataJoint/schema coupling explicitly, not behind a generic CRUD facade."
     }
   ],
   "evidence": [
@@ -445,6 +571,18 @@
       "limits": [
         "not full regression",
         "not native/browser/CI/performance qualification"
+      ]
+    },
+    {
+      "source_commit": "48c2c47c2b55cf613a3dff95d59f6c4d371033a1",
+      "kind": "presentation baseline source correctness",
+      "renderer_pass": 17,
+      "skips": 0,
+      "deliberate_faults_detected": 8,
+      "location": "task-4/evidence/presentation-baseline-binding.json",
+      "limits": [
+        "fake HTTP and presentation probes with real App/Protocol/history/draft/merge owners",
+        "not native/packaged/CI/performance qualification"
       ]
     }
   ],

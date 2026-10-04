@@ -20,10 +20,12 @@ Baseline is `18975ad8240044273ca1f52783b20b8adbfd9a3f`; published stable remains
 | Tree selection | Reader owns exact routes, traversal and range mechanics; views own gestures/publication. | P03 implemented; preserve synchronous/scheduled behavior, exact order and stale refusal. |
 | Mutation recovery | HTTP completion policy separates SQL commit, recovery and independent backup. | P04 implemented; client read-POST close barriers intentionally differ from server backup exemptions. |
 | Export materialization | Shared format tail; callers retain frozen recipe, staging and publication. | P05 local implementation retained; native qualification and H5/Ovation work deferred. |
+| Acquisition ingestion | `prepare` and `import_catalog` still combine H5/RetinAnalysis preparation with concrete catalog population. | Existing coupled implementation; generic intake remains proposed and deferred. |
+| Catalog storage | DataJoint/MySQL acquisition and authored state; project lifecycle and derived typed indexes have distinct owners. | Transaction/deduplication policy still sits in importer composition; no universal storage facade exists. |
 | Typed query/generation/leases | Existing typed reader, generation/cache lease and native authority owners. | Keep conservative exact method/binding proof; broad authority proposals not implemented. |
 | Renderer resources | Context-specific request, activation, bounded cache and summary-job ownership. | Existing modules retained; unifying distinct freshness/profile policies is not justified. |
 | Group save | Opaque session owns exact requests, retry and deferred release; tree preview owns query/validation. | Reviewed opaque-session slice `f7fc7b6`; keep-current alternative remains documented. |
-| Presentation sessions | App owns fallback/maps; draft/navigation modules own intent and publication. | Proposed deepening only; compare session owner against smaller checkpoint/pruning helpers. |
+| Presentation sessions | Five-operation owner hides route/fallback storage, checkpoints and pruning; App retains navigation/persistence composition. | Reviewed runtime slice `5e04525`; immutable baseline `48c2c47`, no speed claim. |
 | Desktop lifecycle | Existing draft, startup, process and quit owners have separate obligations. | P07 enforcement adopted in `5d12cf0`; no runtime facade or protocol change. |
 | Contract enforcement | Single adopted catalog and guard discover owners and affected tests. | Scoped desktop CJS runner added; direct imports do not prove transitive authority. |
 
@@ -78,3 +80,30 @@ Check whether warm read gains shift cost into build/open, hidden cache retention
 backup lag or exit. None of those whole-app cost shifts has been measured for this
 increment. Add justified cases only to the existing registry; no fabricated budget
 or historical timing retrofit. H5/Ovation/native export remain deferred.
+
+## Import and database: current versus proposed
+
+The importer does not yet hand a format-neutral bundle to an independent database
+module. `recording_workspace.prepare` calls the H5-specific Symphony parser and
+produces RetinAnalysis-shaped metadata. `import_catalog` directly acquires the SQL
+advisory lock, creates connection-local collision indexes before the transaction,
+checks source identity/deduplication, calls RetinAnalysis population, verifies stored
+relationships and writes the audit event. Later workspace files and protocol
+finalization are separate from that committed transaction. Cleanup failure must
+not imply rollback of a committed catalog.
+
+Project database provisioning/ownership (`workspace_project_database` and
+`workspace_native_mysql`) is distinct from these write semantics. The typed SQLite
+index/generation/lease modules already form useful derived-read modules; they do
+not replace authoritative MySQL/DataJoint storage or choose scientific membership.
+The structured ledger records exact source pointers, coupling and contract gaps.
+
+A possible next design is one purpose-specific catalog-ingest transaction owner
+behind the existing `import_catalog` operation. It could hide lock/collision lookup
+lifetime, population and identity proof, while its caller keeps preparation and
+post-commit finalization. This is a read-only candidate, not an implemented port.
+Keep-current remains valid until the proposed interface removes meaningful caller
+knowledge and preserves same-source revalidation, collisions, rollback, unknown
+commit and partial-success reporting. No generic repository, schema rewrite or
+new importer is proposed. Existing surveys informed this assessment; bounded source
+reads confirmed the current coupling. No import/H5/native fixtures ran.

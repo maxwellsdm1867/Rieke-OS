@@ -168,6 +168,50 @@
           "python/tests/test_workspace_group_recovery.py"
         ]
       }
+    },
+    {
+      "id": "presentation-session-owner",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Presentation-session ownership"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/workspacePresentationSessions.js",
+          "allow": [
+            "workspace-app/src/deletedSourceSelections.js"
+          ],
+          "require": [
+            "workspace-app/src/deletedSourceSelections.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "require": [
+            "workspace-app/src/workspacePresentationSessions.js"
+          ],
+          "deny": [
+            "workspace-app/src/deletedSourceSelections.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/workspacePresentationSessions.test.js",
+          "workspace-app/src/presentationSessionsIntegration.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/workspaceNavigation.test.js",
+          "workspace-app/src/deletedSourceSelections.test.js",
+          "workspace-app/src/desktopDraftSession.test.js",
+          "workspace-app/src/projectUnmount.test.js"
+        ],
+        "python": []
+      }
     }
   ]
 }

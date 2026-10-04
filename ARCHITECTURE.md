@@ -14,7 +14,9 @@ plan. **The complete proposed ports remain design guidance.** Three bounded inte
 selection reads, mutation recovery completion and export format materialization; that record identifies the
 actual interfaces, preserved behavior, exact correctness evidence and limits.
 The same record adopts existing P07 lifecycle obligations for scoped desktop
-contract enforcement, without adding a runtime facade.
+contract enforcement, without adding a runtime facade. It also records the bounded
+presentation-session owner, which removes storage policy from App while preserving
+navigation, draft and merge-consent ownership.
 
 The [adopted-slice check catalog](docs/architecture/adopted-port-checks.json)
 indexes owned dependencies and existing conformance tests. The
