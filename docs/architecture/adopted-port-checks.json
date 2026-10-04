@@ -63,6 +63,64 @@
         "javascript": [],
         "python": ["python/tests/test_workspace_export_artifacts.py", "python/tests/test_workspace_export_boundary.py", "python/tests/test_workspace_candidate_exports.py", "python/tests/test_workspace_export_boundaries.py", "python/tests/test_workspace_export_paths.py", "python/tests/test_workspace_recipes.py", "python/tests/test_workspace_sqlite.py", "python/tests/test_workspace_matlab.py", "python/tests/test_workspace_export_reader.py", "python/tests/test_workspace_workbench_exports.py"]
       }
+    },
+    {
+      "id": "p07-runtime-lifecycle",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Project runtime lifecycle obligations"
+      },
+      "affected_paths": [
+        "desktop/**",
+        "workspace-app/**",
+        "python/**",
+        "docs/dev/DESKTOP_QUIT_COORDINATION.md"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "desktop/quit-coordinator.cjs",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/draft-barrier.cjs",
+          "allow": [
+            "node:crypto"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/desktopLifecycle.js",
+          "allow": []
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/desktopLifecycle.test.js",
+          "workspace-app/src/projectUnmount.test.js",
+          "workspace-app/src/apiCommandPolicy.test.js",
+          "workspace-app/src/desktopDraftSession.test.js",
+          "workspace-app/src/startupRestore.test.js"
+        ],
+        "python": [
+          "python/tests/test_workspace_desktop.py",
+          "python/tests/test_workspace_lifecycle.py",
+          "python/tests/test_workspace_startup_registry.py",
+          "python/tests/test_workspace_startup.py",
+          "python/tests/test_lazy_startup_outcome.py"
+        ],
+        "desktop": [
+          "desktop/tests/supervisor.test.cjs",
+          "desktop/tests/draft-barrier.test.cjs",
+          "desktop/tests/draft-store.test.cjs",
+          "desktop/tests/quit-coordinator.test.cjs",
+          "desktop/tests/main-quit-recovery.test.cjs",
+          "desktop/tests/startup-session.test.cjs",
+          "desktop/tests/verification-recovery.test.cjs",
+          "desktop/tests/main-startup-restoration.test.cjs"
+        ]
+      }
     }
   ]
 }

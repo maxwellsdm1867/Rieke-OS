@@ -13,6 +13,8 @@ plan. **The complete proposed ports remain design guidance.** Three bounded inte
 [0.1.8 slices](docs/architecture/0.1.8-first-port-slices.md) now implement tree
 selection reads, mutation recovery completion and export format materialization; that record identifies the
 actual interfaces, preserved behavior, exact correctness evidence and limits.
+The same record adopts existing P07 lifecycle obligations for scoped desktop
+contract enforcement, without adding a runtime facade.
 
 The [adopted-slice check catalog](docs/architecture/adopted-port-checks.json)
 indexes owned dependencies and existing conformance tests. The

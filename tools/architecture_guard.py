@@ -17,6 +17,7 @@ import sys
 
 CATALOG = 'docs/architecture/adopted-port-checks.json'
 LANGUAGES = ('python', 'javascript')
+RUNNERS = (*LANGUAGES, 'desktop')
 
 
 def contained(root, name, *, exists=True):
@@ -72,14 +73,16 @@ def catalog(root):
             raise ValueError(f'Missing contract heading: {entry["contract"]}')
         for pattern in string_list(entry['affected_paths'], 'affected_paths'):
             contained(root, pattern, exists=False)
-        keys(entry['tests'], LANGUAGES)
-        for language in LANGUAGES:
-            for path in string_list(entry['tests'][language], 'test paths'):
+        keys(entry['tests'], LANGUAGES, ('desktop',))
+        for language in RUNNERS:
+            for path in string_list(entry['tests'].get(language, []), 'test paths'):
                 contained(root, path)
                 if language == 'python' and not (path.startswith('python/tests/') and path.endswith('.py')):
                     raise ValueError(f'Invalid Python test path: {path}')
                 if language == 'javascript' and not (path.startswith('workspace-app/src/') and path.endswith('.test.js')):
                     raise ValueError(f'Invalid JavaScript test path: {path}')
+                if language == 'desktop' and not (path.startswith('desktop/tests/') and path.endswith('.test.cjs')):
+                    raise ValueError(f'Invalid desktop test path: {path}')
         if not any(entry['tests'].values()):
             raise ValueError(f'Contract has no conformance tests: {entry["id"]}')
         if not isinstance(entry['rules'], list) or not entry['rules']:
@@ -129,6 +132,8 @@ def validate_dependencies(entry, rule, dependencies):
 
 
 def check_ownership(root, value, language, node):
+    if language == 'desktop':
+        language = 'javascript'
     checked = ['metadata']
     for selected in LANGUAGES:
         if language not in ('all', selected):
@@ -199,7 +204,7 @@ def affected_plan(root, value, base, head, all_contracts):
     shared = any(fnmatch.fnmatchcase(path, pattern) for path in paths for pattern in value['shared_paths'])
     selected = [entry for entry in value['contracts'] if all_contracts or shared or any(
         fnmatch.fnmatchcase(path, pattern) for path in paths for pattern in entry['affected_paths'])]
-    tests = {language: sorted({path for entry in selected for path in entry['tests'][language]}) for language in LANGUAGES}
+    tests = {language: sorted({path for entry in selected for path in entry['tests'].get(language, [])}) for language in RUNNERS}
     # Preserve workspace-ci's previous docs/** and **/*.md exclusion, while
     # reference/contract changes still receive their mapped conformance checks.
     source_changed = all_contracts or any(not path.startswith('docs/') and not path.endswith('.md') for path in paths)
@@ -207,12 +212,13 @@ def affected_plan(root, value, base, head, all_contracts):
             'changed_paths':paths, 'affected_contracts':[entry['id'] for entry in selected],
             'tests':tests, 'source_changed':source_changed,
             'javascript_required':source_changed or bool(tests['javascript']),
-            'python_required':source_changed or bool(tests['python'])}
+            'python_required':source_changed or bool(tests['python']),
+            'desktop_required':bool(tests['desktop'])}
 
 
 def run_contracts(root, value, plan, language, node):
-    if language not in LANGUAGES:
-        raise ValueError('Mapped tests require an explicit --language python or javascript')
+    if language not in RUNNERS:
+        raise ValueError('Mapped tests require an explicit --language python, javascript or desktop')
     tests = plan['tests'][language]
     if not tests:
         return {'status':'not affected', 'runs':[]}
@@ -220,9 +226,12 @@ def run_contracts(root, value, plan, language, node):
     if language == 'python':
         command = [sys.executable, '-B', '-m', 'unittest', '-v', *[path[:-3].replace('/', '.') for path in tests]]
         cwd = root
-    else:
+    elif language == 'javascript':
         command = [node, '--import', './src/test-support/reactTestEnvironment.js', '--test', *[str(Path(path).relative_to('workspace-app')) for path in tests]]
         cwd = root / 'workspace-app'
+    else:
+        command = [node, '--test', *tests]
+        cwd = root
     env = {**os.environ, 'PYTHONPATH':os.pathsep.join([str(root / 'python'), str(root / 'python/tests')]), 'PYTHONDONTWRITEBYTECODE':'1'}
     run = subprocess.run(command, cwd=cwd, env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
     return {'status':'passed' if run.returncode == 0 else 'failed', 'checked':checked,
@@ -251,7 +260,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=['check', 'plan', 'test'])
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[1])
-    parser.add_argument('--language', choices=['all', 'metadata', *LANGUAGES], default='all')
+    parser.add_argument('--language', choices=['all', 'metadata', *RUNNERS], default='all')
     parser.add_argument('--node', default='node')
     parser.add_argument('--base')
     parser.add_argument('--head', default='HEAD')
@@ -278,7 +287,7 @@ def main():
             args.output.write_text(json.dumps(result, indent=2)+'\n')
         if args.github_output:
             with args.github_output.open('a') as output:
-                for key in ('source_changed','javascript_required','python_required'):
+                for key in ('source_changed','javascript_required','python_required','desktop_required'):
                     output.write(f'{key}={str(result[key]).lower()}\n')
         print(json.dumps(result, indent=2))
         return 1 if result['status'] == 'failed' else 0

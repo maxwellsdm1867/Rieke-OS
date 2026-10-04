@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
@@ -155,7 +156,58 @@ class ArchitectureGuardTests(unittest.TestCase):
         output=self.root/'.git/result.json';github=self.root/'.git/github-output'
         result=self.cli('plan','--base',self.initial,'--output',str(output),'--github-output',str(github))
         self.assertEqual(json.loads(output.read_text()),result)
-        self.assertEqual(github.read_text(),'source_changed=false\njavascript_required=false\npython_required=true\n')
+        self.assertEqual(github.read_text(),'source_changed=false\njavascript_required=false\npython_required=true\ndesktop_required=false\n')
         self.assertEqual(len(result['source_sha256']['docs/contract.md']),64)
+
+    def desktop_contract(self):
+        self.write('desktop/tests/lifecycle.test.cjs',
+            "const test=require('node:test'),assert=require('node:assert/strict');\n"
+            "test('desktop contract',()=>{assert.equal(process.cwd(),__dirname.replace(/[/\\\\]desktop[/\\\\]tests$/,''));assert.ok(!process.execArgv.includes('--import'));});\n")
+        entry=self.catalog['contracts'][0]
+        entry['affected_paths'].append('desktop/**')
+        entry['tests']['desktop']=['desktop/tests/lifecycle.test.cjs']
+        self.write_catalog()
+
+    @unittest.skipUnless(shutil.which('node'), 'Desktop CJS runner requires Node')
+    def test_desktop_runner_uses_root_without_react_and_propagates_behavior_failure(self):
+        self.desktop_contract()
+        duplicate=json.loads(json.dumps(self.catalog['contracts'][0]));duplicate['id']='second-owner'
+        self.catalog['contracts'].append(duplicate);self.write_catalog()
+        passed=self.cli('test','--all','--language','desktop')
+        self.assertEqual(passed['runs'][0]['command'],['node','--test','desktop/tests/lifecycle.test.cjs'])
+        self.assertEqual(passed['runs'][0]['cwd'],str(self.root.resolve()))
+        self.assertEqual(passed['runs'][0]['exit_code'],0)
+        self.write('desktop/tests/lifecycle.test.cjs',"require('node:test')('receipt fault',()=>require('node:assert/strict').equal('unconfirmed','clean'));\n")
+        self.commit()
+        failed=self.cli('test','--base',self.initial,'--language','desktop',success=False)
+        self.assertEqual(failed['runs'][0]['exit_code'],1)
+        self.assertIn('unconfirmed',failed['runs'][0]['output'])
+
+    def test_desktop_mapping_tracks_docs_renames_and_deleted_paths(self):
+        self.desktop_contract();base=self.commit()
+        self.write('docs/unrelated.md','# note\n');self.commit()
+        self.assertFalse(self.cli('plan','--base',base)['desktop_required'])
+        self.write('docs/contract.md','# Contract\n## Recovery\nClarified\n');self.commit()
+        doc=self.cli('plan','--base',base)
+        self.assertTrue(doc['desktop_required']);self.assertFalse(doc['source_changed'])
+        base=self.git('rev-parse','HEAD')
+        self.git('mv','desktop/tests/lifecycle.test.cjs','desktop/tests/renamed.test.cjs')
+        self.catalog['contracts'][0]['tests']['desktop']=['desktop/tests/renamed.test.cjs']
+        self.write_catalog();self.commit()
+        result=self.cli('plan','--base',base)
+        self.assertTrue(result['desktop_required'])
+        self.assertIn('desktop/tests/lifecycle.test.cjs',result['changed_paths'])
+        self.assertIn('desktop/tests/renamed.test.cjs',result['changed_paths'])
+
+    def test_desktop_and_renderer_paths_cannot_be_misclassified(self):
+        self.desktop_contract()
+        self.write('workspace-app/src/view.test.js','export {};\n')
+        tests=self.catalog['contracts'][0]['tests']
+        tests['desktop']=['workspace-app/src/view.test.js'];self.write_catalog()
+        self.assertIn('Invalid desktop test path',self.cli('check','--language','metadata',success=False)['error'])
+        tests['desktop']=[];tests['javascript']=['desktop/tests/lifecycle.test.cjs'];self.write_catalog()
+        self.assertIn('Invalid JavaScript test path',self.cli('check','--language','metadata',success=False)['error'])
+        tests['javascript']=[];tests['unknown']=[];self.write_catalog()
+        self.assertIn('Invalid catalog fields',self.cli('check','--language','metadata',success=False)['error'])
 
 if __name__ == '__main__': unittest.main()

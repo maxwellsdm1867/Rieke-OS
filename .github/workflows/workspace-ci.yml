@@ -16,6 +16,7 @@ jobs:
       source_changed: ${{ steps.plan.outputs.source_changed }}
       javascript_required: ${{ steps.plan.outputs.javascript_required }}
       python_required: ${{ steps.plan.outputs.python_required }}
+      desktop_required: ${{ steps.plan.outputs.desktop_required }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,6 +62,36 @@ jobs:
         run: |
           node --test workspace-app/src/architectureImports.test.js
           python3 -B tools/architecture_guard.py test --base "$BASE_REF" --language javascript
+  desktop-contracts:
+    name: Scoped desktop lifecycle contracts
+    needs: architecture
+    if: needs.architecture.outputs.desktop_required == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      # Reuse the existing ownership parser; no Electron/native installation.
+      - run: npm ci
+        working-directory: workspace-app
+      - name: Mapped desktop CJS contracts
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          args=(--all)
+          if [ -n "$BASE_REF" ] && [ "$BASE_REF" != 0000000000000000000000000000000000000000 ]; then args=(--base "$BASE_REF"); fi
+          python3 -B tools/architecture_guard.py test "${args[@]}" --language desktop --output "$RUNNER_TEMP/desktop-contracts.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: desktop-lifecycle-contracts
+          path: ${{ runner.temp }}/desktop-contracts.json
+          if-no-files-found: error
   python:
     needs: architecture
     if: needs.architecture.outputs.python_required == 'true'
