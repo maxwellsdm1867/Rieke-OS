@@ -2,7 +2,7 @@ name: Disco regression checks
 on:
   pull_request:
   push:
-    branches: [main, master, codex/rieke-native-e2e]
+    branches: [main, master, codex/rieke-native-e2e, codex/0.1.8-stable-ports]
 concurrency:
   group: regression-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
