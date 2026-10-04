@@ -159,6 +159,27 @@ class ArchitectureGuardTests(unittest.TestCase):
         self.assertEqual(github.read_text(),'source_changed=false\njavascript_required=false\npython_required=true\ndesktop_required=false\n')
         self.assertEqual(len(result['source_sha256']['docs/contract.md']),64)
 
+    def test_module_policy_version_is_explicit_and_nested_test_paths_remain_mapped(self):
+        self.catalog['version'] = 2
+        self.write_catalog()
+        self.assertIn('requires module policy', self.cli('check', '--language', 'metadata', success=False)['error'])
+        self.catalog['version'] = 1
+        self.catalog['javascript_module_policy'] = {}
+        self.write_catalog()
+        self.assertIn('version 1 forbids', self.cli('check', '--language', 'metadata', success=False)['error'])
+        del self.catalog['javascript_module_policy']
+        path = 'workspace-app/src/presentation/internal/helper.test.js'
+        self.write(path, 'export {};')
+        self.catalog['contracts'][0]['tests']['javascript'] = [path]
+        self.catalog['contracts'][0]['affected_paths'].append('workspace-app/**')
+        self.write_catalog()
+        base = self.commit()
+        self.write(path, '// changed nested contract\nexport {};')
+        self.commit()
+        result = self.cli('plan', '--base', base)
+        self.assertEqual(result['tests']['javascript'], [path])
+        self.assertTrue(result['javascript_required'])
+
     def desktop_contract(self):
         self.write('desktop/tests/lifecycle.test.cjs',
             "const test=require('node:test'),assert=require('node:assert/strict');\n"

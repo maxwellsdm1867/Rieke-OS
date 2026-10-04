@@ -1,5 +1,7 @@
 # Architecture entry point
 
+For frontend work, start at [module navigation](workspace-app/src/AGENTS.md).
+
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for the implemented module map and
 [stable behavioral ports proposal](docs/architecture/stable-ports.md) before
 changing cross-module contracts. Proposed ports are not implemented APIs or a

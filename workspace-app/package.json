@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "start": "node start.mjs",
-    "test": "node --import ./src/test-support/reactTestEnvironment.js --test src/*.test.js"
+    "test": "node ./runTests.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "5.104.1",

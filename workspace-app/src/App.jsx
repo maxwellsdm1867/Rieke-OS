@@ -7,7 +7,7 @@ import UndoControls from './components/UndoControls.jsx';
 import GroupAnnotationRecovery from './components/GroupAnnotationRecovery.jsx';
 import {useMutationUndo} from './useMutationUndo.js';
 
-import {createWorkspacePresentationSessions} from './workspacePresentationSessions.js';
+import {createWorkspacePresentationSessions} from './presentation/workspacePresentationSessions.js';
 import ProtocolViewFilter from './components/ProtocolViewFilter.jsx';
 import {tagFilterLabel,predicateWithProtocolFilters} from './protocolViewFilter.js';
 

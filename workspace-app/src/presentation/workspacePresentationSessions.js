@@ -1,7 +1,32 @@
-import {pruneDeletedSourceSelections} from './deletedSourceSelections.js';
+import {pruneDeletedSourceSelections} from './internal/deletedSourceSelections.js';
 
 // One App mount owns these presentation values. Navigation, draft persistence,
 // scientific authority and Protocol initialization remain with their callers.
+/**
+ * Create one in-memory presentation owner per App mount. No I/O or adapter.
+ * @typedef {{page:string, key:string, protocol?:string, resumeExplorer?:boolean}} Route
+ * @typedef {{route:unknown, sessions:Array<[string,unknown]>,
+ *   protocolSessions:Array<[string,unknown]>, lastExplorerSession:unknown,
+ *   lastStoresSession:unknown}} Checkpoint
+ * @returns {{remember:(route:Route,value:unknown)=>void,
+ *   read:(route:Route)=>{session:unknown,restoreSession:boolean},
+ *   checkpoint:(route:unknown)=>Checkpoint, restore:(value:unknown)=>unknown,
+ *   pruneDeleted:(removed:{removedEpochs?:string[],removedCells?:string[]})=>void}}
+ * remember(route, value) retains the exact value by route.key and updates only
+ * that destination's fallback (page: stores/explore/protocol; protocol identity).
+ * read(route) returns {session, restoreSession}; exact truthy values precede
+ * destination fallbacks. Protocol restoreSession reports key presence, including
+ * falsy saved values. Explorer fallback requires route.resumeExplorer.
+ * checkpoint(route) returns {route, sessions, protocolSessions,
+ * lastExplorerSession, lastStoresSession}: copied entry arrays, shared values.
+ * restore(value) rejects null/nonobjects before mutation; arrays are accepted.
+ * Invalid pair collections become empty independently; duplicate keys keep the
+ * last value. It replaces stores before returning the unvalidated value.route.
+ * pruneDeleted({removedEpochs, removedCells}) recursively removes identities
+ * from snapshots and clears the Stores fallback, even for empty identity lists.
+ * Navigation validation, stable callbacks, persistence and scientific authority
+ * belong to App/callers. No deep cloning, eviction or project reset is implied.
+ */
 export function createWorkspacePresentationSessions(){
  let sessions=new Map(),protocolSessions=new Map(),lastExplorerSession=null,lastStoresSession=null;
  return {

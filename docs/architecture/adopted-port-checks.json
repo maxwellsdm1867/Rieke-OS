@@ -1,67 +1,194 @@
 {
   "format": "disco-adopted-port-checks",
-  "version": 1,
+  "version": 2,
   "discovery": [
-    {"from": "AGENTS.md", "to": "ARCHITECTURE.md"},
-    {"from": "ARCHITECTURE.md", "to": "docs/architecture/0.1.8-first-port-slices.md"},
-    {"from": "ARCHITECTURE.md", "to": "docs/architecture/adopted-port-checks.json"},
-    {"from": "docs/architecture/0.1.8-first-port-slices.md", "to": "docs/architecture/stable-ports.md"},
-    {"from": "docs/architecture/0.1.8-first-port-slices.md", "to": "docs/architecture/adopted-port-checks.json"}
+    {
+      "from": "AGENTS.md",
+      "to": "ARCHITECTURE.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "docs/architecture/0.1.8-first-port-slices.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "docs/architecture/adopted-port-checks.json"
+    },
+    {
+      "from": "docs/architecture/0.1.8-first-port-slices.md",
+      "to": "docs/architecture/stable-ports.md"
+    },
+    {
+      "from": "docs/architecture/0.1.8-first-port-slices.md",
+      "to": "docs/architecture/adopted-port-checks.json"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/presentation/AGENTS.md"
+    }
   ],
   "shared_paths": [
-    "AGENTS.md", "ARCHITECTURE.md", "docs/architecture/**",
-    "tools/architecture_guard.py", "python/tests/test_architecture_guard.py",
-    "workspace-app/architectureImports.mjs", "workspace-app/src/architectureImports.test.js",
-    ".github/workflows/**", "rieke-release.json", "python/rieke-release.json",
-    "desktop/package.json", "desktop/package-lock.json", "desktop/application-profile.json"
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "docs/architecture/**",
+    "tools/architecture_guard.py",
+    "python/tests/test_architecture_guard.py",
+    "workspace-app/architectureImports.mjs",
+    "workspace-app/src/architectureImports.test.js",
+    ".github/workflows/**",
+    "rieke-release.json",
+    "python/rieke-release.json",
+    "desktop/package.json",
+    "desktop/package-lock.json",
+    "desktop/application-profile.json",
+    "tools/architecture_module_policy.py",
+    "workspace-app/runTests.mjs",
+    "workspace-app/vite.config.*",
+    "workspace-app/**/jsconfig*.json",
+    "workspace-app/**/tsconfig*.json",
+    "workspace-app/package.json",
+    "workspace-app/package-lock.json",
+    "workspace-app/isolatedViteCache.js",
+    "workspace-app/src/AGENTS.md",
+    "workspace-app/src/presentation/AGENTS.md"
   ],
   "contracts": [
     {
       "id": "p03-selection-reader",
-      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Tree selection reader"},
-      "affected_paths": ["workspace-app/**"],
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Tree selection reader"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
       "rules": [
         {
           "language": "javascript",
           "file": "workspace-app/src/components/PagedTree.jsx",
-          "deny": ["workspace-app/src/api.js", "workspace-app/src/pagedTreeRequest.js", "workspace-app/src/treeBranchReadCache.js", "node:module", "module"],
-          "require": ["workspace-app/src/treeSelectionReader.js"]
+          "deny": [
+            "workspace-app/src/api.js",
+            "workspace-app/src/pagedTreeRequest.js",
+            "workspace-app/src/treeBranchReadCache.js",
+            "node:module",
+            "module"
+          ],
+          "require": [
+            "workspace-app/src/treeSelectionReader.js"
+          ]
         },
         {
           "language": "javascript",
           "file": "workspace-app/src/treeSelectionReader.js",
-          "allow": ["workspace-app/src/api.js", "workspace-app/src/pagedTreeRequest.js"]
+          "allow": [
+            "workspace-app/src/api.js",
+            "workspace-app/src/pagedTreeRequest.js"
+          ]
         }
       ],
       "tests": {
-        "javascript": ["workspace-app/src/treeSelectionReader.test.js", "workspace-app/src/pagedTreeLifecycle.test.js", "workspace-app/src/pagedTreeRequest.test.js", "workspace-app/src/inspectorTreeAuthority.test.js", "workspace-app/src/stableContentInert.test.js", "workspace-app/src/candidateContinuity.test.js"],
+        "javascript": [
+          "workspace-app/src/treeSelectionReader.test.js",
+          "workspace-app/src/pagedTreeLifecycle.test.js",
+          "workspace-app/src/pagedTreeRequest.test.js",
+          "workspace-app/src/inspectorTreeAuthority.test.js",
+          "workspace-app/src/stableContentInert.test.js",
+          "workspace-app/src/candidateContinuity.test.js"
+        ],
         "python": []
       }
     },
     {
       "id": "p04-mutation-recovery",
-      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Mutation recovery completion"},
-      "affected_paths": ["python/**", "workspace-app/**"],
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Mutation recovery completion"
+      },
+      "affected_paths": [
+        "python/**",
+        "workspace-app/**"
+      ],
       "rules": [
-        {"language": "python", "file": "python/workspace_mutation_outcomes.py", "allow": ["flask"]}
+        {
+          "language": "python",
+          "file": "python/workspace_mutation_outcomes.py",
+          "allow": [
+            "flask"
+          ]
+        }
       ],
       "tests": {
-        "javascript": ["workspace-app/src/apiCommandPolicy.test.js", "workspace-app/src/desktopLifecycle.test.js", "workspace-app/src/projectUnmount.test.js"],
-        "python": ["python/tests/test_workspace_mutation_outcomes.py", "python/tests/test_workspace_group_recovery.py", "python/tests/test_workspace_registered_recovery_policy.py"]
+        "javascript": [
+          "workspace-app/src/apiCommandPolicy.test.js",
+          "workspace-app/src/desktopLifecycle.test.js",
+          "workspace-app/src/projectUnmount.test.js"
+        ],
+        "python": [
+          "python/tests/test_workspace_mutation_outcomes.py",
+          "python/tests/test_workspace_group_recovery.py",
+          "python/tests/test_workspace_registered_recovery_policy.py"
+        ]
       }
     },
     {
       "id": "p05-export-materialization",
-      "contract": {"path": "docs/architecture/0.1.8-first-port-slices.md", "heading": "Export format materialization"},
-      "affected_paths": ["python/**"],
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Export format materialization"
+      },
+      "affected_paths": [
+        "python/**"
+      ],
       "rules": [
-        {"language": "python", "file": "python/workspace_export_artifacts.py", "allow": ["pathlib", "workspace_sqlite", "workspace_external_tags"]},
-        {"language": "python", "file": "python/workspace_api.py", "require": ["workspace_export_artifacts"], "deny": ["workspace_sqlite"]},
-        {"language": "python", "file": "python/workspace_candidate_exports.py", "require": ["workspace_export_artifacts"], "deny": ["workspace_sqlite", "workspace_external_tags"]}
+        {
+          "language": "python",
+          "file": "python/workspace_export_artifacts.py",
+          "allow": [
+            "pathlib",
+            "workspace_sqlite",
+            "workspace_external_tags"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_api.py",
+          "require": [
+            "workspace_export_artifacts"
+          ],
+          "deny": [
+            "workspace_sqlite"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_candidate_exports.py",
+          "require": [
+            "workspace_export_artifacts"
+          ],
+          "deny": [
+            "workspace_sqlite",
+            "workspace_external_tags"
+          ]
+        }
       ],
       "tests": {
         "javascript": [],
-        "python": ["python/tests/test_workspace_export_artifacts.py", "python/tests/test_workspace_export_boundary.py", "python/tests/test_workspace_candidate_exports.py", "python/tests/test_workspace_export_boundaries.py", "python/tests/test_workspace_export_paths.py", "python/tests/test_workspace_recipes.py", "python/tests/test_workspace_sqlite.py", "python/tests/test_workspace_matlab.py", "python/tests/test_workspace_export_reader.py", "python/tests/test_workspace_workbench_exports.py"]
+        "python": [
+          "python/tests/test_workspace_export_artifacts.py",
+          "python/tests/test_workspace_export_boundary.py",
+          "python/tests/test_workspace_candidate_exports.py",
+          "python/tests/test_workspace_export_boundaries.py",
+          "python/tests/test_workspace_export_paths.py",
+          "python/tests/test_workspace_recipes.py",
+          "python/tests/test_workspace_sqlite.py",
+          "python/tests/test_workspace_matlab.py",
+          "python/tests/test_workspace_export_reader.py",
+          "python/tests/test_workspace_workbench_exports.py"
+        ]
       }
     },
     {
@@ -181,37 +308,115 @@
       "rules": [
         {
           "language": "javascript",
-          "file": "workspace-app/src/workspacePresentationSessions.js",
+          "file": "workspace-app/src/presentation/workspacePresentationSessions.js",
           "allow": [
-            "workspace-app/src/deletedSourceSelections.js"
+            "workspace-app/src/presentation/internal/deletedSourceSelections.js"
           ],
           "require": [
-            "workspace-app/src/deletedSourceSelections.js"
+            "workspace-app/src/presentation/internal/deletedSourceSelections.js"
           ]
         },
         {
           "language": "javascript",
           "file": "workspace-app/src/App.jsx",
           "require": [
-            "workspace-app/src/workspacePresentationSessions.js"
+            "workspace-app/src/presentation/workspacePresentationSessions.js"
           ],
           "deny": [
-            "workspace-app/src/deletedSourceSelections.js"
+            "workspace-app/src/presentation/internal/deletedSourceSelections.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/presentation/internal/deletedSourceSelections.js",
+          "allow": []
         }
       ],
       "tests": {
         "javascript": [
-          "workspace-app/src/workspacePresentationSessions.test.js",
+          "workspace-app/src/presentation/workspacePresentationSessions.test.js",
           "workspace-app/src/presentationSessionsIntegration.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/workspaceNavigation.test.js",
-          "workspace-app/src/deletedSourceSelections.test.js",
+          "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
           "workspace-app/src/desktopDraftSession.test.js",
-          "workspace-app/src/projectUnmount.test.js"
+          "workspace-app/src/projectUnmount.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/architectureImports.test.js"
         ],
-        "python": []
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
       }
     }
-  ]
+  ],
+  "javascript_module_policy": {
+    "source_root": "workspace-app/src",
+    "test_support_roots": [
+      "workspace-app/src/test-support"
+    ],
+    "test_tool_files": [
+      "workspace-app/src/benchmarkNavigation.mjs",
+      "workspace-app/architectureImports.mjs",
+      "workspace-app/runTests.mjs",
+      "workspace-app/isolatedViteCache.js"
+    ],
+    "package_manifest": "workspace-app/package.json",
+    "package_lock": "workspace-app/package-lock.json",
+    "resolver_config": {
+      "path": "workspace-app/vite.config.js",
+      "sha256": "15ff17b56359507f049b62b29d9e6d5eb53b58b8daf97bab2f42a036ba83a107"
+    },
+    "dom_override_test_files": [
+      "workspace-app/src/importMergeWorkflow.test.js",
+      "workspace-app/src/incomingWorkbenchStrictMode.test.js",
+      "workspace-app/src/navigationReadStrictMode.test.js",
+      "workspace-app/src/workbenchSessionLifecycle.test.js"
+    ],
+    "modules": [
+      {
+        "contract_id": "presentation-session-owner",
+        "root": "workspace-app/src/presentation",
+        "public_entry": "workspace-app/src/presentation/workspacePresentationSessions.js",
+        "public_exports": [
+          "createWorkspacePresentationSessions"
+        ],
+        "private_test_edges": [
+          {
+            "from": "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
+            "to": "workspace-app/src/presentation/internal/deletedSourceSelections.js"
+          }
+        ]
+      }
+    ],
+    "additional_sources": [
+      "workspace-app/architectureImports.mjs",
+      "workspace-app/runTests.mjs",
+      "workspace-app/isolatedViteCache.js"
+    ],
+    "tool_external_imports": [
+      {
+        "from": "workspace-app/architectureImports.mjs",
+        "specifier": "rolldown/utils",
+        "lock_package": "node_modules/rolldown"
+      }
+    ],
+    "virtual_import_edges": [
+      {
+        "from": "workspace-app/src/test-support/fixtures/globalSearch-checkpoint.jsx",
+        "specifier": "../api.js",
+        "to": "workspace-app/src/api.js",
+        "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
+        "resolver_sha256": "bd6dfe50f8670f07ea0809a6a8f987f67acfef9df49174d1af2d2846137a9187"
+      },
+      {
+        "from": "workspace-app/src/test-support/fixtures/globalSearch-checkpoint.jsx",
+        "specifier": "./GlobalSearch.css",
+        "to": "workspace-app/src/components/GlobalSearch.css",
+        "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
+        "resolver_sha256": "bd6dfe50f8670f07ea0809a6a8f987f67acfef9df49174d1af2d2846137a9187"
+      }
+    ]
+  }
 }

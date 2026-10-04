@@ -964,13 +964,13 @@
         "In-process pure pruning helper only; no adapter/transport/browser dependency."
       ],
       "source_paths": [
-        "workspace-app/src/workspacePresentationSessions.js",
+        "workspace-app/src/presentation/workspacePresentationSessions.js",
         "workspace-app/src/App.jsx",
-        "workspace-app/src/deletedSourceSelections.js"
+        "workspace-app/src/presentation/internal/deletedSourceSelections.js"
       ],
       "verification": {
         "existing_tests": [
-          "workspace-app/src/workspacePresentationSessions.test.js",
+          "workspace-app/src/presentation/workspacePresentationSessions.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/presentationSessionsIntegration.test.js"
         ],
@@ -1018,12 +1018,12 @@
       ],
       "inventory_reference_id": "FE08-presentation-session-owner",
       "source_pointers": [
-        "workspace-app/src/workspacePresentationSessions.js",
+        "workspace-app/src/presentation/workspacePresentationSessions.js",
         "workspace-app/src/App.jsx",
-        "workspace-app/src/deletedSourceSelections.js"
+        "workspace-app/src/presentation/internal/deletedSourceSelections.js"
       ],
       "existing_tests": [
-        "workspace-app/src/workspacePresentationSessions.test.js",
+        "workspace-app/src/presentation/workspacePresentationSessions.test.js",
         "workspace-app/src/presentationSessionsApp.test.js",
         "workspace-app/src/presentationSessionsIntegration.test.js"
       ],
@@ -1084,7 +1084,61 @@
       },
       "area": "Frontend",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "public_entrypoints": [
+        {
+          "path": "workspace-app/src/presentation/workspacePresentationSessions.js",
+          "export": "createWorkspacePresentationSessions",
+          "methods": [
+            "remember",
+            "read",
+            "checkpoint",
+            "restore",
+            "pruneDeleted"
+          ]
+        }
+      ],
+      "filesystem_pilot": {
+        "status": "implemented; independent source review GO within declared syntactic scope",
+        "baseline": "0d3052167c22cf9a0211c432554aec2e58b8aa58",
+        "guidance": "workspace-app/src/presentation/AGENTS.md",
+        "private_root": "workspace-app/src/presentation/internal",
+        "guard_contract": "presentation-session-owner",
+        "design_sha256": "980efa793c68d080a55c4911b0064a6f9bc392b4d63fb06401537fe30978e938",
+        "schema_design_sha256": "d28025d91a2e14e4edcfe5976af4be429010721200d253c6c16eaf98e0ad84dd",
+        "measurement": "No performance or additional behavioral depth claim from relocation; seven whole-app costs remain unmeasured.",
+        "source_binding": "task-4/evidence/presentation-folder-pilot/final-binding.json (exact candidate commit, commands, results and hashes; verify receipt status)",
+        "resolver_design_sha256": "568b56564dc29d9142b02eaa589f9dab3e9485ca4ac0c4f40e5117e66690ad44",
+        "fresh_context_check": {
+          "evidence": "task-4/evidence/presentation-folder-pilot/fresh-context-result.json",
+          "outcome": "Fresh agent found public factory, responsibility limits and relevant composition/test commands without expected paths or history",
+          "limit": "One selected module and scenario, not whole-codebase discoverability"
+        },
+        "enforcement_scope": "Syntactic imports/exports and recognized loaders across source + explicit tooling; not arbitrary Vite harness data flow or a security sandbox",
+        "correctness_detectors": [
+          "architectureModulePolicy.test.js",
+          "architectureImports.test.js",
+          "testDiscovery.test.js",
+          "python/tests/test_architecture_guard.py"
+        ],
+        "next_candidates": [
+          {
+            "order": 1,
+            "module": "Tree selection reads",
+            "status": "proposed; review existing public reader and HTTP/test adapters before a folder move"
+          },
+          {
+            "order": 2,
+            "module": "Group annotation save/recovery",
+            "status": "proposed; review three public surfaces and singleton lifetime before grouping"
+          },
+          {
+            "order": 3,
+            "module": "Python/desktop owners",
+            "status": "deferred; separate packaging-aware design required"
+          }
+        ]
+      }
     },
     {
       "id": "desktop-lifecycle",

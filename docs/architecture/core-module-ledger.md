@@ -144,3 +144,28 @@ skips. Its immutable 17-case App baseline remains unchanged. Final combined
 source verification is recorded outside the repository under `task-4/evidence`.
 All seven whole-app cost shifts remain unmeasured; benchmark criteria are not
 measured results or calibrated latency targets.
+
+## Presentation folder pilot
+
+The [presentation module](../../workspace-app/src/presentation/AGENTS.md) now
+colocates the named public factory, contract documentation, owner tests and private
+pruning implementation. App composition tests remain at their existing seam.
+This is one filesystem pilot, not whole-codebase reorganization or a depth/speed
+claim. The JSON record includes its exact public entry, private root and source-review status. Resolver closure includes exact historical virtual-import
+mappings and explicitly scanned outside-source test tooling; it never exempts
+mapped targets from private import checks. Independent source review is GO within
+the declared syntactic scope. Exact clean-commit verification belongs to
+`task-4/evidence/presentation-folder-pilot/final-binding.json`; check that receipt
+for execution status rather than treating this design record as a test result.
+
+A fresh agent, given only a Data Stores return-view scenario and the repository,
+followed root/frontend/module navigation to the public factory, ownership limits,
+and relevant contract/composition tests and commands. This is one successful
+scenario, not a whole-codebase claim. The agent identified the distinction between
+sidebar return, history and draft restoration, and the harness's DataStores probe.
+
+Next proposed sequence: tree selection reads (existing public reader and real
+HTTP/test seam), then group annotation save/recovery (review its three public
+surfaces and singleton lifetime). Python/desktop folders require separate
+packaging-aware designs. These are ideas for review, not automatically started
+refactors. The pilot adds no measured performance or behavioral-depth gain.

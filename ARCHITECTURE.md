@@ -1,5 +1,8 @@
 # Disco architecture
 
+For folder-local public contracts and tests, start at
+[frontend module navigation](workspace-app/src/AGENTS.md).
+
 Disco is a local scientific application for inspecting, selecting, comparing and
 exporting electrophysiology recordings. Its architecture must let implementations
 change repeatedly for performance and user experience without changing scientific

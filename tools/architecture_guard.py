@@ -15,6 +15,8 @@ import re
 import subprocess
 import sys
 
+import architecture_module_policy as module_policy
+
 CATALOG = 'docs/architecture/adopted-port-checks.json'
 LANGUAGES = ('python', 'javascript')
 RUNNERS = (*LANGUAGES, 'desktop')
@@ -44,9 +46,11 @@ def keys(value, required, optional=()):
 
 def catalog(root):
     value = json.loads(contained(root, CATALOG).read_text())
-    keys(value, ('format', 'version', 'discovery', 'shared_paths', 'contracts'))
-    if value['format'] != 'disco-adopted-port-checks' or value['version'] != 1:
+    keys(value, ('format', 'version', 'discovery', 'shared_paths', 'contracts'), ('javascript_module_policy',))
+    if value['format'] != 'disco-adopted-port-checks' or value['version'] not in (1, 2):
         raise ValueError('Unsupported adopted-port catalog format/version')
+    if (value['version'] == 2) != ('javascript_module_policy' in value):
+        raise ValueError('Catalog version 2 requires module policy; version 1 forbids it')
     for pattern in string_list(value['shared_paths'], 'shared_paths'):
         contained(root, pattern, exists=False)
     if not isinstance(value['discovery'], list) or not value['discovery']:
@@ -96,6 +100,7 @@ def catalog(root):
                 for dependency in string_list(rule.get(kind, []), kind):
                     if rule['language'] == 'javascript' and dependency.startswith(('workspace-app/', 'desktop/')):
                         contained(root, dependency)
+    module_policy.validate(root, value)
     return value
 
 
@@ -169,6 +174,8 @@ def check_ownership(root, value, language, node):
                         else:
                             dependencies.append(specifier)
                 validate_dependencies(entry, rule, dependencies)
+        if selected == 'javascript':
+            module_policy.check(root, value, node)
         checked.append(selected)
     return checked
 
@@ -239,7 +246,8 @@ def run_contracts(root, value, plan, language, node):
 
 
 def source_hashes(root, value):
-    paths = {CATALOG}
+    paths = {CATALOG, 'tools/architecture_module_policy.py'} if value.get('javascript_module_policy') else {CATALOG}
+    paths.update(module_policy.inputs(root, value))
     for path in ('workspace-app/architectureImports.mjs', 'workspace-app/package-lock.json', 'python/workspace-runtime.lock', 'workspace-app/isolatedViteCache.js'):
         if (root/path).is_file():
             paths.add(path)
