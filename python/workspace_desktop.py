@@ -498,10 +498,25 @@ class DesktopServices:
                     self._save()
             return list(self.database_operations.values())
 
+    def accept_startup_receipt(self, key, process, line):
+        # Called only by the reader of this spawn's private inherited pipe.
+        # Keep validated outcome in memory until exact child exit is observed;
+        # a slow reader must not lose authority after the open caller returns.
+        with self.lock:
+            item = self.children.get(key)
+            if item is None or item['process'] is not process:
+                raise ValueError('Owned child receipt no longer matches this spawn')
+            outcome = validate_child_startup_receipt(line, item['record'])
+            if outcome.get('pre_database_failed'):
+                item['startup_outcome'] = 'before_project_database'
+                self.records()
+            return outcome
+
     def records(self):
         with self.lock:
             removed = [key for key, item in self.children.items()
-                       if item['process'].poll() is not None and (self._clean_database(item['record'])
+                       if item['process'].poll() is not None and (item.get('startup_outcome') == 'before_project_database'
+                                                                or self._clean_database(item['record'])
                                                                 or self._rejected_legacy_preflight(item['record']))]
             for key in removed:
                 del self.children[key]
@@ -586,7 +601,7 @@ class DesktopServices:
                 with os.fdopen(read_fd, 'r') as pipe:
                     line = pipe.readline(65537)
                     try:
-                        packet.update(validate_child_startup_receipt(line, record))
+                        packet.update(self.accept_startup_receipt(key, process, line))
                     except (ValueError, TypeError):
                         packet['valid'] = False
                     finally:
@@ -598,11 +613,7 @@ class DesktopServices:
                 # Observe the already-closed private pipe even if exit wins the
                 # scheduling race. Absence of files is never this authority.
                 bound.wait(1)
-                if packet.get('pre_database_failed'):
-                    with self.lock:
-                        if self.children.get(key, {}).get('process') is process:
-                            del self.children[key]
-                            self._save()
+                self.records()
                 # Other startup failures retain the existing recovery-required path.
                 raise ValueError('Project startup failed; inspect its recovery log before retrying')
             if not bound.is_set():
