@@ -169,3 +169,12 @@ HTTP/test seam), then group annotation save/recovery (review its three public
 surfaces and singleton lifetime). Python/desktop folders require separate
 packaging-aware designs. These are ideas for review, not automatically started
 refactors. The pilot adds no measured performance or behavioral-depth gain.
+
+The implementation commit `20f04c63496031e7656db5ce8baef57ab82c8ad0`
+passed 192 mapped renderer tests, all 754 frontend tests, 16 Python guard tests,
+the complete architecture guard and the frontend build, with zero test skips.
+The 22 guard/discovery cases include deliberate import/resolver/discovery faults.
+Source checks preserve the original owner body and helper, moved contract tests,
+App characterization/harness, virtual historical fixture/harness, lockfile and
+benchmark registry/runner. This ledger update records those exact source results;
+it does not relabel them as executions on a later documentation commit.

@@ -900,7 +900,8 @@
       "status": "implemented-reviewed",
       "implementation_commits": [
         "48c2c47c2b55cf613a3dff95d59f6c4d371033a1",
-        "5e0452531c77bf12c5fb3af9c40b78f97abf0008"
+        "5e0452531c77bf12c5fb3af9c40b78f97abf0008",
+        "20f04c63496031e7656db5ce8baef57ab82c8ad0"
       ],
       "correctness_detectors": [
         "presentationSessionsApp.test.js (17 immutable baseline cases)",
@@ -1099,7 +1100,7 @@
         }
       ],
       "filesystem_pilot": {
-        "status": "implemented; independent source review GO within declared syntactic scope",
+        "status": "implemented; independent source review GO and exact clean-source tests passed",
         "baseline": "0d3052167c22cf9a0211c432554aec2e58b8aa58",
         "guidance": "workspace-app/src/presentation/AGENTS.md",
         "private_root": "workspace-app/src/presentation/internal",
@@ -1137,7 +1138,32 @@
             "module": "Python/desktop owners",
             "status": "deferred; separate packaging-aware design required"
           }
-        ]
+        ],
+        "implementation_commit": "20f04c63496031e7656db5ce8baef57ab82c8ad0",
+        "verification": {
+          "tested_commit": "20f04c63496031e7656db5ce8baef57ab82c8ad0",
+          "mapped_renderer": {
+            "passed": 192,
+            "skipped": 0
+          },
+          "full_frontend": {
+            "passed": 754,
+            "skipped": 0
+          },
+          "python_guard": {
+            "passed": 16,
+            "skipped": 0
+          },
+          "guard_discovery_cases": 22,
+          "frontend_build": "passed",
+          "architecture_guard": "passed (all languages; metadata/import checks only)",
+          "evidence": "task-4/evidence/presentation-folder-pilot/final-binding.json",
+          "limitations": [
+            "No native/backend/desktop runtime qualification",
+            "No performance measurements",
+            "One module and one fresh-agent discovery scenario"
+          ]
+        }
       }
     },
     {
