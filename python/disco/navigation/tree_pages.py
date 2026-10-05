@@ -12,7 +12,7 @@ import uuid
 from itertools import chain
 from collections.abc import Mapping
 
-from disco.workbench.recipes import checksum, parse_splits
+from disco.workbench.recipes import SPLIT_FIELDS, checksum, parse_splits
 from disco.navigation.tree import (field_value_order, joint_definition, joint_value,
                             value_key, protocol_family)
 from disco.navigation.predicates import validate as validate_predicate, matches
@@ -195,7 +195,12 @@ class TreePath:
 
     def datum(self, current, field):
         parts=self.components[field]
-        return (True,joint_value(current,parts)) if parts else (field in current,current.get(field))
+        if parts:
+            return True,joint_value(current,parts)
+        value=current.get(field)
+        # Match build_tree: scalar built-in nulls are unrecorded; dynamic nulls are values.
+        present=field in current and (field not in SPLIT_FIELDS or value is not None)
+        return present,value
 
     def key(self, current, field):
         present,value=self.datum(current,field)

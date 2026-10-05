@@ -17,7 +17,9 @@ Predicates distinguish missing from null, Boolean from numeric values, and exact
 numeric equality. Validation bounds literal depth, predicate depth, node count
 and choices. Unknown fields and unsupported operators fail closed. Grouping uses
 opaque escaped field names and exact typed ordering; it does not select membership
-or read waveforms. Saved methods and layouts retain optimistic versions and do
+or read waveforms. Scalar built-in groupings treat both `None` and absence as
+the legacy missing branch; dynamic explicit null and joint component presence
+remain distinct. Saved methods and layouts retain optimistic versions and do
 not replace immutable applied-query, source or native revision authority.
 
 Tree pages retain captured WorkspaceService/ExplorerHistory method identity,
