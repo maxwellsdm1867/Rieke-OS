@@ -6992,6 +6992,16 @@
       },
       "binding_sha256": "d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82",
       "qualification": "Exact local source/frontend/desktop composition checks; no assembled app, native, benchmark or performance qualification. Broad mapped Python scientific/export suites were not run."
+    },
+    {
+      "id": "benchmark-revision-owned-path-prerequisite",
+      "worker_commit": "9c92a240a1aa4ff9591ce1cfb269257d0a92c0ba",
+      "integration_commit": "7d8c68d",
+      "status": "independently source-reviewed; exact three implementation/test/guide files match worker",
+      "tests": "21 source tests passed on Python3.14; formerly blocked YAML workflow case separately passed on existing Python3.11.13; three deliberate faults detected; earlier blocked log retained",
+      "binding": "evidence/benchmark-path-provenance/integration-binding.json",
+      "binding_sha256": "f7c9437f63abf2c850681d3b5ae288ece3c26bab16d4ef217c50f52043f0a71c",
+      "qualification": "Existing runner path provenance only; no benchmark workloads, registry/schema changes or performance results. Prior application aggregate remains bound to ebdbfdb9."
     }
   ],
   "deferred": [

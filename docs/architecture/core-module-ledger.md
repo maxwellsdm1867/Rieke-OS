@@ -283,3 +283,5 @@ Python runtime relocation has occurred. Historical source pointers and receipts
 remain unchanged; JSON organization fields and path overrides locate current code.
 All seven whole-app costs remain unmeasured. Final assembled E2E is blocked on a
 reviewed no-force-kill launcher implementation, pinned runtime qualification and exact package gate. An existing Python3.11.13 source-test runtime was located; that is not final app/native qualification.
+
+Benchmark path prerequisite integrated as `7d8c68d` from reviewed `9c92a24`: revision-owned recipes and four exact legacy runner hashes preserve historical suite identity.21 source cases passed plus one separate YAML workflow case using existing Python3.11.13; three deliberate faults detected. Initial missing-PyYAML evidence remains preserved. No benchmark workload ran, no registry/schema changed, and whole-app costs remain unmeasured.
