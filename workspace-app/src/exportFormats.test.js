@@ -22,6 +22,7 @@ test('export success requires a complete receipt for the requested supported for
  for(const otherFormat of ['matlab-mat','reference-json'])assert.equal(validExportReceipt(receipt,otherFormat),false);
  assert.equal(validExportReceipt(receipt,'epictree-mat'),false);
  assert.equal(validExportReceipt({...receipt,format:'unknown'},'unknown'),false);
+ assert.equal(validExportReceipt({...receipt,format:'__proto__'},'__proto__'),false);
  assert.equal(validExportReceipt({...receipt,format:{}},{}),false);
  for(const missing of ['dataset_uuid','event_uuid','download_url'])assert.equal(validExportReceipt({...receipt,[missing]:''},'wheeler-sqlite'),false);
  for(const epoch_count of [0,-1,NaN,2.5,Number.MAX_SAFE_INTEGER+1])assert.equal(validExportReceipt({...receipt,epoch_count},'wheeler-sqlite'),false);
