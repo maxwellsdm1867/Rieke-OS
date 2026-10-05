@@ -1847,7 +1847,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-tree-layout"
+          "group": "protocol-tree-layout",
+          "current_path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         },
         {
           "path": "workspace-app/src/uploadRecording.js",
@@ -1940,7 +1942,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-tree-layout"
+          "group": "protocol-tree-layout",
+          "current_path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         },
         {
           "path": "workspace-app/src/useRequestedSummaries.js",
@@ -2599,7 +2603,11 @@
             "workspace-app/src/treeLayoutPersistence.js",
             "workspace-app/src/useProtocolTreeLayout.js"
           ],
-          "current_status": "Real-hook characterization source GO; folder implementation in progress; not integrated."
+          "current_status": "Source-reviewed folder candidate integrated; aggregate validation pending",
+          "current_public_entries": [
+            "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+            "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
+          ]
         },
         {
           "id": "project-preferences",
@@ -4055,7 +4063,9 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "protocol-tree-layout"
+          "group": "protocol-tree-layout",
+          "current_path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         },
         {
           "path": "workspace-app/src/uploadRecording.test.js",
@@ -10262,6 +10272,21 @@
       "new_guidance_paths": [
         "desktop/integrity/AGENTS.md",
         "desktop/integrity/README.md"
+      ]
+    },
+    {
+      "id": "protocol-tree-layout",
+      "status": "source-reviewed folder candidate; aggregate validation pending",
+      "moves": {
+        "workspace-app/src/treeLayoutPersistence.js": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+        "workspace-app/src/treeLayoutPersistence.test.js": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
+        "workspace-app/src/useProtocolTreeLayout.js": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
+      },
+      "new_test_paths": [
+        "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.test.js"
+      ],
+      "new_guidance_paths": [
+        "workspace-app/src/protocol-tree-layout/AGENTS.md"
       ]
     }
   ],

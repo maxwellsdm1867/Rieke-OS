@@ -4356,7 +4356,22 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "status": "Protocol tree-layout folder independently source-reviewed; aggregate validation pending. Other view/summary preferences remain pending.",
+        "current_source_paths": [
+          "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+          "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
+        ],
+        "current_test_paths": [
+          "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
+          "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.test.js"
+        ],
+        "guidance": "workspace-app/src/protocol-tree-layout/AGENTS.md",
+        "evidence": "evidence/protocol-tree-layout-folder/review-v2/summary.json",
+        "worker_results": "60 focused checks pass; six hook and three saver faults detected; no production behavior changes",
+        "qualification": "No native/performance qualification; original evidence preserved and invalid-receipt review correction recorded."
+      }
     },
     {
       "id": "desktop.ipc-boundary",
@@ -7365,7 +7380,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Renderer draft factory/hook folder reviewed and aggregate verified at ebdbfdb9. Tree-layout real-hook characterization independently reviewed (9 checks,6 faults); folder implementation in progress. Navigation/preferences/shared lifecycle remain pending."
+        "progress_note": "Renderer drafts aggregate verified at ebdbfdb9. Protocol tree-layout source-reviewed folder candidate integrated, aggregate pending. Navigation/preferences/shared lifecycle remain pending."
       },
       {
         "id": "frontend-reads",

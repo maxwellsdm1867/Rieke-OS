@@ -113,6 +113,26 @@
     {
       "from": "desktop/integrity/AGENTS.md",
       "to": "desktop/integrity/README.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/protocol-tree-layout/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/protocol-tree-layout/AGENTS.md",
+      "to": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js"
+    },
+    {
+      "from": "workspace-app/src/protocol-tree-layout/AGENTS.md",
+      "to": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
+    },
+    {
+      "from": "workspace-app/src/protocol-tree-layout/AGENTS.md",
+      "to": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js"
+    },
+    {
+      "from": "workspace-app/src/protocol-tree-layout/AGENTS.md",
+      "to": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.test.js"
     }
   ],
   "shared_paths": [
@@ -141,7 +161,8 @@
     "workspace-app/src/presentation/AGENTS.md",
     "workspace-app/src/tree-selection/AGENTS.md",
     "workspace-app/src/group-save/AGENTS.md",
-    "workspace-app/src/renderer-drafts/AGENTS.md"
+    "workspace-app/src/renderer-drafts/AGENTS.md",
+    "workspace-app/src/protocol-tree-layout/AGENTS.md"
   ],
   "contracts": [
     {
@@ -582,6 +603,60 @@
           "python/tests/test_architecture_guard.py"
         ]
       }
+    },
+    {
+      "id": "protocol-tree-layout",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Protocol tree-layout ownership"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js"
+          ],
+          "require": [
+            "workspace-app/src/api.js",
+            "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
+          "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/presentationSessionsIntegration.test.js",
+          "workspace-app/src/workflowResponsiveness.test.js",
+          "workspace-app/src/importMergeWorkflow.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
     }
   ],
   "javascript_module_policy": {
@@ -672,6 +747,25 @@
           }
         ],
         "private_test_edges": []
+      },
+      {
+        "contract_id": "protocol-tree-layout",
+        "root": "workspace-app/src/protocol-tree-layout",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+            "exports": [
+              "createTreeLayoutSaver"
+            ]
+          },
+          {
+            "path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
+            "exports": [
+              "default"
+            ]
+          }
+        ]
       }
     ],
     "additional_sources": [

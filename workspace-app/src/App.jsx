@@ -27,7 +27,7 @@ import ExternalTagSync from './components/ExternalTagSync.jsx';
 import ProtocolExportDialog from './components/ProtocolExportDialog.jsx';
 import {AnnotationProfileProvider} from './annotationProfile.js';
 import AnnotationProfile from './components/AnnotationProfile.jsx';
-import useProtocolTreeLayout from './useProtocolTreeLayout.js';
+import useProtocolTreeLayout from './protocol-tree-layout/useProtocolTreeLayout.js';
 const ProtocolInfographic=lazy(()=>import('./components/ProtocolInfographic.jsx'));
 import ProjectOnboarding from './components/ProjectOnboarding.jsx';
 import ProjectSetupDialog from './components/ProjectSetupDialog.jsx';

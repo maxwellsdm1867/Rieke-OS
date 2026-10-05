@@ -76,7 +76,7 @@ Two additional mounted cases verify lightweight explicit preview with independen
 cell/epoch counts and advanced-catalog opt-in clearing on layout/generation
 changes. The tree case now verifies absent all-fields control, complete discovery,
 preserved frozen filters/missing axes and no catalog fetch when opening its chooser.
-Run with `node --test --test-concurrency=1 src/{requestedSummaries,requestedSummariesLifecycle,predicateEditor,predicateState,predicateValueSuggestions,treeFieldPresentation,treeLayoutPersistence,epochViewerArchitecture,workflowResponsiveness,epochViewerRendering,pagedTreeLifecycle,protocolSelectionSummary}.test.js`.
+Run with `node --test --test-concurrency=1 src/{requestedSummaries,requestedSummariesLifecycle,predicateEditor,predicateState,predicateValueSuggestions,treeFieldPresentation,epochViewerArchitecture,workflowResponsiveness,epochViewerRendering,pagedTreeLifecycle,protocolSelectionSummary}.test.js src/protocol-tree-layout/treeLayoutPersistence.test.js`.
 Existing mounted fixtures emit sandbox-denied HMR-listen warnings; all 74 checks
 pass without a running HTTP service. No native timing or package build ran here.
 

@@ -24,9 +24,27 @@ test('failed saves preserve the desired layout for an explicit retry',async()=>{
  assert.deepEqual(requests[1],{split_order:[],expected_version:0});
 });
 
-test('the first validated default layout is also persisted before a query update can replace its fallback',async()=>{
+test('public example: the first validated default layout is persisted before a query update can replace its fallback',async()=>{
  const writes=[];
  const saver=createTreeLayoutSaver({version:0,splitOrder:['date','cell'],write:async body=>{writes.push(body);return {version:1,split_order:body.split_order};}});
  await saver.remember(['date','cell']);await saver.remember(['date','cell']);
  assert.equal(writes.length,1);
+ assert.deepEqual(writes,[{split_order:['date','cell'],expected_version:0}]);
+});
+
+for(const [label,receipt] of [
+ ['wrong version',{version:9,split_order:['cell','date']}],
+ ['altered split_order',{version:4,split_order:['date','cell']}],
+])test(`saver rejects ${label} and retries exact desired order at the acknowledged version`,async()=>{
+ const writes=[],states=[];
+ const saver=createTreeLayoutSaver({version:3,splitOrder:['date'],onState:state=>states.push(state),write:async body=>{
+  writes.push(body);
+  return writes.length===1?receipt:{version:4,split_order:body.split_order};
+ }});
+ await saver.remember(['cell','date']);
+ assert.deepEqual(states.at(-1),{status:'error',version:3,error:'Tree save returned an invalid receipt. Reload before retrying.'});
+ assert.deepEqual(writes,[{split_order:['cell','date'],expected_version:3}]);
+ await saver.retry();
+ assert.deepEqual(writes,[{split_order:['cell','date'],expected_version:3},{split_order:['cell','date'],expected_version:3}]);
+ assert.deepEqual(states.at(-1),{status:'saved',version:4});
 });

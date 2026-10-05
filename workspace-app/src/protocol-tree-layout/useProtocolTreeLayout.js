@@ -1,7 +1,13 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {api} from './api.js';
+import {api} from '../api.js';
 import {createTreeLayoutSaver} from './treeLayoutPersistence.js';
 
+/**
+ * Bind saved protocol split order to this React mount. Initial order is captured
+ * once; readiness/load errors and save status are separate public state.
+ * Cleanup aborts the load and fences publication, without clearing the old saver
+ * or cancelling accepted writes. See AGENTS.md and the real-hook tests.
+ */
 export default function useProtocolTreeLayout(id,initial){
   const initialOrder=useRef(initial).current;
   const [order,setOrder]=useState(Array.isArray(initialOrder)?initialOrder:['date','cell','block']);

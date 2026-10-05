@@ -14,6 +14,9 @@ Start in the module folder for the responsibility you are changing:
 - [Renderer view drafts](renderer-drafts/AGENTS.md): queued persistence, load recovery
   and React lifetime binding; native storage and shared lifecycle remain separate.
 
+- [Protocol tree layout](protocol-tree-layout/AGENTS.md): versioned layout saves
+  and the real React load/save lifetime; scientific grouping remains separate.
+
 Other frontend owners retain their existing named files pending the organization
 worklist; each ledger record need not become a separate module. See the
 [architecture map](../../ARCHITECTURE.md) for other adopted interfaces.

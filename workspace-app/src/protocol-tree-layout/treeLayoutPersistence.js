@@ -1,4 +1,10 @@
 // Serialize autosaves so a slower response cannot overwrite a newer arrangement.
+/**
+ * Serialize {split_order, expected_version} writes and coalesce desired edits.
+ * remember(fields) and retry() retain the last acknowledged version on failure;
+ * onState reports errors rather than rejecting the caught write failure.
+ * Version zero persists even an unchanged order. See the executable test example.
+ */
 export function createTreeLayoutSaver({version,splitOrder,write,onState=()=>{}}){
   let saved=[...splitOrder],desired=[...splitOrder],running=null;
   const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);

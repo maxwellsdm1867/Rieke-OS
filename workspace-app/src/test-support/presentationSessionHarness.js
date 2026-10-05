@@ -53,7 +53,7 @@ export async function createPresentationSessionHarness({route={page:'overview',k
   resolveId(id,importer){
    if(id.endsWith('/annotationProfile.js'))return '\0presentation-profile';
    if(importer?.endsWith('/App.jsx')){
-    if(id==='./useProtocolTreeLayout.js')return '\0presentation-layout';
+    if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0presentation-layout';
     if(id==='./useImportQueue.js')return '\0presentation-import-queue';
     if(id==='./components/ProtocolInfographic.jsx')return '\0presentation-lazy';
     const probes={'./components/Inspector.jsx':'inspector','./components/MetadataExplorer.jsx':'explorer','./components/DataStores.jsx':'stores','./components/CellQC.jsx':'qc','./components/Overview.jsx':'overview','./components/ProtocolSidebar.jsx':'sidebar','./components/DesktopDraftRecovery.jsx':'draft-recovery','./components/ProjectNavigator.jsx':'project-navigation','./components/ProjectUnmountDialog.jsx':'unmount'};
