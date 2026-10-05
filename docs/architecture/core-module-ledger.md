@@ -312,3 +312,24 @@ Python v4 reader/fixture implementation before the first recovery move. Retained
 tool guidance and provenance/packaging prerequisites are integrated but do not
 count as runtime folder completion. Final assembled UI/native/package acceptance
 and all seven whole-app cost measurements remain outstanding.
+
+### Verified layout and integrity increment at `4a4867ee`
+
+Exact candidate checks pass: 779 full frontend, 264 mapped frontend, 102 mapped
+desktop and 38 Python guard/planner tests, with zero failures/skips. Build, guard
+and explicit-base plan also pass. Binding SHA-256: `6eaa828f191653a35a7bbee144d1b4dfd2690c42d43eeac6efaa616c72b44b88`.
+The invalid-receipt test gap found in review was corrected before integration;
+production bodies and original obligations remain preserved.
+
+There are now **9 verified responsibility folders / 14 organized baseline runtime
+paths**. Remaining classifications: 308 proposed moves, 131 keep-in-place decisions
+requiring acceptance and 12 deferred paths. The 20 broad work items still comprise
+4 integrated, 6 partial/active and 10 queued/keep-current designs. Layout and
+integrity complete only parts of those broad work items. The prior snapshot is
+historical; JSON progress_snapshot contains the current counts.
+
+Next: reviewed navigation/update slices, corrected Python v4 reader before any
+Python move, and concrete assembly/runtime preparation. Launcher source is
+reviewed at `54771398`; execution remains on hold pending the final candidate,
+package/runtime qualification, synthetic preflight and reviewed quiet window.
+No new performance measurements or native acceptance are implied.

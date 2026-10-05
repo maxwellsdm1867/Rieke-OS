@@ -1849,7 +1849,7 @@
           "reason": "Existing responsibility grouped without behavior or export changes.",
           "group": "protocol-tree-layout",
           "current_path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         },
         {
           "path": "workspace-app/src/uploadRecording.js",
@@ -1944,7 +1944,7 @@
           "reason": "Existing responsibility grouped without behavior or export changes.",
           "group": "protocol-tree-layout",
           "current_path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         },
         {
           "path": "workspace-app/src/useRequestedSummaries.js",
@@ -2603,7 +2603,7 @@
             "workspace-app/src/treeLayoutPersistence.js",
             "workspace-app/src/useProtocolTreeLayout.js"
           ],
-          "current_status": "Source-reviewed folder candidate integrated; aggregate validation pending",
+          "current_status": "Independently source-reviewed and aggregate verified local increment at 4a4867eee81b989a1c703e548f3ee27ee8351d97",
           "current_public_entries": [
             "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
             "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
@@ -4065,7 +4065,7 @@
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
           "group": "protocol-tree-layout",
           "current_path": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         },
         {
           "path": "workspace-app/src/uploadRecording.test.js",
@@ -9307,7 +9307,7 @@
           "group": "integrity",
           "reason": "Later move with abort/recovery ordering and exact application verification unchanged.",
           "current_path": "desktop/integrity/verification-recovery.cjs",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         },
         {
           "path": "desktop/verify-application.cjs",
@@ -9323,7 +9323,7 @@
           "group": "integrity",
           "reason": "Later move with abort/recovery ordering and exact application verification unchanged.",
           "current_path": "desktop/integrity/verify-application.cjs",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         }
       ],
       "completion_gates": [
@@ -9903,7 +9903,7 @@
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
           "group": "integrity",
           "current_path": "desktop/integrity/tests/verification-recovery.test.cjs",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         },
         {
           "path": "desktop/tests/verify-application.test.cjs",
@@ -9917,7 +9917,7 @@
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
           "group": "integrity",
           "current_path": "desktop/integrity/tests/verify-application.test.cjs",
-          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
+          "current_disposition": "organized; reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97"
         }
       ],
       "excluded": [
@@ -10258,7 +10258,7 @@
     },
     {
       "id": "desktop-integrity",
-      "status": "source-reviewed folder candidate; aggregate validation pending",
+      "status": "independently reviewed and aggregate verified local increment",
       "worker_commit": "3f4aa0a2981c7368cf578137800d197731459809",
       "moves": {
         "desktop/verify-application.cjs": "desktop/integrity/verify-application.cjs",
@@ -10272,11 +10272,12 @@
       "new_guidance_paths": [
         "desktop/integrity/AGENTS.md",
         "desktop/integrity/README.md"
-      ]
+      ],
+      "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97"
     },
     {
       "id": "protocol-tree-layout",
-      "status": "source-reviewed folder candidate; aggregate validation pending",
+      "status": "independently reviewed and aggregate verified local increment",
       "moves": {
         "workspace-app/src/treeLayoutPersistence.js": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
         "workspace-app/src/treeLayoutPersistence.test.js": "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
@@ -10287,7 +10288,8 @@
       ],
       "new_guidance_paths": [
         "workspace-app/src/protocol-tree-layout/AGENTS.md"
-      ]
+      ],
+      "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97"
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

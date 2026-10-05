@@ -4358,7 +4358,7 @@
       "contract_gaps": [],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "organization": {
-        "status": "Protocol tree-layout folder independently source-reviewed; aggregate validation pending. Other view/summary preferences remain pending.",
+        "status": "Independently source-reviewed local folder increment; aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97. Other view/summary preferences remain pending.",
         "current_source_paths": [
           "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
           "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js"
@@ -4370,7 +4370,23 @@
         "guidance": "workspace-app/src/protocol-tree-layout/AGENTS.md",
         "evidence": "evidence/protocol-tree-layout-folder/review-v2/summary.json",
         "worker_results": "60 focused checks pass; six hook and three saver faults detected; no production behavior changes",
-        "qualification": "No native/performance qualification; original evidence preserved and invalid-receipt review correction recorded."
+        "qualification": "No native/performance qualification; original evidence preserved and invalid-receipt review correction recorded.",
+        "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97",
+        "aggregate_evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/layout-integrity-integration/final-binding.json",
+          "sha256": "6eaa828f191653a35a7bbee144d1b4dfd2690c42d43eeac6efaa616c72b44b88",
+          "results": {
+            "frontend_full": 779,
+            "frontend_mapped": 264,
+            "desktop_mapped": 102,
+            "python_guard_planner": 38,
+            "failed": 0,
+            "skipped": 0,
+            "build": "passed",
+            "guard": "passed",
+            "explicit_base_plan": "passed"
+          }
+        }
       }
     },
     {
@@ -5812,7 +5828,7 @@
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "not_newly_run_fault_ideas": [],
       "organization": {
-        "status": "independently source-reviewed folder candidate integrated; aggregate validation pending",
+        "status": "Independently source-reviewed local folder increment; aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97. Other update/install groups remain pending.",
         "worker_commit": "3f4aa0a2981c7368cf578137800d197731459809",
         "integration_commit": "39a3e04",
         "current_source_paths": [
@@ -5826,7 +5842,23 @@
         ],
         "guidance": "desktop/integrity/AGENTS.md",
         "worker_results": "65 focused and38 Python passed; three public behavioral faults detected; source profile passed",
-        "qualification": "Local source/read-only disposable audit-child tests only; no native/app/install/seal/performance qualification"
+        "qualification": "Local source/read-only disposable audit-child tests only; no native/app/install/seal/performance qualification",
+        "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97",
+        "aggregate_evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/layout-integrity-integration/final-binding.json",
+          "sha256": "6eaa828f191653a35a7bbee144d1b4dfd2690c42d43eeac6efaa616c72b44b88",
+          "results": {
+            "frontend_full": 779,
+            "frontend_mapped": 264,
+            "desktop_mapped": 102,
+            "python_guard_planner": 38,
+            "failed": 0,
+            "skipped": 0,
+            "build": "passed",
+            "guard": "passed",
+            "explicit_base_plan": "passed"
+          }
+        }
       }
     },
     {
@@ -7034,6 +7066,24 @@
       "binding": "evidence/benchmark-path-provenance/integration-binding.json",
       "binding_sha256": "f7c9437f63abf2c850681d3b5ae288ece3c26bab16d4ef217c50f52043f0a71c",
       "qualification": "Existing runner path provenance only; no benchmark workloads, registry/schema changes or performance results. Prior application aggregate remains bound to ebdbfdb9."
+    },
+    {
+      "id": "layout-integrity-integration",
+      "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97",
+      "binding": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/layout-integrity-integration/final-binding.json",
+      "sha256": "6eaa828f191653a35a7bbee144d1b4dfd2690c42d43eeac6efaa616c72b44b88",
+      "results": {
+        "frontend_full": 779,
+        "frontend_mapped": 264,
+        "desktop_mapped": 102,
+        "python_guard_planner": 38,
+        "failed": 0,
+        "skipped": 0,
+        "build": "passed",
+        "guard": "passed",
+        "explicit_base_plan": "passed"
+      },
+      "qualification": "Exact local source/frontend/desktop composition checks. No application/native launch, full mapped Python scientific/export suite, benchmark, final ASAR or performance qualification. Fullfrontend generated review HTML retained outsidegit."
     }
   ],
   "deferred": [
@@ -7380,7 +7430,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Renderer drafts aggregate verified at ebdbfdb9. Protocol tree-layout source-reviewed folder candidate integrated, aggregate pending. Navigation/preferences/shared lifecycle remain pending."
+        "progress_note": "Renderer drafts and protocol tree-layout folders independently reviewed and aggregate verified. Navigation design source-approved and implementation active; other preferences/shared lifecycle remain pending."
       },
       {
         "id": "frontend-reads",
@@ -7602,7 +7652,7 @@
           "desktop.update-coordinators",
           "desktop.bundle-install-recovery"
         ],
-        "status": "integrated-candidate-awaiting-aggregate",
+        "status": "partially-integrated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7611,7 +7661,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Integrity folder source-reviewed candidate3f4aa0a integrated39a3e04 with shared metadata; aggregate validation pending. Update/install groups remain pending."
+        "progress_note": "Integrity folder source-reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97; updates folder implementation active; install groups remain pending."
       },
       {
         "id": "desktop-entrypoints",
@@ -7649,7 +7699,7 @@
         "progress_note": "JSv3 multi-entry guard, explicit desktop test lanes, profile v2 reader (shipping v1), revision-owned benchmark recipes and retained-tool navigation integrated/reviewed. Pythonv4 policy under implementation; whole-codebase ownership/discovery remains incomplete."
       }
     ],
-    "coverage_status": "All59contractrecords assigned exactly once to20workitems; all465baseline runtime/config paths assigned.7verified folders cover10baseline runtimepaths;312proposed moves,131keep decisions requiring acceptance,12deferred paths remain separately classified.",
+    "coverage_status": "All59records assigned once to20workitems; all465baseline paths assigned.9verifiedfolders cover14baseline runtimepaths;308proposedmoves,131keep decisions requiring acceptance,12deferred paths. No completion percentage.",
     "stage_rules": [
       "One selected coherent owner at a time; shared guard/catalog/packaging edits and heavy runs serialize.",
       "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
@@ -7694,7 +7744,7 @@
     },
     "progress_snapshot": {
       "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
-      "source_checkpoint": "76962c6c5b028d2c6181cfb42a6946fecf27e103",
+      "source_checkpoint": "4a4867eee81b989a1c703e548f3ee27ee8351d97",
       "work_items_total": 20,
       "work_items_locally_integrated": 4,
       "work_items_partial_or_active": 6,
@@ -7706,20 +7756,22 @@
         "workspace-app/src/renderer-drafts",
         "desktop/close",
         "desktop/drafts",
-        "desktop/startup"
+        "desktop/startup",
+        "workspace-app/src/protocol-tree-layout",
+        "desktop/integrity"
       ],
       "runtime_or_config_path_counts": {
         "keep-in-place": 131,
-        "move-proposed": 312,
+        "move-proposed": 308,
         "deferred": 12,
-        "organized": 10
+        "organized": 14
       },
       "by_area": {
         "frontend": {
           "keep-in-place": 28,
-          "move-proposed": 243,
+          "move-proposed": 241,
           "deferred": 2,
-          "organized": 6
+          "organized": 8
         },
         "backend": {
           "keep-in-place": 77,
@@ -7728,11 +7780,11 @@
         },
         "desktop": {
           "keep-in-place": 26,
-          "move-proposed": 12,
-          "organized": 4
+          "move-proposed": 10,
+          "organized": 6
         }
       },
-      "qualification": "Counts partition the original465runtime/config paths, not tests/newdocs or module-depth metrics. Organized10paths are in7verified responsibility folders. Baseline131keep-in-place and12deferred paths are not blanket-accepted completion. Remaining312moves require per-slice review; no completion percentage or performance claim. Four complete workitems plus partials does not complete final app gates."
+      "qualification": "Counts partition original465runtime/config paths, not newtests/docs or module-depth metrics.14organized paths in9verifiedfolders.308proposed moves,131keep decisions and12deferred paths remain separately classified. Wholeapp/finalqualification incomplete."
     }
   }
 }
