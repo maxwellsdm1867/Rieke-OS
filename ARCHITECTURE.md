@@ -54,8 +54,11 @@ The adoption record adds cross-owner obligations; it does not replace those loca
 contracts. Folder organization is partial: functional areas in the system table
 below describe responsibilities, not completed physical modules.
 
+For retained backend owners, use [backend navigation](python/AGENTS.md).
+
 | Responsibility | Canonical local guide |
 | --- | --- |
+| HTTP mutation completion and independent backup status | [Mutation recovery](python/disco/recovery/CONTRACT.md) |
 | Presentation snapshots and route checkpoints | [Presentation sessions](workspace-app/src/presentation/AGENTS.md) |
 | Ordered, bounded selection reads | [Tree selection](workspace-app/src/tree-selection/AGENTS.md) |
 | Group-save retry identity and recovery | [Group save](workspace-app/src/group-save/AGENTS.md) |
@@ -118,7 +121,7 @@ have different authority and lifecycle from disposable SQLite query sidecars.
 | Tree navigation | [selection reader](workspace-app/src/tree-selection/treeSelectionReader.js), [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
 | Scientific decisions | [shared annotations](python/workspace_annotations.py), [curation](python/workspace_curation.py), [workbench](python/workspace_workbench.py), [state generation](python/workspace_state_generation.py) | Author/scope/identity and expected revisions; transactionally related audit and generation. |
 | Exports | [format materializer](python/workspace_export_artifacts.py), [recipes](python/workspace_recipes.py), [SQLite writer](python/workspace_sqlite.py), [standalone reader](python/query_workspace_export.py), [MATLAB writer](python/workspace_matlab.py) | Caller-owned frozen membership, metadata, source references, decisions and provenance; shared format tail retains caller publication authority. |
-| Recovery | [HTTP completion policy](python/workspace_mutation_outcomes.py), [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |
+| Recovery | [HTTP completion policy](python/disco/recovery/__init__.py), [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |
 | Display and lifecycle | [API client/hooks](workspace-app/src/api.js), [renderer lifecycle](workspace-app/src/desktopLifecycle.js), [preload](desktop/preload.cjs), [supervisor](desktop/supervisor.cjs), [Python desktop](python/workspace_desktop.py) | Intent/publication fences, project/actor isolation, narrow IPC, process ownership, readiness, draft and close barriers. |
 
 ### The actual H5 and JSON boundary

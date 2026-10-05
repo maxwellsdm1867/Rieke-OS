@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 from flask import Flask, jsonify
 
-from workspace_mutation_outcomes import register_mutation_recovery
+from disco.recovery import register_mutation_recovery
 
 
 class RecoveryScheduler:

@@ -1,6 +1,6 @@
 {
   "format": "disco-adopted-port-checks",
-  "version": 3,
+  "version": 4,
   "discovery": [
     {
       "from": "AGENTS.md",
@@ -209,6 +209,34 @@
     {
       "from": "ARCHITECTURE.md",
       "to": "desktop/updates/README.md"
+    },
+    {
+      "from": "AGENTS.md",
+      "to": "python/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "python/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "python/disco/recovery/CONTRACT.md"
+    },
+    {
+      "from": "python/AGENTS.md",
+      "to": "python/disco/recovery/AGENTS.md"
+    },
+    {
+      "from": "python/disco/recovery/AGENTS.md",
+      "to": "python/disco/recovery/CONTRACT.md"
+    },
+    {
+      "from": "python/disco/recovery/CONTRACT.md",
+      "to": "python/disco/recovery/__init__.py"
+    },
+    {
+      "from": "python/disco/recovery/CONTRACT.md",
+      "to": "python/disco/recovery/tests/test_workspace_mutation_outcomes.py"
     }
   ],
   "shared_paths": [
@@ -240,7 +268,11 @@
     "workspace-app/src/renderer-drafts/AGENTS.md",
     "workspace-app/src/protocol-tree-layout/AGENTS.md",
     "workspace-app/src/workspace-navigation/AGENTS.md",
-    "README.md"
+    "README.md",
+    "python/AGENTS.md",
+    "python/disco/__init__.py",
+    "python/disco/recovery/AGENTS.md",
+    "python/disco/recovery/CONTRACT.md"
   ],
   "contracts": [
     {
@@ -304,10 +336,25 @@
       "rules": [
         {
           "language": "python",
-          "file": "python/workspace_mutation_outcomes.py",
+          "file": "python/disco/recovery/mutation_outcomes.py",
           "allow": [
             "flask"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/recovery/__init__.py",
+          "allow": [
+            "disco.recovery.mutation_outcomes"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_api.py",
+          "require": [
+            "disco.recovery"
+          ],
+          "deny": []
         }
       ],
       "tests": {
@@ -317,9 +364,10 @@
           "workspace-app/src/projectUnmount.test.js"
         ],
         "python": [
-          "python/tests/test_workspace_mutation_outcomes.py",
+          "python/disco/recovery/tests/test_workspace_mutation_outcomes.py",
           "python/tests/test_workspace_group_recovery.py",
-          "python/tests/test_workspace_registered_recovery_policy.py"
+          "python/tests/test_workspace_registered_recovery_policy.py",
+          "python/tests/test_architecture_guard.py"
         ]
       }
     },
@@ -568,7 +616,7 @@
         "workspace-app/**",
         "python/workspace_annotation_groups.py",
         "python/workspace_api.py",
-        "python/workspace_mutation_outcomes.py",
+        "python/disco/recovery/**",
         "python/tests/test_workspace_annotation_groups.py",
         "python/tests/test_workspace_group_recovery.py"
       ],
@@ -1014,6 +1062,215 @@
         "to": "workspace-app/src/components/GlobalSearch.css",
         "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
         "resolver_sha256": "bd6dfe50f8670f07ea0809a6a8f987f67acfef9df49174d1af2d2846137a9187"
+      }
+    ]
+  },
+  "python_module_policy": {
+    "source_root": "python",
+    "test_roots": [
+      "python/tests",
+      "python/disco/recovery/tests"
+    ],
+    "fixture_pythonpath": [
+      "python/tests"
+    ],
+    "reviewed_loader_sites": [
+      {
+        "file": "python/recording_workspace.py",
+        "file_sha256": "fbddb153b5984cc4158091ed5df7e11073d5076eef991d4dd4dde4c02118e9bf",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "1073eee0e42e1856a4905d3810e21ac6590562fa6cfcd229a6c03d8bce97fc6e",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "17738dab3d6dc14d88776054512de0307b04a94d1b91fc896c1e645cde8bf97b",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing external parser source boundary; no execution permission"
+      },
+      {
+        "file": "python/tests/test_benchmark.py",
+        "file_sha256": "c27b26d991a99a7edd6540157507e4f12c92aeb1940a5d3987f5a9001b29783c",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "8164d5aac342447f6e7be48f3af932dfb6bc6e24bc01d47538731bd45b7ce1a8",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "6180852d6421b32965c1d5a09fa46183f0286543b36c54920a71234a838db38c",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_benchmark_native.py",
+        "file_sha256": "71c43a53a200b58218a17bdb02b65fa2a55a603d1aaf31562d1858a37d53668f",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "a3e95b2942d49cc2a7cb366e214fd1fca7f8ae40a7acb0075b43fddfb7920207",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "4aa2e23e029af4bfd4bf70c87709a09dc00dba66a7ec1db900a04b605e7635de",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_benchmark_preload.py",
+        "file_sha256": "9f9e1b525ac8434c9dd3decdac5a08bc5b6971c2be57bbcf4745783672f8c892",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "8164d5aac342447f6e7be48f3af932dfb6bc6e24bc01d47538731bd45b7ce1a8",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "6180852d6421b32965c1d5a09fa46183f0286543b36c54920a71234a838db38c",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_desktop_artifact_faults.py",
+        "file_sha256": "de60fcdba095b1ed2b1d443ecc16bb5d9e2a276a74013856db0b9253c57b82a5",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "3d714b74239fbb215bc4e452e9d40d3297365ffcc426ab546446a989dd6490b3",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "7ad1c76dd6f462147041e10b4596eeb972dec0c84a9a7bb0eb147304721c6926",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_desktop_native_compatibility.py",
+        "file_sha256": "2e492154db1d22be0971e2be68d6d6666e8966f6fd46a2192cb4e8d91418d43f",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "c9e377d91691dd6001de45bedfcc283c3f5a2faf57d8eb46b5bebaff03959ca3",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "7c36faa0c789f4fef2f5faaf96cea3ac354094320acb649f91bfc03162e9fa29",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_desktop_release.py",
+        "file_sha256": "d0731610778580a1d0922fe10bfbf76d0ce60cc3ff86656080094e5f6a92cb19",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "1da0e749abda35f117338dda99998926df6d3f8ec117872d68cc3052064a1120",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "e29857577f79a8aede2eb402bc2605d5de69b7c1b2da4dba232b4d5afba82696",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_desktop_runtime_audit.py",
+        "file_sha256": "d20a5f7f6a760415328b7488299ed5d326ac6a84c86e155b7fc99988ca6fd1db",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "29d0cf56de14ca97b549c609780ce896ae844bdda7a715319162cefffdfe7e34",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "7c36faa0c789f4fef2f5faaf96cea3ac354094320acb649f91bfc03162e9fa29",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/tests/test_desktop_runtime_packaging.py",
+        "file_sha256": "ce100ce752348df1367f3838a335c4e83e4cfe39e2c0dc7c7650f2ac45a4f3e0",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "0a2f8616204a840066ec0d7219380cbe6310faf6fa3dc71ad6ea2751246355d2",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "17738dab3d6dc14d88776054512de0307b04a94d1b91fc896c1e645cde8bf97b",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing temporary parser-settings loader; whole-file binding proposed for independent review after resetting synthetic package export before copied-loader fault. Both loader ASTs unchanged; no loader execution permission."
+      },
+      {
+        "file": "python/tests/test_desktop_test_release.py",
+        "file_sha256": "f912cc3b95dd3cccbe9a2c6404b36d04c75fd0ae1c3cc80ca72afb1c2faa6113",
+        "sites": [
+          {
+            "selector": "call:spec_from_file_location:1",
+            "ast_sha256": "8e7a114fcd5e52e7152b63d698626438ddc2cfdf97fc3b79b01ed3dd5af392d4",
+            "kind": "ast-call"
+          },
+          {
+            "selector": "call:exec_module:1",
+            "ast_sha256": "17738dab3d6dc14d88776054512de0307b04a94d1b91fc896c1e645cde8bf97b",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+      },
+      {
+        "file": "python/workspace_bootstrap.py",
+        "file_sha256": "7b6d56e7c79e27d1469a4dd9b3f55ef5aeca274a4568b8adf02256476438ecaa",
+        "sites": [
+          {
+            "selector": "assignment:PROBE",
+            "ast_sha256": "1a0c10301b479ba5967f2b0b6f826bc776cebd8df8b245cfa53793779c713b18",
+            "kind": "embedded-python"
+          }
+        ],
+        "reason": "Existing embedded bootstrap third-party/parser probe; no execution permission"
+      }
+    ],
+    "modules": [
+      {
+        "contract_id": "p04-mutation-recovery",
+        "root": "python/disco/recovery",
+        "public_module": "disco.recovery",
+        "public_entry": "python/disco/recovery/__init__.py",
+        "public_exports": [
+          {
+            "name": "register_mutation_recovery",
+            "from": "python/disco/recovery/mutation_outcomes.py"
+          }
+        ],
+        "private_test_edges": []
       }
     ]
   }

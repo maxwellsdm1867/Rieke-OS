@@ -3,7 +3,7 @@
 Handlers are replaced after production URL registration, leaving its map intact. These
 tests establish HTTP completion policy, not scientific transactions or replay.
 Native-schema composition/header ordering has separate existing coverage in
-test_workspace_mutation_outcomes.ApplicationRecoveryRegistrationTests.
+disco.recovery.tests.test_workspace_mutation_outcomes.ApplicationRecoveryRegistrationTests.
 """
 from functools import partial
 import os
@@ -17,7 +17,7 @@ from flask import jsonify
 import test_workspace_api as api_fixture
 from workspace_api import create_app
 from workspace_lifecycle import register_project_lifecycle
-from workspace_mutation_outcomes import register_mutation_recovery
+from disco.recovery import register_mutation_recovery
 
 
 # Literal registration expectations, independent of the production exemption set.

@@ -51,6 +51,18 @@ class ReleasePlanCLITests(unittest.TestCase):
         self.assertFalse(output.exists(), result.stderr)
         return result
 
+    def test_recovery_local_tests_do_not_hide_production_siblings(self):
+        self.write('python/disco/recovery/tests/test_policy.py', '# Local public coverage\n')
+        test_head = self.commit()
+        value = self.plan('--base', self.initial, '--head', test_head)
+        self.assertFalse(any(value[flag] for flag in FLAGS))
+        self.write('python/disco/recovery/mutation_outcomes.py', '# Production change\n')
+        production_head = self.commit()
+        value = self.plan('--base', test_head, '--head', production_head)
+        self.assertTrue(value['build_required'])
+        self.assertTrue(value['database'])
+        self.assertTrue(value['full_ui'])
+
     def test_documentation_and_tests_only_do_not_build_an_application(self):
         self.write('.gitignore', 'docs/dev/desktop-smoke-e2e.json\n')
         self.write('docs/dev/guide.md', 'Updated release guide\n')

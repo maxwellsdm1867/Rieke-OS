@@ -1882,7 +1882,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         app.extensions['backup_scheduler']=scheduler
         if shared_annotations is not None:shared_annotations.on_commit=scheduler.request
 
-        from workspace_mutation_outcomes import register_mutation_recovery
+        from disco.recovery import register_mutation_recovery
         register_mutation_recovery(app, scheduler,
             desktop_mode=lambda: os.environ.get('RIEKE_DESKTOP_MODE') == '1')
 

@@ -34,7 +34,9 @@ jobs:
         run: uv run --no-project --python 3.11.13 python rieke.py setup && .rieke-runtime/venv/bin/python rieke.py doctor --json
       - name: Validate adopted architecture boundaries
         run: .rieke-runtime/venv/bin/python -B tools/architecture_guard.py check
-      - run: .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
+      - run: |
+          .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
+          PYTHONPATH=python:python/tests .rieke-runtime/venv/bin/python -B -m unittest discover -s python/disco/recovery/tests -t python -p 'test_*workspace*.py' -v
         env:
           PYTHONPATH: python
       - name: Verify architecture guard tooling

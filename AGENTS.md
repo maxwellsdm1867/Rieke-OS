@@ -6,6 +6,8 @@ linked there before changing an owner; use its executable public examples and
 scoped checks. Preserve a single detailed local contract instead of duplicating it
 in top-level summaries.
 
+For backend work, start at [backend navigation](python/AGENTS.md).
+
 For tooling work, start at [retained tooling navigation](tools/AGENTS.md).
 
 For desktop work, start at [desktop navigation](desktop/AGENTS.md).

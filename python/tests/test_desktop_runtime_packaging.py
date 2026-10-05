@@ -454,6 +454,8 @@ assert public.acknowledge(True) == {'saved': True}
         with self.assertRaisesRegex(ValueError, 'Unclassified external application loader: recording_workspace.py'):
             validate_source_closure(self.root, actual)
         # A copied external loader spelling in an ordinary package is never approved.
+        # Restore the synthetic public export after copying the real package above.
+        self.write('disco/recovery/__init__.py', 'from .policy import acknowledge\n__all__ = ("acknowledge",)\n')
         self.write('disco/recovery/policy.py', 'acknowledge = None\nimport importlib.util\nimportlib.util.spec_from_file_location("parser", path)')
         with self.assertRaisesRegex(ValueError, 'Unclassified external'):
             validate_source_closure(self.root, self.profile)

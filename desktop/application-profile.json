@@ -1,6 +1,6 @@
 {
   "format": "rieke-application-profile",
-  "version": 1,
+  "version": 2,
   "application": "Disco",
   "capabilities": {
     "mat_data_export": "Python/scipy; numeric data, acquisition provenance and frozen annotations",
@@ -52,7 +52,9 @@
     "workspace_matlab.py",
     "workspace_metadata_objects.py",
     "workspace_migration.py",
-    "workspace_mutation_outcomes.py",
+    "disco/__init__.py",
+    "disco/recovery/__init__.py",
+    "disco/recovery/mutation_outcomes.py",
     "workspace_mysql_profile.py",
     "workspace_mysql_runtime.py",
     "workspace_native_mysql.py",
