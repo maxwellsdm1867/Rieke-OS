@@ -126,7 +126,7 @@ test('versioned schemas retain v1/v2 and reject mixed, missing and future polici
   f.catalog.version=2;fails(f,/version 2 requires/);
   f.catalog.version=1;assert.equal(f.check().exit,0);
   f.catalog.javascript_module_policy=f.policy;fails(f,/version 1 forbids/);
-  for(const version of [0,5,99]){f.catalog.version=version;fails(f,/Unsupported adopted-port/);}
+  for(const version of [0,6,99]){f.catalog.version=version;fails(f,/Unsupported adopted-port/);}
   for(const version of [1,2,3]){
    f.catalog.version=version;f.catalog.python_module_policy={};fails(f,/Invalid catalog fields/);delete f.catalog.python_module_policy;
   }
