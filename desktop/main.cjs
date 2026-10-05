@@ -13,7 +13,7 @@ const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./drafts/draft-store.cjs');
 const {StartupSession,viewNamespace}=require('./startup/startup-session.cjs');
-let startupSession,startupOpening;const scopedDraftStores=new Map();
+let startupSession,startupOpening,startupError;const scopedDraftStores=new Map();
 function scopedDraftStore(window,projectId){
   const origin=new URL(window.webContents.getURL()).origin;
   if(projectId==='launcher'&&origin===supervisor.origin)return {store:draftStore};
@@ -201,6 +201,31 @@ function configureSession() {
     item.setSaveDialogOptions({title: 'Save export', defaultPath: filename});
   });
 }
+function restoreStartupWindow(window){
+    const expected=startupSession.target;startupSession.target=null;
+    if(startupSession.cancelled)return {restored:false};
+    startupOpening=(async()=>{
+    const opened=await supervisor.api('/api/desktop/resume-project',{method:'POST',body:{directory:expected.projectPath,project_uuid:expected.projectId},timeout:90000});
+    const url=opened.url;
+    if(!await supervisor.authorizeProjectURL(url))throw Error('Restored project failed ownership verification');
+    const origin=new URL(url).origin,record=supervisor.registry.services.find(record=>`http://127.0.0.1:${record.port}`===origin);
+    const mismatch=record?.project_uuid!==expected.projectId||record?.project_path!==expected.projectPath;
+    if(startupSession.cancelled||mismatch||quitting){
+      if(!record)throw Error('Restored project ownership is unavailable; Quit to recover');
+      const response=await fetch(origin+'/api/project/close',{method:'POST',headers:{'X-Rieke-Desktop-Capability':supervisor.capability,'X-Workspace-Request':'1','Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(35000)});
+      const value=await response.json();if(!response.ok||value.state!=='closed')throw Error('Restoration cancelled but project cleanup requires recovery. Quit before continuing.');
+      const deadline=Date.now()+10000;
+      while((await supervisor.api('/api/desktop/health')).services.some(item=>item.pid===record.pid&&item.created_at===record.created_at)){
+        if(Date.now()>deadline)throw Error('Cancelled project has not exited. Quit to recover.');await new Promise(resolve=>setTimeout(resolve,100));
+      }
+      supervisor.origins.delete(origin);
+      if(mismatch)throw Error('The saved project identity changed. Choose its current folder.');
+      return {restored:false,closed:true};
+    }
+    await window.loadURL(origin);return {restored:true};
+    })().finally(()=>{startupOpening=null;});
+    return startupOpening;
+}
 async function startScientificUI() {
   if (startupInProgress || quitting || integrityFailed) return;
   startupInProgress = true;
@@ -222,10 +247,27 @@ async function startScientificUI() {
         manifest: supervisor.manifest, distribution});
       coordinator.start().catch(() => broadcast({state:'Deferred',channel:distribution.channel,message:'Update check unavailable. The installed app remains usable.'}));
     }
-    lifecycleStatus = {state: 'Running'};
+    // Resolve the remembered project before the first application document.
+    // The existing authenticated open/authorization/cleanup path retains ownership.
+    // No intermediate chooser renderer, draft read, React mount or IPC round trip.
+    const target=startupSession.claim();
     for (const window of windows) {
-      await window.loadURL(origin); window.draftUnavailable = false; scientificWindows.add(window);
+      let restored=false;
+      if(target&&!startupSession.cancelled){
+        try{restored=(await restoreStartupWindow(window)).restored;}
+        catch(error){
+          // A failed ownership check can leave a child requiring recovery. Only
+          // a root that confirms no retained child allows the ordinary chooser.
+          const health=await supervisor.api('/api/desktop/health');
+          if(health.services?.length)throw error;
+          startupError=error.message;
+        }
+      }
+      if(quitting||integrityFailed)return;
+      if(!restored)await window.loadURL(origin);
+      window.draftUnavailable = false; scientificWindows.add(window);
     }
+    lifecycleStatus = {state: 'Running'};
     viewUnavailable = false;
     broadcast(supervisor.recoveredQuit?.drafts_saved === false
       ? {...status(),message:'The previous quit could not confirm the latest view. The last saved view is retained; accepted operations were reconciled before reopening.'}
@@ -248,34 +290,16 @@ function registerIPC() {
   noPayload('desktop:undo-text', window=>window.webContents.undo());
 
   noPayload('desktop:status', () => status());
-  noPayload('desktop:startup-session', window => new URL(window.webContents.getURL()).origin===supervisor.origin?startupSession.claim():null);
+  noPayload('desktop:startup-session', window => {
+    if(new URL(window.webContents.getURL()).origin!==supervisor.origin)return null;
+    if(startupError){const error=startupError;startupError=null;throw Error(error);}
+    return startupSession.claim();
+  });
   noPayload('desktop:choose-startup',()=>startupSession.choose());
   noPayload('desktop:cancel-startup',()=>{startupSession.cancelled=true;});
   noPayload('desktop:open-startup',window=>{
     if(new URL(window.webContents.getURL()).origin!==supervisor.origin||!startupSession.target||startupOpening)throw Error('No startup restoration is active');
-    const expected=startupSession.target;startupSession.target=null;
-    if(startupSession.cancelled)return {restored:false};
-    startupOpening=(async()=>{
-    const opened=await supervisor.api('/api/desktop/open-project',{method:'POST',body:{directory:expected.projectPath,project_uuid:expected.projectId},timeout:90000});
-    const url=opened.url;
-    if(!await supervisor.authorizeProjectURL(url))throw Error('Restored project failed ownership verification');
-    const origin=new URL(url).origin,record=supervisor.registry.services.find(record=>`http://127.0.0.1:${record.port}`===origin);
-    const mismatch=record?.project_uuid!==expected.projectId||record?.project_path!==expected.projectPath;
-    if(startupSession.cancelled||mismatch||quitting){
-      if(!record)throw Error('Restored project ownership is unavailable; Quit to recover');
-      const response=await fetch(origin+'/api/project/close',{method:'POST',headers:{'X-Rieke-Desktop-Capability':supervisor.capability,'X-Workspace-Request':'1','Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(35000)});
-      const value=await response.json();if(!response.ok||value.state!=='closed')throw Error('Restoration cancelled but project cleanup requires recovery. Quit before continuing.');
-      const deadline=Date.now()+10000;
-      while((await supervisor.api('/api/desktop/health')).services.some(item=>item.pid===record.pid&&item.created_at===record.created_at)){
-        if(Date.now()>deadline)throw Error('Cancelled project has not exited. Quit to recover.');await new Promise(resolve=>setTimeout(resolve,100));
-      }
-      supervisor.origins.delete(origin);
-      if(mismatch)throw Error('The saved project identity changed. Choose its current folder.');
-      return {restored:false,closed:true};
-    }
-    await window.loadURL(origin);return {restored:true};
-    })().finally(()=>{startupOpening=null;});
-    return startupOpening;
+    return restoreStartupWindow(window);
   });
   noPayload('desktop:check-updates', () => coordinator ? coordinator.check() : status());
   noPayload('desktop:download-update', () => {

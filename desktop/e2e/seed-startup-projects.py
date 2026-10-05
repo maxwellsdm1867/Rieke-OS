@@ -20,6 +20,8 @@ database.mkdir(exist_ok=True)
 with (database / 'unavailable-data.ibd').open('wb') as file:
     file.truncate(200 * 1024**3)
 recordings = Path(large['path']) / 'raw-uploads'
+for i in range(10000):
+    (recordings / ('unread-data-%05d.h5' % i)).touch()
 (recordings / 'missing-recording.h5').symlink_to(home / 'absent-recording.h5')
 preferences = state / 'preferences'
 preferences.mkdir(parents=True, exist_ok=True)

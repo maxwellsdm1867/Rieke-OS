@@ -47,7 +47,7 @@ const output=path.resolve(__dirname,'../../docs/dev/startup-boundary');
    await page.exposeFunction('recordChooser',()=>{chooserSeen=true;});
    await page.addInitScript(()=>new MutationObserver(()=>{if(document.querySelector('.project-launcher'))window.recordChooser();}).observe(document,{childList:true,subtree:true}));
    await page.getByRole('button',{name:projects.small.name+', current project',exact:true}).waitFor({timeout:20000});
-   timings.push({sample,milestone:'last_project_shell_ms',ms:performance.now()-began});
+   timings.push({sample,milestone:'last_project_shell_ms',ms:performance.now()-began});console.log(JSON.stringify(timings.at(-1)));
    await page.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:120000});
    timings.push({sample,milestone:'restored_data_view_ms',ms:performance.now()-began});
    assert.equal(chooserSeen,false,'Normal relaunch must skip the chooser');
@@ -61,9 +61,17 @@ const output=path.resolve(__dirname,'../../docs/dev/startup-boundary');
   await page.getByRole('button',{name:projects.large.name+', current project',exact:true}).waitFor({timeout:20000});
   timings.push({milestone:'sparse_200gb_project_shell_ms',ms:performance.now()-large});
   await page.getByRole('alert').filter({hasText:'Project data could not open'}).waitFor({timeout:20000});
+  await quit();
+  for(let sample=0;sample<5;sample++){
+   const began=await start();
+   await page.getByRole('button',{name:projects.large.name+', current project',exact:true}).waitFor({timeout:20000});
+   timings.push({sample,milestone:'sparse_200gb_last_project_shell_ms',ms:performance.now()-began});console.log(JSON.stringify(timings.at(-1)));
+   await page.getByRole('alert').filter({hasText:'Project data could not open'}).waitFor({timeout:20000});
+   if(sample<4)await quit();
+  }
   await unmount(projects.large);await quit();
   assert.deepEqual(errors,[]);await verifyResources(runtime,manifest.resources);
-  const receipt={fixture:fixture.root,application_version:manifest.application_version,source_commit:manifest.source_commit,source_dirty:manifest.source_dirty,method:'Actual packaged Electron, isolated HOME/profile; five fresh-process restores of an empty native project, OS caches uncontrolled; sparse 200 GB invalid database is a failure-isolation control, not a populated database benchmark. Timings include Playwright overhead.',timings,last_project_resumed:true,last_view_restored:true,chooser_skipped:true,loaded_project_unmounted_cleanly:true,failed_data_project_unmounted:true,unmounted_project_not_reopened:true,page_errors:errors};
+  const receipt={fixture:fixture.root,application_version:manifest.application_version,source_commit:manifest.source_commit,source_dirty:manifest.source_dirty,method:'Actual packaged Electron, isolated HOME/profile; five fresh-process restores each of an empty native project and a sparse 200 GB / 10,000-file project, OS caches uncontrolled; sparse 200 GB invalid database is a failure-isolation control, not a populated database benchmark. Timings include Playwright overhead.',timings,last_project_resumed:true,last_view_restored:true,chooser_skipped:true,loaded_project_unmounted_cleanly:true,failed_data_project_unmounted:true,unmounted_project_not_reopened:true,page_errors:errors};
   await fs.writeFile(path.join(output,'project-resume-packaged.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt,null,2));
  }finally{if(application){await page.screenshot({path:path.join(output,'resume-failure.png')}).catch(()=>{});console.error(await page.locator('body').innerText().catch(()=>''));await quit().catch(error=>console.error(error.message));}}
 })().catch(error=>{console.error(error);process.exitCode=1;});

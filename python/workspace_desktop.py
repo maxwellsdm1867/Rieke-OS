@@ -245,6 +245,7 @@ class DesktopBoundary:
             threading.Timer(.25, self.stop_callback).start()
             return result if result is not None else (jsonify(ready=True, stopped=True), 202)
 
+        @self.app.post(_CONTROL + 'resume-project')
         @self.app.post(_CONTROL + 'open-project')
         def desktop_open():
             body = request.get_json(silent=True)
@@ -255,6 +256,11 @@ class DesktopBoundary:
             record = _project_record(directory)
             if record['uuid'] != body['project_uuid']:
                 return jsonify(error='Project identity changed'), 409
+            if request.path.endswith('/resume-project'):
+                from workspace_startup_registry import read_project_index
+                if any(item['path'] == str(directory) and item['project_uuid'] == record['uuid']
+                       for item in read_project_index().get('unmounted', [])):
+                    return jsonify(error='The last project was unmounted. Open a project to continue.'), 409
             return jsonify(self.services.open(directory, record['uuid'], None, 300))
 
         @self.app.post(_CONTROL + 'authorize-project')

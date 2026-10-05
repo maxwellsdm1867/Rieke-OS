@@ -44,7 +44,7 @@ function fixture(options = {}) {
     expectedHealth: () => expected,
     async api(route, settings) {
       calls.push({route, settings});
-      if (route === '/api/desktop/open-project') return options.open ? options.open() : {url: project + '/workspace'};
+      if (route === '/api/desktop/resume-project') return options.open ? options.open() : {url: project + '/workspace'};
       if (route === '/api/desktop/health') return options.health ? options.health() : {...expected, services: []};
       throw Error('Unexpected transport route: ' + route);
     },
@@ -75,11 +75,13 @@ function fixture(options = {}) {
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../main.cjs'), 'utf8') + `
     supervisor=seed.supervisor; startupSession=seed.startupSession;
     registerIPC(); globalThis.window=createWindow();
+    globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"})};return startScientificUI();};
   `, context);
   const window = context.window;
   window.webContents.mainFrame.url = launcher;
   return {supervisor, startupSession, record, calls, navigation, messages, window,
     get quits() { return quits; },
+    startNativeRestore:()=>context.startNativeRestore(),
     invoke(channel, payload) {
       return handlers.get('desktop:' + channel)({sender: window.webContents, senderFrame: window.webContents.mainFrame}, payload);
     }};
@@ -96,7 +98,7 @@ test('registered restoration claims once from chooser and opens exact saved iden
   const opening = h.invoke('open-startup');
   await new Promise(setImmediate);
   assert.deepEqual(h.navigation, []);
-  assert.deepEqual(plain(h.calls[0]), {route: '/api/desktop/open-project', settings: {
+  assert.deepEqual(plain(h.calls[0]), {route: '/api/desktop/resume-project', settings: {
     method: 'POST', body: {directory: '/owned/saved-project', project_uuid: projectId}, timeout: 90000}});
   await assert.rejects(h.invoke('open-startup'), /No startup restoration is active/);
   gate.resolve(true);
@@ -206,4 +208,21 @@ test('registered repeated Quit stays bounded while accepted startup is pending a
   assert.deepEqual(h.navigation, []);
   assert.equal(h.supervisor.registry.services[0], h.record);
   await assert.rejects(h.invoke('open-startup'), /closing; new work is paused/);
+});
+
+
+test('native startup loads the saved project as the first application document',async()=>{
+  const h=fixture();
+  await h.startNativeRestore();
+  assert.deepEqual(h.navigation,[project]);
+  assert.equal(h.startupSession.claim(),null);
+  assert.equal(h.calls.filter(call=>call.route==='/api/desktop/resume-project').length,1);
+});
+
+test('native startup failure without a retained child opens the chooser with visible error',async()=>{
+  const h=fixture({open:()=>{throw Error('Saved project unavailable');}});
+  await h.startNativeRestore();
+  assert.deepEqual(h.navigation,[launcher]);
+  await assert.rejects(h.invoke('startup-session'),/Saved project unavailable/);
+  assert.equal(await h.invoke('startup-session'),null);
 });

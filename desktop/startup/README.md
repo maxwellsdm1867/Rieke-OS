@@ -69,3 +69,11 @@ E2E, actual IPC/native exit and filesystem crash evidence remain separate.
 [explicit Quit contract](../../docs/dev/DESKTOP_QUIT_COORDINATION.md) and
 [compatibility policy](../../docs/dev/macos-compatibility.md) remain authoritative.
 No startup latency, memory/disk or release-support improvement is claimed.
+
+Native first navigation now claims the remembered target in main immediately
+after authenticated root readiness and calls the same restore/authorization/
+cancellation path used by IPC. It loads the project as the first application
+document. The private resume endpoint refuses an explicitly unmounted identity;
+ordinary explicit open retains its existing behavior. Failure falls back to the
+chooser only when root health confirms no retained project child, and exposes
+the failure once to the renderer. An uncertain child remains a recovery error.
