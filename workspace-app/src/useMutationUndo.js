@@ -2,7 +2,7 @@ import {epochResourceCache} from './resourceCache.js';
 import {useEffect,useRef} from 'react';
 import {api} from './api.js';
 import {mutationUndo,shouldUndoData,undoEnabled,expandUndoAction} from './mutationUndo.js';
-import {groupAnnotationRecovery} from './groupAnnotationRecovery.js';
+import {groupAnnotationRecovery} from './group-save/groupAnnotationRecovery.js';
 import {confirmGroupReceipt} from './treeGroupQueryTags.js';
 import {desktopBridge} from './desktopLifecycle.js';
 

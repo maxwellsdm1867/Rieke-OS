@@ -1,5 +1,5 @@
 import {useState,useSyncExternalStore} from 'react';
-import {groupAnnotationRecovery} from '../groupAnnotationRecovery.js';
+import {groupAnnotationRecovery} from '../group-save/groupAnnotationRecovery.js';
 import {number} from '../api.js';
 import './GroupAnnotationRecovery.css';
 

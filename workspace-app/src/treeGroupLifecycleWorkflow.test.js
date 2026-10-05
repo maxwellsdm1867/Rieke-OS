@@ -43,7 +43,7 @@ test('dismissed committed507 refreshes globally and visible recovery replays exa
   await h.mount(Component,{onChange:value=>changes.push(value)});await openSaveClose(h);await h.waitFor(fixture.ready);
   await h.act(()=>fixture.release('507'));await h.waitFor(()=>changes.length===1&&find(h,'Retry original group save')&&!find(h,'Retry original group save').props.disabled);
   assert.equal(changes[0].kind,'annotations');assert.equal(fixture.selected(),true);
-  const recovery=(await h.module('groupAnnotationRecovery.js')).groupAnnotationRecovery;
+  const recovery=(await h.module('group-save/groupAnnotationRecovery.js')).groupAnnotationRecovery;
   assert.equal(recovery.view()[0].status,'unconfirmed');
   await h.act(()=>find(h,'Retry original group save').props.onClick());await h.waitFor(()=>changes.length===2&&recovery.view().length===0);
   assert.deepEqual(fixture.writes[0],fixture.writes[1]);assert.equal(fixture.writes.length,2);

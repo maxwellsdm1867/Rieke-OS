@@ -203,3 +203,18 @@ Completion also requires reviewed exact-candidate assembled-app E2E: isolated
 synthetic project, actual pages/tree/trace oracle, tag persistence/export readback,
 normal quit/reopen and owned-resource cleanup. This gate is unrun. It does not
 resume paused unrelated native experiments or imply speed/release qualification.
+
+### Tree-selection and group-save folder increment
+
+The actual owners/tests now live in `workspace-app/src/tree-selection/` and
+`workspace-app/src/group-save/`, with public JSDoc, local AGENTS and executable
+consumer examples. Caller imports and the actual Vite/module-lookup seams follow
+those paths. Lexical helpers, shared request shaping, preview, UI and undo remain
+with their existing owners; no facade or additional runtime adapter was added.
+
+Both worker slices received independent source GO. Focused checks and deliberate
+behavior faults passed at their recorded worker source hashes. Combined guard,
+folder-specific rejection tests, full frontend/build and final source evidence are
+recorded separately once complete. Prior ledger review/receipt fields remain
+historical; live paths and organization status are explicit in the JSON records.
+No native, packaged-app or performance qualification follows from this increment.

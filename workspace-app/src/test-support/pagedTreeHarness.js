@@ -12,7 +12,7 @@ export async function createPagedTreeHarness(){
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'selection-fixtures',enforce:'pre',
     resolveId(id,importer){
-      if(id==='./api.js'&&importer?.endsWith('/treeSelectionReader.js'))return '\0selection-api';
+      if(id==='../api.js'&&importer?.endsWith('/tree-selection/treeSelectionReader.js'))return '\0selection-api';
       if(importer?.endsWith('/components/PagedTree.jsx')){
       if(id==='../api.js')return '\0selection-api';
       if(id==='./HierarchyTree.jsx'||id==='./ColumnTree.jsx')return '\0selection-tree';

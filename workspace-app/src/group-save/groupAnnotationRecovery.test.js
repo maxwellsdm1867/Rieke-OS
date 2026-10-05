@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {groupQueryScope,previewTreeGroup,confirmGroupReceipt,releaseGroupPreview} from './treeGroupQueryTags.js';
-import {persistUndo} from './useMutationUndo.js';
-import {createUndoHistory,mutationUndo} from './mutationUndo.js';
-import {groupAnnotationRecovery as recovery} from './groupAnnotationRecovery.js';
+import {groupQueryScope,previewTreeGroup,confirmGroupReceipt,releaseGroupPreview} from '../treeGroupQueryTags.js';
+import {persistUndo} from '../useMutationUndo.js';
+import {createUndoHistory,mutationUndo} from '../mutationUndo.js';
+import {groupAnnotationRecovery as recovery,createGroupSaveSession} from './groupAnnotationRecovery.js';
 const scope={protocolId:'protocol',filters:{metadata_predicate:'{"all":[]}'},splits:'parameters/value'},revision='a'.repeat(64),path=['b'.repeat(64)];
 function receipt(body,count=1857){return {format:'rieke-group-annotation-receipt',version:1,action:'add',operation_uuid:body.operation_uuid,target_kind:'epoch',target_count:count,changed:count-1,unchanged:1,profile_uuid:body.profile_uuid,tag:body.tag,undo:{kind:'annotation_group',operation_uuid:body.operation_uuid,count:count-1}};}
 test('query preview contains complete scope/path and no page offsets or epoch identities',async()=>{
@@ -246,4 +246,33 @@ test('definite refusal releases a closed preview once but occupies its slot unti
   assert.equal(releases.length,1);const row=recovery.view()[0];assert.equal(row.status,'rejected');
   recovery.dismiss(row.operation_uuid);assert.equal(recovery.view().length,0);
  }
+});
+
+test('public example: uncertain save retries unchanged and releases before publishing',async()=>{
+ const previous=recovery.currentProject(),previousUndo=mutationUndo.view().project;
+ recovery.project('example-project');mutationUndo.project('example-project');
+ const writes=[],releases=[],published=[];
+ const request=async(route,{body})=>{
+  if(route==='/annotations/group-preview-release'){releases.push({...body});return {};}
+  assert.equal(route,'/annotations/group');writes.push({...body});
+  if(writes.length===1)throw Object.assign(Error('Recovery copy unconfirmed'),{status:507,saved:true});
+  return receipt(body,2);
+ };
+ try{
+  // The caller already verified this preview and captured its project before I/O.
+  const session=createGroupSaveSession({project:'example-project',selectionUuid:'example-selection',profileUuid:'author',count:2,request});
+  const original={tag:'example-tag',profileUuid:'author'};
+  await assert.rejects(session.save(original),/Recovery copy unconfirmed/);
+  await session.release(); // Closing the editor cannot release the uncertain save.
+  assert.equal(releases.length,0);
+  const result=await session.save(original); // The same handle retains exact identity.
+  await session.release();
+  if(session.canPublish())published.push(result);
+  assert.deepEqual(writes[1],writes[0]);
+  assert.deepEqual(releases,[{selection_uuid:'example-selection'}]);
+  assert.deepEqual(published,[result]);assert.equal(result.changed,1);
+  assert.equal(mutationUndo.view().count,1);assert.equal(recovery.view().length,0);
+  recovery.project('another-project');
+  assert.equal(session.canPublish(),false);
+ }finally{recovery.project(previous);mutationUndo.project(previousUndo);}
 });

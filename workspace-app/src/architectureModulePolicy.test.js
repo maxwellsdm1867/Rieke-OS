@@ -138,3 +138,40 @@ test('virtual fixture mapping resolves exact edges but preserves private checks 
   f.write(from,"import './virtual-api.js'");edge.from=f.s+'consumer.js';fails(f,/scanned test support/);
  }finally{f.close();}
 });
+
+for (const id of ['p03-selection-reader', 'p04-group-save-session']) {
+ test(`${id} folder enforces its declared public surface and rejects private/test imports`, () => {
+  const actual = JSON.parse(readFileSync(new URL('../../docs/architecture/adopted-port-checks.json', import.meta.url), 'utf8'));
+  const declared = actual.javascript_module_policy.modules.find(module => module.contract_id === id);
+  assert.ok(declared, `${id} must have a folder policy`);
+  assert.deepEqual(declared.private_test_edges, []);
+  const f = fixture();
+  try {
+   // Exercise the catalog's real root/entry/export names in an isolated source tree.
+   // The injected helper is a future private file, not a new runtime abstraction.
+   const helper = `${declared.root}/internal/helper.js`;
+   const publicTest = declared.public_entry.replace(/\.js$/, '.test.js');
+   const publicSource = `import {value} from './internal/helper.js';\n${declared.public_exports.map(name => `export const ${name}=value;`).join('\n')}`;
+   f.policy.modules.push({...declared, private_test_edges: []});
+   f.catalog.contracts.push({id, contract: {path:'docs/contract.md',heading:'Presentation'}, affected_paths:['workspace-app/**'], rules:[
+    {language:'javascript',file:declared.public_entry,allow:[helper]},
+    {language:'javascript',file:helper,allow:[]},
+   ], tests:{python:[],javascript:[publicTest]}});
+   f.write(helper, 'export const value=1;');
+   f.write(declared.public_entry, publicSource);
+   f.write(publicTest, `import {${declared.public_exports.join(',')}} from './${declared.public_entry.split('/').at(-1)}';`);
+   assert.equal(f.check().exit, 0);
+   const relative = helper.slice(f.s.length);
+   for (const consumer of ['outside.js','outside.test.js']) {
+    f.write(f.s+consumer, `import './${relative}';`);
+    fails(f, /forbidden private/);
+    f.write(f.s+consumer, 'export {};');
+   }
+   f.write(declared.public_entry, publicSource+'\nexport const accidentalPublicName=1;');
+   fails(f, /public export surface/);
+   f.write(declared.public_entry, publicSource);
+   f.write(f.s+'outside.js', `import './${publicTest.slice(f.s.length)}';`);
+   fails(f, /production cannot import test/);
+  } finally { f.close(); }
+ });
+}

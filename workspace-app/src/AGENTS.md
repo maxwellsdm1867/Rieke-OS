@@ -6,8 +6,13 @@ Start in the module folder for the responsibility you are changing:
   fallbacks, checkpoints and deletion pruning; public session factory and tests
   live together. App composes navigation, persistence and scientific owners.
 
-Other frontend owners retain their existing named files. This is one folder
-pilot, not a declaration that each ledger record is a separate module. See the
+- [Tree selection](tree-selection/AGENTS.md): ordered first-epoch and bounded
+  range reads; callers retain gestures, cancellation ownership and publication.
+- [Group save/recovery](group-save/AGENTS.md): exact retry identity, compact
+  recovery and deferred preview release; preview, UI and undo remain callers.
+
+Other frontend owners retain their existing named files pending the organization
+worklist; each ledger record need not become a separate module. See the
 [architecture map](../../ARCHITECTURE.md) for other adopted interfaces.
 
 Run `npm test` from `workspace-app` for recursive `.test.js` discovery with the

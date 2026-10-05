@@ -1,5 +1,5 @@
-import {api} from './api.js';
-import {TREE_PAGE_SIZE,treePageRequest} from './pagedTreeRequest.js';
+import {api} from '../api.js';
+import {TREE_PAGE_SIZE,treePageRequest} from '../pagedTreeRequest.js';
 
 function requestTreePage(scope,options,signal){
   return api(scope.readContext?`${scope.readContext.root}/tree/page`:'/tree-pages',{
@@ -23,8 +23,20 @@ function checkAborted(signal){
  * supplied branch/revision: an array synchronously when the
  * supplied page suffices, otherwise a Promise. The supplied page is trusted as
  * before; no cache or additional identity authority is introduced.
- * Both operations retain tree-change/transport errors and reject cancellation
- * with AbortError. Ranges also reject incomplete rows and sizes above 1,000.
+ * Both operations retain tree-change/transport errors. firstEpoch rejects with
+ * AbortError on cancellation; rangeEpochIds throws synchronously before a
+ * transport is needed, or rejects its Promise after an asynchronous read.
+ * Ranges also reject incomplete rows and sizes above 1,000. No partial result
+ * publishes. Scope/path/offset are caller-provided, not newly validated here.
+ *
+ * @example
+ * const page = {kind:'epochs', revision:'r', path:[], offset:0,
+ *   epochs:[{epoch_uuid:'epoch-A'}]};
+ * const reader = createTreeSelectionReader({requestPage:async () => page});
+ * const first = await reader.firstEpoch({}, {path:[], revision:'r'});
+ * const ids = reader.rangeEpochIds({}, {page, firstIndex:0, lastIndex:0});
+ * // first === page.epochs[0]; ids is the synchronous array ['epoch-A'].
+ * // See AGENTS.md and the colocated public test for async/cancellation usage.
  */
 export function createTreeSelectionReader({requestPage=requestTreePage}={}){
   async function read(scope,options,signal){

@@ -112,7 +112,7 @@
       },
       "scientific_contract": {
         "identities": "Tree revision and branch path must match; expectedRevision takes precedence. Selection continuity proof is separate from write readiness and project/profile authority.",
-        "types": "The supplied page is trusted as existing behavior. Additional pages must be epoch-kind and exact revision; missing row fails rather than partial selection.",
+        "types": "Supplied page scope/path/offset are caller-provided. Kind and missing-row checks are retained; fetched pages additionally validate exact revision.",
         "order": "First-epoch traversal follows first branches in server order; range uses normalized ascending absolute positions and page size60, max1000 epochs. Paths remain opaque.",
         "units": "Indices/counts are epochs, scrollTop is nonnegative CSS pixels in presentation snapshots; no scientific duration inference.",
         "provenance": "Membership/order comes from server tree DTOs, not client labels or visible row subset."
@@ -130,7 +130,7 @@
         "In-process pure request shaping and epoch selection combiners."
       ],
       "source_paths": [
-        "workspace-app/src/treeSelectionReader.js",
+        "workspace-app/src/tree-selection/treeSelectionReader.js",
         "workspace-app/src/pagedTreeRequest.js",
         "workspace-app/src/components/PagedTree.jsx",
         "workspace-app/src/epochSelection.js"
@@ -185,7 +185,7 @@
         "workspace-app/src/epochSelection.js"
       ],
       "existing_tests": [
-        "workspace-app/src/treeSelectionReader.test.js",
+        "workspace-app/src/tree-selection/treeSelectionReader.test.js",
         "workspace-app/src/pagedTreeRequest.test.js",
         "workspace-app/src/pagedTreeLifecycle.test.js",
         "workspace-app/src/inspectorTreeAuthority.test.js"
@@ -239,7 +239,16 @@
       },
       "area": "Frontend",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "status": "implemented; aggregate verification and final integration pending",
+        "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
+        "public_entry": "workspace-app/src/tree-selection/treeSelectionReader.js",
+        "guidance": "workspace-app/src/tree-selection/AGENTS.md",
+        "independent_worker_source_review": "GO; aggregate closure pending",
+        "historical_evidence": "Prior source_pointers, verification records and receipt claims retain their original review context; current live paths are source_paths and existing_tests.",
+        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged."
+      }
     },
     {
       "id": "mutation-recovery",
@@ -798,7 +807,7 @@
         ]
       },
       "existing_tests": [
-        "workspace-app/src/treeGroupQueryTags.test.js",
+        "workspace-app/src/group-save/groupAnnotationRecovery.test.js",
         "workspace-app/src/treeGroupLifecycleWorkflow.test.js",
         "workspace-app/src/treeGroupAnnotationWorkflow.test.js"
       ],
@@ -835,7 +844,7 @@
         "In-process mutationUndo and epoch cache; backend command details cross-reference command_contracts."
       ],
       "source_paths": [
-        "workspace-app/src/groupAnnotationRecovery.js",
+        "workspace-app/src/group-save/groupAnnotationRecovery.js",
         "workspace-app/src/treeGroupQueryTags.js",
         "workspace-app/src/components/GroupAnnotationRecovery.jsx",
         "workspace-app/src/components/AnnotationTags.jsx"
@@ -882,7 +891,16 @@
         "Preserve first-save reservation, exact replay body, ready pin, terminal classification/release and project-scoped undo.",
         "No universal command bus or arbitrary retry capability follows from this owner."
       ],
-      "inventory_reference_id": "FE15-group-save-renderer-session"
+      "inventory_reference_id": "FE15-group-save-renderer-session",
+      "organization": {
+        "status": "implemented; aggregate verification and final integration pending",
+        "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
+        "public_entry": "workspace-app/src/group-save/groupAnnotationRecovery.js",
+        "guidance": "workspace-app/src/group-save/AGENTS.md",
+        "independent_worker_source_review": "GO; aggregate closure pending",
+        "historical_evidence": "Prior source_pointers, verification records and receipt claims retain their original review context; current live paths are source_paths and existing_tests.",
+        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged."
+      }
     },
     {
       "id": "presentation-sessions",
@@ -7081,12 +7099,12 @@
         "contract_records": [
           "tree-selection"
         ],
-        "status": "implementation-in-progress",
+        "status": "aggregate-verification-pending",
         "stages": {
           "goal_contract": "complete",
-          "refactor_files_and_local_contract": "in-progress",
-          "public_seam_and_fault_tests": "pending",
-          "independent_source_review": "pending",
+          "refactor_files_and_local_contract": "complete",
+          "public_seam_and_fault_tests": "focused and deliberate behavior faults passed; aggregate closure pending",
+          "independent_source_review": "worker GO; shared integration review pending",
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
@@ -7097,12 +7115,12 @@
         "contract_records": [
           "group-save"
         ],
-        "status": "implementation-in-progress",
+        "status": "aggregate-verification-pending",
         "stages": {
           "goal_contract": "complete",
-          "refactor_files_and_local_contract": "in-progress",
-          "public_seam_and_fault_tests": "pending",
-          "independent_source_review": "pending",
+          "refactor_files_and_local_contract": "complete",
+          "public_seam_and_fault_tests": "focused and deliberate behavior faults passed; aggregate closure pending",
+          "independent_source_review": "worker GO; shared integration review pending",
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."

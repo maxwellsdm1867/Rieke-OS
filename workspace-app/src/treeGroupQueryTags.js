@@ -1,6 +1,6 @@
 import {treePageRequest} from './pagedTreeRequest.js';
-import {groupAnnotationRecovery,createGroupSaveSession} from './groupAnnotationRecovery.js';
-export {confirmGroupReceipt} from './groupAnnotationRecovery.js';
+import {groupAnnotationRecovery,createGroupSaveSession} from './group-save/groupAnnotationRecovery.js';
+export {confirmGroupReceipt} from './group-save/groupAnnotationRecovery.js';
 
 export function groupQueryScope(scope,path,revision){
   if(scope.readContext)throw Error('Shared group tags are not supported in Incoming Workbench yet.');

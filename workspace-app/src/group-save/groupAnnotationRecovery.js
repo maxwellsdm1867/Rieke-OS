@@ -1,5 +1,5 @@
-import {mutationUndo,undoEnabled} from './mutationUndo.js';
-import {epochResourceCache} from './resourceCache.js';
+import {mutationUndo,undoEnabled} from '../mutationUndo.js';
+import {epochResourceCache} from '../resourceCache.js';
 
 // Session-only, at most four compact original requests. Never evict an
 // unconfirmed operation or retain the server's target list/annotation graphs.
@@ -8,6 +8,12 @@ const records=new Map(),listeners=new Set(),changes=new Set();
 let project=null,version=0;
 const emit=()=>{version++;for(const listener of listeners)listener();};
 const notify=record=>{epochResourceCache.invalidate();for(const listener of changes)listener({project:record.project,kind:'annotations'});};
+/**
+ * Renderer-session recovery singleton. Project changes select publication authority;
+ * they do not clear retained operations. Views expose compact copies, never records.
+ * Retry preserves the original request; only terminal rejected rows may be dismissed.
+ * See AGENTS.md and the colocated executable public example for caller obligations.
+ */
 export const groupAnnotationRecovery={
  subscribe(listener){listeners.add(listener);return()=>listeners.delete(listener);},version:()=>version,
  project(value){project=value;emit();},currentProject:()=>project,
@@ -16,12 +22,29 @@ export const groupAnnotationRecovery={
  onChange(listener){changes.add(listener);return()=>changes.delete(listener);},
  async retry(operation){const record=records.get(operation);if(!record)throw Error('The original operation is no longer pending.');return run(record,true);},
 };
+/**
+ * Return the same complete receipt or throw when its identity/arithmetic is unconfirmed.
+ * Missing persistence is accepted; a supplied database state must be committed.
+ * This check does not establish backend transaction or recovery-copy durability.
+ */
 export function confirmGroupReceipt(result,{operationUuid,profileUuid,count,tag,action='add',forward}){
   if(result?.format!=='rieke-group-annotation-receipt'||result.version!==1||result.action!==action||result.operation_uuid!==operationUuid||result.target_kind!=='epoch'||result.target_count!==count||result.profile_uuid!==profileUuid||!Number.isSafeInteger(result.changed)||result.changed<0||result.changed>count||result.unchanged!==count-result.changed||result.persistence&&result.persistence.database!=='committed'||action==='add'&&(result.tag!==tag||result.undo?.kind!=='annotation_group'||result.undo.operation_uuid!==operationUuid||result.undo.count!==result.changed)||action==='undo'&&result.forward_operation_uuid!==forward)throw Error('The complete group receipt was not confirmed. Retry the same operation before another tag.');
   return result;
 }
 
-// The preview supplies the project captured before its request began.
+/**
+ * Create a frozen save/release/canPublish handle from an already verified preview.
+ * The caller supplies the project captured before the preview request began and its
+ * existing request adapter. First save reserves one of four compact recovery slots;
+ * the conservative per-request admission limit is 16 KiB, not total heap usage.
+ * Uncertain saves must retry the original tag/profile. Release is best effort and
+ * deferred while ready/pending/unconfirmed; it never cancels a submitted write.
+ * A retained handle survives editor dismissal. Check canPublish before publishing.
+ * @param {{project: *, selectionUuid: string, profileUuid: string, count: number,
+ *   request: function(string, Object): Promise<*>}} options
+ * @returns {Readonly<{selectionUuid: string, profileUuid: string, count: number,
+ *   save: function(Object): Promise<*>, release: function(): *, canPublish: function(): boolean}>}
+ */
 export function createGroupSaveSession({project:originalProject,selectionUuid,profileUuid,count,request}){
   let operation=null,releaseRequested=false,released=false;
   const release=()=>{

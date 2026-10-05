@@ -1,6 +1,6 @@
 import {useCallback,useRef,useState,useLayoutEffect} from 'react';
 import ColumnTree from './ColumnTree.jsx';
-import {createTreeSelectionReader} from '../treeSelectionReader.js';
+import {createTreeSelectionReader} from '../tree-selection/treeSelectionReader.js';
 import {mergeEpochSelection,toggleEpochSelection} from '../epochSelection.js';
 import HierarchyTree from './HierarchyTree.jsx';
 import './PagedTree.css';

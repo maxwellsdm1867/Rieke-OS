@@ -29,6 +29,30 @@
     {
       "from": "workspace-app/src/AGENTS.md",
       "to": "workspace-app/src/presentation/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/tree-selection/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/tree-selection/AGENTS.md",
+      "to": "workspace-app/src/tree-selection/treeSelectionReader.js"
+    },
+    {
+      "from": "workspace-app/src/tree-selection/AGENTS.md",
+      "to": "docs/architecture/0.1.8-first-port-slices.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/group-save/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/group-save/AGENTS.md",
+      "to": "workspace-app/src/group-save/groupAnnotationRecovery.js"
+    },
+    {
+      "from": "workspace-app/src/group-save/AGENTS.md",
+      "to": "docs/architecture/0.1.8-first-port-slices.md"
     }
   ],
   "shared_paths": [
@@ -54,7 +78,9 @@
     "workspace-app/package-lock.json",
     "workspace-app/isolatedViteCache.js",
     "workspace-app/src/AGENTS.md",
-    "workspace-app/src/presentation/AGENTS.md"
+    "workspace-app/src/presentation/AGENTS.md",
+    "workspace-app/src/tree-selection/AGENTS.md",
+    "workspace-app/src/group-save/AGENTS.md"
   ],
   "contracts": [
     {
@@ -78,12 +104,12 @@
             "module"
           ],
           "require": [
-            "workspace-app/src/treeSelectionReader.js"
+            "workspace-app/src/tree-selection/treeSelectionReader.js"
           ]
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/treeSelectionReader.js",
+          "file": "workspace-app/src/tree-selection/treeSelectionReader.js",
           "allow": [
             "workspace-app/src/api.js",
             "workspace-app/src/pagedTreeRequest.js"
@@ -92,12 +118,15 @@
       ],
       "tests": {
         "javascript": [
-          "workspace-app/src/treeSelectionReader.test.js",
+          "workspace-app/src/tree-selection/treeSelectionReader.test.js",
           "workspace-app/src/pagedTreeLifecycle.test.js",
           "workspace-app/src/pagedTreeRequest.test.js",
           "workspace-app/src/inspectorTreeAuthority.test.js",
           "workspace-app/src/stableContentInert.test.js",
-          "workspace-app/src/candidateContinuity.test.js"
+          "workspace-app/src/candidateContinuity.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/architectureImports.test.js"
         ],
         "python": []
       }
@@ -269,30 +298,57 @@
           "file": "workspace-app/src/treeGroupQueryTags.js",
           "allow": [
             "workspace-app/src/pagedTreeRequest.js",
-            "workspace-app/src/groupAnnotationRecovery.js"
+            "workspace-app/src/group-save/groupAnnotationRecovery.js"
           ],
           "require": [
-            "workspace-app/src/groupAnnotationRecovery.js"
+            "workspace-app/src/group-save/groupAnnotationRecovery.js"
           ]
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/groupAnnotationRecovery.js",
+          "file": "workspace-app/src/group-save/groupAnnotationRecovery.js",
           "allow": [
             "workspace-app/src/mutationUndo.js",
             "workspace-app/src/resourceCache.js"
+          ],
+          "require": [
+            "workspace-app/src/mutationUndo.js",
+            "workspace-app/src/resourceCache.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/useMutationUndo.js",
+          "require": [
+            "workspace-app/src/group-save/groupAnnotationRecovery.js"
+          ],
+          "deny": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/components/GroupAnnotationRecovery.jsx",
+          "require": [
+            "workspace-app/src/group-save/groupAnnotationRecovery.js"
+          ],
+          "deny": []
         }
       ],
       "tests": {
         "javascript": [
-          "workspace-app/src/treeGroupQueryTags.test.js",
+          "workspace-app/src/group-save/groupAnnotationRecovery.test.js",
           "workspace-app/src/treeGroupLifecycleWorkflow.test.js",
-          "workspace-app/src/treeGroupAnnotationWorkflow.test.js"
+          "workspace-app/src/treeGroupAnnotationWorkflow.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/mutationUndo.test.js",
+          "workspace-app/src/mutationUndoWorkflow.test.js",
+          "workspace-app/src/apiCommandPolicy.test.js"
         ],
         "python": [
           "python/tests/test_workspace_annotation_groups.py",
-          "python/tests/test_workspace_group_recovery.py"
+          "python/tests/test_workspace_group_recovery.py",
+          "python/tests/test_architecture_guard.py"
         ]
       }
     },
@@ -388,6 +444,26 @@
             "to": "workspace-app/src/presentation/internal/deletedSourceSelections.js"
           }
         ]
+      },
+      {
+        "contract_id": "p03-selection-reader",
+        "root": "workspace-app/src/tree-selection",
+        "public_entry": "workspace-app/src/tree-selection/treeSelectionReader.js",
+        "public_exports": [
+          "createTreeSelectionReader"
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "p04-group-save-session",
+        "root": "workspace-app/src/group-save",
+        "public_entry": "workspace-app/src/group-save/groupAnnotationRecovery.js",
+        "public_exports": [
+          "groupAnnotationRecovery",
+          "createGroupSaveSession",
+          "confirmGroupReceipt"
+        ],
+        "private_test_edges": []
       }
     ],
     "additional_sources": [

@@ -2,6 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createTreeSelectionReader} from './treeSelectionReader.js';
 
+test('documented consumer example preserves sync, Promise and cancellation results',async()=>{
+  const page=offset=>({kind:'epochs',revision:'r',path:['opaque'],offset,
+    epochs:Array.from({length:60},(_,i)=>({epoch_uuid:`epoch-${offset+i}`}))});
+  const reader=createTreeSelectionReader({requestPage:async(_scope,options)=>page(options.offset??0)});
+  const scope={expectedRevision:'r'},supplied=page(0);
+  const first=await reader.firstEpoch(scope,{path:['opaque'],revision:'r'});
+  const samePage=reader.rangeEpochIds(scope,{page:supplied,firstIndex:0,lastIndex:1});
+  const pending=reader.rangeEpochIds(scope,{page:supplied,firstIndex:59,lastIndex:60});
+  assert.equal(first.epoch_uuid,'epoch-0');
+  assert.equal(Array.isArray(samePage),true);assert.deepEqual(samePage,['epoch-0','epoch-1']);
+  assert.equal(pending instanceof Promise,true);assert.deepEqual(await pending,['epoch-59','epoch-60']);
+  const controller=new AbortController();controller.abort();
+  await assert.rejects(reader.firstEpoch(scope,{path:['opaque'],signal:controller.signal}),{name:'AbortError'});
+  assert.throws(()=>reader.rangeEpochIds(scope,{page:supplied,firstIndex:0,lastIndex:0,signal:controller.signal}),{name:'AbortError'});
+});
+
 function deferred(){let resolve;const promise=new Promise(yes=>{resolve=yes;});return {promise,resolve};}
 
 test('first epoch cancellation between transport completion and reader continuation still rejects',async()=>{
