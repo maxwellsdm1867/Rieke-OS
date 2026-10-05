@@ -138,7 +138,7 @@ export default function ColumnTree(props){
   },[selected,state.columns,state.loading,state.error]);
   const revealedTrace=useRef(null);
   useEffect(()=>{
-    if(!active||state.loading||state.error||ownerBlocked||!props.trailingPane||!props.trailingPaneKey||state.columns.at(-1)?.kind!=='epochs')return;
+    if(!active||state.loading||state.error||ownerBlocked||!props.trailingPane||!props.trailingPaneKey||state.columns.at(-1)?.kind!=='epochs'||!state.columns.at(-1)?.epochs.some(item=>item.epoch_uuid===selected))return;
     if(revealedTrace.current===props.trailingPaneKey)return;
     revealedTrace.current=props.trailingPaneKey;
     const pane=strip.current?.querySelector('.tree-trace-pane');
@@ -170,7 +170,7 @@ export default function ColumnTree(props){
           <footer className="tp-pagination"><button disabled={blocked||!page.offset} aria-label={`Previous page in column ${depth+1}`} onClick={()=>load({path:page.path,offset:Math.max(0,page.offset-60)})}><ArrowLeft size={13}/></button><span>{page.total?page.offset+1:0}–{page.offset+entries.length} / {number(page.total)}</span><button disabled={blocked||!page.has_more} aria-label={`Next page in column ${depth+1}`} onClick={()=>load({path:page.path,offset:page.offset+60})}><ArrowRight size={13}/></button></footer>
         </section>;
       })}
-      {last?.kind==='epochs'&&!state.error&&!ownerBlocked&&props.trailingPane}
+      {last?.kind==='epochs'&&!state.loading&&!state.error&&!ownerBlocked&&last.epochs.some(item=>item.epoch_uuid===selected)&&props.trailingPane}
       {state.loading&&!state.columns.length?<div className="tp-prompt" role="status">{showLoading?'Loading tree…':''}</div>:last?.kind!=='epochs'&&!state.error&&<div className="tp-prompt"><GitBranch size={24}/><strong>Choose a group</strong><p>Its next split opens alongside this column.</p></div>}
     </div>
     {showLoading&&!!state.columns.length&&<div className="tp-loading-notice" role="status">Updating tree…</div>}

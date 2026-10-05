@@ -8,7 +8,7 @@ import {createServer} from './test-support/isolatedVite.js';
 
 // Actual Inspector, viewer, PagedTree, HierarchyTree, hooks and selection reader.
 // Only HTTP and browser platform are fixtures; no component or hook replacement.
-async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
+async function mountFixture({ownerProjectPath='/owned-fixture',siblingBranch=false}={}){
  const dom=new JSDOM('<div id="root"></div>',{url:'http://fixture/',pretendToBeVisual:true}),saved=new Map();
  const put=(key,value)=>{saved.set(key,Object.getOwnPropertyDescriptor(globalThis,key));Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});};
  for(const key of ['window','document','navigator','localStorage','HTMLElement','MutationObserver'])put(key,dom.window[key]);
@@ -39,6 +39,8 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
   else if(url.pathname.endsWith('/exports'))result={exports:[]};
   else if(url.pathname==='/api/annotations/read')result={targets:Object.fromEntries(body.target_uuids.map(id=>[id,{target_uuid:id,target_kind:body.target_kind,tags:[],revisions:{}}]))};
   else {fixture.errors.push(request.path);throw Error('Unexpected HTTP fixture request: '+request.path);}
+  if(siblingBranch&&url.pathname==='/api/tree-pages'&&result.kind==='branches')result={...result,total:2,branches:[...result.branches,{key:'other-branch',path:['other-branch'],value:'cell-other',label:'Other',count:4}]};
+  if(siblingBranch&&url.pathname==='/api/tree-pages'&&body.path[0]==='other-branch')result={...page(0),path:['other-branch'],ancestors:[{key:'other-branch',parent_offset:0}],total:4,has_more:false,epochs:other};
   if(url.pathname==='/api/tree-pages'&&body.filters?.tag_predicate){
    if(body.anchor_uuid==='big-0'){request.completed=Date.now();return {ok:false,status:400,json:async()=>({error:'Epoch is outside this tree selection'})};}
    const members=selectedRows(big,body.filters);
@@ -343,7 +345,7 @@ test('explicit replacement-scope epoch navigation still anchors its requested ta
 });
 
 test('column design keeps a trace-only pane beside terminal epochs and closes it with its branch',async()=>{
- const h=await mountFixture();try{
+ const h=await mountFixture({siblingBranch:true});try{
   await h.open();await h.click(h.button('Open and edit tree'));
   await h.wait(()=>document.querySelector('.tree-trace-pane .tree-preview-identity'),'trace pane');
   const pane=document.querySelector('.tree-trace-pane');
@@ -353,10 +355,18 @@ test('column design keeps a trace-only pane beside terminal epochs and closes it
   assert.equal(document.querySelector('.tree-recording-preview'),null);
   await h.click(document.querySelector('.column-tree [data-epoch-uuid="big-1"]'));
   await h.wait(()=>document.querySelector('.tree-trace-pane')?.textContent.includes('Epoch 2'),'changed trace identity');
+  await h.click(h.button('Next page in column 2'));
+  await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-60"]'),'different terminal page');
+  assert.equal(document.querySelector('.tree-trace-pane'),null,'A page without the focused epoch cannot label its trace as the current branch');
+  await h.click(document.querySelector('.column-tree [data-epoch-uuid="big-60"]'));
+  await h.wait(()=>document.querySelector('.tree-trace-pane')?.textContent.includes('Epoch 61'),'trace follows new page selection');
   await h.click(h.button('Close raw recording preview'));
   assert.equal(document.querySelector('.tree-trace-pane'),null);
   await h.click(h.button('Show raw recording preview'));
   await h.wait(()=>document.querySelector('.tree-trace-pane'),'reopened trace');
+  await h.click([...document.querySelectorAll('.column-tree .tp-branch')].find(node=>node.textContent.includes('Other')));
+  await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="other-0"]'),'sibling branch');
+  assert.equal(document.querySelector('.tree-trace-pane'),null,'Sibling branch cannot display the prior branch trace');
   await h.click(document.querySelector('.column-tree .tp-branch.selected'));
   await h.wait(()=>!document.querySelector('.tp-terminal'),'closed branch');
   assert.equal(document.querySelector('.tree-trace-pane'),null);
