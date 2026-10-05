@@ -56,7 +56,7 @@ The root-owned [P07 catalog](../../docs/architecture/adopted-port-checks.json),
 mappings. During branch review the parent integrates those mappings separately;
 local source moves alone do not make an old catalog runnable.
 
-The existing root packaging check now covers main plus four adopted nested entries,
+The existing root packaging check now covers main plus six adopted nested entries,
 including this owner's `../security.cjs`. It checks exact default/preview source
 allowlists, excludes tests, and exercises stale/missing-path faults in an owned
 staged tree. It does not build/run Electron, parse every transitive module, or

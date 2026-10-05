@@ -105,6 +105,14 @@
     {
       "from": "desktop/startup/AGENTS.md",
       "to": "desktop/startup/README.md"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/integrity/AGENTS.md"
+    },
+    {
+      "from": "desktop/integrity/AGENTS.md",
+      "to": "desktop/integrity/README.md"
     }
   ],
   "shared_paths": [
@@ -332,6 +340,27 @@
             "desktop/security.cjs",
             "desktop/supervisor.cjs"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/integrity/verification-recovery.cjs",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/integrity/verify-application.cjs",
+          "allow": [
+            "node:path",
+            "node:child_process",
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/bootstrap.cjs"
+          ],
+          "require": [
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/bootstrap.cjs"
+          ]
         }
       ],
       "tests": {
@@ -358,12 +387,14 @@
           "desktop/close/tests/quit-coordinator.test.cjs",
           "desktop/tests/main-quit-recovery.test.cjs",
           "desktop/startup/tests/startup-session.test.cjs",
-          "desktop/tests/verification-recovery.test.cjs",
+          "desktop/integrity/tests/verification-recovery.test.cjs",
           "desktop/tests/main-startup-restoration.test.cjs",
           "desktop/close/tests/public-examples.test.cjs",
           "desktop/tests/close-packaging.test.cjs",
           "desktop/drafts/tests/public-examples.test.cjs",
-          "desktop/startup/tests/public-examples.test.cjs"
+          "desktop/startup/tests/public-examples.test.cjs",
+          "desktop/integrity/tests/verify-application.test.cjs",
+          "desktop/integrity/tests/public-examples.test.cjs"
         ]
       }
     },

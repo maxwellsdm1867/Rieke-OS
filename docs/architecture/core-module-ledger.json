@@ -5795,7 +5795,24 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "status": "independently source-reviewed folder candidate integrated; aggregate validation pending",
+        "worker_commit": "3f4aa0a2981c7368cf578137800d197731459809",
+        "integration_commit": "39a3e04",
+        "current_source_paths": [
+          "desktop/integrity/verify-application.cjs",
+          "desktop/integrity/verification-recovery.cjs"
+        ],
+        "current_test_paths": [
+          "desktop/integrity/tests/verify-application.test.cjs",
+          "desktop/integrity/tests/verification-recovery.test.cjs",
+          "desktop/integrity/tests/public-examples.test.cjs"
+        ],
+        "guidance": "desktop/integrity/AGENTS.md",
+        "worker_results": "65 focused and38 Python passed; three public behavioral faults detected; source profile passed",
+        "qualification": "Local source/read-only disposable audit-child tests only; no native/app/install/seal/performance qualification"
+      }
     },
     {
       "id": "desktop.update-coordinators",
@@ -7570,7 +7587,7 @@
           "desktop.update-coordinators",
           "desktop.bundle-install-recovery"
         ],
-        "status": "implementation-under-review",
+        "status": "integrated-candidate-awaiting-aggregate",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7579,7 +7596,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Integrity-folder candidate3f4aa0a independently under source review; not integrated. Update/install groups remain pending."
+        "progress_note": "Integrity folder source-reviewed candidate3f4aa0a integrated39a3e04 with shared metadata; aggregate validation pending. Update/install groups remain pending."
       },
       {
         "id": "desktop-entrypoints",

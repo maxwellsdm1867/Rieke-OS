@@ -12,6 +12,8 @@ are beside the public entries and tests.
 remain separate owners with nearby contracts and public examples. ServiceSupervisor owns
 exact root identity/readiness; Python `workspace_desktop.py` owns project children
 and native cleanup. Renderer draft/lifecycle files stay in `workspace-app/src`.
+[Application integrity](integrity/AGENTS.md) owns explicit read-only auditing and
+recovery ordering; main retains admission and Quit composition.
 No universal lifecycle facade exists.
 
 Preserve strict replacement versus bounded explicit Quit. Project UUID/canonical
@@ -19,7 +21,7 @@ path and PID/creation time are separate proofs. Preference restoration grants no
 scientific readiness. Do not widen IPC, disable sandbox/security checks or replace
 uncertain stop with a clean receipt.
 
-Root `tests/` retains cross-owner composition. `close/tests/`, `drafts/tests/` and `startup/tests/` contain local public
+Root `tests/` retains cross-owner composition. `close/tests/`, `drafts/tests/`, `startup/tests/` and `integrity/tests/` contain local public
 seam tests; `test/` retains updater contracts. `e2e/` and host/native inspection
 are separate qualification. Never use indiscriminate recursive test discovery.
 

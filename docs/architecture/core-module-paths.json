@@ -9295,7 +9295,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "integrity",
-          "reason": "Later move with abort/recovery ordering and exact application verification unchanged."
+          "reason": "Later move with abort/recovery ordering and exact application verification unchanged.",
+          "current_path": "desktop/integrity/verification-recovery.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         },
         {
           "path": "desktop/verify-application.cjs",
@@ -9309,7 +9311,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "integrity",
-          "reason": "Later move with abort/recovery ordering and exact application verification unchanged."
+          "reason": "Later move with abort/recovery ordering and exact application verification unchanged.",
+          "current_path": "desktop/integrity/verify-application.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         }
       ],
       "completion_gates": [
@@ -9887,7 +9891,9 @@
           "proposed_path": "desktop/tests/verification-recovery.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "integrity"
+          "group": "integrity",
+          "current_path": "desktop/integrity/tests/verification-recovery.test.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         },
         {
           "path": "desktop/tests/verify-application.test.cjs",
@@ -9899,7 +9905,9 @@
           "proposed_path": "desktop/tests/verify-application.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "integrity"
+          "group": "integrity",
+          "current_path": "desktop/integrity/tests/verify-application.test.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate validation pending"
         }
       ],
       "excluded": [
@@ -10237,6 +10245,24 @@
         "desktop/startup/README.md"
       ],
       "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
+    },
+    {
+      "id": "desktop-integrity",
+      "status": "source-reviewed folder candidate; aggregate validation pending",
+      "worker_commit": "3f4aa0a2981c7368cf578137800d197731459809",
+      "moves": {
+        "desktop/verify-application.cjs": "desktop/integrity/verify-application.cjs",
+        "desktop/verification-recovery.cjs": "desktop/integrity/verification-recovery.cjs",
+        "desktop/tests/verify-application.test.cjs": "desktop/integrity/tests/verify-application.test.cjs",
+        "desktop/tests/verification-recovery.test.cjs": "desktop/integrity/tests/verification-recovery.test.cjs"
+      },
+      "new_test_paths": [
+        "desktop/integrity/tests/public-examples.test.cjs"
+      ],
+      "new_guidance_paths": [
+        "desktop/integrity/AGENTS.md",
+        "desktop/integrity/README.md"
+      ]
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

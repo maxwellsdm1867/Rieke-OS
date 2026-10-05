@@ -44,7 +44,7 @@ From repository root, run the source-only packaging check and main composition
 contracts with existing frontend parser dependencies:
 
 ```sh
-node --test desktop/tests/close-packaging.test.cjs desktop/tests/main-quit-recovery.test.cjs desktop/tests/main-startup-restoration.test.cjs desktop/tests/verification-recovery.test.cjs
+node --test desktop/tests/close-packaging.test.cjs desktop/tests/main-quit-recovery.test.cjs desktop/tests/main-startup-restoration.test.cjs desktop/integrity/tests/verification-recovery.test.cjs
 python3 -B -m unittest python.tests.test_architecture_guard python.tests.test_desktop_release_plan
 python tools/architecture_guard.py check
 python tools/architecture_guard.py plan --base <pre-change-ancestor>
@@ -60,10 +60,10 @@ root tests directory; final-app E2E stays separate.
 
 ## Packaging and qualification
 
-`package.json` lists the two exact close CJS paths plus the draft and startup entries; root `*.cjs` alone does not
+`package.json` lists the two exact close CJS paths plus the draft, startup and two integrity entries; root `*.cjs` alone does not
 include nested files. The source packaging test validates default and inherited
 preview exact allowlists, excludes tests/broad patterns, stages the declared app
-files, and resolves literal local requires in main and all four nested entries using the
+files, and resolves literal local requires in main and all six nested entries using the
 existing parser. Other desktop module internals are outside this check. Negative fixtures cover missing entries, either configuration's
 accidental test inclusion, stale main import and missing staged dependency. It
 never executes main, builds/signs an app, or launches Electron.
