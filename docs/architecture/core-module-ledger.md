@@ -178,3 +178,28 @@ Source checks preserve the original owner body and helper, moved contract tests,
 App characterization/harness, virtual historical fixture/harness, lockfile and
 benchmark registry/runner. This ledger update records those exact source results;
 it does not relabel them as executions on a later documentation commit.
+
+## Active whole-codebase organization worklist
+
+The JSON ledger's `organization_rollout` is the canonical execution worklist. Its
+cycle is goal/contract → actual file and local-contract moves → public-seam and
+fault tests → independent review → local integration. All existing contract
+records have work assignments; actual runtime-file coverage is still pending.
+Work groups do not imply one module or folder per group or per record.
+
+Presentation is integrated. Tree-selection and group-save designs have independent
+GO and parent authorization for bounded implementation; desktop close has a reviewed
+packaging design; concrete Python package/profile/guard prerequisites await review. Remaining
+frontend, Python and desktop responsibilities stay explicitly queued. Keep-in-place
+choices need reasons and remain navigable; ledger labels alone do not complete
+filesystem organization.
+
+Every selected module needs nearby public contract/JSDoc, executable call/error
+examples linked to seam tests, local AGENTS, dependency/ownership limits, exact test
+commands and canonical benchmark links. Retain real caller integration; private
+algorithm tests may supplement but not replace public behavior detectors.
+
+Completion also requires reviewed exact-candidate assembled-app E2E: isolated
+synthetic project, actual pages/tree/trace oracle, tag persistence/export readback,
+normal quit/reopen and owned-resource cleanup. This gate is unrun. It does not
+resume paused unrelated native experiments or imply speed/release qualification.

@@ -7052,5 +7052,403 @@
       "Shutdown"
     ],
     "deferred": "New legacy/Ovation/H5 port implementation and paused native/export fixtures remain deferred. Existing importer source is covered as a contract."
+  },
+  "organization_rollout": {
+    "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
+    "goal": "Organize the complete eligible codebase into coherent responsibility folders and navigable public contracts, preserving exact behavior. This worklist groups work; it is not a claim these groups are individual modules.",
+    "status": "active; tree-selection and group-save runtime moves authorized by parent design review",
+    "work_items": [
+      {
+        "id": "presentation",
+        "goal": "Frontend presentation sessions",
+        "contract_records": [
+          "presentation-sessions"
+        ],
+        "status": "integrated",
+        "stages": {
+          "goal_contract": "complete",
+          "refactor_files_and_local_contract": "complete",
+          "public_seam_and_fault_tests": "complete",
+          "independent_source_review": "complete",
+          "local_integration": "complete"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "integrated_commit": "500983f69829a52d49a9f5c18c2064538911efe4"
+      },
+      {
+        "id": "tree-selection",
+        "goal": "Frontend tree-selection reader",
+        "contract_records": [
+          "tree-selection"
+        ],
+        "status": "implementation-in-progress",
+        "stages": {
+          "goal_contract": "complete",
+          "refactor_files_and_local_contract": "in-progress",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "group-save",
+        "goal": "Frontend group-save/recovery owner",
+        "contract_records": [
+          "group-save"
+        ],
+        "status": "implementation-in-progress",
+        "stages": {
+          "goal_contract": "complete",
+          "refactor_files_and_local_contract": "in-progress",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "desktop-close",
+        "goal": "Desktop close coordination",
+        "contract_records": [
+          "desktop.close-coordination"
+        ],
+        "status": "design-reviewed",
+        "stages": {
+          "goal_contract": "complete",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-completion",
+        "goal": "Backend HTTP mutation completion",
+        "contract_records": [
+          "mutation-recovery"
+        ],
+        "status": "prerequisite-design",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "frontend-navigation",
+        "goal": "Frontend navigation, view preferences and draft/lifecycle owners",
+        "contract_records": [
+          "workspace-navigation",
+          "view-preferences-layout",
+          "renderer.desktop-draft-session",
+          "renderer.lifecycle-fence"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "frontend-reads",
+        "goal": "Frontend request, resource, activation and readiness owners",
+        "contract_records": [
+          "renderer-resources",
+          "command-transport-admission",
+          "epoch-snapshot-cache",
+          "search-read-activation",
+          "tree-ancestor-cache",
+          "epoch-browser-readiness",
+          "requested-summary-jobs",
+          "display-invalidation-clocks"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "frontend-scientific-views",
+        "goal": "Frontend typed, incoming and trace presentation",
+        "contract_records": [
+          "typed-query-presentation",
+          "incoming-read-presentation",
+          "trace-window-presentation"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "undo",
+        "goal": "Distinct frontend/backend session undo owners",
+        "contract_records": [
+          "session-undo"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-recovery",
+        "goal": "Backend backup/recovery owners",
+        "contract_records": [
+          "backup-scheduling",
+          "recovery-store-authority"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-metadata",
+        "goal": "Backend metadata, typed reads, leases and authority",
+        "contract_records": [
+          "typed-query",
+          "native-metadata-index",
+          "typed-generation-cache",
+          "query-execution",
+          "state-generation-authority",
+          "protocol-state-reader",
+          "trace-read"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-decisions",
+        "goal": "Backend authored scientific decisions",
+        "contract_records": [
+          "shared-annotations",
+          "author-identity-preferences",
+          "annotation-group-authority",
+          "protocol-curation",
+          "external-tag-receipts"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-workbench",
+        "goal": "Backend frozen review, recipes and export publication owners",
+        "contract_records": [
+          "frozen-workbench-review",
+          "sealed-recipes",
+          "export-materialization",
+          "export-publication"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "backend-projects",
+        "goal": "Backend project database, retention and portability",
+        "contract_records": [
+          "project-database",
+          "recording-retention",
+          "project-portability"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "acquisition-composition",
+        "goal": "Acquisition/catalog composition and stable CLIs",
+        "contract_records": [
+          "acquisition-ingestion",
+          "catalog-storage"
+        ],
+        "status": "keep-in-place-design",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "rationale": "Stable importer/CLI composition and paused legacy/Ovation/H5-port work: retain current paths until a separate justified design. This is not a claim all subordinate acquisition files are organized."
+      },
+      {
+        "id": "desktop-startup",
+        "goal": "Desktop startup and exact process composition",
+        "contract_records": [
+          "desktop-lifecycle",
+          "desktop.root-supervisor",
+          "desktop.project-process-owner",
+          "desktop.backend-admission",
+          "desktop.startup-preference",
+          "desktop.startup-restoration"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "desktop-state",
+        "goal": "Desktop draft/profile/location owners",
+        "contract_records": [
+          "desktop.draft-store",
+          "desktop.profile-path-policy",
+          "desktop.project-location-index"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "desktop-updates",
+        "goal": "Desktop integrity/update/install owners",
+        "contract_records": [
+          "desktop.integrity-recovery",
+          "desktop.update-coordinators",
+          "desktop.bundle-install-recovery"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      },
+      {
+        "id": "desktop-entrypoints",
+        "goal": "Desktop IPC entrypoints and qualification obligations",
+        "contract_records": [
+          "desktop.ipc-boundary",
+          "desktop.packaging-qualification"
+        ],
+        "status": "keep-in-place-design",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "rationale": "Keep main/preload and security-sensitive entrypoint paths stable during owner moves; packaging qualification is an obligation, not a runtime folder."
+      },
+      {
+        "id": "engineering",
+        "goal": "Architecture tools and contract/benchmark navigation",
+        "contract_records": [
+          "contract-enforcement"
+        ],
+        "status": "queued",
+        "stages": {
+          "goal_contract": "pending",
+          "refactor_files_and_local_contract": "pending",
+          "public_seam_and_fault_tests": "pending",
+          "independent_source_review": "pending",
+          "local_integration": "pending"
+        },
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+      }
+    ],
+    "coverage_status": "All 59 existing contract records assigned to work items; actual runtime-file coverage assessment remains pending. Record coverage is not filesystem completion.",
+    "stage_rules": [
+      "One selected coherent owner at a time; shared guard/catalog/packaging edits and heavy runs serialize.",
+      "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
+      "Local examples exercise public call shapes/results/errors; private tests never substitute for the seam.",
+      "Retire an old test only after equivalent or stronger public behavior coverage is demonstrated.",
+      "Independent design/source review and source-bound tests precede each integration; local commits track reviewed slices.",
+      "Keep current paths only with an explicit responsibility/path-contract reason; no empty folders or one folder per contract record."
+    ],
+    "final_gates": {
+      "runtime_path_coverage": "pending",
+      "stale_path_and_navigation_check": "pending",
+      "materially_different_fresh_context_checks": "presentation scenario passed; Python/desktop and later material types pending",
+      "complete_build_and_packaging_closure": "pending final candidate",
+      "assembled_app_e2e": "pending reviewed exact harness/fixture/environment plan; all steps unrun"
+    },
+    "e2e_acceptance": [
+      "Exact assembled candidate launches and opens isolated synthetic project",
+      "Actual UI core pages/tree and analytic trace oracle",
+      "Authored tags persist and exported data read back correctly",
+      "Normal quit/reopen retains required state and releases owned resources"
+    ],
+    "exclusions": [
+      "No real user project writes or new accounts",
+      "No main push/publication or security behavior changes",
+      "No force-kills",
+      "No restart of unrelated paused legacy/Ovation/new-H5-port/native-export experiment"
+    ],
+    "metrics": "All whole-app cost shifts remain unmeasured; correctness smoke is not performance evidence."
   }
 }
