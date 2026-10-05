@@ -273,6 +273,12 @@ def check(root, catalog, node):
         return identity
     modules = [(module, {entry['path']: entry['exports'] for entry in public_entries(module, catalog['version'])})
                for module in policy['modules']]
+    # Validation binds these exact test-support edges to reviewed resolver bytes.
+    # CSS assets are not executable public entries; mapped JavaScript still goes
+    # through the ordinary private-module checks below.
+    virtual_css_edges = {(edge['from'], edge['specifier'], edge['to'])
+                         for edge in policy['virtual_import_edges']
+                         if Path(edge['to']).suffix == '.css'}
     for item in parsed:
         importer = item['filename']
         for module, entries in modules:
@@ -284,6 +290,8 @@ def check(root, catalog, node):
                 continue
             if not is_test(importer, policy) and is_test(target, policy):
                 raise ValueError(f'{importer}: production cannot import test source {target}')
+            if (importer, specifier, target) in virtual_css_edges:
+                continue
             for module, entries in modules:
                 if not target.startswith(module['root'] + '/') or target in entries:
                     continue

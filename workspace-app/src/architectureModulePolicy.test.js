@@ -317,6 +317,26 @@ test('virtual fixture mapping resolves exact edges but preserves private checks 
  }finally{f.close();}
 });
 
+test('reviewed virtual fixture CSS crosses a module only on its exact hash-bound asset edge',()=>{
+ const f=twoEntryFixture();try{
+  const from=f.s+'test-support/fixture.js',resolver=f.s+'test-support/resolver.js',target=f.s+'presentation/theme.css';
+  const source="import './virtual-theme.css';",resolverSource='export const fixtureResolver=1;';
+  f.write(from,source);f.write(resolver,resolverSource);f.write(target,'body{color:black}');
+  const edge={from,specifier:'./virtual-theme.css',to:target,resolver_path:resolver,resolver_sha256:createHash('sha256').update(resolverSource).digest('hex')};
+  f.policy.virtual_import_edges.push(edge);assert.equal(f.check().exit,0);
+  // A reviewed asset mapping cannot authorize executable module internals.
+  edge.to=f.s+'presentation/internal/helper.js';fails(f,/forbidden private/);edge.to=target;
+  f.write(resolver,'export const fixtureResolver=2;');fails(f,/Virtual resolver hash changed/);f.write(resolver,resolverSource);
+  // Neither another importer nor an unmapped specifier can borrow the CSS edge.
+  f.write(f.s+'test-support/other.js',"import '../presentation/theme.css';");fails(f,/forbidden private/);f.write(f.s+'test-support/other.js','export {};');
+  f.write(from,"import '../presentation/theme.css';");fails(f,/forbidden private/);f.write(from,source);
+  f.write(f.s+'consumer.js',"import './presentation/theme.css';");fails(f,/forbidden private/);f.write(f.s+'consumer.js',"import {factory} from './presentation/public.js';");
+  f.write(from,'export {};');fails(f,/Unused virtual/);f.write(from,source);
+  const link=f.s+'presentation/linked.css';symlinkSync(join(f.root,target),join(f.root,link));edge.to=link;fails(f,/symlink/);edge.to=target;rmSync(join(f.root,link));
+  assert.equal(f.check().exit,0);
+ }finally{f.close();}
+});
+
 for (const id of ['p03-selection-reader', 'p04-group-save-session']) {
  test(`${id} folder enforces its declared public surface and rejects private/test imports`, () => {
   const actual = JSON.parse(readFileSync(new URL('../../docs/architecture/adopted-port-checks.json', import.meta.url), 'utf8'));
