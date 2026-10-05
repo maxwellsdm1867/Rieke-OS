@@ -187,9 +187,9 @@ fault tests → independent review → local integration. All existing contract
 records have work assignments; actual runtime-file coverage is still pending.
 Work groups do not imply one module or folder per group or per record.
 
-Presentation is integrated. Tree-selection and group-save designs have independent
-GO and parent authorization for bounded implementation; desktop close has a reviewed
-packaging design; concrete Python package/profile/guard prerequisites await review. Remaining
+Presentation, tree-selection and group-save folder increments are locally integrated
+and verified. Desktop close has a reviewed packaging design; concrete Python
+package/profile/guard prerequisites await review. Remaining
 frontend, Python and desktop responsibilities stay explicitly queued. Keep-in-place
 choices need reasons and remain navigable; ledger labels alone do not complete
 filesystem organization.
@@ -213,8 +213,13 @@ those paths. Lexical helpers, shared request shaping, preview, UI and undo remai
 with their existing owners; no facade or additional runtime adapter was added.
 
 Both worker slices received independent source GO. Focused checks and deliberate
-behavior faults passed at their recorded worker source hashes. Combined guard,
-folder-specific rejection tests, full frontend/build and final source evidence are
-recorded separately once complete. Prior ledger review/receipt fields remain
+behavior faults passed at their recorded worker source hashes. Combined source `0b1431f3098970f2cb24af0ace5ed7f33360ab18` passed
+758 full frontend tests, 209 mapped frontend tests, 16 Python guard tests (zero
+skips), all-language guard and production build. The 13 policy tests include both
+new folders’ private/export/test-import faults. Exact source-review GO and all
+413 guarded hashes are bound in `evidence/organization-rollout/final-binding.json`
+(outside the checkout), SHA-256
+`102c4848bad3ae86b106b57b413b39de1d4bfdc19a8445b67c1bff23923cc768`.
+This documentation update does not relabel those runs as later-commit executions. Prior ledger review/receipt fields remain
 historical; live paths and organization status are explicit in the JSON records.
 No native, packaged-app or performance qualification follows from this increment.

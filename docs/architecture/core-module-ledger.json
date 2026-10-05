@@ -66,7 +66,8 @@
       "implementation_commits": [
         "9fc8d1b03f9abb757e0a2f82b45728e93933d99f",
         "75290aa5a3fb241dbdff3421e69b7483ade48453",
-        "1f5bcda6d07345043a155a477a6f681466f65110"
+        "1f5bcda6d07345043a155a477a6f681466f65110",
+        "0b1431f3098970f2cb24af0ace5ed7f33360ab18"
       ],
       "correctness_detectors": [
         "treeSelectionReader.test.js",
@@ -241,13 +242,25 @@
       "contract_gaps": [],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "organization": {
-        "status": "implemented; aggregate verification and final integration pending",
+        "status": "integrated local candidate; final assembled-app E2E pending",
         "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
         "public_entry": "workspace-app/src/tree-selection/treeSelectionReader.js",
         "guidance": "workspace-app/src/tree-selection/AGENTS.md",
-        "independent_worker_source_review": "GO; aggregate closure pending",
+        "independent_worker_source_review": "GO; combined exact-commit source GO",
         "historical_evidence": "Prior source_pointers, verification records and receipt claims retain their original review context; current live paths are source_paths and existing_tests.",
-        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged."
+        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged.",
+        "implementation_commit": "0b1431f3098970f2cb24af0ace5ed7f33360ab18",
+        "evidence": {
+          "receipt": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/organization-rollout/final-binding.json",
+          "sha256": "102c4848bad3ae86b106b57b413b39de1d4bfdc19a8445b67c1bff23923cc768",
+          "full_frontend_passed": 758,
+          "mapped_frontend_passed": 209,
+          "python_guard_passed": 16,
+          "skipped": 0,
+          "guard": "all languages passed; 413 source hashes matched",
+          "build": "passed; large-chunk advisory",
+          "deliberate_faults": "Tree: order/sync/cancellation; group: early release/retry identity/terminal redispatch/post-await capture; both folder private/export/test-import rejection tests"
+        }
       }
     },
     {
@@ -671,7 +684,8 @@
       ],
       "status": "implemented-reviewed; supersedes earlier survey proposal",
       "implementation_commits": [
-        "f7fc7b6676fc013d53cc8d01b71a271650f6884e"
+        "f7fc7b6676fc013d53cc8d01b71a271650f6884e",
+        "0b1431f3098970f2cb24af0ace5ed7f33360ab18"
       ],
       "correctness_detectors": [
         "treeGroupQueryTags.test.js",
@@ -893,13 +907,25 @@
       ],
       "inventory_reference_id": "FE15-group-save-renderer-session",
       "organization": {
-        "status": "implemented; aggregate verification and final integration pending",
+        "status": "integrated local candidate; final assembled-app E2E pending",
         "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
         "public_entry": "workspace-app/src/group-save/groupAnnotationRecovery.js",
         "guidance": "workspace-app/src/group-save/AGENTS.md",
-        "independent_worker_source_review": "GO; aggregate closure pending",
+        "independent_worker_source_review": "GO; combined exact-commit source GO",
         "historical_evidence": "Prior source_pointers, verification records and receipt claims retain their original review context; current live paths are source_paths and existing_tests.",
-        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged."
+        "performance": "No new measurements; existing registry mappings and unmeasured whole-app costs unchanged.",
+        "implementation_commit": "0b1431f3098970f2cb24af0ace5ed7f33360ab18",
+        "evidence": {
+          "receipt": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/organization-rollout/final-binding.json",
+          "sha256": "102c4848bad3ae86b106b57b413b39de1d4bfdc19a8445b67c1bff23923cc768",
+          "full_frontend_passed": 758,
+          "mapped_frontend_passed": 209,
+          "python_guard_passed": 16,
+          "skipped": 0,
+          "guard": "all languages passed; 413 source hashes matched",
+          "build": "passed; large-chunk advisory",
+          "deliberate_faults": "Tree: order/sync/cancellation; group: early release/retry identity/terminal redispatch/post-await capture; both folder private/export/test-import rejection tests"
+        }
       }
     },
     {
@@ -7074,7 +7100,7 @@
   "organization_rollout": {
     "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
     "goal": "Organize the complete eligible codebase into coherent responsibility folders and navigable public contracts, preserving exact behavior. This worklist groups work; it is not a claim these groups are individual modules.",
-    "status": "active; tree-selection and group-save runtime moves authorized by parent design review",
+    "status": "active; tree-selection and group-save bounded increments locally verified; remaining module organization and final E2E pending",
     "work_items": [
       {
         "id": "presentation",
@@ -7099,15 +7125,16 @@
         "contract_records": [
           "tree-selection"
         ],
-        "status": "aggregate-verification-pending",
+        "status": "integrated",
         "stages": {
           "goal_contract": "complete",
           "refactor_files_and_local_contract": "complete",
-          "public_seam_and_fault_tests": "focused and deliberate behavior faults passed; aggregate closure pending",
-          "independent_source_review": "worker GO; shared integration review pending",
-          "local_integration": "pending"
+          "public_seam_and_fault_tests": "complete",
+          "independent_source_review": "complete",
+          "local_integration": "complete"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "integrated_commit": "0b1431f3098970f2cb24af0ace5ed7f33360ab18"
       },
       {
         "id": "group-save",
@@ -7115,15 +7142,16 @@
         "contract_records": [
           "group-save"
         ],
-        "status": "aggregate-verification-pending",
+        "status": "integrated",
         "stages": {
           "goal_contract": "complete",
           "refactor_files_and_local_contract": "complete",
-          "public_seam_and_fault_tests": "focused and deliberate behavior faults passed; aggregate closure pending",
-          "independent_source_review": "worker GO; shared integration review pending",
-          "local_integration": "pending"
+          "public_seam_and_fault_tests": "complete",
+          "independent_source_review": "complete",
+          "local_integration": "complete"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "integrated_commit": "0b1431f3098970f2cb24af0ace5ed7f33360ab18"
       },
       {
         "id": "desktop-close",
