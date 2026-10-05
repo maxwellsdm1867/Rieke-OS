@@ -1,10 +1,10 @@
 'use strict';
-const physicalFS=require('./physical-fs.cjs');
+const physicalFS=require('../physical-fs.cjs');
 const fs=physicalFS.promises,path=require('node:path'),crypto=require('node:crypto');
 const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
-const {compareVersions,compatibleMacMinimum,verifyResources,ARCHIVE_CHECK}=require('./updater-validation.cjs');
+const {compareVersions,compatibleMacMinimum,verifyResources,ARCHIVE_CHECK}=require('../updater-validation.cjs');
 const REPOSITORY='maxwellsdm1867/Rieke-OS';
 const REPOSITORIES=Object.freeze([REPOSITORY,'maxwellsdm1867/disco']);
 function approvedURL(value,kind='asset',redirect=false){
@@ -102,11 +102,11 @@ async function inspectTestingBundle({bundle,descriptor,manifest,hostVersion,run=
   // Structural integrity accepts an ad-hoc testing seal; this is not a
   // Developer ID, notarization, or Gatekeeper authorization assertion.
   await run('/usr/bin/codesign',['--verify','--deep','--strict',bundle],{timeout:180000});
-  bundleDigest||=require('./testing-install.cjs').bundleDigest;
+  bundleDigest||=require('../testing-install.cjs').bundleDigest;
   return {version:descriptor.application_version,bundle_path:bundle,bundle_sha256:await bundleDigest(bundle),runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true,source_dirty:candidate.source_dirty,trust:'official-repository-https-checksums',developer_id_verified:false,native_staging_verified:false,startup_health_verified:false};
 }
 async function validateTestingCandidate({downloadedFile,descriptor,manifest,cacheDirectory,installedBundle,hostVersion,run=runFile,bundleDigest}){
-  require('./install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
+  require('../install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
   await verifyArchive(downloadedFile,descriptor);
   const temporary=await fs.mkdtemp(path.join(cacheDirectory,'candidate-'));
   try{

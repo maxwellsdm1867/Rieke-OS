@@ -6,7 +6,7 @@ const fs = require('node:fs/promises');
 const os = require('node:os');
 const path = require('node:path');
 const vm = require('node:vm');
-const {compatibleCandidate, compatibleMacMinimum, safeResource, compareVersions, verifyResources, ARCHIVE_CHECK} = require('../updater-validation.cjs');
+const {compatibleCandidate, compatibleMacMinimum, safeResource, compareVersions, verifyResources, ARCHIVE_CHECK} = require('../../updater-validation.cjs');
 const manifest = {format: 'rieke-desktop-runtime', version: 1, source_dirty:false,source_commit:'a'.repeat(40),parser_commit:'b'.repeat(40),application_version: '1.0.0', platform: 'darwin', architecture: 'arm64', mysql_version: '8.4.2', workspace_formats: [1], database_compatibility: 1, resources: {'file': {sha256: 'a'.repeat(64), size: 0}}};
 test('candidate rejects migrations, downgrades, prereleases and foreign platforms', () => {
   const next = {...manifest, application_version: '1.1.0'};
@@ -27,7 +27,7 @@ test('archive preflight rejects traversal and escaping symlinks before extractio
   const {spawnSync} = require('node:child_process');
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'rieke-archive-test-'));
   t.after(() => fs.rm(root, {recursive: true, force: true}));
-  const bundledPython = path.resolve(__dirname, '../build/runtime/python/bin/python3.11');
+  const bundledPython = path.resolve(__dirname, '../../build/runtime/python/bin/python3.11');
   const python = require('node:fs').existsSync(bundledPython) ? bundledPython : 'python3';
   const generate = String.raw`
 import sys,zipfile,stat
@@ -58,7 +58,7 @@ async function fixture(t, options = {}) {
   // queue or changing production stop/installation behavior. Each published
   // status queues exactly one receipt; its final rename is the completion fence.
   const actualRequire = require('node:module').createRequire(path.resolve(__dirname, '../updater.cjs'));
-  const physical = actualRequire('./physical-fs.cjs');
+  const physical = actualRequire('../physical-fs.cjs');
   const observedFs = {...physical.promises, rename:async (...args) => {
     await beforeReceiptRename();
     await physical.promises.rename(...args);
@@ -66,7 +66,7 @@ async function fixture(t, options = {}) {
   }};
   const module = {exports:{}};
   vm.runInNewContext(require('node:fs').readFileSync(path.resolve(__dirname, '../updater.cjs'), 'utf8'),
-    {module, process, require:name => name === './physical-fs.cjs' ? {promises:observedFs} : actualRequire(name)},
+    {module, process, require:name => name === '../physical-fs.cjs' ? {promises:observedFs} : actualRequire(name)},
     {filename:path.resolve(__dirname, '../updater.cjs')});
   const {createUpdateCoordinator} = module.exports;
   async function flushReceipts() {

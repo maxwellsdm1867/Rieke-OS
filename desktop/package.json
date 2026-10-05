@@ -7,7 +7,7 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "test": "node --test tests/*.test.cjs test/*.test.cjs close/tests/*.test.cjs drafts/tests/*.test.cjs startup/tests/*.test.cjs integrity/tests/*.test.cjs",
+    "test": "node --test tests/*.test.cjs close/tests/*.test.cjs drafts/tests/*.test.cjs startup/tests/*.test.cjs integrity/tests/*.test.cjs updates/tests/*.test.cjs",
     "test:e2e": "node e2e/packaged.e2e.cjs",
     "test:e2e:smoke": "node e2e/smoke.e2e.cjs",
     "test:e2e:startup-failure": "node e2e/backend-failure.e2e.cjs",
@@ -50,7 +50,10 @@
       "distribution.json",
       "rieke-emblem.png",
       "integrity/verify-application.cjs",
-      "integrity/verification-recovery.cjs"
+      "integrity/verification-recovery.cjs",
+      "updates/updater.cjs",
+      "updates/testing-updater.cjs",
+      "updates/testing-update-validation.cjs"
     ],
     "extraResources": [
       {

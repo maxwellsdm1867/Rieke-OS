@@ -1,9 +1,9 @@
 'use strict';
-const fs = require('./physical-fs.cjs').promises;
+const fs = require('../physical-fs.cjs').promises;
 const path = require('node:path');
-const {compareVersions, signingIdentity, validateDownloadedCandidate} = require('./updater-validation.cjs');
+const {compareVersions, signingIdentity, validateDownloadedCandidate} = require('../updater-validation.cjs');
 
-function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepareQuit, authorizeQuit = () => {}, revokeQuit = () => {}, onInstallationFailure = () => {}, updater, verifyCandidate = validateDownloadedCandidate, verifyInstalled = signingIdentity, retainPrevious = options => require('./update-recovery.cjs').retainPriorBundle(options), receiptPath, timers = globalThis, random = Math.random, enabled, installedBundle}) {
+function createUpdateCoordinator({app, manifest, publishStatus = () => {}, prepareQuit, authorizeQuit = () => {}, revokeQuit = () => {}, onInstallationFailure = () => {}, updater, verifyCandidate = validateDownloadedCandidate, verifyInstalled = signingIdentity, retainPrevious = options => require('../update-recovery.cjs').retainPriorBundle(options), receiptPath, timers = globalThis, random = Math.random, enabled, installedBundle}) {
   const cacheDirectory = path.join(app.getPath('userData'), 'updates');
   receiptPath ||= path.join(cacheDirectory, 'status.json');
   installedBundle ||= path.resolve(app.getPath('exe'), '../../..');

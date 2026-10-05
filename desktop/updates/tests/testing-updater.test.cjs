@@ -166,7 +166,7 @@ async function bundleFixture(t){
   await fs.writeFile(path.join(bundle,'Contents/Info.plist'),plist);
   await fs.writeFile(path.join(bundle,'Contents/Resources/app.asar'),'test asar');
   const next={...descriptor,asar_sha256:crypto.createHash('sha256').update('test asar').digest('hex'),runtime_manifest_sha256:crypto.createHash('sha256').update(JSON.stringify(candidate)).digest('hex')};
-  const bundleDigest=require('../bootstrap.cjs').bundleDigest;
+  const bundleDigest=require('../../bootstrap.cjs').bundleDigest;
   const execute=require('node:util').promisify(require('node:child_process').execFile);
   // Tiny fixture is not Mach-O; all boundaries except structural seal checking
   // use the actual OS tools. Packaged E2E checks the real seal without this seam.
@@ -186,7 +186,7 @@ test('real ZIP preflight/extraction uses installed interpreter and never execute
   const f=await bundleFixture(t);
   const {promisify}=require('node:util'),run=promisify(require('node:child_process').execFile);
   let installedBundle;
-  try{installedBundle=require('../e2e/packaged-path.cjs').packagedSource(path.resolve(__dirname,'..'),require('../package.json').build);await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
+  try{installedBundle=require('../../e2e/packaged-path.cjs').packagedSource(path.resolve(__dirname,'../..'),require('../../package.json').build);await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
   catch{
     // Small source unit-test fixture only. Packaged E2E always uses real bundled Python.
     installedBundle=path.join(f.root,'installed','Rieke OS.app');

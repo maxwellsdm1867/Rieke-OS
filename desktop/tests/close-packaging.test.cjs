@@ -11,7 +11,9 @@ const {pathToFileURL} = require('node:url');
 const desktop = path.resolve(__dirname, '..');
 const entries = ['close/draft-barrier.cjs', 'close/quit-coordinator.cjs',
   'drafts/draft-store.cjs', 'startup/startup-session.cjs',
-  'integrity/verify-application.cjs', 'integrity/verification-recovery.cjs'];
+  'integrity/verify-application.cjs', 'integrity/verification-recovery.cjs',
+  'updates/updater.cjs', 'updates/testing-updater.cjs', 'updates/testing-update-validation.cjs'];
+const mainEntries = entries.filter(entry => entry !== 'updates/testing-update-validation.cjs');
 const rootPatterns = ['*.cjs', '*.html', '*.css'];
 const rootFiles = ['recovery.js', 'icon.png', 'package.json', 'distribution.json', 'rieke-emblem.png'];
 const expectedFiles = [...rootPatterns, ...rootFiles, ...entries];
@@ -47,8 +49,8 @@ async function check({root, config, preview}) {
   const {dependencies} = await parser;
   const main = fs.readFileSync(path.join(root, 'main.cjs'), 'utf8');
   const mainDependencies = dependencies('main.cjs', main);
-  for (const entry of entries) assert.ok(mainDependencies.includes('./' + entry), `main must require ${entry}`);
-  // Check main and the six moved public entries only, without evaluating application
+  for (const entry of mainEntries) assert.ok(mainDependencies.includes('./' + entry), `main must require ${entry}`);
+  // Check main and the nine moved public entries only, without evaluating application
   // code. Existing unrelated helper CLI require.main guards are outside this
   // scoped parser policy; this is not a whole-desktop transitive closure audit.
   const pending = ['main.cjs', ...entries], seen = new Set();
@@ -60,6 +62,9 @@ async function check({root, config, preview}) {
     const code = fs.readFileSync(filename, 'utf8');
     const imports = dependencies(relative, code);
     const stateDependencies = {
+      'updates/updater.cjs': ['../physical-fs.cjs', 'node:path', '../updater-validation.cjs', '../update-recovery.cjs', 'node:crypto', 'electron-updater'],
+      'updates/testing-updater.cjs': ['../physical-fs.cjs', 'node:path', 'node:crypto', 'node:https', 'node:util', 'node:child_process', '../updater-validation.cjs', './testing-update-validation.cjs', '../install-name.cjs', '../testing-install.cjs'],
+      'updates/testing-update-validation.cjs': ['../physical-fs.cjs', 'node:path', 'node:crypto', 'node:util', 'node:child_process', '../updater-validation.cjs', '../testing-install.cjs', '../install-name.cjs'],
       'integrity/verification-recovery.cjs': [],
       'integrity/verify-application.cjs': ['../physical-fs.cjs', 'node:path', 'node:child_process', '../updater-validation.cjs', '../bootstrap.cjs'],
       'drafts/draft-store.cjs': ['node:fs/promises', 'node:path', 'node:crypto', '../security.cjs'],
@@ -82,7 +87,7 @@ async function check({root, config, preview}) {
 test('default and preview declare all adopted nested entries; staged adopted desktop local requires resolve', async t => {
   const seen = await check(stage(t));
   assert.ok(seen.has('main.cjs'));
-  assert.equal(seen.size, 7);
+  assert.equal(seen.size, 10);
 });
 
 for (const entry of entries) test(`omitting ${entry} from either configuration fails`, async t => {
@@ -93,7 +98,7 @@ for (const entry of entries) test(`omitting ${entry} from either configuration f
 });
 
 for (const fault of ['close/tests/quit-coordinator.test.cjs', 'drafts/tests/draft-store.test.cjs',
-  'startup/tests/startup-session.test.cjs', 'integrity/tests/verify-application.test.cjs', 'integrity/**/*.cjs', '**/*.cjs', 'close/**/*.cjs', 'drafts/**/*.cjs', 'startup/**/*.cjs']) {
+  'startup/tests/startup-session.test.cjs', 'integrity/tests/verify-application.test.cjs', 'integrity/**/*.cjs', 'updates/tests/public-examples.test.cjs', 'updates/**/*.cjs', '**/*.cjs', 'close/**/*.cjs', 'drafts/**/*.cjs', 'startup/**/*.cjs']) {
   test(`test inclusion or broad pattern ${fault} fails`, async t => {
     for (const mode of ['config', 'preview']) {
       await assert.rejects(check(stage(t, value => { value[mode].files.push(fault); })), /exact reviewed app entries/);
@@ -101,7 +106,7 @@ for (const fault of ['close/tests/quit-coordinator.test.cjs', 'drafts/tests/draf
   });
 }
 
-for (const entry of entries) test(`stale main require for ${entry} fails before application evaluation`, async t => {
+for (const entry of mainEntries) test(`stale main require for ${entry} fails before application evaluation`, async t => {
   await assert.rejects(check(stage(t, ({root}) => {
     const file = path.join(root, 'main.cjs');
     fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('./' + entry, './' + path.basename(entry)));
@@ -110,6 +115,18 @@ for (const entry of entries) test(`stale main require for ${entry} fails before 
 
 for (const [entry, dependency] of [
   ['drafts/draft-store.cjs', 'security.cjs'],
+  ['updates/updater.cjs', 'physical-fs.cjs'],
+  ['updates/updater.cjs', 'updater-validation.cjs'],
+  ['updates/updater.cjs', 'update-recovery.cjs'],
+  ['updates/testing-updater.cjs', 'physical-fs.cjs'],
+  ['updates/testing-updater.cjs', 'updater-validation.cjs'],
+  ['updates/testing-updater.cjs', 'install-name.cjs'],
+  ['updates/testing-updater.cjs', 'testing-install.cjs'],
+  ['updates/testing-update-validation.cjs', 'physical-fs.cjs'],
+  ['updates/testing-update-validation.cjs', 'updater-validation.cjs'],
+  ['updates/testing-update-validation.cjs', 'testing-install.cjs'],
+  ['updates/testing-update-validation.cjs', 'install-name.cjs'],
+
   ['integrity/verify-application.cjs', 'physical-fs.cjs'],
   ['integrity/verify-application.cjs', 'updater-validation.cjs'],
   ['integrity/verify-application.cjs', 'bootstrap.cjs'],
@@ -130,4 +147,16 @@ test('missing installed relative dependency fails', async t => {
 
 for (const entry of entries) test(`moved entry ${entry} missing from stage fails`, async t => {
   await assert.rejects(check(stage(t, ({root}) => fs.unlinkSync(path.join(root, entry)))), /ENOENT/);
+});
+
+test('stale testing validation sibling import fails', async t => {
+  await assert.rejects(check(stage(t, ({root}) => {
+    const file=path.join(root,'updates/testing-updater.cjs');
+    fs.writeFileSync(file,fs.readFileSync(file,'utf8').replace('./testing-update-validation.cjs','../testing-update-validation.cjs'));
+  })), /Cannot find module/);
+});
+for(const dependency of ['node:os','../security.cjs'])test(`unexpected updater dependency ${dependency} fails`,async t=>{
+  await assert.rejects(check(stage(t,({root})=>{
+    fs.appendFileSync(path.join(root,'updates/updater.cjs'),`\nrequire('${dependency}');\n`);
+  })),/reviewed direct dependencies/);
 });

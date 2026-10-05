@@ -1,10 +1,10 @@
 'use strict';
-const physicalFS=require('./physical-fs.cjs');
+const physicalFS=require('../physical-fs.cjs');
 const fs=physicalFS.promises,path=require('node:path'),crypto=require('node:crypto'),https=require('node:https');
 const {constants}=physicalFS;
 const {promisify}=require('node:util');
 const runFile=promisify(require('node:child_process').execFile);
-const {compareVersions}=require('./updater-validation.cjs');
+const {compareVersions}=require('../updater-validation.cjs');
 const {REPOSITORY,REPOSITORIES,approvedURL,validateDescriptor,verifyArchive,ensurePrivateCache,validateTestingCandidate,revalidateTestingCandidate,hashFile}=require('./testing-update-validation.cjs');
 const API=`https://api.github.com/repos/${REPOSITORY}/releases?per_page=100&page=1`;
 async function atomicHint(cache,value){
@@ -140,7 +140,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
           if(descriptors.length!==1)continue;
           try{
             const descriptor=validateDescriptor(await jsonAt(transport,assetURL(descriptors[0],release.tag_name,'desktop-release.json')),manifest,hostVersion);
-            require('./install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
+            require('../install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);
             if(release.tag_name!==`v${descriptor.application_version}`&&release.tag_name!==`desktop-test-v${descriptor.application_version}`)throw new Error('Release tag differs from app version.');
             const archives=assets.filter(asset=>asset?.name===descriptor.archive.filename);
             if(archives.length!==1||archives[0].size!==descriptor.archive.size)throw new Error('Archive metadata differs from descriptor.');
@@ -231,7 +231,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
         const result=await prepareQuit();
         if(result?.ready!==true){set('Ready',{message:'Testing update remains pending until drafts, writers and services close.'});return{ready:false,reason:result?.reason||status.message};}
         drained=true;await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');
-        const helper=(!processIdentity||!installHelper)?require('./testing-install.cjs'):{};
+        const helper=(!processIdentity||!installHelper)?require('../testing-install.cjs'):{};
         const identity=await (processIdentity||helper.processCreationIdentity)(process.pid,app.getPath('exe'));
         const cache=await ensurePrivateCache(app.getPath('userData'));
         const receiptPath=path.join(cache,`install-${crypto.randomUUID()}.json`);

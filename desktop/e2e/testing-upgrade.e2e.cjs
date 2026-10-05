@@ -71,7 +71,7 @@ async function timedRun(exe,args,options){
 const manifest=JSON.parse(fs.readFileSync(path.join(config.bundle,'Contents/Resources/runtime/runtime-manifest.json'),'utf8'));
 const packaged=path.join(config.bundle,'Contents/Resources/app.asar');
 const helper=require(path.join(packaged,'testing-install.cjs'));
-const {createTestingUpdateCoordinator}=require(path.join(packaged,'testing-updater.cjs'));
+const {createTestingUpdateCoordinator}=require(path.join(packaged,'updates/testing-updater.cjs'));
 const statuses=[];let coordinator,handoff,authorized=false;
 const progress=state=>{const temporary=config.driverProgress+'.tmp';fs.writeFileSync(temporary,JSON.stringify({phase:config.phase,state,timestamp:new Date().toISOString()}),{mode:0o600});fs.renameSync(temporary,config.driverProgress);};progress('Starting');
 const app={isPackaged:true,getPath:name=>name==='exe'?process.execPath:config.userData,quit(){

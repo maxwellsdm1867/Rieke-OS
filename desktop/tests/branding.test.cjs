@@ -2,8 +2,8 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {Readable}=require('node:stream');
 const {configureBranding}=require('../branding.cjs');
-const {releaseList,assetURL}=require('../testing-updater.cjs');
-const {approvedURL}=require('../testing-update-validation.cjs');
+const {releaseList,assetURL}=require('../updates/testing-updater.cjs');
+const {approvedURL}=require('../updates/testing-update-validation.cjs');
 test('Disco preserves established and explicitly selected Electron profiles',()=>{
  for(const explicit of [null,'/tmp/selected-existing-profile']){
   let name='new package name',saved;

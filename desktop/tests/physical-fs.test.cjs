@@ -11,7 +11,7 @@ test('actual Electron validates physical ASAR bytes and removes its cache withou
  await fs.writeFile(driver,`const assert=require('node:assert/strict'),virtual=require('node:fs'),path=require('node:path');
 const physical=require(process.argv[2]),{hashFile}=require(process.argv[3]);
 (async()=>{const archive=process.argv[4];assert.equal(virtual.lstatSync(archive).isDirectory(),true);assert.equal(physical.lstatSync(archive).isFile(),true);assert.equal(await hashFile(archive),process.argv[5]);await physical.promises.rm(path.dirname(archive),{recursive:true});console.log('RIEKE_PHYSICAL_ASAR_PASS');})().catch(error=>{console.error(error.stack);process.exitCode=1;});`);
- const result=await run(require('electron'),[driver,path.resolve(__dirname,'../physical-fs.cjs'),path.resolve(__dirname,'../testing-update-validation.cjs'),archive,expected],{timeout:30000,env:{...process.env,ELECTRON_RUN_AS_NODE:'1',HOME:root,PATH:'/usr/bin:/bin'}});
+ const result=await run(require('electron'),[driver,path.resolve(__dirname,'../physical-fs.cjs'),path.resolve(__dirname,'../updates/testing-update-validation.cjs'),archive,expected],{timeout:30000,env:{...process.env,ELECTRON_RUN_AS_NODE:'1',HOME:root,PATH:'/usr/bin:/bin'}});
  assert.match(result.stdout,/RIEKE_PHYSICAL_ASAR_PASS/);await assert.rejects(fs.access(cache));
 });
 test('actual Electron signed candidate rejection cleans extracted ASAR while retaining Developer ID policy',{skip:process.platform!=='darwin'},async t=>{

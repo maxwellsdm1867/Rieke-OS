@@ -214,8 +214,8 @@ async function startScientificUI() {
     if (integrityFailed || quitting) return;
     if (!coordinator && !preview) {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
-        ? require('./testing-updater.cjs').createTestingUpdateCoordinator
-        : require('./updater.cjs').createUpdateCoordinator;
+        ? require('./updates/testing-updater.cjs').createTestingUpdateCoordinator
+        : require('./updates/updater.cjs').createUpdateCoordinator;
       coordinator = createUpdateCoordinator({app, publishStatus: broadcast, prepareQuit,
         authorizeQuit: () => { quitAuthorized = true; }, revokeQuit: () => { quitAuthorized = false; },
         onInstallationFailure: () => { scientificWindows.clear(); recovery('Native update installation failed. Restart the installed backend or restore the verified previous app.'); },
