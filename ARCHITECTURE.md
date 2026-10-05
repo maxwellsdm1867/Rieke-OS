@@ -45,6 +45,38 @@ work, proposals, replacement options and explicitly unmeasured whole-app costs.
 - [Fixed benchmark protocol](docs/dev/benchmarks.md) and
   [registry](benchmarks/registry.json): evidence requirements and open gates.
 
+## Module guide
+
+Use this index to find the current physical owner before editing. Each linked
+folder guide is the canonical local contract: how to call its public entries,
+what it owns, dependencies, errors, lifetime rules, executable examples and tests.
+The adoption record adds cross-owner obligations; it does not replace those local
+contracts. Folder organization is partial: functional areas in the system table
+below describe responsibilities, not completed physical modules.
+
+| Responsibility | Canonical local guide |
+| --- | --- |
+| Presentation snapshots and route checkpoints | [Presentation sessions](workspace-app/src/presentation/AGENTS.md) |
+| Ordered, bounded selection reads | [Tree selection](workspace-app/src/tree-selection/AGENTS.md) |
+| Group-save retry identity and recovery | [Group save](workspace-app/src/group-save/AGENTS.md) |
+| Renderer draft queue, recovery and React lifetime | [Renderer drafts](workspace-app/src/renderer-drafts/AGENTS.md) |
+| Versioned tree-layout saves and load lifetime | [Protocol tree layout](workspace-app/src/protocol-tree-layout/AGENTS.md) |
+| Route identity, history and navigation intent | [Workspace navigation](workspace-app/src/workspace-navigation/AGENTS.md) |
+| Draft barriers and bounded ordinary Quit | [Desktop close](desktop/close/README.md) |
+| Scoped persistent renderer drafts | [Desktop draft store](desktop/drafts/README.md) |
+| Startup preference validation and one-time claim | [Desktop startup](desktop/startup/README.md) |
+| Explicit application verification and recovery ordering | [Desktop integrity](desktop/integrity/README.md) |
+| Signed and unsigned-testing update coordination | [Desktop updates](desktop/updates/README.md) |
+
+[Frontend instructions](workspace-app/src/AGENTS.md),
+[desktop instructions](desktop/AGENTS.md) and [retained tooling instructions](tools/AGENTS.md)
+provide area-specific check commands and remaining owners. Python runtime owners
+currently retain their existing paths; the system table below links them. The
+first recovery package remains gated. See the [current path ledger](docs/architecture/core-module-paths.json)
+for baseline versus current paths; historical evidence must retain its original
+source identity. No folder-count or test result substitutes for native/package
+acceptance or a measured performance comparison.
+
 ## Implemented system
 
 ```mermaid

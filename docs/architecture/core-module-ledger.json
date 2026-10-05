@@ -3443,7 +3443,7 @@
       "contract_gaps": [],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "organization": {
-        "status": "independently source-reviewed navigation folder candidate integrated; aggregate validation pending",
+        "status": "Independently source-reviewed and aggregate-verified local folder increment",
         "current_source_paths": [
           "workspace-app/src/workspace-navigation/workspaceNavigation.js",
           "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js"
@@ -3454,7 +3454,24 @@
         "guidance": "workspace-app/src/workspace-navigation/AGENTS.md",
         "worker_evidence": "evidence/workspace-navigation-folder/summary.json",
         "worker_results": "53frontend and21benchmark-source passes, five deliberate faults detected",
-        "qualification": "No actual benchmark/native run; historical recipes/receipts not relabeled"
+        "qualification": "No actual benchmark/native run; historical recipes/receipts not relabeled",
+        "tested_commit": "268de3e24bb93c140849f302a22c4ca7047f4d80",
+        "aggregate_evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/navigation-updates-integration/final-binding.json",
+          "sha256": "bd516fd5a16c6efdd9a6c68340dd73f7f0c8daad53f4019d58bbd28c8300b909",
+          "results": {
+            "frontend_full": 780,
+            "frontend_mapped": 269,
+            "desktop_mapped": 130,
+            "python_guard_planner": 55,
+            "benchmark_source": 21,
+            "failed": 0,
+            "skipped": 0,
+            "build": "passed",
+            "guard": "passed",
+            "explicit_base_plan": "passed"
+          }
+        }
       }
     },
     {
@@ -6004,7 +6021,7 @@
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "not_newly_run_fault_ideas": [],
       "organization": {
-        "status": "independently source-reviewed updates folder integrated; aggregate validation pending",
+        "status": "Independently source-reviewed and aggregate-verified local folder increment",
         "worker_commit": "58c93c7fa309696e6ab21795187edf5ed3370400",
         "current_source_paths": [
           "desktop/updates/updater.cjs",
@@ -6023,7 +6040,24 @@
         },
         "worker_evidence": "evidence/desktop-updates-folder/receipt.json",
         "worker_results": "67 focused plus2 selected signed source tests and39Python pass;3testing-only faults detected",
-        "qualification": "Full original host/native suites unrun; no installer/signing/app/performance qualification."
+        "qualification": "Full original host/native suites unrun; no installer/signing/app/performance qualification.",
+        "tested_commit": "268de3e24bb93c140849f302a22c4ca7047f4d80",
+        "aggregate_evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/navigation-updates-integration/final-binding.json",
+          "sha256": "bd516fd5a16c6efdd9a6c68340dd73f7f0c8daad53f4019d58bbd28c8300b909",
+          "results": {
+            "frontend_full": 780,
+            "frontend_mapped": 269,
+            "desktop_mapped": 130,
+            "python_guard_planner": 55,
+            "benchmark_source": 21,
+            "failed": 0,
+            "skipped": 0,
+            "build": "passed",
+            "guard": "passed",
+            "explicit_base_plan": "passed"
+          }
+        }
       }
     },
     {
@@ -7120,6 +7154,25 @@
         "explicit_base_plan": "passed"
       },
       "qualification": "Exact local source/frontend/desktop composition checks. No application/native launch, full mapped Python scientific/export suite, benchmark, final ASAR or performance qualification. Fullfrontend generated review HTML retained outsidegit."
+    },
+    {
+      "id": "navigation-updates-and-reader-A-integration",
+      "tested_commit": "268de3e24bb93c140849f302a22c4ca7047f4d80",
+      "binding": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/navigation-updates-integration/final-binding.json",
+      "sha256": "bd516fd5a16c6efdd9a6c68340dd73f7f0c8daad53f4019d58bbd28c8300b909",
+      "results": {
+        "frontend_full": 780,
+        "frontend_mapped": 269,
+        "desktop_mapped": 130,
+        "python_guard_planner": 55,
+        "benchmark_source": 21,
+        "failed": 0,
+        "skipped": 0,
+        "build": "passed",
+        "guard": "passed",
+        "explicit_base_plan": "passed"
+      },
+      "qualification": "Exact local source/frontend/scoped desktop composition checks. Benchmark tests use mocked workers and temporary Git; no benchmark workloads. Full original updater host/native tests unrun. No native/app/installer/signing, broad mapped Python scientific/export suites, finalpackage or performance qualification."
     }
   ],
   "deferred": [
@@ -7437,7 +7490,7 @@
         "contract_records": [
           "mutation-recovery"
         ],
-        "status": "reader-implementation-in-progress",
+        "status": "reader-integrated-move-gated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7446,7 +7499,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Profile prerequisite reviewed and integrated. v4 reader/fixtures A in progress; recovery runtime move B awaits independent A review and parent design gate."
+        "progress_note": "Pythonv4 reader A independently reviewed/integrated and aggregate verified; shippingcatalogv3/profilev1 unchanged. Actualrecoverymove B requires refreshedexactbindings and parentgate."
       },
       {
         "id": "frontend-navigation",
@@ -7466,7 +7519,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Renderer drafts and tree layout aggregate verified; workspace navigation source-reviewed folder integrated, aggregate pending. Other preferences/shared lifecycle remain pending."
+        "progress_note": "Renderer drafts, tree layout and workspace navigation independently reviewed and aggregate verified. Other preferences/shared lifecycle remain pending."
       },
       {
         "id": "frontend-reads",
@@ -7697,7 +7750,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Integrity aggregate verified at4a4867e; updates source-reviewed candidate integrated, aggregate pending. Install groups remain pending."
+        "progress_note": "Integrity and updates folders source-reviewed and aggregate verified; installation/helper KEEP design GO, localcontracts/examples pending."
       },
       {
         "id": "desktop-entrypoints",
@@ -7732,10 +7785,10 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "JSv3 multi-entry guard, explicit desktop test lanes, profile v2 reader (shipping v1), revision-owned benchmark recipes and retained-tool navigation integrated/reviewed. Pythonv4 policy under implementation; whole-codebase ownership/discovery remains incomplete."
+        "progress_note": "JSv3 multi-entry guard, explicit desktop test lanes, profile v2 reader (shipping v1), revision-owned benchmark recipes and retained-tool navigation integrated/reviewed. Python v4 reader A integrated; catalog v4 adoption remains pending. Whole-codebase ownership/discovery remains incomplete."
       }
     ],
-    "coverage_status": "All59records assigned once to20workitems; all465baseline paths assigned.9verifiedfolders cover14baseline runtimepaths;308proposedmoves,131keep decisions requiring acceptance,12deferred paths. No completion percentage.",
+    "coverage_status": "All59records assigned once to20workitems; all465baseline paths assigned.11verifiedfolders cover19baseline runtimepaths;302proposedmoves,132keep classifications,12deferred. No completion percentage.",
     "stage_rules": [
       "One selected coherent owner at a time; shared guard/catalog/packaging edits and heavy runs serialize.",
       "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
@@ -7780,7 +7833,7 @@
     },
     "progress_snapshot": {
       "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
-      "source_checkpoint": "4a4867eee81b989a1c703e548f3ee27ee8351d97",
+      "source_checkpoint": "268de3e24bb93c140849f302a22c4ca7047f4d80",
       "work_items_total": 20,
       "work_items_locally_integrated": 4,
       "work_items_partial_or_active": 6,
@@ -7794,20 +7847,22 @@
         "desktop/drafts",
         "desktop/startup",
         "workspace-app/src/protocol-tree-layout",
-        "desktop/integrity"
+        "desktop/integrity",
+        "workspace-app/src/workspace-navigation",
+        "desktop/updates"
       ],
       "runtime_or_config_path_counts": {
-        "keep-in-place": 131,
-        "move-proposed": 308,
+        "keep-in-place": 132,
+        "move-proposed": 302,
         "deferred": 12,
-        "organized": 14
+        "organized": 19
       },
       "by_area": {
         "frontend": {
           "keep-in-place": 28,
-          "move-proposed": 241,
+          "move-proposed": 239,
           "deferred": 2,
-          "organized": 8
+          "organized": 10
         },
         "backend": {
           "keep-in-place": 77,
@@ -7815,12 +7870,12 @@
           "move-proposed": 57
         },
         "desktop": {
-          "keep-in-place": 26,
-          "move-proposed": 10,
-          "organized": 6
+          "keep-in-place": 27,
+          "move-proposed": 6,
+          "organized": 9
         }
       },
-      "qualification": "Counts partition original465runtime/config paths, not newtests/docs or module-depth metrics.14organized paths in9verifiedfolders.308proposed moves,131keep decisions and12deferred paths remain separately classified. Wholeapp/finalqualification incomplete."
+      "qualification": "Counts partition original465runtime/config paths, not newtests/docs or module-depth metrics.19organized paths in11verifiedfolders.302proposed moves,132keep decisions (one newly reviewed shared-validator rationale) and12deferred. Functional areas are not completed physical modules. Wholeapp/finalqualification incomplete."
     }
   }
 }

@@ -157,6 +157,58 @@
     {
       "from": "workspace-app/src/workspace-navigation/AGENTS.md",
       "to": "workspace-app/src/workspace-navigation/workspaceNavigation.test.js"
+    },
+    {
+      "from": "README.md",
+      "to": "ARCHITECTURE.md"
+    },
+    {
+      "from": "README.md",
+      "to": "AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/presentation/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/tree-selection/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/group-save/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/renderer-drafts/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/protocol-tree-layout/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/workspace-navigation/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "desktop/close/README.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "desktop/drafts/README.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "desktop/startup/README.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "desktop/integrity/README.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "desktop/updates/README.md"
     }
   ],
   "shared_paths": [
@@ -187,7 +239,8 @@
     "workspace-app/src/group-save/AGENTS.md",
     "workspace-app/src/renderer-drafts/AGENTS.md",
     "workspace-app/src/protocol-tree-layout/AGENTS.md",
-    "workspace-app/src/workspace-navigation/AGENTS.md"
+    "workspace-app/src/workspace-navigation/AGENTS.md",
+    "README.md"
   ],
   "contracts": [
     {

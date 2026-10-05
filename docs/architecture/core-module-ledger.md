@@ -333,3 +333,27 @@ Python move, and concrete assembly/runtime preparation. Launcher source is
 reviewed at `54771398`; execution remains on hold pending the final candidate,
 package/runtime qualification, synthetic preflight and reviewed quiet window.
 No new performance measurements or native acceptance are implied.
+
+### Navigation, updates and reader prerequisite at `268de3e2`
+
+Exact candidate checks pass: 780 full frontend, 269 mapped frontend, 130 scoped
+desktop, 55 Python guard/planner and 21 benchmark-source tests; zero failures or
+skips. Build, guard and explicit-base plan also pass. Binding SHA-256:
+`bd516fd5a16c6efdd9a6c68340dd73f7f0c8daad53f4019d58bbd28c8300b909`. Benchmark-source tests execute mocked workers, not measurements.
+Original updater host/native suites remain explicitly unrun.
+
+Current finite inventory: **11 verified folders / 19 organized baseline runtime
+paths**, 302 proposed moves, 132 keep-in-place classifications and 12 deferred
+paths. The shared root updater validator changed from proposed relocation to a
+reviewed keep rationale; this is not an additional organized folder. Broad work
+items remain 4 integrated, 6 partial/active and 10 queued/keep-current designs.
+The nine functional areas discussed with the user describe responsibilities, not
+nine completed physical modules.
+
+Python reader A is integrated and reviewed, including explicit module-shim and
+lexical-scope regression fixes. Shipping catalog v3/profile v1 remain unchanged;
+no Python runtime relocation occurred. Recovery move B needs its refreshed exact
+loader bindings and separate gate. Existing runtime reuse is a preparation
+candidate pending full byte verification and static audit; final application
+assembly/imports/UI acceptance and all whole-app costs remain unqualified or
+unmeasured.

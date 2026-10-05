@@ -56,6 +56,17 @@ responsibility.
 Read the [product and data-model overview](docs/RIEKE_OS_OVERVIEW.md) for how
 projects, searches, working datasets, annotations and exports fit together.
 
+## Working on the code
+
+Start with [the architecture and module guide](ARCHITECTURE.md#module-guide) and
+[repository instructions](AGENTS.md). The guide links each organized folder to
+its public interface, ownership rules, examples and tests. Follow
+[frontend navigation](workspace-app/src/AGENTS.md),
+[desktop navigation](desktop/AGENTS.md), or [tooling navigation](tools/AGENTS.md)
+for the area you are changing. The [module ledger](docs/architecture/core-module-ledger.md)
+separates verified local increments, retained owners and remaining work; these
+source checks do not establish final assembled-app qualification.
+
 ## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
