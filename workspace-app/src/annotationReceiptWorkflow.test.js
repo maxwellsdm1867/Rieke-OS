@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
-import {confirmAnnotationReceipt,mergeAnnotationReceipts,applyAnnotationReceipts} from './annotationReceipts.js';
+import {confirmAnnotationReceipt,mergeAnnotationReceipts,applyAnnotationReceipts} from "./annotations/annotationReceipts.js";
 import {createResourceCache} from './resourceCache.js';
 
 const input=h=>h.root.findAllByType('input').find(node=>node.props['aria-label']?.startsWith('Tag ')&&!node.props['aria-label'].startsWith('Tag to add'));

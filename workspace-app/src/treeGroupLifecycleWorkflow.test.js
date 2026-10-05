@@ -47,7 +47,7 @@ test('dismissed committed507 refreshes globally and visible recovery replays exa
   assert.equal(recovery.view()[0].status,'unconfirmed');
   await h.act(()=>find(h,'Retry original group save').props.onClick());await h.waitFor(()=>changes.length===2&&recovery.view().length===0);
   assert.deepEqual(fixture.writes[0],fixture.writes[1]);assert.equal(fixture.writes.length,2);
-  const history=(await h.module('mutationUndo.js')).mutationUndo;
+  const history=(await h.module("undo/mutationUndo.js")).mutationUndo;
   assert.equal(history.view().count,1);assert.equal(changes[1].kind,'annotations');
  }finally{await h.close();}
 });

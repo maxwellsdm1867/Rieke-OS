@@ -12,13 +12,13 @@ import EpochDetailHeading from './EpochDetailHeading.jsx';
 import EpochAnalysisInclusion from './EpochAnalysisInclusion.jsx';
 import Trace from '../traces/ui/TraceViewer.jsx';
 import MetadataPanel from './MetadataPanel.jsx';
-import SelectionOverview from './SelectionOverview.jsx';
+import SelectionOverview from '../protocol-overview/ui/SelectionOverview.jsx';
 import ProtocolViewFilter from '../typed-query/ui/ProtocolViewFilter.jsx';
 import {clearTagFilters,tagFilterLabel} from '../typed-query/protocolViewFilter.js';
 import {Empty} from './Common.jsx';
 import {datedCellLabel} from '../recording-import/recordingIdentity.js';
-import AnnotationTags from './AnnotationTags.jsx';
-import useTreeCellSelection from '../useTreeCellSelection.js';
+import AnnotationTags from '../annotations/ui/AnnotationTags.jsx';
+import useTreeCellSelection from '../annotations/useTreeCellSelection.js';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
 export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,readContext=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){

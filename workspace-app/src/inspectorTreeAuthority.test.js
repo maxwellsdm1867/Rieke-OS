@@ -42,7 +42,7 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
  });
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
  const {default:Inspector}=await server.ssrLoadModule('/src/components/Inspector.jsx');
- const {AnnotationProfileProvider}=await server.ssrLoadModule('/src/annotationProfile.js');
+ const {AnnotationProfileProvider}=await server.ssrLoadModule("/src/annotations/annotationProfile.js");
  const {TreeBranchReadOwner}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReads.jsx');
  const {createTreeBranchReadCache}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReadCache.js');
  const cache=createTreeBranchReadCache();

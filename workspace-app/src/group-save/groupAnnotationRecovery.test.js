@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {groupQueryScope,previewTreeGroup,confirmGroupReceipt,releaseGroupPreview} from '../treeGroupQueryTags.js';
-import {persistUndo} from '../useMutationUndo.js';
-import {createUndoHistory,mutationUndo} from '../mutationUndo.js';
+import {groupQueryScope,previewTreeGroup,confirmGroupReceipt,releaseGroupPreview} from "../annotations/treeGroupQueryTags.js";
+import {persistUndo} from "../undo/useMutationUndo.js";
+import {createUndoHistory,mutationUndo} from "../undo/mutationUndo.js";
 import {groupAnnotationRecovery as recovery,createGroupSaveSession} from './groupAnnotationRecovery.js';
 const scope={protocolId:'protocol',filters:{metadata_predicate:'{"all":[]}'},splits:'parameters/value'},revision='a'.repeat(64),path=['b'.repeat(64)];
 function receipt(body,count=1857){return {format:'rieke-group-annotation-receipt',version:1,action:'add',operation_uuid:body.operation_uuid,target_kind:'epoch',target_count:count,changed:count-1,unchanged:1,profile_uuid:body.profile_uuid,tag:body.tag,undo:{kind:'annotation_group',operation_uuid:body.operation_uuid,count:count-1}};}

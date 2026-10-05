@@ -5,7 +5,7 @@ import TestRenderer,{act} from 'react-test-renderer';
 import {fileURLToPath} from 'node:url';
 import {createServer} from './test-support/isolatedVite.js';
 import {incomingTagSummary} from './incoming-workbench/incomingTagSummary.js';
-import {compactAnnotationTags,incomingRowAnnotation} from './annotationTags.js';
+import {compactAnnotationTags,incomingRowAnnotation} from "./annotations/annotationTags.js";
 const cell={tag:'Quality',profile_uuid:'alice',author_name:'Alice'};
 const other={...cell,profile_uuid:'bob',author_name:'Bob'};
 const row=(epoch_uuid,cell_uuid,cell_tags=[],epoch_tags=[])=>({epoch_uuid,cell_uuid,annotations:{cell_tags,epoch_tags},curation:{tags:['dataset-only']}});

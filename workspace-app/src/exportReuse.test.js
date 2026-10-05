@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {exportReuseRoute} from './exportReuse.js';
+import {exportReuseRoute} from "./exports/exportReuse.js";
 const candidate='b411db17-0ab4-42aa-872a-e6e614106041',scope='7d76b76a-4c43-42c6-ac54-881ff2fc108a';
 test('candidate reuse opens immutable selection for review, never its export-only scope as a protocol',()=>{
   const recipe={kind:'explorer_candidate',protocol_uuid:scope,candidate_revision_uuid:candidate,

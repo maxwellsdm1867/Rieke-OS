@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { overviewModel } from './components/overviewModel.js';
+import { overviewModel } from "./protocol-overview/ui/overviewModel.js";
 
 test('overview dates and types count source cells independently of overlapping protocol cohorts',()=>{
   const result=overviewModel({cells:[{date:'2026-09-25',cell_type:'A',epochs:5,duration_seconds:2},{date:'2026-09-24',cell_type:'A',epochs:2,duration_seconds:3},{date:'2026-09-24',cell_type:'B',epochs:8,duration_seconds:4}],protocols:[{counts:{cells:3,epochs:15}},{counts:{cells:3,epochs:15}}]});

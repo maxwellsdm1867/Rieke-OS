@@ -11,7 +11,7 @@ test('resting-voltage supporting detail reads prepared anchors and labels the cu
  globalThis.fetch=async url=>{requests.push(url);return {ok:true,json:async()=>({cell:{label:'Cell 1'},families:[],counts:{epochs:2},temperature:{},resting_voltage:{status:'unavailable',reason:'Review raw estimates before validating a curve.',supporting_measurements:supporting}})};};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});let renderer;
  try{
-  const {default:CellQC}=await server.ssrLoadModule('/src/components/CellQC.jsx');
+  const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
   const button=renderer.root.findAllByType('button').find(button=>button.children.includes('View prepared estimates'));
   await act(async()=>button.props.onClick());

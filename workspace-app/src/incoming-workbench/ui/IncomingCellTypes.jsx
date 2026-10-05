@@ -1,5 +1,5 @@
 import {incomingCellTypes} from '../incomingCellTypes.js';
-import {cellTypeColor} from '../../cellTypes.js';
+import {cellTypeColor} from "../../cell-qc/cellTypes.js";
 import {number} from '../../api.js';
 import NeuronIcon from '../../components/NeuronIcon.jsx';
 

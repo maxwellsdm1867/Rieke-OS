@@ -1,4 +1,4 @@
-import {activeProtocolSuggestions,sameSuggestionComparison} from '../protocolSuggestions.js';
+import {activeProtocolSuggestions,sameSuggestionComparison} from "../protocol-overview/protocolSuggestions.js";
 
 export const reviewKey = item => `${item.protocol_uuid}:${item.candidate_revision_uuid}`;
 export const reviewSessionKey = (project,id) => `incoming-review:${project}:${id}`;

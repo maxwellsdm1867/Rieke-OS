@@ -1,5 +1,5 @@
 import {IncomingEpochSelect} from '../incoming-workbench/ui/IncomingTreeSelection.jsx';
-import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';
+import {TreeGroupTagButton,useTreeGroupTags} from '../annotations/ui/TreeGroupTags.jsx';
 import {loadIncomingSelection} from '../incoming-workbench/incomingSelection.js';
 import {frozenPresentationScope} from '../frozenReadContext.js';
 import StableContent from './StableContent.jsx';
@@ -12,7 +12,7 @@ import {epochSelectionRange,toggleEpochSelection,mergeEpochSelection} from '../e
 import {inspectionDates} from '../inspectionCellTree.js';
 import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {Status} from './Common.jsx';
-import {incomingRowAnnotation} from '../annotationTags.js';
+import {incomingRowAnnotation} from '../annotations/annotationTags.js';
 import './InspectionCellTree.css';
 import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 import {inspectionNavigation,inspectionPageOffset,toggleInspectionBranch,restoreInspectionScroll} from '../inspectionNavigation.js';

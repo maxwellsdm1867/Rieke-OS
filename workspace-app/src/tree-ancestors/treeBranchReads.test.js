@@ -39,7 +39,7 @@ async function fixture(){
  }finally{for(const restore of restores)restore();browser.window.close();for(const [key,descriptor]of previous){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}}}
  try{
   server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
-  ({AnnotationProfileProvider:Profile}=await server.ssrLoadModule('/src/annotationProfile.js'));
+  ({AnnotationProfileProvider:Profile}=await server.ssrLoadModule("/src/annotations/annotationProfile.js"));
   ({TreeBranchReadOwner:Owner,useTreeBranchReads:useReads}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReads.jsx'));
   const {createTreeBranchReadCache}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReadCache.js');cache=createTreeBranchReadCache({now:()=>0});
   root=createRoot(document.getElementById('root'));

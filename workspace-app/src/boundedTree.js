@@ -1,4 +1,4 @@
-import {recordedCellType} from './cellTypes.js';
+import {recordedCellType} from './cell-qc/cellTypes.js';
 // Paging changes presentation only. A selected item outside the page is shown
 // once as an additional pinned row, without replacing any page members.
 export function boundedTreePage(items,offset=0,limit=60,pinned=null){

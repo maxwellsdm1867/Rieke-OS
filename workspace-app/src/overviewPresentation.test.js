@@ -13,11 +13,11 @@ async function harness(t) {
       name:'overview-no-io',enforce:'pre',resolveId(id){if(id==='./RecordingSize.jsx')return '\0recording-size';},
       load(id){if(id==='\0recording-size')return 'export default function RecordingSize(){return null;}';}
     }]});
-  const {default:Overview}=await server.ssrLoadModule('/src/components/Overview.jsx');
-  const {default:ProtocolSelectionSummary}=await server.ssrLoadModule('/src/components/ProtocolSelectionSummary.jsx');
-  const {default:CellListSection}=await server.ssrLoadModule('/src/components/CellListSection.jsx');
-  const {default:CellTypeAccordions}=await server.ssrLoadModule('/src/components/CellTypeAccordions.jsx');
-  const {default:ProtocolInfographic}=await server.ssrLoadModule('/src/components/ProtocolInfographic.jsx');
+  const {default:Overview}=await server.ssrLoadModule("/src/protocol-overview/ui/Overview.jsx");
+  const {default:ProtocolSelectionSummary}=await server.ssrLoadModule("/src/protocol-overview/ui/ProtocolSelectionSummary.jsx");
+  const {default:CellListSection}=await server.ssrLoadModule("/src/cell-qc/ui/CellListSection.jsx");
+  const {default:CellTypeAccordions}=await server.ssrLoadModule("/src/cell-qc/ui/CellTypeAccordions.jsx");
+  const {default:ProtocolInfographic}=await server.ssrLoadModule("/src/protocol-overview/ui/ProtocolInfographic.jsx");
   let renderer;const refs=[];
   t.after(async()=>{await act(()=>renderer?.unmount());await server.close();globalThis.window=beforeWindow;globalThis.requestAnimationFrame=beforeFrame;});
   return {Overview,ProtocolInfographic,CellListSection,CellTypeAccordions,ProtocolSelectionSummary,get root(){return renderer.root;},refs,

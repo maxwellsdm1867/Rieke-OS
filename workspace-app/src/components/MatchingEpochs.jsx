@@ -8,8 +8,8 @@ import {useEpochBrowserPage} from '../useEpochBrowserPage.js';
 import {epochShortcutDirection,inspectorPaneSizes} from '../inspectorInteraction.js';
 import EpochConnections from './EpochConnections.jsx';
 import './MatchingEpochs.css';
-import AnnotationTags from './AnnotationTags.jsx';
-import TagExchangeControls from './TagExchangeControls.jsx';
+import AnnotationTags from '../annotations/ui/AnnotationTags.jsx';
+import TagExchangeControls from '../annotations/ui/TagExchangeControls.jsx';
 
 function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onQC}){
   const navigationIntent=useRef(null);

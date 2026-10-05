@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readTagDocument,tagExportUrl,MAX_TAG_IMPORT_BYTES} from './tagExchange.js';
+import {readTagDocument,tagExportUrl,MAX_TAG_IMPORT_BYTES} from "./annotations/tagExchange.js";
 test('tag import rejects masks, oversized files, invalid JSON and arrays',async()=>{
  for(const file of [{size:MAX_TAG_IMPORT_BYTES+1},{name:'mask.ugm',size:2},{size:1,text:async()=>'{broken'},{size:2,text:async()=>'[]'}])await assert.rejects(readTagDocument(file));
  assert.deepEqual(await readTagDocument({size:2,text:async()=>'{}'}),{});

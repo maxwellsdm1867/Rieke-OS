@@ -3,7 +3,7 @@ import {useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {ChevronDown,ChevronRight,Check,X,Tag} from 'lucide-react';
 import {humanize} from '../api.js';
 import {epochSkimGroups} from '../epochSkimGroups.js';
-import AnnotationIndicator from './AnnotationIndicator.jsx';
+import AnnotationIndicator from '../annotations/ui/AnnotationIndicator.jsx';
 
 export default function EpochSkimList({epochs,offset,focused,onFocus,targets=[],setTargets,disabled,showProtocol=false,selectable=true}){
   const list=useRef(null);

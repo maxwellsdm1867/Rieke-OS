@@ -42,7 +42,7 @@ test('changing selected cells cancels a pending revision read without losing unf
 test('tree cell checkboxes retain exact identities across pages and reject stale tree or epoch-derived targets',async()=>{
  const h=await createWorkflowHarness();let selection;
  try{
-  const {default:useSelection,treeCellUuid}=await h.module('useTreeCellSelection.js');
+  const {default:useSelection,treeCellUuid}=await h.module("annotations/useTreeCellSelection.js");
   const a='00000000-0000-4000-8000-000000000001',b='00000000-0000-4000-8000-000000000002';
   assert.equal(treeCellUuid({value:a},{field:'epoch'}),null);
   assert.equal(treeCellUuid({value:'Cell1'},{field:'cell'}),null);

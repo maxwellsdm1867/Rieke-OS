@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {aggregateCellTypes} from './protocolOverviewModel.js';
+import {aggregateCellTypes} from "./protocol-overview/protocolOverviewModel.js";
 
 test('type summaries deduplicate exact cell UUIDs and sum authoritative per-cell epoch membership once',()=>{
  const a={cell_uuid:'a',cell_type:'ON parasol',label:'Cell1',epochs:120,duration_seconds:12.5,exported:90,included:100,reviewed:40};

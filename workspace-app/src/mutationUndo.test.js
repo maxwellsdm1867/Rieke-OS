@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createUndoHistory,shouldUndoData} from './mutationUndo.js';
-import {persistUndo,installUndoShortcuts} from './useMutationUndo.js';
+import {createUndoHistory,shouldUndoData} from "./undo/mutationUndo.js";
+import {persistUndo,installUndoShortcuts} from "./undo/useMutationUndo.js";
 const action=(revision=1,id='original')=>({kind:'annotations',operations:[{target_kind:'epoch',target_uuid:id,profile_uuid:'scientist',expected_revision:revision,before_revision:revision-1,tags_add:[],tags_remove:['chosen']}]});
 
 test('undo targets original identities after navigation; repeated shortcuts cannot race',async()=>{

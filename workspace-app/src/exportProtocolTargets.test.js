@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {exportProtocolGroups,pinProtocolPreference} from './exportProtocolTargets.js';
+import {exportProtocolGroups,pinProtocolPreference} from "./exports/exportProtocolTargets.js";
 test('pinned destinations lead and typing datasets stay secondary',()=>{
  const protocols=[{protocol_uuid:'qc',name:'ExpandingSpots'},{protocol_uuid:'a',name:'VariableMeanNoise'},{protocol_uuid:'b',name:'VariableHistoryNoise'}];
  const preferences={b:{section:'pinned',rank:0}};

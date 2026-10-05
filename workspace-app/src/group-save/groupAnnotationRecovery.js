@@ -1,4 +1,4 @@
-import {mutationUndo,undoEnabled} from '../mutationUndo.js';
+import {mutationUndo,undoEnabled} from "../undo/mutationUndo.js";
 import {epochResourceCache} from '../resourceCache.js';
 
 // Session-only, at most four compact original requests. Never evict an

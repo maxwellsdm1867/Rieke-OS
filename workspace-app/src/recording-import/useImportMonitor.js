@@ -1,7 +1,7 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {api} from '../api.js';
 import {isImportPending,importMonitorDelay,shouldRefreshImportCompletion,completedImportToReview} from './importProgress.js';
-import {importCompletionKey} from '../protocolSuggestions.js';
+import {importCompletionKey} from '../protocol-overview/protocolSuggestions.js';
 // This lightweight endpoint has its own timeout; parsing/export requests do not.
 // A failed read retains the last confirmed state and never retries an import POST.
 export default function useImportMonitor(revision,onCompleted,watchingRequest=false,enabled=true){

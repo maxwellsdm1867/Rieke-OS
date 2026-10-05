@@ -16,7 +16,7 @@ import {jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.j
 import JointGroupingEditor from './JointGroupingEditor.jsx';
 import {useDelayedLoading} from '../../components/NavigationLoading.jsx';
 import {useIncomingTreeSelection} from '../../incoming-workbench/ui/IncomingTreeSelection.jsx';
-import {TreeGroupTagButton,useTreeGroupTags} from '../../components/TreeGroupTags.jsx';
+import {TreeGroupTagButton,useTreeGroupTags} from "../../annotations/ui/TreeGroupTags.jsx";
 
 const categories = ['Common', 'Parameters', 'Combinations', 'Conditions', 'Suggested', 'All'];
 const categoryLabel = category => category === 'Suggested' ? 'Recommended' : category === 'Parameters' ? 'Protocol settings' : category === 'All' ? 'All metadata' : category;

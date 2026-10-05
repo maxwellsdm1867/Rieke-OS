@@ -9,9 +9,9 @@ import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,r
 import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {hierarchyKey,pathContains,mergeHierarchyPage,collapseHierarchy,expandHierarchy,hierarchySnapshot,hierarchyRestore,cancelUnloadedExpansion} from '../hierarchyTreeState.js';
 import {IncomingEpochSelect,useIncomingTreeSelection} from '../incoming-workbench/ui/IncomingTreeSelection.jsx';
-import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';
+import {TreeGroupTagButton,useTreeGroupTags} from '../annotations/ui/TreeGroupTags.jsx';
 import './HierarchyTree.css';
-import {incomingRowAnnotation} from '../annotationTags.js';
+import {incomingRowAnnotation} from '../annotations/annotationTags.js';
 
 const blank=()=>({pages:[],expanded:[],loading:true,error:null,loadingPath:[],notice:''});
 export default function HierarchyTree(props){

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cellTypeColor,recordedCellType,distinctCells} from './cellTypes.js';
-import {protocolCellSummary} from './protocolOverviewModel.js';
-import {overviewModel} from './components/overviewModel.js';
+import {cellTypeColor,recordedCellType,distinctCells} from "./cell-qc/cellTypes.js";
+import {protocolCellSummary} from "./protocol-overview/protocolOverviewModel.js";
+import {overviewModel} from "./protocol-overview/ui/overviewModel.js";
 
 test('scientific colors are stable across subset order and recorded spelling, without changing labels',()=>{
   for(const [name,color] of [['ON midget','var(--cell-on-midget)'],['OFF midget','var(--cell-off-midget)'],['ON parasol','var(--cell-on-parasol)'],['OFF parasol','var(--cell-off-parasol)']]) {

@@ -89,7 +89,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
 test('App and affected dialog/browser/sidebar JSX transform from isolated source',async()=>{
  const server=await create();
  try{
-  for(const file of ['App.jsx','components/MetadataExplorer.jsx','components/IncomingExportDialog.jsx','components/ExportSelectionDialog.jsx','components/ProtocolSidebar.jsx','incoming-workbench/ui/FrozenIncomingReview.jsx','components/WorkbenchExportDialog.jsx']){
+  for(const file of ['App.jsx','components/MetadataExplorer.jsx',"exports/ui/IncomingExportDialog.jsx","exports/ui/ExportSelectionDialog.jsx","protocol-overview/ui/ProtocolSidebar.jsx",'incoming-workbench/ui/FrozenIncomingReview.jsx',"exports/ui/WorkbenchExportDialog.jsx"]){
    const result=await server.transformRequest(`/src/${file}`);assert.ok(result?.code.length>0,file);
   }
  }finally{await server.close();}
@@ -164,7 +164,7 @@ test('accept then export failure preserves acceptance receipt and retries identi
   return {ok:status===200,status,json:async()=>value};
  };
  try{
-  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  const {default:Dialog}=await server.ssrLoadModule("/src/exports/ui/WorkbenchExportDialog.jsx");
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);},onChanged:()=>changed++});}
   const mount=async()=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});};
   await mount();await act(async()=>renderer.root.findByType('form').props.onSubmit({preventDefault(){}}));
@@ -204,7 +204,7 @@ test('definitively rejected acceptance refreshes on reopen and permits a fresh a
  const server=await create(),oldFetch=globalThis.fetch;let renderer,saved={phase:'rejected',preview:null,acceptOperation:null,error:'Old source scope'};
  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>({candidate_scope_revision:'fresh',draft:{draft_version:6,selection_mode:'selected'}})});
  try{
-  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  const {default:Dialog}=await server.ssrLoadModule("/src/exports/ui/WorkbenchExportDialog.jsx");
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},accept:true,state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   assert.equal(saved.phase,null);assert.match(saved.error,/Fresh proposal loaded/);
@@ -223,7 +223,7 @@ test('unsupported direct export format releases rejected request so fresh format
   return {ok:status===200,status,json:async()=>value};
  };
  try{
-  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  const {default:Dialog}=await server.ssrLoadModule("/src/exports/ui/WorkbenchExportDialog.jsx");
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   await act(async()=>renderer.root.findAllByType('input').find(node=>node.props.value==='matlab-mat').props.onChange());
@@ -489,7 +489,7 @@ test('selected-only export cannot retry against a changed saved draft after its 
  const server=await create(),oldFetch=globalThis.fetch,calls=[];let renderer,saved={phase:'rejected',preview:null,error:'Scope changed'};
  globalThis.fetch=async(path,options={})=>{calls.push({path,method:options.method||'GET'});assert.equal(options.method,undefined,'fresh selection must return through the parent; no automatic draft preview');return {ok:true,status:200,json:async()=>({candidate_scope_revision:'changed',draft:{draft_version:99,selection_mode:'selected'}})};};
  try{
-  const {default:Dialog}=await server.ssrLoadModule('/src/components/WorkbenchExportDialog.jsx');
+  const {default:Dialog}=await server.ssrLoadModule("/src/exports/ui/WorkbenchExportDialog.jsx");
   function Probe(){const [state,setState]=React.useState(saved);return React.createElement(Dialog,{selectedOnly:true,protocolId:'history',item:{candidate_revision_uuid:'proposal'},state,onState:value=>{saved=value;setState(value);}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   assert.equal(renderer.root.findAllByType('button').find(n=>n.props.className==='primary').props.disabled,true);

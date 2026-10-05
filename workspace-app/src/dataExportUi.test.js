@@ -16,7 +16,7 @@ test('web tree arrangement keeps grouping controls without MATLAB GUI command co
 });
 
 test('saved legacy search destination renders a selected standalone MAT data choice without a GUI handoff',async()=>{
- const html=await render('/src/components/CandidateExportPanel.jsx',{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'epictree-mat'});
+ const html=await render("/src/exports/ui/CandidateExportPanel.jsx",{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'epictree-mat'});
  assert.match(html,/MATLAB data \(\.mat\)/);assert.match(html.match(/<input[^>]*value="matlab-mat"[^>]*>/)?.[0]||'',/checked=""/);assert.doesNotMatch(html,/EpicTree|launcher|selection mask|MATLAB bundle/);
 });
 
@@ -24,7 +24,7 @@ test('saved legacy search destination renders a selected standalone MAT data cho
 test('explicit export from a legacy saved search posts only the canonical MAT data format',async()=>{
  const prior=globalThis.fetch,calls=[];let root;
  globalThis.fetch=async(path,options)=>{calls.push({path,body:JSON.parse(options.body)});return {ok:true,json:async()=>({format:'matlab-mat',name:'Saved selection',epoch_count:3,dataset_uuid:'dataset',event_uuid:'event',download_url:'/api/exports/dataset/download'})};};
- try{const {default:Candidate}=await server.ssrLoadModule('/src/components/CandidateExportPanel.jsx');
+ try{const {default:Candidate}=await server.ssrLoadModule("/src/exports/ui/CandidateExportPanel.jsx");
   await act(async()=>{root=TestRenderer.create(createElement(Candidate,{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'epictree-mat'}));});
   assert.equal(calls.length,0);
   await act(async()=>root.root.findByType('form').props.onSubmit({preventDefault(){}}));

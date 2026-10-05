@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {startExternalTagMonitor} from './externalTagMonitor.js';
+import {startExternalTagMonitor} from "./annotations/externalTagMonitor.js";
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
 test('reopen refreshes once; unchanged scans do not reload; changed revisions refresh',async()=>{
   let changes=0,revision='a';const timers=[];

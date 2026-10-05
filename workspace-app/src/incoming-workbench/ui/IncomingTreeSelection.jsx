@@ -1,7 +1,7 @@
 import {useLayoutEffect,useRef,useState} from 'react';
 import {CheckSquare} from 'lucide-react';
 import {api} from '../../api.js';
-import {resolveTreeGroup} from '../../treeGroupTargets.js';
+import {resolveTreeGroup} from "../../annotations/treeGroupTargets.js";
 import {mergeEpochSelection,toggleEpochSelection} from '../../epochSelection.js';
 
 export function IncomingEpochSelect({epoch,selected=[],onSelect,disabled=false}){

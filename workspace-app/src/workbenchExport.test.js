@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {acceptedExportRequest,candidateExportRequest,submitWorkbenchExport,nextWorkbenchWorkflow} from './workbenchExport.js';
+import {acceptedExportRequest,candidateExportRequest,submitWorkbenchExport,nextWorkbenchWorkflow} from "./exports/workbenchExport.js";
 const preview={expected_candidate_scope_revision:'frozen',expected_draft_version:4,mode:'selected',preview_sha256:'preview',expected_binding_version:7,expected_query_revision:'main',accepted_epoch_count:2};
 test('new-only export uses exact preview fences and independent export identity',()=>{
  const prepared=candidateExportRequest('/candidate',preview,{format:'reference-json',name:'New only',operationUuid:'export-op'});

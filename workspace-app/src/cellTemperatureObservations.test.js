@@ -18,7 +18,7 @@ test('temperature opens all-epoch pages and inspects the exact source without a 
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
  let renderer;
  try{
-  const {default:CellQC}=await server.ssrLoadModule('/src/components/CellQC.jsx');
+  const {default:CellQC}=await server.ssrLoadModule("/src/cell-qc/ui/CellQC.jsx");
   await act(async()=>{renderer=TestRenderer.create(React.createElement(CellQC,{cellUuid:'cell',revision:0}));});
   const findButton=label=>renderer.root.findAllByType('button').find(button=>button.children.includes(label));
   const card=renderer.root.findByProps({className:'qc-temperature-metric'});

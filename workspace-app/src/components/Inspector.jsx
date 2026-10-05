@@ -2,7 +2,7 @@ import {useTreeBranchReads} from '../tree-ancestors/treeBranchReads.jsx';
 import {createPortal} from 'react-dom';
 import {useUnmountGuard} from '../useUnmountGuard.js';
 import EpochViewer from './EpochViewer.jsx';
-import SelectionMaskDialog from './SelectionMaskDialog.jsx';
+import SelectionMaskDialog from '../exports/ui/SelectionMaskDialog.jsx';
 import {NavigationLoadingProvider} from './NavigationLoading.jsx';
 import {advanceEpochIntent, epochIntentAt, epochAtIntent} from '../epochNavigationIntent.js';
 import {SourceEligibilityNotice} from './Common.jsx';
@@ -12,14 +12,14 @@ import {api, useResource, useEpochResource, useEpochPrefetch, number, humanize, 
 import {Badge} from './Common.jsx';
 import EpochConnections from './EpochConnections.jsx';
 import './InspectorPolish.css';
-import EpochTags from './EpochTags.jsx';
+import EpochTags from '../annotations/ui/EpochTags.jsx';
 import IncomingEpochReview from '../incoming-workbench/ui/IncomingEpochReview.jsx';
 import {selectedViewFilters} from '../incoming-workbench/selectedIncomingWorkflow.js';
 import IncomingSelectionTools from '../incoming-workbench/ui/IncomingSelectionTools.jsx';
 import IncomingTagSummary from '../incoming-workbench/ui/IncomingTagSummary.jsx';
 import {incomingTagSummary} from '../incoming-workbench/incomingTagSummary.js';
-import AnnotationTags from './AnnotationTags.jsx';
-import TagExchangeControls from './TagExchangeControls.jsx';
+import AnnotationTags from '../annotations/ui/AnnotationTags.jsx';
+import TagExchangeControls from '../annotations/ui/TagExchangeControls.jsx';
 import './Inspector.css';
 
 import {frozenReadPath,frozenReadQuery,frozenPresentationScope} from '../frozenReadContext.js';
@@ -27,8 +27,8 @@ export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=Trace.supportsFrozenReadContex
 
 import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
-import {useAnnotationReceipts} from '../useAnnotationReceipts.js';
-import {fastAnnotationReceipt} from '../annotationReceipts.js';
+import {useAnnotationReceipts} from '../annotations/useAnnotationReceipts.js';
+import {fastAnnotationReceipt} from '../annotations/annotationReceipts.js';
 import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {restoredEpochFocus} from '../workspace-navigation/workspaceNavigation.js';
 import Trace from '../traces/ui/TraceViewer.jsx';

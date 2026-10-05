@@ -6,7 +6,7 @@ import {api,duration,humanize,number,useResource} from '../../api.js';
 import {Badge,Empty,Metadata,Status} from '../../components/Common.jsx';
 import './DataStores.css';
 import {epochResourceCache} from '../../resourceCache.js';
-import SourcePropagation from '../../components/SourcePropagation.jsx';
+import SourcePropagation from '../../protocol-overview/ui/SourcePropagation.jsx';
 import {availabilityLabel,availabilityExplanation} from '../../metadataRefresh.js';
 
 const PAGE_SIZE=50;

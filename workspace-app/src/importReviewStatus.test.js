@@ -21,7 +21,7 @@ test('pending status follows authoritative cumulative counts, survives refresh, 
 test('Review import dot survives opening, closing and remounting, then clears only with resolved authority',async()=>{
  const h=await createWorkflowHarness(),Component=await h.component('ProtocolSuggestion');
  window.addEventListener=()=>{};window.removeEventListener=()=>{};
- const {ImportSuggestions}=await h.module('components/ProtocolSuggestion.jsx');
+ const {ImportSuggestions}=await h.module("protocol-overview/ui/ProtocolSuggestion.jsx");
  const jobs=[{job_uuid:'finished',status:'complete',finished_at:'2026-10-02T10:00:00Z',source:'fixture.h5'}];
  const pending={pendingProtocols:2,phase:'ready'};
  const props={jobs,reviewStatus:pending};

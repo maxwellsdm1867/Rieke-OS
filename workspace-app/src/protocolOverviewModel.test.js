@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {isTypingProtocol,recordingStorage,sizeLabel} from './protocolOverviewModel.js';
+import {isTypingProtocol,recordingStorage,sizeLabel} from "./protocol-overview/protocolOverviewModel.js";
 test('typing recordings stay separate from experimental noise protocols',()=>{
  for(const name of ['SingleSpot','ExpandingSpots','SplitFieldCentering'])assert.equal(isTypingProtocol({acquisition_protocol:`lab.${name}`}),true);
  for(const name of ['VariableMeanNoise','VariableMeanNoiseCurInject','VariableHistoryNoiseCurInject'])assert.equal(isTypingProtocol({name}),false);
@@ -16,7 +16,7 @@ test('source sizes deduplicate shared H5 files and never treat missing files as 
 });
 
 test('protocol type counts use unique cell identities and distinguish export participation',async()=>{
- const {protocolCellTypes}=await import('./protocolOverviewModel.js');
+ const {protocolCellTypes}=await import("./protocol-overview/protocolOverviewModel.js");
  const cells=[
   {cell_uuid:'date1-cell1',label:'Cell1',cell_type:'ON-parasol',epochs:100,exported:1},
   {cell_uuid:'date2-cell1',label:'Cell1',cell_type:'ON-parasol',epochs:2,exported:0},
@@ -33,7 +33,7 @@ test('protocol type counts use unique cell identities and distinguish export par
 });
 
 test('headline counts recorded types separately from unclassified cells',async()=>{
- const {protocolCellSummary}=await import('./protocolOverviewModel.js');
+ const {protocolCellSummary}=await import("./protocol-overview/protocolOverviewModel.js");
  const summary=protocolCellSummary([{cell_uuid:'a',cell_type:'ON-parasol'},{cell_uuid:'a',cell_type:'ON-parasol'},{cell_uuid:'b',cell_type:'OFF-parasol'},{cell_uuid:'c',cell_type:' '},{cell_uuid:'d',cell_type:'Unknown'}]);
  assert.equal(summary.matchingCells,4);
  assert.equal(summary.cellTypes,2);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compactAnnotationTags,annotationChange,annotationIndicator,annotationPredicate,bulkAnnotationChange,canRemoveAnnotation,navigateAfterTagSave} from './annotationTags.js';
+import {compactAnnotationTags,annotationChange,annotationIndicator,annotationPredicate,bulkAnnotationChange,canRemoveAnnotation,navigateAfterTagSave} from "./annotations/annotationTags.js";
 const first={epoch_uuid:'epoch-a',cell_uuid:'cell-a',cell_label:'Cell1',date:'2026-09-23'};
 const second={epoch_uuid:'epoch-b',cell_uuid:'cell-b',cell_label:'Cell1',date:'2026-09-24'};
 const annotations={revisions:{cell:{me:3},epoch:{me:2}}};

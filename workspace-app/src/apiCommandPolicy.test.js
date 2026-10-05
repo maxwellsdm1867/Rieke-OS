@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {api} from './api.js';
 import {beginProjectUnmount,installDesktopLifecycle,registerDraftSaver} from './desktopLifecycle.js';
-import {mutationUndo} from './mutationUndo.js';
+import {mutationUndo} from "./undo/mutationUndo.js";
 
 // Real api() and lifecycle owners, with no network or desktop/native operations.
 const deferred=()=>{let resolve;const promise=new Promise(yes=>{resolve=yes;});return {promise,resolve};};

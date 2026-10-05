@@ -15,10 +15,10 @@ import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import './TreePreview.css';
 import './ColumnTree.css';
 import {IncomingEpochSelect,useIncomingTreeSelection} from '../incoming-workbench/ui/IncomingTreeSelection.jsx';
-import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';
-import AnnotationIndicator from './AnnotationIndicator.jsx';
-import {incomingRowAnnotation} from '../annotationTags.js';
-import {treeCellUuid} from '../useTreeCellSelection.js';
+import {TreeGroupTagButton,useTreeGroupTags} from '../annotations/ui/TreeGroupTags.jsx';
+import AnnotationIndicator from '../annotations/ui/AnnotationIndicator.jsx';
+import {incomingRowAnnotation} from '../annotations/annotationTags.js';
+import {treeCellUuid} from '../annotations/useTreeCellSelection.js';
 
 // Preserve the column interaction while loading at most one 60-row page per level.
 export default function ColumnTree(props){

@@ -4,7 +4,7 @@
  */
 import {createContext,useContext,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../api.js';
-import {useAnnotationProfile} from '../annotationProfile.js';
+import {useAnnotationProfile} from "../annotations/annotationProfile.js";
 import {createPageReadCache,pageReadKey,searchReadDescriptor} from './pageReadCache.js';
 
 const Context=createContext(null);

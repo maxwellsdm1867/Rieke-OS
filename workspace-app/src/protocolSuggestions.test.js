@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {pendingProtocolSuggestions,suggestionBadge,importCompletionKey,sameSuggestionComparison} from './protocolSuggestions.js';
+import {pendingProtocolSuggestions,suggestionBadge,importCompletionKey,sameSuggestionComparison} from "./protocol-overview/protocolSuggestions.js";
 import {datedCellLabel} from './recording-import/recordingIdentity.js';
 
 test('only persisted pending candidates produce update badges',()=>{
@@ -34,14 +34,14 @@ test('dated cell labels distinguish repeated cell numbers without changing IDs',
   assert.equal(datedCellLabel({cell_label:'Cell1'}),'Date not recorded · Cell1');
 });
 test('stale candidates remain actionable as refresh notices, never new-data count badges',async()=>{
-  const {activeProtocolSuggestions}=await import('./protocolSuggestions.js');
+  const {activeProtocolSuggestions}=await import("./protocol-overview/protocolSuggestions.js");
   const stale={protocol_uuid:'p',candidate_revision_uuid:'r',status:'stale',diff_summary:{delta:{cells:5}}};
   assert.deepEqual(activeProtocolSuggestions({suggestions:[stale]}),[stale]);
   assert.deepEqual(pendingProtocolSuggestions({suggestions:[stale]}),[]);
   assert.equal(suggestionBadge(stale),'Refresh');
 });
 test('import attempt notice follows actual job state rather than staying queued',async()=>{
-  const {importAttemptNotice}=await import('./protocolSuggestions.js');
+  const {importAttemptNotice}=await import("./protocol-overview/protocolSuggestions.js");
   assert.match(importAttemptNotice({status:'queued'}).message,/queued/);
   assert.equal(importAttemptNotice({status:'validating'}).pending,true);
   assert.equal(importAttemptNotice({status:'complete'}).pending,false);
@@ -63,7 +63,7 @@ test('same counts with a different working binding require a refreshed visible c
 });
 
 test('approval rechecks displayed candidate and sends both concurrency guards',async()=>{
-  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const {approveProtocolSuggestion}=await import("./protocol-overview/protocolSuggestions.js");
   const suggestion={protocol_uuid:'p',candidate_revision_uuid:'r'};
   const shown={expected_binding_version:2,expected_query_revision:'q',diff_counts:{added:3,removed:0,changed:0},diff_summary:{current:{cells:1,epochs:2},proposed:{cells:2,epochs:5}}};
   const calls=[];
@@ -75,7 +75,7 @@ test('approval rechecks displayed candidate and sends both concurrency guards',a
   assert.deepEqual(calls[1].body,{protocol_uuid:'p',expected_binding_version:2,expected_query_revision:'q'});
 });
 test('changed bulk approval is held for visible review without mutating dataset',async()=>{
-  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const {approveProtocolSuggestion}=await import("./protocol-overview/protocolSuggestions.js");
   const shown={expected_binding_version:2,expected_query_revision:'q',diff_counts:{added:3}};
   const fresh={...shown,expected_binding_version:3};
   let calls=0;
@@ -85,7 +85,7 @@ test('changed bulk approval is held for visible review without mutating dataset'
   assert.equal(result.comparison,fresh);
 });
 test('approval refuses invalid comparison and ambiguous apply receipt',async()=>{
-  const {approveProtocolSuggestion}=await import('./protocolSuggestions.js');
+  const {approveProtocolSuggestion}=await import("./protocol-overview/protocolSuggestions.js");
   const candidate={protocol_uuid:'p',candidate_revision_uuid:'r'};
   await assert.rejects(()=>approveProtocolSuggestion(candidate,{},async()=>({expected_binding_version:1})),/valid dataset version/);
   const shown={expected_binding_version:1,expected_query_revision:'q'};

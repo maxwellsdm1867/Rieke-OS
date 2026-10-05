@@ -1,4 +1,4 @@
-import {mutationUndo,undoEnabled,localUndoScope} from '../mutationUndo.js';
+import {mutationUndo,undoEnabled,localUndoScope} from '../undo/mutationUndo.js';
 import {treePreviewScope} from '../pagedTreeRequest.js';
 import {predicateWithTagFilters,tagFilterLabel} from '../typed-query/protocolViewFilter.js';
 import {searchInclusionPredicate,searchEpochInclusion,toggleSearchInclusion} from '../searchInclusion.js';
@@ -7,7 +7,7 @@ import QueryPresetDialog from './QueryPresetDialog.jsx';
 import {searchPresetPayload,validatePresetReceipt} from '../project-preferences/projectSearchPresets.js';
 import {rememberSearch,predicateSummary} from '../project-preferences/searchPresets.js';
 import {useProjectPreference} from '../project-preferences/useProjectPreference.js';
-import ExportSelectionDialog from './ExportSelectionDialog.jsx';
+import ExportSelectionDialog from '../exports/ui/ExportSelectionDialog.jsx';
 import PredicateDialog from '../typed-query/ui/PredicateDialog.jsx';
 import {predicateIdentity} from '../typed-query/predicateIdentity.js';
 import {useFieldRegistry} from '../useFieldRegistry.js';

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {resolveTreeGroup,verifyTreeGroup} from './treeGroupTargets.js';
-import {bulkAnnotationChange} from './annotationTags.js';
+import {resolveTreeGroup,verifyTreeGroup} from "./annotations/treeGroupTargets.js";
+import {bulkAnnotationChange} from "./annotations/annotationTags.js";
 
 const revision='a'.repeat(64),path=['b'.repeat(64)],scope={protocolId:'protocol',filters:{metadata_predicate:{all:[]}},splits:'date,cell'};
 function leaf({path:currentPath=path,offset=0,rows,total=rows.length,count=total,rev=revision}){

@@ -1,6 +1,6 @@
-import {useTreeGroupTags} from '../components/TreeGroupTags.jsx';
-import {useMutationUndo} from '../useMutationUndo.js';
-import GroupAnnotationRecovery from '../components/GroupAnnotationRecovery.jsx';
+import {useTreeGroupTags} from "../annotations/ui/TreeGroupTags.jsx";
+import {useMutationUndo} from "../undo/useMutationUndo.js";
+import GroupAnnotationRecovery from "../annotations/ui/GroupAnnotationRecovery.jsx";
 export default function TreeGroupLifecycleHarness({onChange}){
  useMutationUndo('owned-group-project',onChange);
  const groups=useTreeGroupTags({splits:'protocol',onAnnotationsChanged:onChange});

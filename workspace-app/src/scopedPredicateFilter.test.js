@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {predicateWithProtocolFilters,tagFilterLabel} from './typed-query/protocolViewFilter.js';
-import {annotationFilterNeedsRefresh} from './annotationReceipts.js';
+import {annotationFilterNeedsRefresh} from "./annotations/annotationReceipts.js";
 import {predicateToDraft,compilePredicate} from './typed-query/ui/predicateState.js';
 
 test('scientific view criteria remain distinct, exact, and composable',()=>{

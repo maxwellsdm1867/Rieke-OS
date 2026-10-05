@@ -9,9 +9,9 @@ import IncomingCellTypes from './IncomingCellTypes.jsx';
 import {mergeIntentMatches} from '../incomingMergeIntent.js';
 import Inspector,* as InspectorCapabilities from '../../components/Inspector.jsx';
 import ProtocolViewFilter from '../../typed-query/ui/ProtocolViewFilter.jsx';
-import WorkbenchExportDialog from '../../components/WorkbenchExportDialog.jsx';
+import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import IncomingMergePreview from './IncomingMergePreview.jsx';
-import {nextWorkbenchWorkflow} from '../../workbenchExport.js';
+import {nextWorkbenchWorkflow} from "../../exports/workbenchExport.js";
 import {acceptWorkbench,acceptanceFailureKind,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
 export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled}){
