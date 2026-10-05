@@ -273,6 +273,134 @@
     {
       "from": "README.md",
       "to": "python/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/annotations/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/annotations/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/app-updates/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/app-updates/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/appearance/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/appearance/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/cell-qc/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/cell-qc/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/epoch-browser/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/epoch-browser/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/exports/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/exports/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/file-picker/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/file-picker/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/metadata-explorer/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/metadata-explorer/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/metadata-refresh/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/metadata-refresh/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/project-preferences/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/project-preferences/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/project-workspace/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/project-workspace/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/protocol-overview/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/protocol-overview/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/recording-import/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/recording-import/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/summary-jobs/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/summary-jobs/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/tree-browser/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/tree-browser/AGENTS.md"
+    },
+    {
+      "from": "ARCHITECTURE.md",
+      "to": "workspace-app/src/undo/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/undo/AGENTS.md"
     }
   ],
   "shared_paths": [
@@ -323,7 +451,7 @@
       "rules": [
         {
           "language": "javascript",
-          "file": "workspace-app/src/components/PagedTree.jsx",
+          "file": "workspace-app/src/tree-browser/ui/PagedTree.jsx",
           "deny": [
             "workspace-app/src/api.js",
             "workspace-app/src/pagedTreeRequest.js",
@@ -661,7 +789,7 @@
       "rules": [
         {
           "language": "javascript",
-          "file": "workspace-app/src/treeGroupQueryTags.js",
+          "file": "workspace-app/src/annotations/treeGroupQueryTags.js",
           "allow": [
             "workspace-app/src/pagedTreeRequest.js",
             "workspace-app/src/group-save/groupAnnotationRecovery.js"
@@ -674,17 +802,17 @@
           "language": "javascript",
           "file": "workspace-app/src/group-save/groupAnnotationRecovery.js",
           "allow": [
-            "workspace-app/src/mutationUndo.js",
+            "workspace-app/src/undo/mutationUndo.js",
             "workspace-app/src/resourceCache.js"
           ],
           "require": [
-            "workspace-app/src/mutationUndo.js",
+            "workspace-app/src/undo/mutationUndo.js",
             "workspace-app/src/resourceCache.js"
           ]
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/useMutationUndo.js",
+          "file": "workspace-app/src/undo/useMutationUndo.js",
           "require": [
             "workspace-app/src/group-save/groupAnnotationRecovery.js"
           ],
@@ -692,7 +820,7 @@
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/components/GroupAnnotationRecovery.jsx",
+          "file": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
           "require": [
             "workspace-app/src/group-save/groupAnnotationRecovery.js"
           ],
@@ -924,7 +1052,7 @@
       "tests": {
         "javascript": [
           "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
-          "workspace-app/src/searchInclusion.test.js",
+          "workspace-app/src/metadata-explorer/searchInclusion.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/presentationSessionsIntegration.test.js",
           "workspace-app/src/importMergeWorkflow.test.js",
@@ -972,7 +1100,7 @@
           "allow": [
             "react",
             "workspace-app/src/api.js",
-            "workspace-app/src/annotationProfile.js",
+            "workspace-app/src/annotations/annotationProfile.js",
             "workspace-app/src/search-activation/pageReadCache.js"
           ]
         },
@@ -1080,7 +1208,7 @@
           "allow": [
             "workspace-app/src/search-activation/pageReadCache.js",
             "workspace-app/src/pagedTreeRequest.js",
-            "workspace-app/src/columnTreeNavigation.js",
+            "workspace-app/src/tree-browser/columnTreeNavigation.js",
             "workspace-app/src/tree-ancestors/treeBranchReadCache.js"
           ]
         },
@@ -1098,7 +1226,7 @@
           "allow": [
             "@tanstack/react-query",
             "react",
-            "workspace-app/src/annotationProfile.js",
+            "workspace-app/src/annotations/annotationProfile.js",
             "workspace-app/src/tree-ancestors/treeBranchReadCache.js"
           ]
         },
@@ -1115,7 +1243,7 @@
         "javascript": [
           "workspace-app/src/tree-ancestors/treeBranchReadCache.test.js",
           "workspace-app/src/tree-ancestors/treeBranchReads.test.js",
-          "workspace-app/src/columnTreeNavigation.test.js",
+          "workspace-app/src/tree-browser/columnTreeNavigation.test.js",
           "workspace-app/src/inspectorTreeAuthority.test.js",
           "workspace-app/src/workbenchSessionLifecycle.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
@@ -1204,14 +1332,14 @@
             "workspace-app/src/typed-query/ui/predicateState.js",
             "workspace-app/src/requested-summaries/useRequestedSummaries.js",
             "workspace-app/src/requested-summaries/requestedSummaries.js",
-            "workspace-app/src/components/SummaryStatus.jsx",
-            "workspace-app/src/components/SummaryPreferences.jsx",
-            "workspace-app/src/useProtocolSummaryPreferences.js",
-            "workspace-app/src/useProjectPreference.js",
+            "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
+            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
+            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
+            "workspace-app/src/project-preferences/useProjectPreference.js",
             "workspace-app/src/api.js",
-            "workspace-app/src/frozenReadContext.js",
+            "workspace-app/src/epoch-browser/frozenReadContext.js",
             "workspace-app/src/typed-query/predicateIdentity.js",
-            "workspace-app/src/searchPresets.js",
+            "workspace-app/src/project-preferences/searchPresets.js",
             "workspace-app/src/components/StableContent.jsx",
             "workspace-app/src/typed-query/ui/PredicateDialog.css"
           ]
@@ -1246,7 +1374,7 @@
             "react",
             "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
             "workspace-app/src/typed-query/ui/predicateState.js",
-            "workspace-app/src/useFieldRegistry.js"
+            "workspace-app/src/summary-jobs/useFieldRegistry.js"
           ]
         },
         {
@@ -1257,21 +1385,21 @@
             "react-dom",
             "lucide-react",
             "workspace-app/src/api.js",
-            "workspace-app/src/useFieldRegistry.js",
+            "workspace-app/src/summary-jobs/useFieldRegistry.js",
             "workspace-app/src/requested-summaries/useRequestedSummaries.js",
-            "workspace-app/src/useProtocolSummaryPreferences.js",
+            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
             "workspace-app/src/requested-summaries/requestedSummaries.js",
-            "workspace-app/src/components/SummaryStatus.jsx",
-            "workspace-app/src/components/SummaryPreferences.jsx",
+            "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
+            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
             "workspace-app/src/typed-query/ui/TreeBuilder.css",
             "workspace-app/src/ordering.js",
             "workspace-app/src/pointerDrag.js",
-            "workspace-app/src/treeFieldPresentation.js",
+            "workspace-app/src/tree-browser/treeFieldPresentation.js",
             "workspace-app/src/typed-query/jointGrouping.js",
             "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
             "workspace-app/src/components/NavigationLoading.jsx",
             "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
-            "workspace-app/src/components/TreeGroupTags.jsx"
+            "workspace-app/src/annotations/ui/TreeGroupTags.jsx"
           ]
         },
         {
@@ -1330,7 +1458,7 @@
           "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
           "allow": [
-            "workspace-app/src/cellTypes.js"
+            "workspace-app/src/cell-qc/cellTypes.js"
           ]
         },
         {
@@ -1342,7 +1470,7 @@
           "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/incomingReview.js",
           "allow": [
-            "workspace-app/src/protocolSuggestions.js"
+            "workspace-app/src/protocol-overview/protocolSuggestions.js"
           ]
         },
         {
@@ -1354,7 +1482,7 @@
           "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/incomingSelection.js",
           "allow": [
-            "workspace-app/src/epochBrowserSource.js",
+            "workspace-app/src/epoch-browser/epochBrowserSource.js",
             "workspace-app/src/epochSelection.js"
           ]
         },
@@ -1362,7 +1490,7 @@
           "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
           "allow": [
-            "workspace-app/src/annotationTags.js"
+            "workspace-app/src/annotations/annotationTags.js"
           ]
         },
         {
@@ -1382,7 +1510,7 @@
             "workspace-app/src/components/NeuronIcon.jsx",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
-            "workspace-app/src/components/WorkbenchExportDialog.jsx"
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx"
           ]
         },
         {
@@ -1398,11 +1526,11 @@
             "workspace-app/src/typed-query/protocolViewFilter.js",
             "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
             "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
-            "workspace-app/src/components/Inspector.jsx",
+            "workspace-app/src/epoch-browser/ui/Inspector.jsx",
             "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
-            "workspace-app/src/components/WorkbenchExportDialog.jsx",
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
             "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
-            "workspace-app/src/workbenchExport.js",
+            "workspace-app/src/exports/workbenchExport.js",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js"
           ]
         },
@@ -1411,7 +1539,7 @@
           "file": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
           "allow": [
             "workspace-app/src/incoming-workbench/incomingCellTypes.js",
-            "workspace-app/src/cellTypes.js",
+            "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/api.js",
             "workspace-app/src/components/NeuronIcon.jsx"
           ]
@@ -1450,8 +1578,8 @@
           "allow": [
             "lucide-react",
             "workspace-app/src/api.js",
-            "workspace-app/src/annotationTags.js",
-            "workspace-app/src/components/AnnotationTags.css"
+            "workspace-app/src/annotations/annotationTags.js",
+            "workspace-app/src/annotations/ui/AnnotationTags.css"
           ]
         },
         {
@@ -1461,7 +1589,7 @@
             "react",
             "lucide-react",
             "workspace-app/src/api.js",
-            "workspace-app/src/treeGroupTargets.js",
+            "workspace-app/src/annotations/treeGroupTargets.js",
             "workspace-app/src/epochSelection.js"
           ]
         },
@@ -1472,12 +1600,12 @@
             "react",
             "lucide-react",
             "workspace-app/src/api.js",
-            "workspace-app/src/protocolSuggestions.js",
+            "workspace-app/src/protocol-overview/protocolSuggestions.js",
             "workspace-app/src/incoming-workbench/incomingReview.js",
-            "workspace-app/src/components/IncomingExportDialog.jsx",
-            "workspace-app/src/components/WorkbenchExportDialog.jsx",
-            "workspace-app/src/workbenchExport.js",
-            "workspace-app/src/components/MetadataExplorer.jsx",
+            "workspace-app/src/exports/ui/IncomingExportDialog.jsx",
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+            "workspace-app/src/exports/workbenchExport.js",
+            "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
             "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
             "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
             "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
@@ -1581,7 +1709,7 @@
         },
         {
           "language": "javascript",
-          "file": "workspace-app/src/components/EpochViewer.jsx",
+          "file": "workspace-app/src/epoch-browser/ui/EpochViewer.jsx",
           "deny": [],
           "require": [
             "workspace-app/src/traces/ui/TraceViewer.jsx"

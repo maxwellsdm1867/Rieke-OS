@@ -133,7 +133,7 @@
       "source_paths": [
         "workspace-app/src/tree-selection/treeSelectionReader.js",
         "workspace-app/src/pagedTreeRequest.js",
-        "workspace-app/src/components/PagedTree.jsx",
+        "workspace-app/src/tree-browser/ui/PagedTree.jsx",
         "workspace-app/src/epochSelection.js"
       ],
       "verification": {
@@ -260,7 +260,12 @@
           "guard": "all languages passed; 413 source hashes matched",
           "build": "passed; large-chunk advisory",
           "deliberate_faults": "Tree: order/sync/cancellation; group: early release/retry identity/terminal redispatch/post-await capture; both folder private/export/test-import rejection tests"
-        }
+        },
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/tree-browser/AGENTS.md"
+        ]
       }
     },
     {
@@ -329,7 +334,7 @@
         "change_rules": "New route classification needs registered composition coverage; endpoint-name unit doubles alone do not establish mapping. Preserve separation from client read-POST close admission."
       },
       "existing_tests": [
-        "python/tests/test_workspace_mutation_outcomes.py",
+        "python/disco/recovery/tests/test_workspace_mutation_outcomes.py",
         "python/tests/test_workspace_registered_recovery_policy.py",
         "python/tests/test_workspace_group_recovery.py",
         "workspace-app/src/apiCommandPolicy.test.js"
@@ -859,9 +864,9 @@
       ],
       "source_paths": [
         "workspace-app/src/group-save/groupAnnotationRecovery.js",
-        "workspace-app/src/treeGroupQueryTags.js",
-        "workspace-app/src/components/GroupAnnotationRecovery.jsx",
-        "workspace-app/src/components/AnnotationTags.jsx"
+        "workspace-app/src/annotations/treeGroupQueryTags.js",
+        "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
+        "workspace-app/src/annotations/ui/AnnotationTags.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -925,7 +930,12 @@
           "guard": "all languages passed; 413 source hashes matched",
           "build": "passed; large-chunk advisory",
           "deliberate_faults": "Tree: order/sync/cancellation; group: early release/retry identity/terminal redispatch/post-await capture; both folder private/export/test-import rejection tests"
-        }
+        },
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/annotations/AGENTS.md"
+        ]
       }
     },
     {
@@ -2573,7 +2583,7 @@
         "python/tests/test_workspace_workbench.py",
         "python/tests/test_workspace_workbench_pending.py",
         "python/tests/test_workspace_workbench_history_recovery.py",
-        "workspace-app/src/workbenchAuthority.test.js",
+        "workspace-app/src/incoming-workbench/workbenchAuthority.test.js",
         "workspace-app/src/workbenchSessionLifecycle.test.js",
         "workspace-app/src/incomingAuthorityRecovery.test.js"
       ],
@@ -2709,7 +2719,7 @@
       "source_paths": [
         "workspace-app/src/resourceCache.js",
         "workspace-app/src/api.js",
-        "workspace-app/src/components/traceGeometry.js"
+        "workspace-app/src/traces/ui/traceGeometry.js"
       ],
       "verification": {
         "existing_tests": [
@@ -2856,9 +2866,9 @@
         "In-process actor preference namespace and browser lifecycle owner."
       ],
       "source_paths": [
-        "workspace-app/src/pageReadCache.js",
-        "workspace-app/src/navigationReadCache.jsx",
-        "workspace-app/src/components/GlobalSearch.jsx"
+        "workspace-app/src/search-activation/pageReadCache.js",
+        "workspace-app/src/search-activation/navigationReadCache.jsx",
+        "workspace-app/src/search-activation/GlobalSearch.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -2911,9 +2921,9 @@
         "workspace-app/src/components/GlobalSearch.jsx"
       ],
       "existing_tests": [
-        "workspace-app/src/pageReadCache.test.js",
-        "workspace-app/src/globalSearchCache.test.js",
-        "workspace-app/src/navigationReadStrictMode.test.js"
+        "workspace-app/src/search-activation/pageReadCache.test.js",
+        "workspace-app/src/search-activation/globalSearchCache.test.js",
+        "workspace-app/src/search-activation/navigationReadStrictMode.test.js"
       ],
       "not_newly_run_fault_ideas": [
         {
@@ -3008,9 +3018,9 @@
         "Remote but owned tree read request; server witness required."
       ],
       "source_paths": [
-        "workspace-app/src/treeBranchReadCache.js",
-        "workspace-app/src/treeBranchReads.jsx",
-        "workspace-app/src/components/ColumnTree.jsx"
+        "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
+        "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
+        "workspace-app/src/tree-browser/ui/ColumnTree.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -3063,8 +3073,8 @@
         "workspace-app/src/components/ColumnTree.jsx"
       ],
       "existing_tests": [
-        "workspace-app/src/treeBranchReadCache.test.js",
-        "workspace-app/src/columnTreeNavigation.test.js",
+        "workspace-app/src/tree-ancestors/treeBranchReadCache.test.js",
+        "workspace-app/src/tree-browser/columnTreeNavigation.test.js",
         "workspace-app/src/inspectorTreeAuthority.test.js"
       ],
       "not_newly_run_fault_ideas": [
@@ -3127,7 +3137,14 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/tree-browser/AGENTS.md"
+        ]
+      }
     },
     {
       "id": "epoch-browser-readiness",
@@ -3160,11 +3177,11 @@
         "In-process annotation reconciliation, route presentation and branch-read owner."
       ],
       "source_paths": [
-        "workspace-app/src/components/Inspector.jsx",
-        "workspace-app/src/epochBrowserSource.js",
-        "workspace-app/src/epochNavigationIntent.js",
-        "workspace-app/src/inspectionNavigation.js",
-        "workspace-app/src/frozenReadContext.js"
+        "workspace-app/src/epoch-browser/ui/Inspector.jsx",
+        "workspace-app/src/epoch-browser/epochBrowserSource.js",
+        "workspace-app/src/epoch-browser/epochNavigationIntent.js",
+        "workspace-app/src/epoch-browser/inspectionNavigation.js",
+        "workspace-app/src/epoch-browser/frozenReadContext.js"
       ],
       "verification": {
         "existing_tests": [
@@ -3225,9 +3242,9 @@
         "workspace-app/src/frozenReadContext.js"
       ],
       "existing_tests": [
-        "workspace-app/src/epochBrowserSource.test.js",
-        "workspace-app/src/epochNavigationIntent.test.js",
-        "workspace-app/src/inspectionNavigation.test.js",
+        "workspace-app/src/epoch-browser/epochBrowserSource.test.js",
+        "workspace-app/src/epoch-browser/epochNavigationIntent.test.js",
+        "workspace-app/src/epoch-browser/inspectionNavigation.test.js",
         "workspace-app/src/inspectorNavigationLifecycle.test.js",
         "workspace-app/src/inspectorCurationLifecycle.test.js",
         "workspace-app/src/inspectionTreeLifecycle.test.js"
@@ -3293,7 +3310,14 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/epoch-browser/AGENTS.md"
+        ]
+      }
     },
     {
       "id": "workspace-navigation",
@@ -3325,9 +3349,9 @@
         "Local-substitutable browser history; in-process helpers and separate incomingMergeIntent owner."
       ],
       "source_paths": [
-        "workspace-app/src/useWorkspaceNavigation.js",
-        "workspace-app/src/workspaceNavigation.js",
-        "workspace-app/src/incomingMergeIntent.js",
+        "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
+        "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+        "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
         "workspace-app/src/App.jsx"
       ],
       "verification": {
@@ -3379,7 +3403,7 @@
         "workspace-app/src/App.jsx"
       ],
       "existing_tests": [
-        "workspace-app/src/workspaceNavigation.test.js",
+        "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
         "workspace-app/src/presentationSessionsApp.test.js",
         "workspace-app/src/importMergeAppRoute.test.js"
       ],
@@ -3505,9 +3529,9 @@
         "In-process typed summary decoration and preference selection."
       ],
       "source_paths": [
-        "workspace-app/src/requestedSummaries.js",
-        "workspace-app/src/useRequestedSummaries.js",
-        "workspace-app/src/summaryApi.js"
+        "workspace-app/src/requested-summaries/requestedSummaries.js",
+        "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+        "workspace-app/src/requested-summaries/summaryApi.js"
       ],
       "verification": {
         "existing_tests": [
@@ -3560,8 +3584,8 @@
         "workspace-app/src/summaryApi.js"
       ],
       "existing_tests": [
-        "workspace-app/src/requestedSummaries.test.js",
-        "workspace-app/src/requestedSummariesLifecycle.test.js"
+        "workspace-app/src/requested-summaries/requestedSummaries.test.js",
+        "workspace-app/src/requested-summaries/requestedSummariesLifecycle.test.js"
       ],
       "not_newly_run_fault_ideas": [
         {
@@ -3657,7 +3681,7 @@
       "source_paths": [
         "workspace-app/src/useWorkspaceChanges.js",
         "workspace-app/src/App.jsx",
-        "workspace-app/src/components/Inspector.jsx"
+        "workspace-app/src/epoch-browser/ui/Inspector.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -3763,7 +3787,14 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/epoch-browser/AGENTS.md"
+        ]
+      }
     },
     {
       "id": "typed-query-presentation",
@@ -3795,11 +3826,11 @@
         "In-process typed compiler; registry supplied by owned metadata APIs."
       ],
       "source_paths": [
-        "workspace-app/src/components/predicateState.js",
-        "workspace-app/src/components/predicateEditor.js",
-        "workspace-app/src/predicateIdentity.js",
-        "workspace-app/src/jointGrouping.js",
-        "workspace-app/src/predicateFieldPresentation.js"
+        "workspace-app/src/typed-query/ui/predicateState.js",
+        "workspace-app/src/typed-query/ui/predicateEditor.js",
+        "workspace-app/src/typed-query/predicateIdentity.js",
+        "workspace-app/src/typed-query/jointGrouping.js",
+        "workspace-app/src/typed-query/predicateFieldPresentation.js"
       ],
       "verification": {
         "existing_tests": [
@@ -3856,11 +3887,11 @@
         "workspace-app/src/predicateFieldPresentation.js"
       ],
       "existing_tests": [
-        "workspace-app/src/predicateState.test.js",
-        "workspace-app/src/predicateEditor.test.js",
-        "workspace-app/src/predicateIdentity.test.js",
-        "workspace-app/src/jointGrouping.test.js",
-        "workspace-app/src/predicateFieldPresentation.test.js",
+        "workspace-app/src/typed-query/predicateState.test.js",
+        "workspace-app/src/typed-query/predicateEditor.test.js",
+        "workspace-app/src/typed-query/predicateIdentity.test.js",
+        "workspace-app/src/typed-query/jointGrouping.test.js",
+        "workspace-app/src/typed-query/predicateFieldPresentation.test.js",
         "workspace-app/src/predicateDialogLifecycle.test.js",
         "workspace-app/src/scopedPredicateLifecycle.test.js"
       ],
@@ -3956,13 +3987,13 @@
         "In-process incomingMergeIntent and Protocol/App routing; command_contracts owns draft/preview/accept scientific details."
       ],
       "source_paths": [
-        "workspace-app/src/useWorkbenchQueue.js",
-        "workspace-app/src/components/IncomingWorkbench.jsx",
-        "workspace-app/src/components/FrozenIncomingReview.jsx",
-        "workspace-app/src/useIncomingMergeIntent.js",
-        "workspace-app/src/incomingMergeIntent.js",
-        "workspace-app/src/incomingSelection.js",
-        "workspace-app/src/workbenchAuthority.js"
+        "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+        "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+        "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+        "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+        "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+        "workspace-app/src/incoming-workbench/incomingSelection.js",
+        "workspace-app/src/incoming-workbench/workbenchAuthority.js"
       ],
       "verification": {
         "existing_tests": [
@@ -4023,7 +4054,7 @@
         "workspace-app/src/workbenchAuthority.js"
       ],
       "existing_tests": [
-        "workspace-app/src/incomingSelection.test.js",
+        "workspace-app/src/incoming-workbench/incomingSelection.test.js",
         "workspace-app/src/incomingSelectionRendering.test.js",
         "workspace-app/src/workbenchSessionLifecycle.test.js",
         "workspace-app/src/workbenchRouteRendering.test.js",
@@ -4122,9 +4153,9 @@
         "Remote but owned trace endpoint; in-process geometry and resource cache."
       ],
       "source_paths": [
-        "workspace-app/src/components/TraceViewer.jsx",
-        "workspace-app/src/components/traceGeometry.js",
-        "workspace-app/src/traceReadContext.js"
+        "workspace-app/src/traces/ui/TraceViewer.jsx",
+        "workspace-app/src/traces/ui/traceGeometry.js",
+        "workspace-app/src/traces/traceReadContext.js"
       ],
       "verification": {
         "existing_tests": [
@@ -4176,7 +4207,7 @@
         "workspace-app/src/traceReadContext.js"
       ],
       "existing_tests": [
-        "workspace-app/src/traceGeometry.test.js",
+        "workspace-app/src/traces/traceGeometry.test.js",
         "workspace-app/src/traceReadContext.test.js",
         "workspace-app/src/epochResourceLifecycle.test.js"
       ],
@@ -4271,10 +4302,10 @@
         "Local-substitutable localStorage for explicit summary preferences."
       ],
       "source_paths": [
-        "workspace-app/src/treeLayoutPersistence.js",
-        "workspace-app/src/useProtocolTreeLayout.js",
-        "workspace-app/src/useProtocolSummaryPreferences.js",
-        "workspace-app/src/requestedSummaries.js"
+        "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+        "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
+        "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
+        "workspace-app/src/requested-summaries/requestedSummaries.js"
       ],
       "verification": {
         "existing_tests": [
@@ -4325,8 +4356,8 @@
         "workspace-app/src/requestedSummaries.js"
       ],
       "existing_tests": [
-        "workspace-app/src/treeLayoutPersistence.test.js",
-        "workspace-app/src/requestedSummaries.test.js"
+        "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.test.js",
+        "workspace-app/src/requested-summaries/requestedSummaries.test.js"
       ],
       "not_newly_run_fault_ideas": [
         {
@@ -4417,7 +4448,12 @@
             "guard": "passed",
             "explicit_base_plan": "passed"
           }
-        }
+        },
+        "current_frontend_increment": "frontend-finite-a-b-c",
+        "current_frontend_status": "Physical paths composed; exact combined review and aggregate pending",
+        "current_frontend_guidance": [
+          "workspace-app/src/summary-jobs/AGENTS.md"
+        ]
       }
     },
     {
@@ -4992,7 +5028,7 @@
       ],
       "existing_tests": [
         {
-          "path": "desktop/tests/startup-session.test.cjs",
+          "path": "desktop/startup/tests/startup-session.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -5263,7 +5299,7 @@
       ],
       "existing_tests": [
         {
-          "path": "desktop/tests/draft-store.test.cjs",
+          "path": "desktop/drafts/tests/draft-store.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -5271,7 +5307,7 @@
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
-          "path": "desktop/tests/startup-session.test.cjs",
+          "path": "desktop/startup/tests/startup-session.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         }
       ],
@@ -5404,7 +5440,7 @@
       ],
       "existing_tests": [
         {
-          "path": "workspace-app/src/desktopDraftSession.test.js",
+          "path": "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -5682,11 +5718,11 @@
       ],
       "existing_tests": [
         {
-          "path": "desktop/tests/draft-barrier.test.cjs",
+          "path": "desktop/close/tests/draft-barrier.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
-          "path": "desktop/tests/quit-coordinator.test.cjs",
+          "path": "desktop/close/tests/quit-coordinator.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -5844,11 +5880,11 @@
       ],
       "existing_tests": [
         {
-          "path": "desktop/tests/verify-application.test.cjs",
+          "path": "desktop/integrity/tests/verify-application.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
-          "path": "desktop/tests/verification-recovery.test.cjs",
+          "path": "desktop/integrity/tests/verification-recovery.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -6006,11 +6042,11 @@
       ],
       "existing_tests": [
         {
-          "path": "desktop/test/updater.test.cjs",
+          "path": "desktop/updates/tests/updater.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
-          "path": "desktop/test/testing-updater.test.cjs",
+          "path": "desktop/updates/tests/testing-updater.test.cjs",
           "qualification": "Existing test source; not executed for this ledger"
         },
         {
@@ -7022,7 +7058,7 @@
           "qualification": "Existing test source only; not run for this ledger."
         },
         {
-          "path": "workspace-app/src/projectTransfer.test.js",
+          "path": "workspace-app/src/project-workspace/projectTransfer.test.js",
           "qualification": "Existing test source only; not run for this ledger."
         }
       ],
@@ -7427,7 +7463,7 @@
   "organization_rollout": {
     "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
     "goal": "Organize the complete eligible codebase into coherent responsibility folders and navigable public contracts, preserving exact behavior. This worklist groups work; it is not a claim these groups are individual modules.",
-    "status": "active; presentation/tree/group/desktop-close folders integrated; remaining finite coverage and assembled E2E pending",
+    "status": "active; frontend finite A/B/C source paths composed; backend, retained-owner acceptance and combined/native/app qualification pending",
     "work_items": [
       {
         "id": "presentation",
@@ -7801,7 +7837,7 @@
         "progress_note": "JS multi-entry and Python v4 package reader adopted; explicit desktop lanes, profile v2, revision-owned benchmark recipes retained. New named-file Python mode under design; no silent facade or private demotion. Combined path/mapping aggregate pending."
       }
     ],
-    "coverage_status": "All59 records assigned once to20 workitems; all465 baseline paths assigned. Current source wave: {'keep-in-place': 139, 'move-proposed': 241, 'organized': 73, 'deferred': 12}. Previous aggregate snapshot preserved; combined qualification pending.",
+    "coverage_status": "All 465 baseline paths remain assigned. Frontend current partition: 248 organized, 29 keep-in-place, 2 deferred; zero proposed moves. This source-path completion does not establish behavioral or whole-app qualification; historical snapshots below retain their original identities.",
     "stage_rules": [
       "Independent owners progress in parallel owned worktrees; shared contract/catalog/build edits and resource-contending runs serialize under one integration owner.",
       "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
@@ -7927,6 +7963,69 @@
         "python/disco/recovery"
       ],
       "qualification": "Prior progress_snapshot is the last aggregate-verified snapshot, not relabeled by this wave. Counts describe original465 paths; KEEP classifications are not all qualification-complete."
+    },
+    "current_frontend_snapshot": {
+      "id": "frontend-finite-a-b-c",
+      "status": "source composed; exact combined review and aggregate pending",
+      "source_base": "d0ae570b6ad66c712dd56d56b08c0d25e1604e2a",
+      "source_candidates": {
+        "41230b1": "41230b118890817740442ce32b882c27275a8963",
+        "61b6e1f": "61b6e1f9e6677d39799087c6703c4163ece60646"
+      },
+      "finite_plan": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/parallel-wave-integration/finite-remaining-wave-plan.json",
+      "finite_plan_sha256": "f7c634a0eb381a705cb666e05c250c90f4df584b92a7758a1afd48b0bbe212f0",
+      "runtime_move_counts": {
+        "frontend-a": 52,
+        "frontend-b": 72,
+        "frontend-c": 61
+      },
+      "companion_test_moves": 28,
+      "current_frontend_baseline_path_counts": {
+        "keep-in-place": 29,
+        "organized": 248,
+        "deferred": 2
+      },
+      "qualification": "Path coverage only; source candidate receipts keep their original identities. No combined test/build, native/app, benchmark or final qualification is claimed.",
+      "guidance_paths": [
+        "workspace-app/src/annotations/AGENTS.md",
+        "workspace-app/src/app-updates/AGENTS.md",
+        "workspace-app/src/appearance/AGENTS.md",
+        "workspace-app/src/cell-qc/AGENTS.md",
+        "workspace-app/src/epoch-browser/AGENTS.md",
+        "workspace-app/src/exports/AGENTS.md",
+        "workspace-app/src/file-picker/AGENTS.md",
+        "workspace-app/src/metadata-explorer/AGENTS.md",
+        "workspace-app/src/metadata-refresh/AGENTS.md",
+        "workspace-app/src/project-preferences/AGENTS.md",
+        "workspace-app/src/project-workspace/AGENTS.md",
+        "workspace-app/src/protocol-overview/AGENTS.md",
+        "workspace-app/src/recording-import/AGENTS.md",
+        "workspace-app/src/summary-jobs/AGENTS.md",
+        "workspace-app/src/tree-browser/AGENTS.md",
+        "workspace-app/src/undo/AGENTS.md"
+      ],
+      "source_candidate_evidence": [
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/frontend-batch-a-evidence-e6a6a74/receipt.json",
+          "sha256": "d334d11e636f63c11af36b88572ffee3f12e4e4026bc8e73d5bd894b2a429697",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/frontend-batch-a-evidence-e6a6a74/production-interface-check.json",
+          "sha256": "279d2f34f6c05941bbcee9ec6fd832b2b4edaec7d047d22e13a5fcae6cd6c8d6",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/frontend-batch-c/binding.json",
+          "sha256": "46f021ea12bbf0eccf58cc1073701e98ab9385af25006eac6a38efdf31778e3f",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/frontend-batch-c/independent-source-proof.json",
+          "sha256": "95a3d2d97f218168bd2e74e107676b0d536766a1f05d6478d23e3c10e4259ca9",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        }
+      ]
     }
   }
 }

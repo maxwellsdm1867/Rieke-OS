@@ -8,7 +8,7 @@
     "frontend": {
       "format": "rieke-frontend-runtime-coverage",
       "version": 1,
-      "status": "Design-only finite coverage worklist; no runtime/test/service execution and no benchmark qualification",
+      "status": "Baseline design inventory preserved; current_path/current_disposition record source organization through frontend A/B/C; combined qualification pending",
       "scope": {
         "tracked_runtime_suffixes": [
           ".js",
@@ -67,21 +67,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/annotationProfile.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/annotationProfile.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/annotationReceipts.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/annotationReceipts.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/annotationReceipts.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/annotationTags.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/annotationTags.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/annotationTags.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/api.js",
@@ -95,42 +104,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/appearance/appAppearance.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "appearance"
+          "group": "appearance",
+          "current_path": "workspace-app/src/appearance/appAppearance.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/appUpdates.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/app-updates/appUpdates.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "app-updates"
+          "group": "app-updates",
+          "current_path": "workspace-app/src/app-updates/appUpdates.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/appearanceThemes.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/appearance/appearanceThemes.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "appearance"
+          "group": "appearance",
+          "current_path": "workspace-app/src/appearance/appearanceThemes.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/boundedTree.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/boundedTree.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/boundedTree.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/cellTypes.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/cellTypes.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/cellTypes.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/columnTreeNavigation.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/columnTreeNavigation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/columnTreeNavigation.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/columnTreeReads.js",
@@ -147,154 +174,220 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/AnnotationIndicator.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/AnnotationIndicator.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AnnotationProfile.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/AnnotationProfile.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/AnnotationProfile.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AnnotationTags.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/AnnotationTags.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/AnnotationTags.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AnnotationTags.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/AnnotationTags.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/AnnotationTags.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AppAppearance.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/appearance/ui/AppAppearance.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "appearance"
+          "group": "appearance",
+          "current_path": "workspace-app/src/appearance/ui/AppAppearance.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AppAppearance.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/appearance/ui/AppAppearance.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "appearance"
+          "group": "appearance",
+          "current_path": "workspace-app/src/appearance/ui/AppAppearance.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AppUpdates.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/app-updates/ui/AppUpdates.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "app-updates"
+          "group": "app-updates",
+          "current_path": "workspace-app/src/app-updates/ui/AppUpdates.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/AppUpdates.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/app-updates/ui/AppUpdates.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "app-updates"
+          "group": "app-updates",
+          "current_path": "workspace-app/src/app-updates/ui/AppUpdates.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/BrowseFilesButton.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/ui/BrowseFilesButton.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/ui/BrowseFilesButton.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CandidateExportPanel.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/CandidateExportPanel.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/CandidateExportPanel.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CandidateExportPanel.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/CandidateExportPanel.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/CandidateExportPanel.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellList.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellList.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellList.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellListSection.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellListSection.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellListSection.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellListSection.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellListSection.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellListSection.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellQC.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellQC.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellQC.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellQC.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellQC.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellQC.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellTypeAccordions.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellTypeAccordions.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellTypeAccordions.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellTypeAccordions.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellTypeAccordions.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellTypeAccordions.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellTypeSummary.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellTypeSummary.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellTypeSummary.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/CellTypeSummary.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/cell-qc/ui/CellTypeSummary.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "cell-qc"
+          "group": "cell-qc",
+          "current_path": "workspace-app/src/cell-qc/ui/CellTypeSummary.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ColumnTree.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/ColumnTree.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/ColumnTree.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ColumnTree.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/ColumnTree.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/ColumnTree.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/Common.jsx",
@@ -318,14 +411,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/DataStores.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/DataStores.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/DataStores.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/DataStores.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/DataStores.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/DesktopDraftRecovery.jsx",
@@ -339,147 +438,210 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochAnalysisInclusion.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochAnalysisInclusion.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochBrowserChrome.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochBrowserChrome.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochBrowserChrome.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochBrowserLayout.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochBrowserLayout.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochBrowserLayout.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochConnections.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochConnections.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochConnections.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochConnections.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochConnections.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochConnections.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochDetailHeading.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochDetailHeading.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochDetailHeading.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochInclusionToggle.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochInclusionToggle.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochSkimList.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochSkimList.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochSkimList.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochTags.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/EpochTags.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/EpochTags.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochTags.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/EpochTags.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/EpochTags.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochTreePane.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochTreePane.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochTreePane.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochViewer.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochViewer.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochViewer.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/EpochViewer.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/EpochViewer.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/EpochViewer.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ExportSelectionDialog.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/ExportSelectionDialog.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/ExportSelectionDialog.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ExportSelectionDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/ExportSelectionDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/ExportSelectionDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ExternalTagSync.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/ExternalTagSync.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/ExternalTagSync.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/FolderBrowserDialog.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/ui/FolderBrowserDialog.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/ui/FolderBrowserDialog.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/FolderBrowserDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/ui/FolderBrowserDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/ui/FolderBrowserDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/FolderPathInput.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/ui/FolderPathInput.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/ui/FolderPathInput.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/FolderPathInput.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/ui/FolderPathInput.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/ui/FolderPathInput.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/FrozenIncomingReview.jsx",
@@ -516,70 +678,100 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/GroupAnnotationRecovery.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/H5Inbox.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/H5Inbox.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/H5Inbox.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/H5Inbox.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/H5Inbox.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/H5Inbox.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/HierarchyTree.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/HierarchyTree.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/HierarchyTree.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/HierarchyTree.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/HierarchyTree.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/HierarchyTree.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ImportHistory.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/ImportHistory.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/ImportHistory.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ImportHistory.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/ImportHistory.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/ImportHistory.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ImportStatusBar.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/ImportStatusBar.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/ImportStatusBar.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ImportStatusBar.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/ui/ImportStatusBar.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/ui/ImportStatusBar.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/IncomingCellTypes.jsx",
@@ -606,7 +798,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/IncomingExportDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/IncomingExportDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/IncomingMergePreview.jsx",
@@ -673,42 +868,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/InspectionCellTree.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/InspectionCellTree.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/InspectionCellTree.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/InspectionCellTree.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/InspectionCellTree.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/Inspector.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/Inspector.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/Inspector.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/Inspector.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/Inspector.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/Inspector.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/InspectorActions.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/InspectorActions.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/InspectorActions.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/InspectorPolish.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/InspectorPolish.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/InspectorPolish.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/JointGroupingEditor.jsx",
@@ -725,7 +938,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/LocalExportFolder.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/LocalExportFolder.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MasterLog.css",
@@ -746,63 +962,90 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/MatchingEpochs.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/MatchingEpochs.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MatchingEpochs.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataExplorer.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataExplorer.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataPanel.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/MetadataPanel.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/MetadataPanel.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataPanel.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/MetadataPanel.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/MetadataPanel.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataRefresh.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-refresh"
+          "group": "metadata-refresh",
+          "current_path": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataRefresh.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-refresh"
+          "group": "metadata-refresh",
+          "current_path": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/MetadataTable.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/ui/MetadataTable.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/ui/MetadataTable.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/NavigationLoading.css",
@@ -830,35 +1073,50 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/NewPinnedProtocol.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/NewPinnedProtocol.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/Overview.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/Overview.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/Overview.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/Overview.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/Overview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/Overview.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/PagedTree.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/PagedTree.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/PagedTree.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/PagedTree.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/PagedTree.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/PagedTree.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/PaneDivider.jsx",
@@ -922,210 +1180,300 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectClosedNotice.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectFiles.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectFiles.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectFiles.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectFiles.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectFiles.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectFiles.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectFolder.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectFolder.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectFolder.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectFolder.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectFolder.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectFolder.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectNavigator.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectNavigator.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectNavigator.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectNavigator.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectNavigator.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectNavigator.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectOnboarding.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectOnboarding.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectOnboarding.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectOnboarding.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectSetupDialog.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectSetupDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectStartupError.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectStartupError.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectStartupError.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectUnmountDialog.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProjectUnmountDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolApplyPanel.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolApplyPanel.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolApplyPanel.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolDiff.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolDiff.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolDiff.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolDiff.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolDiff.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolDiff.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolExportDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/ProtocolExportDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/ProtocolExportDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolExports.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/ProtocolExports.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/ProtocolExports.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolExports.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/ProtocolExports.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/ProtocolExports.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolInfographic.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolInfographic.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSelectionSummary.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSelectionSummary.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSidebar.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSidebar.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSuggestion.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolSuggestion.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolTagSummary.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/ProtocolTagSummary.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/ProtocolTagSummary.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ProtocolViewFilter.css",
@@ -1152,14 +1500,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/ui/QueryPresetDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/ui/QueryPresetDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/QueryPresetHistory.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/ui/QueryPresetHistory.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/ui/QueryPresetHistory.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/RecordingSize.jsx",
@@ -1173,7 +1527,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/RetainedTreePresentation.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/RetainedTreePresentation.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/ScientificContext.jsx",
@@ -1197,42 +1554,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/ui/SearchPresets.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/ui/SearchPresets.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SearchPresets.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/ui/SearchPresets.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/ui/SearchPresets.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SelectionMaskDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/SelectionMaskDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/SelectionMaskDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SelectionOverview.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/SelectionOverview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/SelectionOverview.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SourcePropagation.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/SourcePropagation.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/SourcePropagation.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SourcePropagation.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/SourcePropagation.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/SourcePropagation.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/StableContent.css",
@@ -1253,35 +1628,50 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/SummaryStatus.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TagExchange.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/TagExchange.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/TagExchange.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TagExchangeControls.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/TagExchangeControls.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/TagExchangeControls.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TagExchangeDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/TagExchangeDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/TagExchangeDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TraceViewer.css",
@@ -1328,42 +1718,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/TreeGroupTags.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/TreeGroupTags.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TreeGroupTags.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/ui/TreeGroupTags.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/ui/TreeGroupTags.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TreePreview.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/TreePreview.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/TreePreview.css",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/TreePreview.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/ui/TreePreview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/ui/TreePreview.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/UndoControls.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/undo/ui/UndoControls.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "undo"
+          "group": "undo",
+          "current_path": "workspace-app/src/undo/ui/UndoControls.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/WorkbenchExportDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/metadataValues.js",
@@ -1377,7 +1785,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/ui/overviewModel.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/ui/overviewModel.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/components/predicateEditor.js",
@@ -1414,7 +1825,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/curationSelection.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/curationSelection.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/desktopDraftSession.js",
@@ -1437,21 +1851,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/epochBrowserSource.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochBrowserSource.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochListScroll.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/epochListScroll.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochListScroll.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochNavigationIntent.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/epochNavigationIntent.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochNavigationIntent.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochSelection.js",
@@ -1465,56 +1888,80 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/epochSkimGroups.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochSkimGroups.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/explorerScope.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/explorerScope.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/explorerScope.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/exportFormats.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/exportFormats.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/exportFormats.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/exportProtocolTargets.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/exportProtocolTargets.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/exportProtocolTargets.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/exportReuse.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/exportReuse.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/exportReuse.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/externalTagMonitor.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/externalTagMonitor.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/externalTagMonitor.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/folderBrowser.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/file-picker/folderBrowser.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/folderBrowser.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/frozenReadContext.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/frozenReadContext.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/frozenReadContext.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/group-save/groupAnnotationRecovery.js",
@@ -1528,21 +1975,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/hierarchyTreeState.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/hierarchyTreeState.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/importProgress.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/importProgress.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/importProgress.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/importReadiness.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/importReadiness.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/importReadiness.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/incomingCellTypes.js",
@@ -1609,28 +2065,40 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/inspectionCellTree.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectionCellTree.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectionNavigation.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/inspectionNavigation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectionNavigation.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectionScope.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/inspectionScope.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectionScope.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectorInteraction.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/inspectorInteraction.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectorInteraction.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/jointGrouping.js",
@@ -1661,7 +2129,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-refresh/metadataRefresh.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-refresh"
+          "group": "metadata-refresh",
+          "current_path": "workspace-app/src/metadata-refresh/metadataRefresh.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/metadataSearch.js",
@@ -1678,7 +2149,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/undo/mutationUndo.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "undo"
+          "group": "undo",
+          "current_path": "workspace-app/src/undo/mutationUndo.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/navigationReadCache.jsx",
@@ -1770,28 +2244,40 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/projectNavigation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/projectNavigation.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectPreferences.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/projectPreferences.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/projectPreferences.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectSearchPresets.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/projectSearchPresets.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/projectSearchPresets.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectTransfer.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/projectTransfer.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/projectTransfer.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectUnmount.js",
@@ -1805,14 +2291,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/protocolOverviewModel.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/protocolOverviewModel.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/protocolSuggestions.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/protocol-overview/protocolSuggestions.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "protocol-overview"
+          "group": "protocol-overview",
+          "current_path": "workspace-app/src/protocol-overview/protocolSuggestions.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/protocolViewFilter.js",
@@ -1829,7 +2321,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/recordingIdentity.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/recordingIdentity.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/requestedSummaries.js",
@@ -1867,14 +2362,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-explorer/searchInclusion.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/searchInclusion.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/searchPresets.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/searchPresets.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/searchPresets.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/selectedIncomingWorkflow.js",
@@ -1891,7 +2392,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-workspace/startupRestore.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/startupRestore.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/styles.css",
@@ -1915,7 +2419,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/tagExchange.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/tagExchange.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/themes.css",
@@ -1946,7 +2453,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/treeBranchPresentation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/treeBranchPresentation.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeBranchReadCache.js",
@@ -1973,21 +2483,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-browser/treeFieldPresentation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/treeFieldPresentation.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeGroupQueryTags.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/treeGroupQueryTags.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/treeGroupQueryTags.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeGroupTargets.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/treeGroupTargets.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/treeGroupTargets.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeLayoutPersistence.js",
@@ -2003,14 +2522,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/uploadRecording.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/uploadRecording.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useAnnotationReceipts.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/useAnnotationReceipts.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/useAnnotationReceipts.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useDesktopDraft.js",
@@ -2026,35 +2551,50 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/epoch-browser/useEpochBrowserPage.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/useEpochBrowserPage.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useFieldRegistry.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/useFieldRegistry.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/summary-jobs/useFieldRegistry.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useImportMonitor.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/useImportMonitor.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/useImportMonitor.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useImportQueue.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/useImportQueue.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/useImportQueue.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useImportReviewStatus.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/recording-import/useImportReviewStatus.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/useImportReviewStatus.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useIncomingMergeIntent.js",
@@ -2071,21 +2611,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/undo/useMutationUndo.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "undo"
+          "group": "undo",
+          "current_path": "workspace-app/src/undo/useMutationUndo.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useProjectPreference.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/project-preferences/useProjectPreference.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/useProjectPreference.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useProtocolSummaryPreferences.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useProtocolTreeLayout.js",
@@ -2111,7 +2660,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/annotations/useTreeCellSelection.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "annotations"
+          "group": "annotations",
+          "current_path": "workspace-app/src/annotations/useTreeCellSelection.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/useUnmountGuard.js",
@@ -2164,7 +2716,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/exports/workbenchExport.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "exports"
+          "group": "exports",
+          "current_path": "workspace-app/src/exports/workbenchExport.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/workspaceNavigation.js",
@@ -2448,6 +3003,20 @@
             "workspace-app/src/hierarchyTreeState.js",
             "workspace-app/src/treeBranchPresentation.js",
             "workspace-app/src/treeFieldPresentation.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/tree-browser/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/tree-browser/boundedTree.js",
+            "workspace-app/src/tree-browser/columnTreeNavigation.js",
+            "workspace-app/src/tree-browser/ui/ColumnTree.jsx",
+            "workspace-app/src/tree-browser/ui/HierarchyTree.jsx",
+            "workspace-app/src/tree-browser/ui/PagedTree.jsx",
+            "workspace-app/src/tree-browser/ui/RetainedTreePresentation.jsx",
+            "workspace-app/src/tree-browser/ui/TreePreview.jsx",
+            "workspace-app/src/tree-browser/hierarchyTreeState.js",
+            "workspace-app/src/tree-browser/treeBranchPresentation.js",
+            "workspace-app/src/tree-browser/treeFieldPresentation.js"
           ]
         },
         {
@@ -2515,6 +3084,36 @@
             "workspace-app/src/inspectionScope.js",
             "workspace-app/src/inspectorInteraction.js",
             "workspace-app/src/useEpochBrowserPage.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/epoch-browser/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/epoch-browser/ui/EpochAnalysisInclusion.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochBrowserChrome.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochBrowserLayout.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochConnections.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochDetailHeading.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochSkimList.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochTreePane.jsx",
+            "workspace-app/src/epoch-browser/ui/EpochViewer.jsx",
+            "workspace-app/src/epoch-browser/ui/InspectionCellTree.jsx",
+            "workspace-app/src/epoch-browser/ui/Inspector.jsx",
+            "workspace-app/src/epoch-browser/ui/InspectorActions.jsx",
+            "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
+            "workspace-app/src/epoch-browser/ui/MetadataPanel.jsx",
+            "workspace-app/src/epoch-browser/ui/MetadataTable.jsx",
+            "workspace-app/src/epoch-browser/curationSelection.js",
+            "workspace-app/src/epoch-browser/epochBrowserSource.js",
+            "workspace-app/src/epoch-browser/epochListScroll.js",
+            "workspace-app/src/epoch-browser/epochNavigationIntent.js",
+            "workspace-app/src/epoch-browser/epochSkimGroups.js",
+            "workspace-app/src/epoch-browser/frozenReadContext.js",
+            "workspace-app/src/epoch-browser/inspectionCellTree.js",
+            "workspace-app/src/epoch-browser/inspectionNavigation.js",
+            "workspace-app/src/epoch-browser/inspectionScope.js",
+            "workspace-app/src/epoch-browser/inspectorInteraction.js",
+            "workspace-app/src/epoch-browser/useEpochBrowserPage.js"
           ]
         },
         {
@@ -2608,6 +3207,22 @@
             "workspace-app/src/exportProtocolTargets.js",
             "workspace-app/src/exportReuse.js",
             "workspace-app/src/workbenchExport.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/exports/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/exports/ui/CandidateExportPanel.jsx",
+            "workspace-app/src/exports/ui/ExportSelectionDialog.jsx",
+            "workspace-app/src/exports/ui/IncomingExportDialog.jsx",
+            "workspace-app/src/exports/ui/LocalExportFolder.jsx",
+            "workspace-app/src/exports/ui/ProtocolExportDialog.jsx",
+            "workspace-app/src/exports/ui/ProtocolExports.jsx",
+            "workspace-app/src/exports/ui/SelectionMaskDialog.jsx",
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+            "workspace-app/src/exports/exportFormats.js",
+            "workspace-app/src/exports/exportProtocolTargets.js",
+            "workspace-app/src/exports/exportReuse.js",
+            "workspace-app/src/exports/workbenchExport.js"
           ]
         },
         {
@@ -2647,6 +3262,29 @@
             "workspace-app/src/treeGroupTargets.js",
             "workspace-app/src/useAnnotationReceipts.js",
             "workspace-app/src/useTreeCellSelection.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/annotations/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/annotations/annotationProfile.js",
+            "workspace-app/src/annotations/annotationReceipts.js",
+            "workspace-app/src/annotations/annotationTags.js",
+            "workspace-app/src/annotations/ui/AnnotationIndicator.jsx",
+            "workspace-app/src/annotations/ui/AnnotationProfile.jsx",
+            "workspace-app/src/annotations/ui/AnnotationTags.jsx",
+            "workspace-app/src/annotations/ui/EpochTags.jsx",
+            "workspace-app/src/annotations/ui/ExternalTagSync.jsx",
+            "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
+            "workspace-app/src/annotations/ui/ProtocolTagSummary.jsx",
+            "workspace-app/src/annotations/ui/TagExchangeControls.jsx",
+            "workspace-app/src/annotations/ui/TagExchangeDialog.jsx",
+            "workspace-app/src/annotations/ui/TreeGroupTags.jsx",
+            "workspace-app/src/annotations/externalTagMonitor.js",
+            "workspace-app/src/annotations/tagExchange.js",
+            "workspace-app/src/annotations/treeGroupQueryTags.js",
+            "workspace-app/src/annotations/treeGroupTargets.js",
+            "workspace-app/src/annotations/useAnnotationReceipts.js",
+            "workspace-app/src/annotations/useTreeCellSelection.js"
           ]
         },
         {
@@ -2669,6 +3307,13 @@
             "workspace-app/src/components/UndoControls.jsx",
             "workspace-app/src/mutationUndo.js",
             "workspace-app/src/useMutationUndo.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/undo/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/undo/ui/UndoControls.jsx",
+            "workspace-app/src/undo/mutationUndo.js",
+            "workspace-app/src/undo/useMutationUndo.js"
           ]
         },
         {
@@ -2690,6 +3335,13 @@
           "public_entries": [
             "workspace-app/src/components/MetadataRefresh.jsx",
             "workspace-app/src/metadataRefresh.js",
+            "workspace-app/src/useWorkspaceChanges.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/metadata-refresh/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/metadata-refresh/ui/MetadataRefresh.jsx",
+            "workspace-app/src/metadata-refresh/metadataRefresh.js",
             "workspace-app/src/useWorkspaceChanges.js"
           ]
         },
@@ -2751,6 +3403,17 @@
             "workspace-app/src/useFieldRegistry.js",
             "workspace-app/src/useProtocolSummaryPreferences.js",
             "workspace-app/src/useRequestedSummaries.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/summary-jobs/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
+            "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
+            "workspace-app/src/requestedSummaries.js",
+            "workspace-app/src/summaryApi.js",
+            "workspace-app/src/summary-jobs/useFieldRegistry.js",
+            "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
+            "workspace-app/src/useRequestedSummaries.js"
           ]
         },
         {
@@ -2799,6 +3462,15 @@
             "workspace-app/src/projectSearchPresets.js",
             "workspace-app/src/searchPresets.js",
             "workspace-app/src/useProjectPreference.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/project-preferences/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/project-preferences/ui/SearchPresets.jsx",
+            "workspace-app/src/project-preferences/projectPreferences.js",
+            "workspace-app/src/project-preferences/projectSearchPresets.js",
+            "workspace-app/src/project-preferences/searchPresets.js",
+            "workspace-app/src/project-preferences/useProjectPreference.js"
           ]
         },
         {
@@ -2824,6 +3496,15 @@
             "workspace-app/src/components/QueryPresetHistory.jsx",
             "workspace-app/src/explorerScope.js",
             "workspace-app/src/searchInclusion.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/metadata-explorer/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
+            "workspace-app/src/metadata-explorer/ui/QueryPresetDialog.jsx",
+            "workspace-app/src/metadata-explorer/ui/QueryPresetHistory.jsx",
+            "workspace-app/src/metadata-explorer/explorerScope.js",
+            "workspace-app/src/metadata-explorer/searchInclusion.js"
           ]
         },
         {
@@ -2854,6 +3535,23 @@
             "workspace-app/src/components/overviewModel.js",
             "workspace-app/src/protocolOverviewModel.js",
             "workspace-app/src/protocolSuggestions.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/protocol-overview/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/protocol-overview/ui/NewPinnedProtocol.jsx",
+            "workspace-app/src/protocol-overview/ui/Overview.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolApplyPanel.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolDiff.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolInfographic.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolSidebar.jsx",
+            "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.jsx",
+            "workspace-app/src/protocol-overview/ui/SelectionOverview.jsx",
+            "workspace-app/src/protocol-overview/ui/SourcePropagation.jsx",
+            "workspace-app/src/protocol-overview/ui/overviewModel.js",
+            "workspace-app/src/protocol-overview/protocolOverviewModel.js",
+            "workspace-app/src/protocol-overview/protocolSuggestions.js"
           ]
         },
         {
@@ -2878,6 +3576,15 @@
             "workspace-app/src/components/CellQC.jsx",
             "workspace-app/src/components/CellTypeAccordions.jsx",
             "workspace-app/src/components/CellTypeSummary.jsx"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/cell-qc/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/cell-qc/cellTypes.js",
+            "workspace-app/src/cell-qc/ui/CellListSection.jsx",
+            "workspace-app/src/cell-qc/ui/CellQC.jsx",
+            "workspace-app/src/cell-qc/ui/CellTypeAccordions.jsx",
+            "workspace-app/src/cell-qc/ui/CellTypeSummary.jsx"
           ]
         },
         {
@@ -2910,6 +3617,22 @@
             "workspace-app/src/projectNavigation.js",
             "workspace-app/src/projectTransfer.js",
             "workspace-app/src/startupRestore.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/project-workspace/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/project-workspace/ui/DataStores.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectClosedNotice.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectFiles.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectFolder.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectNavigator.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectSetupDialog.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectStartupError.jsx",
+            "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.jsx",
+            "workspace-app/src/project-workspace/projectNavigation.js",
+            "workspace-app/src/project-workspace/projectTransfer.js",
+            "workspace-app/src/project-workspace/startupRestore.js"
           ]
         },
         {
@@ -2937,6 +3660,20 @@
             "workspace-app/src/useImportMonitor.js",
             "workspace-app/src/useImportQueue.js",
             "workspace-app/src/useImportReviewStatus.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/recording-import/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/recording-import/ui/H5Inbox.jsx",
+            "workspace-app/src/recording-import/ui/ImportHistory.jsx",
+            "workspace-app/src/recording-import/ui/ImportStatusBar.jsx",
+            "workspace-app/src/recording-import/importProgress.js",
+            "workspace-app/src/recording-import/importReadiness.js",
+            "workspace-app/src/recording-import/recordingIdentity.js",
+            "workspace-app/src/recording-import/uploadRecording.js",
+            "workspace-app/src/recording-import/useImportMonitor.js",
+            "workspace-app/src/recording-import/useImportQueue.js",
+            "workspace-app/src/recording-import/useImportReviewStatus.js"
           ]
         },
         {
@@ -2958,6 +3695,14 @@
             "workspace-app/src/components/FolderBrowserDialog.jsx",
             "workspace-app/src/components/FolderPathInput.jsx",
             "workspace-app/src/folderBrowser.js"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/file-picker/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/file-picker/ui/BrowseFilesButton.jsx",
+            "workspace-app/src/file-picker/ui/FolderBrowserDialog.jsx",
+            "workspace-app/src/file-picker/ui/FolderPathInput.jsx",
+            "workspace-app/src/file-picker/folderBrowser.js"
           ]
         },
         {
@@ -2978,6 +3723,13 @@
             "workspace-app/src/appAppearance.js",
             "workspace-app/src/appearanceThemes.js",
             "workspace-app/src/components/AppAppearance.jsx"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/appearance/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/appearance/appAppearance.js",
+            "workspace-app/src/appearance/appearanceThemes.js",
+            "workspace-app/src/appearance/ui/AppAppearance.jsx"
           ]
         },
         {
@@ -2997,6 +3749,12 @@
           "public_entries": [
             "workspace-app/src/appUpdates.js",
             "workspace-app/src/components/AppUpdates.jsx"
+          ],
+          "current_state": "source composed; exact combined review and aggregate pending",
+          "current_guidance": "workspace-app/src/app-updates/AGENTS.md",
+          "current_public_entries": [
+            "workspace-app/src/app-updates/appUpdates.js",
+            "workspace-app/src/app-updates/ui/AppUpdates.jsx"
           ]
         },
         {
@@ -3082,7 +3840,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "appearance"
+          "group": "appearance",
+          "current_path": "workspace-app/src/appearance/appAppearancePersistence.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/appUpdates.test.js",
@@ -3091,7 +3852,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "app-updates"
+          "group": "app-updates",
+          "current_path": "workspace-app/src/app-updates/appUpdates.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/appUpdatesLifecycle.test.js",
@@ -3129,7 +3893,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/tree-browser/boundedTree.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/candidateContinuity.test.js",
@@ -3195,7 +3962,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/columnTreeNavigation.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/curation-scope.test.js",
@@ -3214,7 +3984,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/curationSelection.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/dataExportUi.test.js",
@@ -3253,7 +4026,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochBrowserSource.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochListScroll.test.js",
@@ -3262,7 +4038,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochListScroll.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochNavigationIntent.test.js",
@@ -3271,7 +4050,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochNavigationIntent.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochResourceLifecycle.test.js",
@@ -3299,7 +4081,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/epochSkimGroups.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/epochViewerArchitecture.test.js",
@@ -3326,7 +4111,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "metadata-explorer"
+          "group": "metadata-explorer",
+          "current_path": "workspace-app/src/metadata-explorer/explorerScope.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/export-policy.test.js",
@@ -3381,7 +4169,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "file-picker"
+          "group": "file-picker",
+          "current_path": "workspace-app/src/file-picker/folderBrowser.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/folderPathInputLifecycle.test.js",
@@ -3429,7 +4220,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/hierarchyTreeState.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/importMergeAppRoute.test.js",
@@ -3458,7 +4252,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/importProgress.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/importReadiness.test.js",
@@ -3467,7 +4264,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/importReadiness.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/importReviewStatus.test.js",
@@ -3589,7 +4389,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/epoch-browser/inspectionCellTree.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectionNavigation.test.js",
@@ -3598,7 +4401,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Keep current path until benchmark historical-path reconstruction is reviewed; do not create forwarding tests.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectionNavigation.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectionScope.test.js",
@@ -3607,7 +4413,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectionScope.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectionTreeLifecycle.test.js",
@@ -3634,7 +4443,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "epoch-browser"
+          "group": "epoch-browser",
+          "current_path": "workspace-app/src/epoch-browser/inspectorInteraction.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/inspectorNavigationLifecycle.test.js",
@@ -3691,7 +4503,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "metadata-refresh"
+          "group": "metadata-refresh",
+          "current_path": "workspace-app/src/metadata-refresh/metadataRefresh.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/metadataRefreshLifecycle.test.js",
@@ -3919,7 +4734,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/project-workspace/projectNavigation.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectPreferences.test.js",
@@ -3929,7 +4747,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/project-preferences/projectPreferences.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectSearchPresets.test.js",
@@ -3938,7 +4759,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/projectSearchPresets.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectStartupError.test.js",
@@ -3956,7 +4780,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "project-workspace"
+          "group": "project-workspace",
+          "current_path": "workspace-app/src/project-workspace/projectTransfer.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/projectUnmount.test.js",
@@ -4083,7 +4910,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/metadata-explorer/searchInclusion.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/searchPresets.test.js",
@@ -4092,7 +4922,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "project-preferences"
+          "group": "project-preferences",
+          "current_path": "workspace-app/src/project-preferences/searchPresets.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/selectedIncomingWorkflow.test.js",
@@ -4185,7 +5018,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/treeBranchPresentation.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeBranchReadCache.test.js",
@@ -4214,7 +5050,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "tree-browser"
+          "group": "tree-browser",
+          "current_path": "workspace-app/src/tree-browser/treeFieldPresentation.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/treeGroupAnnotationWorkflow.test.js",
@@ -4263,7 +5102,10 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "recording-import"
+          "group": "recording-import",
+          "current_path": "workspace-app/src/recording-import/uploadRecording.test.js",
+          "current_disposition": "organized; frontend A/B/C source composed, exact combined review and aggregate pending",
+          "organization_increment": "frontend-finite-a-b-c"
         },
         {
           "path": "workspace-app/src/workbenchAuthority.test.js",
@@ -4388,7 +5230,7 @@
           "reason": "Fixture/history, test-support tooling, benchmark runner or local navigation instructions; not production runtime. Preserve identity and historical paths."
         }
       ],
-      "acceptance_status": "Assignment/design only; proposed moves and retained roles require their documented implementation/review/test gates. No runtime completion implied."
+      "acceptance_status": "All 185 finite remaining frontend runtime moves composed. Retained/deferred owners and combined review, aggregate, backend, packaging, native and assembled-app gates remain separate and pending."
     },
     "backend": {
       "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
@@ -10641,6 +11483,287 @@
         "workspace-app/src/useWorkspaceChanges.js": "Display invalidation clock remains shared across owners with distinct freshness authorities; see src/READ-OWNERS.md."
       },
       "qualification": "No native/HTTP/app or performance qualification. Earlier aggregate receipts retain their tested identities."
+    },
+    {
+      "id": "frontend-finite-a-b-c",
+      "status": "source composed; exact combined review and aggregate pending",
+      "source_base": "d0ae570b6ad66c712dd56d56b08c0d25e1604e2a",
+      "source_candidates": {
+        "41230b1": "41230b118890817740442ce32b882c27275a8963",
+        "61b6e1f": "61b6e1f9e6677d39799087c6703c4163ece60646"
+      },
+      "finite_plan": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/parallel-wave-integration/finite-remaining-wave-plan.json",
+      "finite_plan_sha256": "f7c634a0eb381a705cb666e05c250c90f4df584b92a7758a1afd48b0bbe212f0",
+      "runtime_move_counts": {
+        "frontend-a": 52,
+        "frontend-b": 72,
+        "frontend-c": 61
+      },
+      "companion_test_moves": 28,
+      "moves": {
+        "workspace-app/src/annotationProfile.js": "workspace-app/src/annotations/annotationProfile.js",
+        "workspace-app/src/annotationReceipts.js": "workspace-app/src/annotations/annotationReceipts.js",
+        "workspace-app/src/annotationTags.js": "workspace-app/src/annotations/annotationTags.js",
+        "workspace-app/src/appAppearance.js": "workspace-app/src/appearance/appAppearance.js",
+        "workspace-app/src/appAppearancePersistence.test.js": "workspace-app/src/appearance/appAppearancePersistence.test.js",
+        "workspace-app/src/appUpdates.js": "workspace-app/src/app-updates/appUpdates.js",
+        "workspace-app/src/appUpdates.test.js": "workspace-app/src/app-updates/appUpdates.test.js",
+        "workspace-app/src/appearanceThemes.js": "workspace-app/src/appearance/appearanceThemes.js",
+        "workspace-app/src/boundedTree.js": "workspace-app/src/tree-browser/boundedTree.js",
+        "workspace-app/src/boundedTree.test.js": "workspace-app/src/tree-browser/boundedTree.test.js",
+        "workspace-app/src/cellTypes.js": "workspace-app/src/cell-qc/cellTypes.js",
+        "workspace-app/src/columnTreeNavigation.js": "workspace-app/src/tree-browser/columnTreeNavigation.js",
+        "workspace-app/src/columnTreeNavigation.test.js": "workspace-app/src/tree-browser/columnTreeNavigation.test.js",
+        "workspace-app/src/components/AnnotationIndicator.jsx": "workspace-app/src/annotations/ui/AnnotationIndicator.jsx",
+        "workspace-app/src/components/AnnotationProfile.jsx": "workspace-app/src/annotations/ui/AnnotationProfile.jsx",
+        "workspace-app/src/components/AnnotationTags.css": "workspace-app/src/annotations/ui/AnnotationTags.css",
+        "workspace-app/src/components/AnnotationTags.jsx": "workspace-app/src/annotations/ui/AnnotationTags.jsx",
+        "workspace-app/src/components/AppAppearance.css": "workspace-app/src/appearance/ui/AppAppearance.css",
+        "workspace-app/src/components/AppAppearance.jsx": "workspace-app/src/appearance/ui/AppAppearance.jsx",
+        "workspace-app/src/components/AppUpdates.css": "workspace-app/src/app-updates/ui/AppUpdates.css",
+        "workspace-app/src/components/AppUpdates.jsx": "workspace-app/src/app-updates/ui/AppUpdates.jsx",
+        "workspace-app/src/components/BrowseFilesButton.jsx": "workspace-app/src/file-picker/ui/BrowseFilesButton.jsx",
+        "workspace-app/src/components/CandidateExportPanel.css": "workspace-app/src/exports/ui/CandidateExportPanel.css",
+        "workspace-app/src/components/CandidateExportPanel.jsx": "workspace-app/src/exports/ui/CandidateExportPanel.jsx",
+        "workspace-app/src/components/CellList.css": "workspace-app/src/cell-qc/ui/CellList.css",
+        "workspace-app/src/components/CellListSection.css": "workspace-app/src/cell-qc/ui/CellListSection.css",
+        "workspace-app/src/components/CellListSection.jsx": "workspace-app/src/cell-qc/ui/CellListSection.jsx",
+        "workspace-app/src/components/CellQC.css": "workspace-app/src/cell-qc/ui/CellQC.css",
+        "workspace-app/src/components/CellQC.jsx": "workspace-app/src/cell-qc/ui/CellQC.jsx",
+        "workspace-app/src/components/CellTypeAccordions.css": "workspace-app/src/cell-qc/ui/CellTypeAccordions.css",
+        "workspace-app/src/components/CellTypeAccordions.jsx": "workspace-app/src/cell-qc/ui/CellTypeAccordions.jsx",
+        "workspace-app/src/components/CellTypeSummary.css": "workspace-app/src/cell-qc/ui/CellTypeSummary.css",
+        "workspace-app/src/components/CellTypeSummary.jsx": "workspace-app/src/cell-qc/ui/CellTypeSummary.jsx",
+        "workspace-app/src/components/ColumnTree.css": "workspace-app/src/tree-browser/ui/ColumnTree.css",
+        "workspace-app/src/components/ColumnTree.jsx": "workspace-app/src/tree-browser/ui/ColumnTree.jsx",
+        "workspace-app/src/components/DataStores.css": "workspace-app/src/project-workspace/ui/DataStores.css",
+        "workspace-app/src/components/DataStores.jsx": "workspace-app/src/project-workspace/ui/DataStores.jsx",
+        "workspace-app/src/components/EpochAnalysisInclusion.jsx": "workspace-app/src/epoch-browser/ui/EpochAnalysisInclusion.jsx",
+        "workspace-app/src/components/EpochBrowserChrome.jsx": "workspace-app/src/epoch-browser/ui/EpochBrowserChrome.jsx",
+        "workspace-app/src/components/EpochBrowserLayout.jsx": "workspace-app/src/epoch-browser/ui/EpochBrowserLayout.jsx",
+        "workspace-app/src/components/EpochConnections.css": "workspace-app/src/epoch-browser/ui/EpochConnections.css",
+        "workspace-app/src/components/EpochConnections.jsx": "workspace-app/src/epoch-browser/ui/EpochConnections.jsx",
+        "workspace-app/src/components/EpochDetailHeading.jsx": "workspace-app/src/epoch-browser/ui/EpochDetailHeading.jsx",
+        "workspace-app/src/components/EpochInclusionToggle.css": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.css",
+        "workspace-app/src/components/EpochInclusionToggle.jsx": "workspace-app/src/epoch-browser/ui/EpochInclusionToggle.jsx",
+        "workspace-app/src/components/EpochSkimList.jsx": "workspace-app/src/epoch-browser/ui/EpochSkimList.jsx",
+        "workspace-app/src/components/EpochTags.css": "workspace-app/src/annotations/ui/EpochTags.css",
+        "workspace-app/src/components/EpochTags.jsx": "workspace-app/src/annotations/ui/EpochTags.jsx",
+        "workspace-app/src/components/EpochTreePane.jsx": "workspace-app/src/epoch-browser/ui/EpochTreePane.jsx",
+        "workspace-app/src/components/EpochViewer.css": "workspace-app/src/epoch-browser/ui/EpochViewer.css",
+        "workspace-app/src/components/EpochViewer.jsx": "workspace-app/src/epoch-browser/ui/EpochViewer.jsx",
+        "workspace-app/src/components/ExportSelectionDialog.css": "workspace-app/src/exports/ui/ExportSelectionDialog.css",
+        "workspace-app/src/components/ExportSelectionDialog.jsx": "workspace-app/src/exports/ui/ExportSelectionDialog.jsx",
+        "workspace-app/src/components/ExternalTagSync.jsx": "workspace-app/src/annotations/ui/ExternalTagSync.jsx",
+        "workspace-app/src/components/FolderBrowserDialog.css": "workspace-app/src/file-picker/ui/FolderBrowserDialog.css",
+        "workspace-app/src/components/FolderBrowserDialog.jsx": "workspace-app/src/file-picker/ui/FolderBrowserDialog.jsx",
+        "workspace-app/src/components/FolderPathInput.css": "workspace-app/src/file-picker/ui/FolderPathInput.css",
+        "workspace-app/src/components/FolderPathInput.jsx": "workspace-app/src/file-picker/ui/FolderPathInput.jsx",
+        "workspace-app/src/components/GroupAnnotationRecovery.css": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.css",
+        "workspace-app/src/components/GroupAnnotationRecovery.jsx": "workspace-app/src/annotations/ui/GroupAnnotationRecovery.jsx",
+        "workspace-app/src/components/H5Inbox.css": "workspace-app/src/recording-import/ui/H5Inbox.css",
+        "workspace-app/src/components/H5Inbox.jsx": "workspace-app/src/recording-import/ui/H5Inbox.jsx",
+        "workspace-app/src/components/HierarchyTree.css": "workspace-app/src/tree-browser/ui/HierarchyTree.css",
+        "workspace-app/src/components/HierarchyTree.jsx": "workspace-app/src/tree-browser/ui/HierarchyTree.jsx",
+        "workspace-app/src/components/ImportHistory.css": "workspace-app/src/recording-import/ui/ImportHistory.css",
+        "workspace-app/src/components/ImportHistory.jsx": "workspace-app/src/recording-import/ui/ImportHistory.jsx",
+        "workspace-app/src/components/ImportStatusBar.css": "workspace-app/src/recording-import/ui/ImportStatusBar.css",
+        "workspace-app/src/components/ImportStatusBar.jsx": "workspace-app/src/recording-import/ui/ImportStatusBar.jsx",
+        "workspace-app/src/components/IncomingExportDialog.jsx": "workspace-app/src/exports/ui/IncomingExportDialog.jsx",
+        "workspace-app/src/components/InspectionCellTree.css": "workspace-app/src/epoch-browser/ui/InspectionCellTree.css",
+        "workspace-app/src/components/InspectionCellTree.jsx": "workspace-app/src/epoch-browser/ui/InspectionCellTree.jsx",
+        "workspace-app/src/components/Inspector.css": "workspace-app/src/epoch-browser/ui/Inspector.css",
+        "workspace-app/src/components/Inspector.jsx": "workspace-app/src/epoch-browser/ui/Inspector.jsx",
+        "workspace-app/src/components/InspectorActions.jsx": "workspace-app/src/epoch-browser/ui/InspectorActions.jsx",
+        "workspace-app/src/components/InspectorPolish.css": "workspace-app/src/epoch-browser/ui/InspectorPolish.css",
+        "workspace-app/src/components/LocalExportFolder.jsx": "workspace-app/src/exports/ui/LocalExportFolder.jsx",
+        "workspace-app/src/components/MatchingEpochs.css": "workspace-app/src/epoch-browser/ui/MatchingEpochs.css",
+        "workspace-app/src/components/MatchingEpochs.jsx": "workspace-app/src/epoch-browser/ui/MatchingEpochs.jsx",
+        "workspace-app/src/components/MetadataExplorer.css": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.css",
+        "workspace-app/src/components/MetadataExplorer.jsx": "workspace-app/src/metadata-explorer/ui/MetadataExplorer.jsx",
+        "workspace-app/src/components/MetadataPanel.css": "workspace-app/src/epoch-browser/ui/MetadataPanel.css",
+        "workspace-app/src/components/MetadataPanel.jsx": "workspace-app/src/epoch-browser/ui/MetadataPanel.jsx",
+        "workspace-app/src/components/MetadataRefresh.css": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.css",
+        "workspace-app/src/components/MetadataRefresh.jsx": "workspace-app/src/metadata-refresh/ui/MetadataRefresh.jsx",
+        "workspace-app/src/components/MetadataTable.jsx": "workspace-app/src/epoch-browser/ui/MetadataTable.jsx",
+        "workspace-app/src/components/NewPinnedProtocol.jsx": "workspace-app/src/protocol-overview/ui/NewPinnedProtocol.jsx",
+        "workspace-app/src/components/Overview.css": "workspace-app/src/protocol-overview/ui/Overview.css",
+        "workspace-app/src/components/Overview.jsx": "workspace-app/src/protocol-overview/ui/Overview.jsx",
+        "workspace-app/src/components/PagedTree.css": "workspace-app/src/tree-browser/ui/PagedTree.css",
+        "workspace-app/src/components/PagedTree.jsx": "workspace-app/src/tree-browser/ui/PagedTree.jsx",
+        "workspace-app/src/components/ProjectClosedNotice.css": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.css",
+        "workspace-app/src/components/ProjectClosedNotice.jsx": "workspace-app/src/project-workspace/ui/ProjectClosedNotice.jsx",
+        "workspace-app/src/components/ProjectFiles.css": "workspace-app/src/project-workspace/ui/ProjectFiles.css",
+        "workspace-app/src/components/ProjectFiles.jsx": "workspace-app/src/project-workspace/ui/ProjectFiles.jsx",
+        "workspace-app/src/components/ProjectFolder.css": "workspace-app/src/project-workspace/ui/ProjectFolder.css",
+        "workspace-app/src/components/ProjectFolder.jsx": "workspace-app/src/project-workspace/ui/ProjectFolder.jsx",
+        "workspace-app/src/components/ProjectNavigator.css": "workspace-app/src/project-workspace/ui/ProjectNavigator.css",
+        "workspace-app/src/components/ProjectNavigator.jsx": "workspace-app/src/project-workspace/ui/ProjectNavigator.jsx",
+        "workspace-app/src/components/ProjectOnboarding.css": "workspace-app/src/project-workspace/ui/ProjectOnboarding.css",
+        "workspace-app/src/components/ProjectOnboarding.jsx": "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx",
+        "workspace-app/src/components/ProjectSetupDialog.css": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.css",
+        "workspace-app/src/components/ProjectSetupDialog.jsx": "workspace-app/src/project-workspace/ui/ProjectSetupDialog.jsx",
+        "workspace-app/src/components/ProjectStartupError.jsx": "workspace-app/src/project-workspace/ui/ProjectStartupError.jsx",
+        "workspace-app/src/components/ProjectUnmountDialog.css": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.css",
+        "workspace-app/src/components/ProjectUnmountDialog.jsx": "workspace-app/src/project-workspace/ui/ProjectUnmountDialog.jsx",
+        "workspace-app/src/components/ProtocolApplyPanel.jsx": "workspace-app/src/protocol-overview/ui/ProtocolApplyPanel.jsx",
+        "workspace-app/src/components/ProtocolDiff.css": "workspace-app/src/protocol-overview/ui/ProtocolDiff.css",
+        "workspace-app/src/components/ProtocolDiff.jsx": "workspace-app/src/protocol-overview/ui/ProtocolDiff.jsx",
+        "workspace-app/src/components/ProtocolExportDialog.jsx": "workspace-app/src/exports/ui/ProtocolExportDialog.jsx",
+        "workspace-app/src/components/ProtocolExports.css": "workspace-app/src/exports/ui/ProtocolExports.css",
+        "workspace-app/src/components/ProtocolExports.jsx": "workspace-app/src/exports/ui/ProtocolExports.jsx",
+        "workspace-app/src/components/ProtocolInfographic.css": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.css",
+        "workspace-app/src/components/ProtocolInfographic.jsx": "workspace-app/src/protocol-overview/ui/ProtocolInfographic.jsx",
+        "workspace-app/src/components/ProtocolSelectionSummary.css": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.css",
+        "workspace-app/src/components/ProtocolSelectionSummary.jsx": "workspace-app/src/protocol-overview/ui/ProtocolSelectionSummary.jsx",
+        "workspace-app/src/components/ProtocolSidebar.css": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.css",
+        "workspace-app/src/components/ProtocolSidebar.jsx": "workspace-app/src/protocol-overview/ui/ProtocolSidebar.jsx",
+        "workspace-app/src/components/ProtocolSuggestion.css": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.css",
+        "workspace-app/src/components/ProtocolSuggestion.jsx": "workspace-app/src/protocol-overview/ui/ProtocolSuggestion.jsx",
+        "workspace-app/src/components/ProtocolTagSummary.jsx": "workspace-app/src/annotations/ui/ProtocolTagSummary.jsx",
+        "workspace-app/src/components/QueryPresetDialog.jsx": "workspace-app/src/metadata-explorer/ui/QueryPresetDialog.jsx",
+        "workspace-app/src/components/QueryPresetHistory.jsx": "workspace-app/src/metadata-explorer/ui/QueryPresetHistory.jsx",
+        "workspace-app/src/components/RetainedTreePresentation.jsx": "workspace-app/src/tree-browser/ui/RetainedTreePresentation.jsx",
+        "workspace-app/src/components/SearchPresets.css": "workspace-app/src/project-preferences/ui/SearchPresets.css",
+        "workspace-app/src/components/SearchPresets.jsx": "workspace-app/src/project-preferences/ui/SearchPresets.jsx",
+        "workspace-app/src/components/SelectionMaskDialog.jsx": "workspace-app/src/exports/ui/SelectionMaskDialog.jsx",
+        "workspace-app/src/components/SelectionOverview.jsx": "workspace-app/src/protocol-overview/ui/SelectionOverview.jsx",
+        "workspace-app/src/components/SourcePropagation.css": "workspace-app/src/protocol-overview/ui/SourcePropagation.css",
+        "workspace-app/src/components/SourcePropagation.jsx": "workspace-app/src/protocol-overview/ui/SourcePropagation.jsx",
+        "workspace-app/src/components/SummaryPreferences.jsx": "workspace-app/src/summary-jobs/ui/SummaryPreferences.jsx",
+        "workspace-app/src/components/SummaryStatus.jsx": "workspace-app/src/summary-jobs/ui/SummaryStatus.jsx",
+        "workspace-app/src/components/TagExchange.css": "workspace-app/src/annotations/ui/TagExchange.css",
+        "workspace-app/src/components/TagExchangeControls.jsx": "workspace-app/src/annotations/ui/TagExchangeControls.jsx",
+        "workspace-app/src/components/TagExchangeDialog.jsx": "workspace-app/src/annotations/ui/TagExchangeDialog.jsx",
+        "workspace-app/src/components/TreeGroupTags.css": "workspace-app/src/annotations/ui/TreeGroupTags.css",
+        "workspace-app/src/components/TreeGroupTags.jsx": "workspace-app/src/annotations/ui/TreeGroupTags.jsx",
+        "workspace-app/src/components/TreePreview.css": "workspace-app/src/tree-browser/ui/TreePreview.css",
+        "workspace-app/src/components/TreePreview.jsx": "workspace-app/src/tree-browser/ui/TreePreview.jsx",
+        "workspace-app/src/components/UndoControls.jsx": "workspace-app/src/undo/ui/UndoControls.jsx",
+        "workspace-app/src/components/WorkbenchExportDialog.jsx": "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+        "workspace-app/src/components/overviewModel.js": "workspace-app/src/protocol-overview/ui/overviewModel.js",
+        "workspace-app/src/curationSelection.js": "workspace-app/src/epoch-browser/curationSelection.js",
+        "workspace-app/src/curationSelection.test.js": "workspace-app/src/epoch-browser/curationSelection.test.js",
+        "workspace-app/src/epochBrowserSource.js": "workspace-app/src/epoch-browser/epochBrowserSource.js",
+        "workspace-app/src/epochBrowserSource.test.js": "workspace-app/src/epoch-browser/epochBrowserSource.test.js",
+        "workspace-app/src/epochListScroll.js": "workspace-app/src/epoch-browser/epochListScroll.js",
+        "workspace-app/src/epochListScroll.test.js": "workspace-app/src/epoch-browser/epochListScroll.test.js",
+        "workspace-app/src/epochNavigationIntent.js": "workspace-app/src/epoch-browser/epochNavigationIntent.js",
+        "workspace-app/src/epochNavigationIntent.test.js": "workspace-app/src/epoch-browser/epochNavigationIntent.test.js",
+        "workspace-app/src/epochSkimGroups.js": "workspace-app/src/epoch-browser/epochSkimGroups.js",
+        "workspace-app/src/epochSkimGroups.test.js": "workspace-app/src/epoch-browser/epochSkimGroups.test.js",
+        "workspace-app/src/explorerScope.js": "workspace-app/src/metadata-explorer/explorerScope.js",
+        "workspace-app/src/explorerScope.test.js": "workspace-app/src/metadata-explorer/explorerScope.test.js",
+        "workspace-app/src/exportFormats.js": "workspace-app/src/exports/exportFormats.js",
+        "workspace-app/src/exportProtocolTargets.js": "workspace-app/src/exports/exportProtocolTargets.js",
+        "workspace-app/src/exportReuse.js": "workspace-app/src/exports/exportReuse.js",
+        "workspace-app/src/externalTagMonitor.js": "workspace-app/src/annotations/externalTagMonitor.js",
+        "workspace-app/src/folderBrowser.js": "workspace-app/src/file-picker/folderBrowser.js",
+        "workspace-app/src/folderBrowser.test.js": "workspace-app/src/file-picker/folderBrowser.test.js",
+        "workspace-app/src/frozenReadContext.js": "workspace-app/src/epoch-browser/frozenReadContext.js",
+        "workspace-app/src/hierarchyTreeState.js": "workspace-app/src/tree-browser/hierarchyTreeState.js",
+        "workspace-app/src/hierarchyTreeState.test.js": "workspace-app/src/tree-browser/hierarchyTreeState.test.js",
+        "workspace-app/src/importProgress.js": "workspace-app/src/recording-import/importProgress.js",
+        "workspace-app/src/importProgress.test.js": "workspace-app/src/recording-import/importProgress.test.js",
+        "workspace-app/src/importReadiness.js": "workspace-app/src/recording-import/importReadiness.js",
+        "workspace-app/src/importReadiness.test.js": "workspace-app/src/recording-import/importReadiness.test.js",
+        "workspace-app/src/inspectionCellTree.js": "workspace-app/src/epoch-browser/inspectionCellTree.js",
+        "workspace-app/src/inspectionCellTree.test.js": "workspace-app/src/epoch-browser/inspectionCellTree.test.js",
+        "workspace-app/src/inspectionNavigation.js": "workspace-app/src/epoch-browser/inspectionNavigation.js",
+        "workspace-app/src/inspectionNavigation.test.js": "workspace-app/src/epoch-browser/inspectionNavigation.test.js",
+        "workspace-app/src/inspectionScope.js": "workspace-app/src/epoch-browser/inspectionScope.js",
+        "workspace-app/src/inspectionScope.test.js": "workspace-app/src/epoch-browser/inspectionScope.test.js",
+        "workspace-app/src/inspectorInteraction.js": "workspace-app/src/epoch-browser/inspectorInteraction.js",
+        "workspace-app/src/inspectorInteraction.test.js": "workspace-app/src/epoch-browser/inspectorInteraction.test.js",
+        "workspace-app/src/metadataRefresh.js": "workspace-app/src/metadata-refresh/metadataRefresh.js",
+        "workspace-app/src/metadataRefresh.test.js": "workspace-app/src/metadata-refresh/metadataRefresh.test.js",
+        "workspace-app/src/mutationUndo.js": "workspace-app/src/undo/mutationUndo.js",
+        "workspace-app/src/projectNavigation.js": "workspace-app/src/project-workspace/projectNavigation.js",
+        "workspace-app/src/projectNavigation.test.js": "workspace-app/src/project-workspace/projectNavigation.test.js",
+        "workspace-app/src/projectPreferences.js": "workspace-app/src/project-preferences/projectPreferences.js",
+        "workspace-app/src/projectPreferences.test.js": "workspace-app/src/project-preferences/projectPreferences.test.js",
+        "workspace-app/src/projectSearchPresets.js": "workspace-app/src/project-preferences/projectSearchPresets.js",
+        "workspace-app/src/projectSearchPresets.test.js": "workspace-app/src/project-preferences/projectSearchPresets.test.js",
+        "workspace-app/src/projectTransfer.js": "workspace-app/src/project-workspace/projectTransfer.js",
+        "workspace-app/src/projectTransfer.test.js": "workspace-app/src/project-workspace/projectTransfer.test.js",
+        "workspace-app/src/protocolOverviewModel.js": "workspace-app/src/protocol-overview/protocolOverviewModel.js",
+        "workspace-app/src/protocolSuggestions.js": "workspace-app/src/protocol-overview/protocolSuggestions.js",
+        "workspace-app/src/recordingIdentity.js": "workspace-app/src/recording-import/recordingIdentity.js",
+        "workspace-app/src/searchInclusion.js": "workspace-app/src/metadata-explorer/searchInclusion.js",
+        "workspace-app/src/searchInclusion.test.js": "workspace-app/src/metadata-explorer/searchInclusion.test.js",
+        "workspace-app/src/searchPresets.js": "workspace-app/src/project-preferences/searchPresets.js",
+        "workspace-app/src/searchPresets.test.js": "workspace-app/src/project-preferences/searchPresets.test.js",
+        "workspace-app/src/startupRestore.js": "workspace-app/src/project-workspace/startupRestore.js",
+        "workspace-app/src/tagExchange.js": "workspace-app/src/annotations/tagExchange.js",
+        "workspace-app/src/treeBranchPresentation.js": "workspace-app/src/tree-browser/treeBranchPresentation.js",
+        "workspace-app/src/treeBranchPresentation.test.js": "workspace-app/src/tree-browser/treeBranchPresentation.test.js",
+        "workspace-app/src/treeFieldPresentation.js": "workspace-app/src/tree-browser/treeFieldPresentation.js",
+        "workspace-app/src/treeFieldPresentation.test.js": "workspace-app/src/tree-browser/treeFieldPresentation.test.js",
+        "workspace-app/src/treeGroupQueryTags.js": "workspace-app/src/annotations/treeGroupQueryTags.js",
+        "workspace-app/src/treeGroupTargets.js": "workspace-app/src/annotations/treeGroupTargets.js",
+        "workspace-app/src/uploadRecording.js": "workspace-app/src/recording-import/uploadRecording.js",
+        "workspace-app/src/uploadRecording.test.js": "workspace-app/src/recording-import/uploadRecording.test.js",
+        "workspace-app/src/useAnnotationReceipts.js": "workspace-app/src/annotations/useAnnotationReceipts.js",
+        "workspace-app/src/useEpochBrowserPage.js": "workspace-app/src/epoch-browser/useEpochBrowserPage.js",
+        "workspace-app/src/useFieldRegistry.js": "workspace-app/src/summary-jobs/useFieldRegistry.js",
+        "workspace-app/src/useImportMonitor.js": "workspace-app/src/recording-import/useImportMonitor.js",
+        "workspace-app/src/useImportQueue.js": "workspace-app/src/recording-import/useImportQueue.js",
+        "workspace-app/src/useImportReviewStatus.js": "workspace-app/src/recording-import/useImportReviewStatus.js",
+        "workspace-app/src/useMutationUndo.js": "workspace-app/src/undo/useMutationUndo.js",
+        "workspace-app/src/useProjectPreference.js": "workspace-app/src/project-preferences/useProjectPreference.js",
+        "workspace-app/src/useProtocolSummaryPreferences.js": "workspace-app/src/summary-jobs/useProtocolSummaryPreferences.js",
+        "workspace-app/src/useTreeCellSelection.js": "workspace-app/src/annotations/useTreeCellSelection.js",
+        "workspace-app/src/workbenchExport.js": "workspace-app/src/exports/workbenchExport.js"
+      },
+      "new_guidance_paths": [
+        "workspace-app/src/annotations/AGENTS.md",
+        "workspace-app/src/app-updates/AGENTS.md",
+        "workspace-app/src/appearance/AGENTS.md",
+        "workspace-app/src/cell-qc/AGENTS.md",
+        "workspace-app/src/epoch-browser/AGENTS.md",
+        "workspace-app/src/exports/AGENTS.md",
+        "workspace-app/src/file-picker/AGENTS.md",
+        "workspace-app/src/metadata-explorer/AGENTS.md",
+        "workspace-app/src/metadata-refresh/AGENTS.md",
+        "workspace-app/src/project-preferences/AGENTS.md",
+        "workspace-app/src/project-workspace/AGENTS.md",
+        "workspace-app/src/protocol-overview/AGENTS.md",
+        "workspace-app/src/recording-import/AGENTS.md",
+        "workspace-app/src/summary-jobs/AGENTS.md",
+        "workspace-app/src/tree-browser/AGENTS.md",
+        "workspace-app/src/undo/AGENTS.md"
+      ],
+      "new_test_paths": [
+        "workspace-app/src/summary-jobs/publicExamples.test.js"
+      ],
+      "current_frontend_baseline_path_counts": {
+        "keep-in-place": 29,
+        "organized": 248,
+        "deferred": 2
+      },
+      "qualification": "Path coverage only; source candidate receipts keep their original identities. No combined test/build, native/app, benchmark or final qualification is claimed.",
+      "source_candidate_evidence": [
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/frontend-batch-a-evidence-e6a6a74/receipt.json",
+          "sha256": "d334d11e636f63c11af36b88572ffee3f12e4e4026bc8e73d5bd894b2a429697",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/frontend-batch-a-evidence-e6a6a74/production-interface-check.json",
+          "sha256": "279d2f34f6c05941bbcee9ec6fd832b2b4edaec7d047d22e13a5fcae6cd6c8d6",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/frontend-batch-c/binding.json",
+          "sha256": "46f021ea12bbf0eccf58cc1073701e98ab9385af25006eac6a38efdf31778e3f",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        },
+        {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/frontend-batch-c/independent-source-proof.json",
+          "sha256": "95a3d2d97f218168bd2e74e107676b0d536766a1f05d6478d23e3c10e4259ca9",
+          "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
+        }
+      ]
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

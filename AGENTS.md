@@ -12,7 +12,10 @@ For tooling work, start at [retained tooling navigation](tools/AGENTS.md).
 
 For desktop work, start at [desktop navigation](desktop/AGENTS.md).
 
-For frontend work, start at [module navigation](workspace-app/src/AGENTS.md).
+For frontend work, start at [module navigation](workspace-app/src/AGENTS.md) and
+the [current frontend path composition](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition).
+Use current paths and local guides; historical snapshots are provenance, not
+current file locations or combined-candidate qualification.
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for the implemented module map and
 [stable behavioral ports proposal](docs/architecture/stable-ports.md) before

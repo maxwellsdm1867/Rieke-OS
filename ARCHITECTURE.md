@@ -51,7 +51,8 @@ Use this index to find the current physical owner before editing. Each linked
 folder guide is the canonical local contract: how to call its public entries,
 what it owns, dependencies, errors, lifetime rules, executable examples and tests.
 The adoption record adds cross-owner obligations; it does not replace those local
-contracts. Folder organization is partial: functional areas in the system table
+contracts. Frontend A/B/C finite path moves are composed; their combined review
+and aggregate checks remain pending. Folder organization is partial: functional areas in the system table
 below describe responsibilities, not completed physical modules.
 
 For organized recovery and retained backend owners, use [backend navigation](python/AGENTS.md).
@@ -71,6 +72,22 @@ For organized recovery and retained backend owners, use [backend navigation](pyt
 | Typed predicates, split recipes and editor lifetime | [Typed query presentation](workspace-app/src/typed-query/AGENTS.md) |
 | Incoming queue, frozen review and distinct consent/command entries | [Incoming workbench](workspace-app/src/incoming-workbench/AGENTS.md) |
 | Bounded trace geometry and scoped request identity | [Trace windows](workspace-app/src/traces/AGENTS.md) |
+| Annotations | [Annotations](workspace-app/src/annotations/AGENTS.md) |
+| App updates | [App updates](workspace-app/src/app-updates/AGENTS.md) |
+| Appearance | [Appearance](workspace-app/src/appearance/AGENTS.md) |
+| Cell qc | [Cell qc](workspace-app/src/cell-qc/AGENTS.md) |
+| Epoch browser | [Epoch browser](workspace-app/src/epoch-browser/AGENTS.md) |
+| Exports | [Exports](workspace-app/src/exports/AGENTS.md) |
+| File picker | [File picker](workspace-app/src/file-picker/AGENTS.md) |
+| Metadata explorer | [Metadata explorer](workspace-app/src/metadata-explorer/AGENTS.md) |
+| Metadata refresh | [Metadata refresh](workspace-app/src/metadata-refresh/AGENTS.md) |
+| Project preferences | [Project preferences](workspace-app/src/project-preferences/AGENTS.md) |
+| Project workspace | [Project workspace](workspace-app/src/project-workspace/AGENTS.md) |
+| Protocol overview | [Protocol overview](workspace-app/src/protocol-overview/AGENTS.md) |
+| Recording import | [Recording import](workspace-app/src/recording-import/AGENTS.md) |
+| Summary jobs | [Summary jobs](workspace-app/src/summary-jobs/AGENTS.md) |
+| Tree browser | [Tree browser](workspace-app/src/tree-browser/AGENTS.md) |
+| Undo | [Undo](workspace-app/src/undo/AGENTS.md) |
 | Draft barriers and bounded ordinary Quit | [Desktop close](desktop/close/README.md) |
 | Scoped persistent renderer drafts | [Desktop draft store](desktop/drafts/README.md) |
 | Startup preference validation and one-time claim | [Desktop startup](desktop/startup/README.md) |

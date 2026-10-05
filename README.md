@@ -66,7 +66,9 @@ its public interface, ownership rules, examples and tests. Follow
 or [tooling navigation](tools/AGENTS.md)
 for the area you are changing. The [module ledger](docs/architecture/core-module-ledger.md)
 separates verified local increments, retained owners and remaining work; these
-source checks do not establish final assembled-app qualification.
+source checks do not establish final assembled-app qualification. The
+[finite frontend path composition](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition)
+records current A/B/C owner folders while preserving the historical baseline.
 
 ## Source download (developer workflow)
 

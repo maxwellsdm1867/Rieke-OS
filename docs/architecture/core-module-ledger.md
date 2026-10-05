@@ -363,3 +363,23 @@ unmeasured.
 Source checkpoint `50ff9bd77b72c7a4e39444b4f2c653cbb0a27307` integrates reviewed search activation, requested summaries, tree ancestors, scientific presentation folders and the byte-identical Python recovery registration package. Desktop installation/startup/state owners have explicit KEEP rationale and injected public examples. The JSON pending-wave snapshot and path companion record current paths; the earlier aggregate snapshot and receipts retain their original source identity.
 
 Current baseline-path dispositions: 139 keep-in-place, 241 move-proposed, 73 organized, 12 deferred. These are path classifications, not completion or depth metrics. Shared mappings, aggregate build/tests, HTTP completion checks and final assembled-app acceptance remain pending. Independent owners proceed in parallel; one integration owner serializes shared edits. Interface review emphasizes clear caller knowledge and progressive disclosure, not export counts or implementation size.
+
+## Frontend finite A/B/C current path composition
+
+The current path companion composes the 52/72/61 runtime moves in the finite
+remaining frontend plan: A/B from `d0ae570` to `41230b1`, and C from `d0ae570`
+to `61b6e1f`. These are 185 runtime files, 28 companion tests, 16 local guides
+and one new summary-job public-example test. All 185 planned runtime paths occur
+exactly once in the composed move map. The 279 baseline frontend paths now
+partition into 248 organized, 29 retained and two deferred; zero proposed moves
+remain. Retained paths still require their own acceptance gates.
+
+`source_paths` and `existing_tests` identify current module locations; historical
+`source_pointers`, review verification, receipts, baseline inventories and progress
+snapshots retain their original source identities. New folder guides are discoverable
+from the root module guide and frontend navigation. Physical grouping preserves
+existing file-level APIs and does not adopt additional architectural ports.
+
+Exact combined source review and aggregate checks remain pending for this
+composition. Backend organization, packaging, native and assembled-app gates
+remain open; no timing, release or whole-app qualification is asserted.
