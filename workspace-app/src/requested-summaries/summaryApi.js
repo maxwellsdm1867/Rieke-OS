@@ -1,4 +1,8 @@
-import {api} from './api.js';
+/**
+ * Public requested-summaries entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
+import {api} from '../api.js';
 
 // Additive service contract. Native preview/save/run/full catalogs stay intact.
 export const summaryApi={

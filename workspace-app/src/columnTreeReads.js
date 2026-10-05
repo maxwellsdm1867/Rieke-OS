@@ -1,4 +1,4 @@
-import {canonicalReadIdentity as canonical} from './pageReadCache.js';
+import {canonicalReadIdentity as canonical} from './search-activation/pageReadCache.js';
 import {treePageRequest} from './pagedTreeRequest.js';
 import {columnAncestorPages} from './columnTreeNavigation.js';
 import {reusableTreeBody} from './treeBranchReadCache.js';

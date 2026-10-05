@@ -1,5 +1,5 @@
 import {QueryClient,QueryObserver} from '@tanstack/react-query';
-import {canonicalReadIdentity as canonical} from './pageReadCache.js';
+import {canonicalReadIdentity as canonical} from './search-activation/pageReadCache.js';
 // Cache storage only, not a total renderer heap claim. Mounted columns keep at
 // most eight bounded pages; this adapter never owns terminal rows or raw H5.
 export const TREE_BRANCH_LIMITS=Object.freeze({entries:24,bytes:4*1024*1024,inflight:8,retainMs:120000,leaseMs:10000});

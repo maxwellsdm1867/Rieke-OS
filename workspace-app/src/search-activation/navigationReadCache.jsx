@@ -1,6 +1,10 @@
+/**
+ * Public search-activation entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
 import {createContext,useContext,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
-import {api} from './api.js';
-import {useAnnotationProfile} from './annotationProfile.js';
+import {api} from '../api.js';
+import {useAnnotationProfile} from '../annotationProfile.js';
 import {createPageReadCache,pageReadKey,searchReadDescriptor} from './pageReadCache.js';
 
 const Context=createContext(null);

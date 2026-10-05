@@ -1,3 +1,7 @@
+/**
+ * Public search-activation entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
 // Disposable navigation reads only. A snapshot is never a mutation receipt.
 export const PAGE_READ_CACHE_VERSION=1;
 export const PAGE_READ_CACHE_LIMITS=Object.freeze({entries:16,bytes:32*1024*1024,freshMs:30000,retainMs:300000,inflight:4});

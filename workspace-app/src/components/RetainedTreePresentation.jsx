@@ -1,6 +1,6 @@
 import {Activity,useState} from 'react';
 import {useTreeBranchReads} from '../treeBranchReads.jsx';
-import {canonicalReadIdentity} from '../pageReadCache.js';
+import {canonicalReadIdentity} from '../search-activation/pageReadCache.js';
 import PagedTree from './PagedTree.jsx';
 
 // One React presentation slot, no second query/payload cache. Frozen views are

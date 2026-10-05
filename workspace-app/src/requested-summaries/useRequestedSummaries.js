@@ -1,3 +1,7 @@
+/**
+ * Public requested-summaries entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
 import {useEffect,useRef,useState} from 'react';
 import {createSummaryController,summaryRequestKey} from './requestedSummaries.js';
 import {summaryApi} from './summaryApi.js';

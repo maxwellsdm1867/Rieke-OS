@@ -1,6 +1,10 @@
+/**
+ * Public search-activation entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
 import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,Database,Hash,LoaderCircle,Search,SlidersHorizontal,Users,X} from 'lucide-react';
-import {useSearchSnapshot} from '../navigationReadCache.jsx';
+import {useSearchSnapshot} from './navigationReadCache.jsx';
 import './GlobalSearch.css';
 
 export default function GlobalSearch({revision=0,onEpoch,onCell,onPredicate}){

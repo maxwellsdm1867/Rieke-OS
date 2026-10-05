@@ -4,7 +4,7 @@ import {Metadata} from './Common.jsx';
 import {metadataRows,registeredMetadataField} from './metadataValues.js';
 import {groupingFieldRank} from '../treeFieldPresentation.js';
 import './MetadataPanel.css';
-import {matchesMetadataSearch,parseMetadataSearch} from '../metadataSearch.js';
+import {matchesMetadataSearch,parseMetadataSearch} from '../search-activation/metadataSearch.js';
 
 const defined=object=>Object.fromEntries(Object.entries(object).filter(([,value])=>value!==undefined));
 function withLabel(rows,prefix){return rows.map(row=>({...row,label:`${prefix}${row.label}`}));}

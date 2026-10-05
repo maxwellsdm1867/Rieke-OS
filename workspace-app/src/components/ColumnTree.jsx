@@ -1,4 +1,4 @@
-import {canonicalReadIdentity} from '../pageReadCache.js';
+import {canonicalReadIdentity} from '../search-activation/pageReadCache.js';
 import {epochIncluded} from '../incomingReviewDecision.js';
 import EpochInclusionToggle from './EpochInclusionToggle.jsx';
 import {useDelayedLoading} from './NavigationLoading.jsx';

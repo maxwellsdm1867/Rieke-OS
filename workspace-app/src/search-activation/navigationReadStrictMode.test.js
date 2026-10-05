@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import React,{act,useEffect} from 'react';
 import {createRoot} from 'react-dom/client';
 import {fileURLToPath} from 'node:url';
-import {createServer} from './test-support/isolatedVite.js';
+import {createServer} from '../test-support/isolatedVite.js';
 const {JSDOM}=await import(process.env.RIEKE_TEST_DOM_MODULE||'jsdom');
 
 test('ReactDOM StrictMode replay, owner remount and visible wake cannot resurrect retired search',async()=>{
@@ -12,11 +12,11 @@ test('ReactDOM StrictMode replay, owner remount and visible wake cannot resurrec
  const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,IS_REACT_ACT_ENVIRONMENT:true,fetch:async(url,options)=>{requests.push({url,signal:options.signal});return {ok:true,json:async()=>({results:[{kind:'cell',id:'same-uuid',label:'Synthetic cell'}],total:1})};}};
  const previous=new Map(Object.keys(globals).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
  for(const [key,value] of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
- const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error'});
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error'});
  let mounted=createRoot(document.getElementById('root')),setups=0,cleanups=0,snapshot;
  try{
-   const {NavigationReadProvider,useSearchSnapshot}=await server.ssrLoadModule('/src/navigationReadCache.jsx');
-   const {createPageReadCache}=await server.ssrLoadModule('/src/pageReadCache.js');const cache=createPageReadCache();
+   const {NavigationReadProvider,useSearchSnapshot}=await server.ssrLoadModule('/src/search-activation/navigationReadCache.jsx');
+   const {createPageReadCache}=await server.ssrLoadModule('/src/search-activation/pageReadCache.js');const cache=createPageReadCache();
    function Probe(){snapshot=useSearchSnapshot({open:true,query:'CellA',revision:0});useEffect(()=>{setups++;return()=>{cleanups++;};},[]);return React.createElement('span',null,snapshot.data?.results[0]?.label||'Loading');}
    const element=()=>React.createElement(React.StrictMode,null,React.createElement(NavigationReadProvider,{projectId:'same-project-uuid',projectOpenIdentity:'first-open',actorId:'browse-only',cache},React.createElement(Probe)));
    const wait=async predicate=>{const until=Date.now()+1500;while(!predicate()){if(Date.now()>until)throw Error('Strict search did not settle');await act(()=>new Promise(resolve=>setTimeout(resolve,10)));}};

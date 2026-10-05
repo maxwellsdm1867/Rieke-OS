@@ -1,4 +1,8 @@
-import {metadataValueSafe,metadataValueText,registeredMetadataField} from './components/metadataValues.js';
+/**
+ * Public search-activation entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
+import {metadataValueSafe,metadataValueText,registeredMetadataField} from '../components/metadataValues.js';
 
 export function parseMetadataSearch(query){
   const text=String(query||'').trim(),pair=text.match(/^(.+?)\s*(>=|<=|!=|=|>|<)\s*(.*)$/);

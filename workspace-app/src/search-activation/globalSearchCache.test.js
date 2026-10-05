@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGlobalSearchHarness} from './test-support/globalSearchHarness.js';
+import {createGlobalSearchHarness} from '../test-support/globalSearchHarness.js';
 
 const rows=h=>h.root.findAllByProps({className:'global-search-result'});
 const open=h=>h.act(()=>h.root.findByProps({'aria-label':'Search project metadata and UUIDs'}).props.onClick());

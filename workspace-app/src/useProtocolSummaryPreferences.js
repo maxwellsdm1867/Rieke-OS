@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {summaryPreferenceKey,summaryPreferences} from './requestedSummaries.js';
+import {summaryPreferenceKey,summaryPreferences} from './requested-summaries/requestedSummaries.js';
 
 export function useProtocolSummaryPreferences(project,protocol,view='tree'){
   const key=project&&protocol?summaryPreferenceKey(project,protocol,view):null;

@@ -1,5 +1,9 @@
-import {jointComponents} from './jointGrouping.js';
-import {predicateIdentity} from './predicateIdentity.js';
+/**
+ * Public requested-summaries entry; see ./AGENTS.md for the complete interface,
+ * identity, cancellation and authority contract and executable consumer examples.
+ */
+import {jointComponents} from '../jointGrouping.js';
+import {predicateIdentity} from '../predicateIdentity.js';
 
 export const SUMMARY_PREFERENCES_VERSION=1;
 export function summaryPreferenceKey(project,protocol,view){
