@@ -56,7 +56,7 @@ export async function createPresentationSessionHarness({route={page:'overview',k
     if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0presentation-layout';
     if(id==='./recording-import/useImportQueue.js')return '\0presentation-import-queue';
     if(id==="./protocol-overview/ui/ProtocolInfographic.jsx")return '\0presentation-lazy';
-    const probes={'./components/Inspector.jsx':'inspector','./components/MetadataExplorer.jsx':'explorer','./project-workspace/ui/DataStores.jsx':'stores',"./cell-qc/ui/CellQC.jsx":'qc',"./protocol-overview/ui/Overview.jsx":'overview',"./protocol-overview/ui/ProtocolSidebar.jsx":'sidebar','./components/DesktopDraftRecovery.jsx':'draft-recovery','./project-workspace/ui/ProjectNavigator.jsx':'project-navigation','./project-workspace/ui/ProjectUnmountDialog.jsx':'unmount'};
+    const probes={'./epoch-browser/ui/Inspector.jsx':'inspector','./metadata-explorer/ui/MetadataExplorer.jsx':'explorer','./project-workspace/ui/DataStores.jsx':'stores',"./cell-qc/ui/CellQC.jsx":'qc',"./protocol-overview/ui/Overview.jsx":'overview',"./protocol-overview/ui/ProtocolSidebar.jsx":'sidebar','./components/DesktopDraftRecovery.jsx':'draft-recovery','./project-workspace/ui/ProjectNavigator.jsx':'project-navigation','./project-workspace/ui/ProjectUnmountDialog.jsx':'unmount'};
     if(probes[id])return `\0presentation-probe-${probes[id]}`;
     if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./incoming-workbench/ui/IncomingWorkbench.jsx','./components/Common.jsx'].includes(id))return '\0presentation-child';
    }

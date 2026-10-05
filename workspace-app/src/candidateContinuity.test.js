@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
-import {frozenPresentationScope,frozenReadPath} from './frozenReadContext.js';
+import {frozenPresentationScope,frozenReadPath} from './epoch-browser/frozenReadContext.js';
 const root='/protocols/protocol-A/workbench/candidates/candidate-A';
 const cohort=(route=root,binding=2)=>JSON.stringify([route,'immutable-recipe-A',binding]);
 function props(token='token-A',revision=0,route=root,binding=2){return {

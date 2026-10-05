@@ -7,7 +7,7 @@ import NeuronIcon from '../../components/NeuronIcon.jsx';
 import {clearTagFilters} from '../../typed-query/protocolViewFilter.js';
 import IncomingCellTypes from './IncomingCellTypes.jsx';
 import {mergeIntentMatches} from '../incomingMergeIntent.js';
-import Inspector,* as InspectorCapabilities from '../../components/Inspector.jsx';
+import Inspector,* as InspectorCapabilities from '../../epoch-browser/ui/Inspector.jsx';
 import ProtocolViewFilter from '../../typed-query/ui/ProtocolViewFilter.jsx';
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import IncomingMergePreview from './IncomingMergePreview.jsx';

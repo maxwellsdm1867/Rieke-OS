@@ -6,7 +6,7 @@ import {reviewKey,reviewWorklist} from '../incomingReview.js';
 import IncomingExportDialog from "../../exports/ui/IncomingExportDialog.jsx";
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import {nextWorkbenchWorkflow} from "../../exports/workbenchExport.js";
-import MetadataExplorer from '../../components/MetadataExplorer.jsx';
+import MetadataExplorer from '../../metadata-explorer/ui/MetadataExplorer.jsx';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import CumulativeIncomingReview from './CumulativeIncomingReview.jsx';
 import useWorkbenchQueue from '../useWorkbenchQueue.js';

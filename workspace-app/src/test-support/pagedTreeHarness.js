@@ -13,14 +13,14 @@ export async function createPagedTreeHarness(){
     name:'selection-fixtures',enforce:'pre',
     resolveId(id,importer){
       if(id==='../api.js'&&importer?.endsWith('/tree-selection/treeSelectionReader.js'))return '\0selection-api';
-      if(importer?.endsWith('/components/PagedTree.jsx')){
+      if(importer?.endsWith('/tree-browser/ui/PagedTree.jsx')){
       if(id==='../api.js')return '\0selection-api';
       if(id==='./HierarchyTree.jsx'||id==='./ColumnTree.jsx')return '\0selection-tree';
     }},
     load(id){if(id==='\0selection-api')return `export const api=(...args)=>globalThis[${JSON.stringify(key)}].api(...args);`;
       if(id==='\0selection-tree')return `export default 'tree-probe';`;},
   }]});
-  const {default:PagedTree}=await server.ssrLoadModule('/src/components/PagedTree.jsx');
+  const {default:PagedTree}=await server.ssrLoadModule('/src/tree-browser/ui/PagedTree.jsx');
   let root;
   const element=(props,mode)=>React.createElement(React.Activity,{mode},React.createElement(PagedTree,props));
   return {

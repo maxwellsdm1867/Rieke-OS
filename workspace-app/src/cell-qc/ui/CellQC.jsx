@@ -4,7 +4,7 @@ import {api,humanize,number,useResource,useEpochResource} from "../../api.js";
 import {Badge,Empty,Status} from "../../components/Common.jsx";
 import Trace from "../../traces/ui/TraceViewer.jsx";
 import StableContent from "../../components/StableContent.jsx";
-import MetadataPanel from "../../components/MetadataPanel.jsx";
+import MetadataPanel from "../../epoch-browser/ui/MetadataPanel.jsx";
 import AnnotationTags from "../../annotations/ui/AnnotationTags.jsx";
 import TagExchangeControls from "../../annotations/ui/TagExchangeControls.jsx";
 import {datedCellLabel} from "../../recording-import/recordingIdentity.js";

@@ -1,7 +1,7 @@
 import {useMemo} from 'react';
 import PredicateDialog from './PredicateDialog.jsx';
 import {predicateToDraft,newGroup} from './predicateState.js';
-import {useFieldRegistry} from '../../useFieldRegistry.js';
+import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
 
 // The same editor as Search; this context always intersects frozen membership.
 export default function ScopedPredicateFilter({protocol,projectId,filters,onChange,onClose,revision,purpose,readContext}){

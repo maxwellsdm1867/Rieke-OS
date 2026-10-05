@@ -1,4 +1,4 @@
-import {epochPageRequest,epochPageRevision} from '../epochBrowserSource.js';
+import {epochPageRequest,epochPageRevision} from '../epoch-browser/epochBrowserSource.js';
 import {MAX_SELECTED_EPOCHS} from '../epochSelection.js';
 
 // Use the same scoped cells as loadIncomingSelection; never use Main cell totals.

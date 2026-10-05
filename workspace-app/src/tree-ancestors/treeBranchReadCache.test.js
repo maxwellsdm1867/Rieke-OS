@@ -137,9 +137,9 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
  const key='__treeLeaseFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'fixture',attest:(request,response)=>{witnesses++;return cache.attest(scope,request,response);}},
   api:async(_,{body:request})=>{retryBodies.push(request);if((request.path.length||request.offset)&&!request.revision)throw Error('A tree revision is required for continuation pages');calls++;return calls===1?leaf:calls===2?hold.promise:request.anchor_uuid||request.path.length===2?leaf:ancestor(request);}};
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
-  name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
-   if(id==='../api.js')return '\0lease-api';if(id==='../tree-ancestors/treeBranchReads.jsx')return '\0lease-owner';
-   if(id==='../annotations/ui/TreeGroupTags.jsx'||id==='../incoming-workbench/ui/IncomingTreeSelection.jsx')return '\0lease-actions';
+  name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/tree-browser/ui/ColumnTree.jsx')){
+   if(id==='../../api.js')return '\0lease-api';if(id==='../../tree-ancestors/treeBranchReads.jsx')return '\0lease-owner';
+   if(id==='../../annotations/ui/TreeGroupTags.jsx'||id==='../../incoming-workbench/ui/IncomingTreeSelection.jsx')return '\0lease-actions';
   }},load(id){if(id==='\0lease-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
@@ -147,7 +147,7 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
  const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
  globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
  try{
-  const {default:ColumnTree}=await server.ssrLoadModule('/src/components/ColumnTree.jsx');
+  const {default:ColumnTree}=await server.ssrLoadModule('/src/tree-browser/ui/ColumnTree.jsx');
   await act(async()=>{view=TestRenderer.create(React.createElement(ColumnTree,{protocolId:protocol,splits:'date,cell',selected:'epoch-A'}));});
   assert.equal(calls,3);clock=10001;
   await act(async()=>{hold.resolve(ancestor(body));await new Promise(resolve=>setImmediate(resolve));});
@@ -183,9 +183,9 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
  const key='__retainedTreeFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'owner-A'},api:async(_,{body:request,signal})=>{lastSignal=signal;calls++;requests.push(request);if(hold)return hold.promise;return request.anchor_uuid||request.path.length===2?{...leaf,offset:request.offset,has_more:!request.offset,total:120,epochs:[{epoch_uuid:request.anchor_uuid||'epoch-A'}]}:ancestor(request);}};
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'retained-fixture',enforce:'pre',resolveId(id,importer){
-   if(id==='../tree-ancestors/treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
-   if(id==='../api.js'&&/\/(ColumnTree|PagedTree)\.jsx$/.test(importer||''))return '\0retained-api';
-   if(importer?.endsWith('/components/ColumnTree.jsx')&&(id==='../annotations/ui/TreeGroupTags.jsx'||id==='../incoming-workbench/ui/IncomingTreeSelection.jsx'))return '\0retained-actions';
+   if(id==='../../tree-ancestors/treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
+   if(id==='../../api.js'&&/\/(ColumnTree|PagedTree)\.jsx$/.test(importer||''))return '\0retained-api';
+   if(importer?.endsWith('/tree-browser/ui/ColumnTree.jsx')&&(id==='../../annotations/ui/TreeGroupTags.jsx'||id==='../../incoming-workbench/ui/IncomingTreeSelection.jsx'))return '\0retained-actions';
   },load(id){if(id==='\0retained-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0retained-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
@@ -195,8 +195,8 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
  Object.defineProperty(dom.window.HTMLElement.prototype,'clientHeight',{get:()=>50,configurable:true});
  dom.window.HTMLElement.prototype.getBoundingClientRect=function(){const pane=this.closest('.tp-column-content');const top=this.matches('.tp-epoch,.tp-branch')?7-(pane?.scrollTop||0):0;return {top,bottom:top+20,left:0,right:100,width:100,height:20};};
  try{
-  const {default:Host}=await server.ssrLoadModule('/src/components/RetainedTreePresentation.jsx');
-  const {default:Layout}=await server.ssrLoadModule('/src/components/EpochBrowserLayout.jsx');
+  const {default:Host}=await server.ssrLoadModule('/src/tree-browser/ui/RetainedTreePresentation.jsx');
+  const {default:Layout}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochBrowserLayout.jsx');
   const tree={protocolId:protocol,splits:'date,cell',revision:1,selected:'epoch-A',onSelectEpoch:()=>selected++,onStatus:value=>statuses.push(value)};
   const committedLabels=[];function LabelProbe({active}){React.useLayoutEffect(()=>{if(active)committedLabels.push(container.querySelector('[data-retained-tree-status]')?.textContent||'');});return null;}
   const render=async(active,changes={})=>domAct(async()=>{view.render(React.createElement(Layout,{retainDetail:true,editing:active,sizes:{},treeOpen:false,metadataOpen:false,detail:React.createElement(React.Fragment,null,React.createElement(Host,{active,tree:{...tree,...changes}}),React.createElement(LabelProbe,{active}))}));await new Promise(resolve=>setImmediate(resolve));});

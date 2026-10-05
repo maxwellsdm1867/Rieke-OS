@@ -35,9 +35,24 @@ Start in the module folder for the responsibility you are changing:
 - [Trace windows](traces/AGENTS.md): bounded recorded samples, inclusive time and
   missing-sample segmentation; resource/cache lifetime remains shared.
 
-Other frontend owners retain their existing named files pending the organization
-worklist; each ledger record need not become a separate module. See the
-[architecture map](../../ARCHITECTURE.md) for other adopted interfaces.
+The remaining presentation owners are grouped by responsibility:
+
+- Browsing and inspection: [epoch browser](epoch-browser/AGENTS.md),
+  [tree browser](tree-browser/AGENTS.md), [cell QC](cell-qc/AGENTS.md) and
+  [protocol overview](protocol-overview/AGENTS.md).
+- Metadata and controls: [metadata explorer](metadata-explorer/AGENTS.md),
+  [metadata refresh](metadata-refresh/AGENTS.md),
+  [summary controls](summary-jobs/AGENTS.md) and
+  [annotations](annotations/AGENTS.md).
+- Project workflows: [project workspace](project-workspace/AGENTS.md),
+  [recording import](recording-import/AGENTS.md), [exports](exports/AGENTS.md),
+  [file picker](file-picker/AGENTS.md) and [undo](undo/AGENTS.md).
+- Local preferences and application presentation:
+  [project preferences](project-preferences/AGENTS.md),
+  [appearance](appearance/AGENTS.md) and [app updates](app-updates/AGENTS.md).
+
+These folders retain named public entries and existing authority boundaries. See
+also the [architecture map](../../ARCHITECTURE.md).
 
 Run `npm test` from `workspace-app` for recursive `.test.js` discovery with the
 React preload, or use a module's explicit command. Do not import test support into

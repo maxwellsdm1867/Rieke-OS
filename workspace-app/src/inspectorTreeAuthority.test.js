@@ -41,7 +41,7 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
   if(fixture.hold)await fixture.hold(request);request.completed=Date.now();return {ok:true,status:200,json:async()=>result};
  });
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
- const {default:Inspector}=await server.ssrLoadModule('/src/components/Inspector.jsx');
+ const {default:Inspector}=await server.ssrLoadModule('/src/epoch-browser/ui/Inspector.jsx');
  const {AnnotationProfileProvider}=await server.ssrLoadModule("/src/annotations/annotationProfile.js");
  const {TreeBranchReadOwner}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReads.jsx');
  const {createTreeBranchReadCache}=await server.ssrLoadModule('/src/tree-ancestors/treeBranchReadCache.js');
@@ -57,7 +57,7 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
  try{await render();}catch(error){await act(async()=>root.unmount());await server.close();dom.window.close();for(const [key,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}throw error;}
  return {fixture,cache,props,render,
   async retained({active,selected='big-0',revision=0,ownerRevision=0,...treeProps}){
-   const {default:Host}=await server.ssrLoadModule('/src/components/RetainedTreePresentation.jsx');
+   const {default:Host}=await server.ssrLoadModule('/src/tree-browser/ui/RetainedTreePresentation.jsx');
    await act(async()=>root.render(React.createElement(AnnotationProfileProvider,{projectId:'project'},React.createElement(TreeBranchReadOwner,{projectId:'project',projectPath:'/owned-fixture',revision:ownerRevision,cache},React.createElement(Host,{active,tree:{protocolId:'protocol-A',filters:{},splits:'cell',revision,selected,...treeProps}})))));
   },settle,wait,click,leaf,button,async open(){await wait(()=>document.querySelector('.ht-branch > button'),'cell branch');await click(document.querySelector('.ht-branch > button'));await wait(()=>leaf(0)&&!leaf(0).disabled,'first tree page ready');},async close(){await act(async()=>root.unmount());await server.close();dom.window.close();for(const [key,descriptor]of saved){if(descriptor)Object.defineProperty(globalThis,key,descriptor);else delete globalThis[key];}}};
 }

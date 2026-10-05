@@ -9,11 +9,11 @@ export async function createInspectorHarness(){
   globalThis[key]=fixture;
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
     name:'inspector-fixtures',enforce:'pre',
-    resolveId(id,importer){if(importer?.endsWith('/components/Inspector.jsx')){
-      if(id==='../tree-ancestors/treeBranchReads.jsx')return '\0inspector-tree-owner';
-      if(id==='../api.js')return '\0inspector-api';
-      if(id==='./NavigationLoading.jsx')return '\0inspector-loading';
-      if(id==='./Common.jsx')return '\0inspector-common';
+    resolveId(id,importer){if(importer?.endsWith('/epoch-browser/ui/Inspector.jsx')){
+      if(id==='../../tree-ancestors/treeBranchReads.jsx')return '\0inspector-tree-owner';
+      if(id==='../../api.js')return '\0inspector-api';
+      if(id==='../../components/NavigationLoading.jsx')return '\0inspector-loading';
+      if(id==='../../components/Common.jsx')return '\0inspector-common';
       if(id.endsWith('.jsx'))return '\0inspector-child:'+id;
     }},
     load(id){
@@ -30,7 +30,7 @@ export async function createInspectorHarness(){
       if(id.startsWith('\0inspector-child:'))return `export default ${JSON.stringify(id.includes('EpochViewer.jsx')?'inspector-viewer':'inspector-child')};`;
     },
   }]});
-  const {default:Inspector}=await server.ssrLoadModule('/src/components/Inspector.jsx');let root;
+  const {default:Inspector}=await server.ssrLoadModule('/src/epoch-browser/ui/Inspector.jsx');let root;
   return {fixture,
     async render(props){fixture.protocol=props.protocol;await act(async()=>{const element=React.createElement(Inspector,props);if(root)root.update(element);else root=TestRenderer.create(element);});},
     get viewer(){return root.root.findByType('inspector-viewer').props;},

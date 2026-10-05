@@ -20,8 +20,8 @@ test('shared and curation scientific criteria require authority refresh',()=>{
  assert.equal(annotationFilterNeedsRefresh({metadata_predicate:'invalid'}),true);
 });
 
-import {frozenReadPath,candidatePreviewReceipt} from './frozenReadContext.js';
-import {epochPageRequest} from './epochBrowserSource.js';
+import {frozenReadPath,candidatePreviewReceipt} from './epoch-browser/frozenReadContext.js';
+import {epochPageRequest} from './epoch-browser/epochBrowserSource.js';
 import {treePageRequest} from './pagedTreeRequest.js';
 test('frozen row/detail/tree requests retain exact token and never fall back',()=>{
  const readContext={root:'/protocols/p/workbench/candidates/r',candidate_scope_revision:'opaque /+ token'};

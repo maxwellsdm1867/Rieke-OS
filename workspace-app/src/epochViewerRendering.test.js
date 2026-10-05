@@ -19,7 +19,7 @@ function render(Component,props){
  try{return renderToString(createElement(Component,props));}finally{console.error=previous;}
 }
 test('opening a pinned inspector before any epoch is focused renders its empty state without dereferencing curation',async()=>{
- const {default:Inspector}=await server.ssrLoadModule('/src/components/Inspector.jsx');
+ const {default:Inspector}=await server.ssrLoadModule('/src/epoch-browser/ui/Inspector.jsx');
  const html=render(Inspector,{protocol:{definition:{protocol_uuid:'fixture',name:'Variable History Noise'},cells:[]},filters:{},revision:0});
  assert.match(html,/Choose an epoch/);
  assert.match(html,/Epoch list controls/);
@@ -27,14 +27,14 @@ test('opening a pinned inspector before any epoch is focused renders its empty s
  assert.doesNotMatch(html,/Include in analysis/);
 });
 test('opening Search results before any epoch is focused uses the same safe viewer empty state',async()=>{
- const {default:MatchingEpochs}=await server.ssrLoadModule('/src/components/MatchingEpochs.jsx');
+ const {default:MatchingEpochs}=await server.ssrLoadModule('/src/epoch-browser/ui/MatchingEpochs.jsx');
  const html=render(MatchingEpochs,{predicate:{all:[]},splits:'date,cell',preview:{tree_revision:'fixture',catalog:{fields:[]}},viewFilters:{},onViewFilters:()=>{}});
  assert.match(html,/Choose an epoch/);
  assert.match(html,/Epoch list controls/);
  assert.doesNotMatch(html,/Include in analysis/);
 });
 test('shared viewer accepts no selected epoch and no source-specific extras',async()=>{
- const {default:EpochViewer}=await server.ssrLoadModule('/src/components/EpochViewer.jsx');
+ const {default:EpochViewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx');
  const html=render(EpochViewer,{layout:{sizes:{columns:'minmax(0,1fr)',metadata:300},treeOpen:false,metadataOpen:false,onResize:()=>{}},epoch:null});
  assert.match(html,/Choose an epoch/);
  assert.doesNotMatch(html,/Include in analysis/);
@@ -53,7 +53,7 @@ test('common recorded scientific context preserves source facts and marks config
 
 
 test('shared designer puts its only Back to epochs control in the left tree pane',async()=>{
- const {default:EpochViewer}=await server.ssrLoadModule('/src/components/EpochViewer.jsx');
+ const {default:EpochViewer}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochViewer.jsx');
  const html=render(EpochViewer,{designMode:true,toolbar:{designMode:true,onBrowse:()=>{}},
   layout:{sizes:{columns:'320px 7px minmax(0,1fr)',tree:320,treeMax:560},treeOpen:true,metadataOpen:false,onResize:()=>{}},
   builder:{catalogData:{fields:[]},value:[],onChange:()=>{},preview:{count:0,levels:[]}},columnTree:{predicate:{all:[]},splits:''}});

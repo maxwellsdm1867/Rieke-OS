@@ -1,6 +1,6 @@
 import {canonicalReadIdentity as canonical} from '../search-activation/pageReadCache.js';
 import {treePageRequest} from '../pagedTreeRequest.js';
-import {columnAncestorPages} from '../columnTreeNavigation.js';
+import {columnAncestorPages} from '../tree-browser/columnTreeNavigation.js';
 import {reusableTreeBody} from './treeBranchReadCache.js';
 
 // Every operation starts with a current server page. Only its nonterminal

@@ -9,8 +9,8 @@ test('candidate detail and tree toggles use proposal flags; native toggles ignor
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'silent',optimizeDeps:{noDiscovery:true,entries:[]}});
  let rendered;
  try{
-  const {default:Detail}=await server.ssrLoadModule('/src/components/EpochAnalysisInclusion.jsx');
-  const {default:Row}=await server.ssrLoadModule('/src/components/EpochInclusionToggle.jsx');
+  const {default:Detail}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochAnalysisInclusion.jsx');
+  const {default:Row}=await server.ssrLoadModule('/src/epoch-browser/ui/EpochInclusionToggle.jsx');
   const epoch={epoch_uuid:'epoch-A',curation:{included:true,review_state:'unreviewed',revision:0},review_decision:{selected:false,reviewed:true,excluded:true}};
   const original=structuredClone(epoch),calls=[];
   const update=async(component,props)=>act(async()=>{const element=React.createElement(component,{epoch,label:'epoch A',onToggle:(...args)=>calls.push(args),...props});if(rendered)rendered.update(element);else rendered=TestRenderer.create(element);});

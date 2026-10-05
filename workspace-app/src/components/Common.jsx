@@ -1,9 +1,9 @@
 import NeuronIcon from './NeuronIcon.jsx';
 import {cellTypeColor} from "../cell-qc/cellTypes.js";
 import {useMemo,useState} from 'react';
-import {groupedCellPage} from '../boundedTree.js';
+import {groupedCellPage} from '../tree-browser/boundedTree.js';
 import "../cell-qc/ui/CellList.css";
-import MetadataTable from './MetadataTable.jsx';
+import MetadataTable from '../epoch-browser/ui/MetadataTable.jsx';
 import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import { AlertTriangle, LoaderCircle, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
 import { number, duration } from '../api.js';

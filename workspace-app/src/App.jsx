@@ -35,7 +35,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, CircleDot, Database, Download, FileJson, FolderOpen, GitBranch, Layers, LayoutDashboard, ListFilter, PanelLeftClose, PanelLeftOpen, Plus, RefreshCw, Search, Settings2, ShieldCheck, Upload, Users, Clock3, X } from 'lucide-react';
 import { api, useResource, number, duration, humanize, time, eligibleExportCount } from './api.js';
 import { Badge, Empty, Metadata, Stats, Status, SourceEligibilityNotice } from './components/Common.jsx';
-import Inspector from './components/Inspector.jsx';
+import Inspector from './epoch-browser/ui/Inspector.jsx';
 import IncomingWorkbench from './incoming-workbench/ui/IncomingWorkbench.jsx';
 import {createIncomingMergeIntents} from './incoming-workbench/incomingMergeIntent.js';
 import useImportReviewStatus from './recording-import/useImportReviewStatus.js';
@@ -43,7 +43,7 @@ import ProjectFiles from './project-workspace/ui/ProjectFiles.jsx';
 import DataStores from './project-workspace/ui/DataStores.jsx';
 import ImportHistory, {IMPORT_TERMINAL} from './recording-import/ui/ImportHistory.jsx';
 import MasterLog from './components/MasterLog.jsx';
-import MetadataExplorer from './components/MetadataExplorer.jsx';
+import MetadataExplorer from './metadata-explorer/ui/MetadataExplorer.jsx';
 import GlobalSearch from './search-activation/GlobalSearch.jsx';
 import {WorkspaceReadCacheOwner} from './search-activation/navigationReadCache.jsx';
 import CellQC from "./cell-qc/ui/CellQC.jsx";
@@ -52,7 +52,7 @@ import ProtocolSuggestion,{ImportSuggestions} from "./protocol-overview/ui/Proto
 import {activeProtocolSuggestions} from "./protocol-overview/protocolSuggestions.js";
 import useImportMonitor from './recording-import/useImportMonitor.js';
 import ImportStatusBar from './recording-import/ui/ImportStatusBar.jsx';
-import MetadataRefresh from './components/MetadataRefresh.jsx';
+import MetadataRefresh from './metadata-refresh/ui/MetadataRefresh.jsx';
 import useImportQueue from './recording-import/useImportQueue.js';
 import {isImportPending} from './recording-import/importProgress.js';
 import {datedCellLabel} from './recording-import/recordingIdentity.js';

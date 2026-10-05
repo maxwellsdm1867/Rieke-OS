@@ -6,7 +6,7 @@ import {loadIncomingSelection} from "../../incoming-workbench/incomingSelection.
 import {resolveTreeGroup,verifyTreeGroup} from '../treeGroupTargets.js';
 import {useAnnotationProfile} from '../annotationProfile.js';
 import {previewTreeGroup,releaseGroupPreview} from '../treeGroupQueryTags.js';
-import {branchLabel} from "../../treeBranchPresentation.js";
+import {branchLabel} from "../../tree-browser/treeBranchPresentation.js";
 import AnnotationTags from './AnnotationTags.jsx';
 import './TreeGroupTags.css';
 

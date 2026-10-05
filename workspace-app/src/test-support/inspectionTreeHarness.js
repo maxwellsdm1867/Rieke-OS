@@ -20,10 +20,10 @@ export async function createInspectionHarness({treeElement=null}={}){
   const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,
     server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
       name:'inspection-fixtures',enforce:'pre',
-      resolveId(id,importer){if(importer?.endsWith('/components/InspectionCellTree.jsx')){
-        if(id==='../api.js')return '\0inspection-api';
+      resolveId(id,importer){if(importer?.endsWith('/epoch-browser/ui/InspectionCellTree.jsx')){
+        if(id==='../../api.js')return '\0inspection-api';
         if(id==='../useEpochBrowserPage.js')return '\0inspection-page';
-        if(id==='./Common.jsx')return '\0inspection-common';
+        if(id==='../../components/Common.jsx')return '\0inspection-common';
         if(id==='./EpochInclusionToggle.jsx')return '\0inspection-inclusion';
       }},
       load(id){
@@ -33,7 +33,7 @@ export async function createInspectionHarness({treeElement=null}={}){
         if(id==='\0inspection-inclusion')return 'export default ()=>null;';
       },
     }]});
-  const {default:InspectionCellTree}=await server.ssrLoadModule('/src/components/InspectionCellTree.jsx');
+  const {default:InspectionCellTree}=await server.ssrLoadModule('/src/epoch-browser/ui/InspectionCellTree.jsx');
   let root;
   const branches=()=>root.root.findAll(node=>node.type?.name==='CellBranch');
   return {network,

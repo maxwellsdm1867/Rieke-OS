@@ -9,7 +9,7 @@ import {createServer} from './test-support/isolatedVite.js';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('').trim();
 const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
-const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../components/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../components/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
+const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
 test('selected merge requires explicit review, saves exact selection and preserves exclusions before preview',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer;
@@ -89,7 +89,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
 test('App and affected dialog/browser/sidebar JSX transform from isolated source',async()=>{
  const server=await create();
  try{
-  for(const file of ['App.jsx','components/MetadataExplorer.jsx',"exports/ui/IncomingExportDialog.jsx","exports/ui/ExportSelectionDialog.jsx","protocol-overview/ui/ProtocolSidebar.jsx",'incoming-workbench/ui/FrozenIncomingReview.jsx',"exports/ui/WorkbenchExportDialog.jsx"]){
+  for(const file of ['App.jsx','metadata-explorer/ui/MetadataExplorer.jsx',"exports/ui/IncomingExportDialog.jsx","exports/ui/ExportSelectionDialog.jsx","protocol-overview/ui/ProtocolSidebar.jsx",'incoming-workbench/ui/FrozenIncomingReview.jsx',"exports/ui/WorkbenchExportDialog.jsx"]){
    const result=await server.transformRequest(`/src/${file}`);assert.ok(result?.code.length>0,file);
   }
  }finally{await server.close();}

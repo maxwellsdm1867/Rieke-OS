@@ -1,4 +1,4 @@
-import QueryPresetHistory from '../../components/QueryPresetHistory.jsx';
+import QueryPresetHistory from '../../metadata-explorer/ui/QueryPresetHistory.jsx';
 import {useRef,useState} from 'react';
 import {ArrowRight,Clock3,Search,Filter,Pin,PinOff,Pencil,RefreshCw,Sparkles,Download,Upload,Database,Users,Activity} from 'lucide-react';
 import {number,time} from '../../api.js';

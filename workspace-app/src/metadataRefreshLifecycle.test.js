@@ -12,7 +12,7 @@ test('metadata refresh remains a metadata operation and ignores legacy MATLAB ma
  globalThis.document={addEventListener(){},removeEventListener(){}};
  globalThis.fetch=async(path,options)=>{calls.push({path,options});return {ok:true,json:async()=>path==='/api/metadata/refresh'?{refresh,masks,warnings:[]}:{status:'ready',last_refresh:refresh,masks}};};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
- try{const {default:MetadataRefresh}=await server.ssrLoadModule('/src/components/MetadataRefresh.jsx');await act(async()=>{root=TestRenderer.create(React.createElement(MetadataRefresh,{revision:0,onChange:()=>changed++}),{createNodeMock:()=>({contains:()=>true})});});
+ try{const {default:MetadataRefresh}=await server.ssrLoadModule('/src/metadata-refresh/ui/MetadataRefresh.jsx');await act(async()=>{root=TestRenderer.create(React.createElement(MetadataRefresh,{revision:0,onChange:()=>changed++}),{createNodeMock:()=>({contains:()=>true})});});
   await act(async()=>root.root.findByProps({'aria-label':'Metadata refresh status'}).props.onClick());
   assert.doesNotMatch(text(root.toJSON()),/MATLAB|selection masks|Apply updated mask/);
   await act(async()=>root.root.findByProps({'aria-label':'Refresh project metadata'}).props.onClick());

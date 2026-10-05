@@ -7,7 +7,7 @@ import {Badge,Empty,Metadata,Status} from '../../components/Common.jsx';
 import './DataStores.css';
 import {epochResourceCache} from '../../resourceCache.js';
 import SourcePropagation from '../../protocol-overview/ui/SourcePropagation.jsx';
-import {availabilityLabel,availabilityExplanation} from '../../metadataRefresh.js';
+import {availabilityLabel,availabilityExplanation} from '../../metadata-refresh/metadataRefresh.js';
 
 const PAGE_SIZE=50;
 const actions={
