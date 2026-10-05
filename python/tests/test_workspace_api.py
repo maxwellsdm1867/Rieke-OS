@@ -123,6 +123,47 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(response.get_json()['attributes']['startTimeDotNetDateTimeOffsetTicks'], str(ticks))
         self.assertEqual(self.service.details[epoch]['attributes']['startTimeDotNetDateTimeOffsetTicks'], ticks)
 
+    def test_trace_encoding_does_not_hold_the_database_lock(self):
+        import threading
+        started, release, shell_done = threading.Event(), threading.Event(), threading.Event()
+        result = {'epoch_uuid': self.service.ids[0], 'values': [1.25, -0.0], 'tick': 2**60}
+        self.service.trace = lambda *args: copy.deepcopy(result)
+        original = self.app.json.dumps
+        responses, errors = {}, []
+        def encode(value, **kwargs):
+            if isinstance(value, dict) and value.get('values') == result['values']:
+                started.set()
+                if not release.wait(3):
+                    raise RuntimeError('Encoding test was not released')
+            return original(value, **kwargs)
+        def get(name, path):
+            try:
+                with self.app.test_client() as client:
+                    responses[name] = client.get(path)
+            except BaseException as error:
+                errors.append(error)
+            finally:
+                if name == 'shell': shell_done.set()
+        trace = threading.Thread(target=get, args=('trace', '/api/epochs/' + self.service.ids[0] + '/trace?stream_uuid=stream'))
+        shell = threading.Thread(target=get, args=('shell', '/api/overview'))
+        with patch.object(self.app.json, 'dumps', side_effect=encode):
+            try:
+                trace.start()
+                self.assertTrue(started.wait(2))
+                shell.start()
+                self.assertTrue(shell_done.wait(2), 'unrelated DB read waits for trace JSON encoding')
+            finally:
+                release.set()
+                trace.join(3)
+                if shell.ident is not None: shell.join(3)
+        self.assertFalse(trace.is_alive())
+        self.assertFalse(shell.is_alive())
+        self.assertEqual(errors, [])
+        self.assertEqual(responses['shell'].status_code, 200)
+        self.assertEqual(responses['trace'].status_code, 200)
+        self.assertEqual(responses['trace'].mimetype, 'application/json')
+        self.assertEqual(responses['trace'].get_json(), {**result, 'tick': str(2**60)})
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

@@ -14,7 +14,7 @@ export function mergeEpochSelection(selected,ids){
 
 // Range order is the displayed date/cell order, then each cell's epoch order.
 // Fetch intervening pages before publishing any selection, never a partial range.
-export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevision=page=>page.query_revision}){
+export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevision=page=>page.query_revision,pageSize=60}){
   if(typeof anchor.revision!=='string'||!anchor.revision||target.revision!==anchor.revision)throw new Error('Epoch query changed. Refresh and select the range again.');
   const startCell=cells.findIndex(cell=>cell.cell_uuid===anchor.cellUuid);
   const endCell=cells.findIndex(cell=>cell.cell_uuid===target.cellUuid);
@@ -29,11 +29,11 @@ export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevi
   if(spans.reduce((sum,span)=>sum+span.to-span.from+1,0)>MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs for one tag operation.');
   const ids=[];
   for(const {cell,from,to} of spans){
-    for(let offset=Math.floor(from/60)*60;offset<=to;offset+=60){
+    for(let offset=Math.floor(from/pageSize)*pageSize;offset<=to;offset+=pageSize){
       const page=await loadPage(cell.cell_uuid,offset);
       if(pageRevision(page)!==anchor.revision)throw new Error('Epoch query changed. Refresh and select the range again.');
       if(page.total!==cell.epochs||page.offset!==offset)throw new Error('Epoch order changed. Refresh and select the range again.');
-      for(let index=Math.max(from,offset);index<=Math.min(to,offset+59);index++){
+      for(let index=Math.max(from,offset);index<=Math.min(to,offset+pageSize-1);index++){
         const row=page.epochs[index-offset];
         if(!row?.epoch_uuid||row.cell_uuid!==cell.cell_uuid)throw new Error('The complete epoch range could not be loaded.');
         if((cell.cell_uuid===anchor.cellUuid&&index===anchor.index&&row.epoch_uuid!==anchor.uuid)||

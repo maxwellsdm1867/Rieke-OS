@@ -417,3 +417,11 @@ only. This metadata update runs JSON/path checks and imports no product modules.
 Exact combined source review, catalog/discovery closure, runtime/native/scientific
 qualification and final assembled-app acceptance remain separate gates; whole-app
 costs remain unmeasured.
+
+## Retained background trace execution
+
+`python/workspace_trace_workers.py` is a new retained execution helper, not a move
+from the finite backend baseline. The [local contract](trace-worker-execution.md)
+keeps admission/source authority in WorkspaceService and records process/close
+ownership. The application profile includes the helper; historical finite-path
+counts and source receipts are unchanged.

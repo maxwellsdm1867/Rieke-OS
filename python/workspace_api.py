@@ -165,6 +165,14 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     frontend = (Path(os.environ['RIEKE_DESKTOP_FRONTEND']) if os.environ.get('RIEKE_DESKTOP_MODE') == '1'
                 else Path(__file__).resolve().parents[1] / "workspace-app/dist")
     app.extensions["workspace_service"] = service
+    # Only the exact legacy service opts into this source-admission contract.
+    # Supplied/custom and imported-snapshot owners retain their own read path.
+    from workspace_trace_workers import TraceWorkers, TraceWorkerUnavailable
+    trace_workers = (TraceWorkers() if type(service) is WorkspaceService and
+                     getattr(service.trace, '__func__', None) is WorkspaceService.trace else None)
+    if trace_workers is not None:
+        app.extensions['trace_workers'] = trace_workers
+        app.extensions['close_trace_workers'] = trace_workers.close
     app.extensions["curation_store"] = store
     from disco.projects.project_preferences import register_project_preference_routes
     register_project_preference_routes(app, project_dir, service.project['project_uuid'], db_lock)
@@ -461,6 +469,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from disco.decisions.shared_tag_index import SharedTagsChanged
         if isinstance(error, (RevisionConflict, StaleWorkspace, SharedTagsChanged)):
             return jsonify(error=str(error), code="stale_workspace"), 409
+        if isinstance(error, TraceWorkerUnavailable):
+            return jsonify(error=str(error), code='trace_worker_unavailable', retryable=True), 503
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
             return jsonify(error=str(error)), 400
         incident = str(uuid.uuid4())
@@ -1184,9 +1194,32 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/epochs/<epoch_uuid>/trace")
     def trace(epoch_uuid):
+        stream = request.args["stream_uuid"]
+        start, count = int(request.args.get("start", 0)), int(request.args.get("count", 20000))
+        # A custom serializer must retain its own response behavior.
+        eligible = (trace_workers is not None and type(app.json) is ExactMetadataJSON and
+                    request.headers.get('X-Disco-Trace-Priority') == 'background')
+        if eligible and trace_workers.ready():
+            with db_lock:
+                plan, witness = service.capture_trace_read(epoch_uuid, stream, start, count)
+            encoding = {'ensure_ascii': app.json.ensure_ascii, 'sort_keys': app.json.sort_keys,
+                        'compact': app.json.compact if app.json.compact is not None else not app.debug}
+            body = trace_workers.execute(plan, encoding,
+                background=request.headers.get('X-Disco-Trace-Priority') == 'background')
+            with db_lock:
+                service.validate_trace_read(witness)
+            return app.response_class(body, mimetype=app.json.mimetype)
         with db_lock:
-            return jsonify(service.trace(epoch_uuid, request.args["stream_uuid"],
-                                         int(request.args.get("start", 0)), int(request.args.get("count", 20000))))
+            result = service.trace(epoch_uuid, stream, start, count)
+        # Cold reads stay inline while demand-triggered children import. Never
+        # duplicate a read already dispatched to a child or silently retry it.
+        if eligible and not trace_workers.stats()['started']:
+            try:
+                trace_workers.start()
+            except Exception:
+                app.logger.exception('Trace workers could not start; using inline reads')
+        # Samples are detached; encoding does not need the shared DB connection.
+        return jsonify(result)
 
     def curation_selection_scope(ids, scope, protocol_uuid=None):
         """Validate only the selected rows; never load their detail metadata."""
@@ -1894,6 +1927,13 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if importing.locked() or active_jobs:
                 inbox.start()
                 raise ValueError('An inbox import started while closing; wait for it to finish')
+            if trace_workers is not None:
+                try:
+                    trace_workers.close()
+                except Exception as error:
+                    error.desktop_shutdown_stage = 'trace_workers'
+                    inbox.start()
+                    raise
             with db_lock:
                 scheduler=app.extensions.get('backup_scheduler')
                 try:
@@ -1947,7 +1987,12 @@ def main():
         server.serve_forever()
     finally:
         app.extensions['h5_inbox'].stop()
-        server.server_close()
+        try:
+            close_traces = app.extensions.get('close_trace_workers')
+            if close_traces is not None:
+                close_traces()
+        finally:
+            server.server_close()
 
 
 if __name__ == "__main__":

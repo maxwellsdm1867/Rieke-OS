@@ -84,6 +84,7 @@
     "workspace_export_folder.py",
     "workspace_frontend.py",
     "workspace_h5_inbox.py",
+    "workspace_http_boundary.py",
     "workspace_import_check.py",
     "workspace_import_progress.py",
     "workspace_installation.py",
@@ -107,6 +108,7 @@
     "workspace_startup_registry.py",
     "workspace_state_generation.py",
     "workspace_state_snapshot.py",
+    "workspace_trace_workers.py",
     "workspace_updates.py"
   ],
   "source_exclusions": [

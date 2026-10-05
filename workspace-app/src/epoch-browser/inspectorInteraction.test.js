@@ -20,13 +20,19 @@ test('pane bounds reserve plot space, restore sensible defaults and overlay on n
   assert.equal(inspectorPaneSizes(1100,{},false,false).columns,'minmax(0,1fr)');
   assert.equal(inspectorPaneSizes(1100,{tree:NaN}).tree,270);
 });
-test('W/S navigation ignores typing, composition, modifiers and old arrow bindings',()=>{
+test('W/S and Up/Down navigation preserve typing, composition, modifiers and native controls',()=>{
   const event={key:'s',target:{closest:()=>null}};
   assert.equal(epochShortcutDirection(event),1);
   assert.equal(epochShortcutDirection({...event,key:'w'}),-1);
+  assert.equal(epochShortcutDirection({...event,key:'ArrowDown',repeat:true}),1);
+  assert.equal(epochShortcutDirection({...event,key:'ArrowUp',repeat:true}),-1);
+  for(const key of ['ArrowUp','ArrowDown']){
+    assert.equal(epochShortcutDirection({...event,key,target:{closest:selector=>selector.includes('[data-epoch-arrows=')?{}:null}}),0);
+    assert.equal(epochShortcutDirection({...event,key,target:{closest:selector=>selector.includes('input')?{}:null}}),0);
+  }
   for(const modifier of ['altKey','ctrlKey','metaKey','shiftKey','defaultPrevented','isComposing'])assert.equal(epochShortcutDirection({...event,[modifier]:true}),0);
   assert.equal(epochShortcutDirection({...event,target:{closest:()=>({})}}),0);
-  for(const key of ['ArrowLeft','ArrowUp','ArrowDown','Tab','W','S'])assert.equal(epochShortcutDirection({...event,key}),0);
+  for(const key of ['ArrowLeft','ArrowRight','Tab','W','S'])assert.equal(epochShortcutDirection({...event,key}),0);
   assert.equal(epochShortcutDirection({...event,nativeEvent:{isComposing:true}}),0);
 });
 test('epoch navigation crosses chronological pages and locates a tree-selected offpage epoch',()=>{

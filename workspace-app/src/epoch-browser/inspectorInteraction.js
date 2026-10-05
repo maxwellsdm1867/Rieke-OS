@@ -22,8 +22,8 @@ export function epochShortcutDirection(event){
     const navigation=event.target===event.currentTarget||event.target?.closest?.('.epoch-row button,.epoch-leaf,.epoch-navigation,[data-epoch-navigation]');
     return navigation?(event.shiftKey?-1:1):0;
   }
-  if(event.shiftKey||!['w','s'].includes(event.key))return 0;
-  return event.key==='w'?-1:1;
+  if(event.shiftKey||!['w','s','ArrowUp','ArrowDown'].includes(event.key))return 0;
+  return event.key==='w'||event.key==='ArrowUp'?-1:1;
 }
 
 export function nextEpochAction({epochs=[],offset=0,total=0,focused,direction,pageSize=60}){

@@ -3,6 +3,19 @@ import assert from 'node:assert/strict';
 import {createInspectionHarness,deferred,cells,sourceA,pageAt} from './test-support/inspectionTreeHarness.js';
 
 const base={cells,source:sourceA,revision:1,targets:[],disabled:false};
+test('actual expanding cell page and first-epoch selection share one request',async()=>{
+ const h=await createInspectionHarness({realPages:true}),pending=deferred(),calls=[],selected=[];
+ h.network.api=(path,options)=>{calls.push({path,...options});return pending.promise;};
+ try{
+  await h.render({...base,setTargets(){},onSelectCell:(_cell,epoch)=>selected.push(epoch.epoch_uuid)});
+  await h.toggle(0,true);
+  const selection=await h.selectCell();await h.toggle(1,true);
+  assert.equal(calls.length,1,'the cell summary and mounted page must join the same read');
+  await h.act(async()=>{pending.resolve(pageAt());await selection.work;});
+  assert.deepEqual(selected,['cell-A-0']);
+  assert(h.buttons.some(button=>button['aria-label']?.endsWith('epoch 1')));
+ }finally{await h.close();}
+});
 test('mounted inspection cancels late cell/range publication for scope and revision changes',async()=>{
  const h=await createInspectionHarness();
  try{
@@ -101,7 +114,7 @@ test('return restores date/cell expansion and page only after fresh matching mem
  const props={...base,navigationScope:'project-A/protocol-A/filter-A',membershipReady:true,onNavigationChange:value=>{saved=value;},setTargets(){}};
  try{
   await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
-  await h.act(()=>h.buttons.find(button=>button['aria-label']?.startsWith('Next epochs')).onClick());
+  await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
   await h.unmount();
   await h.render({...props,cells:[],membershipReady:false,initialNavigation:saved});
   await h.render({...props,initialNavigation:saved});
@@ -140,4 +153,48 @@ test('external and same-target navigation intents cancel delayed scroll; errors 
   await h.unmount();pane.scrollTop=0;childPending=true;await h.render({...props,membershipReady:true});await frame();
   await h.render({...props,membershipReady:true,focused:'new-epoch'});childPending=false;changed();await frame();await frame();assert.equal(pane.scrollTop,0,'external focus change also cancels');
  }finally{await h.close();Object.assign(globalThis,prior);}
+});
+
+test('scrolling appends bounded pages with original ordinals and retires changed membership',async()=>{
+ const h=await createInspectionHarness();let saved;
+ const props={...base,setTargets(){},onNavigationChange:value=>{saved=value;}};
+ try{
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Next epochs')),false);
+  assert.equal(h.buttons.filter(button=>button['aria-label']?.startsWith('Inspect ')).length,60);
+  await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onFocus());
+  assert.equal(h.buttons.filter(button=>button['aria-label']?.startsWith('Inspect ')).length,65);
+  assert.equal(saved.offsets['cell-A'],60);
+  await h.unmount();
+  h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:pageAt(request.cellUuid,request.offset,request.offset?'changed':'query-A')});
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
+  assert.match(h.errors.join(' '),/query changed/i);
+  assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')),false);
+ }finally{await h.close();}
+});
+
+test('keyboard focus reveals later rows without a visible sentinel and rejects binding changes',async()=>{
+ const h=await createInspectionHarness(),props={...base,setTargets(){}};
+ try{
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await h.render({...props,focused:'cell-A-60',revealEpoch:pageAt('cell-A',60).epochs[0]});
+  assert.ok(h.buttons.some(button=>button['aria-label']?.endsWith('epoch 61')&&button['aria-current']==='true'));
+  await h.unmount();
+  h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:{...pageAt(request.cellUuid,request.offset),expected_binding_version:request.offset?2:1}});
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
+  assert.match(h.errors.join(' '),/list changed/i);
+  assert.equal(h.buttons.some(button=>button['aria-label']?.startsWith('Inspect ')),false);
+ }finally{await h.close();}
+});
+
+test('malformed continuation renders retry instead of publishing rows or crashing',async()=>{
+ const h=await createInspectionHarness(),props={...base,setTargets(){}};
+ try{
+  h.network.page=(source,request)=>({loading:false,error:null,reload(){},data:request.offset?{...pageAt(request.cellUuid,request.offset),epochs:{invalid:true}}:pageAt(request.cellUuid,request.offset)});
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await h.act(()=>h.buttons.find(button=>button.children==='Load more epochs').onClick());
+  assert.match(h.errors.join(' '),/list changed/i);
+ }finally{await h.close();}
 });

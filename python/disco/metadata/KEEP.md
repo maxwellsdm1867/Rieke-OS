@@ -37,3 +37,13 @@ one trace function would not remove its provenance obligations and would cross t
 paused acquisition/H5/export work. Existing service/source-identity/export-reader
 tests retain those qualification scopes. No new native, H5, legacy/Ovation, export,
 HTTP or real-data fixture is introduced or executed here.
+
+## Reviewed background execution extension
+
+The [background trace execution contract](../../../docs/architecture/trace-worker-execution.md)
+adds bounded CPU execution for exact legacy background windows. Source admission
+and `read_response_window` stay at their retained paths with unchanged scientific
+checks. Detached plans cross processes; authority witnesses do not. The parent
+revalidates before publication. Imported snapshot authority does not opt in. This
+extension has its own synthetic-H5/source tests and does not relabel the earlier
+module-reorganization receipts or qualify an assembled application.

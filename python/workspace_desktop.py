@@ -918,6 +918,10 @@ def main(argv=None):
         current_inbox = app.extensions.get('h5_inbox')
         if current_inbox:
             current_inbox.stop()
+        close_traces = app.extensions.get('close_trace_workers')
+        if close_traces is not None:
+            close_traces()
+
         if session_lock:
             session_lock.close()
 

@@ -27,16 +27,16 @@ test('draft pause cancels old-scope delayed reads and resumes only with the new 
   await render({token:'newest'});await tick(80);assert.match(requests.at(-1).path,/revision=newest$/);assert.equal(current.loading,false);
  }finally{await act(async()=>renderer?.unmount());t.mock.timers.reset();globalThis.fetch=previousFetch;await server.close();}
 });
-async function harness(t){
+async function harness(t,{delayMs,prefetch=false}={}){
  const previousFetch=globalThis.fetch,requests=[],renders=[];
  let respond=path=>{const uuid=new URL(path,'http://fixture').pathname.split('/')[2];return path.includes('/trace?')?trace(uuid):metadata(uuid);};
  globalThis.fetch=async(url,options)=>{const path=url.slice(4);requests.push({path,signal:options.signal});return new Response(JSON.stringify(await respond(path)),{status:200});};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
- const {useEpochResource}=await server.ssrLoadModule('/src/api.js');
+ const {useEpochResource,useEpochPrefetch}=await server.ssrLoadModule('/src/api.js');
  const {epochResourceCache:cache,initialEpochTracePath}=await server.ssrLoadModule('/src/resourceCache.js');
  t.mock.timers.enable({apis:['setTimeout']});
  let renderer,current;
- function Probe({path,revision=0}){current=useEpochResource(path,revision);renders.push({...current});return null;}
+ function Probe({path,revision=0}){current=useEpochResource(path,revision,delayMs);useEpochPrefetch(prefetch&&!path?['/epochs/a']:[],revision,0,{traces:true});renders.push({...current});return null;}
  const h={cache,requests,renders,get current(){return current;},set respond(value){respond=value;},
   warm(uuid,revision=0,path=`/epochs/${uuid}`){const epoch=metadata(uuid);cache.put(path,revision,epoch);cache.put(initialEpochTracePath(epoch),revision,trace(uuid));return epoch;},
   async render(path,revision=0){await act(async()=>{const element=React.createElement(Probe,{path,revision});if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);});},
@@ -55,8 +55,8 @@ test('complete warm A/B/A transitions publish in their first render without time
   await h.tick(80);assert.equal(h.requests.length,0);
  }finally{await h.close();}
 });
-test('metadata-only misses retain 80 ms latest-intent coalescing and await the matching trace',async t=>{
- const h=await harness(t);let finish;
+test('an explicitly requested delay still coalesces metadata-only misses and awaits the matching trace',async t=>{
+ const h=await harness(t,{delayMs:80});let finish;
  try{
   h.cache.put('/epochs/a',0,metadata('a'));h.cache.put('/epochs/b',0,metadata('b'));
   h.respond=path=>path.includes('/trace?')?new Promise(resolve=>finish=resolve):metadata('b');
@@ -68,7 +68,7 @@ test('metadata-only misses retain 80 ms latest-intent coalescing and await the m
  }finally{await h.close();}
 });
 test('query/revision changes and reload hide previous warm data until exact fresh reads complete',async t=>{
- const h=await harness(t);try{
+ const h=await harness(t,{delayMs:80});try{
   h.warm('a',7,'/epochs/a?protocol_uuid=p');await h.render('/epochs/a?protocol_uuid=p',7);
   await h.render('/epochs/a?protocol_uuid=q',7);assert.equal(h.current.data,null);assert.equal(h.requests.length,0);
   await h.render('/epochs/a?protocol_uuid=p',8);assert.equal(h.current.data,null);await h.tick(80);
@@ -80,15 +80,62 @@ test('query/revision changes and reload hide previous warm data until exact fres
  }finally{await h.close();}
 });
 test('candidate reads never consume global warmth; superseded late trace completion stays fenced',async t=>{
- const h=await harness(t);let finish;
+ const h=await harness(t,{delayMs:80});let finish;
  try{
   h.warm('a');const candidate='/protocols/p/workbench/candidates/r/epochs/a?candidate_scope_revision=token';
   h.respond=()=>metadata('a');await h.render(candidate);assert.equal(h.current.data,null);await h.tick(80);
   assert.deepEqual(h.requests.map(item=>item.path),[candidate]);assert.equal(h.cache.peek(candidate,0),undefined);
   h.cache.put('/epochs/b',0,metadata('b'));h.respond=()=>new Promise(resolve=>finish=resolve);
   await h.render('/epochs/b');await h.tick(80);const obsolete=h.requests.at(-1);
-  assert.match(obsolete.path,/\/epochs\/b\/trace/);await h.render('/epochs/a');assert.equal(h.current.data.epoch_uuid,'a');assert.equal(obsolete.signal.aborted,true);
+  assert.match(obsolete.path,/\/epochs\/b\/trace/);await h.render('/epochs/a');assert.equal(h.current.data.epoch_uuid,'a');await h.tick(0);assert.equal(obsolete.signal.aborted,true);
   await act(async()=>finish(trace('b')));assert.equal(h.current.data.epoch_uuid,'a');
   assert.equal(h.cache.peek('/epochs/b/trace?stream_uuid=stream-b&start=0&count=3',0),undefined);
+ }finally{await h.close();}
+});
+
+test('uncached epoch navigation starts metadata and then trace without advancing a timer',async t=>{
+ const h=await harness(t),pending=new Map();
+ try{
+  h.respond=path=>new Promise(resolve=>pending.set(path,resolve));
+  await h.render('/epochs/a');
+  assert.deepEqual(h.requests.map(item=>item.path),['/epochs/a']);
+  assert.equal(h.current.data,null);
+  await act(async()=>pending.get('/epochs/a')(metadata('a')));
+  const tracePath='/epochs/a/trace?stream_uuid=stream-a&start=0&count=3';
+  assert.deepEqual(h.requests.map(item=>item.path),['/epochs/a',tracePath]);
+  assert.equal(h.current.data,null,'metadata cannot publish as a complete trace snapshot');
+  await act(async()=>pending.get(tracePath)(trace('a')));
+  assert.equal(h.current.data.epoch_uuid,'a');assert.equal(h.current.loading,false);
+ }finally{await h.close();}
+});
+
+test('immediate rapid navigation aborts obsolete reads and rejects late trace publication',async t=>{
+ const h=await harness(t),pending=new Map();
+ try{
+  for(const uuid of ['a','b','c'])h.cache.put(`/epochs/${uuid}`,0,metadata(uuid));
+  h.respond=path=>new Promise(resolve=>pending.set(path,resolve));
+  for(const uuid of ['a','b','c'])await h.render(`/epochs/${uuid}`);
+  assert.equal(h.requests.length,3,'each new intent begins without advancing timers');
+  await h.tick(0); // End the bounded prefetch-to-foreground handoff turn.
+  assert.deepEqual(h.requests.map(item=>item.signal.aborted),[true,true,false]);
+  await act(async()=>pending.get(h.requests[2].path)(trace('c')));
+  assert.equal(h.current.data.epoch_uuid,'c');
+  await act(async()=>{pending.get(h.requests[1].path)(trace('b'));pending.get(h.requests[0].path)(trace('a'));});
+  assert.equal(h.current.data.epoch_uuid,'c');
+  for(const obsolete of h.requests.slice(0,2))assert.equal(h.cache.peek(obsolete.path,0),undefined);
+ }finally{await h.close();}
+});
+
+test('actual hook transition adopts the prefetched trace without a duplicate request',async t=>{
+ const h=await harness(t,{prefetch:true});let finish;
+ try{
+  h.respond=path=>path.includes('/trace?')?new Promise(resolve=>finish=resolve):metadata('a');
+  await h.render(null);await h.tick(0);
+  assert.equal(h.requests.length,2);const traceRequest=h.requests[1];
+  await h.render('/epochs/a');await h.tick(0);
+  assert.equal(h.requests.length,2,'prefetch and foreground must share the pending trace');
+  assert.equal(traceRequest.signal.aborted,false);
+  await act(async()=>finish(trace('a')));
+  assert.equal(h.current.data.epoch_uuid,'a');assert.equal(h.current.loading,false);
  }finally{await h.close();}
 });

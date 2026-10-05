@@ -1,9 +1,10 @@
+import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,RotateCcw,ZoomIn,ZoomOut} from 'lucide-react';
 import {number,useResource} from '../../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
-import {traceRequestPath,traceCacheRevision} from '../traceReadContext.js';
+import {traceRequestPath,traceCacheRevision,traceResponseMatches} from '../traceReadContext.js';
 import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 
 function paintTrace(canvas,data){
@@ -41,9 +42,13 @@ function paintTrace(canvas,data){
 }
 
 // Keep the canvas mounted while resetting stream/window state for each identity.
-export default function Trace({epoch,revision=0,readContext=null}){return <TraceViewer epoch={epoch} revision={revision} readContext={readContext}/>;}
+export default function Trace({epoch,revision=0,readContext=null}){
+  const owner=useWorkspaceRequestScope();
+  return <TraceViewer epoch={epoch} revision={revision} readContext={readContext??(owner?epoch?.trace_read_context??owner.traceReadContext:null)??null}/>;
+}
 Trace.supportsFrozenReadContext=true;
 function TraceViewer({epoch,revision,readContext}){
+  const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
   const streams=(epoch?.streams || []).filter(stream=>stream.kind==='responses'&&stream.sample_count>0);
   const [selection,setSelection]=useState({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});
   const sameEpoch=selection.epoch===epoch?.epoch_uuid;
@@ -56,12 +61,12 @@ function TraceViewer({epoch,revision,readContext}){
   const bounded=clampWindow(sameEpoch?viewport.start:0,sameEpoch?viewport.count:MAX_TRACE_SAMPLES,stream?.sample_count);
   useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});setViewport(clampWindow(0,MAX_TRACE_SAMPLES,streams[0]?.sample_count));setEntryError('');}},[epoch?.epoch_uuid,sameEpoch]);
   const requestPath=traceRequestPath(epoch?.epoch_uuid,stream,bounded,readContext);
-  const resource=useResource(requestPath,traceCacheRevision(revision,readContext),0,{cache:true});
-  const data=resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===bounded.start&&resource.data?.count===bounded.count?resource.data:null;
-  const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&data.values?.length===data.count;
+  const resource=useResource(requestPath,traceCacheRevision(revision,readContext),0,{cache:!imported});
+  const data=traceResponseMatches(resource.data,readContext)&&resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===bounded.start&&resource.data?.count===bounded.count?resource.data:null;
+  const valid=data&&data.sample_rate>0&&Number.isFinite(data.sample_rate)&&(!imported||data.sample_rate===stream?.sample_rate&&(typeof stream?.units==='string'||stream?.units===null)&&data.units===stream.units)&&data.values?.length===data.count;
   const base=useRef(null),overlay=useRef(null),geometry=useRef(null),cursor=useRef(null),drag=useRef(null),frame=useRef(null),sampleReadout=useRef(null),timeReadout=useRef(null),responseReadout=useRef(null),cursorInput=useRef(null),surface=useRef(null);
   const cursorHelp=useId();
-  const authorityKey=readContext?JSON.stringify([readContext.root,readContext.candidate_scope_revision]):'global';
+  const authorityKey=traceCacheRevision('paint',readContext);
   const painted=useRef(false),paintedAuthority=useRef(authorityKey);
   const canRetainPaint=painted.current&&paintedAuthority.current===authorityKey;
   const dataRef=useRef(null);dataRef.current=valid?data:null;
@@ -109,19 +114,29 @@ function TraceViewer({epoch,revision,readContext}){
     cursor.current=null;drag.current=null;
     for(const ref of [sampleReadout,timeReadout,responseReadout])if(ref.current)ref.current.textContent='—';
     if(cursorInput.current)cursorInput.current.value=valid?String(data.start):'';
-    let resizedFrame;
+    let resizedFrame,lastSize;
     const draw=()=>{
       // A pending window keeps its bitmap only within the same frozen authority.
       // Failed/invalid responses clear it; only validated samples get new axes.
       geometry.current=valid?paintTrace(base.current,data):pending&&paintedAuthority.current===authorityKey?null:paintTrace(base.current,null);
       if(valid){painted.current=true;paintedAuthority.current=authorityKey;}else if(!pending||paintedAuthority.current!==authorityKey){painted.current=false;paintedAuthority.current=authorityKey;}
       const rect=base.current.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
+      lastSize={width:rect.width,height:rect.height,ratio};
       overlay.current.width=Math.round(rect.width*ratio);overlay.current.height=Math.round(rect.height*ratio);
       scheduleOverlay();
     };
     const resize=()=>{cancelAnimationFrame(resizedFrame);resizedFrame=requestAnimationFrame(draw);};
-    draw();const observer=new ResizeObserver(resize);observer.observe(base.current);window.addEventListener('resize',resize);window.addEventListener('disco:appearance',resize);
-    return()=>{observer.disconnect();window.removeEventListener('resize',resize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
+    const resizeIfChanged=(immediate=false)=>{
+      const rect=base.current.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;
+      if(lastSize?.width!==rect.width||lastSize?.height!==rect.height||lastSize?.ratio!==ratio){
+        if(immediate){cancelAnimationFrame(resizedFrame);draw();}else resize();
+      }
+    };
+    // observe() delivers an initial notification even though draw() already
+    // painted this size. Data and appearance changes still always repaint.
+    const windowResize=()=>resizeIfChanged();
+    draw();const observer=new ResizeObserver(()=>resizeIfChanged(true));observer.observe(base.current);window.addEventListener('resize',windowResize);window.addEventListener('disco:appearance',resize);
+    return()=>{observer.disconnect();window.removeEventListener('resize',windowResize);window.removeEventListener('disco:appearance',resize);cancelAnimationFrame(resizedFrame);if(frame.current!=null){cancelAnimationFrame(frame.current);frame.current=null;}};
   },[data,valid,pending,authorityKey]);
   function local(event){const rect=overlay.current.getBoundingClientRect(),g=geometry.current;return g?{x:Math.max(0,Math.min(g.w,event.clientX-rect.left-g.left)),inside:event.clientX-rect.left>=g.left&&event.clientX-rect.left<=g.left+g.w&&event.clientY-rect.top>=g.top&&event.clientY-rect.top<=g.top+g.h}:null;}
   function pointerMove(event){const at=local(event);if(!at||!dataRef.current)return;if(drag.current)drag.current.current=at.x;if(at.inside||drag.current)cursor.current=sampleAtPixel(at.x,geometry.current.w,dataRef.current.count);scheduleOverlay();}
@@ -148,14 +163,14 @@ function TraceViewer({epoch,revision,readContext}){
   }
   return <section className="trace-viewer trace-section" aria-label="Recorded response viewer">
     <div className="tv-tools"><div className="tv-modes" aria-label="Drag interaction"><button className={mode==='zoom'?'active':''} aria-pressed={mode==='zoom'} onClick={()=>setMode('zoom')}><MousePointer2 size={13}/> Drag to zoom</button><button className={mode==='pan'?'active':''} aria-pressed={mode==='pan'} onClick={()=>setMode('pan')}><Hand size={13}/> Pan</button></div><div className="tv-zoom-buttons"><button disabled={!stream||pending||bounded.count<=Math.min(2,total)} onClick={()=>zoom(.5)} title="Zoom in around cursor or window center" aria-label="Zoom in"><ZoomIn size={15}/></button><button disabled={!stream||pending||bounded.count>=Math.min(MAX_TRACE_SAMPLES,total)} onClick={()=>zoom(2)} title="Zoom out, up to 20,000 full-rate samples" aria-label="Zoom out"><ZoomOut size={15}/></button><button disabled={!stream||pending} onClick={()=>moveWindow({start:0,count:MAX_TRACE_SAMPLES})} title="Return to the first bounded window"><RotateCcw size={13}/> Reset</button></div><span>Y-axis auto-scales per window</span></div>
-    <div ref={surface} className={`tv-plot tv-${mode}`} tabIndex={0} role="group" aria-label="Trace plot. Arrow keys move the sample cursor. Shift and arrows pan. Plus and minus zoom. Home resets." onKeyDown={keyDown}>
+    <div ref={surface} data-epoch-arrows="ignore" className={`tv-plot tv-${mode}`} tabIndex={0} role="group" aria-label="Trace plot. Left/Right move the sample cursor. Shift and Left/Right pan. Plus and minus zoom. Home resets." onKeyDown={keyDown}>
       <canvas ref={base} className="tv-base" aria-hidden="true"/><canvas ref={overlay} className="tv-overlay" aria-hidden="true" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{drag.current=null;scheduleOverlay();}}/>
       {!stream&&<div className="tv-status">This epoch has no indexed response stream.</div>}
       {valid&&gapCount===data.count&&<div className="tv-status" role="status">No finite samples in this window.</div>}
       {pending&&canRetainPaint&&<span className="tv-previous-trace">Previous trace · inactive</span>}
       {showLoading&&<div className="tv-status tv-loading" role="status"><span><LoaderCircle size={16}/> Loading selected samples{canRetainPaint?' · previous trace is inactive':'…'}</span></div>}
       {currentError&&<div className="tv-status tv-error" role="alert"><span>{currentError}</span><button onClick={resource.reload}>Retry trace</button></div>}
-      {invalidResponse&&<div className="tv-status tv-error" role="alert">Trace identity, sample rate or window does not match the request. No plot is shown.<button onClick={resource.reload}>Retry trace</button></div>}
+      {invalidResponse&&<div className="tv-status tv-error" role="alert">Trace identity, sample rate, units or window does not match the request. No plot is shown.<button onClick={resource.reload}>Retry trace</button></div>}
     </div>
     <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;scheduleOverlay();}}}/></label></div>
     <p id={cursorHelp} className="tv-cursor-help">Move over the plot or use the sample cursor to read a recorded value.</p>

@@ -12,7 +12,7 @@ import './TreeBuilder.css';
 import { reorderIds } from '../../ordering.js';
 import { startPointerDrag } from '../../pointerDrag.js';
 import {COMMON_TREE_FIELDS,treeFieldLabel,treeFieldHint,treeFieldExamples,treeFieldMatches,groupingFieldRank} from '../../tree-browser/treeFieldPresentation.js';
-import {jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.js';
+import {jointComponents,jointDefinition,shortFieldLabel,uncombineLevel} from '../jointGrouping.js';
 import JointGroupingEditor from './JointGroupingEditor.jsx';
 import {useDelayedLoading} from '../../components/NavigationLoading.jsx';
 import {useIncomingTreeSelection} from '../../incoming-workbench/ui/IncomingTreeSelection.jsx';
@@ -187,6 +187,10 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       <ol className={`tb-steps ${dragging?'tb-is-dragging':''}`} aria-label="Ordered tree splits" onKeyDown={event=>{if(event.key==='Escape'&&dragging){event.preventDefault();clearDrag();setAnnouncement('Reordering cancelled.');}}}>
         {order.map((id,index)=>{
           const field=fieldMap.get(id),level=isCurrent?preview.levels[index]:null;
+          // Saved recipes remain readable when their registry fields are unavailable.
+          // These labels never make a missing definition eligible for grouping.
+          const components=field?.components||jointComponents(id);
+          const componentName=key=>shortFieldLabel(fieldMap.get(key)||{id:key.split('/').at(-1).replace(/([a-z])([A-Z])/g,'$1 $2')});
           return <li key={id} className={`${dragging===id?'tb-drag-source ':''}${dragging&&dropSpot?.id===id&&dragging!==id?`tb-drop-${dropSpot.placement}`:''}`}
             data-tree-field={id} onPointerDown={event=>{
               if(event.pointerType==='touch'||event.target.closest('button,input,select,a,summary'))return;
@@ -196,12 +200,12 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
               aria-label={`Reorder ${field?.label || id}, level ${index+1}`} aria-describedby={dragHelpId}
               title="Drag to reorder · Alt + ↑ / ↓" onKeyDown={event=>{if(event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();move(index,event.key==='ArrowUp'?-1:1);}}}>
               <GripVertical size={17}/></button><span className="tb-step-number">{index+1}</span><div className="tb-step-field">
-            <strong title={field?.path || id}>{field?.components?'Combined settings':field?.label || id}</strong>
-            {field?.components&&<div className="tb-joint-level">{field.components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{shortFieldLabel(fieldMap.get(key))}</span>)}</div>}
-            <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:categoryLabel(field?.category) || 'Saved field'}{field?.components?' · all values match':''}</small>
+            <strong title={field?.path || id}>{components.length?'Combined settings':field?.label || id}</strong>
+            {!!components.length&&<div className="tb-joint-level">{components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{componentName(key)}</span>)}</div>}
+            <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:categoryLabel(field?.category) || 'Saved field'}{components.length?' · all values match':''}</small>
           </div><div className="tb-step-actions">
             <TreeGroupTagButton onSelect={groupSelection.select?event=>groupSelection.select({path:[],count:preview?.total_epochs??preview?.count},preview,event):undefined} label="Tag this level" disabled={actionsDisabled||pending||!preview?.revision} count={preview?.total_epochs??preview?.count} onClick={event=>groupTags.open({path:[],count:preview?.total_epochs??preview?.count},field||{field:id},preview,event,{level:true})}/>
-            {field?.components&&<button aria-label={`Separate ${field.label} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
+            {!!components.length&&<button aria-label={`Separate ${field?.label || components.map(componentName).join(' + ')} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
             <button disabled={index===order.length-1} aria-label={`Move ${field?.label || id} later`} title="Move down one level" onClick={()=>move(index,1)}><ArrowDown size={13}/></button></>}
             <button aria-label={`Remove ${field?.label || id} grouping`} title="Remove level" onClick={()=>changeOrder(previous=>previous.filter(key=>key!==id))}><X size={13}/></button>

@@ -78,3 +78,18 @@ identity, error, cancellation and lifetime contracts. Authority or runtime body
 changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
+
+## Progressive epoch list scrolling
+
+The shared Inspector and workbench cell list appends bounded 60-row pages as its
+scroll sentinel approaches the viewport. Each appended row keeps its original
+page receipt and ordinal. All pages must agree on query revision, expected
+binding version and total; malformed, overlapping or non-progressing pages retire
+the accumulated list with explicit retry. Source/revision changes and collapse
+retire the reads. Saved frontiers restore sequentially without cancelling pending
+scroll restoration. Admitted keyboard focus reveals its cell page independently
+of sentinel visibility. The accessible Load more fallback replaces pagination.
+
+Fast trace-first navigation and optional metadata values use the tested cache and
+request owners; startup App/data activation remain unchanged. See
+[trace worker execution](../../../docs/architecture/trace-worker-execution.md).

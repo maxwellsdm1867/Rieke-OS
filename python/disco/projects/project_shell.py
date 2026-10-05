@@ -112,6 +112,9 @@ class ProjectData:
             inbox = app.extensions.get('h5_inbox')
             if inbox:
                 inbox.stop()
+            close_traces = app.extensions.get('close_trace_workers')
+            if close_traces:
+                close_traces()
             scheduler = app.extensions.get('backup_scheduler')
             if scheduler:
                 scheduler.close(flush=False)

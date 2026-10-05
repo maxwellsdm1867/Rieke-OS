@@ -1,27 +1,36 @@
+import {useWorkspaceRequestScope} from './workspaceRequest.js';
 import {mutationUndo,isUndoableRequest} from "./undo/mutationUndo.js";
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
-import {cachedResourceRequest,epochResourceCache,peekEpochWithTrace,prefetchEpochMetadata,requestEpochWithTrace} from './resourceCache.js';
+import {cachedResourceRequest,epochResourceCache,peekEpochWithTrace,prefetchEpochMetadata,prefetchEpochTraces,prefetchTraceWindows,requestEpochWithTrace} from './resourceCache.js';
 import { useCallback, useEffect, useState } from 'react';
 import {trackWrite,assertDesktopWritable} from './desktopLifecycle.js';
-export function api(path,options={}){
+export function createApiRequest(transport=requestApi){
+ return function request(path,options={}){
   const write=['POST','PUT','PATCH','DELETE'].includes((options.method||'GET').toUpperCase());
   if(write){try{assertDesktopWritable(path);}catch(error){return Promise.reject(error);}}
   let token;
   try{if(isUndoableRequest(path,options))token=mutationUndo.begin();}catch(error){return Promise.reject(error);}
-  const operation=requestApi(path,token?{...options,headers:{...options.headers,'X-Rieke-Undo-Receipt':'1'}}:options).then(result=>{if(token)mutationUndo.complete(token,result.undo);return result;},error=>{if(token)mutationUndo.failed(error);throw error;});
+  const endRead=options.background!==true&&(!write||path==='/explore/epochs')?epochResourceCache.beginDemand():()=>{};
+  let submission;
+  try{submission=transport(path,token?{...options,headers:{...options.headers,'X-Rieke-Undo-Receipt':'1'}}:options);}catch(error){endRead();if(token)mutationUndo.failed(error);return Promise.reject(error);}
+  const operation=Promise.resolve(submission).then(result=>{if(token)mutationUndo.complete(token,result.undo);return result;},error=>{if(token)mutationUndo.failed(error);throw error;}).finally(endRead);
   return write?trackWrite(operation):operation;
+ };
 }
-async function requestApi(path, options = {}) {
+export const api=createApiRequest();
+export async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
-    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...options.headers },
+    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) {const error=new Error(data.error || data.message || `Request failed (${response.status})`);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}
+  if (!response.ok) {const message=typeof data.error==='string'?data.error:typeof data.error?.message==='string'?data.error.message:typeof data.message==='string'?data.message:`Request failed (${response.status})`;const error=new Error(message);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}
   return data;
 }
 export function useResource(path, revision = 0, delayMs = 0, options = {}) {
-  const cached=options.cache===true,warmEpoch=options.warmEpoch===true,paused=options.paused===true;
+  const inherited=useWorkspaceRequestScope(),owner=options.requestPort===undefined?inherited:options.requestPort;
+  const transport=owner?(typeof owner.request==='function'?owner.request:()=>Promise.reject(Error('Workspace request authority is unavailable.'))):api;
+  const cached=!owner&&options.cache===true,warmEpoch=!owner&&options.warmEpoch===true,paused=options.paused===true;
   const [state, setState] = useState({data: null, loading: true, error: null});
   const [nonce, setNonce] = useState(0);
   const reload = useCallback(() => {if(cached)epochResourceCache.invalidate(path,{related:warmEpoch});setNonce(n => n + 1);}, [path,cached,warmEpoch]);
@@ -31,24 +40,26 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     if(paused)return;
     if (!path) {setState({data: null, loading: false, error: null}); return;}
     const complete=cached&&warmEpoch?peekEpochWithTrace(path,revision):undefined;
-    if(complete!==undefined){setState({data:complete,loading:false,error:null,path,revision,nonce});return;}
-    setState(previous => previous.path === path ? {...previous, loading:true, error:null} : {data:null,loading:true,error:null,path});
-    const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):api;
+    if(complete!==undefined){epochResourceCache.get(path,revision);setState({data:complete,loading:false,error:null,path,revision,nonce,owner});return;}
+    setState(previous => previous.path === path && previous.owner===owner ? {...previous, loading:true, error:null} : {data:null,loading:true,error:null,path});
+    const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):transport;
     return startResourceRequest({path,delayMs,request,
-      onData:data=>setState({data,loading:false,error:null,path,revision,nonce}),
-      onError:error=>setState({data:null,loading:false,error:error.message,path,revision,nonce})});
-  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused]);
+      onData:data=>setState({data,loading:false,error:null,path,revision,nonce,owner}),
+      onError:error=>setState({data:null,loading:false,error:error.message,path,revision,nonce,owner})});
+  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,owner,transport]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
-  // retain delayed I/O and the exact path/revision/reload publication fences.
+  // start I/O immediately unless the caller explicitly requests a delay.
+  // Both paths retain exact path/revision/reload publication fences.
   const hit=cached&&path?(warmEpoch?peekEpochWithTrace(path,revision):epochResourceCache.peek(path,revision)):undefined;
-  const visible=visibleResourceState({state,path,revision,nonce,hit});
+  const visible=visibleResourceState({state:state.owner===owner?state:{},path,revision,nonce,hit});
   return {...visible,loading:paused&&!!path||visible.loading,reload};
 }
-export function useEpochResource(path,revision=0,delayMs=80){return useResource(path,revision,delayMs,{cache:true,warmEpoch:true});}
+export function useEpochResource(path,revision=0,delayMs=0){return useResource(path,revision,delayMs,{cache:true,warmEpoch:true});}
 export function prefetchResources(paths,revision=0,{delayMs=180}={}){return prefetchEpochMetadata(paths,{request:api,revision,delayMs});}
-export function useEpochPrefetch(paths,revision=0,delayMs=180){
+export function useEpochPrefetch(paths,revision=0,delayMs=180,{traces=false,traceOnly=false,progressive=false,concurrency=1}={}){
+  const owner=useWorkspaceRequestScope();
   const identity=JSON.stringify(paths||[]);
-  useEffect(()=>prefetchResources(JSON.parse(identity),revision,{delayMs}),[identity,revision,delayMs]);
+  useEffect(()=>owner?undefined:traceOnly?prefetchTraceWindows(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):traces?prefetchEpochTraces(JSON.parse(identity),{request:api,revision,delayMs,progressive,concurrency}):prefetchResources(JSON.parse(identity),revision,{delayMs}),[identity,revision,delayMs,owner,traces,traceOnly,progressive,concurrency]);
 }
 export const number = value => Number(value || 0).toLocaleString();
 export const duration = seconds => seconds == null ? 'Unknown' : seconds < 60 ? `${seconds.toFixed(1)} s` : `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;

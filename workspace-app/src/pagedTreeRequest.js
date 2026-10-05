@@ -1,6 +1,6 @@
 export const TREE_PAGE_SIZE=60;
 export function treePageRequest(scope,{path=[],offset=0,anchor=null,reset=false,currentRevision=null}={}){
-  const body={...(scope.readContext?{candidate_scope_revision:scope.readContext.candidate_scope_revision}:scope.protocolId?{protocol_uuid:scope.protocolId}:{predicate:scope.predicate||{all:[]}}),filters:scope.filters||{},splits:scope.splits||'',path:anchor?[]:path,offset:anchor?0:offset,limit:TREE_PAGE_SIZE};
+  const body={...(scope.readContext?{candidate_scope_revision:scope.readContext.candidate_scope_revision}:scope.protocolId?{protocol_uuid:scope.protocolId}:{predicate:scope.predicate||{all:[]}}),filters:scope.filters||{},splits:scope.splits||'',path:anchor?[]:path,offset:anchor?0:offset,limit:scope.pageSize??TREE_PAGE_SIZE};
   const revision=scope.expectedRevision||(!reset?currentRevision:null);
   if(revision)body.revision=revision;
   if(anchor)body.anchor_uuid=anchor;

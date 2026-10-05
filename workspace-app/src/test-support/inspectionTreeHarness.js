@@ -12,7 +12,7 @@ export function pageAt(cell='cell-A',offset=0,revision='query-A',kind='protocol'
   return {offset,total,...(kind==='protocol'?{query_revision:revision}:{revision}),
     epochs:Array.from({length:Math.min(60,total-offset)},(_,index)=>({epoch_uuid:`${cell}-${offset+index}`,cell_uuid:cell,start_time:'06/11/2026 12:00:00:000000'}))};
 }
-export async function createInspectionHarness({treeElement=null}={}){
+export async function createInspectionHarness({treeElement=null,realPages=false}={}){
   const key=`__inspectionTest${Math.random().toString(36).slice(2)}`;
   const network={api:()=>{throw Error('Unexpected API call');},page:(source,request)=>({loading:false,error:null,reload(){},
     data:pageAt(request.cellUuid,request.offset,source.kind==='protocol'?source.queryRevision:source.treeRevision,source.kind)})};
@@ -22,7 +22,7 @@ export async function createInspectionHarness({treeElement=null}={}){
       name:'inspection-fixtures',enforce:'pre',
       resolveId(id,importer){if(importer?.endsWith('/epoch-browser/ui/InspectionCellTree.jsx')){
         if(id==='../../api.js')return '\0inspection-api';
-        if(id==='../useEpochBrowserPage.js')return '\0inspection-page';
+        if(id==='../useEpochBrowserPage.js'&&!realPages)return '\0inspection-page';
         if(id==='../../components/Common.jsx')return '\0inspection-common';
         if(id==='./EpochInclusionToggle.jsx')return '\0inspection-inclusion';
       }},

@@ -7,14 +7,14 @@ import {fileURLToPath} from 'node:url';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 
-export async function createWorkflowHarness({total=500,baseline=false,delay=0,enableUndo=false,portals=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
+export async function createWorkflowHarness({total=500,baseline=false,delay=0,liveMetadata=true,enableUndo=false,portals=false,baselineRoot:configuredBaselineRoot=process.env.RIEKE_WORKFLOW_BASELINE_ROOT}={}){
   const rootPath=fileURLToPath(new URL('../..',import.meta.url));
   const key=`__workflow${Math.random().toString(36).slice(2)}`;
   const baselineRoot=configuredBaselineRoot?path.resolve(configuredBaselineRoot):path.resolve(rootPath,'../docs/dev/scale-audit-2026-09-29/frozen-100000-dense-recovery/snapshot/workspace-app/src');
   const fixture={total,generation:0,requests:[],nodes:new Map(),mounts:0,unmounts:0,failNextSave:false,delay,profile:{profileUuid:'author',profileName:'Scientist',loading:false},annotations:new Map(),cellAnnotations:new Map(),annotationVersions:new Map(),curations:new Map(),pending:new Set(),route:{page:'protocol',protocol:'protocol-A',key:'route-1',inspection:{epoch_uuid:'epoch-0'}}};
   globalThis[key]=fixture;
   const old={fetch:globalThis.fetch,window:globalThis.window,document:globalThis.document,localStorage:globalThis.localStorage};
-  const memory=new Map();memory.set('rieke.undo.enabled',String(enableUndo));
+  const memory=new Map([['workspace.inspector.liveMetadata',String(liveMetadata)]]);memory.set('rieke.undo.enabled',String(enableUndo));
   globalThis.localStorage={getItem:name=>memory.get(name)??null,setItem:(name,value)=>memory.set(name,value)};
   globalThis.window={innerWidth:1400,location:{href:'http://localhost/'},addEventListener(){},removeEventListener(){}};
   globalThis.document={title:'',getElementById:()=>null,addEventListener:()=>{},removeEventListener:()=>{}};
@@ -46,7 +46,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
     const pathname=url.pathname.replace(/^\/api/,'');
     const body=options.body?JSON.parse(options.body):{};
     if(pathname==='/projects')return {current_project_uuid:'project',projects:[{uuid:'project',path:'/fixture',name:'Fixture',current:true}]};
-    if(pathname==='/overview')return {project:{project_uuid:'project',name:'Fixture'},protocols:[{protocol_uuid:'protocol-A',name:'Test'}],sources:[]};
+    if(pathname==='/overview'||pathname==='/project-shell')return {project:{project_uuid:'project',name:'Fixture'},protocols:[{protocol_uuid:'protocol-A',name:'Test'}],sources:[]};
     if(pathname==='/protocol-suggestions')return {suggestions:[]};
     if(pathname==='/jobs')return {jobs:[]};
     if(pathname==='/metadata/status')return {status:'ready'};

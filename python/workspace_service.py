@@ -1229,6 +1229,47 @@ class WorkspaceService:
                 'source_filename': Path(manifest['source_path']).name,
                 'source_reference': {'sha256': row['source_sha256'], 'path': manifest['source_path']}}
 
+    def capture_trace_read(self, epoch_uuid, stream_uuid, start=0, count=20000):
+        """Capture a detached read plan under the caller's shared DB lock.
+
+        The opaque parent witness must stay with this service; only plan goes to
+        a worker. No SQL/native/session object is serialized into the plan.
+        """
+        self._ready()
+        row = self.rows[_uuid(epoch_uuid)]
+        stream = next((item for item in row['streams'] if item['uuid'] == _uuid(stream_uuid)), None)
+        if not stream or stream['kind'] != 'responses':
+            raise ValueError('Choose a recorded response stream belonging to this epoch')
+        bounded_window(start, count, stream['sample_count'])
+        manifest = self.manifests[row['source_sha256']]
+        path, signature = self._verified_source(manifest)
+        plan = {'path': str(path), 'signature': signature,
+                'row': {key: row[key] for key in ('epoch_uuid', 'source_sha256')},
+                'stream': copy.deepcopy(stream), 'start': start, 'count': count}
+        witness = {'service': self, 'project': self.project['project_uuid'],
+                   'generation': getattr(self, '_explore_publication', None),
+                   'readiness': getattr(self, '_metadata_readiness', None),
+                   'rows': self.rows, 'manifests': self.manifests,
+                   'row': checksum(row), 'manifest': checksum(manifest),
+                   'plan': copy.deepcopy(plan)}
+        return plan, witness
+
+    def validate_trace_read(self, witness):
+        """Fence a completed detached read before publication, under DB lock."""
+        self._ready()
+        plan = witness['plan']
+        if (witness['service'] is not self or self.project['project_uuid'] != witness['project'] or
+                getattr(self, '_explore_publication', None) != witness['generation'] or
+                getattr(self, '_metadata_readiness', None) is not witness['readiness'] or
+                self.rows is not witness['rows'] or self.manifests is not witness['manifests']):
+            raise ValueError('Trace workspace generation changed; select the window again')
+        row = self.rows.get(plan['row']['epoch_uuid'])
+        manifest = self.manifests.get(plan['row']['source_sha256'])
+        if row is None or manifest is None or checksum(row) != witness['row'] or checksum(manifest) != witness['manifest']:
+            raise ValueError('Trace source authority changed while reading')
+        if self._input_signature(plan['path']) != tuple(plan['signature']):
+            raise ValueError('Source recording changed while reading trace')
+
     def trace(self, epoch_uuid, stream_uuid, start=0, count=20000):
         self._ready()
         row = self.rows[_uuid(epoch_uuid)]

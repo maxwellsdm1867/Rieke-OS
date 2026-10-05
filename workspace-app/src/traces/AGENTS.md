@@ -62,3 +62,9 @@ updates the existing catalog, ledger and path companion and runs the coordinated
 import/build checks. Benchmark links in the ledger are historical/indirect;
 relocation establishes neither new performance nor native qualification. Browser
 layout/paint, native data reads and full backend qualification remain separate.
+
+The navigation assembly retains `traceResponseMatches` as a public read-context
+comparison helper. TraceViewer obtains explicit supplied request/context owners
+from `../workspaceRequest.js`; supplied contexts cannot borrow global cache or
+trace prefetch. Default legacy rendering remains supported. The viewport resize
+paint runs before display, retaining exact samples and existing geometry.

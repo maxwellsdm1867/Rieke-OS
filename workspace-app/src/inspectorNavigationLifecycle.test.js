@@ -113,7 +113,7 @@ test('real hooks abort/reject late cross-page anchors and preserve clickable lis
  try{
   const Inspector=await h.component('Inspector');await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0'},initialEpochUuid:'epoch-0'});
   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);await openCell(h);
-  const next=h.root.findAllByType('button').find(node=>node.props['aria-label']?.startsWith('Next epochs for'));
+  const next=h.root.findAllByType('button').find(node=>node.props.children==='Load more epochs');
   await h.act(()=>next.props.onClick());await h.waitFor(()=>!!row(h,61));
   h.fixture.respond=(url,options,result)=>url.searchParams.has('anchor_uuid')?new Promise(resolve=>pending.push({resolve:()=>resolve(result()),signal:options.signal,uuid:url.searchParams.get('anchor_uuid')})):result();
   for(const ordinal of [61,62,63]){

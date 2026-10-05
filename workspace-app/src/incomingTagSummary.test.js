@@ -50,7 +50,7 @@ test('incoming rows expose shared tag descriptions without pills and retain expl
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  const oldFetch=globalThis.fetch,requests=[],selected=[],focused=[];let renderer;
  const a={...row('a','cell-one',[cell]),start_time:'2026-10-01 12:00:00',date:'2026-10-01',cell_label:'Cell1',protocol_name:'Fixture'};
- globalThis.fetch=async(path,options={})=>{requests.push({path,method:options.method||'GET'});return {ok:true,status:200,json:async()=>({epochs:[a],total:1,query_revision:'scope',expected_binding_version:1})};};
+ globalThis.fetch=async(path,options={})=>{requests.push({path,method:options.method||'GET'});return {ok:true,status:200,json:async()=>({offset:0,epochs:[a],total:1,query_revision:'scope',expected_binding_version:1})};};
  try{
   const {default:Tree}=await server.ssrLoadModule('/src/epoch-browser/ui/InspectionCellTree.jsx');
   const props={cells:[{cell_uuid:'cell-one',label:'Cell1',date:'2026-10-01',epochs:1,annotations:{cell_tags:[cell]}}],source:{kind:'protocol',protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope',cohort_key:'fixture'}},targets:[],setTargets:v=>selected.push(v),onFocus:(...args)=>focused.push(args),onSelectCell:()=>{},revision:0};

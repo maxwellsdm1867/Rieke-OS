@@ -1,14 +1,16 @@
+import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useUnmountGuard} from "../../useUnmountGuard.js";
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {MessageCircle,Plus,X,Search,ChevronDown,UserRound,CornerDownRight} from 'lucide-react';
-import {api,useResource,number} from "../../api.js";
+import {api as defaultApi,useResource,number} from "../../api.js";
 import {useAnnotationProfile} from '../annotationProfile.js';
 import {annotationTagColor,annotationChange,annotationGroups,canRemoveAnnotation,annotationPredicate,bulkAnnotationChange,navigateAfterTagSave} from '../annotationTags.js';
 import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from "../../resourceCache.js";
 
-export default function AnnotationTags({composer=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,reconcileReceipt=false,verifyTarget,groupMutation}){
+export default function AnnotationTags({composer=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,readSeparately=false,reconcileReceipt=false,verifyTarget,groupMutation}){
+  const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope();
   const {profileUuid,profileName,openProfile,loading:profileLoading,error:profileError}=useAnnotationProfile();
   const [refreshAfter,setRefreshAfter]=useState(null);
   const [tabLocked,setTabLocked]=useState(()=>{try{return localStorage.getItem('workspace.tags.tabNavigation')!=='false';}catch{return true;}});
@@ -27,7 +29,7 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
   function setValue(next){if(composer)composer.onChange(draftKey,next);else setLocalValue(next);}
   useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
   const refreshPending=!!refreshAfter&&refreshAfter.identity===identity&&refreshAfter.annotations===epoch?.annotations;
-  const remoteNeeded=!bulkCells&&(!epoch?.annotations||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
+  const remoteNeeded=!bulkCells&&(readSeparately||!epoch?.annotations||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
   const awaitingEpoch=refreshWithEpoch&&!refreshAfter?.force&&refreshPending;
   const scopeIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,revision,selectedEpochs,selectedCells,groupMutation?.selectionUuid]);
   const committedScope=useRef(null),generation=useRef(0),mounted=useRef(false),mutation=useRef(null);
@@ -82,7 +84,7 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
       let confirmed=null;
       if(reconcileReceipt){
         try{confirmed=confirmAnnotationReceipt(result,body);}catch(error){onChange?.(result);throw error;}
-        epochResourceCache.invalidateAnnotations(confirmed);
+        if(!requestScope)epochResourceCache.invalidateAnnotations(confirmed);
       }else if(!result||!Object.hasOwn(result,'changed'))throw new Error('The server did not return an annotation receipt. Refresh tags before retrying.');
       if(isCurrent()){
         composerDirty.current=false;setValue('');setQuery('');setActive(-1);setOpen(false);

@@ -132,3 +132,23 @@ test('unmount fence admits only the exact unmount write path and tracks it',asyn
   h.network.resolve(response());await operation;
   release();const finish=beginProjectUnmount();finish();
 });
+
+for(const [name,data,message] of [
+ ['string',{error:'Existing message'},'Existing message'],
+ ['structured',{error:{code:'source_unavailable',message:'Locate this recording',recovery:['locate','cancel']}},'Locate this recording'],
+ ['malformed',{error:{message:{invalid:true}},message:7},'Request failed (409)'],
+])test(`API ${name} failure preserves exact payload and usable message`,async t=>{
+ const h=harness(t);const operation=api('/snapshot/protocols/p/epochs/e/trace');
+ h.network.resolve(response(data,409));
+ await assert.rejects(operation,error=>{assert.equal(error.message,message);assert.equal(error.data,data);assert.equal(error.status,409);return true;});
+});
+
+
+test('background read priority reaches HTTP without leaking internal fetch options',async t=>{
+ const h=harness(t);
+ const operation=api('/epochs/e/trace?stream_uuid=s',{background:true});
+ assert.equal(h.calls[0][1].headers['X-Disco-Trace-Priority'],'background');
+ assert.equal(Object.hasOwn(h.calls[0][1],'background'),false);
+ h.network.resolve(response({values:[1]}));
+ await operation;
+});
