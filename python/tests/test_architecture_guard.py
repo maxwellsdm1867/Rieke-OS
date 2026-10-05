@@ -542,6 +542,34 @@ class PythonPackagePolicyTests(unittest.TestCase):
         self.catalog['contracts'][0]['rules'][1]['allow'] = ['disco.recovery.implementation']
         self.assertIn('Missing Python implementation export', self.check(False)['error'])
 
+    def test_reviewed_relative_loader_and_definition_scope_faults(self):
+        name = 'python/tests/test_central.py'
+        for source in (
+            "__import__('implementation', {'__package__':'disco.recovery'}, {}, ['callback'], 1)",
+            "__import__('implementation', fromlist=['callback'], level=1)",
+            "__import__('contextvars', fromlist=names)",
+            "from importlib import import_module as load\ndef f(load=load(name)): pass",
+            "from importlib import import_module as load\nclass C:\n load=None\n def f(self): load(name)",
+            "import disco.recovery as recovery\ndef f(recovery=recovery.implementation): pass",
+            "import disco.recovery as recovery\n@recovery.implementation.decorate\ndef f(recovery): pass",
+            "import disco.recovery as recovery\nclass C(recovery.implementation.Base):\n recovery=None",
+            "import disco.recovery as recovery\nitems=[recovery for recovery in recovery.implementation.items]",
+        ):
+            with self.subTest(source=source):
+                self.write(name, source); self.check(False)
+        self.write(name, "__import__('contextvars', fromlist=['ContextVar'], level=0)")
+        self.check()
+        self.write('python/disco/recovery/implementation.py', 'callback: object')
+        self.assertIn('Missing Python implementation export', self.check(False)['error'])
+
+    def test_v4_duplicate_declarations_fail_but_cross_contract_reuse_passes(self):
+        tests = self.catalog['contracts'][0]['tests']['python']
+        tests.append(tests[0])
+        self.assertIn('Duplicate test path', self.check(False, 'metadata')['error'])
+        tests.pop()
+        self.catalog['contracts'][1]['tests']['python'] = [tests[0]]
+        self.check()
+
     def test_new_outside_consumer_selects_policy_and_symlink_test_target_fails(self):
         self.cli('check', '--language', 'metadata')
         base = self.git('rev-parse', 'HEAD')

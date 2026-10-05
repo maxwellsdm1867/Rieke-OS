@@ -219,20 +219,39 @@ class PythonModulePolicy:
             self.expected_loaders[name] = sites
         self.scopes, self.node_scopes, self.parents = {}, {}, {}
         for name, tree in self.trees.items():
-            top = {'file': name, 'parent': None, 'bindings': {}}
+            top = {'file': name, 'parent': None, 'bindings': {}, 'kind': 'module'}
             self.scopes[name] = top
             def visit(node, scope):
                 self.node_scopes[id(node)] = scope
                 if isinstance(node, PYTHON_SCOPES):
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
                         scope['bindings'].setdefault(node.name, []).append(('ordinary',))
-                    child = {'file': name, 'parent': scope, 'bindings': {}}
+                    # Defaults/decorators/bases are evaluated in the enclosing
+                    # scope. Function/comprehension free names skip class locals.
+                    lexical_parent = scope
+                    while lexical_parent and lexical_parent['kind'] == 'class':
+                        lexical_parent = lexical_parent['parent']
+                    child = {'file': name, 'parent': lexical_parent, 'bindings': {},
+                             'kind': 'class' if isinstance(node, ast.ClassDef) else 'local'}
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
                         for arg in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs, node.args.vararg, node.args.kwarg):
                             if arg is not None: child['bindings'][arg.arg] = [('ordinary',)]
-                    for part in ast.iter_child_nodes(node):
-                        self.parents[id(part)] = node
-                        visit(part, child)
+                    if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                        for index, generator in enumerate(node.generators):
+                            self.node_scopes[id(generator)] = child
+                            self.parents[id(generator)] = node
+                            for part in ast.iter_child_nodes(generator):
+                                self.parents[id(part)] = generator
+                                visit(part, scope if index == 0 and part is generator.iter else child)
+                        for part in ast.iter_child_nodes(node):
+                            if part not in node.generators:
+                                self.parents[id(part)] = node
+                                visit(part, child)
+                    else:
+                        body = [node.body] if isinstance(node, ast.Lambda) else node.body
+                        for part in ast.iter_child_nodes(node):
+                            self.parents[id(part)] = node
+                            visit(part, child if part in body else scope)
                     return
                 if isinstance(node, ast.Import):
                     for alias in node.names:
@@ -349,7 +368,7 @@ class PythonModulePolicy:
         key = (source, symbol)
         if key in seen: return False
         for item in self.scopes[source]['bindings'].get(symbol, []):
-            if item[0] in ('ordinary', 'expression', 'module'): return True
+            if item[0] in ('ordinary', 'module') or item[0] == 'expression' and item[1] is not None: return True
             if item[0] == 'symbol':
                 target = self.target(item[1])
                 if target and self.defined(target, item[2], seen | {key}): return True
@@ -486,6 +505,22 @@ class PythonModulePolicy:
                                    isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str))
                         if literal:
                             identity = node.args[0].value
+                            from_names = []
+                            if loader == '__import__':
+                                # Only absolute imports with explicit literal
+                                # fromlists are statically admitted. Relative or
+                                # computed forms require a reviewed exact site.
+                                keywords = {keyword.arg: keyword.value for keyword in node.keywords}
+                                level = node.args[4] if len(node.args) > 4 else keywords.get('level', ast.Constant(0))
+                                fromlist = node.args[3] if len(node.args) > 3 else keywords.get('fromlist', ast.Tuple(elts=[]))
+                                try:
+                                    literal_level = ast.literal_eval(level)
+                                    from_names = ast.literal_eval(fromlist)
+                                except (ValueError, TypeError):
+                                    literal_level, from_names = None, None
+                                literal = (len(node.args) <= 5 and not set(keywords) - {'globals', 'locals', 'fromlist', 'level'} and
+                                           type(literal_level) is int and literal_level == 0 and isinstance(from_names, (tuple, list)) and
+                                           all(isinstance(symbol, str) and symbol != '*' for symbol in from_names))
                             if identity.startswith('.'):
                                 package = node.args[1] if len(node.args) > 1 else next((k.value for k in node.keywords if k.arg == 'package'), None)
                                 if loader != 'import_module' or not isinstance(package, ast.Constant) or not isinstance(package.value, str):
@@ -498,7 +533,12 @@ class PythonModulePolicy:
                             if literal:
                                 if any(identity == m['public_module'] or identity.startswith(m['public_module'] + '.') or m['public_module'].startswith(identity + '.') for m in self.modules) or self.has_adopted_bindings(identity):
                                     raise ValueError(name + ': dynamic access to adopted Python module')
-                                public_import(name, identity)
+                                target = public_import(name, identity)
+                                for symbol in from_names:
+                                    child = self.target(identity + '.' + symbol)
+                                    if child: edge(name, child)
+                                    if target and any(v[0] == 'adopted' for v in self.binding(self.scopes[target], symbol)):
+                                        raise ValueError(name + ': dynamic access to adopted Python binding')
                         if not literal:
                             found_loaders[selector] = {'selector': selector, 'kind': 'ast-call',
                                 'ast_sha256': hashlib.sha256(ast.dump(node, annotate_fields=True, include_attributes=False).encode()).hexdigest()}
@@ -560,7 +600,10 @@ def catalog(root):
             contained(root, pattern, exists=False)
         keys(entry['tests'], LANGUAGES, ('desktop',))
         for language in RUNNERS:
-            for path in string_list(entry['tests'].get(language, []), 'test paths'):
+            declared_tests = string_list(entry['tests'].get(language, []), 'test paths')
+            if value['version'] == 4 and len(declared_tests) != len(set(declared_tests)):
+                raise ValueError('Duplicate test path within contract: ' + entry['id'])
+            for path in declared_tests:
                 contained(root, path)
                 if language == 'python' and not (path.endswith('.py') and (path.startswith('python/tests/') or
                         value['version'] == 4 and any(path.startswith(prefix + '/') for prefix in value['python_module_policy'].get('test_roots', [])))):
