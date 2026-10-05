@@ -22,13 +22,14 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
  // Deliberately different flat/tree layouts: big59 is outside flat page zero.
  const flat=[...other,...big],cells=[{cell_uuid:'cell-big',label:'Big',date:'2026-10-04',epochs:121},{cell_uuid:'cell-other',label:'Other',date:'2026-10-04',epochs:4}];
  const fixture={requests:[],errors:[],query:'query-1',binding:2,treeRevision:'tree-1',hold:null};
+ const selectedRows=(rows,filters)=>filters?.tag_predicate?rows.filter(row=>row.epoch_uuid!=='big-0'):rows;
  const page=offset=>({kind:'epochs',ancestors:[{key:'big-branch',parent_offset:0}],path:['big-branch'],offset,limit:60,total:121,has_more:offset+60<121,depth:1,split_order:['cell'],levels:[{field:'cell',label:'Cell'}],revision:fixture.treeRevision,epochs:big.slice(offset,offset+60),branches:[],fields:[{field:'cell',label:'Cell'}]});
  put('fetch',async(input,options={})=>{
   const url=new URL(input,'http://fixture'),body=options.body?JSON.parse(options.body):null;
   const request={path:url.pathname+url.search,body,signal:options.signal,at:Date.now()};fixture.requests.push(request);if(fixture.requests.length>150)throw Error('Unbounded test HTTP requests: '+request.path);let result;
   if(url.pathname==='/api/protocols/protocol-A/epochs'){
-   const anchor=url.searchParams.get('anchor_uuid'),offset=anchor?Math.floor(flat.findIndex(row=>row.epoch_uuid===anchor)/60)*60:Number(url.searchParams.get('offset')||0);
-   result={offset,limit:60,total:125,epochs:flat.slice(offset,offset+60),cells,query_revision:fixture.query,expected_binding_version:fixture.binding};
+   const members=selectedRows(flat,Object.fromEntries(url.searchParams)),anchor=url.searchParams.get('anchor_uuid'),offset=anchor?Math.floor(members.findIndex(row=>row.epoch_uuid===anchor)/60)*60:Number(url.searchParams.get('offset')||0);
+   result={offset,limit:60,total:members.length,epochs:members.slice(offset,offset+60),cells,query_revision:fixture.query,expected_binding_version:fixture.binding};
   }else if(url.pathname==='/api/tree-pages')result=body.anchor_uuid?page(Math.floor(big.findIndex(row=>row.epoch_uuid===body.anchor_uuid)/60)*60):body.path.length?page(body.offset):{kind:'branches',path:[],offset:0,limit:60,total:1,has_more:false,depth:0,split_order:['cell'],levels:[{field:'cell',label:'Cell'}],revision:fixture.treeRevision,fields:[{field:'cell',label:'Cell'}],field:{field:'cell',label:'Cell'},branches:[{key:'big-branch',path:['big-branch'],value:'cell-big',label:'Big',count:121}],epochs:[]};
   else if(/^\/api\/epochs\/[^/]+$/.test(url.pathname))result=flat.find(row=>row.epoch_uuid===url.pathname.split('/').at(-1));
   else if(url.pathname==='/api/annotation-profiles')result={profiles:[{profile_uuid:'author-A',display_name:'Fixture author'}],selected_profile_uuid:'author-A'};
@@ -38,6 +39,11 @@ async function mountFixture({ownerProjectPath='/owned-fixture'}={}){
   else if(url.pathname.endsWith('/exports'))result={exports:[]};
   else if(url.pathname==='/api/annotations/read')result={targets:Object.fromEntries(body.target_uuids.map(id=>[id,{target_uuid:id,target_kind:body.target_kind,tags:[],revisions:{}}]))};
   else {fixture.errors.push(request.path);throw Error('Unexpected HTTP fixture request: '+request.path);}
+  if(url.pathname==='/api/tree-pages'&&body.filters?.tag_predicate){
+   if(body.anchor_uuid==='big-0'){request.completed=Date.now();return {ok:false,status:400,json:async()=>({error:'Epoch is outside this tree selection'})};}
+   const members=selectedRows(big,body.filters);
+   result={...result,total_epochs:members.length,...(result.kind==='epochs'?{epochs:members.slice(body.offset,body.offset+60),total:members.length,has_more:body.offset+60<members.length}:{branches:result.branches.map(branch=>({...branch,count:members.length}))})};
+  }
   if(fixture.hold)await fixture.hold(request);request.completed=Date.now();return {ok:true,status:200,json:async()=>result};
  });
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
@@ -259,7 +265,9 @@ test('old design locator completion cannot relabel metadata or release replaceme
   releaseOld();await h.settle();await h.settle();
   assert.ok(![...document.querySelectorAll('.column-tree .epoch-inclusion-toggle')].some(node=>!node.disabled),'Old success cannot unlock replacement controls');
   assert.equal(document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),null,'Old metadata may not publish under replacement scope');
-  releaseNew();await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),'replacement locator publishes its own result');
+  releaseNew();await h.wait(()=>document.querySelector('.column-tree .tp-branch'),'replacement root publishes its own result');
+  assert.equal(document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),null,'Filter change retires prior focus');
+  assert.ok(h.fixture.requests.filter(row=>row.body?.filters?.cell_type==='replacement').every(row=>!row.body.anchor_uuid),'Replacement must not reuse the old focus locator');
   assert.deepEqual(h.fixture.errors,[]);
  }finally{releaseOld?.();releaseNew?.();await h.close();}
 });
@@ -295,6 +303,40 @@ test('real provider null to available permits its first gesture after ordinary r
   await h.click(h.leaf(59));
   await h.wait(()=>h.fixture.requests.slice(start).some(row=>row.path.includes('anchor_uuid=big-59')&&row.completed),'First valid gesture starts and completes focus locator');
   await h.wait(()=>h.leaf(59)?.classList.contains('selected'),'First gesture publishes focus');
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});
+
+for(const design of [false,true])test(`filter change retires excluded focus before ${design?'column':'hierarchy'} tree reads`,async()=>{
+ const h=await mountFixture();try{
+  await h.open();await h.click(h.leaf(0));
+  await h.wait(()=>h.leaf(0)?.classList.contains('selected'),'initial focused epoch');
+  if(design){await h.click(h.button('Open and edit tree'));await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]'),'focused design');}
+  const start=h.fixture.requests.length;
+  const filters={tag_predicate:JSON.stringify({all:[{not:{field:'annotations/epoch/tags',operator:'contains',value:'tagged'}}]})};
+  await h.render({filters});
+  await h.wait(()=>h.fixture.requests.slice(start).some(row=>row.path==='/api/tree-pages'&&row.body.filters?.tag_predicate&&row.completed),'new filter tree read');
+  await h.settle();
+  const reads=h.fixture.requests.slice(start).filter(row=>row.path==='/api/tree-pages');
+  assert.ok(reads.length>0);assert.ok(reads.every(row=>!row.body.anchor_uuid),'Retired focus must not anchor the replacement filter');
+  assert.ok(!document.body.textContent.includes('Epoch is outside this tree selection'));
+  assert.ok(document.querySelector(design?'.column-tree .tp-branch':'.ht-branch > button'),'Replacement root remains browsable');
+  const clearStart=h.fixture.requests.length;await h.render({filters:{}});
+  await h.wait(()=>h.fixture.requests.slice(clearStart).some(row=>row.path==='/api/tree-pages'&&row.completed),'clear filter root');
+  assert.ok(h.fixture.requests.slice(clearStart).filter(row=>row.path==='/api/tree-pages').every(row=>!row.body.anchor_uuid));
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});
+
+test('explicit replacement-scope epoch navigation still anchors its requested target',async()=>{
+ const h=await mountFixture();try{
+  await h.open();await h.click(h.leaf(0));await h.click(h.button('Open and edit tree'));
+  await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]'),'initial design focus');
+  const start=h.fixture.requests.length;
+  await h.render({filters:{cell_type:'replacement'},initialEpochUuid:'big-120'});
+  await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),'explicit new target');
+  assert.ok(h.fixture.requests.slice(start).some(row=>row.body?.filters?.cell_type==='replacement'&&row.body.anchor_uuid==='big-120'));
+  assert.ok(h.fixture.requests.slice(start).every(row=>row.body?.anchor_uuid!=='big-0'));
   assert.deepEqual(h.fixture.errors,[]);
  }finally{await h.close();}
 });
