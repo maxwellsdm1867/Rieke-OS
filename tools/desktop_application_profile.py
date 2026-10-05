@@ -187,24 +187,70 @@ def validate_source_closure(root, profile):
             raise ValueError('Relative application import escapes package: ' + module)
         return '.'.join(parts[:len(parts) - level + 1] + ([module] if module else []))
 
+    parsed = {}
+
+    def bindings(identity):
+        path = local.get(identity)
+        if path not in allowed:
+            return []
+        if identity not in parsed:
+            parsed[identity] = ast.parse(files[path].read_text(), filename=path)
+        pending, result = list(parsed[identity].body), []
+        while pending:
+            node = pending.pop()
+            result.append(node)
+            # Comprehension targets and lambda-local assignments do not
+            # establish module attributes (nor do function/class locals).
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+                                     ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
+                pending.extend(ast.iter_child_nodes(node))
+        return result
+
+    def exported(identity, symbol, seen=frozenset()):
+        """Resolve declared bindings, never use an import to justify itself."""
+        if (identity, symbol) in seen:
+            return False
+        if identity.split('.')[0] not in roots:
+            return True  # external exports are outside static local proof
+        seen = seen | {(identity, symbol)}
+        path = local.get(identity, '')
+        package = identity if path.endswith('/__init__.py') else identity.rpartition('.')[0]
+        for node in bindings(identity):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name == symbol:
+                return True
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store) and node.id == symbol:
+                return True
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if (alias.asname or alias.name.split('.')[0]) == symbol:
+                        # The import's own closure is independently checked.
+                        return alias.name.split('.')[0] not in roots or local.get(alias.name) in allowed
+            elif isinstance(node, ast.ImportFrom):
+                target = relative(node.module or '', node.level, package) if node.level else node.module or ''
+                for alias in node.names:
+                    if (alias.asname or alias.name) != symbol:
+                        continue
+                    child = target + '.' + alias.name
+                    if child in local:
+                        if local[child] in allowed:
+                            return True
+                    elif exported(target, alias.name, seen):
+                        return True
+        return False
+
     def package_attributes(identity):
         path = local.get(identity, '')
         if not path.endswith('/__init__.py') or path not in allowed:
             return None
-        tree = ast.parse(files[path].read_text(), filename=path)
-        attributes = set()
-        pending = list(tree.body)
-        while pending:
-            node = pending.pop()
+        candidates = set()
+        for node in bindings(identity):
             if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                attributes.add(node.name)
-                continue  # function/class locals are not package exports
-            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
-                attributes.add(node.id)
+                candidates.add(node.name)
+            elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                candidates.add(node.id)
             elif isinstance(node, (ast.Import, ast.ImportFrom)):
-                attributes.update(alias.asname or alias.name.split('.')[0] for alias in node.names)
-            pending.extend(ast.iter_child_nodes(node))
-        return attributes
+                candidates.update(alias.asname or alias.name.split('.')[0] for alias in node.names)
+        return {name for name in candidates if exported(identity, name)}
 
     for name, path in sorted(files.items()):
         text = path.read_text()
@@ -289,7 +335,7 @@ def validate_source_closure(root, profile):
                                 raise ValueError('Unresolved application package export: ' + child)
                 elif leaf in ('spec_from_file_location', 'exec_module', 'SourceFileLoader', 'SourcelessFileLoader', 'run_module', 'run_path', 'exec', 'eval'):
                     external.append(leaf)
-        if external:
+        if external or name in EXTERNAL_LOADER_SOURCES:
             if (hashlib.sha256(path.read_bytes()).hexdigest() != EXTERNAL_LOADER_SOURCES.get(name) or
                     external != ({'recording_workspace.py': ['spec_from_file_location', 'exec_module'],
                                   'workspace_bootstrap.py': ['embedded PROBE subprocess source']}.get(name))):

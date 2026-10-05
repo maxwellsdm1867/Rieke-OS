@@ -141,7 +141,11 @@ class DesktopPackagingTests(unittest.TestCase):
             profile = load_profile()
             for name in profile['python_modules']:
                 (root / 'python' / name).parent.mkdir(parents=True, exist_ok=True)
-                (root / 'python' / name).write_text('# reviewed module\n')
+                # Existing parser boundaries remain source-bound even in a
+                # synthetic staging tree; these bytes are scanned, never run.
+                text = ((ROOT / 'python' / name).read_text() if name in
+                        {'recording_workspace.py', 'workspace_bootstrap.py'} else '# reviewed module\n')
+                (root / 'python' / name).write_text(text)
             for name in ('export_mat.py', 'import_ugm.py', 'workspace_matlab_routes.py', 'unreviewed.py'):
                 (root / 'python' / name).write_text('# excluded or unknown\n')
             for name in ('epicTreeGUI.m', 'install.m', 'src/gui/widget.m', 'examples/sample.m'):
@@ -348,6 +352,29 @@ assert public.acknowledge(True) == {'saved': True}
         with self.assertRaisesRegex(ValueError, 'excluded paths'):
             validate_release_source(self.root, tracked + ['src/legacy.m'])
 
+    def test_comprehension_and_lambda_locals_do_not_become_package_exports(self):
+        for initializer in ('ignored = [missing for missing in []]',
+                            'ignored = {missing for missing in []}',
+                            'ignored = {missing: 1 for missing in []}',
+                            'ignored = (missing for missing in [])',
+                            'ignored = lambda: (missing := 1)'):
+            self.write('disco/recovery/__init__.py', initializer)
+            self.write('disco/recovery/policy.py', 'from . import missing')
+            with self.subTest(initializer=initializer), self.assertRaisesRegex(ValueError, 'Unresolved application package export'):
+                validate_source_closure(self.root, self.profile)
+
+    def test_initializer_missing_import_and_circular_reexport_cannot_justify_exports(self):
+        for initializer in ('from . import missing', 'from . import missing as alias',
+                            'from .policy import missing'):
+            self.write('disco/recovery/__init__.py', initializer)
+            self.write('disco/recovery/policy.py', 'from . import missing')
+            with self.subTest(initializer=initializer), self.assertRaisesRegex(ValueError, 'Unresolved application package export'):
+                validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/__init__.py', 'from .policy import acknowledge')
+        self.write('disco/recovery/policy.py', 'from . import acknowledge')
+        with self.assertRaisesRegex(ValueError, 'Unresolved application package export'):
+            validate_source_closure(self.root, self.profile)
+
     def test_source_and_destination_redirects_fail_before_copy(self):
         for side in ('source', 'destination'):
             with self.subTest(side=side):
@@ -402,6 +429,18 @@ assert public.acknowledge(True) == {'saved': True}
                 validate_source_closure(self.root, self.profile)
         self.write('disco/recovery/policy.py', 'acknowledge = None\nimport importlib; importlib.import_module(".policy", package="disco.recovery")')
         self.assertEqual(validate_source_closure(self.root, self.profile)['external_loader_boundaries'], [])
+
+    def test_deleting_or_renaming_all_bound_loader_sites_is_rejected(self):
+        actual = load_profile()
+        for name in actual['python_modules']:
+            self.write(name, (ROOT / 'python' / name).read_text())
+        for name in ('recording_workspace.py', 'workspace_bootstrap.py'):
+            original = (ROOT / 'python' / name).read_text()
+            for changed in ('# all loader sites removed\n', original.replace('PROBE =', 'RENAMED_PROBE =') if name == 'workspace_bootstrap.py' else '# parser loader removed\n'):
+                self.write(name, changed)
+                with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'Unclassified external application loader: ' + name):
+                    validate_source_closure(self.root, actual)
+            self.write(name, original)
 
     def test_existing_external_loader_boundaries_are_source_bound_not_executed(self):
         report = validate_source_closure(ROOT, load_profile())
