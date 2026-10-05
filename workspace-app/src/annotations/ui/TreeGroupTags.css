@@ -18,9 +18,9 @@
 .incoming-explicit-select:focus-visible{outline:2px solid var(--success-ink);outline-offset:2px}
 .tp-group-tag-wrap>.incoming-tree-actions{position:absolute;right:9px;bottom:8px}
 .tp-group-tag-wrap:has(>.incoming-tree-actions)>.tp-branch{padding-bottom:40px}
-.tp-level-heading>.incoming-tree-actions{margin-left:auto;flex-wrap:wrap;justify-content:flex-end;max-width:120px}
+.tp-level-heading>.incoming-tree-actions{margin-left:auto;flex-wrap:wrap;justify-content:flex-end;max-width:150px}
 .hierarchy-tree .ht-branch>.incoming-tree-actions{position:absolute;right:3px;top:4px}
-.hierarchy-tree .ht-branch:has(>.incoming-tree-actions)>button:first-child{padding-right:130px!important}
+.hierarchy-tree .ht-branch:has(>.incoming-tree-actions)>button:first-child{padding-right:150px!important}
 .tree-split-item .incoming-tree-actions{margin-left:auto}
 .incoming-tree-feedback{font-size:11px;padding:6px 10px;color:var(--ink-secondary)}
 .incoming-tree-feedback[role=alert]{color:var(--error-ink)}

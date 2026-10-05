@@ -61,12 +61,14 @@ layout. Frozen context preparation still owns its scientific readiness. A single
 disposable-project observation found preparation dominated entry time; it is not
 a comparable baseline or a latency guarantee.
 
-Incoming tree selection uses green On / blue Off switches. A branch flip applies
+Incoming tree selection uses green Selected / blue Select controls. A branch flip applies
 to all verified descendants, with the existing 1,000-epoch limit. Individual child
 or epoch changes leave explicit parent switches unchanged; the next parent flip
 replaces descendant overrides. Shared-tag coverage is a separate neutral count.
 Replacement frozen candidates retain only inert browsing presentation, preserving
 tree mode after tagging without copying selections or review consent.
+If a refresh interrupts a pending selection, its message survives tree remounts
+and asks for an explicit retry. Interrupted work cannot overwrite a later choice.
 
 The cell-count metric opens a compact recorded-type breakdown on hover, keyboard
 focus or click. Export preview content uses the available dialog width. Final

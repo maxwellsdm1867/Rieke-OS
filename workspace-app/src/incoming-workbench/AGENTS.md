@@ -103,3 +103,12 @@ They are not persisted in sessions and never replace selected UUIDs for merge/ex
 Global selection tools send explicit root-command metadata only after successful
 selection; individual epoch updates leave ancestor commands intact. Saved tags use
 separate neutral badges and convey neither selection nor merge approval.
+
+If a mounted tree refresh/availability change interrupts a branch selection, retire
+the request and show explicit retry feedback. Never replay it automatically or let
+its late response overwrite a newer command; unmount cleanup does not publish UI.
+
+Inspector owns interruption feedback outside the retained tree subtree, with a
+dedicated mount-only guard. Scope eviction may remount PagedTree without losing
+that alert. A new explicit branch/global command clears it; parent unmount ignores
+child cleanup notifications. Standalone tree callers retain local feedback.
