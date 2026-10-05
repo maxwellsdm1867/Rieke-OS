@@ -102,7 +102,7 @@ test('explicit quit waits for clean receipts and process exit, then removes owne
 });
 test('failed Verify draft acknowledgement survives successful closure and subsequent ordinary Quit',async t=>{
  const {recoverVerificationFailure,cleanupAfterVerificationRecovery}=require('../verification-recovery.cjs');
- const {QuitCoordinator}=require('../quit-coordinator.cjs');
+ const {QuitCoordinator}=require('../close/quit-coordinator.cjs');
  const {supervisor}=await fixture(t,(sup,worker,url)=>{
   if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));
   return response(url.endsWith('/health')?{...sup.expectedHealth(),ready:true,services:[]}:{ready:true});

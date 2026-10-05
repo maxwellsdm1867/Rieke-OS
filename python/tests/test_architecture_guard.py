@@ -231,4 +231,26 @@ class ArchitectureGuardTests(unittest.TestCase):
         tests['javascript']=[];tests['unknown']=[];self.write_catalog()
         self.assertIn('Invalid catalog fields',self.cli('check','--language','metadata',success=False)['error'])
 
+    def test_close_tests_are_narrowly_accepted_and_keep_mapped_execution(self):
+        self.desktop_contract()
+        name = 'desktop/close/tests/example.test.cjs'
+        self.write(name, "require('node:test')('public seam', () => require('node:assert/strict').equal(1, 1));\n")
+        self.catalog['contracts'][0]['tests']['desktop'] = [name]
+        self.write_catalog()
+        self.cli('check', '--language', 'metadata')
+        if shutil.which('node'):
+            result = self.cli('test', '--all', '--language', 'desktop')
+            self.assertEqual(result['runs'][0]['command'], ['node', '--test', name])
+            self.assertEqual(result['runs'][0]['exit_code'], 0)
+        for invalid in ['desktop/close/owner.cjs', 'desktop/other/tests/example.test.cjs',
+                        'desktop/close/tests/nested/example.test.cjs',
+                        'desktop/close/testsuite/example.test.cjs']:
+            self.write(invalid, '// invalid mapped location\n')
+            self.catalog['contracts'][0]['tests']['desktop'] = [invalid]
+            self.write_catalog()
+            self.assertIn('Invalid desktop test path', self.cli('check', '--language', 'metadata', success=False)['error'])
+        self.catalog['contracts'][0]['tests']['desktop'] = ['desktop/close/tests/../../../python/tests/test_policy.py']
+        self.write_catalog()
+        self.assertIn('escapes', self.cli('check', '--language', 'metadata', success=False)['error'])
+
 if __name__ == '__main__': unittest.main()

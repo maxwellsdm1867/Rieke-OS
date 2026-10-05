@@ -85,7 +85,7 @@ def catalog(root):
                     raise ValueError(f'Invalid Python test path: {path}')
                 if language == 'javascript' and not (path.startswith('workspace-app/src/') and path.endswith('.test.js')):
                     raise ValueError(f'Invalid JavaScript test path: {path}')
-                if language == 'desktop' and not (path.startswith('desktop/tests/') and path.endswith('.test.cjs')):
+                if language == 'desktop' and not ((path.startswith('desktop/tests/') or Path(path).parent.as_posix() == 'desktop/close/tests') and path.endswith('.test.cjs')):
                     raise ValueError(f'Invalid desktop test path: {path}')
         if not any(entry['tests'].values()):
             raise ValueError(f'Contract has no conformance tests: {entry["id"]}')

@@ -61,7 +61,7 @@ function fixture(options = {}) {
   const actualRequire = require('node:module').createRequire(path.join(__dirname, '../main.cjs'));
   const electron = {app, BrowserWindow: Window, ipcMain: {handle: (name, handler) => handlers.set(name, handler)},
     dialog: {}, session: {}, shell: {}, Menu: {}, powerMonitor: {}};
-  const context = {require: name => name === 'electron' ? electron : name === './quit-coordinator.cjs'
+  const context = {require: name => name === 'electron' ? electron : name === './close/quit-coordinator.cjs'
       ? {QuitCoordinator: class extends actualRequire(name).QuitCoordinator {
         constructor(settings) { super({...settings, deadline: 25, draftDeadline: 5}); }
       }} : actualRequire(name),

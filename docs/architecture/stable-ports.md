@@ -364,7 +364,7 @@ outcomes are proposed. Keep platform/process details behind adapters.
   merely to manufacture a successful stop receipt.
 - **Current owners:** [preload](../../desktop/preload.cjs),
   [supervisor](../../desktop/supervisor.cjs),
-  [quit coordinator](../../desktop/quit-coordinator.cjs),
+  [quit coordinator](../../desktop/close/quit-coordinator.cjs),
   [Python desktop](../../python/workspace_desktop.py),
   [renderer lifecycle](../../workspace-app/src/desktopLifecycle.js).
   [Explicit quit contract](../dev/DESKTOP_QUIT_COORDINATION.md) describes mode-specific

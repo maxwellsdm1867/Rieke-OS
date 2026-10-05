@@ -1,5 +1,7 @@
 # Architecture entry point
 
+For desktop work, start at [desktop navigation](desktop/AGENTS.md).
+
 For frontend work, start at [module navigation](workspace-app/src/AGENTS.md).
 
 Read [ARCHITECTURE.md](ARCHITECTURE.md) for the implemented module map and

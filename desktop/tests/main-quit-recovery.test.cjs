@@ -7,7 +7,7 @@ function fixture(){
  class Window extends EventEmitter{constructor(){super();this.webContents=new EventEmitter();this.messages=[];Object.assign(this.webContents,{send:(channel,value)=>this.messages.push({channel,value}),setWindowOpenHandler(){}});}isDestroyed(){return false;}loadFile(){return Promise.resolve();}loadURL(){return Promise.resolve();}}
  const electron={app,BrowserWindow:Window,ipcMain:{handle(){}},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
- const required=name=>name==='electron'?electron:name==='./quit-coordinator.cjs'?{QuitCoordinator:class extends actualRequire(name).QuitCoordinator{constructor(options){super({...options,deadline:25,draftDeadline:5});}}}:actualRequire(name);
+ const required=name=>name==='electron'?electron:name==='./close/quit-coordinator.cjs'?{QuitCoordinator:class extends actualRequire(name).QuitCoordinator{constructor(options){super({...options,deadline:25,draftDeadline:5});}}}:actualRequire(name);
  const context={require:required,__dirname:path.join(__dirname,'..'),process,console,setTimeout,clearTimeout};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+'\n globalThis.harness={recovery,orderlyQuit,prepareQuit,createWindow,scientificWindows,setSupervisor:value=>supervisor=value};',context);
  return{...context.harness,app,quitCompleted,get quits(){return quits;}};

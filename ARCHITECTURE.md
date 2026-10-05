@@ -138,3 +138,7 @@ The [detailed proposal](docs/architecture/stable-ports.md) records the first
 candidate, the deletion test, configuration ownership, implementation-versus-contract
 versioning, reusable correctness/benchmark evidence, and migration decisions. It
 is intended for discussion and incremental adoption, not a broad refactor mandate.
+
+Desktop close coordination lives in [desktop navigation](desktop/AGENTS.md) and
+[its public contracts and examples](desktop/close/README.md). Electron composition
+remains in main; strict replacement and bounded explicit Quit stay distinct.

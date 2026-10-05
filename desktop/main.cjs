@@ -10,7 +10,7 @@ const {promisify} = require('node:util');
 const {ServiceSupervisor, matchesHealth} = require('./supervisor.cjs');
 const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs');
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
-const {DraftBarrier} = require('./draft-barrier.cjs');
+const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./draft-store.cjs');
 const {StartupSession,viewNamespace}=require('./startup-session.cjs');
 let startupSession,startupOpening;const scopedDraftStores=new Map();
@@ -25,7 +25,7 @@ function scopedDraftStore(window,projectId){
 }
 const {iconPath,applyAppIcon,savedAppIcon}=require('./app-icon.cjs');
 let appIcon='disco';
-const {QuitCoordinator} = require('./quit-coordinator.cjs');
+const {QuitCoordinator} = require('./close/quit-coordinator.cjs');
 
 const {distributionPolicy} = require('./distribution.cjs');
 const distribution = distributionPolicy(require('./distribution.json'));

@@ -7,7 +7,7 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "test": "node --test tests/*.test.cjs test/*.test.cjs",
+    "test": "node --test tests/*.test.cjs test/*.test.cjs close/tests/*.test.cjs",
     "test:e2e": "node e2e/packaged.e2e.cjs",
     "test:e2e:smoke": "node e2e/smoke.e2e.cjs",
     "test:e2e:startup-failure": "node e2e/backend-failure.e2e.cjs",
@@ -38,6 +38,8 @@
     },
     "files": [
       "*.cjs",
+      "close/draft-barrier.cjs",
+      "close/quit-coordinator.cjs",
       "*.html",
       "*.css",
       "recovery.js",

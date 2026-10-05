@@ -32,7 +32,7 @@ def revision(repo, value):
 def change_kind(path):
     """Paths in the committed application closure, with conservative unknowns."""
     name = Path(path).name
-    if (path.startswith(('docs/', '.github/', 'python/tests/', 'desktop/tests/', 'desktop/test/',
+    if (path.startswith(('docs/', '.github/', 'python/tests/', 'desktop/tests/', 'desktop/test/', 'desktop/close/tests/',
                          'desktop/e2e/', 'workspace-app/tests/', 'workspace-app/test/', 'tools/tests/', 'tests/', 'test/'))
             or path == '.gitignore'  # Tracking housekeeping; build inputs are committed files.
             or name.endswith(('.md', '.rst'))

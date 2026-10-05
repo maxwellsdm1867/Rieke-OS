@@ -63,6 +63,29 @@ class ReleasePlanCLITests(unittest.TestCase):
         self.assertEqual(value['changed_paths'], ['.gitignore', 'docs/dev/guide.md', 'python/tests/test_example.py'])
 
 
+    def test_close_test_changes_and_renames_do_not_build(self):
+        self.write('desktop/tests/old.test.cjs', '// existing test\n')
+        before = self.commit()
+        self.write('desktop/close/tests/new.test.cjs', '// nearby test\n')
+        self.git('mv', 'desktop/tests/old.test.cjs', 'desktop/close/tests/moved.test.cjs')
+        self.commit()
+        value = self.plan('--base', before)
+        self.assertEqual(tuple(value[flag] for flag in FLAGS), (False,) * 5)
+
+    def test_close_production_move_and_removal_keep_domain_classification(self):
+        self.write('desktop/draft-barrier.cjs', '// existing production\n')
+        before = self.commit()
+        (self.root / 'desktop/close').mkdir(parents=True)
+        self.git('mv', 'desktop/draft-barrier.cjs', 'desktop/close/draft-barrier.cjs')
+        moved = self.commit()
+        value = self.plan('--base', before)
+        self.assertEqual(tuple(value[flag] for flag in FLAGS), (True, True, False, False, True))
+        self.assertEqual(value['changed_paths'], ['desktop/close/draft-barrier.cjs', 'desktop/draft-barrier.cjs'])
+        self.git('rm', 'desktop/close/draft-barrier.cjs')
+        self.commit()
+        value = self.plan('--base', moved)
+        self.assertEqual(tuple(value[flag] for flag in FLAGS), (True, True, False, False, True))
+
     def test_application_changes_select_routine_or_domain_qualification(self):
         cases = [
             ('workspace-app/src/components/Inspector.jsx', (True, False, False, False, False)),
@@ -73,6 +96,8 @@ class ReleasePlanCLITests(unittest.TestCase):
             ('desktop/recovery-install.cjs', (True, True, False, True, False)),
             ('desktop/supervisor.cjs', (True, True, False, False, True)),
             ('desktop/main.cjs', (True, True, False, False, True)),
+            ('desktop/close/draft-barrier.cjs', (True, True, False, False, True)),
+            ('desktop/close/quit-coordinator.cjs', (True, True, False, False, False)),
             ('python/workspace_desktop.py', (True, True, True, False, True)),
             ('python/workspace_migration.py', (True, False, True, False, True)),
             ('python/workspace_annotations.py', (True, False, True, False, True)),
