@@ -14,10 +14,21 @@ export function requirePreparedWorkbench(protocol,value,queueRevision){
   if(value.candidate_scope_revision!==value.context.candidate_scope_revision||value.queue_revision!==queueRevision)throw new Error('The cumulative Workbench scope changed while preparing. Refresh the queue.');
   return {...value,queue_revision:queueRevision};
 }
+// A replacement frozen candidate may keep the way the scientist was browsing,
+// never its selected epochs, edit text, receipts or revision-bound tree pages.
+function viewerPresentation(viewer){
+  if(!viewer)return null;
+  const result={};
+  for(const key of ['treeOpen','treeMode','designMode'])if(typeof viewer[key]==='boolean')result[key]=viewer[key];
+  for(const key of ['focused','focusCell'])if(viewer[key]===null||typeof viewer[key]==='string')result[key]=viewer[key];
+  if(Number.isSafeInteger(viewer.offset)&&viewer.offset>=0)result.offset=viewer.offset;
+  return result;
+}
 export default function CumulativeIncomingReview({queue,protocolId,session={},onSession,onHistory,onRefresh,onReviewProposal,refreshing=false,mergeRequest=null,onMergeRequestHandled,...reviewProps}){
   const [prepared,setPrepared]=useState(session.prepared||null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
   const [receiptExport,setReceiptExport]=useState(null),[,setDraftVersion]=useState(0);
   const drafts=useRef(session.drafts||{}),scopes=useRef(session.scopes||(session.prepared?{[session.prepared.candidate_revision_uuid]:session.prepared}:{})),attempted=useRef(null),snapshot=useRef(null);
+  const presentationOwner=useRef({protocolId,projectId:reviewProps.projectId});
   const draft=prepared?drafts.current[prepared.candidate_revision_uuid]:null;
   const recovering=(!draft?.receipt&&(!!draft?.acceptPending||!!draft?.unconfirmed))||!!draft?.exportState?.pending||!!draft?.exportState&&!draft.exportState.exported&&!!(draft.exportState.prepared||draft.exportState.acceptOperation);
   snapshot.current={prepared,drafts:drafts.current,scopes:scopes.current};
@@ -36,10 +47,18 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
     // request, and a real remount retries the exact server-idempotent body.
     let active=true;setBusy(true);setError('');
     attempted.current.promise.then(value=>{
-      if(active){const saved=requirePreparedWorkbench(protocolId,value,token);scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};setBusy(false);setPrepared(saved);}
+      if(active){const saved=requirePreparedWorkbench(protocolId,value,token);
+        const previous=snapshot.current?.prepared,priorProtocol=previous?.context?.protocol?.definition?.protocol_uuid||previous?.context?.protocol?.protocol_uuid;
+        const previousViewer=viewerPresentation(drafts.current[previous?.candidate_revision_uuid]?.viewer);
+        const destination=drafts.current[saved.candidate_revision_uuid];
+        if(previous?.candidate_revision_uuid!==saved.candidate_revision_uuid&&priorProtocol===protocolId&&presentationOwner.current.protocolId===protocolId&&presentationOwner.current.projectId===reviewProps.projectId&&previousViewer&&!Object.hasOwn(destination||{},'viewer')){
+          drafts.current={...drafts.current,[saved.candidate_revision_uuid]:{...destination,viewer:previousViewer}};
+        }
+        presentationOwner.current={protocolId,projectId:reviewProps.projectId};
+        scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};setBusy(false);setPrepared(saved);}
     }).catch(error=>{if(active){setBusy(false);setError(error.message);}});
     return()=>{active=false;};
-  },[protocolId,queue.data?.queue_revision,queue.data?.pending_epoch_count,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision]);
+  },[protocolId,reviewProps.projectId,queue.data?.queue_revision,queue.data?.pending_epoch_count,queue.data?.total_candidate_count,queue.loading,queue.error,recovering,nonce,prepared?.queue_revision]);
   const eligibleProposals=(queue.data?.candidates||[]).filter(item=>['pending','pending_rebased','deferred'].includes(item.status)&&Number.isSafeInteger(item.eligible_pending_epoch_count)&&item.eligible_pending_epoch_count>0);
   const authorityChanged=!!queue.data?.queue_revision&&prepared?.queue_revision!==queue.data.queue_revision;
   const remember=useCallback(value=>{drafts.current={...drafts.current,[prepared.candidate_revision_uuid]:value};onSession?.({...snapshot.current,drafts:drafts.current});setDraftVersion(value=>value+1);},[prepared?.candidate_revision_uuid,onSession]);

@@ -53,3 +53,22 @@ after the shared startup base; their changes are incorporated by `cde28e3`
 with the optional-metadata integration retained. This records content inclusion,
 not merge ancestry. The tracking commit changes documentation only and does not
 relabel the packaged source or benchmark commit.
+
+## Workbench follow-up
+
+Workbench entry no longer waits for the main protocol summary or saved main-tree
+layout. Frozen context preparation still owns its scientific readiness. A single
+disposable-project observation found preparation dominated entry time; it is not
+a comparable baseline or a latency guarantee.
+
+Incoming tree selection uses green On / blue Off switches. A branch flip applies
+to all verified descendants, with the existing 1,000-epoch limit. Individual child
+or epoch changes leave explicit parent switches unchanged; the next parent flip
+replaces descendant overrides. Shared-tag coverage is a separate neutral count.
+Replacement frozen candidates retain only inert browsing presentation, preserving
+tree mode after tagging without copying selections or review consent.
+
+The cell-count metric opens a compact recorded-type breakdown on hover, keyboard
+focus or click. Export preview content uses the available dialog width. Final
+source, package and native receipts must identify the later clean candidate;
+earlier package evidence does not qualify these changes.

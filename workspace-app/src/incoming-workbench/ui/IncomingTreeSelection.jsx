@@ -1,31 +1,50 @@
 import {useLayoutEffect,useRef,useState} from 'react';
-import {CheckSquare} from 'lucide-react';
 import {api} from '../../api.js';
 import {resolveTreeGroup} from "../../annotations/treeGroupTargets.js";
 import {mergeEpochSelection,toggleEpochSelection} from '../../epochSelection.js';
+import {incomingTreeSelectionScope,incomingBranchOn,incomingBranchCommand} from '../incomingSelection.js';
 
 export function IncomingEpochSelect({epoch,selected=[],onSelect,disabled=false}){
   if(!onSelect)return null;
   const checked=selected.includes(epoch.epoch_uuid);
-  return <button type="button" className="incoming-explicit-select" aria-label={`${checked?'Deselect':'Select'} epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-pressed={checked} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><CheckSquare size={13}/><span>Select</span></button>;
+  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={checked?'Turn this epoch off':'Turn this epoch on'} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'On':'Off'}</span></button>;
 }
-export function useIncomingTreeSelection(props){
-  const [error,setError]=useState(''),[working,setWorking]=useState(false),controller=useRef(null),current=useRef(props),committed=useRef(null);
+export function useIncomingTreeSelection(props,page=null){
+  const [error,setError]=useState(''),[working,setWorking]=useState(false),[localIntent,setLocalIntent]=useState(null),controller=useRef(null),current=useRef(props),committed=useRef(null);
   current.current=props;
-  const scopeKey=JSON.stringify([props.protocolId,props.readContext,props.filters,props.splits,props.revision,props.expectedRevision,props.actionsDisabled]);
-  useLayoutEffect(()=>{committed.current=scopeKey;return()=>{committed.current=null;controller.current?.abort();};},[scopeKey]);
-  async function select(item,page,event){
+  const scopeKey=incomingTreeSelectionScope(props),operationKey=JSON.stringify([scopeKey,props.actionsDisabled,props.active]);
+  const intent=props.treeSelectionIntent===undefined?localIntent:props.treeSelectionIntent;
+  const changeIntent=value=>props.onTreeSelectionIntentChange?props.onTreeSelectionIntentChange(value):setLocalIntent(value);
+  const intentRef=useRef(intent);intentRef.current=intent;
+  const rootCurrent=props.active!==false&&!props.actionsDisabled&&page&&page.candidate_scope_revision===props.readContext?.candidate_scope_revision;
+  // Global Select/Deselect all can run in the epoch list before a tree exists.
+  // Bind its command only when a fresh tree page for that same view is available.
+  useLayoutEffect(()=>{
+    if(intent&&intent.scope!==scopeKey){if(props.treeSelectionIntent===undefined)setLocalIntent(null);return;}
+    if(rootCurrent&&intent?.scope===scopeKey){
+      if(intent.revision===null)changeIntent({...intent,revision:page.revision});
+      else if(intent.revision!==page.revision)changeIntent(null);
+    }
+  },[rootCurrent,page?.revision,scopeKey,intent]);
+  useLayoutEffect(()=>{committed.current=operationKey;return()=>{committed.current=null;controller.current?.abort();};},[operationKey]);
+  function on(item,branchPage){return incomingBranchOn(intent,scopeKey,branchPage?.revision,item.path||[]);}
+  async function select(item,branchPage,event){
     event?.preventDefault();event?.stopPropagation();
-    if(!props.readContext||props.actionsDisabled||controller.current)return;
+    if(!props.readContext||props.actionsDisabled||props.active===false||controller.current||committed.current!==operationKey)return;
     const request=new AbortController();controller.current=request;setWorking(true);setError('');
-    const before=JSON.stringify(props.selectedEpochs||[]);
+    const before=JSON.stringify(props.selectedEpochs||[]),beforeIntent=intent,nextOn=!on(item,branchPage),path=item.path||[];
     try{
-      const target=await resolveTreeGroup({scope:props,path:item.path||[],revision:page.revision,count:item.count,request:api,signal:request.signal});
-      if(request.signal.aborted||committed.current!==scopeKey)return;
-      if(JSON.stringify(current.current.selectedEpochs||[])!==before)throw Error('Selection changed while loading. Select this group again.');
-      current.current.setSelectedEpochs?.(mergeEpochSelection(current.current.selectedEpochs||[],target.ids));
-    }catch(error){if(committed.current!==null)setError(error.name==='AbortError'?'Tree changed while selecting. Select the group again.':error.message);}
+      if(item.count>1000)throw Error('Switch at most 1,000 epochs at a time. Filter this view or choose a smaller branch.');
+      const target=await resolveTreeGroup({scope:props,path,revision:branchPage.revision,count:item.count,request:api,signal:request.signal});
+      if(request.signal.aborted||committed.current!==operationKey)return;
+      if(JSON.stringify(current.current.selectedEpochs||[])!==before||intentRef.current!==beforeIntent)throw Error('Selection changed while loading. Switch this group again.');
+      const selected=current.current.selectedEpochs||[],remove=new Set(target.ids);
+      const next=nextOn?mergeEpochSelection(selected,target.ids):selected.filter(id=>!remove.has(id));
+      const nextIntent=incomingBranchCommand(intent,scopeKey,branchPage.revision,path,nextOn);
+      current.current.setSelectedEpochs?.(next);
+      changeIntent(nextIntent);
+    }catch(error){if(committed.current===operationKey)setError(error.name==='AbortError'?'Tree changed while selecting. Switch the group again.':error.message);}
     finally{if(controller.current===request){controller.current=null;setWorking(false);}}
   }
-  return {select:props.readContext&&props.setSelectedEpochs?select:null,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback" role="status">Selecting all downstream epochs…</p>:null};
+  return {select:props.readContext&&props.setSelectedEpochs?select:null,on,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback" role="status">Updating downstream selection…</p>:null};
 }

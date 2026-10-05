@@ -54,7 +54,12 @@
 
 .hierarchy-tree .ht-leaf:has(>.epoch-inclusion-toggle[aria-pressed=false])>button:first-child>.ht-value{color:var(--ink-muted)}
 
-.hierarchy-tree .ht-branch>button.tag-coverage-all{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
-.hierarchy-tree .ht-branch>button.tag-coverage-partial{border-color:var(--warning-border,var(--border-strong));background:var(--warning-soft,var(--surface-subtle))}
+.hierarchy-tree .ht-branch>button .tree-tag-coverage{color:var(--ink-secondary)}
+
 .hierarchy-tree .ht-branch>button.selected{box-shadow:inset 3px 0 var(--accent)}
 .hierarchy-tree .ht-branch>button .tree-tag-coverage{font-size:10px;font-weight:600;line-height:1.4;white-space:normal}
+
+.hierarchy-tree .ht-branch>button.incoming-branch-on{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.hierarchy-tree .ht-branch>button.incoming-branch-off{background:var(--accent-soft);border-color:var(--border);color:var(--accent)}
+.hierarchy-tree .ht-leaf.incoming-epoch-on{background:var(--success-soft);color:var(--success-ink)}
+.hierarchy-tree .ht-leaf.incoming-epoch-off{background:var(--accent-soft)}

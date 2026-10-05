@@ -24,3 +24,16 @@
 .tree-split-item .incoming-tree-actions{margin-left:auto}
 .incoming-tree-feedback{font-size:11px;padding:6px 10px;color:var(--ink-secondary)}
 .incoming-tree-feedback[role=alert]{color:var(--error-ink)}
+
+/* Binary branch intent stays on when an individual descendant is switched off. */
+.incoming-selection-switch{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:28px;min-width:58px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:650;white-space:nowrap;cursor:pointer}
+.incoming-selection-switch[aria-checked=true]{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.incoming-selection-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.incoming-selection-switch:disabled{cursor:default;opacity:.55}
+.incoming-switch-track{display:inline-flex;align-items:center;width:23px;height:14px;padding:2px;border-radius:20px;background:var(--accent)}
+.incoming-switch-track>span{display:block;width:10px;height:10px;border-radius:50%;background:var(--surface);transition:transform .12s ease}
+.incoming-selection-switch[aria-checked=true] .incoming-switch-track{background:var(--success-ink)}
+.incoming-selection-switch[aria-checked=true] .incoming-switch-track>span{transform:translateX(9px)}
+@media(prefers-reduced-motion:reduce){.incoming-switch-track>span{transition:none}}
+
+.tree-tag-marker{display:inline-flex;align-items:center;padding:1px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink-secondary);font-size:9px;font-weight:500}

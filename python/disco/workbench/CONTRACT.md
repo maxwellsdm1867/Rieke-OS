@@ -128,7 +128,9 @@ The read reuses the private shared-annotation snapshot already captured by
 and applies it to exact bucket membership. No per-epoch queries or extra snapshot
 read is added. The existing response-end scope check rejects changed annotation
 witnesses. Private snapshot records are never part of the public context payload.
-Frontend green coverage requires matching current candidate scope and complete
+Frontend saved-tag badges require matching current candidate scope and complete
 validated counts; partial coverage and unavailable/retained reads remain distinct.
+Badges use neutral styling. Green/blue branch switches describe the separate
+ephemeral incoming selection command, never shared-tag coverage.
 Executable cases: `test_workspace_workbench.WorkbenchTests` coverage tests and
 `workspace-app/src/treeTagCoverageWorkflow.test.js`.

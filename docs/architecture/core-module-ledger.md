@@ -439,10 +439,23 @@ Frozen tree pages may include exact descendant shared-tag coverage from the
 Workbench's already captured annotation snapshot. The existing response-end
 scope check still owns freshness. The tree view treats complete, partial and
 unavailable coverage separately and does not equate tags with merge membership
-or scientific approval. See the backend workbench/navigation contracts and tree
+or scientific approval. Coverage uses a neutral count badge. Green/blue belongs
+to explicit binary selection: a branch command changes every verified descendant;
+child overrides leave its parent switch unchanged. Inspector shares ephemeral
+branch intent across tree presentations, scoped to the project, protocol, frozen
+context, filters, splits and tree revision. Selected epoch UUIDs retain action
+authority; neither the switches nor restored presentation grant scientific consent.
+See the backend workbench/navigation contracts and tree
 browser guide for the narrow optional callback and presentation fences. The
 catalog adds the mounted coverage regression; the reviewed tree-page observer
 ASTs, identities and targets are unchanged while source hashes are updated.
+
+Replacement frozen candidates may inherit only browsing mode/focus presentation
+within the same project and protocol, when no destination viewer state exists.
+Selections, edit drafts, receipts and revision-bound navigation are not copied.
+The cell-count metric discloses recorded cell types on hover, focus or click;
+the ordinary inline component remains available for other callers. The mounted
+session/disclosure examples exercise those lifetimes and keyboard dismissal.
 
 New audit events now fingerprint the current organized frontend paths. Previously
 recorded audit events remain unchanged. The source-install workflow fetches the

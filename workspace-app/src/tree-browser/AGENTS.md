@@ -59,9 +59,17 @@ changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
 
-Workbench branch coverage uses exact backend `shared_tag_coverage` counts, never
-loaded children or direct cell chips as a descendant-total substitute. All epochs
-with any direct/inherited shared tag are green; partial coverage shows a count.
-Tag names may differ. Neither appearance nor tags grant approval/merge membership.
-Missing, malformed, stale-scope and refreshing coverage cannot paint green. Keep
-`treeTagCoverageWorkflow.test.js` with the pure branch presentation examples.
+Workbench saved-tag badges use exact backend `shared_tag_coverage` counts and
+neutral styling; they never color the whole branch green. Missing, malformed,
+stale-scope and refreshing coverage stays unavailable.
+
+Incoming branch switches are binary user commands: green on, blue off. Descendants
+inherit the nearest branch command; explicit child switches override it without
+changing the parent's switch. Flipping a parent again replaces downstream overrides.
+A command resolves and verifies every descendant UUID before changing selection,
+with the existing 1,000-epoch bound. Leaf switches reflect the actual selected UUIDs;
+merge/export continue using those UUIDs, never branch appearance or saved tags.
+Inspector keeps commands only in ephemeral scoped state across tree presentations.
+Fresh global Select/Deselect all commands explicitly seed a root switch; individual
+leaf changes do not clear parent commands. Scope/revision changes clear markers.
+See `treeTagCoverageWorkflow.test.js` and the incoming branch selection tests.

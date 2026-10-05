@@ -12,13 +12,13 @@ export default function IncomingSelectionTools({source,cells,targets=[],onSelect
     if(locked||pending.current)return;
     const controller=new AbortController();pending.current=controller;setWorking(true);setError('');
     const isCurrent=()=>committed.current===scope&&!controller.signal.aborted;
-    try{const ids=await loadIncomingSelection({source,cells,request:api,signal:controller.signal,isCurrent});if(isCurrent())onSelect(ids);}
+    try{const ids=await loadIncomingSelection({source,cells,request:api,signal:controller.signal,isCurrent});if(isCurrent())onSelect(ids,{treeSelection:{on:true}});}
     catch(error){if(committed.current!==null)setError(error.name==='AbortError'?'Incoming view changed while selecting. Choose Select all again.':error.message);}
     finally{if(pending.current===controller){pending.current=null;setWorking(false);}}
   }
   return <section className="incoming-draft-tools" aria-label="Incoming selection actions">
     <button disabled={locked||!cells.length} onClick={selectAll}><CheckSquare size={13}/> Select all</button>
-    <button disabled={locked||!targets.length} onClick={()=>onSelect([])}><Square size={13}/> Deselect all</button>
+    <button disabled={locked} onClick={()=>onSelect([],{treeSelection:{on:false}})}><Square size={13}/> Deselect all</button>
     <button disabled={locked||!viewSelected&&!targets.length} aria-pressed={viewSelected} onClick={onViewSelected}><Eye size={13}/> {viewSelected?'Return to all':'View selected'}</button>
     <button className="primary" disabled={locked||count==null||count===0||!onMerge} aria-description="Review these selected epochs, then preview and confirm their merge to Main." onClick={()=>onMerge([...targets])}><GitMerge size={14}/> Merge ({count==null?'count unavailable':`${number(count)} ${count===1?'epoch':'epochs'}`})</button>
     {working&&<p className="incoming-draft-feedback" role="status">Selecting all scoped epochs…</p>}{error&&<p className="incoming-draft-feedback" role="alert">{error}</p>}

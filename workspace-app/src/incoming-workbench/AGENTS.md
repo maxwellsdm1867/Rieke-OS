@@ -41,6 +41,16 @@ Workbench does not request a filtered main summary for retained browsing filters
 this separation without connecting to a user project. It is ordering/correctness
 evidence, not a measured native latency improvement.
 
+When cumulative preparation replaces its frozen candidate, a previously absent
+viewer may inherit only tree/list/design mode, focused UUID/cell and offset hints
+from the same mounted project/protocol. Current candidate context/pages still
+load before actions become available. Existing destination viewer state takes
+precedence. Selected epochs, operation/preview/receipt/export state and unfinished
+tag text stay with the old candidate. Revision-bound tree paths/pages/scroll are
+not transferred to a different candidate; same-candidate restoration is unchanged.
+The mounted `workbenchSessionLifecycle.test.js` covers pending preparation,
+fresh context, absence of carried consent/edit state and project/protocol fences.
+
 ## Factoring decision
 
 Pure selection/count/review policy is in-process; queue and scientific commands use
@@ -79,3 +89,17 @@ updates the existing catalog, ledger and path companion and runs the coordinated
 import/build checks. Benchmark links in the ledger are historical/indirect;
 relocation establishes neither new performance nor native qualification. Browser
 layout/paint, native data reads and full backend qualification remain separate.
+
+## Binary tree selection commands
+
+`incomingSelection.js` holds the pure scoped branch-command policy; the tree hook
+verifies complete current descendant IDs through `resolveTreeGroup` before any
+selection change. Branch color is the nearest explicit on/off command, not child
+coverage. A child or epoch can be off while its parent remains on; flipping the
+parent overwrites all downstream commands and selected UUIDs. Existing 1,000-target,
+partial-page, duplicate, cancellation and final-revision checks remain mandatory.
+Inspector owns ephemeral branch commands shared by column/hierarchy presentations.
+They are not persisted in sessions and never replace selected UUIDs for merge/export.
+Global selection tools send explicit root-command metadata only after successful
+selection; individual epoch updates leave ancestor commands intact. Saved tags use
+separate neutral badges and convey neither selection nor merge approval.

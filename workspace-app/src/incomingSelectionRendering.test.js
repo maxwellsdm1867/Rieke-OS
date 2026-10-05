@@ -7,15 +7,15 @@ import {createServer} from './test-support/isolatedVite.js';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('').trim();
 const create=()=>createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 test('Select all publishes every scoped ID, ignores focus loading, and refuses a changed view before publication',async()=>{
- const server=await create(),oldFetch=globalThis.fetch;let release,renderer;const selected=[];
+ const server=await create(),oldFetch=globalThis.fetch;let release,renderer;const selected=[],commands=[];
  globalThis.fetch=async()=>{await new Promise(resolve=>{release=resolve;});return {ok:true,status:200,json:async()=>({query_revision:'scope',offset:0,total:2,epochs:[{epoch_uuid:'a1',cell_uuid:'a'},{epoch_uuid:'a2',cell_uuid:'a'}]})};};
  try{
   const {default:Tools}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingSelectionTools.jsx');
-  const props={source:{kind:'protocol',protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope'},query:'',queryRevision:'scope'},cells:[{cell_uuid:'a',epochs:2}],targets:[],epoch:null,disabled:false,onSelect:ids=>selected.push(ids),onMerge:()=>assert.fail('selection must not merge')};
+  const props={source:{kind:'protocol',protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope'},query:'',queryRevision:'scope'},cells:[{cell_uuid:'a',epochs:2}],targets:[],epoch:null,disabled:false,onSelect:(ids,command)=>{selected.push(ids);commands.push(command);},onMerge:()=>assert.fail('selection must not merge')};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Tools,props));});const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
-  await act(async()=>{void button('Select all').props.onClick();});await act(async()=>renderer.update(React.createElement(Tools,{...props,epoch:{epoch_uuid:'a1'}})));await act(async()=>release());assert.deepEqual(selected,[['a1','a2']]);
+  await act(async()=>{void button('Select all').props.onClick();});await act(async()=>renderer.update(React.createElement(Tools,{...props,epoch:{epoch_uuid:'a1'}})));await act(async()=>release());assert.deepEqual(selected,[['a1','a2']]);assert.deepEqual(commands,[{treeSelection:{on:true}}]);
   await act(async()=>{void button('Select all').props.onClick();});await act(async()=>renderer.update(React.createElement(Tools,{...props,source:{...props.source,query:'cell_type=OFF'}})));await act(async()=>release());assert.equal(selected.length,1);assert.match(label(renderer.root),/Incoming view changed/);
-  await act(async()=>renderer.update(React.createElement(Tools,{...props,targets:['a1']})));await act(async()=>button('Deselect all').props.onClick());assert.deepEqual(selected,[['a1','a2'],[]]);
+  await act(async()=>renderer.update(React.createElement(Tools,{...props,targets:['a1']})));await act(async()=>button('Deselect all').props.onClick());assert.deepEqual(selected,[['a1','a2'],[]]);assert.deepEqual(commands,[{treeSelection:{on:true}},{treeSelection:{on:false}}]);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 test('Merge uses only explicit selected IDs, including zero while an epoch or cell is focused',async()=>{

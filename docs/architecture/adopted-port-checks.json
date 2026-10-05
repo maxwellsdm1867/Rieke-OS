@@ -1538,6 +1538,7 @@
           "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
           "allow": [
+            "react",
             "workspace-app/src/incoming-workbench/incomingCellTypes.js",
             "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/api.js",
@@ -1587,10 +1588,10 @@
           "file": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
           "allow": [
             "react",
-            "lucide-react",
             "workspace-app/src/api.js",
             "workspace-app/src/annotations/treeGroupTargets.js",
-            "workspace-app/src/epochSelection.js"
+            "workspace-app/src/epochSelection.js",
+            "workspace-app/src/incoming-workbench/incomingSelection.js"
           ]
         },
         {
@@ -1656,6 +1657,7 @@
           "workspace-app/src/incomingCellTypesRendering.test.js",
           "workspace-app/src/incomingInclusionRendering.test.js",
           "workspace-app/src/incomingSelectionRendering.test.js",
+          "workspace-app/src/incomingBranchSelectionWorkflow.test.js",
           "workspace-app/src/incomingTagSummary.test.js",
           "workspace-app/src/incomingWorkbenchRendering.test.js",
           "workspace-app/src/incomingWorkbenchStrictMode.test.js",
@@ -3160,7 +3162,10 @@
             "path": "workspace-app/src/incoming-workbench/incomingSelection.js",
             "exports": [
               "incomingSelectionCount",
-              "loadIncomingSelection"
+              "loadIncomingSelection",
+              "incomingTreeSelectionScope",
+              "incomingBranchOn",
+              "incomingBranchCommand"
             ]
           },
           {

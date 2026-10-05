@@ -29,7 +29,7 @@ function Highlight({text, term}) {
   return index < 0 ? value : <>{value.slice(0,index)}<mark>{value.slice(index,index+query.length)}</mark>{value.slice(index+query.length)}</>;
 }
 
-export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
+export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
   const legacyPath=`${catalogPath || `/protocols/${protocolId}/tree-fields`}${queryString?'?'+queryString:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
@@ -42,8 +42,8 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
-  const groupTags=useTreeGroupTags({protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,onAnnotationsChanged,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false});
-  const groupSelection=useIncomingTreeSelection({protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,selectedEpochs,setSelectedEpochs,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false});
+  const groupTags=useTreeGroupTags({protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,onAnnotationsChanged,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false},preview);
+  const groupSelection=useIncomingTreeSelection({projectId,treeSelectionIntent,onTreeSelectionIntentChange,protocolId:context.protocol_uuid||protocolId,predicate:context.predicate,filters:context.filters||{},splits:order.join(','),revision,readContext,selectedEpochs,setSelectedEpochs,actionsDisabled:actionsDisabled||loading||sameOrder(order,value)===false},preview);
   const requested=requestedSummaryFields({registry:registry.data?.fields||definitions,axes:order,predicate:summaryContext?.filters?.metadata_predicate?{all:[summaryContext.predicate||{all:[]},JSON.parse(summaryContext.filters.metadata_predicate)]}:summaryContext?.predicate,preferences:preferences.value});
   const summaries=useRequestedSummaries({...context,summary_fields:requested.fields,generation:registry.data?.generation},
     {enabled:summaryEnabled&&!!registry.supportsSummaries&&!!registry.data?.generation&&requested.fields.length>0});
@@ -204,7 +204,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
             {!!components.length&&<div className="tb-joint-level">{components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{componentName(key)}</span>)}</div>}
             <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:categoryLabel(field?.category) || 'Saved field'}{components.length?' · all values match':''}</small>
           </div><div className="tb-step-actions">
-            <TreeGroupTagButton onSelect={groupSelection.select?event=>groupSelection.select({path:[],count:preview?.total_epochs??preview?.count},preview,event):undefined} label="Tag this level" disabled={actionsDisabled||pending||!preview?.revision} count={preview?.total_epochs??preview?.count} onClick={event=>groupTags.open({path:[],count:preview?.total_epochs??preview?.count},field||{field:id},preview,event,{level:true})}/>
+            <TreeGroupTagButton selectionOn={groupSelection.on({path:[]},preview)} onSelect={groupSelection.select?event=>groupSelection.select({path:[],count:preview?.total_epochs??preview?.count},preview,event):undefined} label="Tag this level" disabled={actionsDisabled||pending||!preview?.revision} count={preview?.total_epochs??preview?.count} onClick={event=>groupTags.open({path:[],count:preview?.total_epochs??preview?.count},field||{field:id},preview,event,{level:true})}/>
             {!!components.length&&<button aria-label={`Separate ${field?.label || components.map(componentName).join(' + ')} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
             <button disabled={index===order.length-1} aria-label={`Move ${field?.label || id} later`} title="Move down one level" onClick={()=>move(index,1)}><ArrowDown size={13}/></button></>}

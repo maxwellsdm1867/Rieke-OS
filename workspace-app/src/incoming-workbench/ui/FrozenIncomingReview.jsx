@@ -137,9 +137,8 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   return <section className="incoming-review">
     <div className="incoming-action-bar" aria-label="Incoming review actions">
       <div className="incoming-bar-metrics" aria-label={scopeKind==='cumulative_pending'?'Distinct pending incoming counts':'Pending proposal counts'}><span className={`incoming-bar-scope ${epochs>0?'is-pending':''}`} title={epochs>0&&notReviewed?'Your current draft has no reviewed incoming epochs':'Unmerged incoming recordings; review and merge remain separate'}>{epochs>0&&notReviewed&&<CircleDot size={11} aria-hidden="true"/>}{incomingStatus}</span>
-        <span><NeuronIcon size={18}/><strong>{incomingCount(cells)}</strong><small>cells</small></span>
+        <IncomingCellTypes cells={contextFresh&&!busy&&!externalBusy?context.protocol?.cells:null} count={contextFresh?context.protocol?.counts?.cells:null} scope="Frozen proposal" trigger={<span><NeuronIcon size={18}/><strong>{incomingCount(cells)}</strong><small>cells</small></span>}/>
         <span><Activity size={18} aria-hidden="true"/><strong>{incomingCount(epochs)}</strong><small>epochs</small></span>
-        <IncomingCellTypes cells={contextFresh&&!busy&&!externalBusy?context.protocol?.cells:null} count={contextFresh?context.protocol?.counts?.cells:null} scope="Frozen proposal"/>
       </div>
       <div className="incoming-bar-actions">
         <div className="incoming-draft-host" ref={setDraftSelectionTarget}/>

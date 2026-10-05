@@ -36,3 +36,23 @@ export async function loadIncomingSelection({source,cells,cellUuid=null,request,
   check();if(new Set(ids).size!==ids.length||ids.length!==count)throw new Error('The incoming selection contains duplicate or missing identities.');
   return ids;
 }
+
+// Branch switches remember the user's command, not an aggregate of child UUIDs.
+// They are ephemeral presentation state; flat selected UUIDs remain authoritative.
+export function incomingTreeSelectionScope(props){
+  return JSON.stringify([props.projectId??null,props.protocolId??null,props.readContext??null,
+    props.filters||{},props.splits||'',props.revision??0]);
+}
+export function incomingBranchOn(intent,scope,revision,path=[]){
+  if(!intent||intent.scope!==scope||intent.revision!==revision)return false;
+  let nearest=null;
+  for(const marker of intent.markers||[]){
+    if(marker.path.length<=path.length&&marker.path.every((key,index)=>path[index]===key)&&
+      (!nearest||marker.path.length>nearest.path.length))nearest=marker;
+  }
+  return nearest?.on===true;
+}
+export function incomingBranchCommand(intent,scope,revision,path,on){
+  const markers=intent?.scope===scope&&intent.revision===revision?intent.markers||[]:[];
+  return {scope,revision,markers:[...markers.filter(marker=>!(path.length<=marker.path.length&&path.every((key,index)=>marker.path[index]===key))),{path:[...path],on}]};
+}
