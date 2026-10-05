@@ -136,6 +136,15 @@ export default function ColumnTree(props){
     });
     return()=>cancelAnimationFrame(frame);
   },[selected,state.columns,state.loading,state.error]);
+  const revealedTrace=useRef(null);
+  useEffect(()=>{
+    if(!active||state.loading||state.error||ownerBlocked||!props.trailingPane||!props.trailingPaneKey||state.columns.at(-1)?.kind!=='epochs')return;
+    if(revealedTrace.current===props.trailingPaneKey)return;
+    revealedTrace.current=props.trailingPaneKey;
+    const pane=strip.current?.querySelector('.tree-trace-pane');
+    if(pane)revealWithin(strip.current,pane,{horizontal:true,vertical:false});
+  },[active,state.loading,state.error,state.columns,ownerBlocked,props.trailingPane,props.trailingPaneKey]);
+  useEffect(()=>{if(!props.trailingPaneKey)revealedTrace.current=null;},[props.trailingPaneKey]);
   const last=state.columns.at(-1),root=state.columns[0],path=last?.path||[];
   const ancestors=last?.ancestors||path.map((key,depth)=>state.columns[depth]?.branches?.find(branch=>branch.key===key)).filter(Boolean);
   return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
@@ -161,9 +170,10 @@ export default function ColumnTree(props){
           <footer className="tp-pagination"><button disabled={blocked||!page.offset} aria-label={`Previous page in column ${depth+1}`} onClick={()=>load({path:page.path,offset:Math.max(0,page.offset-60)})}><ArrowLeft size={13}/></button><span>{page.total?page.offset+1:0}–{page.offset+entries.length} / {number(page.total)}</span><button disabled={blocked||!page.has_more} aria-label={`Next page in column ${depth+1}`} onClick={()=>load({path:page.path,offset:page.offset+60})}><ArrowRight size={13}/></button></footer>
         </section>;
       })}
+      {last?.kind==='epochs'&&!state.error&&!ownerBlocked&&props.trailingPane}
       {state.loading&&!state.columns.length?<div className="tp-prompt" role="status">{showLoading?'Loading tree…':''}</div>:last?.kind!=='epochs'&&!state.error&&<div className="tp-prompt"><GitBranch size={24}/><strong>Choose a group</strong><p>Its next split opens alongside this column.</p></div>}
     </div>
     {showLoading&&!!state.columns.length&&<div className="tp-loading-notice" role="status">Updating tree…</div>}
-    <footer className="tp-footer"><span>Tree splits preserve the full selection.</span><span>Scroll between levels. Select an epoch to preview its recording and tags.</span></footer>
+    <footer className="tp-footer"><span>Tree splits preserve the full selection.</span><span>Scroll between levels. Select an epoch to view its recording alongside the columns.</span></footer>
   </section>;
 }

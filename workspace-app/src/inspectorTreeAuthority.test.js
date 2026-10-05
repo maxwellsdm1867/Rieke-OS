@@ -195,7 +195,7 @@ test('design tree external out-of-page focus blocks old mutation controls until 
 for(const change of ['unchanged','revision','binding','owner-replaced','owner-retired','hide','hide-late-failure']){
  test(`actual design range delayed publication: ${change}`,async()=>{
   const h=await mountFixture();let release;try{
-   await h.open();await h.click(h.button('Open and edit tree'));
+   await h.open();await h.click(h.button('Open and edit tree'));await h.click(h.button('Show tree selection tags'));
    const leaf=i=>document.querySelector(`.column-tree [data-epoch-uuid="big-${i}"]`);
    const ready=()=>leaf(0)&&!document.querySelector('.column-tree .tree-group-tag-button').disabled;
    await h.wait(ready,'design ready');await h.click(leaf(0));
@@ -208,13 +208,13 @@ for(const change of ['unchanged','revision','binding','owner-replaced','owner-re
    if(change==='binding')await h.render({protocol:{...h.props.protocol,expected_binding_version:3}});
    if(change==='owner-replaced')await h.render({ownerProjectPath:'/replacement-fixture'});
    if(change==='owner-retired'){
-    await h.wait(()=>!document.querySelector('.column-tree .tree-group-tag-button').disabled&&document.querySelector('.tree-preview-tags .annotation-composer input')&&document.querySelector('.tree-preview-identity')?.textContent.includes('Epoch 61'),'settled design detail before synchronous retirement');
+    await h.wait(()=>!document.querySelector('.column-tree .tree-group-tag-button').disabled&&document.querySelector('.tree-selection-tags .annotation-composer input')&&document.querySelector('.tree-preview-identity')?.textContent.includes('Epoch 61'),'settled design detail before synchronous retirement');
     await h.settle();h.cache.retire();
    }
    if(change.startsWith('hide'))await h.click([...document.querySelectorAll('button')].find(node=>node.textContent===' Back to epochs'));
    release();await h.settle();await h.settle();
    if(change==='owner-retired'){
-    const target=document.querySelector('.tree-preview-tags .annotation-composer input');
+    const target=document.querySelector('.tree-selection-tags .annotation-composer input');
     assert.ok(target,'Visible design tag target exists');
     assert.equal(target.closest('[hidden]'),null,'Assertion uses the active design preview, not hidden metadata');
     assert.equal(target.getAttribute('aria-label'),'Tag this epoch','Retired owner must not publish 61 selected tag targets');
@@ -225,7 +225,7 @@ for(const change of ['unchanged','revision','binding','owner-replaced','owner-re
     h.fixture.hold=null;await h.click(h.button('Previous page in column 2'));await h.wait(()=>leaf(0)&&!leaf(0).disabled,'selected first page');
     actual.unshift(...[...document.querySelectorAll('.column-tree [data-epoch-uuid].selected')].map(node=>node.dataset.epochUuid));
     assert.deepEqual(actual,Array.from({length:61},(_,i)=>`big-${i}`));
-    assert.equal(document.querySelector('.tree-preview-tags .annotation-composer input')?.getAttribute('aria-label'),'Tag 61 selected epochs','Visible target label detects the positive selection');
+    assert.equal(document.querySelector('.tree-selection-tags .annotation-composer input')?.getAttribute('aria-label'),'Tag 61 selected epochs','Visible target label detects the positive selection');
    }else {
     assert.ok(document.querySelectorAll('.column-tree [data-epoch-uuid].selected').length<=1,'Only display focus may remain');
     // A published 61-range has only one selected row on page60. Inspect the
@@ -321,6 +321,7 @@ for(const design of [false,true])test(`filter change retires excluded focus befo
   assert.ok(reads.length>0);assert.ok(reads.every(row=>!row.body.anchor_uuid),'Retired focus must not anchor the replacement filter');
   assert.ok(!document.body.textContent.includes('Epoch is outside this tree selection'));
   assert.ok(document.querySelector(design?'.column-tree .tp-branch':'.ht-branch > button'),'Replacement root remains browsable');
+  if(design)assert.equal(document.querySelector('.tree-trace-pane'),null,'Filter change removes the old trace pane');
   const clearStart=h.fixture.requests.length;await h.render({filters:{}});
   await h.wait(()=>h.fixture.requests.slice(clearStart).some(row=>row.path==='/api/tree-pages'&&row.completed),'clear filter root');
   assert.ok(h.fixture.requests.slice(clearStart).filter(row=>row.path==='/api/tree-pages').every(row=>!row.body.anchor_uuid));
@@ -337,6 +338,28 @@ test('explicit replacement-scope epoch navigation still anchors its requested ta
   await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-120"]'),'explicit new target');
   assert.ok(h.fixture.requests.slice(start).some(row=>row.body?.filters?.cell_type==='replacement'&&row.body.anchor_uuid==='big-120'));
   assert.ok(h.fixture.requests.slice(start).every(row=>row.body?.anchor_uuid!=='big-0'));
+  assert.deepEqual(h.fixture.errors,[]);
+ }finally{await h.close();}
+});
+
+test('column design keeps a trace-only pane beside terminal epochs and closes it with its branch',async()=>{
+ const h=await mountFixture();try{
+  await h.open();await h.click(h.button('Open and edit tree'));
+  await h.wait(()=>document.querySelector('.tree-trace-pane .tree-preview-identity'),'trace pane');
+  const pane=document.querySelector('.tree-trace-pane');
+  assert.equal(pane.parentElement.className,'tp-columns');
+  assert.ok(pane.previousElementSibling.classList.contains('tp-terminal'));
+  assert.equal(pane.querySelector('.annotation-composer,.curation-bar,.metadata-panel'),null);
+  assert.equal(document.querySelector('.tree-recording-preview'),null);
+  await h.click(document.querySelector('.column-tree [data-epoch-uuid="big-1"]'));
+  await h.wait(()=>document.querySelector('.tree-trace-pane')?.textContent.includes('Epoch 2'),'changed trace identity');
+  await h.click(h.button('Close raw recording preview'));
+  assert.equal(document.querySelector('.tree-trace-pane'),null);
+  await h.click(h.button('Show raw recording preview'));
+  await h.wait(()=>document.querySelector('.tree-trace-pane'),'reopened trace');
+  await h.click(document.querySelector('.column-tree .tp-branch.selected'));
+  await h.wait(()=>!document.querySelector('.tp-terminal'),'closed branch');
+  assert.equal(document.querySelector('.tree-trace-pane'),null);
   assert.deepEqual(h.fixture.errors,[]);
  }finally{await h.close();}
 });
