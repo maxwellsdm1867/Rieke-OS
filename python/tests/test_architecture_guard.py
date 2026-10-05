@@ -435,7 +435,9 @@ class PythonPackagePolicyTests(unittest.TestCase):
         for source in ('from helper import recovery\nrecovery.callback(1)',
                        'import helper\nhelper.recovery.callback(1)',
                        'import helper as h\nalias = h\nalias.recovery.callback(1)',
-                       '__import__("helper", fromlist=["recovery"])'):
+                       '__import__("helper", fromlist=["recovery"])',
+                       'import helper\nhelper.__dict__["recovery"].callback(1)',
+                       'import helper\nhelper.unknown.callback(1)'):
             with self.subTest(source=source):
                 self.write('python/tests/test_central.py', source); self.check(False)
         self.write('python/tests/test_central.py', 'from helper import ordinary')

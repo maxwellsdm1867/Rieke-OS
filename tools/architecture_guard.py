@@ -475,6 +475,8 @@ class PythonModulePolicy:
                             raise ValueError(name + ': public Python import must use canonical package')
                         if target and not public and any(self.adopted_origin(v) for v in self.expression(node, scope)):
                             raise ValueError(name + ': forbidden Python public re-export shim')
+                        if target and not public and self.has_adopted_bindings(value[1]) and (node.attr.startswith('__') or node.attr not in self.scopes[target]['bindings']):
+                            raise ValueError(name + ': reflective or unresolved Python shim attribute')
                 # Module-object forwarding/reflection is outside supported syntax.
                 if isinstance(node, (ast.Name, ast.Attribute)) and isinstance(node.ctx, ast.Load):
                     values = self.expression(node, scope)
