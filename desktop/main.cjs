@@ -164,6 +164,25 @@ function createWindow() {
   window.webContents.on('will-redirect', (event, url) => {
     if (!isOwnedURL(url, supervisor?.origins, [recoveryPage])) event.preventDefault();
   });
+  // Owned benchmark telemetry only. Observe native first paint before any CDP
+  // client attaches; never use this marker as readiness or mutation authority.
+  if(process.env.DISCO_STARTUP_DIAGNOSTIC==='1')window.webContents.on('did-finish-load',()=>{
+    if(!isOwnedURL(window.webContents.getURL(),supervisor?.origins))return;
+    void window.webContents.executeJavaScript(`new Promise(resolve=>{
+      const until=performance.now()+15000;
+      function frame(){
+        const current=document.querySelector('.project-rail-item[aria-current="page"]');
+        const launcher=document.querySelector('.project-launcher');
+        const node=current||launcher;
+        if(node&&node.getBoundingClientRect().width>0&&!node.disabled){
+          requestAnimationFrame(()=>resolve({kind:current?'project':'launcher',wall_ms:performance.timeOrigin+performance.now()}));
+        }else if(performance.now()<until)requestAnimationFrame(frame);else resolve(null);
+      }
+      requestAnimationFrame(frame);
+    })`).then(value=>{
+      if(value)process.stdout.write('DISCO_SHELL_PAINTED='+JSON.stringify({pid:process.pid,...value})+'\n');
+    }).catch(()=>{});
+  });
   window.webContents.on('render-process-gone', () => { window.draftUnavailable = scientificWindows.has(window); recovery('The scientific window stopped. The last saved view is retained. Quit remains available; retry startup to recover the project.'); });
   window.on('close', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
   window.on('closed', () => { windows.delete(window); scientificWindows.delete(window); });

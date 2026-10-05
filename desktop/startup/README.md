@@ -77,3 +77,11 @@ document. The private resume endpoint refuses an explicitly unmounted identity;
 ordinary explicit open retains its existing behavior. Failure falls back to the
 chooser only when root health confirms no retained project child, and exposes
 the failure once to the renderer. An uncertain child remains a recovery error.
+
+The opt-in `DISCO_STARTUP_DIAGNOSTIC=1` reports a project-navigation paint marker
+on the owned main-process stdout. It observes an enabled current-project button
+after two animation frames following document load. It grants no readiness or
+write authority and runs no observer in ordinary launches. The native timing
+runner starts the executable normally and attaches CDP only after this marker,
+so debugger/observer initialization cannot stall the startup being measured.
+Raw debugger-inclusive timings from the functional runner remain separate.
