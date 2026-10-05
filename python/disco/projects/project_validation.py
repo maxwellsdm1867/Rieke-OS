@@ -13,7 +13,7 @@ def _manifest(root, relative):
         raise ValueError(f'Cannot open project: {relative} is missing or invalid ({error})') from error
 
 
-def validate_project_folder(path):
+def validate_project_folder(path, *, verify_storage=True):
     if not isinstance(path, (str, Path)) or not str(path).strip():
         raise ValueError('Choose an absolute project folder path')
     candidate = Path(str(path).strip()).expanduser()
@@ -42,6 +42,9 @@ def validate_project_folder(path):
                 'migration_available': provider.get('kind') == 'docker-container-env',
                 'migration_endpoint': '/api/projects/migrate-source',
                 'message': 'Create a desktop copy in a separate folder. The original project and source database stay unchanged.'}
+        return result
+    if not verify_storage:
+        result['database_status'] = 'not_loaded'
         return result
     # _configuration checks descriptors and rejects symlinked native state without
     # calling the runtime, opening a database connection, or changing file modes.
@@ -102,7 +105,7 @@ def validate_project_folder(path):
     return result
 
 
-def _inspect_exact(candidate):
+def _inspect_exact(candidate, *, verify_storage=True):
     from workspace_portability import MANIFEST, inspect_package
     if (candidate / MANIFEST).exists() or (candidate / MANIFEST).is_symlink():
         transfer = inspect_package(candidate)
@@ -116,10 +119,10 @@ def _inspect_exact(candidate):
                 'checks': ['Prepared project identity and complete file inventory verified',
                            'Recording and parsed metadata checksums verified'],
                 'warnings': [], 'source_count': len(transfer['sources'])}
-    return validate_project_folder(candidate)
+    return validate_project_folder(candidate, verify_storage=verify_storage)
 
 
-def inspect_project_folder(path):
+def inspect_project_folder(path, *, verify_storage=True):
     """Inspect an exact root, or propose nearby fully validated roots read-only.
 
     Search at most eight ancestors and 128 immediate children. Never descend
@@ -134,7 +137,7 @@ def inspect_project_folder(path):
     if not candidate.is_dir():
         raise ValueError('Choose an existing project folder')
     try:
-        return _inspect_exact(candidate)
+        return _inspect_exact(candidate, verify_storage=verify_storage)
     except (ValueError, OSError, UnicodeError, TypeError, KeyError) as error:
         original_error = error
 
@@ -145,7 +148,7 @@ def inspect_project_folder(path):
                    for marker in ('project.json', 'transfer.json')):
             return None
         try:
-            report = _inspect_exact(folder)
+            report = _inspect_exact(folder, verify_storage=verify_storage)
         except (ValueError, OSError, UnicodeError, TypeError, KeyError):
             return None
         project = report['project']

@@ -106,3 +106,26 @@ They do not create recording/export fixtures or validate real provider readiness
 Existing root tests retain their names and imports against the same public entries;
 scientific/native/HTTP tests remain deferred. Package/profile/import closure is a
 separate integration gate. No benchmark or release qualification is claimed.
+
+## Project shell and deferred scientific services
+
+`project_shell.create_project_shell` serves identity, navigation, appearance,
+project management and frontend assets before SQL or scientific services start.
+The renderer requests `/api/project/activate` after painting the restored shell.
+Concurrent requests share initialization. Failure leaves the shell and explicit
+retry available; data-dependent endpoints refuse access until ready.
+
+The desktop entry retains session locks, identity and authenticated admission.
+Its deferred builder retains storage/recovery checks and native ownership before
+scientific use. A private session receipt changes durably from `unused` to
+`database_attempted` before native effects. Only an exact unused session can exit
+without a database shutdown receipt. All attempted database use retains the
+existing clean-close/recovery obligations, including partial-build cleanup.
+Unmount stays owned by `workspace_project_unmount` and `DesktopBoundary`.
+
+The scientific application still performs its existing project-wide catalog
+refresh when activated; this change does not claim bounded first-query cost.
+Selected-cell QC preparation remains explicit; export storage is prepared during
+validated export. The shell tests use temporary files and injected scientific
+construction. Actual restoration, unmount and database shutdown require the
+separate packaged Electron tests and timings.

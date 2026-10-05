@@ -366,7 +366,7 @@ def validate_child_startup_receipt(line, record):
         if failure:
             outcome['component_failure'] = failure
         return outcome
-    return {'valid': True}
+    return {'valid': True, 'data_deferred': value.get('data_deferred') is True}
 
 
 class DesktopServices:
@@ -405,7 +405,7 @@ class DesktopServices:
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     if psutil.pid_exists(record['pid']):
                         raise ValueError('A previous service cannot be inspected; preserve it for recovery')
-                if not self._clean_database(record):
+                if not self._unused_database(record) and not self._clean_database(record):
                     if self._rejected_legacy_preflight(record):
                         continue
                     raise ValueError('A previous project service has no clean database exit receipt; recovery is required before opening projects')
@@ -430,6 +430,12 @@ class DesktopServices:
             return owner.get('clean_shutdown') is True and owner.get('project_uuid') == record['project_uuid']
         except (OSError, ValueError, KeyError, TypeError):
             return False
+
+    def _unused_database(self, record):
+        if record.get('data_deferred') is not True:
+            return False
+        from disco.projects.project_shell import unused_session
+        return unused_session(self.user_state, record)
 
     def _save(self):
         _atomic_json(self.path, {'version': 1, 'services': [item['record'] for item in self.children.values()],
@@ -525,6 +531,7 @@ class DesktopServices:
         with self.lock:
             removed = [key for key, item in self.children.items()
                        if item['process'].poll() is not None and (item.get('startup_outcome') == 'before_project_database'
+                                                                or self._unused_database(item['record'])
                                                                 or self._clean_database(item['record'])
                                                                 or self._rejected_legacy_preflight(item['record']))]
             for key in removed:
@@ -636,6 +643,7 @@ class DesktopServices:
             if not record['bound']:
                 with self.lock:
                     record['bound'] = True
+                    record['data_deferred'] = packet.get('data_deferred', False)
                     self._save()
             try:
                 if self.call(record, 'health', timeout=.5).get('ready'):
@@ -793,13 +801,6 @@ def main(argv=None):
     # and explicit Verify. Normal launches check compatibility and required paths;
     # project ownership, recovery and scientific source validation remain separate.
     manifest = validate_desktop_runtime(runtime)
-    prepare_desktop_parser_config(user_state)
-    # The chooser does not need the scientific parser or a database. Project
-    # children must prove those capabilities before opening data or advertising ready.
-    from workspace_mysql_runtime import mysql_runtime
-    lazy_root = args.project_dir is None
-    if not lazy_root:
-        initialize_before_project_database(args, manifest, mysql_runtime)
     from workspace_bootstrap import runtime_paths
     runtime_config = runtime_paths()
     preference = user_state / 'preferences/workspace-selection.json'
@@ -811,9 +812,6 @@ def main(argv=None):
             raise ValueError('Desktop workspace preference is invalid')
         runtime_config['managed_root'] = selected['managed_root']
     retinanalysis = Path(runtime_config['retinanalysis'])
-    from recording_workspace import load_parser
-    if not lazy_root:
-        initialize_before_project_database(args, manifest, lambda: load_parser(retinanalysis))
     identity = {'pid': os.getpid(), 'session_id': session_id,
                 'application_version': manifest['application_version'],
                 'source_commit': manifest['source_commit'],
@@ -832,11 +830,37 @@ def main(argv=None):
         session_lock = acquire_project_session(project)
         from lifecycle_diagnostic import install_read_observers
         install_read_observers()
-        from disco.projects.project_database import ensure_project_database
-        ensure_project_database(project)
-        from workspace_api import create_app
-        app = create_app(project, retinanalysis, desktop_session_lock=session_lock)
-        identity.update(project_uuid=app.extensions['workspace_service'].project['project_uuid'], project_path=str(project))
+        from workspace_projects import _project_record
+        record = _project_record(project, current=True)
+        identity.update(project_uuid=record['uuid'], project_path=str(project), data_deferred=True)
+
+        def build_project(capture, begin_database):
+            # These checks belong to the requested data load, not shell startup.
+            from disco.projects.project_validation import validate_project_folder
+            selected = validate_project_folder(project)['project']
+            if selected['uuid'] != identity['project_uuid']:
+                raise ValueError('Project identity changed; reopen its folder')
+            if (project / '.app-state-restore.pending').exists():
+                raise ValueError('An app-state restore was interrupted. Complete recovery before loading data.')
+            from workspace_bootstrap import prepare_desktop_parser_config
+            prepare_desktop_parser_config(user_state)
+            from workspace_native_mysql import native_binary
+            native_binary()  # Missing dependencies fail before any database effect.
+            begin_database()
+            from disco.projects.project_database import ensure_project_database
+            ensure_project_database(project)
+            from workspace_api import create_app
+            return create_app(project, retinanalysis, desktop_session_lock=session_lock, on_created=capture)
+
+        def cleanup_failed_project():
+            from workspace_native_mysql import stop_native_database
+            stop_native_database(project)
+            if not DesktopServices._clean_database(identity):
+                raise ValueError('Database cleanup could not be confirmed; its files were preserved for recovery')
+
+        from disco.projects.project_shell import create_project_shell
+        app = create_project_shell(project, retinanalysis, user_state=user_state,
+            identity=identity, build=build_project, cleanup_failed=cleanup_failed_project)
     else:
         lock_path = user_state / 'desktop-session.lock'
         if lock_path.is_symlink():
@@ -884,8 +908,9 @@ def main(argv=None):
     try:
         server.run()
     finally:
-        if inbox:
-            inbox.stop()
+        current_inbox = app.extensions.get('h5_inbox')
+        if current_inbox:
+            current_inbox.stop()
         if session_lock:
             session_lock.close()
 

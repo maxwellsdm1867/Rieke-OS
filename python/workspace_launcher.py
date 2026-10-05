@@ -76,7 +76,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         if request.args or not isinstance(body, dict) or set(body) != {'directory'}:
             raise ValueError('Choose an existing project folder')
         from disco.projects.project_validation import inspect_project_folder
-        return jsonify(inspect_project_folder(body['directory']))
+        return jsonify(inspect_project_folder(body['directory'], verify_storage=os.environ.get('RIEKE_DESKTOP_MODE') != '1'))
 
     @app.post('/api/projects/open-folder')
     def project_open_folder():
@@ -95,7 +95,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         if not (directory / 'project.json').is_file() or not (directory / 'catalog.json').is_file():
             raise ValueError('Choose the project folder containing project.json and catalog.json, not its parent workspace')
         from disco.projects.project_validation import validate_project_folder
-        project = validate_project_folder(str(directory))['project']
+        project = validate_project_folder(str(directory), verify_storage=os.environ.get('RIEKE_DESKTOP_MODE') != '1')['project']
         if not project['available']:
             raise ValueError('Project manifests are invalid: ' + project['unavailable_reason'])
         if current:

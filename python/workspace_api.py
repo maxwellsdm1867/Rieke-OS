@@ -86,7 +86,7 @@ def import_worker_process(command, log, app):
     return subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, **options)
 
 
-def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, explorer_history=None, data_stores=None, protocol_suggestions=None, shared_annotations=None, desktop_session_lock=None):
+def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, explorer_history=None, data_stores=None, protocol_suggestions=None, shared_annotations=None, desktop_session_lock=None, on_created=None):
     from workspace_service import WorkspaceService
     from disco.decisions.curation import CurationStore, RevisionConflict
     from disco.decisions.explorer import ExplorerHistory
@@ -97,9 +97,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     project_dir, retinanalysis_dir = Path(project_dir).resolve(), Path(retinanalysis_dir).resolve()
     if (project_dir / '.app-state-restore.pending').exists():
         raise ValueError('An app-state restore was interrupted. Complete offline recovery before opening this project.')
-    from workspace_export_folder import prepare_export_root
-    export_root = prepare_export_root(project_dir)
+    export_root = project_dir / 'exports'
     app = Flask(__name__, static_folder=None)
+    if on_created is not None:
+        on_created(app)
     app.json = ExactMetadataJSON(app)
     app.config.update(MAX_CONTENT_LENGTH=16 * 1024**3, MAX_FORM_MEMORY_SIZE=1024**2)
     if service is None or hasattr(service.dj, 'Schema'):
@@ -1441,6 +1442,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                                 "tree_view": {"format": "recording-tree-view", "version": 1,
                                     "fields": [{key: field_catalog[field][key] for key in ("id", "label", "path", "category", "components") if key in field_catalog[field]}
                                                for field in grouping]}})
+            from workspace_export_folder import prepare_export_root
+            prepare_export_root(project_dir)
             output = managed_directory(project_dir, 'exports') / recipe["export_uuid"]
             output.mkdir(parents=True, exist_ok=False)
             save_snapshot(output / "recipe.json", recipe)
@@ -1850,9 +1853,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         register_tag_exchange_routes(app,service,shared_annotations,db_lock)
     from workspace_qc import register_qc_routes
     register_qc_routes(app, service, db_lock)
-    if hasattr(service.dj, 'Schema'):
-        with db_lock:
-            app.extensions['supporting_voltage_backfill']=app.extensions['cell_qc'].prepare_baselines()
+    # Selected-cell preparation and import own QC work; opening never reads all cells.
     from disco.metadata.search import register_search_routes
     register_search_routes(app, service, db_lock)
 

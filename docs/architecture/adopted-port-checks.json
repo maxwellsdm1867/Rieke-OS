@@ -2537,11 +2537,32 @@
             "subprocess",
             "workspace_native_mysql"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/project_shell.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "flask",
+            "json",
+            "os",
+            "pathlib",
+            "threading",
+            "uuid",
+            "werkzeug.exceptions",
+            "werkzeug.wrappers",
+            "workspace_desktop",
+            "workspace_frontend",
+            "workspace_launcher",
+            "workspace_projects"
+          ]
         }
       ],
       "tests": {
         "python": [
-          "python/disco/projects/tests/test_public_examples.py"
+          "python/disco/projects/tests/test_public_examples.py",
+          "python/tests/test_workspace_project_shell.py"
         ],
         "javascript": []
       }
@@ -2578,6 +2599,7 @@
             "recording_workspace",
             "uuid",
             "workspace_export_artifacts",
+            "workspace_export_folder",
             "workspace_matlab"
           ]
         },
@@ -3446,7 +3468,7 @@
       },
       {
         "file": "python/workspace_bootstrap.py",
-        "file_sha256": "7b6d56e7c79e27d1469a4dd9b3f55ef5aeca274a4568b8adf02256476438ecaa",
+        "file_sha256": "cdf014e61d3754eac6ce700a3054c849b77af3f5dec55ca4a23be1f66f7d499a",
         "sites": [
           {
             "selector": "assignment:PROBE",
@@ -3454,7 +3476,7 @@
             "kind": "embedded-python"
           }
         ],
-        "reason": "Existing embedded bootstrap third-party/parser probe; no execution permission"
+        "reason": "Reviewed startup-only required-resource change defers the MySQL executable check to data use; explicit hash audits still require it. The embedded third-party/parser PROBE and its AST remain unchanged; no new execution permission."
       },
       {
         "file": "python/disco/decisions/tests/test_checkpoint_refusal_public.py",
@@ -4183,6 +4205,16 @@
               "managed_directory",
               "migrate_legacy_logs"
             ]
+          },
+          {
+            "path": "python/disco/projects/project_shell.py",
+            "module": "disco.projects.project_shell",
+            "exports": [
+              "ProjectData",
+              "create_project_shell",
+              "session_receipt",
+              "unused_session"
+            ]
           }
         ],
         "private_test_edges": []
@@ -4385,7 +4417,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "file_sha256": "52f9609676ad8a7123f92c7547998b2b8f5d59d21cbeab1ec3d72642a17fab86",
                 "contract_id": null
               }
             ]
@@ -4798,7 +4830,7 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "666af203058d1c196fb6f277c9be4ebb14ea65dbdee43bd796c1b6e700abc955",
+                "file_sha256": "09dc4a661b7973acbf6048140ff7fe49a639a8a2d3b3d46cf4dc175df62d6ad1",
                 "contract_id": "backend-workbench"
               }
             ]
@@ -4820,7 +4852,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "file_sha256": "52f9609676ad8a7123f92c7547998b2b8f5d59d21cbeab1ec3d72642a17fab86",
                 "contract_id": null
               }
             ]
@@ -4847,13 +4879,13 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "666af203058d1c196fb6f277c9be4ebb14ea65dbdee43bd796c1b6e700abc955",
+                "file_sha256": "09dc4a661b7973acbf6048140ff7fe49a639a8a2d3b3d46cf4dc175df62d6ad1",
                 "contract_id": "backend-workbench"
               },
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "file_sha256": "52f9609676ad8a7123f92c7547998b2b8f5d59d21cbeab1ec3d72642a17fab86",
                 "contract_id": null
               }
             ]

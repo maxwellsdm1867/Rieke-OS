@@ -189,7 +189,10 @@ def validate_desktop_runtime(runtime, verify_hashes=False):
     resources = manifest.get('resources')
     if not isinstance(resources, dict) or not resources:
         raise ValueError('Packaged runtime has no resource inventory')
-    for name in ('python/bin/python3.11', 'mysql/bin/mysqld', 'application/python/workspace_desktop.py', 'frontend/index.html'):
+    required = ('python/bin/python3.11', 'application/python/workspace_desktop.py', 'frontend/index.html')
+    if verify_hashes:
+        required += ('mysql/bin/mysqld',)
+    for name in required:
         if not (runtime / name).is_file() or name not in resources:
             raise ValueError(f'Required packaged resource is absent: {name}')
         if not (runtime / name).resolve(strict=True).is_relative_to(runtime):

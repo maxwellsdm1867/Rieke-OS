@@ -55,6 +55,7 @@
     "disco/projects/migration.py",
     "disco/projects/project_database.py",
     "disco/projects/project_preferences.py",
+    "disco/projects/project_shell.py",
     "disco/projects/project_validation.py",
     "disco/projects/recording_files.py",
     "disco/projects/storage.py",

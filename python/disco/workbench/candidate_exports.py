@@ -105,6 +105,8 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
             'tree_view':{'format':'recording-tree-view','version':1,
                 'fields':[{key:fields[field][key] for key in ('id','label','path','category','components') if key in fields[field]}
                           for field in grouping]}})
+    from workspace_export_folder import prepare_export_root
+    prepare_export_root(service.project_dir)
     output=managed_directory(service.project_dir,'exports')/recipe['export_uuid']
     output.mkdir(parents=True,exist_ok=False)
     artifact=output/'recordings.json'

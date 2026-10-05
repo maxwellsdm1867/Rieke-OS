@@ -72,3 +72,10 @@ Run the listed commands from `workspace-app`, with `RIEKE_TEST_DOM_MODULE` unset
 only in the coordinated test lane. Native/packaged behavior, actual ingestion,
 backend durability and performance remain separately qualified; these examples
 use owned synthetic values and do not authorize deferred/native fixtures.
+
+`useProjectData.js` separates shell rendering from scientific activation. It
+requests activation after paint, retains the restored route, and presents load
+failure/retry through `ui/ProjectWelcome.jsx`. Passive scientific resources wait
+for activation. Project management and the existing unmount owner remain usable.
+App suppresses the chooser while the existing one-shot startup restoration is
+pending; missing or changed projects retain the chooser's recovery path.

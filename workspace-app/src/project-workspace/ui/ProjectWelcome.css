@@ -1,0 +1,13 @@
+.project-welcome{max-width:1040px;margin:32px auto;padding:24px 36px}
+.project-welcome-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:28px 0}
+.project-welcome-card{display:flex;align-items:center;gap:16px;text-align:left;min-height:112px;padding:24px;border:1px solid var(--border,#dddfe4);border-radius:14px;background:var(--surface,#fff)}
+.project-welcome-card>span{display:grid;gap:7px;flex:1}
+.project-welcome-card strong{font-size:15px}
+.project-welcome-card small{font-weight:400;color:var(--muted,#686b73);line-height:1.4}
+.project-welcome-location{display:flex;align-items:center;gap:10px;margin-top:32px;color:var(--muted,#686b73);font-size:12px}
+.project-welcome-location>span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-welcome-progress{padding:16px 0}
+.project-welcome-error{display:block;margin:20px 0}
+@media(max-width:1000px){.project-welcome-actions{grid-template-columns:1fr}.project-welcome{padding:20px}}
+
+.project-restoring{padding:48px;max-width:760px;margin:auto;color:var(--ink)}.project-restoring p{margin:16px 0;color:var(--ink-secondary)}
