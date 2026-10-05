@@ -72,6 +72,9 @@ const output=path.resolve(__dirname,'../../docs/dev/startup-boundary');
   await unmount(projects.large);await quit();
   assert.deepEqual(errors,[]);await verifyResources(runtime,manifest.resources);
   const receipt={fixture:fixture.root,application_version:manifest.application_version,source_commit:manifest.source_commit,source_dirty:manifest.source_dirty,method:'Actual packaged Electron, isolated HOME/profile; five fresh-process restores each of an empty native project and a sparse 200 GB / 10,000-file project, OS caches uncontrolled; sparse 200 GB invalid database is a failure-isolation control, not a populated database benchmark. Timings include Playwright overhead.',timings,last_project_resumed:true,last_view_restored:true,chooser_skipped:true,loaded_project_unmounted_cleanly:true,failed_data_project_unmounted:true,unmounted_project_not_reopened:true,page_errors:errors};
+  receipt.shell_target_ms=2000;
+  receipt.shell_target_met=timings.filter(x=>['last_project_shell_ms','sparse_200gb_last_project_shell_ms'].includes(x.milestone)).every(x=>x.ms<receipt.shell_target_ms);
   await fs.writeFile(path.join(output,'project-resume-packaged.json'),JSON.stringify(receipt,null,2)+'\n');console.log(JSON.stringify(receipt,null,2));
+  assert.equal(receipt.shell_target_met,true,'Every measured restored shell must be usable within two seconds');
  }finally{if(application){await page.screenshot({path:path.join(output,'resume-failure.png')}).catch(()=>{});console.error(await page.locator('body').innerText().catch(()=>''));await quit().catch(error=>console.error(error.message));}}
 })().catch(error=>{console.error(error);process.exitCode=1;});
