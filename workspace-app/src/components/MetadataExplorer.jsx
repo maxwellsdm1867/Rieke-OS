@@ -14,7 +14,7 @@ import {useFieldRegistry} from '../useFieldRegistry.js';
 import MatchingEpochs from './MatchingEpochs.jsx';
 import InspectorActions from './InspectorActions.jsx';
 import {explorerFocusState} from '../explorerScope.js';
-import {snapshotExplorerState} from '../workspaceNavigation.js';
+import {snapshotExplorerState} from '../workspace-navigation/workspaceNavigation.js';
 import {datedCellLabel} from '../recordingIdentity.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, ChevronDown, Search, Filter, Download, GitBranch, History, LoaderCircle, RefreshCw, Save, Plus, X } from 'lucide-react';

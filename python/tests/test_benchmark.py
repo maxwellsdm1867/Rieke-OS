@@ -111,8 +111,9 @@ class BenchmarkTests(unittest.TestCase):
             shutil.copytree(self.repo, repo)
             left = self.receipt()
             runner = repo/'tools/benchmark.py'
-            runner.write_bytes(runner.read_bytes().replace(b"NAV_TESTS = ['workspaceNavigation'", b"NAV_TESTS = ['navigation/workspaceNavigation'"))
-            original = repo/'workspace-app/src/workspaceNavigation.test.js'
+            runner.write_bytes(runner.read_bytes().replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = ['navigation/workspaceNavigation'"))
+            self.assertNotEqual(runner.read_bytes(), (self.repo/'tools/benchmark.py').read_bytes())
+            original = repo/'workspace-app/src/workspace-navigation/workspaceNavigation.test.js'
             moved = repo/'workspace-app/src/navigation/workspaceNavigation.test.js'
             moved.parent.mkdir();original.rename(moved)
             bench.git('add', '.', root=repo)
@@ -198,7 +199,7 @@ class SuitePathTests(unittest.TestCase):
         'python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
         'python/tests/test_workspace_matlab.py',
     ]
-    NAV = ['workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
+    NAV = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
            'traceReadContext', 'navigationReadStrictMode', 'inspectorNavigationLifecycle']
     DB = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_import_identities',
           'test_workspace_epoch_page_performance']
@@ -250,7 +251,8 @@ class SuitePathTests(unittest.TestCase):
             with self.subTest(revision=revision):
                 raw = bench.committed_bytes(revision, 'tools/benchmark.py')
                 self.assertEqual(bench.sha(raw), expected_hash)
-                expected = self.expected_paths()
+                expected = self.expected_paths(nav=['workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
+                    'traceReadContext', 'navigationReadStrictMode', 'inspectorNavigationLifecycle'])
                 if index == 0:
                     expected.remove('benchmarks/requirements-py311.txt')
                 # Independent original algorithm, reading names from this revision.
@@ -262,14 +264,15 @@ class SuitePathTests(unittest.TestCase):
                     bench._suite_recipe(raw + b'\n# unknown legacy bytes\n')
 
     def test_revision_owns_renamed_test_and_support_inventory_independent_of_globals(self):
-        old = 'workspace-app/src/workspaceNavigation.test.js'
-        new = 'workspace-app/src/workspace-navigation/workspaceNavigation.test.js'
+        old = 'workspace-app/src/workspace-navigation/workspaceNavigation.test.js'
+        new = 'workspace-app/src/navigation-fixture/workspaceNavigation.test.js'
         later = dict(self.files)
         later[new] = later.pop(old)
         del later[self.SUPPORT+'old helper.js']
         later[self.SUPPORT+'new helper.js'] = b'new helper'
         later[self.SUPPORT+'reactTestEnvironment.js'] = b'changed preload'
-        later['tools/benchmark.py'] = self.raw.replace(b"NAV_TESTS = ['workspaceNavigation'", b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'")
+        later['tools/benchmark.py'] = self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = ['navigation-fixture/workspaceNavigation'")
+        self.assertNotEqual(later['tools/benchmark.py'], self.raw)
         (self.repo/old).unlink()
         (self.repo/(self.SUPPORT+'old helper.js')).unlink()
         for name, raw in later.items():
@@ -300,28 +303,29 @@ class SuitePathTests(unittest.TestCase):
             self.raw + b"\nNAV_TESTS += ['extra']\n",
             self.raw + b"\nNAV_TESTS = ['extra']\n",
             self.raw + b"\nNAV_TESTS.append('extra')\n",
-            self.raw.replace(b"NAV_TESTS = ['workspaceNavigation'", b"NAV_TESTS = [str('workspaceNavigation')"),
+            self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = [str('workspaceNavigation')"),
             self.raw + b"\nNAV_TESTS[0] = 'other'\n",
             self.raw + b"\nif True:\n    NAV_TESTS = ['extra']\n",
             self.raw + b"\ntry:\n    pass\nexcept Exception as NAV_TESTS:\n    pass\n",
             self.raw + b"\nmatch []:\n    case [*NAV_TESTS]:\n        pass\n",
-            self.raw.replace(b"NAV_TESTS = ['workspaceNavigation'", b"NAV_TESTS = ['inspectionNavigation'"),
+            self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = ['inspectionNavigation'"),
             self.raw.replace(b"DB_TESTS = ['test_workspace_sqlite'", b"DB_TESTS = ['test_workspace_sqlite.py'"),
             self.raw.replace(b"'benchmarks/requirements-py311.txt',", b''),
             b'not python \xff',
             self.raw.replace(b'SUITE_PATHS_VERSION = 1', ("SUITE_PATHS_VERSION = __import__('pathlib').Path("+repr(str(sentinel))+").write_text('executed')").encode()),
         ]
         for invalid in ('../escape', '/absolute', 'a//b', 'a/./b', 'a/../b', 'a\\b', 'test.js', 'test.test', 'a*', 'a?', 'a[0]', 'a\x00', 'a\n'):
-            faults.append(self.raw.replace(b"NAV_TESTS = ['workspaceNavigation'", ('NAV_TESTS = ['+repr(invalid)).encode()))
+            faults.append(self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", ('NAV_TESTS = ['+repr(invalid)).encode()))
         with patch.object(bench.subprocess, 'Popen') as launch:
             for raw in faults:
+                self.assertNotEqual(raw, self.raw, 'deliberate source mutation must change bytes')
                 with self.subTest(raw=raw[-100:]), self.assertRaises(ValueError):
                     bench._suite_recipe(raw)
             launch.assert_not_called()
         self.assertFalse(sentinel.exists())
 
     def test_missing_paths_no_alias_fallback_and_no_worker_launch(self):
-        missing = 'workspace-app/src/workspaceNavigation.test.js'
+        missing = 'workspace-app/src/workspace-navigation/workspaceNavigation.test.js'
         (self.repo/missing).unlink()
         self.write('workspace-app/src/nested/workspaceNavigation.test.js', b'not an alias')
         with patch.object(bench.subprocess, 'Popen') as launch:
@@ -341,7 +345,7 @@ class SuitePathTests(unittest.TestCase):
             bench.suite_identity(self.repo, third)
 
     def test_regular_file_policy_for_working_and_committed_inputs(self):
-        for name in ('workspace-app/src/workspaceNavigation.test.js', self.SUPPORT+'old helper.js'):
+        for name in ('workspace-app/src/workspace-navigation/workspaceNavigation.test.js', self.SUPPORT+'old helper.js'):
             target = self.repo/name
             target.unlink();target.symlink_to(self.repo/(self.SUPPORT+'reactTestEnvironment.js'))
             with self.assertRaisesRegex(ValueError, 'symlink'):

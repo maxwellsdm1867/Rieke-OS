@@ -1,6 +1,11 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {makeWorkspaceRoute,routeAddress,validWorkspaceRoute} from './workspaceNavigation.js';
 const freshKey=()=>crypto.randomUUID();
+/**
+ * Bind route, history position and monotonically increasing user intent to this
+ * mount. Restoration replaces history without granting merge consent; consuming
+ * a matching merge request only removes its presentation hint. See AGENTS.md.
+ */
 export default function useWorkspaceNavigation(){
   const [location,setLocation]=useState(()=>{
     const saved=window.history.state?.riekeWorkspace;

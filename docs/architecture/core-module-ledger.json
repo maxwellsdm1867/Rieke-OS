@@ -3441,7 +3441,21 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "status": "independently source-reviewed navigation folder candidate integrated; aggregate validation pending",
+        "current_source_paths": [
+          "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+          "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js"
+        ],
+        "current_test_paths": [
+          "workspace-app/src/workspace-navigation/workspaceNavigation.test.js"
+        ],
+        "guidance": "workspace-app/src/workspace-navigation/AGENTS.md",
+        "worker_evidence": "evidence/workspace-navigation-folder/summary.json",
+        "worker_results": "53frontend and21benchmark-source passes, five deliberate faults detected",
+        "qualification": "No actual benchmark/native run; historical recipes/receipts not relabeled"
+      }
     },
     {
       "id": "requested-summary-jobs",
@@ -5988,7 +6002,29 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "status": "independently source-reviewed updates folder integrated; aggregate validation pending",
+        "worker_commit": "58c93c7fa309696e6ab21795187edf5ed3370400",
+        "current_source_paths": [
+          "desktop/updates/updater.cjs",
+          "desktop/updates/testing-updater.cjs",
+          "desktop/updates/testing-update-validation.cjs"
+        ],
+        "current_test_paths": [
+          "desktop/updates/tests/updater.test.cjs",
+          "desktop/updates/tests/testing-updater.test.cjs",
+          "desktop/updates/tests/public-examples.test.cjs"
+        ],
+        "guidance": "desktop/updates/AGENTS.md",
+        "kept_shared_dependency": {
+          "path": "desktop/updater-validation.cjs",
+          "reason": "Shared installation, integrity, seal and packaging consumers; moving would add unrelated churn without new locality."
+        },
+        "worker_evidence": "evidence/desktop-updates-folder/receipt.json",
+        "worker_results": "67 focused plus2 selected signed source tests and39Python pass;3testing-only faults detected",
+        "qualification": "Full original host/native suites unrun; no installer/signing/app/performance qualification."
+      }
     },
     {
       "id": "desktop.bundle-install-recovery",
@@ -7430,7 +7466,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Renderer drafts and protocol tree-layout folders independently reviewed and aggregate verified. Navigation design source-approved and implementation active; other preferences/shared lifecycle remain pending."
+        "progress_note": "Renderer drafts and tree layout aggregate verified; workspace navigation source-reviewed folder integrated, aggregate pending. Other preferences/shared lifecycle remain pending."
       },
       {
         "id": "frontend-reads",
@@ -7661,7 +7697,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Integrity folder source-reviewed and aggregate verified at 4a4867eee81b989a1c703e548f3ee27ee8351d97; updates folder implementation active; install groups remain pending."
+        "progress_note": "Integrity aggregate verified at4a4867e; updates source-reviewed candidate integrated, aggregate pending. Install groups remain pending."
       },
       {
         "id": "desktop-entrypoints",

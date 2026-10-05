@@ -36,7 +36,7 @@ python3 -B -m unittest python.tests.test_architecture_guard python.tests.test_de
 ```
 
 The root packaging check asserts exact default/preview source entries and direct
-staged require resolution for main plus six moved entries, with missing/stale and
+staged require resolution for main plus nine moved entries, with missing/stale and
 broad test-inclusion faults. It does not build ASAR or audit every transitive module.
 The [Python boundary tests](../../python/tests/test_desktop_verification_boundary.py)
 separate lightweight launch readiness from explicit full byte auditing.
@@ -50,3 +50,6 @@ cancellation and final packaged UI/native teardown remain separate acceptance.
 and [macOS policy](../../docs/dev/macos-compatibility.md) retain qualification gates.
 No owner benchmark exists; ui.native.navigation remains an unsupported release
 requirement. No latency, power-loss or release improvement is claimed.
+
+The nine-entry source check distinguishes eight direct main imports from the
+testing coordinator’s sibling validator; it is not a complete transitive audit.

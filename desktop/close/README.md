@@ -60,10 +60,10 @@ root tests directory; final-app E2E stays separate.
 
 ## Packaging and qualification
 
-`package.json` lists the two exact close CJS paths plus the draft, startup and two integrity entries; root `*.cjs` alone does not
+`package.json` lists the two exact close CJS paths plus the draft, startup, two integrity and three update entries; root `*.cjs` alone does not
 include nested files. The source packaging test validates default and inherited
 preview exact allowlists, excludes tests/broad patterns, stages the declared app
-files, and resolves literal local requires in main and all six nested entries using the
+files, and resolves literal local requires in main and all nine nested entries using the
 existing parser. Other desktop module internals are outside this check. Negative fixtures cover missing entries, either configuration's
 accidental test inclusion, stale main import and missing staged dependency. It
 never executes main, builds/signs an app, or launches Electron.
@@ -79,3 +79,6 @@ candidate. VM fixtures and source guards cannot satisfy them.
 startup/close benchmark or speed improvement is claimed. Native navigation is an
 unsupported requirement, not a passing benchmark. Read the
 [compatibility matrix](../../docs/dev/macos-compatibility.md) before native packaging.
+
+The nine-entry source check distinguishes eight direct main imports from the
+testing coordinator’s sibling validator; it is not a complete transitive audit.

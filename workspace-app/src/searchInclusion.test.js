@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {searchInclusionPredicate,searchEpochInclusion,toggleSearchInclusion} from './searchInclusion.js';
-import {snapshotExplorerState} from './workspaceNavigation.js';
+import {snapshotExplorerState} from './workspace-navigation/workspaceNavigation.js';
 test('local exclusions constrain every candidate destination without changing browsable predicate or protocol curation',()=>{
  const base={field:'protocol',operator:'eq',value:'example'};
  const row={epoch_uuid:'one',curation:{included:false,tags:['existing']}};

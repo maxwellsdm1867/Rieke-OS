@@ -23,7 +23,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'rieke-core-benchmark'
-NAV_TESTS = ['workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
+NAV_TESTS = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
              'traceReadContext', 'navigationReadStrictMode', 'inspectorNavigationLifecycle']
 DB_TESTS = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_import_identities',
             'test_workspace_epoch_page_performance']

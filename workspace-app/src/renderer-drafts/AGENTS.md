@@ -89,7 +89,7 @@ Do not replace it with source-text assertions or a fake hook.
 From `workspace-app`, with `RIEKE_TEST_DOM_MODULE` unset:
 
 ```sh
-node --import ./src/test-support/reactTestEnvironment.js --test src/renderer-drafts/desktopDraftSession.test.js src/renderer-drafts/useDesktopDraft.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/desktopLifecycle.test.js src/projectUnmount.test.js src/apiCommandPolicy.test.js src/startupRestore.test.js src/workspaceNavigation.test.js
+node --import ./src/test-support/reactTestEnvironment.js --test src/renderer-drafts/desktopDraftSession.test.js src/renderer-drafts/useDesktopDraft.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/desktopLifecycle.test.js src/projectUnmount.test.js src/apiCommandPolicy.test.js src/startupRestore.test.js src/workspace-navigation/workspaceNavigation.test.js
 ```
 
 The real App/presentation harness must keep the real draft hook/factory; it needs

@@ -30,7 +30,7 @@ import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../useAnnotationReceipts.js';
 import {fastAnnotationReceipt} from '../annotationReceipts.js';
 import {datedCellLabel} from '../recordingIdentity.js';
-import {restoredEpochFocus} from '../workspaceNavigation.js';
+import {restoredEpochFocus} from '../workspace-navigation/workspaceNavigation.js';
 import Trace from './TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};

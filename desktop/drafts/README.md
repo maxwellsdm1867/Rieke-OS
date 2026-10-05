@@ -56,7 +56,7 @@ The root-owned [P07 catalog](../../docs/architecture/adopted-port-checks.json),
 mappings. During branch review the parent integrates those mappings separately;
 local source moves alone do not make an old catalog runnable.
 
-The existing root packaging check now covers main plus six adopted nested entries,
+The existing root packaging check now covers main plus nine adopted nested entries,
 including this owner's `../security.cjs`. It checks exact default/preview source
 allowlists, excludes tests, and exercises stale/missing-path faults in an owned
 staged tree. It does not build/run Electron, parse every transitive module, or
@@ -68,3 +68,6 @@ composition remains a coverage gap. Final assembled-app E2E is separate.
 [explicit Quit contract](../../docs/dev/DESKTOP_QUIT_COORDINATION.md) and
 [compatibility matrix](../../docs/dev/macos-compatibility.md) retain existing gates.
 No draft latency/memory/disk or power-loss improvement is measured here.
+
+The nine-entry source check distinguishes eight direct main imports from the
+testing coordinator’s sibling validator; it is not a complete transitive audit.

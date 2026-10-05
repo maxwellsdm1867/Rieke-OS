@@ -133,6 +133,30 @@
     {
       "from": "workspace-app/src/protocol-tree-layout/AGENTS.md",
       "to": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.test.js"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/updates/AGENTS.md"
+    },
+    {
+      "from": "desktop/updates/AGENTS.md",
+      "to": "desktop/updates/README.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/workspace-navigation/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/workspace-navigation/AGENTS.md",
+      "to": "workspace-app/src/workspace-navigation/workspaceNavigation.js"
+    },
+    {
+      "from": "workspace-app/src/workspace-navigation/AGENTS.md",
+      "to": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js"
+    },
+    {
+      "from": "workspace-app/src/workspace-navigation/AGENTS.md",
+      "to": "workspace-app/src/workspace-navigation/workspaceNavigation.test.js"
     }
   ],
   "shared_paths": [
@@ -162,7 +186,8 @@
     "workspace-app/src/tree-selection/AGENTS.md",
     "workspace-app/src/group-save/AGENTS.md",
     "workspace-app/src/renderer-drafts/AGENTS.md",
-    "workspace-app/src/protocol-tree-layout/AGENTS.md"
+    "workspace-app/src/protocol-tree-layout/AGENTS.md",
+    "workspace-app/src/workspace-navigation/AGENTS.md"
   ],
   "contracts": [
     {
@@ -382,6 +407,66 @@
             "desktop/updater-validation.cjs",
             "desktop/bootstrap.cjs"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/updates/updater.cjs",
+          "allow": [
+            "node:path",
+            "node:crypto",
+            "electron-updater",
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/update-recovery.cjs"
+          ],
+          "require": [
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/update-recovery.cjs"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/updates/testing-updater.cjs",
+          "allow": [
+            "node:path",
+            "node:crypto",
+            "node:https",
+            "node:util",
+            "node:child_process",
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/updates/testing-update-validation.cjs",
+            "desktop/install-name.cjs",
+            "desktop/testing-install.cjs"
+          ],
+          "require": [
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/updates/testing-update-validation.cjs",
+            "desktop/install-name.cjs",
+            "desktop/testing-install.cjs"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/updates/testing-update-validation.cjs",
+          "allow": [
+            "node:path",
+            "node:crypto",
+            "node:util",
+            "node:child_process",
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/testing-install.cjs",
+            "desktop/install-name.cjs"
+          ],
+          "require": [
+            "desktop/physical-fs.cjs",
+            "desktop/updater-validation.cjs",
+            "desktop/testing-install.cjs",
+            "desktop/install-name.cjs"
+          ]
         }
       ],
       "tests": {
@@ -415,7 +500,8 @@
           "desktop/drafts/tests/public-examples.test.cjs",
           "desktop/startup/tests/public-examples.test.cjs",
           "desktop/integrity/tests/verify-application.test.cjs",
-          "desktop/integrity/tests/public-examples.test.cjs"
+          "desktop/integrity/tests/public-examples.test.cjs",
+          "desktop/updates/tests/public-examples.test.cjs"
         ]
       }
     },
@@ -534,7 +620,7 @@
           "workspace-app/src/presentation/workspacePresentationSessions.test.js",
           "workspace-app/src/presentationSessionsIntegration.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
-          "workspace-app/src/workspaceNavigation.test.js",
+          "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
           "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
           "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
           "workspace-app/src/projectUnmount.test.js",
@@ -594,7 +680,7 @@
           "workspace-app/src/projectUnmount.test.js",
           "workspace-app/src/apiCommandPolicy.test.js",
           "workspace-app/src/startupRestore.test.js",
-          "workspace-app/src/workspaceNavigation.test.js",
+          "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
           "workspace-app/src/testDiscovery.test.js"
@@ -655,6 +741,62 @@
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "workspace-navigation",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Workspace navigation ownership"
+      },
+      "affected_paths": [
+        "workspace-app/**",
+        "tools/benchmark.py",
+        "python/tests/test_benchmark.py"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
+          "allow": [
+            "react",
+            "workspace-app/src/workspace-navigation/workspaceNavigation.js"
+          ],
+          "require": [
+            "workspace-app/src/workspace-navigation/workspaceNavigation.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+            "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
+          "workspace-app/src/searchInclusion.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/presentationSessionsIntegration.test.js",
+          "workspace-app/src/importMergeWorkflow.test.js",
+          "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py",
+          "python/tests/test_benchmark.py"
         ]
       }
     }
@@ -761,6 +903,31 @@
           },
           {
             "path": "workspace-app/src/protocol-tree-layout/useProtocolTreeLayout.js",
+            "exports": [
+              "default"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "workspace-navigation",
+        "root": "workspace-app/src/workspace-navigation",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+            "exports": [
+              "WORKSPACE_PAGES",
+              "validWorkspaceRoute",
+              "routeAddress",
+              "makeWorkspaceRoute",
+              "resolveProtocolSession",
+              "restoredEpochFocus",
+              "snapshotExplorerState"
+            ]
+          },
+          {
+            "path": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
             "exports": [
               "default"
             ]

@@ -17,6 +17,9 @@ Start in the module folder for the responsibility you are changing:
 - [Protocol tree layout](protocol-tree-layout/AGENTS.md): versioned layout saves
   and the real React load/save lifetime; scientific grouping remains separate.
 
+- [Workspace navigation](workspace-navigation/AGENTS.md): route/history identity and
+  React navigation lifetime; restored views do not restore scientific consent.
+
 Other frontend owners retain their existing named files pending the organization
 worklist; each ledger record need not become a separate module. See the
 [architecture map](../../ARCHITECTURE.md) for other adopted interfaces.

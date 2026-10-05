@@ -14,6 +14,8 @@ exact root identity/readiness; Python `workspace_desktop.py` owns project childr
 and native cleanup. Renderer draft/lifecycle files stay in `workspace-app/src`.
 [Application integrity](integrity/AGENTS.md) owns explicit read-only auditing and
 recovery ordering; main retains admission and Quit composition.
+[Update coordination](updates/AGENTS.md) keeps signed and unsigned-testing owners
+separate; the shared root validator remains an installation/integrity dependency.
 No universal lifecycle facade exists.
 
 Preserve strict replacement versus bounded explicit Quit. Project UUID/canonical
@@ -22,7 +24,7 @@ scientific readiness. Do not widen IPC, disable sandbox/security checks or repla
 uncertain stop with a clean receipt.
 
 Root `tests/` retains cross-owner composition. `close/tests/`, `drafts/tests/`, `startup/tests/` and `integrity/tests/` contain local public
-seam tests; `test/` retains updater contracts. `e2e/` and host/native inspection
+seam tests; `updates/tests/` retains updater contracts and controlled public examples. `e2e/` and host/native inspection
 are separate qualification. Never use indiscriminate recursive test discovery.
 
 From repository root, with existing provisioned dependencies:

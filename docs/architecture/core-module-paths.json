@@ -1986,7 +1986,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "workspace-navigation"
+          "group": "workspace-navigation",
+          "current_path": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "workspace-app/src/workbenchAuthority.js",
@@ -2007,7 +2009,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/workspace-navigation/workspaceNavigation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "workspace-navigation"
+          "group": "workspace-navigation",
+          "current_path": "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         }
       ],
       "groups": [
@@ -2110,7 +2114,11 @@
             "workspace-app/src/useWorkspaceNavigation.js",
             "workspace-app/src/workspaceNavigation.js"
           ],
-          "current_status": "Revision-owned benchmark path prerequisite integrated7d8c68d; per-slice source/characterization/relocation review still required."
+          "current_status": "Source-reviewed folder candidate integrated; aggregate pending",
+          "current_public_entries": [
+            "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+            "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js"
+          ]
         },
         {
           "id": "renderer-drafts",
@@ -4130,7 +4138,9 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Keep current path until benchmark historical-path reconstruction is reviewed; do not create forwarding tests.",
-          "group": "workspace-navigation"
+          "group": "workspace-navigation",
+          "current_path": "workspace-app/src/workspace-navigation/workspaceNavigation.test.js",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         }
       ],
       "test_group_note": "cross-owner-integration is a test classification, not a runtime folder; owner_associations enumerates actual owners. All tests are held at current paths pending their reviewed slice.",
@@ -9235,7 +9245,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "updates",
-          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade."
+          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade.",
+          "current_path": "desktop/updates/testing-update-validation.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "desktop/testing-updater.cjs",
@@ -9249,7 +9261,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "updates",
-          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade."
+          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade.",
+          "current_path": "desktop/updates/testing-updater.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "desktop/update-recovery.cjs",
@@ -9277,7 +9291,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "updates",
-          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade."
+          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade.",
+          "current_disposition": "keep-in-place; reviewed shared dependency rationale",
+          "current_reason": "Installation/integrity/seal/tooling consumers share this root validator; updates-only relocation would not improve locality."
         },
         {
           "path": "desktop/updater.cjs",
@@ -9291,7 +9307,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "updates",
-          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade."
+          "reason": "Later move preserving signed/testing trust distinctions; no generic coordinator facade.",
+          "current_path": "desktop/updates/updater.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "desktop/verification-recovery.cjs",
@@ -9540,7 +9558,9 @@
           "proposed_path": "desktop/test/testing-updater.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "updates"
+          "group": "updates",
+          "current_path": "desktop/updates/tests/testing-updater.test.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "desktop/test/updater.test.cjs",
@@ -9552,7 +9572,9 @@
           "proposed_path": "desktop/test/updater.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "updates"
+          "group": "updates",
+          "current_path": "desktop/updates/tests/updater.test.cjs",
+          "current_disposition": "source-reviewed folder candidate; aggregate pending"
         },
         {
           "path": "desktop/tests/app-icon.test.cjs",
@@ -10290,6 +10312,37 @@
         "workspace-app/src/protocol-tree-layout/AGENTS.md"
       ],
       "tested_commit": "4a4867eee81b989a1c703e548f3ee27ee8351d97"
+    },
+    {
+      "id": "desktop-updates",
+      "status": "source-reviewed folder candidate; aggregate pending",
+      "worker_commit": "58c93c7fa309696e6ab21795187edf5ed3370400",
+      "moves": {
+        "desktop/updater.cjs": "desktop/updates/updater.cjs",
+        "desktop/testing-updater.cjs": "desktop/updates/testing-updater.cjs",
+        "desktop/testing-update-validation.cjs": "desktop/updates/testing-update-validation.cjs",
+        "desktop/test/updater.test.cjs": "desktop/updates/tests/updater.test.cjs",
+        "desktop/test/testing-updater.test.cjs": "desktop/updates/tests/testing-updater.test.cjs"
+      },
+      "new_test_paths": [
+        "desktop/updates/tests/public-examples.test.cjs"
+      ],
+      "new_guidance_paths": [
+        "desktop/updates/AGENTS.md",
+        "desktop/updates/README.md"
+      ]
+    },
+    {
+      "id": "workspace-navigation",
+      "status": "source-reviewed folder candidate; aggregate pending",
+      "moves": {
+        "workspace-app/src/workspaceNavigation.js": "workspace-app/src/workspace-navigation/workspaceNavigation.js",
+        "workspace-app/src/useWorkspaceNavigation.js": "workspace-app/src/workspace-navigation/useWorkspaceNavigation.js",
+        "workspace-app/src/workspaceNavigation.test.js": "workspace-app/src/workspace-navigation/workspaceNavigation.test.js"
+      },
+      "new_guidance_paths": [
+        "workspace-app/src/workspace-navigation/AGENTS.md"
+      ]
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

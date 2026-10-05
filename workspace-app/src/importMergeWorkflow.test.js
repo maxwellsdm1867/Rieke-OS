@@ -38,7 +38,7 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
  const server=await createServer({root,configFile:false,plugins:[{name:'merge-browser-probes',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(id))return '\0merge-'+id;},load(id){if(id==='\0merge-./Inspector.jsx')return "import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default props=>React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision},React.createElement('button',{disabled:props.draftSelection.disabled,onClick:()=>props.onSelectionChange("+JSON.stringify(chosen)+")},'Select fixture epochs'),React.createElement('button',{disabled:props.draftSelection.disabled,onClick:()=>props.draftSelection.onMerge(props.draftSelection.selected)},'Merge selection'));";if(id==='\0merge-./ProtocolViewFilter.jsx')return 'export default ()=>null;';}}],optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  const {default:Suggestion}=await server.ssrLoadModule('/src/components/ProtocolSuggestion.jsx');
  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
- const {default:useNavigation}=await server.ssrLoadModule('/src/useWorkspaceNavigation.js');
+ const {default:useNavigation}=await server.ssrLoadModule('/src/workspace-navigation/useWorkspaceNavigation.js');
  if(restore)window.history.replaceState({riekeWorkspace:{route:restore,index:0}},'');
  const container=document.getElementById('root'),mounted=createRoot(container);let saved=session;
  function Demo(){

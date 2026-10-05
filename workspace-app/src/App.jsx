@@ -61,9 +61,9 @@ import ProtocolExports,{ExportDestination} from './components/ProtocolExports.js
 import ProjectNavigator,{ProjectRail} from './components/ProjectNavigator.jsx';
 import {projectBootstrap} from './projectNavigation.js';
 import {inspectAndOpenProject,localProjectUrl} from './projectTransfer.js';
-import useWorkspaceNavigation from './useWorkspaceNavigation.js';
+import useWorkspaceNavigation from './workspace-navigation/useWorkspaceNavigation.js';
 import {exportReuseRoute,exportHistoryLabel,exportReuseLabel} from './exportReuse.js';
-import {resolveProtocolSession,restoredEpochFocus} from './workspaceNavigation.js';
+import {resolveProtocolSession,restoredEpochFocus} from './workspace-navigation/workspaceNavigation.js';
 import './WorkspaceNavigation.css';
 import {EXPORT_FORMATS,exportDownloadLabel,exportFormatLabel,initialExportFormat,normalizeExportFormat,validExportReceipt} from './exportFormats.js';
 

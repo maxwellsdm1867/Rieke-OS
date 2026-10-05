@@ -104,7 +104,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
       if(id.endsWith('/annotationProfile.js')||id==='./annotationProfile.js'||id==='../annotationProfile.js')return '\0workflow-profile';
       if(importer?.endsWith('/App.jsx')){
         if(id==='./components/ProtocolInfographic.jsx')return '\0workflow-lazy';
-        if(id==='./useWorkspaceNavigation.js')return '\0workflow-navigation';
+        if(id==='./workspace-navigation/useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0workflow-layout';
         if(id==='./useImportQueue.js')return '\0workflow-import-queue';
         if(id.endsWith('.jsx')&&!['./treeBranchReads.jsx','./navigationReadCache.jsx','./components/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
