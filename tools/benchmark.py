@@ -23,7 +23,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 FORMAT = 'rieke-core-benchmark'
-NAV_TESTS = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'search-activation/pageReadCache',
+NAV_TESTS = ['workspace-navigation/workspaceNavigation', 'epoch-browser/inspectionNavigation', 'search-activation/pageReadCache',
              'traceReadContext', 'search-activation/navigationReadStrictMode', 'inspectorNavigationLifecycle']
 DB_TESTS = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_import_identities',
             'test_workspace_epoch_page_performance']
@@ -47,6 +47,11 @@ SUITE_STATIC_FILES = [
     'python/tests/test_workspace_matlab.py',
 ]
 SUITE_SUPPORT_ROOT = 'workspace-app/src/test-support'
+
+# Physical schema paths belong to this revision, like the suite path recipe.
+SCHEMA_FILES = [('disco/metadata/disk_index.py', 'FORMAT'),
+                ('disco/metadata/typed_index.py', 'FORMAT'),
+                ('workspace_sqlite.py', 'SCHEMA_VERSION')]
 
 
 def _navigation_paths(recipe):
@@ -288,7 +293,7 @@ def source(root=ROOT):
     release = json.loads((root / 'rieke-release.json').read_text())
     status = git('status', '--porcelain', '--untracked-files=all', root=root)
     versions = {}
-    for name, symbol in [('workspace_disk_index.py', 'FORMAT'), ('workspace_typed_index.py', 'FORMAT'), ('workspace_sqlite.py', 'SCHEMA_VERSION')]:
+    for name, symbol in SCHEMA_FILES:
         match = re.search(r'^' + symbol + r'\s*=\s*(\d+)', (root / 'python' / name).read_text(), re.M)
         if not match: raise ValueError(f'Missing schema version: {name}')
         versions[name] = int(match[1])
@@ -297,7 +302,23 @@ def source(root=ROOT):
             'application_version': release['version'], 'database_compatibility': release['database_compatibility'],
             'workspace_formats': release['workspace_formats'],
             'schema_sources': {name: sha((root / 'python' / name).read_bytes()) for name in
-                               ['workspace_disk_index.py', 'workspace_typed_index.py', 'workspace_sqlite.py']}}
+                               [name for name, _ in SCHEMA_FILES]}}
+
+
+def _schema_files(raw):
+    """Read revision-owned paths without executing historical runner code."""
+    tree = ast.parse(raw.decode('utf-8'))
+    if any(isinstance(node, ast.Name) and node.id == 'SCHEMA_FILES' for node in ast.walk(tree)):
+        files = _literal_declarations(tree, {'SCHEMA_FILES'})['SCHEMA_FILES']
+        if files != [('disco/metadata/disk_index.py', 'FORMAT'),
+                     ('disco/metadata/typed_index.py', 'FORMAT'),
+                     ('workspace_sqlite.py', 'SCHEMA_VERSION')]:
+            raise ValueError('Unsupported schema source paths')
+        return files
+    # Older receipts retain their original path keys and implementation bytes.
+    return [('workspace_disk_index.py', 'FORMAT'),
+            ('workspace_typed_index.py', 'FORMAT'),
+            ('workspace_sqlite.py', 'SCHEMA_VERSION')]
 
 
 def committed_source(commit, root=ROOT):
@@ -305,7 +326,7 @@ def committed_source(commit, root=ROOT):
     commit = resolve_commit(commit, root)
     release = json.loads(committed_bytes(commit, 'rieke-release.json', root))
     schemas, versions = {}, {}
-    for name, symbol in [('workspace_disk_index.py', 'FORMAT'), ('workspace_typed_index.py', 'FORMAT'), ('workspace_sqlite.py', 'SCHEMA_VERSION')]:
+    for name, symbol in _schema_files(committed_bytes(commit, 'tools/benchmark.py', root)):
         raw = committed_bytes(commit, 'python/' + name, root)
         match = re.search(r'^' + symbol + r'\s*=\s*(\d+)', raw.decode(), re.M)
         if not match: raise ValueError(f'Missing committed schema version: {name}')

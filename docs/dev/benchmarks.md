@@ -51,6 +51,10 @@ recipe without pinned requirements. Unknown legacy bytes, malformed declarations
 missing files and symlink inputs fail closed. Navigation tests may use explicit
 nested paths; execution and hashing share those declarations. Historical support
 files come from that commit's Git tree, not the current checkout.
+Schema source paths are also read from that revision's literal `SCHEMA_FILES`
+declaration. Earlier runners without it retain their original flat schema paths
+and receipt keys; current runners use the metadata package paths. Neither lookup
+imports historical code or rewrites an existing receipt.
 
 The receipt schema and registry are unchanged. A test relocation changes path keys
 and therefore suite identity. Reconstructing an old receipt's original digest does

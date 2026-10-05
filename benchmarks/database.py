@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / 'python'), str(ROOT / 'tools/metadata_qualification')]
 from truth import Truth, canonical, digest
 from core_adapter import CoreAdapter
-from workspace_typed_index import TypedMetadataIndex
+from disco.metadata.typed_index import TypedMetadataIndex
 
 
 def run(samples):

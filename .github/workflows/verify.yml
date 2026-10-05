@@ -31,7 +31,7 @@ jobs:
         working-directory: ${{ runner.temp }}/Rieke Client
         run: |
           PYTHONPATH=python .rieke-runtime/venv/bin/python -m unittest discover -s python/tests
-          PYTHONPATH=python:python/tests .rieke-runtime/venv/bin/python -B -m unittest discover -s python/disco/recovery/tests -t python -p 'test_*.py' -v
+          PYTHONPATH=python:python/tests .rieke-runtime/venv/bin/python -B -m unittest discover -s python/disco -t python -p 'test_*.py' -v
       - name: Browser logic tests
         working-directory: ${{ runner.temp }}/Rieke Client
         run: PATH="$PWD/.rieke-runtime/native/bin:$PATH" npm --prefix workspace-app test

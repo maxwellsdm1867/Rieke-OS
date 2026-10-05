@@ -21,7 +21,7 @@ class BenchmarkTests(unittest.TestCase):
         cls.temp = tempfile.TemporaryDirectory(prefix='benchmark-provenance-test-')
         cls.repo = Path(cls.temp.name)
         paths = set(bench.suite_identity()['files']) | {'rieke-release.json'}
-        paths |= {'python/' + name for name in ('workspace_disk_index.py', 'workspace_typed_index.py', 'workspace_sqlite.py')}
+        paths |= {'python/' + name for name in ('disco/metadata/disk_index.py', 'disco/metadata/typed_index.py', 'workspace_sqlite.py')}
         for name in paths:
             target = cls.repo / name; target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(ROOT / name, target)
@@ -199,7 +199,7 @@ class SuitePathTests(unittest.TestCase):
         'python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
         'python/tests/test_workspace_matlab.py',
     ]
-    NAV = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'search-activation/pageReadCache',
+    NAV = ['workspace-navigation/workspaceNavigation', 'epoch-browser/inspectionNavigation', 'search-activation/pageReadCache',
            'traceReadContext', 'search-activation/navigationReadStrictMode', 'inspectorNavigationLifecycle']
     DB = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_import_identities',
           'test_workspace_epoch_page_performance']
@@ -290,6 +290,21 @@ class SuitePathTests(unittest.TestCase):
         self.assertNotEqual(self.identity(self.files), self.identity(later))
         self.assertFalse((self.repo/old).exists())
 
+    def test_schema_paths_preserve_historical_keys_and_validate_current_declaration(self):
+        historical = [('workspace_disk_index.py', 'FORMAT'),
+                      ('workspace_typed_index.py', 'FORMAT'),
+                      ('workspace_sqlite.py', 'SCHEMA_VERSION')]
+        current = [('disco/metadata/disk_index.py', 'FORMAT'),
+                   ('disco/metadata/typed_index.py', 'FORMAT'),
+                   ('workspace_sqlite.py', 'SCHEMA_VERSION')]
+        self.assertEqual(bench._schema_files(b'# historical runner without declaration\n'), historical)
+        self.assertEqual(bench._schema_files(self.raw), current)
+        for invalid in (self.raw.replace(b"'disco/metadata/disk_index.py'", b"'elsewhere/disk_index.py'"),
+                        self.raw + b"\nSCHEMA_FILES = []\n",
+                        self.raw + b"\nSCHEMA_FILES.append(('extra.py', 'FORMAT'))\n"):
+            with self.assertRaises(ValueError):
+                bench._schema_files(invalid)
+
     def test_strict_literals_paths_versions_and_bindings_never_execute_source(self):
         sentinel = self.repo/'must-not-exist'
         faults = [
@@ -308,7 +323,7 @@ class SuitePathTests(unittest.TestCase):
             self.raw + b"\nif True:\n    NAV_TESTS = ['extra']\n",
             self.raw + b"\ntry:\n    pass\nexcept Exception as NAV_TESTS:\n    pass\n",
             self.raw + b"\nmatch []:\n    case [*NAV_TESTS]:\n        pass\n",
-            self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = ['inspectionNavigation'"),
+            self.raw.replace(b"NAV_TESTS = ['workspace-navigation/workspaceNavigation'", b"NAV_TESTS = ['epoch-browser/inspectionNavigation'"),
             self.raw.replace(b"DB_TESTS = ['test_workspace_sqlite'", b"DB_TESTS = ['test_workspace_sqlite.py'"),
             self.raw.replace(b"'benchmarks/requirements-py311.txt',", b''),
             b'not python \xff',

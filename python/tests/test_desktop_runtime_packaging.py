@@ -23,11 +23,11 @@ from desktop_application_profile import audit_application, load_profile, validat
 class DesktopPackagingTests(unittest.TestCase):
     def test_current_application_closure_includes_typed_requested_summary_backend(self):
         profile = load_profile()
-        required = {'workspace_typed_index.py', 'workspace_typed_lifecycle.py',
-                    'workspace_typed_query.py', 'workspace_explore_queries.py',
-                    'workspace_cache_lifecycle.py', 'workspace_metadata_objects.py',
-                    'workspace_disk_index.py', 'workspace_service.py', 'workspace_api.py',
-                    'workspace_tree_pages.py'}
+        required = {'disco/metadata/typed_index.py', 'disco/metadata/typed_lifecycle.py',
+                    'disco/metadata/typed_query.py', 'disco/metadata/explore_queries.py',
+                    'disco/metadata/cache_lifecycle.py', 'disco/metadata/metadata_objects.py',
+                    'disco/metadata/disk_index.py', 'workspace_service.py', 'workspace_api.py',
+                    'disco/navigation/tree_pages.py'}
         self.assertTrue(required <= set(profile['python_modules']))
         # Audit every static/local and literal dynamic import in the full actual
         # application, rather than merely asserting these expected filenames.

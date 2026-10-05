@@ -36,7 +36,7 @@ jobs:
         run: .rieke-runtime/venv/bin/python -B tools/architecture_guard.py check
       - run: |
           .rieke-runtime/venv/bin/python -m unittest discover -s python/tests -p 'test_*workspace*.py' -v
-          PYTHONPATH=python:python/tests .rieke-runtime/venv/bin/python -B -m unittest discover -s python/disco/recovery/tests -t python -p 'test_*workspace*.py' -v
+          PYTHONPATH=python:python/tests .rieke-runtime/venv/bin/python -B -m unittest discover -s python/disco -t python -p 'test_*workspace*.py' -v
         env:
           PYTHONPATH: python
       - name: Verify architecture guard tooling
