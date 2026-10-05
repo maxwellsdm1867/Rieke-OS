@@ -55,11 +55,18 @@ contracts. Frontend A/B/C finite path moves are composed; their combined review
 and aggregate checks remain pending. Folder organization is partial: functional areas in the system table
 below describe responsibilities, not completed physical modules.
 
-For organized recovery and retained backend owners, use [backend navigation](python/AGENTS.md).
+For named backend owners, retained composition and source-witness obligations, use
+[backend navigation](python/AGENTS.md).
 
 | Responsibility | Canonical local guide |
 | --- | --- |
 | HTTP mutation completion and independent backup status | [Mutation recovery](python/disco/recovery/CONTRACT.md) |
+| Metadata readers and disposable generations | [Metadata](python/disco/metadata/CONTRACT.md) |
+| Authored decisions and adjacent tag/query owners | [Decisions](python/disco/decisions/CONTRACT.md) and [adjacent decisions](python/disco/decisions/ADJACENT.md) |
+| Current-state backup and mirror storage | [Backup](python/disco/backup/CONTRACT.md) |
+| Bounded predicate and tree navigation | [Navigation](python/disco/navigation/CONTRACT.md) |
+| Project storage, retention and provisioning | [Projects](python/disco/projects/CONTRACT.md) |
+| Frozen recipes, review and export publication | [Workbench](python/disco/workbench/CONTRACT.md) |
 | Presentation snapshots and route checkpoints | [Presentation sessions](workspace-app/src/presentation/AGENTS.md) |
 | Ordered, bounded selection reads | [Tree selection](workspace-app/src/tree-selection/AGENTS.md) |
 | Group-save retry identity and recovery | [Group save](workspace-app/src/group-save/AGENTS.md) |
@@ -99,7 +106,8 @@ For organized recovery and retained backend owners, use [backend navigation](pyt
 [Frontend instructions](workspace-app/src/AGENTS.md),
 [desktop instructions](desktop/AGENTS.md) and [retained tooling instructions](tools/AGENTS.md)
 provide area-specific check commands and remaining owners. Mutation recovery uses
-its public Python package; other Python runtime owners retain their existing paths.
+its public Python package; six further packages expose their existing named leaves
+through inert initializers. Stable composition and CLI owners retain physical paths.
 These source-level ownership checks do not establish assembled-app qualification.
 See the [current path ledger](docs/architecture/core-module-paths.json)
 for baseline versus current paths; historical evidence must retain its original
@@ -140,14 +148,14 @@ have different authority and lifecycle from disposable SQLite query sidecars.
 
 | Area | Current implementation | Authority / boundary |
 | --- | --- | --- |
-| H5 ingestion | [recording_workspace](python/recording_workspace.py), [import API](python/workspace_api.py), [managed recordings](python/workspace_recording_files.py) | Verify raw source and parsed hierarchy before population; report catalog commit separately from finalization. |
-| Canonical catalog | RetinAnalysis acquisition schema, [workspace tables](python/recording_workspace.py), [curation](python/workspace_curation.py), [annotations](python/workspace_annotations.py), [explorer/bindings](python/workspace_explorer.py) | MySQL stores project registrations and authored state; original H5 retains samples. Sealed imported metadata is checked against registered manifests. |
-| Metadata read model | [WorkspaceService](python/workspace_service.py), [disk index](python/workspace_disk_index.py), [metadata objects](python/workspace_metadata_objects.py) | Source identity and eligibility, exact rows/details, immutable generations and bounded caches. |
-| Typed filtering / aggregates | [typed index](python/workspace_typed_index.py), [typed query](python/workspace_typed_query.py), [lifecycle](python/workspace_typed_lifecycle.py), [explore queries](python/workspace_explore_queries.py) | Derived SQLite accelerates supported reads; service adapters retain source, annotation and frozen-binding authority. |
-| Tree navigation | [selection reader](workspace-app/src/tree-selection/treeSelectionReader.js), [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/tree-ancestors/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
-| Scientific decisions | [shared annotations](python/workspace_annotations.py), [curation](python/workspace_curation.py), [workbench](python/workspace_workbench.py), [state generation](python/workspace_state_generation.py) | Author/scope/identity and expected revisions; transactionally related audit and generation. |
-| Exports | [format materializer](python/workspace_export_artifacts.py), [recipes](python/workspace_recipes.py), [SQLite writer](python/workspace_sqlite.py), [standalone reader](python/query_workspace_export.py), [MATLAB writer](python/workspace_matlab.py) | Caller-owned frozen membership, metadata, source references, decisions and provenance; shared format tail retains caller publication authority. |
-| Recovery | [HTTP completion policy](python/disco/recovery/__init__.py), [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |
+| H5 ingestion | [recording_workspace](python/recording_workspace.py), [import API](python/workspace_api.py), [managed recordings](python/disco/projects/recording_files.py) | Verify raw source and parsed hierarchy before population; report catalog commit separately from finalization. |
+| Canonical catalog | RetinAnalysis acquisition schema, [workspace tables](python/recording_workspace.py), [curation](python/disco/decisions/curation.py), [annotations](python/disco/decisions/annotations.py), [explorer/bindings](python/disco/decisions/explorer.py) | MySQL stores project registrations and authored state; original H5 retains samples. Sealed imported metadata is checked against registered manifests. |
+| Metadata read model | [WorkspaceService](python/workspace_service.py), [disk index](python/disco/metadata/disk_index.py), [metadata objects](python/disco/metadata/metadata_objects.py) | Source identity and eligibility, exact rows/details, immutable generations and bounded caches. |
+| Typed filtering / aggregates | [typed index](python/disco/metadata/typed_index.py), [typed query](python/disco/metadata/typed_query.py), [lifecycle](python/disco/metadata/typed_lifecycle.py), [explore queries](python/disco/metadata/explore_queries.py) | Derived SQLite accelerates supported reads; service adapters retain source, annotation and frozen-binding authority. |
+| Tree navigation | [selection reader](workspace-app/src/tree-selection/treeSelectionReader.js), [tree semantics](python/disco/navigation/tree.py), [tree pages](python/disco/navigation/tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/tree-ancestors/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
+| Scientific decisions | [shared annotations](python/disco/decisions/annotations.py), [curation](python/disco/decisions/curation.py), [workbench](python/disco/workbench/workbench.py), [state generation](python/workspace_state_generation.py) | Author/scope/identity and expected revisions; transactionally related audit and generation. |
+| Exports | [format materializer](python/workspace_export_artifacts.py), [recipes](python/disco/workbench/recipes.py), [SQLite writer](python/workspace_sqlite.py), [standalone reader](python/query_workspace_export.py), [MATLAB writer](python/workspace_matlab.py) | Caller-owned frozen membership, metadata, source references, decisions and provenance; shared format tail retains caller publication authority. |
+| Recovery | [HTTP completion policy](python/disco/recovery/__init__.py), [recovery store](python/disco/backup/recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/disco/backup/backup_scheduler.py) | Backup completion is separate from an already committed native write. |
 | Display and lifecycle | [API client/hooks](workspace-app/src/api.js), [renderer lifecycle](workspace-app/src/desktopLifecycle.js), [preload](desktop/preload.cjs), [supervisor](desktop/supervisor.cjs), [Python desktop](python/workspace_desktop.py) | Intent/publication fences, project/actor isolation, narrow IPC, process ownership, readiness, draft and close barriers. |
 
 ### The actual H5 and JSON boundary

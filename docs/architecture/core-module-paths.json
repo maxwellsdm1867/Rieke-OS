@@ -5345,7 +5345,11 @@
           "reason": "Sealed shared-tag checkpoints, reusable only after fresh canonical proof. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/annotation_checkpoint.py"
+          "proposed_path": "python/disco/decisions/annotation_checkpoint.py",
+          "current_path": "python/disco/decisions/annotation_checkpoint.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_annotation_groups.py",
@@ -5356,7 +5360,11 @@
           "contract_records": [
             "annotation-group-authority"
           ],
-          "proposed_path": "python/disco/decisions/annotation_groups.py"
+          "proposed_path": "python/disco/decisions/annotation_groups.py",
+          "current_path": "python/disco/decisions/annotation_groups.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_annotation_preparation.py",
@@ -5367,7 +5375,11 @@
           "contract_records": [
             "shared-annotations"
           ],
-          "proposed_path": "python/disco/decisions/annotation_preparation.py"
+          "proposed_path": "python/disco/decisions/annotation_preparation.py",
+          "current_path": "python/disco/decisions/annotation_preparation.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_annotations.py",
@@ -5379,7 +5391,11 @@
             "author-identity-preferences",
             "shared-annotations"
           ],
-          "proposed_path": "python/disco/decisions/annotations.py"
+          "proposed_path": "python/disco/decisions/annotations.py",
+          "current_path": "python/disco/decisions/annotations.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_api.py",
@@ -5419,7 +5435,11 @@
           "contract_records": [
             "author-identity-preferences"
           ],
-          "proposed_path": "python/disco/decisions/author_preferences.py"
+          "proposed_path": "python/disco/decisions/author_preferences.py",
+          "current_path": "python/disco/decisions/author_preferences.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_backup_scheduler.py",
@@ -5430,7 +5450,11 @@
           "contract_records": [
             "backup-scheduling"
           ],
-          "proposed_path": "python/disco/recovery/backup_scheduler.py"
+          "proposed_path": "python/disco/recovery/backup_scheduler.py",
+          "current_path": "python/disco/backup/backup_scheduler.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_bootstrap.py",
@@ -5449,7 +5473,11 @@
           "contract_records": [
             "typed-generation-cache"
           ],
-          "proposed_path": "python/disco/metadata/cache_lifecycle.py"
+          "proposed_path": "python/disco/metadata/cache_lifecycle.py",
+          "current_path": "python/disco/metadata/cache_lifecycle.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_candidate_exports.py",
@@ -5461,7 +5489,11 @@
             "export-materialization",
             "export-publication"
           ],
-          "proposed_path": "python/disco/workbench/candidate_exports.py"
+          "proposed_path": "python/disco/workbench/candidate_exports.py",
+          "current_path": "python/disco/workbench/candidate_exports.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_catalog_collision.py",
@@ -5492,7 +5524,11 @@
           "contract_records": [
             "protocol-curation"
           ],
-          "proposed_path": "python/disco/decisions/curation.py"
+          "proposed_path": "python/disco/decisions/curation.py",
+          "current_path": "python/disco/decisions/curation.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_curation_vocabulary.py",
@@ -5501,7 +5537,11 @@
           "reason": "Exact, incremental dataset-tag suggestions backed by the bounded SQL feed. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/curation_vocabulary.py"
+          "proposed_path": "python/disco/decisions/curation_vocabulary.py",
+          "current_path": "python/disco/decisions/curation_vocabulary.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_datastore_deletion.py",
@@ -5510,7 +5550,11 @@
           "reason": "Delete one project-owned acquisition with durable filesystem recovery. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/datastore_deletion.py"
+          "proposed_path": "python/disco/projects/datastore_deletion.py",
+          "current_path": "python/disco/projects/datastore_deletion.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_datastores.py",
@@ -5519,7 +5563,11 @@
           "reason": "H5 registration inventory and reversible manager lifecycle. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/datastores.py"
+          "proposed_path": "python/disco/projects/datastores.py",
+          "current_path": "python/disco/projects/datastores.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_desktop.py",
@@ -5546,7 +5594,11 @@
           "reason": "Compact, exact membership comparisons for the protocol review interface. Frozen incoming review, pending membership, candidate queries/recipes and separate export coordination.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/workbench/diff.py"
+          "proposed_path": "python/disco/workbench/diff.py",
+          "current_path": "python/disco/workbench/diff.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_disk_index.py",
@@ -5557,7 +5609,11 @@
           "contract_records": [
             "native-metadata-index"
           ],
-          "proposed_path": "python/disco/metadata/disk_index.py"
+          "proposed_path": "python/disco/metadata/disk_index.py",
+          "current_path": "python/disco/metadata/disk_index.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_explore_queries.py",
@@ -5568,7 +5624,11 @@
           "contract_records": [
             "query-execution"
           ],
-          "proposed_path": "python/disco/metadata/explore_queries.py"
+          "proposed_path": "python/disco/metadata/explore_queries.py",
+          "current_path": "python/disco/metadata/explore_queries.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_explorer.py",
@@ -5577,7 +5637,11 @@
           "reason": "Immutable applied source-query/tree revisions with transactional audit. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/explorer.py"
+          "proposed_path": "python/disco/decisions/explorer.py",
+          "current_path": "python/disco/decisions/explorer.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_export_artifacts.py",
@@ -5608,7 +5672,11 @@
           "contract_records": [
             "external-tag-receipts"
           ],
-          "proposed_path": "python/disco/decisions/external_tags.py"
+          "proposed_path": "python/disco/decisions/external_tags.py",
+          "current_path": "python/disco/decisions/external_tags.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_folder_browser.py",
@@ -5617,7 +5685,11 @@
           "reason": "Read-only, paged local directory navigation for the browser app. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/folder_browser.py"
+          "proposed_path": "python/disco/projects/folder_browser.py",
+          "current_path": "python/disco/projects/folder_browser.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_frontend.py",
@@ -5686,7 +5758,11 @@
           "reason": "Bounded chronological inspection pages for an exact source-predicate preview. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/matching_epochs.py"
+          "proposed_path": "python/disco/navigation/matching_epochs.py",
+          "current_path": "python/disco/navigation/matching_epochs.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_matlab.py",
@@ -5703,7 +5779,11 @@
           "reason": "Lossless ancestor references inside a sealed, disposable metadata index. Derived metadata projections, typed execution, requested aggregates, exact bounded lookup and disposable generation/lease ownership.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/metadata/metadata_objects.py"
+          "proposed_path": "python/disco/metadata/metadata_objects.py",
+          "current_path": "python/disco/metadata/metadata_objects.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_migration.py",
@@ -5712,7 +5792,11 @@
           "reason": "Explicit read-only source snapshot -> separate project-owned desktop copy. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/migration.py"
+          "proposed_path": "python/disco/projects/migration.py",
+          "current_path": "python/disco/projects/migration.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_mutation_outcomes.py",
@@ -5762,7 +5846,11 @@
           "reason": "Compose exact hierarchical predicates from persistent native tag lookups. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/native_tag_filter.py"
+          "proposed_path": "python/disco/navigation/native_tag_filter.py",
+          "current_path": "python/disco/navigation/native_tag_filter.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_native_tag_lookup.py",
@@ -5771,7 +5859,11 @@
           "reason": "Persistent exact tag lookup maintained transactionally by native SQL triggers. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/native_tag_lookup.py"
+          "proposed_path": "python/disco/decisions/native_tag_lookup.py",
+          "current_path": "python/disco/decisions/native_tag_lookup.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_paths.py",
@@ -5790,7 +5882,11 @@
           "contract_records": [
             "project-portability"
           ],
-          "proposed_path": "python/disco/projects/portability.py"
+          "proposed_path": "python/disco/projects/portability.py",
+          "current_path": "python/workspace_portability.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Stable __main__ CLI and two physical code-root anchors for layout/relocation; preserve transfer interface."
         },
         {
           "path": "python/workspace_predicates.py",
@@ -5799,7 +5895,11 @@
           "reason": "Bounded typed predicates over verified metadata; no SQL or expression eval. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/predicates.py"
+          "proposed_path": "python/disco/navigation/predicates.py",
+          "current_path": "python/disco/navigation/predicates.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_project_database.py",
@@ -5811,7 +5911,11 @@
             "catalog-storage",
             "project-database"
           ],
-          "proposed_path": "python/disco/projects/project_database.py"
+          "proposed_path": "python/disco/projects/project_database.py",
+          "current_path": "python/disco/projects/project_database.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_project_preferences.py",
@@ -5820,7 +5924,11 @@
           "reason": "Portable search shortcuts and protocol organization; device geometry stays local. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/project_preferences.py"
+          "proposed_path": "python/disco/projects/project_preferences.py",
+          "current_path": "python/disco/projects/project_preferences.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_project_servers.py",
@@ -5829,7 +5937,11 @@
           "reason": "Open each DataJoint project in its own process (connection state is global). Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/project_servers.py"
+          "proposed_path": "python/disco/projects/project_servers.py",
+          "current_path": "python/workspace_project_servers.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Child commands resolve sibling workspace_api.py and workspace_updates.py; preserve executable identity."
         },
         {
           "path": "python/workspace_project_unmount.py",
@@ -5838,7 +5950,11 @@
           "reason": "Exact catalog detachment, with owned-service close or conservative refusal. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/project_unmount.py"
+          "proposed_path": "python/disco/projects/project_unmount.py",
+          "current_path": "python/workspace_project_unmount.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Exact owned command proof derives sibling workspace_desktop.py; preserve process ownership."
         },
         {
           "path": "python/workspace_project_validation.py",
@@ -5847,7 +5963,11 @@
           "reason": "Read-only folder preflight. Database availability and H5 checks happen on open. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/project_validation.py"
+          "proposed_path": "python/disco/projects/project_validation.py",
+          "current_path": "python/disco/projects/project_validation.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_projection_cache.py",
@@ -5856,7 +5976,11 @@
           "reason": "Disposable source projections with lossless, lazy ancestor reconstruction. Derived metadata projections, typed execution, requested aggregates, exact bounded lookup and disposable generation/lease ownership.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/metadata/projection_cache.py"
+          "proposed_path": "python/disco/metadata/projection_cache.py",
+          "current_path": "python/disco/metadata/projection_cache.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_projects.py",
@@ -5865,7 +5989,11 @@
           "reason": "Read-only discovery of immediate siblings and explicitly remembered projects. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/projects.py"
+          "proposed_path": "python/disco/projects/projects.py",
+          "current_path": "python/workspace_projects.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Project creation code-root defaults use Path(__file__).resolve().parents[1]; preserve application-root identity."
         },
         {
           "path": "python/workspace_protocol_identity.py",
@@ -5884,7 +6012,11 @@
           "contract_records": [
             "protocol-state-reader"
           ],
-          "proposed_path": "python/disco/decisions/protocol_state.py"
+          "proposed_path": "python/disco/decisions/protocol_state.py",
+          "current_path": "python/workspace_protocol_state.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Cross-owner exact WorkspaceService/CurationStore/SharedAnnotations/ExplorerHistory/native-reader proof, fallback oracle and response/transaction scope."
         },
         {
           "path": "python/workspace_qc.py",
@@ -5903,7 +6035,11 @@
           "contract_records": [
             "sealed-recipes"
           ],
-          "proposed_path": "python/disco/workbench/recipes.py"
+          "proposed_path": "python/disco/workbench/recipes.py",
+          "current_path": "python/disco/workbench/recipes.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_recording_files.py",
@@ -5915,7 +6051,11 @@
             "acquisition-ingestion",
             "recording-retention"
           ],
-          "proposed_path": "python/disco/projects/recording_files.py"
+          "proposed_path": "python/disco/projects/recording_files.py",
+          "current_path": "python/disco/projects/recording_files.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_recovery_generation.py",
@@ -5926,7 +6066,11 @@
           "contract_records": [
             "recovery-store-authority"
           ],
-          "proposed_path": "python/disco/recovery/recovery_generation.py"
+          "proposed_path": "python/disco/recovery/recovery_generation.py",
+          "current_path": "python/disco/backup/recovery_generation.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_recovery_store.py",
@@ -5937,7 +6081,11 @@
           "contract_records": [
             "recovery-store-authority"
           ],
-          "proposed_path": "python/disco/recovery/recovery_store.py"
+          "proposed_path": "python/disco/recovery/recovery_store.py",
+          "current_path": "python/disco/backup/recovery_store.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_search.py",
@@ -5946,7 +6094,11 @@
           "reason": "Bounded project metadata lookup. No waveform reads, SQL text, or mutations. Derived metadata projections, typed execution, requested aggregates, exact bounded lookup and disposable generation/lease ownership.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/metadata/search.py"
+          "proposed_path": "python/disco/metadata/search.py",
+          "current_path": "python/disco/metadata/search.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_search_presets.py",
@@ -5955,7 +6107,11 @@
           "reason": "Versioned project query methods, independent of frozen export membership. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/search_presets.py"
+          "proposed_path": "python/disco/navigation/search_presets.py",
+          "current_path": "python/disco/navigation/search_presets.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_service.py",
@@ -5977,7 +6133,11 @@
           "reason": "Disposable, incremental shared-tag membership index with exact text semantics. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/shared_tag_index.py"
+          "proposed_path": "python/disco/decisions/shared_tag_index.py",
+          "current_path": "python/disco/decisions/shared_tag_index.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_shared_vocabulary.py",
@@ -5986,7 +6146,11 @@
           "reason": "Lazy shared-tag autocomplete over the existing disposable membership index. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/shared_vocabulary.py"
+          "proposed_path": "python/disco/decisions/shared_vocabulary.py",
+          "current_path": "python/disco/decisions/shared_vocabulary.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_sqlite.py",
@@ -6031,7 +6195,11 @@
           "reason": "Recoverable current app state; no waveforms or action replay. HTTP completion and independent recovery mirrors/deltas/checkpoints; distinct commit and backup authority retained.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/recovery/state_snapshot.py"
+          "proposed_path": "python/disco/recovery/state_snapshot.py",
+          "current_path": "python/workspace_state_snapshot.py",
+          "current_disposition": "keep-in-place",
+          "current_increment": "backend-finite-50",
+          "current_reason": "Stable documented direct CLI and __main__ contract; preserve STORAGE_RECOVERY command with no forwarding shim."
         },
         {
           "path": "python/workspace_storage.py",
@@ -6040,7 +6208,11 @@
           "reason": "Managed project directories and a bounded, metadata-only file inventory. Project discovery/preferences/provisioning, managed storage/recording retention, validation, transfer and exact detachment.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/projects/storage.py"
+          "proposed_path": "python/disco/projects/storage.py",
+          "current_path": "python/disco/projects/storage.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_suggestions.py",
@@ -6049,7 +6221,11 @@
           "reason": "Persistent post-import query candidates; never apply new membership automatically. Frozen incoming review, pending membership, candidate queries/recipes and separate export coordination.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/workbench/suggestions.py"
+          "proposed_path": "python/disco/workbench/suggestions.py",
+          "current_path": "python/disco/workbench/suggestions.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_tag_exchange.py",
@@ -6058,7 +6234,11 @@
           "reason": "Explicit, additive authored-tag interchange. Never imports selection masks. Authored annotations, curation, applied query revisions, inverse facts and distinct author/tag/revision authorities.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/decisions/tag_exchange.py"
+          "proposed_path": "python/disco/decisions/tag_exchange.py",
+          "current_path": "python/disco/decisions/tag_exchange.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_tag_predicates.py",
@@ -6067,7 +6247,11 @@
           "reason": "Explicit protocol-scoped tag predicates; raw acquisition indexes stay immutable. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/tag_predicates.py"
+          "proposed_path": "python/disco/navigation/tag_predicates.py",
+          "current_path": "python/disco/navigation/tag_predicates.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_tree.py",
@@ -6076,7 +6260,11 @@
           "reason": "Discover grouping fields from validated metadata, without reading waveforms. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/tree.py"
+          "proposed_path": "python/disco/navigation/tree.py",
+          "current_path": "python/disco/navigation/tree.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_tree_layouts.py",
@@ -6085,7 +6273,11 @@
           "reason": "Latest protocol tree arrangement, independent of dataset membership. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/tree_layouts.py"
+          "proposed_path": "python/disco/navigation/tree_layouts.py",
+          "current_path": "python/disco/navigation/tree_layouts.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_tree_pages.py",
@@ -6094,7 +6286,11 @@
           "reason": "Bounded, revision-checked metadata tree navigation; never reads waveforms. Exact tree grouping/paging/order, saved search predicates and scoped native-tag predicate composition.",
           "packaged_runtime": true,
           "contract_records": [],
-          "proposed_path": "python/disco/navigation/tree_pages.py"
+          "proposed_path": "python/disco/navigation/tree_pages.py",
+          "current_path": "python/disco/navigation/tree_pages.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_typed_index.py",
@@ -6105,7 +6301,11 @@
           "contract_records": [
             "typed-query"
           ],
-          "proposed_path": "python/disco/metadata/typed_index.py"
+          "proposed_path": "python/disco/metadata/typed_index.py",
+          "current_path": "python/disco/metadata/typed_index.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_typed_lifecycle.py",
@@ -6116,7 +6316,11 @@
           "contract_records": [
             "typed-generation-cache"
           ],
-          "proposed_path": "python/disco/metadata/typed_lifecycle.py"
+          "proposed_path": "python/disco/metadata/typed_lifecycle.py",
+          "current_path": "python/disco/metadata/typed_lifecycle.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_typed_query.py",
@@ -6127,7 +6331,11 @@
           "contract_records": [
             "typed-query"
           ],
-          "proposed_path": "python/disco/metadata/typed_query.py"
+          "proposed_path": "python/disco/metadata/typed_query.py",
+          "current_path": "python/disco/metadata/typed_query.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_undo.py",
@@ -6138,7 +6346,11 @@
           "contract_records": [
             "session-undo"
           ],
-          "proposed_path": "python/disco/decisions/undo.py"
+          "proposed_path": "python/disco/decisions/undo.py",
+          "current_path": "python/disco/decisions/undo.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_updates.py",
@@ -6157,7 +6369,11 @@
           "contract_records": [
             "frozen-workbench-review"
           ],
-          "proposed_path": "python/disco/workbench/workbench.py"
+          "proposed_path": "python/disco/workbench/workbench.py",
+          "current_path": "python/disco/workbench/workbench.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_workbench_exports.py",
@@ -6169,7 +6385,11 @@
             "export-materialization",
             "export-publication"
           ],
-          "proposed_path": "python/disco/workbench/workbench_exports.py"
+          "proposed_path": "python/disco/workbench/workbench_exports.py",
+          "current_path": "python/disco/workbench/workbench_exports.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "python/workspace_workbench_pending.py",
@@ -6180,7 +6400,11 @@
           "contract_records": [
             "frozen-workbench-review"
           ],
-          "proposed_path": "python/disco/workbench/workbench_pending.py"
+          "proposed_path": "python/disco/workbench/workbench_pending.py",
+          "current_path": "python/disco/workbench/workbench_pending.py",
+          "current_disposition": "organized",
+          "current_increment": "backend-finite-50",
+          "current_qualification": "Source composition only; catalog/profile integration and exact combined acceptance remain separate gates."
         },
         {
           "path": "tools/analyze_lazy_diagnostic.py",
@@ -7727,7 +7951,9 @@
             "python/workspace_diff.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/workbench/tests/test_workspace_diff.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_disk_index.py",
@@ -7742,7 +7968,9 @@
             "python/workspace_tree.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/metadata/tests/test_workspace_disk_index.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_disk_index_crash.py",
@@ -8187,7 +8415,9 @@
             "tools/metadata_qualification/storage.py"
           ],
           "association_basis": "Source-reference association, not test execution/coverage proof; primary group is navigation only.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/metadata/tests/test_workspace_metadata_object_contract.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_metadata_objects.py",
@@ -8201,7 +8431,9 @@
             "tools/metadata_qualification/storage.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/metadata/tests/test_workspace_metadata_objects.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_metadata_refresh_api.py",
@@ -8479,7 +8711,9 @@
             "tools/metadata_qualification/truth.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/navigation/tests/test_workspace_predicates.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_project_handoff.py",
@@ -9226,7 +9460,9 @@
             "tools/metadata_qualification/truth.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/metadata/tests/test_workspace_typed_index.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_undo.py",
@@ -9238,7 +9474,9 @@
             "python/workspace_undo.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/decisions/tests/test_workspace_undo.py",
+          "current_increment": "backend-finite-50"
         },
         {
           "path": "python/tests/test_workspace_updates.py",
@@ -9720,7 +9958,13 @@
           "Do not reclassify paused native qualification fixtures as runnable or completed."
         ]
       },
-      "acceptance_status": "Assignment/design only; proposed moves and retained roles require their documented implementation/review/test gates. No runtime completion implied."
+      "acceptance_status": "Assignment/design only; proposed moves and retained roles require their documented implementation/review/test gates. No runtime completion implied.",
+      "current_status": "Finite remaining plan composed:50 named-leaf moves and6 explicit KEEP decisions; prior recovery owner preserved; exact combined qualification pending",
+      "current_baseline_path_counts": {
+        "keep-in-place": 83,
+        "deferred": 10,
+        "organized": 51
+      }
     },
     "desktop": {
       "format": "desktop-runtime-coverage",
@@ -11764,6 +12008,51 @@
           "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
         }
       ]
+    },
+    {
+      "id": "backend-finite-50",
+      "source_candidate": "572d3ffed71e71a0776632a120cbb89ec569a961",
+      "integration_commit": "9723d46",
+      "production_moves": 50,
+      "companion_test_moves": 8,
+      "new_inert_initializers": 6,
+      "current_backend_baseline_path_counts": {
+        "keep-in-place": 83,
+        "deferred": 10,
+        "organized": 51
+      },
+      "profile_source_files": 98,
+      "guidance_paths": [
+        "python/disco/backup/AGENTS.md",
+        "python/disco/decisions/AGENTS.md",
+        "python/disco/metadata/AGENTS.md",
+        "python/disco/navigation/AGENTS.md",
+        "python/disco/projects/AGENTS.md",
+        "python/disco/workbench/AGENTS.md"
+      ],
+      "retained_from_finite_plan": {
+        "python/workspace_state_snapshot.py": "Stable documented direct CLI and __main__ contract; preserve STORAGE_RECOVERY command with no forwarding shim.",
+        "python/workspace_protocol_state.py": "Cross-owner exact WorkspaceService/CurationStore/SharedAnnotations/ExplorerHistory/native-reader proof, fallback oracle and response/transaction scope.",
+        "python/workspace_projects.py": "Project creation code-root defaults use Path(__file__).resolve().parents[1]; preserve application-root identity.",
+        "python/workspace_project_servers.py": "Child commands resolve sibling workspace_api.py and workspace_updates.py; preserve executable identity.",
+        "python/workspace_project_unmount.py": "Exact owned command proof derives sibling workspace_desktop.py; preserve process ownership.",
+        "python/workspace_portability.py": "Stable __main__ CLI and two physical code-root anchors for layout/relocation; preserve transfer interface."
+      },
+      "qualification": "Source composition and finite path classification only; no combined runtime, native, scientific, HTTP, benchmark or assembled-app qualification.",
+      "source_evidence": {
+        "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-6/evidence/backend-integration/receipt.json",
+        "sha256": "050ac3e4cdf5815b138fb9c91dddc7bfc0c43eda62d69da499ccf6bc66f008ad"
+      },
+      "source_witnesses": {
+        "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-6/evidence/backend-integration/source-witnesses.json",
+        "sha256": "8931ee7a7c49d8ecf022cc64d6f44068c36a869a02fdd0a2986514d7cb692a1e",
+        "meaning": "Actual leaf bytes and ordered recipes retained. Basename/content changes conservatively invalidate shared checkpoints; old receipts remain immutable."
+      },
+      "additional_root_test_moves": {
+        "python/tests/test_backend_recovery_public.py": "python/disco/backup/tests/test_backend_recovery_public.py",
+        "python/tests/test_workspace_diff.py": "python/disco/workbench/tests/test_workspace_diff.py"
+      },
+      "test_move_qualification": "Six original source-candidate test relocations plus two byte-identical root colocations; no new runtime evidence implied."
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

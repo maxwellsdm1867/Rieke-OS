@@ -383,3 +383,37 @@ existing file-level APIs and does not adopt additional architectural ports.
 Exact combined source review and aggregate checks remain pending for this
 composition. Backend organization, packaging, native and assembled-app gates
 remain open; no timing, release or whole-app qualification is asserted.
+
+
+## Backend finite current path composition
+
+Source candidate `572d3ffed71e71a0776632a120cbb89ec569a961`, integrated as
+`9723d46`, composes 50 existing production leaves into metadata, decisions, backup,
+navigation, projects and workbench packages. Six existing tests move with their
+owners in that candidate; root additionally colocates the unchanged backup and
+workbench diff suites, giving eight current test moves. Six inert production initializers bring the explicit production profile from 92 to
+98 files. Package contracts remain separate and preserve file-level interfaces,
+import timing, exact scientific authority and distinct transaction lifetimes.
+
+The finite backend/tools baseline of 144 paths now partitions into 51 organized
+(including the earlier mutation-recovery owner), 83 retained and 10 deferred;
+zero proposed moves remain. The six retained decisions from the remaining plan
+are project creation, project servers, unmount, portability, protocol-state proof
+and snapshot composition. Snapshot composition keeps its documented executable
+path and `__main__` command; the original proposed move remains historical.
+
+The JSON ledger adds current backend path/guidance fields without changing baseline
+source pointers, metrics or prior receipts. The frontend's 185-move composition
+and its 248/29/2 baseline partition remain unchanged. Actual checkpoint leaf
+bytes and basename labels conservatively change the opaque source contract; old
+receipts refuse reuse and are not rewritten. NativePreview retains the historical
+flat predicate import and separate baseline root. Current benchmark source-recipe
+and catalog adoption remain separately owned integration work.
+
+The source candidate records 173 exact normalized AST comparisons, two comparator
+files byte-identical to the reviewed two-root fix, 11 pure predicate/undo/diff tests
+and three inert two-root import tests. Those receipts describe that source candidate
+only. This metadata update runs JSON/path checks and imports no product modules.
+Exact combined source review, catalog/discovery closure, runtime/native/scientific
+qualification and final assembled-app acceptance remain separate gates; whole-app
+costs remain unmeasured.

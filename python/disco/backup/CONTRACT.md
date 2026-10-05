@@ -50,7 +50,7 @@ There is no forwarding shim. Only its imports of relocated owners change; the
 CLI and guide are not rewritten or executed by this organization work.
 
 The isolated public examples are in
-[the recovery characterization](../../tests/test_backend_recovery_public.py).
+[the recovery characterization](tests/test_backend_recovery_public.py).
 They replace worker startup with an inert test adapter and exercise public
 scheduler calls, plus public snapshot functions. They establish neither worker
 scheduling nor native capture, SQL durability, crash recovery or scientific

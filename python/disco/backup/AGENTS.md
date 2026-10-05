@@ -7,6 +7,6 @@ Snapshot composition retains its documented executable path at
 [`workspace_state_snapshot.py`](../../workspace_state_snapshot.py).
 HTTP mutation completion remains [disco.recovery](../recovery/AGENTS.md).
 
-The [isolated examples](../../tests/test_backend_recovery_public.py) exercise
+The [isolated examples](tests/test_backend_recovery_public.py) exercise
 public scheduler and snapshot calls without a worker, application or database.
 Do not infer native capture/durability qualification from their result.

@@ -91,12 +91,12 @@ foreign keys, native exit, byte provenance or scientific export correctness.
 
 ## Public examples and deferred qualification
 
-The existing [membership examples](../../tests/test_workspace_diff.py) call the same
+The existing [membership examples](tests/test_workspace_diff.py) call the same
 `summarize_diff` interface as review/proposal callers and import only stdlib plus the
 inert package/public diff module. Run from the repository root:
 
 ```sh
-PYTHONPATH=python python3 -B -m unittest discover -s python/tests -p test_workspace_diff.py
+PYTHONPATH=python python3 -B -m unittest disco.workbench.tests.test_workspace_diff
 ```
 
 They verify complete counts despite detail truncation, existing-cell additions,

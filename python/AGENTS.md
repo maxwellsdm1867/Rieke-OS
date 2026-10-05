@@ -1,23 +1,50 @@
 # Backend module navigation
 
-Start at the [application module guide](../ARCHITECTURE.md#module-guide).
-[HTTP mutation recovery](disco/recovery/AGENTS.md) is the first organized Python
-module. Its [canonical public contract](disco/recovery/CONTRACT.md) owns usage,
-ordering, failures and scoped checks. Import its public package, not its private
-implementation. The [catalog](../docs/architecture/adopted-port-checks.json)
-enforces that seam for production and tests.
+Start at the [application module guide](../ARCHITECTURE.md#module-guide) and
+[mutation recovery instructions](disco/recovery/AGENTS.md).
+Owner instructions are [metadata](disco/metadata/AGENTS.md),
+[decisions](disco/decisions/AGENTS.md), [backup](disco/backup/AGENTS.md),
+[navigation](disco/navigation/AGENTS.md), [projects](disco/projects/AGENTS.md)
+and [workbench](disco/workbench/AGENTS.md).
+Import the substantive named leaf for the operation; these package initializers
+are inert and do not create aggregate facades. Existing functions, classes,
+constants, required helpers and imported attributes retain their interfaces.
 
-The remaining flat files retain their substantive responsibilities and paths:
-[HTTP composition](workspace_api.py), [recording/query access](recording_workspace.py),
-[group annotations](workspace_annotation_groups.py), [recovery storage](workspace_recovery_store.py),
-[backup scheduling](workspace_backup_scheduler.py), [export materialization](workspace_export_artifacts.py),
-and [desktop lifecycle](workspace_desktop.py). They are not completed physical
-package migrations. Preserve their scientific, freshness, cancellation and
-process ownership contracts in the [adoption record](../docs/architecture/0.1.8-first-port-slices.md).
+| Responsibility | Canonical local contract |
+| --- | --- |
+| HTTP mutation completion and independent backup status | [Mutation recovery](disco/recovery/CONTRACT.md) |
+| Metadata readers, typed queries and disposable generations | [Metadata](disco/metadata/CONTRACT.md) |
+| Authored annotations, curation and interchange | [Decisions](disco/decisions/CONTRACT.md) |
+| Checkpoints, tag indexes, applied queries and response-only undo | [Adjacent decisions](disco/decisions/ADJACENT.md) |
+| Current-state mirror and backup scheduling | [Backup](disco/backup/CONTRACT.md) |
+| Bounded predicates, saved methods and tree navigation | [Navigation](disco/navigation/CONTRACT.md) |
+| Project storage, retention and provisioning | [Projects](disco/projects/CONTRACT.md) |
+| Frozen recipes, review and separate export publication | [Workbench](disco/workbench/CONTRACT.md) |
+
+The [catalog](../docs/architecture/adopted-port-checks.json) records adopted public
+seams and scoped checks. Read each contract before selecting tests; central suites
+can load native/scientific/HTTP composition even when their names appear narrow.
+Do not replace existing assertions or lower provenance rules to accommodate a move.
+
+Retained composition includes [HTTP](workspace_api.py),
+[recording/query access](recording_workspace.py),
+[protocol-state proof](workspace_protocol_state.py),
+[export materialization](workspace_export_artifacts.py),
+[desktop lifecycle](workspace_desktop.py), and
+[snapshot capture/restore CLI](workspace_state_snapshot.py).
+The documented snapshot command remains unchanged. Project creation, servers,
+unmount and portability retain physical paths because their code-root, sibling
+executable and command-ownership contracts depend on them; see the
+[project KEEP decisions](disco/projects/CONTRACT.md#explicit-retained-paths).
+Metadata's [KEEP rationale](disco/metadata/KEEP.md) preserves scientific authority
+and source-verified trace composition outside disposable read owners.
 
 The [application profile](../desktop/application-profile.json) explicitly lists
-92 production Python files using v2 regular-package paths; tests and guides are
-excluded. Its existing closure/staging helper remains the packaging authority.
-The [module ledger](../docs/architecture/core-module-ledger.md) records measured
-and unmeasured evidence. Source conformance does not qualify an assembled app,
-native imports, SQL durability, parser behavior or historical benchmark results.
+98 production Python files using v2 regular-package paths; tests and guides are
+excluded. Its closure/staging helper remains the packaging authority.
+The [module ledger](../docs/architecture/core-module-ledger.md) and
+[finite path companion](../docs/architecture/core-module-paths.json) distinguish
+current source organization from historical evidence. Leaf source bytes and
+checkpoint basename labels change conservatively; old receipts are never resealed
+or relabeled. Source conformance does not qualify an assembled app, native imports,
+SQL durability, parser behavior or historical benchmark results.

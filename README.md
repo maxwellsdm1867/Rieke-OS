@@ -68,7 +68,9 @@ for the area you are changing. The [module ledger](docs/architecture/core-module
 separates verified local increments, retained owners and remaining work; these
 source checks do not establish final assembled-app qualification. The
 [finite frontend path composition](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition)
-records current A/B/C owner folders while preserving the historical baseline.
+records current A/B/C owner folders while preserving the historical baseline. The
+[backend finite composition](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
+records 50 named-leaf moves, six explicit retained owners and the 98-file source profile.
 
 ## Source download (developer workflow)
 

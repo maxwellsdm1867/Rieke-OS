@@ -419,7 +419,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/workbench/candidate_exports.py",
+          "python/disco/workbench/workbench_exports.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/workbench/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "typed-query",
@@ -500,7 +512,7 @@
       "existing_tests": {
         "status": "source pointers only; not newly run",
         "paths": [
-          "python/tests/test_workspace_typed_index.py",
+          "python/disco/metadata/tests/test_workspace_typed_index.py",
           "python/tests/test_workspace_explore_queries.py",
           "python/tests/test_workspace_tree_read_identity.py"
         ]
@@ -511,7 +523,19 @@
         "Return empty success on interruption or publish a raw backend rank as a public cursor and require refusal."
       ],
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/metadata/typed_index.py",
+          "python/disco/metadata/typed_query.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/metadata/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "renderer-resources",
@@ -1473,7 +1497,18 @@
         "Retry same source with altered catalog parent links and require identity conflict."
       ],
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/projects/recording_files.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/projects/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "status": "existing-coupled-proposed-separation",
@@ -1588,7 +1623,18 @@
         "Inject scratch cleanup failure after commit and preserve committed outcome."
       ],
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/projects/project_database.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/projects/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "recording-retention",
@@ -1647,7 +1693,18 @@
         "status": "not measured for this coverage assessment"
       },
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/projects/recording_files.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/projects/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "project-database",
@@ -1719,7 +1776,18 @@
         "status": "not measured for this coverage assessment"
       },
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/projects/project_database.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/projects/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "native-metadata-index",
@@ -1774,7 +1842,7 @@
       "existing_tests": {
         "status": "source pointers only; not newly run",
         "paths": [
-          "python/tests/test_workspace_disk_index.py",
+          "python/disco/metadata/tests/test_workspace_disk_index.py",
           "python/tests/test_workspace_disk_index_crash.py",
           "python/tests/test_workspace_projection_objects.py",
           "python/tests/test_workspace_refresh_cache.py"
@@ -1790,7 +1858,18 @@
         "status": "not measured for this coverage assessment"
       },
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/metadata/disk_index.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/metadata/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "typed-generation-cache",
@@ -1847,7 +1926,7 @@
           "python/tests/test_workspace_cache_lifecycle.py",
           "python/tests/test_workspace_cache_publication.py",
           "python/tests/test_workspace_refresh_cache.py",
-          "python/tests/test_workspace_typed_index.py"
+          "python/disco/metadata/tests/test_workspace_typed_index.py"
         ]
       },
       "not_newly_run_fault_ideas": [
@@ -1861,7 +1940,19 @@
         "status": "not measured for this coverage assessment"
       },
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/metadata/cache_lifecycle.py",
+          "python/disco/metadata/typed_lifecycle.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/metadata/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "query-execution",
@@ -1932,7 +2023,18 @@
         "status": "not measured for this coverage assessment"
       },
       "area": "Import and storage",
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/metadata/explore_queries.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/metadata/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "state-generation-authority",
@@ -2155,7 +2257,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/annotation_preparation.py",
+          "python/disco/decisions/annotations.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "author-identity-preferences",
@@ -2213,7 +2327,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/annotations.py",
+          "python/disco/decisions/author_preferences.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "annotation-group-authority",
@@ -2283,7 +2409,18 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/annotation_groups.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "command-transport-admission",
@@ -2383,7 +2520,7 @@
       "existing_tests": [
         "workspace-app/src/mutationUndo.test.js",
         "workspace-app/src/mutationUndoWorkflow.test.js",
-        "python/tests/test_workspace_undo.py"
+        "python/disco/decisions/tests/test_workspace_undo.py"
       ],
       "not_newly_run_fault_ideas": [
         "Advance all older overlapping revisions instead of nearest and detect incorrect undo",
@@ -2406,7 +2543,18 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/undo.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "backup-scheduling",
@@ -2467,7 +2615,18 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/backup/backup_scheduler.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/backup/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "recovery-store-authority",
@@ -2533,7 +2692,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/backup/recovery_generation.py",
+          "python/disco/backup/recovery_store.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/backup/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "frozen-workbench-review",
@@ -2606,7 +2777,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/workbench/workbench.py",
+          "python/disco/workbench/workbench_pending.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/workbench/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "export-publication",
@@ -2685,7 +2868,19 @@
       ],
       "area": "Scientific commands",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/workbench/candidate_exports.py",
+          "python/disco/workbench/workbench_exports.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/workbench/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "epoch-snapshot-cache",
@@ -6695,7 +6890,18 @@
       ],
       "bounded_next_design": "Keep purpose-specific store; no universal annotation/curation writer. Any extraction must retain different no-op, attribution and audit semantics.",
       "area": "Scientific commands",
-      "contract_gaps": []
+      "contract_gaps": [],
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/curation.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "protocol-state-reader",
@@ -6761,7 +6967,18 @@
       ],
       "bounded_next_design": "Retain exact fallback and native proof owner. Alternative cache algorithm must preserve conservative adapter support and final attestation before any performance comparison.",
       "area": "Scientific commands",
-      "contract_gaps": []
+      "contract_gaps": [],
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/workspace_protocol_state.py"
+        ],
+        "current_backend_guidance": [],
+        "current_backend_keeps": {
+          "python/workspace_protocol_state.py": "Cross-owner exact WorkspaceService/CurationStore/SharedAnnotations/ExplorerHistory/native-reader proof, fallback oracle and response/transaction scope."
+        }
+      }
     },
     {
       "id": "sealed-recipes",
@@ -6823,7 +7040,18 @@
       ],
       "bounded_next_design": "Keep small integrity/selection helpers. A generalized importer/export schema is a separate versioned design, not established by current seals.",
       "area": "Scientific commands",
-      "contract_gaps": []
+      "contract_gaps": [],
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/workbench/recipes.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/workbench/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "external-tag-receipts",
@@ -6885,7 +7113,18 @@
       ],
       "bounded_next_design": "Keep purpose-specific file receipt owner. Consider bounded scan indexing only with explicit durable receipt and fairness invariants; no new universal event bus.",
       "area": "Scientific commands",
-      "contract_gaps": []
+      "contract_gaps": [],
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/disco/decisions/external_tags.py"
+        ],
+        "current_backend_guidance": [
+          "python/disco/decisions/AGENTS.md"
+        ],
+        "current_backend_keeps": {}
+      }
     },
     {
       "id": "project-portability",
@@ -7062,7 +7301,18 @@
           "qualification": "Existing test source only; not run for this ledger."
         }
       ],
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "current_backend_increment": "backend-finite-50",
+        "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
+        "current_backend_source_paths": [
+          "python/workspace_portability.py"
+        ],
+        "current_backend_guidance": [],
+        "current_backend_keeps": {
+          "python/workspace_portability.py": "Stable __main__ CLI and two physical code-root anchors for layout/relocation; preserve transfer interface."
+        }
+      }
     }
   ],
   "evidence": [
@@ -8026,6 +8276,51 @@
           "context": "Historical source-candidate evidence only; not a receipt for the composed candidate."
         }
       ]
+    },
+    "current_backend_snapshot": {
+      "id": "backend-finite-50",
+      "source_candidate": "572d3ffed71e71a0776632a120cbb89ec569a961",
+      "integration_commit": "9723d46",
+      "production_moves": 50,
+      "companion_test_moves": 8,
+      "new_inert_initializers": 6,
+      "current_backend_baseline_path_counts": {
+        "keep-in-place": 83,
+        "deferred": 10,
+        "organized": 51
+      },
+      "profile_source_files": 98,
+      "guidance_paths": [
+        "python/disco/backup/AGENTS.md",
+        "python/disco/decisions/AGENTS.md",
+        "python/disco/metadata/AGENTS.md",
+        "python/disco/navigation/AGENTS.md",
+        "python/disco/projects/AGENTS.md",
+        "python/disco/workbench/AGENTS.md"
+      ],
+      "retained_from_finite_plan": {
+        "python/workspace_state_snapshot.py": "Stable documented direct CLI and __main__ contract; preserve STORAGE_RECOVERY command with no forwarding shim.",
+        "python/workspace_protocol_state.py": "Cross-owner exact WorkspaceService/CurationStore/SharedAnnotations/ExplorerHistory/native-reader proof, fallback oracle and response/transaction scope.",
+        "python/workspace_projects.py": "Project creation code-root defaults use Path(__file__).resolve().parents[1]; preserve application-root identity.",
+        "python/workspace_project_servers.py": "Child commands resolve sibling workspace_api.py and workspace_updates.py; preserve executable identity.",
+        "python/workspace_project_unmount.py": "Exact owned command proof derives sibling workspace_desktop.py; preserve process ownership.",
+        "python/workspace_portability.py": "Stable __main__ CLI and two physical code-root anchors for layout/relocation; preserve transfer interface."
+      },
+      "qualification": "Source composition and finite path classification only; no combined runtime, native, scientific, HTTP, benchmark or assembled-app qualification.",
+      "source_evidence": {
+        "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-6/evidence/backend-integration/receipt.json",
+        "sha256": "050ac3e4cdf5815b138fb9c91dddc7bfc0c43eda62d69da499ccf6bc66f008ad"
+      },
+      "source_witnesses": {
+        "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-6/evidence/backend-integration/source-witnesses.json",
+        "sha256": "8931ee7a7c49d8ecf022cc64d6f44068c36a869a02fdd0a2986514d7cb692a1e",
+        "meaning": "Actual leaf bytes and ordered recipes retained. Basename/content changes conservatively invalidate shared checkpoints; old receipts remain immutable."
+      },
+      "additional_root_test_moves": {
+        "python/tests/test_backend_recovery_public.py": "python/disco/backup/tests/test_backend_recovery_public.py",
+        "python/tests/test_workspace_diff.py": "python/disco/workbench/tests/test_workspace_diff.py"
+      },
+      "test_move_qualification": "Six original source-candidate test relocations plus two byte-identical root colocations; no new runtime evidence implied."
     }
   }
 }
