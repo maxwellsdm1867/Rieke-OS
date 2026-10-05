@@ -10,7 +10,8 @@ const {createRequire} = require('node:module');
 const {pathToFileURL} = require('node:url');
 const desktop = path.resolve(__dirname, '..');
 const entries = ['close/draft-barrier.cjs', 'close/quit-coordinator.cjs',
-  'drafts/draft-store.cjs', 'startup/startup-session.cjs'];
+  'drafts/draft-store.cjs', 'startup/startup-session.cjs',
+  'integrity/verify-application.cjs', 'integrity/verification-recovery.cjs'];
 const rootPatterns = ['*.cjs', '*.html', '*.css'];
 const rootFiles = ['recovery.js', 'icon.png', 'package.json', 'distribution.json', 'rieke-emblem.png'];
 const expectedFiles = [...rootPatterns, ...rootFiles, ...entries];
@@ -47,7 +48,7 @@ async function check({root, config, preview}) {
   const main = fs.readFileSync(path.join(root, 'main.cjs'), 'utf8');
   const mainDependencies = dependencies('main.cjs', main);
   for (const entry of entries) assert.ok(mainDependencies.includes('./' + entry), `main must require ${entry}`);
-  // Check main and the four moved public entries only, without evaluating application
+  // Check main and the six moved public entries only, without evaluating application
   // code. Existing unrelated helper CLI require.main guards are outside this
   // scoped parser policy; this is not a whole-desktop transitive closure audit.
   const pending = ['main.cjs', ...entries], seen = new Set();
@@ -59,6 +60,8 @@ async function check({root, config, preview}) {
     const code = fs.readFileSync(filename, 'utf8');
     const imports = dependencies(relative, code);
     const stateDependencies = {
+      'integrity/verification-recovery.cjs': [],
+      'integrity/verify-application.cjs': ['../physical-fs.cjs', 'node:path', 'node:child_process', '../updater-validation.cjs', '../bootstrap.cjs'],
       'drafts/draft-store.cjs': ['node:fs/promises', 'node:path', 'node:crypto', '../security.cjs'],
       'startup/startup-session.cjs': ['node:fs/promises', 'node:path', 'node:crypto', '../supervisor.cjs', '../security.cjs'],
     };
@@ -79,7 +82,7 @@ async function check({root, config, preview}) {
 test('default and preview declare all adopted nested entries; staged adopted desktop local requires resolve', async t => {
   const seen = await check(stage(t));
   assert.ok(seen.has('main.cjs'));
-  assert.equal(seen.size, 5);
+  assert.equal(seen.size, 7);
 });
 
 for (const entry of entries) test(`omitting ${entry} from either configuration fails`, async t => {
@@ -90,7 +93,7 @@ for (const entry of entries) test(`omitting ${entry} from either configuration f
 });
 
 for (const fault of ['close/tests/quit-coordinator.test.cjs', 'drafts/tests/draft-store.test.cjs',
-  'startup/tests/startup-session.test.cjs', '**/*.cjs', 'close/**/*.cjs', 'drafts/**/*.cjs', 'startup/**/*.cjs']) {
+  'startup/tests/startup-session.test.cjs', 'integrity/tests/verify-application.test.cjs', 'integrity/**/*.cjs', '**/*.cjs', 'close/**/*.cjs', 'drafts/**/*.cjs', 'startup/**/*.cjs']) {
   test(`test inclusion or broad pattern ${fault} fails`, async t => {
     for (const mode of ['config', 'preview']) {
       await assert.rejects(check(stage(t, value => { value[mode].files.push(fault); })), /exact reviewed app entries/);
@@ -101,12 +104,15 @@ for (const fault of ['close/tests/quit-coordinator.test.cjs', 'drafts/tests/draf
 for (const entry of entries) test(`stale main require for ${entry} fails before application evaluation`, async t => {
   await assert.rejects(check(stage(t, ({root}) => {
     const file = path.join(root, 'main.cjs');
-    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('./' + entry, './' + path.basename(entry)));
+    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replaceAll('./' + entry, './' + path.basename(entry)));
   })), /main must require/);
 });
 
 for (const [entry, dependency] of [
   ['drafts/draft-store.cjs', 'security.cjs'],
+  ['integrity/verify-application.cjs', 'physical-fs.cjs'],
+  ['integrity/verify-application.cjs', 'updater-validation.cjs'],
+  ['integrity/verify-application.cjs', 'bootstrap.cjs'],
   ['startup/startup-session.cjs', 'security.cjs'],
   ['startup/startup-session.cjs', 'supervisor.cjs'],
 ]) test(`stale installed dependency ${entry} -> ${dependency} fails`, async t => {

@@ -101,7 +101,7 @@ test('explicit quit waits for clean receipts and process exit, then removes owne
  child.kill=()=>assert.fail('Quit never kills accepted writers');
 });
 test('failed Verify draft acknowledgement survives successful closure and subsequent ordinary Quit',async t=>{
- const {recoverVerificationFailure,cleanupAfterVerificationRecovery}=require('../verification-recovery.cjs');
+ const {recoverVerificationFailure,cleanupAfterVerificationRecovery}=require('../integrity/verification-recovery.cjs');
  const {QuitCoordinator}=require('../close/quit-coordinator.cjs');
  const {supervisor}=await fixture(t,(sup,worker,url)=>{
   if(url.endsWith('/stop'))process.nextTick(()=>worker.emit('exit',0));

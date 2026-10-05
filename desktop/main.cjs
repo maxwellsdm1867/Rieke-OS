@@ -60,20 +60,20 @@ async function verifyApplicationFiles() {
     let checked=0,last=0;
     try {
       broadcast({...status(),message:'Verifying application files… Use Cancel Application Verification or Quit to stop.'});
-      await require('./verify-application.cjs').verifyApplication({bundle:sourceApp,signed:distribution.channel==='signed',signal,
+      await require('./integrity/verify-application.cjs').verifyApplication({bundle:sourceApp,signed:distribution.channel==='signed',signal,
         progress:()=>{checked++;if(Date.now()-last>250){last=Date.now();broadcast({...status(),message:`Verifying application files… ${checked} entries checked.`});}}});
       if(signal.aborted||quitting)return;
       void dialog.showMessageBox({type:'info',title:'Application verification complete',message:'Application files match the installed inventory and app seal.',
         detail:distribution.channel==='signed'?'Developer ID signature verification also passed. This does not verify project data.':'This unsigned testing build does not establish publisher identity. This does not verify project data.'}).catch(()=>{});
     } catch(error) {
       if(signal.aborted||quitting)return;
-      verificationRecovery=require('./verification-recovery.cjs').recoverVerificationFailure({
+      verificationRecovery=require('./integrity/verification-recovery.cjs').recoverVerificationFailure({
         blockNewWork:()=>{integrityFailed=true;coordinator?.stop();if(startupSession)startupSession.cancelled=true;broadcast({state:'IntegrityRecovery',title:'Application verification failed',message:'New work is blocked. Finishing accepted operations and saving the last available view.'});},
         pause:async()=>{if(supervisor?.bound)await supervisor.api('/api/desktop/pause-all',{method:'POST',timeout:5000});},
         saveDrafts:()=>draftBarrier.prepare(scientificWindows,{timeout:5000}),
         closeServices:drafts=>supervisor?supervisor.quit({drafts,startup:startupOpening}):{ready:true},
         showRecovery:result=>{verificationRecoveryResult=result;
-          recovery(result.services.ready?'Application verification failed. Owned services have closed.':'Application verification failed. Service closure is unconfirmed; recovery is required.',require('./verify-application.cjs').repairGuidance(sourceApp));
+          recovery(result.services.ready?'Application verification failed. Owned services have closed.':'Application verification failed. Service closure is unconfirmed; recovery is required.',require('./integrity/verify-application.cjs').repairGuidance(sourceApp));
           lifecycleStatus={...lifecycleStatus,state:'IntegrityRecovery'};broadcast(lifecycleStatus);}
       });
       await verificationRecovery;
@@ -132,7 +132,7 @@ function orderlyQuit() {
         : draftBarrier.prepare(scientificWindows, {timeout}),
       cleanup: async options => {
         await cancelApplicationVerification();
-        return require('./verification-recovery.cjs').cleanupAfterVerificationRecovery(verificationRecoveryResult,
+        return require('./integrity/verification-recovery.cjs').cleanupAfterVerificationRecovery(verificationRecoveryResult,
           () => supervisor ? supervisor.quit({...options,startup:startupOpening}) : {ready:true});
       },
       publish: value => { lifecycleStatus = value; broadcast(value); },

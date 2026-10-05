@@ -87,23 +87,37 @@ class ReleasePlanCLITests(unittest.TestCase):
         self.assertEqual(tuple(value[flag] for flag in FLAGS), (True, True, False, False, True))
 
     def test_state_owner_test_changes_and_renames_do_not_build(self):
-        for owner in ('drafts', 'startup'):
+        for owner in ('drafts', 'startup', 'integrity'):
             self.write(f'desktop/tests/{owner}.test.cjs', '// original coverage\n')
         before = self.commit()
-        for owner in ('drafts', 'startup'):
+        for owner in ('drafts', 'startup', 'integrity'):
             self.write(f'desktop/{owner}/tests/public.test.cjs', '// public example\n')
             self.git('mv', f'desktop/tests/{owner}.test.cjs', f'desktop/{owner}/tests/moved.test.cjs')
         self.commit()
         value = self.plan('--base', before)
         self.assertEqual(tuple(value[flag] for flag in FLAGS), (False,) * 5)
 
+    def test_integrity_test_edits_and_deletes_do_not_build(self):
+        name = 'desktop/integrity/tests/public.test.cjs'
+        self.write(name, '// first example\n')
+        before = self.commit()
+        self.write(name, '// corrected example\n')
+        self.commit()
+        self.assertEqual(tuple(self.plan('--base', before)[flag] for flag in FLAGS), (False,) * 5)
+        before = self.git('rev-parse', 'HEAD').strip()
+        self.git('rm', name)
+        self.commit()
+        self.assertEqual(tuple(self.plan('--base', before)[flag] for flag in FLAGS), (False,) * 5)
+
     def test_state_production_moves_and_deletions_keep_basename_classification(self):
         for owner, name, expected in [('drafts', 'draft-store', (True, True, False, False, True)),
-                                      ('startup', 'startup-session', (True, True, False, False, False))]:
+                                      ('startup', 'startup-session', (True, True, False, False, False)),
+                                      ('integrity', 'verify-application', (True, True, False, False, False)),
+                                      ('integrity', 'verification-recovery', (True, True, False, False, False))]:
             with self.subTest(owner=owner):
                 self.write(f'desktop/{name}.cjs', '// original owner\n')
                 before = self.commit()
-                (self.root / f'desktop/{owner}').mkdir(parents=True)
+                (self.root / f'desktop/{owner}').mkdir(parents=True, exist_ok=True)
                 self.git('mv', f'desktop/{name}.cjs', f'desktop/{owner}/{name}.cjs')
                 moved = self.commit()
                 value = self.plan('--base', before)

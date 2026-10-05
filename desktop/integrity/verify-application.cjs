@@ -1,10 +1,10 @@
 'use strict';
 // Explicit read-only audit. Never reseal a changed inventory or repair user data.
-const fs = require('./physical-fs.cjs').promises;
+const fs = require('../physical-fs.cjs').promises;
 const path = require('node:path');
 const {spawn} = require('node:child_process');
-const {verifyResources} = require('./updater-validation.cjs');
-const {signatureIdentity, readBundleManifest} = require('./bootstrap.cjs');
+const {verifyResources} = require('../updater-validation.cjs');
+const {signatureIdentity, readBundleManifest} = require('../bootstrap.cjs');
 // Only this read-only audit child is signalled. Resolve/reject on close, not the
 // abort event: Quit must know the owned codesign process has actually exited.
 function runAuditCommand(command, args, {signal, timeout = 120000} = {}) {

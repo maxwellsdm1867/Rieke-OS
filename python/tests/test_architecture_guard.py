@@ -270,7 +270,7 @@ class ArchitectureGuardTests(unittest.TestCase):
 
     def test_state_owner_test_roots_preserve_narrow_mapping_and_execution(self):
         self.desktop_contract()
-        for owner in ('drafts', 'startup'):
+        for owner in ('drafts', 'startup', 'integrity'):
             with self.subTest(owner=owner):
                 name = f'desktop/{owner}/tests/public.test.cjs'
                 self.write(name, "require('node:test')('state contract', () => require('node:assert/strict').equal(1, 1));\n")

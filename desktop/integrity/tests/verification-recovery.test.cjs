@@ -1,7 +1,7 @@
 'use strict';
 const test=require('node:test'),assert=require('node:assert/strict');
 const {recoverVerificationFailure}=require('../verification-recovery.cjs');
-const {QuitCoordinator}=require('../close/quit-coordinator.cjs');
+const {QuitCoordinator}=require('../../close/quit-coordinator.cjs');
 test('ordinary Quit retries only absent or unconfirmed verification cleanup',async()=>{
   const {cleanupAfterVerificationRecovery}=require('../verification-recovery.cjs');
   let retries=0;

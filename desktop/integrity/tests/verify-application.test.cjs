@@ -38,7 +38,7 @@ test('mixed compatibility and failed outer seal fail explicit verification',asyn
 test('assembled build refuses corrupt runtime before signing or rewriting its manifest',async t=>{
   const f=await fixture(t),before=await fs.readFile(f.manifestPath);
   await fs.writeFile(path.join(f.runtime,'unused.txt'),'modified');
-  await assert.rejects(require('../seal-testing.cjs')({electronPlatformName:'darwin',appOutDir:path.dirname(f.bundle),packager:{appInfo:{productFilename:'Disco'}}}),/checksum/);
+  await assert.rejects(require('../../seal-testing.cjs')({electronPlatformName:'darwin',appOutDir:path.dirname(f.bundle),packager:{appInfo:{productFilename:'Disco'}}}),/checksum/);
   assert.deepEqual(await fs.readFile(f.manifestPath),before);
 });
 test('cancel during inventory verification exits without starting codesign',async t=>{
