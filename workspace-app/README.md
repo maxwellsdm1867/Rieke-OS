@@ -1,8 +1,10 @@
 # Disco — local React app
 
-This is the first working React application, backed by the imported RetinAnalysis
-DataJoint catalog. It uses real recordings; the earlier conversation sketch is
-separate and contains example data.
+Disco's React interface is backed by the imported RetinAnalysis DataJoint catalog.
+For organized frontend modules, start at [module navigation](src/AGENTS.md) to find
+the public interfaces, call examples, errors, ownership limits and scoped tests.
+The remaining owners and organization work are tracked in the existing
+[module ledger](../docs/architecture/core-module-ledger.md).
 
 For workspace initialization, launching from your research folder, and the file
 layout, see the [Disco quick start](../docs/RIEKE_OS_QUICK_START.md).
@@ -292,8 +294,16 @@ membership. Export Control previews eligible/held counts and blocks empty output
 Source context retains raw group/solution values and exposes full ancestry.
 Browser metadata preserves integers beyond JavaScript's exact numeric range as
 strings, so acquisition ticks are never silently rounded in the inspector.
-Run `npm test` here for the two curation-target scope regressions. See
-[`SCIENTIFIC_UX_REVIEW.md`](../docs/dev/SCIENTIFIC_UX_REVIEW.md) for findings.
+With `RIEKE_TEST_DOM_MODULE` unset, run `npm test` here for recursive frontend
+`.test.js` discovery with the React preload. To run only the two curation-target
+scope regressions from this directory:
+
+```sh
+node --import ./src/test-support/reactTestEnvironment.js --test src/curation-scope.test.js
+```
+
+See [`SCIENTIFIC_UX_REVIEW.md`](../docs/dev/SCIENTIFIC_UX_REVIEW.md) for the historical
+review findings.
 
 
 ## Managed project files and action history

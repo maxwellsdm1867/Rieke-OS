@@ -89,9 +89,12 @@ this CLI against disposable Git histories, including
 allowlist. Loading/closure validation rejects malformed, missing, redirected or
 excluded modules; copy stages that allowlist; audit compares the actual file set.
 Do not invoke copy while intending only to inspect. Its CLI `--root` checks tracked
-release-source exclusions, not the entire staged runtime. At this source baseline,
-profile v1 accepts flat Python filenames: package relocation requires the reviewed
-closure/profile/discovery prerequisites, not a silent relaxation of the allowlist.
+release-source exclusions, not the entire staged runtime. The shipping profile
+remains v1 with flat Python filenames; the helper also supports v2 explicit package
+paths. Follow the canonical [application boundary](../desktop/README.md#application-boundary)
+for package rules, source-only examples and qualification limits. Actual package
+relocation still requires reviewed closure/discovery changes and separate
+qualification, not a silent relaxation of the allowlist.
 
 [DesktopPackagingTests](../python/tests/test_desktop_runtime_packaging.py) contains
 these existing focused source/temporary-file checks:
