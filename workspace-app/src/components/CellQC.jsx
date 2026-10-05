@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {Activity,ArrowLeft,ArrowUpRight,Check,Copy,Info,Layers,RefreshCw,Thermometer,Tag} from 'lucide-react';
 import {api,humanize,number,useResource,useEpochResource} from '../api.js';
 import {Badge,Empty,Status} from './Common.jsx';
-import Trace from './TraceViewer.jsx';
+import Trace from '../traces/ui/TraceViewer.jsx';
 import StableContent from './StableContent.jsx';
 import MetadataPanel from './MetadataPanel.jsx';
 import AnnotationTags from './AnnotationTags.jsx';

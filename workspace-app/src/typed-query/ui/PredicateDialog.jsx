@@ -2,17 +2,17 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {Search,Users,Activity,Clock3,X} from 'lucide-react';
 import PredicateBuilder from './PredicateBuilder.jsx';
 import {compilePredicate,newGroup} from './predicateState.js';
-import {useRequestedSummaries} from '../requested-summaries/useRequestedSummaries.js';
-import {fieldsWithSummaries,requestedSummaryFields} from '../requested-summaries/requestedSummaries.js';
-import SummaryStatus from './SummaryStatus.jsx';
-import SummaryPreferences from './SummaryPreferences.jsx';
-import {useProtocolSummaryPreferences} from '../useProtocolSummaryPreferences.js';
-import {useProjectPreference} from '../useProjectPreference.js';
-import {api,number,time} from '../api.js';
-import {candidatePreviewReceipt} from '../frozenReadContext.js';
+import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
+import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
+import SummaryStatus from '../../components/SummaryStatus.jsx';
+import SummaryPreferences from '../../components/SummaryPreferences.jsx';
+import {useProtocolSummaryPreferences} from '../../useProtocolSummaryPreferences.js';
+import {useProjectPreference} from '../../useProjectPreference.js';
+import {api,number,time} from '../../api.js';
+import {candidatePreviewReceipt} from '../../frozenReadContext.js';
 import {predicateIdentity} from '../predicateIdentity.js';
-import {presetKey} from '../searchPresets.js';
-import StableContent from './StableContent.jsx';
+import {presetKey} from '../../searchPresets.js';
+import StableContent from '../../components/StableContent.jsx';
 import './PredicateDialog.css';
 
 export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onClose,protocols=[],projectId,protocolId,previousRun=null,previousPredicate=null,title='Search predicate',submitLabel='View matching epochs',readContext=null}){

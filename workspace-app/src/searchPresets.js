@@ -1,4 +1,4 @@
-import {predicateIdentity} from './predicateIdentity.js';
+import {predicateIdentity} from './typed-query/predicateIdentity.js';
 function normalizedPredicate(predicate){
  if(predicate.not){const child=normalizedPredicate(predicate.not);return child.not&&Object.keys(child).length===1?child.not:{not:child};}
  const mode=predicate.all?'all':predicate.any?'any':null;

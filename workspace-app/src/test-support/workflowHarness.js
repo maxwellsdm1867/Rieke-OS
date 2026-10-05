@@ -107,9 +107,9 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
         if(id==='./workspace-navigation/useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0workflow-layout';
         if(id==='./useImportQueue.js')return '\0workflow-import-queue';
-        if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./components/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
+        if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./incoming-workbench/ui/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
-      if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['../tree-ancestors/treeBranchReads.jsx','./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','./IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
+      if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['../tree-ancestors/treeBranchReads.jsx','./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','../incoming-workbench/ui/IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
     async load(id){
       if(id==='\0workflow-portals')return 'export const createPortal=children=>children;';
@@ -124,13 +124,13 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
       if(id==='\0workflow-lazy')return 'export default ()=>null;';
       if(id==='\0workflow-child')return generic;
       if(id==='\0workflow-dialog')return `import React from 'react';export default ({children,footer})=>React.createElement('workflow-dialog',null,children,footer);`;
-      if(id==='\0workflow-viewer')return `import React,{useEffect} from 'react';import ProtocolViewFilter from '/src/components/ProtocolViewFilter.jsx';import InspectionCellTree from '/src/components/InspectionCellTree.jsx';const fixture=globalThis[${JSON.stringify(key)}];export default function Viewer(props){useEffect(()=>{fixture.mounts++;return()=>{fixture.unmounts++;};},[]);return React.createElement('workflow-viewer',props,React.createElement(ProtocolViewFilter,{filters:props.viewFilters,onChange:props.onViewFilters,revision:props.filterRevision,disabled:props.filterDisabled}),props.tags,props.before,props.readContext?props.detailExtras:null,React.createElement(InspectionCellTree,props.treePane.listProps));}`;
+      if(id==='\0workflow-viewer')return `import React,{useEffect} from 'react';import ProtocolViewFilter from '/src/typed-query/ui/ProtocolViewFilter.jsx';import InspectionCellTree from '/src/components/InspectionCellTree.jsx';const fixture=globalThis[${JSON.stringify(key)}];export default function Viewer(props){useEffect(()=>{fixture.mounts++;return()=>{fixture.unmounts++;};},[]);return React.createElement('workflow-viewer',props,React.createElement(ProtocolViewFilter,{filters:props.viewFilters,onChange:props.onViewFilters,revision:props.filterRevision,disabled:props.filterDisabled}),props.tags,props.before,props.readContext?props.detailExtras:null,React.createElement(InspectionCellTree,props.treePane.listProps));}`;
     },
   }]});
   const {default:App,Protocol}=await server.ssrLoadModule('/src/App.jsx');
   const {epochResourceCache}=await server.ssrLoadModule('/src/resourceCache.js');epochResourceCache.invalidate();
   let root;
-  const harness={fixture,App,Protocol,module:modulePath=>server.ssrLoadModule(`/src/${modulePath}`),async component(name){return (await server.ssrLoadModule(`/src/components/${name}.jsx`)).default;},
+  const harness={fixture,App,Protocol,module:modulePath=>server.ssrLoadModule(`/src/${modulePath}`),async component(name){return (await server.ssrLoadModule(`/src/${['JointGroupingEditor','PredicateBuilder','PredicateDialog','PredicateValueInput','ProtocolViewFilter','ScopedPredicateFilter','TreeBuilder'].includes(name)?'typed-query/ui':name==='TraceViewer'?'traces/ui':['CumulativeIncomingReview','FrozenIncomingReview','IncomingCellTypes','IncomingEpochReview','IncomingMergePreview','IncomingSelectionTools','IncomingTagSummary','IncomingTreeSelection','IncomingWorkbench'].includes(name)?'incoming-workbench/ui':'components'}/${name}.jsx`)).default;},
     async mount(component=App,props={}){await act(async()=>{root=TestRenderer.create(React.createElement(component,props),{createNodeMock:element=>{if(element.type==='dialog')return {showModal(){},close(){}};if(element.type==='input'){const node={focus:()=>{},closest:()=>null};fixture.nodes.set(element.props['aria-label'],node);return node;}return null;}});});},
     async render(component,props){await act(async()=>root.update(React.createElement(component,props)));},
     get root(){return root.root;},

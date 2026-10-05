@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from '../api.js';
-import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,workbenchCandidateRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
+import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,workbenchCandidateRoot,workbenchPreviewCounts} from '../incoming-workbench/workbenchAuthority.js';
 import {acceptedExportRequest,candidateExportRequest,submitWorkbenchExport} from '../workbenchExport.js';
 import {ExportDestination} from './ProtocolExports.jsx';
 import {exportDownloadLabel} from '../exportFormats.js';

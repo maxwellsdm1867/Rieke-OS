@@ -30,15 +30,15 @@ async function harness(){
  // visual children that require browser layout or canvas.
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{
   name:'session-view-presentation',enforce:'pre',resolveId(source,importer){
-   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['../tree-ancestors/treeBranchReads.jsx','./NavigationLoading.jsx','./Common.jsx','./IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
-   if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='./ProtocolViewFilter.jsx')return '\0session-null';
+   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['../tree-ancestors/treeBranchReads.jsx','./NavigationLoading.jsx','./Common.jsx','../incoming-workbench/ui/IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
+   if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='../../typed-query/ui/ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
    if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before);}`;
-   if(id==='\0session-./TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
+   if(id==='\0session-../traces/ui/TraceViewer.jsx')return 'function Trace(){return null;}Trace.supportsFrozenReadContext=true;export default Trace;';
    if(id.startsWith('\0session-'))return 'export default function(){return null;}';
   }
  }]});
- const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+ const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
  const container=document.getElementById('root');let mounted=createRoot(container),saved={},publications=0;
  class Boundary extends React.Component{state={error:null};static getDerivedStateFromError(error){return {error};}render(){return this.state.error?React.createElement('p',{'data-loop-error':true},this.state.error.message):this.props.children;}}
  // Bound the broken implementation so regression runs fail rather than hang.

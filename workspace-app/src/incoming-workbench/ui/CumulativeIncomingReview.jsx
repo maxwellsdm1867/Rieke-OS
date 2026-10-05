@@ -1,10 +1,10 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {api,number,time} from '../api.js';
+import {api,number,time} from '../../api.js';
 import {Activity,History,RefreshCw} from 'lucide-react';
-import NeuronIcon from './NeuronIcon.jsx';
+import NeuronIcon from '../../components/NeuronIcon.jsx';
 import {requireWorkbenchContext,workbenchCandidateRoot,workbenchRoot} from '../workbenchAuthority.js';
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
-import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
+import WorkbenchExportDialog from '../../components/WorkbenchExportDialog.jsx';
 
 export function requirePreparedWorkbench(protocol,value,queueRevision){
   if(value?.contract_version!==1||value.kind!=='workbench_pending_union'||typeof value.prepare_operation_uuid!=='string'||typeof value.candidate_revision_uuid!=='string'||value.root!==workbenchCandidateRoot(protocol,value.candidate_revision_uuid))throw new Error('The cumulative Workbench did not return an authoritative frozen destination.');

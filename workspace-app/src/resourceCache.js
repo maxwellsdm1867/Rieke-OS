@@ -1,4 +1,4 @@
-import {clampWindow,MAX_TRACE_SAMPLES} from './components/traceGeometry.js';
+import {clampWindow,MAX_TRACE_SAMPLES} from './traces/ui/traceGeometry.js';
 
 export const EPOCH_CACHE_LIMITS={entries:64,bytes:12*1024*1024,ttlMs:30000};
 export function cacheableEpochPath(path){return typeof path==='string'&&/^\/epochs\/[^/?]+(?:\/trace)?(?:\?[^#]*)?$/.test(path);}

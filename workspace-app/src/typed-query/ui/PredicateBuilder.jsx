@@ -3,7 +3,7 @@ import {predicateFieldLabel as fieldLabel,predicateFieldGroup,predicateFieldRank
 import {useEffect,useId,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {ChevronDown,FolderPlus,MessageCircle,Info,MoreHorizontal,Plus,Search,Trash2,X} from 'lucide-react';
-import {humanize} from '../api.js';
+import {humanize} from '../../api.js';
 import {newCondition,newGroup} from './predicateState.js';
 import {blankValue,fieldCondition,isTagField,canUseDateInput,fieldCategory,groupChoice,operatorChoices,preferredValueType,recordedValueChoices,setGroupChoice,valueTypes} from './predicateEditor.js';
 import './PredicateBuilder.css';

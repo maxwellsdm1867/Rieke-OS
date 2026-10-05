@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from '../api.js';
-import {acceptIncoming,acceptedBinding,exportIncoming} from '../incomingReview.js';
+import {acceptIncoming,acceptedBinding,exportIncoming} from '../incoming-workbench/incomingReview.js';
 import {ExportDestination} from './ProtocolExports.jsx';
 import {exportDownloadLabel} from '../exportFormats.js';
 import ProtocolDiff from './ProtocolDiff.jsx';

@@ -1,6 +1,6 @@
 import {mutationUndo,undoEnabled,localUndoScope} from '../mutationUndo.js';
 import {treePreviewScope} from '../pagedTreeRequest.js';
-import {predicateWithTagFilters,tagFilterLabel} from '../protocolViewFilter.js';
+import {predicateWithTagFilters,tagFilterLabel} from '../typed-query/protocolViewFilter.js';
 import {searchInclusionPredicate,searchEpochInclusion,toggleSearchInclusion} from '../searchInclusion.js';
 import SearchPresets from './SearchPresets.jsx';
 import QueryPresetDialog from './QueryPresetDialog.jsx';
@@ -8,8 +8,8 @@ import {searchPresetPayload,validatePresetReceipt} from '../projectSearchPresets
 import {rememberSearch,predicateSummary} from '../searchPresets.js';
 import {useProjectPreference} from '../useProjectPreference.js';
 import ExportSelectionDialog from './ExportSelectionDialog.jsx';
-import PredicateDialog from './PredicateDialog.jsx';
-import {predicateIdentity} from '../predicateIdentity.js';
+import PredicateDialog from '../typed-query/ui/PredicateDialog.jsx';
+import {predicateIdentity} from '../typed-query/predicateIdentity.js';
 import {useFieldRegistry} from '../useFieldRegistry.js';
 import MatchingEpochs from './MatchingEpochs.jsx';
 import InspectorActions from './InspectorActions.jsx';
@@ -21,7 +21,7 @@ import { ArrowLeft, ArrowRight, Check, ChevronDown, Search, Filter, Download, Gi
 import { api, humanize, number, time, useResource } from '../api.js';
 import { Badge, Metadata, Status } from './Common.jsx';
 import {inspectorPaneSizes} from '../inspectorInteraction.js';
-import { compilePredicate, conditionCount, newCondition, newGroup, predicateToDraft } from './predicateState.js';
+import { compilePredicate, conditionCount, newCondition, newGroup, predicateToDraft } from '../typed-query/ui/predicateState.js';
 import './MetadataExplorer.css';
 
 const initialSearch=()=>({...newGroup(),children:[{...newCondition(),field:'protocol',operator:'contains'}]});

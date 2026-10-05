@@ -1,6 +1,6 @@
 import {useId,useState} from 'react';
 import {ListFilter,X,Plus,Trash2} from 'lucide-react';
-import {useResource} from '../api.js';
+import {useResource} from '../../api.js';
 import {readTagRules,compileTagRules,clearTagFilters,tagFilterLabel} from '../protocolViewFilter.js';
 import ScopedPredicateFilter from './ScopedPredicateFilter.jsx';
 import './ProtocolViewFilter.css';

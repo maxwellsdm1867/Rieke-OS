@@ -1,6 +1,6 @@
 import {useLayoutEffect,useRef,useState} from 'react';
 import {CheckSquare,Square,Eye,GitMerge} from 'lucide-react';
-import {api,number} from '../api.js';
+import {api,number} from '../../api.js';
 import {loadIncomingSelection,incomingSelectionCount} from '../incomingSelection.js';
 export default function IncomingSelectionTools({source,cells,targets=[],onSelect,disabled,onMerge,viewSelected=false,onViewSelected}){
   const [working,setWorking]=useState(false),[error,setError]=useState('');

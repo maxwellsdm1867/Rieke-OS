@@ -1,6 +1,6 @@
 import {Check,ChevronDown,Eye,Layers,SlidersHorizontal} from 'lucide-react';
 import {humanize,number} from '../api.js';
-import {tagFilterLabel} from '../protocolViewFilter.js';
+import {tagFilterLabel} from '../typed-query/protocolViewFilter.js';
 import './ProtocolSelectionSummary.css';
 
 function Rule({value}){

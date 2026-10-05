@@ -4,7 +4,7 @@ import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {createServer} from './test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
-import {predicateToDraft} from './components/predicateState.js';
+import {predicateToDraft} from './typed-query/ui/predicateState.js';
 const catalog={data:{fields:[{id:'parameters/x',label:'X',types:['number'],operators:['eq','gt']}],generation:{metadata:'m',typed:'t',source:'s',publication:'p',annotation:'a'}},supportsSummaries:false,reload(){}};
 const root='/protocols/p/workbench/candidates/r';
 const deferred=()=>{let resolve;return {promise:new Promise(done=>resolve=done),resolve:value=>resolve(value)};};
@@ -15,8 +15,8 @@ async function harness(){
  globalThis.window={innerWidth:1200,innerHeight:800,addEventListener(){},removeEventListener(){}};
  globalThis.document={body:{nodeType:1},addEventListener(){},removeEventListener(){},getElementById:()=>null};
  globalThis.fetch=async(url,options)=>{const body=options.body?JSON.parse(options.body):null;requests.push({url,body});return new Response(JSON.stringify(await respond(url,body)),{status:200});};
- const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'scoped-preferences',enforce:'pre',resolveId(id,importer){if(id==='../useProjectPreference.js'&&importer?.endsWith('PredicateDialog.jsx'))return '\0scoped-preferences';},load(id){if(id==='\0scoped-preferences')return 'export const useProjectPreference=()=>({value:{},update:async()=>{}});';}}]});
- const {default:Dialog}=await server.ssrLoadModule('/src/components/PredicateDialog.jsx');let renderer;
+ const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},optimizeDeps:{noDiscovery:true,entries:[]},appType:'custom',logLevel:'silent',esbuild:{jsx:'automatic'},plugins:[{name:'scoped-preferences',enforce:'pre',resolveId(id,importer){if(id==='../../useProjectPreference.js'&&importer?.endsWith('PredicateDialog.jsx'))return '\0scoped-preferences';},load(id){if(id==='\0scoped-preferences')return 'export const useProjectPreference=()=>({value:{},update:async()=>{}});';}}]});
+ const {default:Dialog}=await server.ssrLoadModule('/src/typed-query/ui/PredicateDialog.jsx');let renderer;
  const h={requests,Dialog,set respond(fn){respond=fn;},async render(props){await act(async()=>{const child=React.createElement(Dialog,{draft:predicateToDraft({all:[{field:'parameters/x',operator:'eq',value:1}]}),catalog,onSearch:async()=>{},onClose(){},...props});if(renderer)renderer.update(child);else renderer=TestRenderer.create(child,{createNodeMock:()=>({showModal(){},close(){},focus(){},getBoundingClientRect:()=>({left:0,top:0,bottom:0,width:300}),contains:()=>false})});});},button(text){return renderer.root.findAllByType('button').find(item=>item.children.some(child=>typeof child==='string'&&child.includes(text)));},text:()=>JSON.stringify(renderer.toJSON()),async act(fn){await act(fn);},async settle(){await act(async()=>{for(let i=0;i<12;i++)await Promise.resolve();});},async close(){await act(()=>renderer?.unmount());await server.close();Object.assign(globalThis,old);}};
  return h;
 }

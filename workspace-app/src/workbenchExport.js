@@ -1,5 +1,5 @@
 import {validExportReceipt} from './exportFormats.js';
-import {workbenchRoot} from './workbenchAuthority.js';
+import {workbenchRoot} from './incoming-workbench/workbenchAuthority.js';
 
 export function nextWorkbenchWorkflow(state={}){
   return {completed:[...(state.completed||[]),...(state.receipt||state.exported?[{receipt:state.receipt,exported:state.exported}]:[])]};

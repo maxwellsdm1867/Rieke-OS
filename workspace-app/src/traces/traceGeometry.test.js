@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clampWindow,dragWindow,finiteExtent,finiteSegments,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './components/traceGeometry.js';
+import {clampWindow,dragWindow,finiteExtent,finiteSegments,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './ui/traceGeometry.js';
 
 test('trace window clamps to source bounds and never exceeds full-rate request cap',()=>{
  assert.deepEqual(clampWindow(-50,50000,100000),{start:0,count:MAX_TRACE_SAMPLES});

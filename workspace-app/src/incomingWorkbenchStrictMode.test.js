@@ -12,14 +12,14 @@ const prepared=token=>({contract_version:1,kind:'workbench_pending_union',prepar
 const queue=token=>({data:{queue_revision:token,pending_epoch_count:2,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
 const deferred=()=>{let resolve;const promise=new Promise(value=>{resolve=value;});return {promise,resolve};};
 const response=(value,status=200)=>({ok:status===200,status,json:async()=>value});
-const probes={name:'strict-frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0strict-${source}`;},load(id){if(id==='\0strict-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector({readContext}){return React.createElement('div',{'data-inspector-scope':readContext.candidate_scope_revision});}`;if(id==='\0strict-./ProtocolViewFilter.jsx')return 'export default function Filter(){return null;}';}};
+const probes={name:'strict-frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../components/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0strict-${source}`;},load(id){if(id==='\0strict-../../components/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector({readContext}){return React.createElement('div',{'data-inspector-scope':readContext.candidate_scope_revision});}`;if(id==='\0strict-../../typed-query/ui/ProtocolViewFilter.jsx')return 'export default function Filter(){return null;}';}};
 async function harness(fetch){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
  const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,IS_REACT_ACT_ENVIRONMENT:true,fetch};
  const previous=new Map(Object.keys(globals).map(key=>[key,Object.getOwnPropertyDescriptor(globalThis,key)]));
  for(const [key,value] of Object.entries(globals))Object.defineProperty(globalThis,key,{configurable:true,writable:true,value});
  const server=await createServer({root,configFile:false,plugins:[probes],optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
- const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+ const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
  const container=dom.window.document.getElementById('root');let mounted=createRoot(container),setups=0,cleanups=0,saved;
  function Proof(props){useEffect(()=>{setups++;return()=>{cleanups++;};},[]);return React.createElement(Review,{protocolId:protocol,onSession:value=>{saved=value;},...props});}
  return {container,get saved(){return saved;},get setups(){return setups;},get cleanups(){return cleanups;},

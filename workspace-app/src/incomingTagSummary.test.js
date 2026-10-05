@@ -4,7 +4,7 @@ import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
 import {fileURLToPath} from 'node:url';
 import {createServer} from './test-support/isolatedVite.js';
-import {incomingTagSummary} from './incomingTagSummary.js';
+import {incomingTagSummary} from './incoming-workbench/incomingTagSummary.js';
 import {compactAnnotationTags,incomingRowAnnotation} from './annotationTags.js';
 const cell={tag:'Quality',profile_uuid:'alice',author_name:'Alice'};
 const other={...cell,profile_uuid:'bob',author_name:'Bob'};
@@ -34,7 +34,7 @@ test('compact incoming summary filters exact shared tag only on explicit click a
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  let renderer;const calls=[];
  try{
-  const {default:Summary}=await server.ssrLoadModule('/src/components/IncomingTagSummary.jsx');
+  const {default:Summary}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingTagSummary.jsx');
   const summary=incomingTagSummary({total:443,epochs:[row('a','c',[cell])]});
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Summary,{summary,onFilter:v=>calls.push(v)}));});
   const text=JSON.stringify(renderer.toJSON());assert.match(text,/Incoming page/);assert.match(text,/443/);assert.match(text,/frozen membership/);assert.equal(calls.length,0);

@@ -1,4 +1,4 @@
-import {epochIncluded} from '../incomingReviewDecision.js';
+import {epochIncluded} from '../incoming-workbench/incomingReviewDecision.js';
 export default function EpochAnalysisInclusion({epoch,disabled=false,onToggle,scope='selection',incoming=false}){
   const included=epochIncluded(epoch,incoming);
   if(incoming&&included===null)return <span role="status">Proposal inclusion unavailable. Refresh this incoming view.</span>;

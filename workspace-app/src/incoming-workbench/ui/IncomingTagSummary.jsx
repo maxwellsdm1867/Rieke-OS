@@ -1,7 +1,7 @@
 import {Tag} from 'lucide-react';
-import {number} from '../api.js';
-import {annotationPredicate} from '../annotationTags.js';
-import './AnnotationTags.css';
+import {number} from '../../api.js';
+import {annotationPredicate} from '../../annotationTags.js';
+import '../../components/AnnotationTags.css';
 
 export default function IncomingTagSummary({summary,onFilter,disabled=false}){
   return <section className="incoming-tag-summary" aria-label="Current shared tags in incoming page">

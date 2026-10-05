@@ -1,4 +1,4 @@
-import {fieldCategory} from './components/predicateEditor.js';
+import {fieldCategory} from './ui/predicateEditor.js';
 // Display aliases only: saved predicates retain the exact indexed field IDs.
 const common=[
  ['protocol','Protocol ID'],

@@ -8,8 +8,8 @@ import GroupAnnotationRecovery from './components/GroupAnnotationRecovery.jsx';
 import {useMutationUndo} from './useMutationUndo.js';
 
 import {createWorkspacePresentationSessions} from './presentation/workspacePresentationSessions.js';
-import ProtocolViewFilter from './components/ProtocolViewFilter.jsx';
-import {tagFilterLabel,predicateWithProtocolFilters} from './protocolViewFilter.js';
+import ProtocolViewFilter from './typed-query/ui/ProtocolViewFilter.jsx';
+import {tagFilterLabel,predicateWithProtocolFilters} from './typed-query/protocolViewFilter.js';
 
 import {useWorkspaceChanges,useSummaryRevision} from './useWorkspaceChanges.js';
 import H5Inbox from './components/H5Inbox.jsx';
@@ -36,8 +36,8 @@ import { Activity, ArrowLeft, ArrowRight, ArrowUpRight, Check, ChevronDown, Circ
 import { api, useResource, number, duration, humanize, time, eligibleExportCount } from './api.js';
 import { Badge, Empty, Metadata, Stats, Status, SourceEligibilityNotice } from './components/Common.jsx';
 import Inspector from './components/Inspector.jsx';
-import IncomingWorkbench from './components/IncomingWorkbench.jsx';
-import {createIncomingMergeIntents} from './incomingMergeIntent.js';
+import IncomingWorkbench from './incoming-workbench/ui/IncomingWorkbench.jsx';
+import {createIncomingMergeIntents} from './incoming-workbench/incomingMergeIntent.js';
 import useImportReviewStatus from './useImportReviewStatus.js';
 import ProjectFiles from './components/ProjectFiles.jsx';
 import DataStores from './components/DataStores.jsx';

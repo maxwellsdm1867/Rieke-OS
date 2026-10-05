@@ -1,7 +1,7 @@
 import {incomingCellTypes} from '../incomingCellTypes.js';
-import {cellTypeColor} from '../cellTypes.js';
-import {number} from '../api.js';
-import NeuronIcon from './NeuronIcon.jsx';
+import {cellTypeColor} from '../../cellTypes.js';
+import {number} from '../../api.js';
+import NeuronIcon from '../../components/NeuronIcon.jsx';
 
 export default function IncomingCellTypes({cells,count,scope='Frozen proposal',compact=false}){
   const groups=incomingCellTypes(cells,count);

@@ -1,17 +1,17 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
-import {api,number} from '../api.js';
+import {api,number} from '../../api.js';
 import {Activity,CircleDot,Download,GitMerge,History,RefreshCw,X} from 'lucide-react';
 import {prepareSelectedIncoming,selectedReview} from '../selectedIncomingWorkflow.js';
-import NeuronIcon from './NeuronIcon.jsx';
-import {clearTagFilters} from '../protocolViewFilter.js';
+import NeuronIcon from '../../components/NeuronIcon.jsx';
+import {clearTagFilters} from '../../typed-query/protocolViewFilter.js';
 import IncomingCellTypes from './IncomingCellTypes.jsx';
 import {mergeIntentMatches} from '../incomingMergeIntent.js';
-import Inspector,* as InspectorCapabilities from './Inspector.jsx';
-import ProtocolViewFilter from './ProtocolViewFilter.jsx';
-import WorkbenchExportDialog from './WorkbenchExportDialog.jsx';
+import Inspector,* as InspectorCapabilities from '../../components/Inspector.jsx';
+import ProtocolViewFilter from '../../typed-query/ui/ProtocolViewFilter.jsx';
+import WorkbenchExportDialog from '../../components/WorkbenchExportDialog.jsx';
 import IncomingMergePreview from './IncomingMergePreview.jsx';
-import {nextWorkbenchWorkflow} from '../workbenchExport.js';
+import {nextWorkbenchWorkflow} from '../../workbenchExport.js';
 import {acceptWorkbench,acceptanceFailureKind,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 
 export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled}){

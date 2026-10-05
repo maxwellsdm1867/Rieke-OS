@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {predicateWithProtocolFilters,tagFilterLabel} from './protocolViewFilter.js';
+import {predicateWithProtocolFilters,tagFilterLabel} from './typed-query/protocolViewFilter.js';
 import {annotationFilterNeedsRefresh} from './annotationReceipts.js';
-import {predicateToDraft,compilePredicate} from './components/predicateState.js';
+import {predicateToDraft,compilePredicate} from './typed-query/ui/predicateState.js';
 
 test('scientific view criteria remain distinct, exact, and composable',()=>{
  const predicate={not:{any:[{field:'parameters/x',operator:'is_null'},{field:'parameters/x',operator:'in',value:[0,1]}]}};

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {groupChoice,setGroupChoice,preferredValueType,canUseDateInput,fieldCategory,recordedValueChoices} from './components/predicateEditor.js';
-import {compilePredicate,predicateToDraft,newGroup} from './components/predicateState.js';
+import {groupChoice,setGroupChoice,preferredValueType,canUseDateInput,fieldCategory,recordedValueChoices} from './ui/predicateEditor.js';
+import {compilePredicate,predicateToDraft,newGroup} from './ui/predicateState.js';
 
 test('None group means NOT ANY and never incorrectly negates ALL',()=>{
  const group=setGroupChoice({...newGroup(),children:[predicateToDraft({field:'date',operator:'eq',value:'2026-09-24'})]},'none');
@@ -46,7 +46,7 @@ test('array contains suggestions offer deduplicated typed elements without fabri
 });
 
 test('choosing shared or dataset tags starts a single-tag membership search',async()=>{
- const {fieldCondition,isTagField}=await import('./components/predicateEditor.js');
+ const {fieldCondition,isTagField}=await import('./ui/predicateEditor.js');
  for(const id of ['annotations/effective/tags','annotations/cell/tags','annotations/epoch/tags','curation/protocol-uuid/tags']){
   const field={id,types:['array'],operators:['eq','ne','contains'],choices:[{type:'array',value:['good','stable']}]};
   const condition=fieldCondition(field);
@@ -60,6 +60,6 @@ test('choosing shared or dataset tags starts a single-tag membership search',asy
 
 
 test('live annotation catalogs without an operators list still default to text membership',async()=>{
- const {fieldCondition}=await import('./components/predicateEditor.js');
+ const {fieldCondition}=await import('./ui/predicateEditor.js');
  assert.deepEqual(fieldCondition({id:'annotations/effective/tags',types:['array'],element_types:['string'],choices:[{type:'array',value:[]}]}),{field:'annotations/effective/tags',operator:'contains',valueType:'string',valueText:''});
 });

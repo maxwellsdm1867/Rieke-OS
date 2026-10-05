@@ -2,7 +2,7 @@ import {useLayoutEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Tag,X,CheckSquare} from 'lucide-react';
 import {api,number} from '../api.js';
-import {loadIncomingSelection} from '../incomingSelection.js';
+import {loadIncomingSelection} from '../incoming-workbench/incomingSelection.js';
 import {resolveTreeGroup,verifyTreeGroup} from '../treeGroupTargets.js';
 import {useAnnotationProfile} from '../annotationProfile.js';
 import {previewTreeGroup,releaseGroupPreview} from '../treeGroupQueryTags.js';

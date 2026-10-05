@@ -1,4 +1,4 @@
-import {predicateIdentity} from './predicateIdentity.js';
+import {predicateIdentity} from './typed-query/predicateIdentity.js';
 // Frozen candidate reads never fall back to a current protocol/global endpoint.
 export function frozenReadQuery(context,query=''){
  const params=new URLSearchParams(query);

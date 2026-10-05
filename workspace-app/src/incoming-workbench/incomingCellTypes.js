@@ -1,4 +1,4 @@
-import {recordedCellType,isUnclassifiedType} from './cellTypes.js';
+import {recordedCellType,isUnclassifiedType} from '../cellTypes.js';
 
 // A complete receipt owns the scope. Never count epoch rows, reused labels,
 // or an incomplete cell list as distinct recorded cells.

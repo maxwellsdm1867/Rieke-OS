@@ -4,7 +4,7 @@ import { humanize } from '../api.js';
 import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShortcutSection } from '../ordering.js';
 import { startPointerDrag } from '../pointerDrag.js';
 import './ProtocolSidebar.css';
-import {pendingReviewBadge} from '../incomingReview.js';
+import {pendingReviewBadge} from '../incoming-workbench/incomingReview.js';
 import {useProjectPreference} from '../useProjectPreference.js';
 
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };

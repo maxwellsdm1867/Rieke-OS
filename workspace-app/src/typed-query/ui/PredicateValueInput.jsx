@@ -1,7 +1,7 @@
 import {useEffect,useId,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {ChevronDown,Pin} from 'lucide-react';
-import {humanize,useResource} from '../api.js';
+import {humanize,useResource} from '../../api.js';
 import {predicateValueSuggestions} from '../predicateValueSuggestions.js';
 
 export default function PredicateValueInput({node,choices,pinnedProtocols,onChange,disabled}){

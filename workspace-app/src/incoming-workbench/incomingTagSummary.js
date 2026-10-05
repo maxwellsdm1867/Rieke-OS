@@ -1,4 +1,4 @@
-import {annotationTagColor} from './annotationTags.js';
+import {annotationTagColor} from '../annotationTags.js';
 
 // The existing frozen epoch page is the authority, not Main or a sum of tags.
 // Counts describe this bounded page, including inherited cell tags, once per UUID.

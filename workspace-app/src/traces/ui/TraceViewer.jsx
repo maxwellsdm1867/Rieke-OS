@@ -1,10 +1,10 @@
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,RotateCcw,ZoomIn,ZoomOut} from 'lucide-react';
-import {number,useResource} from '../api.js';
+import {number,useResource} from '../../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
 import {traceRequestPath,traceCacheRevision} from '../traceReadContext.js';
-import {useNavigationLoading,useDelayedLoading} from './NavigationLoading.jsx';
+import {useNavigationLoading,useDelayedLoading} from '../../components/NavigationLoading.jsx';
 
 function paintTrace(canvas,data){
   const rect=canvas.getBoundingClientRect(),ratio=window.devicePixelRatio || 1;

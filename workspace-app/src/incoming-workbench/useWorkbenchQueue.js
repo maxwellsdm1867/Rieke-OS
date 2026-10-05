@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {api} from './api.js';
+import {api} from '../api.js';
 import {requireWorkbenchQueue,workbenchRoot} from './workbenchAuthority.js';
 export default function useWorkbenchQueue(protocolId,revision,provided){
   const [state,setState]=useState({data:provided??null,loading:provided===undefined,error:null}),[nonce,setNonce]=useState(0);

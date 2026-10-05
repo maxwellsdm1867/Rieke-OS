@@ -1,7 +1,7 @@
 import {ArrowRight,CheckSquare,Copy,GitMerge,Layers,Plus,ShieldCheck,TriangleAlert} from 'lucide-react';
-import {number} from '../api.js';
+import {number} from '../../api.js';
 import {workbenchPreviewCounts} from '../workbenchAuthority.js';
-import NeuronIcon from './NeuronIcon.jsx';
+import NeuronIcon from '../../components/NeuronIcon.jsx';
 
 export default function IncomingMergePreview({preview,context,children}){
   const counts=Object.fromEntries(workbenchPreviewCounts(preview).map(value=>[value.key,value]));

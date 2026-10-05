@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {predicateFieldLabel,predicateFieldGroup,predicateFieldRank,predicateFieldSearch} from './predicateFieldPresentation.js';
-import {compilePredicate,newCondition} from './components/predicateState.js';
+import {compilePredicate,newCondition} from './ui/predicateState.js';
 test('Protocol ID is first among common fields without changing saved field IDs',()=>{
  const p={id:'protocol',label:'Acquisition protocol',path:'protocol_name',types:['string']};
  assert.equal(predicateFieldLabel(p),'Protocol ID');assert.equal(predicateFieldGroup(p),'Common fields');

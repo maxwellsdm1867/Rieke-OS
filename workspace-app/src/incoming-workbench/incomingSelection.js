@@ -1,5 +1,5 @@
-import {epochPageRequest,epochPageRevision} from './epochBrowserSource.js';
-import {MAX_SELECTED_EPOCHS} from './epochSelection.js';
+import {epochPageRequest,epochPageRevision} from '../epochBrowserSource.js';
+import {MAX_SELECTED_EPOCHS} from '../epochSelection.js';
 
 // Use the same scoped cells as loadIncomingSelection; never use Main cell totals.
 export function incomingSelectionCount({targets=[],cells=[],cell=null,epoch=null}){

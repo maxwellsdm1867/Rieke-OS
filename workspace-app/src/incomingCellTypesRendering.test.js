@@ -8,7 +8,7 @@ import {createServer} from './test-support/isolatedVite.js';
 test('inline type counts expose distinct frozen cells without a popup or hover-only content',async()=>{
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
  try{
-  const {default:Types}=await server.ssrLoadModule('/src/components/IncomingCellTypes.jsx');
+  const {default:Types}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingCellTypes.jsx');
   const a={cell_uuid:'a',cell_type:'ON-midget',epochs:999};
   const html=renderToStaticMarkup(React.createElement(Types,{cells:[a,a,{cell_uuid:'b',cell_type:'ON-midget'},{cell_uuid:'c',cell_type:'Unknown'}],count:3}));
   assert.match(html,/aria-label="Frozen proposal cell types"/);

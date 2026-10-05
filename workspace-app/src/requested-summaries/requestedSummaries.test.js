@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createSummaryController,fieldsWithSummaries,requestedSummaryFields,summaryPreferences,summaryPreferenceKey} from './requestedSummaries.js';
-import {jointId} from '../jointGrouping.js';
+import {jointId} from '../typed-query/jointGrouping.js';
 const generation={metadata:'M',source:'S',annotation:'A',publication:'P'};
 const request={predicate:{all:[]},summary_fields:['number'],generation};
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};

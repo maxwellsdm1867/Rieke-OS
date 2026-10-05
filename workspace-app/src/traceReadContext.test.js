@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {traceRequestPath,traceCacheRevision} from './traceReadContext.js';
+import {traceRequestPath,traceCacheRevision} from './traces/traceReadContext.js';
 const root='/protocols/protocol-a/workbench/candidates/revision-a';
 const context={root,candidate_scope_revision:'exact scope + / & = ? # token'};
 const stream={uuid:'response-a'},window={start:123,count:800};

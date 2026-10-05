@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compilePredicate,predicateToDraft,typedValue} from './components/predicateState.js';
+import {compilePredicate,predicateToDraft,typedValue} from './ui/predicateState.js';
 const fields=[{id:'parameters/frequencyCutoff',label:'Frequency cutoff'},{id:'group label',label:'Group label'}];
 test('nested ALL ANY and NOT preserve exact grouping through the editor',()=>{
  const predicate={all:[{field:'parameters/frequencyCutoff',operator:'gte',value:25},{not:{any:[{field:'group label',operator:'eq',value:'NBQX'},{not:{field:'group label',operator:'exists'}}]}}]};

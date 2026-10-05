@@ -11,7 +11,7 @@ before(async()=>{server=await createServer({root:fileURLToPath(new URL('..',impo
 after(async()=>{await server?.close();});
 async function render(path,props){const {default:Component}=await server.ssrLoadModule(path);return renderToString(createElement(Component,props));}
 test('web tree arrangement keeps grouping controls without MATLAB GUI command controls',async()=>{
- const html=await render('/src/components/TreeBuilder.jsx',{value:['date'],onChange(){},catalogData:{fields:[{id:'date',label:'Date',category:'Common'}]},preview:{levels:[{field:'date'}],matlab_command:'legacy_epictree_command();'},loading:false});
+ const html=await render('/src/typed-query/ui/TreeBuilder.jsx',{value:['date'],onChange(){},catalogData:{fields:[{id:'date',label:'Date',category:'Common'}]},preview:{levels:[{field:'date'}],matlab_command:'legacy_epictree_command();'},loading:false});
  assert.match(html,/Arrange tree/);assert.match(html,/Ordered tree splits/);assert.doesNotMatch(html,/EpicTree|MATLAB|legacy_epictree_command|Copy EpicTree code/);
 });
 

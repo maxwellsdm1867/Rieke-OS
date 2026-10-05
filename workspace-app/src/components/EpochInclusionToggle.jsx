@@ -1,4 +1,4 @@
-import {epochIncluded} from '../incomingReviewDecision.js';
+import {epochIncluded} from '../incoming-workbench/incomingReviewDecision.js';
 import {Check,X} from 'lucide-react';
 import './EpochInclusionToggle.css';
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {epochIncluded,incomingReviewDecision} from './incomingReviewDecision.js';
+import {epochIncluded,incomingReviewDecision} from './incoming-workbench/incomingReviewDecision.js';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
 
 const root='/protocols/protocol-A/workbench/candidates/revision-A';

@@ -9,7 +9,7 @@ import {createServer} from './test-support/isolatedVite.js';
 const label=node=>node.children.map(child=>typeof child==='string'?child:label(child)).join('').trim();
 const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
-const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['./Inspector.jsx','./ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-./Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-./ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
+const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../components/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../components/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
 test('selected merge requires explicit review, saves exact selection and preserves exclusions before preview',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer;
@@ -20,7 +20,7 @@ test('selected merge requires explicit review, saves exact selection and preserv
   return {ok:true,status:200,json:async()=>context};
  };
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
   await act(async()=>inspector().props.onSelectionChange(['a','b']));assert.deepEqual(calls,[]);
@@ -48,7 +48,7 @@ test('batched draft saves keep browser reads on the paused committed scope until
   return {ok:true,status:200,json:async()=>context};
  };
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true}}));});
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');const mounted=inspector();
   await act(async()=>{operation=inspector().props.onReviewDecision({epoch_uuids:Array.from({length:501},(_,i)=>`epoch-${i}`),changes:{reviewed:true}});});
@@ -61,7 +61,7 @@ test('batched draft saves keep browser reads on the paused committed scope until
 test('actual Workbench renders authoritative queue and session worklist controls',async()=>{
  const server=await create();
  try{
-  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
+  const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
   const item={protocol_uuid:'history',protocol_name:'VariableHistoryNoiseCurInject',candidate_revision_uuid:'candidate-immutable',baseline_revision_uuid:'base-immutable',status:'pending',created_at:'2026-10-02T01:00:00Z',source_filename:'incoming.h5',diff_counts:{added:12,removed:0,changed:2},next_count:50};
   const props={protocolId:'history',suggestions:[item,{...item,protocol_uuid:'other',protocol_name:'Other'}],projectId:'project',authority:null};
   const html=renderToStaticMarkup(React.createElement(Workbench,props));
@@ -89,7 +89,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
 test('App and affected dialog/browser/sidebar JSX transform from isolated source',async()=>{
  const server=await create();
  try{
-  for(const file of ['App.jsx','components/MetadataExplorer.jsx','components/IncomingExportDialog.jsx','components/ExportSelectionDialog.jsx','components/ProtocolSidebar.jsx','components/FrozenIncomingReview.jsx','components/WorkbenchExportDialog.jsx']){
+  for(const file of ['App.jsx','components/MetadataExplorer.jsx','components/IncomingExportDialog.jsx','components/ExportSelectionDialog.jsx','components/ProtocolSidebar.jsx','incoming-workbench/ui/FrozenIncomingReview.jsx','components/WorkbenchExportDialog.jsx']){
    const result=await server.transformRequest(`/src/${file}`);assert.ok(result?.code.length>0,file);
   }
  }finally{await server.close();}
@@ -111,7 +111,7 @@ test('mounted additive review preserves an uncertain acceptance operation and re
   return {ok:status===200,status,json:async()=>value};
  };
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:false},protocolId:'history',item:{candidate_revision_uuid:'proposal'},session:{preview:priorPreview,operation:'historical-operation'},onSession:value=>{saved=value;},onChange:()=>changed++}));});
   assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('No global query is substituted')));
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
@@ -136,7 +136,7 @@ test('known cumulative authority survives a pending or failed refresh without sw
  let requests=0,release,renderer,state;
  globalThis.fetch=async()=>{if(requests++===0)return {ok:true,status:200,json:async()=>queue};await new Promise(resolve=>{release=resolve;});return {ok:false,status:503,json:async()=>({error:'unavailable'})};};
  try{
-  const {default:useQueue}=await server.ssrLoadModule('/src/useWorkbenchQueue.js');
+  const {default:useQueue}=await server.ssrLoadModule('/src/incoming-workbench/useWorkbenchQueue.js');
   function Probe(){state=useQueue('protocol',0);return React.createElement('span',null,state.data?.queue_revision||'unknown');}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
   assert.equal(state.data.queue_revision,'exact-union');
@@ -189,7 +189,7 @@ test('completed independent export can proceed to review and fresh accept/export
  let context={candidate_scope_revision:'new-scope',protocol:{definition:{protocol_uuid:'history'}},draft:{draft_version:5,selection_mode:'selected',decisions:[{epoch_uuid:'a',selected:false,reviewed:true,excluded:false}],decisions_total:1,decisions_truncated:false}};
  globalThis.fetch=async(path,options={})=>{if(options.method==='PATCH')context={...context,draft:{...context.draft,draft_version:6}};return {ok:true,status:200,json:async()=>String(path).endsWith('/preview')?{preview_sha256:'fresh',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1}:context};};
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const completed={workflow:'export',prepared:{path:'/old',body:{}},exported:{dataset_uuid:'old-dataset',download_url:'/old-download',epoch_count:2},exportOperation:'old-export'};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true},session:{selected:['a'],exportState:completed},onSession:value=>{saved=value;}}));});
   const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
@@ -244,7 +244,7 @@ test('shared change callback and external revision refresh frozen token while pr
   return {ok:true,status:200,json:async()=>({candidate_scope_revision:`scope-v${++contextReads}`,draft:{draft_version:3,selection_mode:'all'},protocol:null})};
  };
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const preview={mode:'all',expected_candidate_scope_revision:'original-operation-scope',expected_draft_version:1,preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'main',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:2,next_epoch_count:3,accepted_cell_count:1};
   function Probe({external=0}){const [revision,setRevision]=React.useState(0);return React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'proposal'},revision:revision+external,capabilities:{frozen_browse:true,drafts:true,additive_accept:true},session:{unconfirmed:true,preview,operation:'same-operation'},onChange:()=>setRevision(value=>value+1),onSession:value=>{saved=value;}});}
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Probe));});
@@ -267,7 +267,7 @@ test('default cumulative Workbench prepares once per queue fence, refreshes afte
   return {ok:true,status:200,json:async()=>value};
  };
  try{
-  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
+  const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
   const props={protocolId:protocol,authority:makeQueue('queue-1',3),onSession:value=>{saved=value;}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
   assert.equal(preparedCalls,1);assert.ok(renderer.root.findAllByType('span').some(node=>String(node.props.className||'').includes('incoming-bar-scope')));
@@ -304,7 +304,7 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
   return {ok:status===200,status,json:async()=>value};
  };
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
   const props={protocolId:'history',queue:makeQueue('old-queue'),session:{prepared,drafts:{'old-union':{preview,operation:'same-operation'}}},onSession:value=>{saved=value;}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
   let accepting;
@@ -324,7 +324,7 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
 test('prepared cumulative scope refuses mismatched candidate, protocol, root or queue identity',async()=>{
  const server=await create();
  try{
-  const {requirePreparedWorkbench}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
+  const {requirePreparedWorkbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
   const protocol='7d76b76a-4c43-42c6-ac54-881ff2fc108a',candidate='b411db17-0ab4-42aa-872a-e6e614106041';
   const value={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-operation',candidate_revision_uuid:candidate,root:`/protocols/${protocol}/workbench/candidates/${candidate}`,queue_revision:'queue',candidate_scope_revision:'scope',context:{candidate_revision_uuid:candidate,protocol:{definition:{protocol_uuid:protocol}},candidate_scope_revision:'scope',draft:{draft_version:1}}};
   assert.equal(requirePreparedWorkbench(protocol,value,'queue').candidate_revision_uuid,candidate);
@@ -353,8 +353,8 @@ test('new queue preparation preserves the mounted Inspector and fences an open e
   return {ok:true,status:200,json:async()=>value};
  };
  try{
-  const {default:Cumulative}=await server.ssrLoadModule('/src/components/CumulativeIncomingReview.jsx');
-  const {default:Frozen}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Cumulative}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
+  const {default:Frozen}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const props={protocolId:protocol,queue:queue('old-queue'),session:{prepared:prepared('old-union','old-queue'),drafts:{'old-union':{selected:['epoch'],filters:{date:'2026-10-01'}}}}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Cumulative,props));});
   const original=renderer.root.findByType(Frozen);
@@ -399,7 +399,7 @@ test('actual queue hook retains Inspector through old-token loading, delayed que
   return {ok:true,status:200,json:async()=>value};
  };
  try{
-  const {default:Workbench}=await server.ssrLoadModule('/src/components/IncomingWorkbench.jsx');
+  const {default:Workbench}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingWorkbench.jsx');
   const props={protocolId:protocol,revision:0};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Workbench,props));});
   const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);assert.equal(prepares,1);
@@ -428,7 +428,7 @@ test('candidate cohort identity survives draft saves while authority tokens refr
   return {ok:true,status:200,json:async()=>context};
  };
  try{
-  const {default:Frozen}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Frozen}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},revision:0,preserveBrowser:true,capabilities:{frozen_browse:true,drafts:true,additive_accept:true}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Frozen,props));});
   const inspector=()=>renderer.root.findAll(node=>node.type?.name==='Inspector')[0];
@@ -450,7 +450,7 @@ test('compact action bar keeps authoritative positive, zero and unavailable coun
  const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_truncated:false},counts:{pending_epochs:0,pending_cells:0},protocol:null};
  globalThis.fetch=async(path,options={})=>{calls.push({path:String(path),method:options.method||'GET'});return {ok:true,status:200,json:async()=>context};};
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},scopeKind:'cumulative_pending',capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true},onDefer:()=>left++};
   const mount=async counts=>{await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,pendingCounts:counts}));});};
   const metrics=()=>renderer.root.findByProps({'aria-label':'Distinct pending incoming counts'}).findAll(node=>node.type==='strong'&&node.parent.type==='span'&&!node.parent.props.className).map(label);
@@ -471,7 +471,7 @@ test('incoming pill never calls reviewed or incomplete actor drafts unreviewed',
  let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:null};
  globalThis.fetch=async()=>({ok:true,status:200,json:async()=>context});
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
   const props={protocolId:'history',item:{candidate_revision_uuid:'proposal'},pendingCounts:{pending_cell_count:1,pending_epoch_count:2}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,revision:0}));});
   const pill=()=>renderer.root.findAllByType('span').find(node=>String(node.props.className||'').includes('incoming-bar-scope'));
@@ -503,7 +503,7 @@ test('single-proposal refresh holds the same inert Inspector until fresh authori
  const context={candidate_scope_revision:'scope',candidate_recipe_sha256:'recipe',expected_binding_version:1,protocol:{definition:{protocol_uuid:'history'}},draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2}};
  globalThis.fetch=async(path,options={})=>{assert.equal(options.method,undefined);if(reads++>0)await new Promise(resolve=>{release=resolve;});return {ok:true,status:200,json:async()=>context};};
  try{
-  const {default:Review}=await server.ssrLoadModule('/src/components/FrozenIncomingReview.jsx');const props={protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}};
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');const props={protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}};
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,revision:0}));});const inspector=renderer.root.find(node=>node.type?.name==='Inspector');
   await act(async()=>renderer.update(React.createElement(Review,{...props,revision:1})));assert.equal(renderer.root.find(node=>node.type?.name==='Inspector'),inspector);assert.equal(inspector.props.readPaused,true);assert.equal(inspector.props.draftSelection.disabled,true);
   await act(async()=>inspector.props.draftSelection.onMerge(['epoch']));assert.equal(reads,2);
