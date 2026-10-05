@@ -4939,7 +4939,21 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "current_source_paths": [
+          "desktop/startup/startup-session.cjs"
+        ],
+        "current_test_paths": [
+          "desktop/startup/tests/startup-session.test.cjs",
+          "desktop/startup/tests/public-examples.test.cjs"
+        ],
+        "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
+        "guidance": "desktop/startup/AGENTS.md",
+        "worker_evidence": "evidence/desktop-state-folders",
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+      }
     },
     {
       "id": "desktop.startup-restoration",
@@ -5195,7 +5209,21 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "current_source_paths": [
+          "desktop/drafts/draft-store.cjs"
+        ],
+        "current_test_paths": [
+          "desktop/drafts/tests/draft-store.test.cjs",
+          "desktop/drafts/tests/public-examples.test.cjs"
+        ],
+        "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
+        "guidance": "desktop/drafts/AGENTS.md",
+        "worker_evidence": "evidence/desktop-state-folders",
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+      }
     },
     {
       "id": "renderer.desktop-draft-session",
@@ -5313,7 +5341,22 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "organization": {
+        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "current_source_paths": [
+          "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+          "workspace-app/src/renderer-drafts/useDesktopDraft.js"
+        ],
+        "current_test_paths": [
+          "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
+          "workspace-app/src/renderer-drafts/useDesktopDraft.test.js"
+        ],
+        "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
+        "guidance": "workspace-app/src/renderer-drafts/AGENTS.md",
+        "worker_evidence": "evidence/renderer-drafts-folder",
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+      }
     },
     {
       "id": "renderer.lifecycle-fence",
@@ -6910,6 +6953,14 @@
         "Desktop/backend unchanged; prior results remain attached to prior commits",
         "No native/packaged/CI/performance qualification"
       ]
+    },
+    {
+      "id": "state-folder-integration-pending",
+      "status": "Independent source GO; aggregate checks pending",
+      "renderer_worker": "74 focused passes and four deliberate faults detected",
+      "desktop_worker": "1554cf38e8cfc7d05fcc16b0d831c746cfb990db: 48 Node and37 Python passes; two deliberate faults detected",
+      "profile_worker": "764b40386e76a3861f8c04afa3f95abb22fb7b72:20 Python and9 Node passes; independent review corrected three faults; shipping profile remains v1",
+      "whole_app_costs": "all unmeasured"
     }
   ],
   "deferred": [

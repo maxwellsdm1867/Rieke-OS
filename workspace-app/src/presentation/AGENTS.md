@@ -20,7 +20,7 @@ belong beside the factory; retain their behavior and real App composition tests.
 From `workspace-app`, run:
 
 ```sh
-node --import ./src/test-support/reactTestEnvironment.js --test src/presentation/workspacePresentationSessions.test.js src/presentation/internal/deletedSourceSelections.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/workspaceNavigation.test.js src/desktopDraftSession.test.js src/projectUnmount.test.js
+node --import ./src/test-support/reactTestEnvironment.js --test src/presentation/workspacePresentationSessions.test.js src/presentation/internal/deletedSourceSelections.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/workspaceNavigation.test.js src/renderer-drafts/desktopDraftSession.test.js src/projectUnmount.test.js
 ```
 
 The [App characterization](../presentationSessionsApp.test.js) and

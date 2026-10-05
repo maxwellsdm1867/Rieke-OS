@@ -66,3 +66,15 @@ test('navigate away then back to the same route still supersedes a delayed resto
   release({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'same-key'}});
   await session.flush();assert.equal(restores,0);session.close();
 });
+
+test('public example saves the unchanged nested renderer envelope through an injected bridge',async()=>{
+  const writes=[],view={route:{page:'files'},stores:{}};
+  const bridge={loadDraft:async projectId=>{assert.equal(projectId,'example-project');return null;},
+    saveDraft:async payload=>writes.push(payload)};
+  const session=createDesktopDraftSession({bridge,projectId:'example-project',
+    snapshot:()=>view,restore:()=>assert.fail('No saved view exists'),isBusy:()=>false});
+  try{
+    await session.flush();
+    assert.deepEqual(writes,[{projectId:'example-project',value:{format:'rieke-renderer-draft',version:1,projectId:'example-project',value:view}}]);
+  }finally{session.close();}
+});

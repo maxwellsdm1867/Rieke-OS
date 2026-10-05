@@ -73,6 +73,38 @@
     {
       "from": "AGENTS.md",
       "to": "tools/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/renderer-drafts/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/renderer-drafts/AGENTS.md",
+      "to": "workspace-app/src/renderer-drafts/desktopDraftSession.js"
+    },
+    {
+      "from": "workspace-app/src/renderer-drafts/AGENTS.md",
+      "to": "workspace-app/src/renderer-drafts/useDesktopDraft.js"
+    },
+    {
+      "from": "workspace-app/src/renderer-drafts/AGENTS.md",
+      "to": "docs/architecture/0.1.8-first-port-slices.md"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/drafts/AGENTS.md"
+    },
+    {
+      "from": "desktop/drafts/AGENTS.md",
+      "to": "desktop/drafts/README.md"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/startup/AGENTS.md"
+    },
+    {
+      "from": "desktop/startup/AGENTS.md",
+      "to": "desktop/startup/README.md"
     }
   ],
   "shared_paths": [
@@ -100,7 +132,8 @@
     "workspace-app/src/AGENTS.md",
     "workspace-app/src/presentation/AGENTS.md",
     "workspace-app/src/tree-selection/AGENTS.md",
-    "workspace-app/src/group-save/AGENTS.md"
+    "workspace-app/src/group-save/AGENTS.md",
+    "workspace-app/src/renderer-drafts/AGENTS.md"
   ],
   "contracts": [
     {
@@ -271,6 +304,34 @@
           "language": "javascript",
           "file": "workspace-app/src/desktopLifecycle.js",
           "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/drafts/draft-store.cjs",
+          "allow": [
+            "node:fs/promises",
+            "node:path",
+            "node:crypto",
+            "desktop/security.cjs"
+          ],
+          "require": [
+            "desktop/security.cjs"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/startup/startup-session.cjs",
+          "allow": [
+            "node:fs/promises",
+            "node:path",
+            "node:crypto",
+            "desktop/security.cjs",
+            "desktop/supervisor.cjs"
+          ],
+          "require": [
+            "desktop/security.cjs",
+            "desktop/supervisor.cjs"
+          ]
         }
       ],
       "tests": {
@@ -278,7 +339,7 @@
           "workspace-app/src/desktopLifecycle.test.js",
           "workspace-app/src/projectUnmount.test.js",
           "workspace-app/src/apiCommandPolicy.test.js",
-          "workspace-app/src/desktopDraftSession.test.js",
+          "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
           "workspace-app/src/startupRestore.test.js"
         ],
         "python": [
@@ -293,14 +354,16 @@
         "desktop": [
           "desktop/tests/supervisor.test.cjs",
           "desktop/close/tests/draft-barrier.test.cjs",
-          "desktop/tests/draft-store.test.cjs",
+          "desktop/drafts/tests/draft-store.test.cjs",
           "desktop/close/tests/quit-coordinator.test.cjs",
           "desktop/tests/main-quit-recovery.test.cjs",
-          "desktop/tests/startup-session.test.cjs",
+          "desktop/startup/tests/startup-session.test.cjs",
           "desktop/tests/verification-recovery.test.cjs",
           "desktop/tests/main-startup-restoration.test.cjs",
           "desktop/close/tests/public-examples.test.cjs",
-          "desktop/tests/close-packaging.test.cjs"
+          "desktop/tests/close-packaging.test.cjs",
+          "desktop/drafts/tests/public-examples.test.cjs",
+          "desktop/startup/tests/public-examples.test.cjs"
         ]
       }
     },
@@ -421,11 +484,68 @@
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/workspaceNavigation.test.js",
           "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
-          "workspace-app/src/desktopDraftSession.test.js",
+          "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
           "workspace-app/src/projectUnmount.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/testDiscovery.test.js",
           "workspace-app/src/architectureImports.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "renderer-draft-session",
+      "contract": {
+        "path": "docs/architecture/0.1.8-first-port-slices.md",
+        "heading": "Renderer draft-session ownership"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
+          "allow": [
+            "react",
+            "workspace-app/src/desktopLifecycle.js",
+            "workspace-app/src/renderer-drafts/desktopDraftSession.js"
+          ],
+          "require": [
+            "workspace-app/src/desktopLifecycle.js",
+            "workspace-app/src/renderer-drafts/desktopDraftSession.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/renderer-drafts/useDesktopDraft.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
+          "workspace-app/src/renderer-drafts/useDesktopDraft.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/presentationSessionsIntegration.test.js",
+          "workspace-app/src/desktopLifecycle.test.js",
+          "workspace-app/src/projectUnmount.test.js",
+          "workspace-app/src/apiCommandPolicy.test.js",
+          "workspace-app/src/startupRestore.test.js",
+          "workspace-app/src/workspaceNavigation.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -502,6 +622,25 @@
             ]
           }
         ]
+      },
+      {
+        "contract_id": "renderer-draft-session",
+        "root": "workspace-app/src/renderer-drafts",
+        "public_entries": [
+          {
+            "path": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+            "exports": [
+              "createDesktopDraftSession"
+            ]
+          },
+          {
+            "path": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
+            "exports": [
+              "useDesktopDraft"
+            ]
+          }
+        ],
+        "private_test_edges": []
       }
     ],
     "additional_sources": [

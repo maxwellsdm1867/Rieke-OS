@@ -1,3 +1,17 @@
+/**
+ * Own one renderer view-draft session with an injected desktop bridge; no imports.
+ * Loading starts immediately. Restore applies only while its load generation and
+ * captured navigation intent are current. The bridge loads by projectId and saves
+ * {projectId, value:{format:'rieke-renderer-draft', version:1, projectId, value}}.
+ * flush serializes saves, waits for loading and reads the latest snapshot when its
+ * turn runs. Closed, busy and unresolved recovery states reject without a save.
+ * Only the unreadable recovery marker permits fresh(); preserveForQuit() preserves
+ * bytes without saving only during recovery. Errors retain the existing messages.
+ * close suppresses late loads, but does not cancel an already submitted bridge save
+ * or add a stronger generation fence to fresh(). Native scope validation stays native.
+ * Returned operations: flush, fresh, retry, preserveForQuit, close.
+ * See AGENTS.md and the executable public example in desktopDraftSession.test.js.
+ */
 export function createDesktopDraftSession({bridge,projectId,snapshot,restore,isBusy,navigationIdentity=()=>null,onState=()=>{}}){
   let loadGeneration=0;
   let alive=true,phase='loading',allowPreservedClose=false,resetAllowed=false,loading,saveChain=Promise.resolve();

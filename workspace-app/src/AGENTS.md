@@ -11,6 +11,9 @@ Start in the module folder for the responsibility you are changing:
 - [Group save/recovery](group-save/AGENTS.md): exact retry identity, compact
   recovery and deferred preview release; preview, UI and undo remain callers.
 
+- [Renderer view drafts](renderer-drafts/AGENTS.md): queued persistence, load recovery
+  and React lifetime binding; native storage and shared lifecycle remain separate.
+
 Other frontend owners retain their existing named files pending the organization
 worklist; each ledger record need not become a separate module. See the
 [architecture map](../../ARCHITECTURE.md) for other adopted interfaces.

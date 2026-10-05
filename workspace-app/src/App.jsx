@@ -19,7 +19,7 @@ import AppUpdates from './components/AppUpdates.jsx';
 import {flushDesktopDrafts} from './desktopLifecycle.js';
 import {saveUnmountView,readUnmountView,clearUnmountView} from './projectUnmount.js';
 import ProjectUnmountDialog from './components/ProjectUnmountDialog.jsx';
-import {useDesktopDraft} from './useDesktopDraft.js';
+import {useDesktopDraft} from './renderer-drafts/useDesktopDraft.js';
 import DesktopDraftRecovery from './components/DesktopDraftRecovery.jsx';
 import ProjectFolder from './components/ProjectFolder.jsx';
 import LocalExportFolder from './components/LocalExportFolder.jsx';

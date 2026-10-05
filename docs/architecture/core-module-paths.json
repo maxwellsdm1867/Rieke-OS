@@ -1334,7 +1334,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "renderer-drafts"
+          "group": "renderer-drafts",
+          "current_path": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "workspace-app/src/desktopLifecycle.js",
@@ -1866,7 +1868,9 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "renderer-drafts"
+          "group": "renderer-drafts",
+          "current_path": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "workspace-app/src/useEpochBrowserPage.js",
@@ -3040,7 +3044,9 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "renderer-drafts"
+          "group": "renderer-drafts",
+          "current_path": "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "workspace-app/src/desktopLifecycle.test.js",
@@ -8806,7 +8812,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "drafts",
-          "reason": "Later independent move preserving private-file ownership, schema, unreadable recovery latch and security dependency."
+          "reason": "Later independent move preserving private-file ownership, schema, unreadable recovery latch and security dependency.",
+          "current_path": "desktop/drafts/draft-store.cjs",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "desktop/entitlements.mac.plist",
@@ -9163,7 +9171,9 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "startup",
-          "reason": "Later preference-only move; retain supervisor atomicJSON and security dependencies; restoration composition stays main."
+          "reason": "Later preference-only move; retain supervisor atomicJSON and security dependencies; restoration composition stays main.",
+          "current_path": "desktop/startup/startup-session.cjs",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "desktop/supervisor.cjs",
@@ -9595,7 +9605,9 @@
           "proposed_path": "desktop/tests/draft-store.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "drafts"
+          "group": "drafts",
+          "current_path": "desktop/drafts/tests/draft-store.test.cjs",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "desktop/tests/e2e/updater-client.cjs",
@@ -9812,7 +9824,9 @@
           "proposed_path": "desktop/tests/startup-session.test.cjs",
           "policy": "retain; reassess colocation with its later owner slice",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "startup"
+          "group": "startup",
+          "current_path": "desktop/startup/tests/startup-session.test.cjs",
+          "current_disposition": "organized; aggregate checks pending"
         },
         {
           "path": "desktop/tests/supervisor-runtime-inspection.test.cjs",
@@ -10186,6 +10200,31 @@
       "status": "independently reviewed documentation integrated; no broader tool runtime requalification",
       "new_guidance_paths": [
         "tools/AGENTS.md"
+      ]
+    },
+    {
+      "id": "renderer-drafts-and-desktop-state",
+      "status": "source-reviewed implementation; aggregate validation pending",
+      "moves": {
+        "workspace-app/src/desktopDraftSession.js": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+        "workspace-app/src/useDesktopDraft.js": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
+        "workspace-app/src/desktopDraftSession.test.js": "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
+        "desktop/draft-store.cjs": "desktop/drafts/draft-store.cjs",
+        "desktop/startup-session.cjs": "desktop/startup/startup-session.cjs",
+        "desktop/tests/draft-store.test.cjs": "desktop/drafts/tests/draft-store.test.cjs",
+        "desktop/tests/startup-session.test.cjs": "desktop/startup/tests/startup-session.test.cjs"
+      },
+      "new_test_paths": [
+        "workspace-app/src/renderer-drafts/useDesktopDraft.test.js",
+        "desktop/drafts/tests/public-examples.test.cjs",
+        "desktop/startup/tests/public-examples.test.cjs"
+      ],
+      "new_guidance_paths": [
+        "workspace-app/src/renderer-drafts/AGENTS.md",
+        "desktop/drafts/AGENTS.md",
+        "desktop/drafts/README.md",
+        "desktop/startup/AGENTS.md",
+        "desktop/startup/README.md"
       ]
     }
   ],

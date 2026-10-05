@@ -267,3 +267,19 @@ catalog versions 1 and 2 retain their behavior. Independent source review and
 guard and explicit-base planning passed. Broad mapped application tests were
 planned rather than executed for this tooling-only change. No runtime, parser or
 benchmark code changed. Python package policy remains a separate prerequisite.
+
+### Renderer drafts and desktop state integration candidate
+
+Renderer drafts now groups the existing factory and real React hook behind their
+separate public entries. Desktop drafts and startup preferences retain distinct
+folders and owners. Independent source review confirmed behavior preservation,
+original-suite retention and exact worker evidence (74 renderer checks; 48 desktop
+and 37 Python checks). Four renderer and two desktop deliberate faults were
+detected. Combined catalog/build/test validation is pending for this candidate.
+
+The profile-tooling prerequisite also passed independent review after three
+regression fixes (20 Python, 9 Node checks); the shipping manifest stays v1 and no
+Python runtime relocation has occurred. Historical source pointers and receipts
+remain unchanged; JSON organization fields and path overrides locate current code.
+All seven whole-app costs remain unmeasured. Final assembled E2E is blocked on a
+reviewed no-force-kill launcher, pinned Python runtime and exact package gate.

@@ -60,11 +60,11 @@ root tests directory; final-app E2E stays separate.
 
 ## Packaging and qualification
 
-`package.json` adds the two exact close CJS paths; root `*.cjs` alone does not
+`package.json` lists the two exact close CJS paths plus the draft and startup entries; root `*.cjs` alone does not
 include nested files. The source packaging test validates default and inherited
 preview exact allowlists, excludes tests/broad patterns, stages the declared app
-files, and resolves literal local requires in main and the two moved entries using the
-existing parser. Other desktop module internals are outside this check. Negative fixtures cover either missing entry, either configuration's
+files, and resolves literal local requires in main and all four nested entries using the
+existing parser. Other desktop module internals are outside this check. Negative fixtures cover missing entries, either configuration's
 accidental test inclusion, stale main import and missing staged dependency. It
 never executes main, builds/signs an app, or launches Electron.
 

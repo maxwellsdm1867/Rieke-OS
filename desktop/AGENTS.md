@@ -8,7 +8,8 @@ are beside the public entries and tests.
 
 `main.cjs` retains Electron window/IPC, restoration and lifecycle composition;
 `preload.cjs` and `security.cjs` retain the renderer capability and admission rules.
-DraftStore and StartupSession remain separate root owners. ServiceSupervisor owns
+[Draft storage](drafts/AGENTS.md) and [startup preferences](startup/AGENTS.md)
+remain separate owners with nearby contracts and public examples. ServiceSupervisor owns
 exact root identity/readiness; Python `workspace_desktop.py` owns project children
 and native cleanup. Renderer draft/lifecycle files stay in `workspace-app/src`.
 No universal lifecycle facade exists.
@@ -18,7 +19,7 @@ path and PID/creation time are separate proofs. Preference restoration grants no
 scientific readiness. Do not widen IPC, disable sandbox/security checks or replace
 uncertain stop with a clean receipt.
 
-Root `tests/` retains cross-owner composition. `close/tests/` contains local public
+Root `tests/` retains cross-owner composition. `close/tests/`, `drafts/tests/` and `startup/tests/` contain local public
 seam tests; `test/` retains updater contracts. `e2e/` and host/native inspection
 are separate qualification. Never use indiscriminate recursive test discovery.
 
