@@ -1297,7 +1297,8 @@
         "0fe34c3420fecd2213adcaa7689e7e1131e1ee38",
         "fabb9c691aa26bd56bb794b556dfcb5dda463e5b",
         "18975ad8240044273ca1f52783b20b8adbfd9a3f",
-        "5d12cf022b7c7ac6bc7a1727a467d14a8fd827b5"
+        "5d12cf022b7c7ac6bc7a1727a467d14a8fd827b5",
+        "373f286e3f0d7bb0ee8ccf9a11a4a5d47cfa9e85"
       ],
       "correctness_detectors": [
         "test_architecture_guard.py",
@@ -1339,7 +1340,24 @@
         "Hosted Node22.12 execution remains unqualified by local Node24.13 results."
       ],
       "existing_tests": [],
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "public_entry_policy": {
+        "catalog_version": 3,
+        "status": "implemented-reviewed",
+        "implementation_commit": "373f286e3f0d7bb0ee8ccf9a11a4a5d47cfa9e85",
+        "behavior": "Exact per-file public entry export sets; all production files still require ownership rules; private imports and production-to-test checks retained; legacy catalogv1/v2 preserved.",
+        "migration": "All three current registrations normalize exactly to the prior catalog; no runtime/parser/benchmark changes.",
+        "verification": {
+          "javascript_operational_passed": 31,
+          "python_guard_passed": 18,
+          "skipped": 0,
+          "all_language_guard": "passed",
+          "explicit_base_plan": "passed; broad mapped application tests not executed for policy-only change",
+          "receipt": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/multi-entry-policy/integration-binding.json",
+          "sha256": "383bc270bd5552ef33e8439305242e88c36f7d07e115f20981933ceef3a1c51b"
+        },
+        "limitations": "No cycle or imported-symbol data-flow analysis. Pythonv4 policy remains proposed; no native or performance claim."
+      }
     },
     {
       "status": "existing-coupled-proposed-separation",

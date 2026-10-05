@@ -256,3 +256,14 @@ tool paths with their interfaces, dependencies, command/test entrypoints and
 qualification limits. Its source-only review checked 91 links and 12 named test
 methods. No tooling runtime or benchmark qualification is implied. The path
 companion preserves baseline assignments and records accepted current-path changes.
+
+### Multi-entry guard prerequisite
+
+Source `373f286e3f0d7bb0ee8ccf9a11a4a5d47cfa9e85` supports multiple explicit
+public files per coherent frontend folder, with each file's exact exports guarded.
+The three current module registrations migrated without semantic changes;
+catalog versions 1 and 2 retain their behavior. Independent source review and
+31 JavaScript operational / 18 Python guard tests passed, zero skips; all-language
+guard and explicit-base planning passed. Broad mapped application tests were
+planned rather than executed for this tooling-only change. No runtime, parser or
+benchmark code changed. Python package policy remains a separate prerequisite.
