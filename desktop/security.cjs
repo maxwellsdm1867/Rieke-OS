@@ -16,6 +16,19 @@ function validateSender(event, windows, origin, localPages) {
       !isOwnedURL(event.senderFrame.url, origin, localPages)) throw new Error('Unauthorized desktop frame');
   return window;
 }
+// Chromium keeps clipboard reads separate. Only our focused scientific main
+// document may request sanitized writes; recovery pages and retired owners deny.
+function allowClipboardWrite(contents, permission, details, windows, origins, requestingOrigin) {
+  if (permission !== 'clipboard-sanitized-write' || !contents || contents.isDestroyed() ||
+      !contents.isFocused() || details?.isMainFrame !== true) return false;
+  try {
+    validateSender({sender: contents, senderFrame: contents.mainFrame}, windows, origins);
+    const current = new URL(contents.mainFrame.url).origin;
+    return isOwnedURL(contents.getURL(), origins) && new URL(contents.getURL()).origin === current &&
+      isOwnedURL(details.requestingUrl, origins) && new URL(details.requestingUrl).origin === current &&
+      (requestingOrigin === undefined || new URL(requestingOrigin).origin === current);
+  } catch { return false; }
+}
 function validateProjectId(value) {
   if (typeof value !== 'string' || !PROJECT_ID.test(value)) throw new TypeError('Invalid project identity');
   return value.toLowerCase();
@@ -31,4 +44,4 @@ function approvedReleaseURL(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'github.com' &&
     !url.username && !url.password && /^\/maxwellsdm1867\/(?:disco|Rieke-OS)\/releases(?:\/|$)/.test(url.pathname); } catch { return false; }
 }
-module.exports = {isOwnedURL, validateSender, validateDraft, validateProjectId, approvedReleaseURL};
+module.exports = {allowClipboardWrite, isOwnedURL, validateSender, validateDraft, validateProjectId, approvedReleaseURL};

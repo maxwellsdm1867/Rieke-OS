@@ -136,3 +136,16 @@ The parent serializes ledger/path-companion/catalog and navigation updates. Thes
 keep decisions change neither public source paths nor packaging selection. No
 native exit, ASAR inclusion, filesystem durability, benchmark improvement or release
 qualification follows from this source/injected-test review.
+
+## Clipboard copy permission
+
+`security.allowClipboardWrite` admits only `clipboard-sanitized-write` from a
+focused, live scientific window whose current main frame and requesting URL have
+the same admitted loopback origin. Permission checks additionally bind the
+requesting origin. Both Electron permission callbacks retain the integrity gate;
+null contents, subframes, recovery/file pages, retired owners, clipboard reads
+and all other permissions are denied. No clipboard IPC is exposed. Electron
+44.5.0 does not provide a clipboard user-gesture flag here; this policy does not
+claim gesture-only enforcement. Copy controls still call the browser API from
+explicit clicks. `tests/security.test.cjs` exercises admission and denial cases;
+actual packaged copy and clipboard-read refusal require separate native evidence.

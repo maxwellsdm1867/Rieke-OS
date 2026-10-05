@@ -8,7 +8,7 @@ const os = require('node:os');
 const {execFile} = require('node:child_process');
 const {promisify} = require('node:util');
 const {ServiceSupervisor, matchesHealth} = require('./supervisor.cjs');
-const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs');
+const {validateSender, approvedReleaseURL, isOwnedURL, allowClipboardWrite} = require('./security.cjs');
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./drafts/draft-store.cjs');
@@ -190,8 +190,10 @@ function createWindow() {
 }
 function configureSession() {
   const ownedSession = session.fromPartition('rieke-desktop');
-  ownedSession.setPermissionRequestHandler((_contents, _permission, callback) => callback(false));
-  ownedSession.setPermissionCheckHandler(() => false);
+  ownedSession.setPermissionRequestHandler((contents, permission, callback, details) =>
+    callback(!integrityFailed && allowClipboardWrite(contents, permission, details, scientificWindows, supervisor?.origins)));
+  ownedSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) =>
+    !integrityFailed && allowClipboardWrite(contents, permission, details, scientificWindows, supervisor?.origins, requestingOrigin));
   ownedSession.webRequest.onBeforeRequest((details, callback) => {
     const owned = [...windows].some(win => !win.isDestroyed() && win.webContents.id === details.webContentsId);
     const localAsset = details.url.startsWith('file:') && (() => {
