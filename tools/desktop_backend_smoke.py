@@ -137,7 +137,9 @@ def run(resources, output, project=True, recording=None):
             result['checks'].append('main-only authorization validates live bound project before navigation')
             if child.get('project_uuid') != scientific_project['uuid'] or child.get('project_path') != scientific_project['path']:
                 raise ValueError('Project service identity mismatch')
-            result['checks'].append('native project created/opened using bundled runtime')
+            if call('/api/project/activate', {}, base=project_origin, timeout=180).get('status') != 'ready':
+                raise ValueError('Project data activation was not acknowledged')
+            result['checks'].append('native project shell opened and scientific data explicitly activated')
             registry = call('/api/desktop/health')['services']
             if len(registry) != 1 or registry[0]['pid'] != child['pid']:
                 raise ValueError('Project registry did not own service')
@@ -211,6 +213,8 @@ def run(resources, output, project=True, recording=None):
                 authorization = call('/api/desktop/authorize-project', {'port': urlsplit(project_origin).port})
                 if authorization['health']['project_uuid'] != scientific_project['uuid']:
                     raise ValueError('Restarted project authorization changed identity')
+                if call('/api/project/activate', {}, base=project_origin, timeout=180).get('status') != 'ready':
+                    raise ValueError('Restarted project data activation was not acknowledged')
                 annotation = call('/api/annotations/read', {'target_kind': 'epoch', 'target_uuids': [epoch_uuid]}, base=project_origin)
                 if tag not in [item['tag'] for item in annotation['targets'][epoch_uuid]['tags']]:
                     raise ValueError('Restart lost shared annotation')

@@ -147,6 +147,8 @@ class Harness:
                 or authorization['health']['project_path'] != str(Path(project['path']).resolve())
                 or authorization['record'].get('bound') is not True):
             raise AssertionError('Project listener identity changed')
+        if self.call('/api/project/activate', {}, origin=origin, timeout=180).get('status') != 'ready':
+            raise AssertionError('Scientific data activation was not acknowledged')
         return origin, authorization['record']
 
     def close_project(self, origin, project):
