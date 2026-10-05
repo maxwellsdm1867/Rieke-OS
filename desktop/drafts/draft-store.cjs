@@ -2,7 +2,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const {randomUUID} = require('node:crypto');
-const {validateDraft, validateProjectId} = require('./security.cjs');
+const {validateDraft, validateProjectId} = require('../security.cjs');
 const MAX_DRAFT_BYTES = 2 * 1024 * 1024;
 function validStoredDraft(value, projectId) {
   return value !== null && typeof value === 'object' && !Array.isArray(value) &&

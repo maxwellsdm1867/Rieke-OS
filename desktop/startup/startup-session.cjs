@@ -2,8 +2,8 @@
 // A small presentation preference, never a runtime or scientific authority.
 const fs=require('node:fs/promises'),path=require('node:path');
 const {createHash}=require('node:crypto');
-const {atomicJSON}=require('./supervisor.cjs');
-const {validateProjectId}=require('./security.cjs');
+const {atomicJSON}=require('../supervisor.cjs');
+const {validateProjectId}=require('../security.cjs');
 const FORMAT='disco-startup-session';
 function valid(value,compatibility){
   return value?.format===FORMAT&&value.version===1&&value.compatibility===compatibility&&

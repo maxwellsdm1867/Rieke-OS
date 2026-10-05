@@ -86,6 +86,34 @@ class ReleasePlanCLITests(unittest.TestCase):
         value = self.plan('--base', moved)
         self.assertEqual(tuple(value[flag] for flag in FLAGS), (True, True, False, False, True))
 
+    def test_state_owner_test_changes_and_renames_do_not_build(self):
+        for owner in ('drafts', 'startup'):
+            self.write(f'desktop/tests/{owner}.test.cjs', '// original coverage\n')
+        before = self.commit()
+        for owner in ('drafts', 'startup'):
+            self.write(f'desktop/{owner}/tests/public.test.cjs', '// public example\n')
+            self.git('mv', f'desktop/tests/{owner}.test.cjs', f'desktop/{owner}/tests/moved.test.cjs')
+        self.commit()
+        value = self.plan('--base', before)
+        self.assertEqual(tuple(value[flag] for flag in FLAGS), (False,) * 5)
+
+    def test_state_production_moves_and_deletions_keep_basename_classification(self):
+        for owner, name, expected in [('drafts', 'draft-store', (True, True, False, False, True)),
+                                      ('startup', 'startup-session', (True, True, False, False, False))]:
+            with self.subTest(owner=owner):
+                self.write(f'desktop/{name}.cjs', '// original owner\n')
+                before = self.commit()
+                (self.root / f'desktop/{owner}').mkdir(parents=True)
+                self.git('mv', f'desktop/{name}.cjs', f'desktop/{owner}/{name}.cjs')
+                moved = self.commit()
+                value = self.plan('--base', before)
+                self.assertEqual(tuple(value[flag] for flag in FLAGS), expected)
+                self.assertEqual(set(value['changed_paths']), {f'desktop/{name}.cjs', f'desktop/{owner}/{name}.cjs'})
+                self.git('rm', f'desktop/{owner}/{name}.cjs')
+                self.commit()
+                value = self.plan('--base', moved)
+                self.assertEqual(tuple(value[flag] for flag in FLAGS), expected)
+
     def test_application_changes_select_routine_or_domain_qualification(self):
         cases = [
             ('workspace-app/src/components/Inspector.jsx', (True, False, False, False, False)),
@@ -98,6 +126,8 @@ class ReleasePlanCLITests(unittest.TestCase):
             ('desktop/main.cjs', (True, True, False, False, True)),
             ('desktop/close/draft-barrier.cjs', (True, True, False, False, True)),
             ('desktop/close/quit-coordinator.cjs', (True, True, False, False, False)),
+            ('desktop/drafts/draft-store.cjs', (True, True, False, False, True)),
+            ('desktop/startup/startup-session.cjs', (True, True, False, False, False)),
             ('python/workspace_desktop.py', (True, True, True, False, True)),
             ('python/workspace_migration.py', (True, False, True, False, True)),
             ('python/workspace_annotations.py', (True, False, True, False, True)),

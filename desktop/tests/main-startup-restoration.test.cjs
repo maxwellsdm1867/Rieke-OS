@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const {EventEmitter} = require('node:events');
-const {StartupSession} = require('../startup-session.cjs');
+const {StartupSession} = require('../startup/startup-session.cjs');
 const {pathToFileURL} = require('node:url');
 
 const projectId = '00000000-0000-0000-0000-000000000001';

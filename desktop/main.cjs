@@ -11,8 +11,8 @@ const {ServiceSupervisor, matchesHealth} = require('./supervisor.cjs');
 const {validateSender, approvedReleaseURL, isOwnedURL} = require('./security.cjs');
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
-const {DraftStore} = require('./draft-store.cjs');
-const {StartupSession,viewNamespace}=require('./startup-session.cjs');
+const {DraftStore} = require('./drafts/draft-store.cjs');
+const {StartupSession,viewNamespace}=require('./startup/startup-session.cjs');
 let startupSession,startupOpening;const scopedDraftStores=new Map();
 function scopedDraftStore(window,projectId){
   const origin=new URL(window.webContents.getURL()).origin;

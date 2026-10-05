@@ -268,4 +268,35 @@ class ArchitectureGuardTests(unittest.TestCase):
         self.write_catalog()
         self.assertIn('escapes', self.cli('check', '--language', 'metadata', success=False)['error'])
 
+    def test_state_owner_test_roots_preserve_narrow_mapping_and_execution(self):
+        self.desktop_contract()
+        for owner in ('drafts', 'startup'):
+            with self.subTest(owner=owner):
+                name = f'desktop/{owner}/tests/public.test.cjs'
+                self.write(name, "require('node:test')('state contract', () => require('node:assert/strict').equal(1, 1));\n")
+                self.catalog['contracts'][0]['tests']['desktop'] = [name]
+                self.write_catalog()
+                self.cli('check', '--language', 'metadata')
+                if shutil.which('node'):
+                    result = self.cli('test', '--all', '--language', 'desktop')
+                    self.assertEqual(result['runs'][0]['command'], ['node', '--test', name])
+                    self.assertEqual(result['runs'][0]['exit_code'], 0)
+                for invalid in [f'desktop/{owner}/owner.cjs', f'desktop/{owner}/tests/nested/a.test.cjs',
+                                f'desktop/{owner}/testsuite/a.test.cjs', 'desktop/other/tests/a.test.cjs']:
+                    self.write(invalid, '// rejected location\n')
+                    self.catalog['contracts'][0]['tests']['desktop'] = [invalid]
+                    self.write_catalog()
+                    self.assertIn('Invalid desktop test path', self.cli('check', '--language', 'metadata', success=False)['error'])
+                self.catalog['contracts'][0]['tests']['desktop'] = [f'desktop/{owner}/tests/../../../python/tests/test_policy.py']
+                self.write_catalog()
+                self.assertIn('escapes', self.cli('check', '--language', 'metadata', success=False)['error'])
+                with tempfile.TemporaryDirectory(prefix='disco-outside-test-') as outside:
+                    target = Path(outside) / 'escape.test.cjs'
+                    target.write_text('// outside repository\n')
+                    link = self.root / f'desktop/{owner}/tests/escape.test.cjs'
+                    link.symlink_to(target)
+                    self.catalog['contracts'][0]['tests']['desktop'] = [str(link.relative_to(self.root))]
+                    self.write_catalog()
+                    self.assertIn('escapes', self.cli('check', '--language', 'metadata', success=False)['error'])
+
 if __name__ == '__main__': unittest.main()
