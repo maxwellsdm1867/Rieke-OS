@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from test_workspace_api import WorkspaceAPITests
 from test_workspace_curation import Table
-from workspace_tree_layouts import TreeLayouts
+from disco.navigation.tree_layouts import TreeLayouts
 
 
 class TreeLayoutTests(unittest.TestCase):

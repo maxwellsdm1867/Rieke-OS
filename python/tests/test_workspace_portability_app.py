@@ -14,8 +14,8 @@ import unittest
 
 import workspace_portability as transfer
 from workspace_projects import create_project_at
-from workspace_project_database import ensure_project_database
-from workspace_recording_files import retain_recording
+from disco.projects.project_database import ensure_project_database
+from disco.projects.recording_files import retain_recording
 
 
 API_CHECK = r'''

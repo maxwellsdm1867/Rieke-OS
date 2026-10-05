@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 from recording_workspace import evaluate_protocol_file
-from workspace_recipes import capture_query, compare_query, save_snapshot
+from disco.workbench.recipes import capture_query, compare_query, save_snapshot
 
 
 def main():

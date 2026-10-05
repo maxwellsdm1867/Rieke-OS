@@ -2,7 +2,7 @@
 import unittest
 from types import SimpleNamespace
 from workspace_api import summarize_cell_membership
-from workspace_curation import CurationStore
+from disco.decisions.curation import CurationStore
 
 
 class CellSummaryScaleTests(unittest.TestCase):

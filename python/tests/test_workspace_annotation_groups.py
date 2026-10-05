@@ -9,11 +9,11 @@ import uuid
 
 import test_workspace_annotation_batch_guard as guard_fixture
 from test_workspace_curation import Table
-from workspace_annotation_groups import AnnotationGroups,RetainedBudget,register_group_annotation_routes
-from workspace_curation import RevisionConflict
-from workspace_recipes import checksum
-from workspace_tree import joint_id
-from workspace_tree_pages import TreePages
+from disco.decisions.annotation_groups import AnnotationGroups,RetainedBudget,register_group_annotation_routes
+from disco.decisions.curation import RevisionConflict
+from disco.workbench.recipes import checksum
+from disco.navigation.tree import joint_id
+from disco.navigation.tree_pages import TreePages
 
 
 class Authority:
@@ -203,7 +203,7 @@ class GroupTests(unittest.TestCase):
         self.groups.selections[preview['selection_uuid']]['expires']=0
         with self.assertRaisesRegex(ValueError,'expired'):self.groups.apply(self.body(preview),'OS actor')
         preview=self.preview();self.assertTrue(self.groups.release({'selection_uuid':preview['selection_uuid']},'OS actor')['released'])
-        with patch('workspace_annotation_groups.PROJECT_LIMIT',10),self.assertRaisesRegex(ValueError,'scope-resolver'):
+        with patch('disco.decisions.annotation_groups.PROJECT_LIMIT',10),self.assertRaisesRegex(ValueError,'scope-resolver'):
             self.preview()
         self.assertEqual(self.case.case.records.rows,[])
         with self.assertRaisesRegex(ValueError,'retained-memory'):
@@ -225,7 +225,7 @@ class GroupTests(unittest.TestCase):
 
     def test_budget_failure_precedes_first_write_and_inverse_conflict_is_atomic(self):
         self.grow(15);preview=self.preview();body=self.body(preview)
-        with patch('workspace_annotation_groups.OPERATION_BYTES',256):
+        with patch('disco.decisions.annotation_groups.OPERATION_BYTES',256):
             with self.assertRaisesRegex(ValueError,'retained-memory'):self.groups.apply(body,'OS actor')
         self.assertEqual(self.case.case.records.rows,[])
         self.groups.apply(body,'OS actor')
@@ -340,15 +340,15 @@ class GroupTests(unittest.TestCase):
             context={'source_revisions':revisions,'generation':self.tracker.token(protocol)}
             return lambda:context['source_revisions']
         self.groups.revision_guard=guard_provider
-        with patch('workspace_annotation_groups.RETAINED_BYTES',10000), \
-             patch('workspace_annotation_groups.RetainedBudget',side_effect=lambda used=0,maximum=None:RetainedBudget(used,maximum or 10000)):
+        with patch('disco.decisions.annotation_groups.RETAINED_BYTES',10000), \
+             patch('disco.decisions.annotation_groups.RetainedBudget',side_effect=lambda used=0,maximum=None:RetainedBudget(used,maximum or 10000)):
             with self.assertRaisesRegex(ValueError,'retained-memory'):
                 self.preview({'protocol_uuid':self.service.protocol_id,'splits':''})
         self.assertEqual(self.groups.selections,{})
         self.groups.revision_guard=None
         preview=self.preview();body=self.body(preview);self.groups.apply(body,'OS actor')
         before=copy.deepcopy((self.receipts.rows,self.case.case.records.rows))
-        with patch('workspace_annotation_groups.OPERATION_BYTES',256),self.assertRaisesRegex(ValueError,'retained-memory'):
+        with patch('disco.decisions.annotation_groups.OPERATION_BYTES',256),self.assertRaisesRegex(ValueError,'retained-memory'):
             self.groups.undo(body['operation_uuid'],{'operation_uuid':str(uuid.uuid4())},'OS actor')
         self.assertEqual((self.receipts.rows,self.case.case.records.rows),before)
 

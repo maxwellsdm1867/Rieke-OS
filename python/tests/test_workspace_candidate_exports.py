@@ -15,8 +15,8 @@ import h5py
 from scipy.io import loadmat
 
 import test_workspace_api as api_fixture
-from workspace_candidate_exports import register_candidate_export_routes,candidate_scope_uuid
-from workspace_recipes import checksum
+from disco.workbench.candidate_exports import register_candidate_export_routes,candidate_scope_uuid
+from disco.workbench.recipes import checksum
 from test_workspace_matlab import epochs as matlab_epochs
 
 

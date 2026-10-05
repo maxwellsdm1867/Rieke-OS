@@ -41,7 +41,7 @@ class ProjectRelocationTests(unittest.TestCase):
 
     def test_move_preserves_identity_files_and_inode_without_database_start(self):
         inode = (self.root / 'database/mysql/evidence.ibd').stat().st_ino
-        with patch('workspace_project_database.ensure_project_database', side_effect=AssertionError('Do not start DB')):
+        with patch('disco.projects.project_database.ensure_project_database', side_effect=AssertionError('Do not start DB')):
             result = transfer.relocate_project(self.root, self.target)
         self.assertTrue(result['moved'])
         self.assertEqual(result['project_uuid'], self.identity)

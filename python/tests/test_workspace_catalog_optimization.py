@@ -5,8 +5,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-import workspace_tree as tree
-import workspace_predicates as predicates
+import disco.navigation.tree as tree
+import disco.navigation.predicates as predicates
 
 
 def fixture():

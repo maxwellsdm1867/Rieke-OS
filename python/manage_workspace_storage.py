@@ -16,7 +16,7 @@ import tempfile
 import time
 
 from recording_workspace import digest, now, write_json
-from workspace_storage import initialize_layout, log_dir, migrate_legacy_logs
+from disco.projects.storage import initialize_layout, log_dir, migrate_legacy_logs
 
 
 def docker(*args):

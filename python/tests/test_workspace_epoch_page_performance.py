@@ -7,10 +7,10 @@ import unittest
 from unittest.mock import Mock, patch
 import uuid
 
-from workspace_disk_index import DiskMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
 from workspace_service import WorkspaceService
 import test_workspace_api as api_fixture
-from workspace_curation import RevisionConflict
+from disco.decisions.curation import RevisionConflict
 
 
 class EpochPageTests(unittest.TestCase):
@@ -85,7 +85,7 @@ class EpochPageTests(unittest.TestCase):
         self.service.set_binding_provider(getter,header_provider=history.protocol_binding_header)
         self.assertEqual(self.service.epoch_page(self.protocol)['total'],2)
         self.assertEqual(getter.call_count,1)
-        with patch('workspace_explorer.copy.deepcopy',side_effect=AssertionError('No recipe copy on warm page')):
+        with patch('disco.decisions.explorer.copy.deepcopy',side_effect=AssertionError('No recipe copy on warm page')):
             # The in-memory SQL double itself deepcopies its one binding row.
             # Supply that same already-fetched immutable header to isolate the
             # potentially huge recipe copy from the real header query's cost.

@@ -64,9 +64,9 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(payload["metadata_fingerprint"], "a" * 64)
 
     def test_paged_metadata_implementation_is_in_new_audit_provenance(self):
-        paths = {'python/workspace_candidate_exports.py', 'workspace-app/src/components/CandidateExportPanel.jsx',
-                 'workspace-app/src/exportReuse.js', 'python/workspace_disk_index.py', 'python/workspace_projection_cache.py',
-                 'python/workspace_tree_pages.py', 'workspace-app/src/components/PagedTree.jsx'}
+        paths = {'python/disco/workbench/candidate_exports.py', 'workspace-app/src/components/CandidateExportPanel.jsx',
+                 'workspace-app/src/exportReuse.js', 'python/disco/metadata/disk_index.py', 'python/disco/metadata/projection_cache.py',
+                 'python/disco/navigation/tree_pages.py', 'workspace-app/src/components/PagedTree.jsx'}
         self.assertTrue(paths <= set(audit.SOURCE_FILES))
         receipt = audit.build_audit_payload('explorer_revision_created', 'fixture', {})
         fingerprints = receipt['audit']['provenance']['code']

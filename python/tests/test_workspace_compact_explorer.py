@@ -5,7 +5,7 @@ import uuid
 from unittest.mock import patch
 
 import test_workspace_api as api_fixture
-from workspace_recipes import checksum
+from disco.workbench.recipes import checksum
 
 
 class CompactExplorerTests(unittest.TestCase):

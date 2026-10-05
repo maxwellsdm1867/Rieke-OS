@@ -7,11 +7,11 @@ import unittest
 from unittest.mock import patch
 
 from test_workspace_annotations import SharedAnnotationTests
-from workspace_annotation_preparation import prepare_annotation_indexes,_ordered_rows
-from workspace_annotation_checkpoint import restore_shared_checkpoint,save_shared_checkpoint
-from workspace_disk_index import DiskMetadataIndex
-from workspace_recipes import checksum
-from workspace_shared_tag_index import SharedTagIndex
+from disco.decisions.annotation_preparation import prepare_annotation_indexes,_ordered_rows
+from disco.decisions.annotation_checkpoint import restore_shared_checkpoint,save_shared_checkpoint
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.workbench.recipes import checksum
+from disco.decisions.shared_tag_index import SharedTagIndex
 
 
 class AnnotationPreparationTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class AnnotationPreparationTests(unittest.TestCase):
         self.tracker=SimpleNamespace(token=lambda:(self.witness,self.proof()['tables']['shared_annotation']['xor']))
         self.shared.state_generation=self.tracker
         self.fresh_index()
-        self.proof_patch=patch('workspace_annotation_checkpoint._proof',side_effect=lambda service:self.proof())
+        self.proof_patch=patch('disco.decisions.annotation_checkpoint._proof',side_effect=lambda service:self.proof())
         self.proof_patch.start();self.addCleanup(self.proof_patch.stop)
 
     def proof(self):
@@ -86,11 +86,11 @@ class AnnotationPreparationTests(unittest.TestCase):
         self.assertFalse(restore_shared_checkpoint(self.service,self.shared)['restored'])
         self.assertEqual(self.prepare()['status'],'ready')
         self.fresh_index()
-        with patch('workspace_annotation_checkpoint._proof',return_value=None):
+        with patch('disco.decisions.annotation_checkpoint._proof',return_value=None):
             self.assertFalse(restore_shared_checkpoint(self.service,self.shared)['restored'])
 
     def test_edit_during_checkpoint_publication_cannot_publish_stale_membership(self):
-        import workspace_annotation_checkpoint as checkpoint
+        import disco.decisions.annotation_checkpoint as checkpoint
         self.prepare()
         initial=save_shared_checkpoint(self.service,self.shared)
         self.assertTrue(initial['saved'])

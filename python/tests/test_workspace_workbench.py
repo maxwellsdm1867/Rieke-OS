@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from test_workspace_suggestions import ImportSuggestionTests
 from test_workspace_curation import Table
-from workspace_workbench import ProtocolWorkbench, WorkbenchConflict
+from disco.workbench.workbench import ProtocolWorkbench, WorkbenchConflict
 
 
 class WorkbenchTests(unittest.TestCase):
@@ -26,7 +26,7 @@ class WorkbenchTests(unittest.TestCase):
         verified.start()
         self.addCleanup(verified.stop)
         # Resolve a deterministic local actor; no user's author preference file is read/written.
-        self.author = patch('workspace_author_preferences.selected_author', return_value={'profile_uuid': 'actor-one'})
+        self.author = patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'actor-one'})
         self.author.start()
         self.addCleanup(self.author.stop)
         fixture.run_import()
@@ -109,7 +109,7 @@ class WorkbenchTests(unittest.TestCase):
             rows = original(scoped, *args, **kwargs)
             witness[0] = 'after'
             return rows
-        with patch('workspace_explore_queries.generation', side_effect=lambda *args: {'annotation': witness[0]}), \
+        with patch('disco.metadata.explore_queries.generation', side_effect=lambda *args: {'annotation': witness[0]}), \
                 patch.object(type(self.case.service), 'filtered_rows', mutate_during_calculation):
             response = self.case.client.post(self.root + '/summary', json=body, headers=self.case.headers)
         self.assertEqual(response.status_code, 409, response.get_json())
@@ -412,7 +412,7 @@ class WorkbenchTests(unittest.TestCase):
     def test_recovery_dependency_order_and_old_recovery_header_remain_supported(self):
         from workspace_state_snapshot import restore_table_order, LEGACY_TABLES
         from test_workspace_recovery_store import scientific_fixture, canonical
-        import workspace_recovery_store as recovery
+        import disco.backup.recovery_store as recovery
         import tempfile
         from pathlib import Path
         order = restore_table_order({'workbench_decision': [], 'workbench_draft': []})

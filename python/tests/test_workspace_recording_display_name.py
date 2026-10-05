@@ -1,6 +1,6 @@
 """Display identity remains independent of managed recording locators."""
 import unittest
-from workspace_recording_files import recording_display_name
+from disco.projects.recording_files import recording_display_name
 
 class RecordingDisplayNameTests(unittest.TestCase):
     def test_managed_relocation_retains_original_name(self):

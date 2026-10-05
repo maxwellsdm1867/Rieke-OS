@@ -124,9 +124,15 @@ def worker(args):
     thread=threading.Thread(target=watch,daemon=True);thread.start()
     native=None;candidate=None
     try:
-        sys.path[:0]=[str(args.baseline_root/'python'),str(args.implementation_root/'python')]
+        sys.path.insert(0,str(args.baseline_root/'python'))
         import workspace_disk_index as native_module
-        from workspace_typed_index import TypedMetadataIndex
+        if Path(native_module.__file__).resolve()!=(args.baseline_root/'python/workspace_disk_index.py').resolve():
+            raise AssertionError('Native comparator did not load from the baseline root')
+        sys.path.insert(0,str(args.implementation_root/'python'))
+        import disco.metadata.typed_index as candidate_module
+        if Path(candidate_module.__file__).resolve()!=(args.implementation_root/'python/disco/metadata/typed_index.py').resolve():
+            raise AssertionError('Typed candidate did not load from the implementation root')
+        TypedMetadataIndex=candidate_module.TypedMetadataIndex
         candidate=TypedMetadataIndex(args.candidate,expected_generation=verified['lineage_receipt']['generation'],expected_project_uuid=verified['lineage_receipt']['project_uuid'])
         source_rows,source_values=load_source(args.real)
         # Independently prove all global ranks, chronology and mapped acquisition UUIDs.

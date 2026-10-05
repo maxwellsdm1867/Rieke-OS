@@ -50,7 +50,7 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     import json
     import uuid
     import contextlib
-    from workspace_diff import summarize_diff
+    from disco.workbench.diff import summarize_diff
 
     if not isinstance(name, str) or not name.strip() or len(name) > 120 or any(ord(char) < 32 for char in name):
         raise ValueError('Name the new pinned protocol using 1–120 characters')

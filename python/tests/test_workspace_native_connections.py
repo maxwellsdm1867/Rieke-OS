@@ -7,7 +7,7 @@ import types
 import unittest
 from unittest.mock import patch
 from recording_workspace import configured_database, connect
-from workspace_recording_files import retain_recording
+from disco.projects.recording_files import retain_recording
 
 
 class NativeConnectionTests(unittest.TestCase):

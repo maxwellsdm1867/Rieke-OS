@@ -313,7 +313,7 @@ class DataStoreTests(unittest.TestCase):
 class StorageSizeTests(unittest.TestCase):
     def test_registered_metadata_size_is_stat_only_and_restricted_to_imports(self):
         import tempfile
-        from workspace_datastores import metadata_file_size
+        from disco.projects.datastores import metadata_file_size
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             metadata = root / 'imports' / 'metadata.json'
@@ -330,7 +330,7 @@ class StorageSizeTests(unittest.TestCase):
             self.assertEqual(metadata_file_size({'metadata_path': str(metadata)}, root)[:2], (None, 'missing'))
 
     def test_combined_sizes_are_deduplicated_and_missing_values_stay_partial(self):
-        from workspace_datastores import storage_summary
+        from disco.projects.datastores import storage_summary
         rows = [{'source_sha256': 'a', 'source_path': '/a.h5', 'size_bytes': 100,
                  'metadata_path': '/a.json', 'metadata_size_bytes': 20},
                 {'source_sha256': 'b', 'source_path': '/b.h5', 'size_bytes': 200,

@@ -16,9 +16,9 @@ import tempfile
 import uuid
 import zlib
 
-from workspace_recipes import member_map, verify
-from workspace_tree import field_id
-from workspace_tag_exchange import frozen_annotation_entries
+from disco.workbench.recipes import member_map, verify
+from disco.navigation.tree import field_id
+from disco.decisions.tag_exchange import frozen_annotation_entries
 
 SCHEMA_VERSION = 2
 FORMAT = 'recording-workspace-sqlite'

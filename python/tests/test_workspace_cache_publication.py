@@ -9,10 +9,10 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from workspace_disk_index import DiskMetadataIndex
-from workspace_cache_lifecycle import CacheNamespace
-from workspace_projection_cache import ProjectionCache
-from test_workspace_disk_index import fixture
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.metadata.cache_lifecycle import CacheNamespace
+from disco.metadata.projection_cache import ProjectionCache
+from disco.metadata.tests.test_workspace_disk_index import fixture
 
 
 def _concurrent_build(path, start, inspect, messages):
@@ -90,7 +90,7 @@ class ProjectionPublicationTests(unittest.TestCase):
                 reading.set()
                 return cache.read('key')
             with ThreadPoolExecutor(max_workers=2) as pool:
-                with patch('workspace_projection_cache.os.replace',side_effect=interrupted_replace):
+                with patch('disco.metadata.projection_cache.os.replace',side_effect=interrupted_replace):
                     writer=pool.submit(cache.write,'key',after)
                     try:
                         self.assertTrue(replaced.wait(10))

@@ -50,7 +50,7 @@ class ExportReaderTests(unittest.TestCase):
         self.stream = self.service.rows[self.epoch]['streams'][0]['uuid']
 
     def test_managed_recording_lazy_trace_survives_deleted_download(self):
-        from workspace_recording_files import retain_recording
+        from disco.projects.recording_files import retain_recording
         retained = retain_recording(self.service.project_dir, self.raw, digest(self.raw))
         self.service.sources[0]['source_path'] = str(retained)
         self.service.manifests[digest(retained)]['source_path'] = str(retained)

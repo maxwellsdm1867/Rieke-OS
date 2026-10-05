@@ -3,7 +3,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from workspace_storage import ManagedStorage, initialize_layout, migrate_legacy_logs
+from disco.projects.storage import ManagedStorage, initialize_layout, migrate_legacy_logs
 
 
 class StorageTests(unittest.TestCase):

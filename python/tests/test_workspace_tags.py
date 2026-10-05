@@ -88,7 +88,7 @@ class TagSuggestionTests(unittest.TestCase):
 
     def test_prefixes_share_cached_vocabulary_and_external_edits_expire_after_two_seconds(self):
         self.add(['Alpha','Beta'],self.first)
-        with patch('workspace_curation.time.monotonic',return_value=10.) as clock:
+        with patch('disco.decisions.curation.time.monotonic',return_value=10.) as clock:
             self.assertEqual(self.store.tag_suggestions('a')['tags'],[{'tag':'Alpha','count':1}])
             first_reads=len(self.fixture.curation.read_log)
             self.assertEqual(self.store.tag_suggestions('B')['tags'],[{'tag':'Beta','count':1}])
@@ -106,7 +106,7 @@ class TagSuggestionTests(unittest.TestCase):
             self.assertEqual(self.store.tag_suggestions('a')['tags'],[{'tag':'Alpha','count':1}])
 
     def test_successful_local_tag_edits_invalidate_cache_immediately_but_rollback_does_not(self):
-        with patch('workspace_curation.time.monotonic',return_value=20.):
+        with patch('disco.decisions.curation.time.monotonic',return_value=20.):
             self.assertEqual(self.store.tag_suggestions()['tags'],[])
             self.store.update(self.protocol,[self.first],{'tags_add':['new']},
                 {self.first:0},{self.first:'b'*64},'fixture')

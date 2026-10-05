@@ -11,7 +11,7 @@ except ImportError:
     import test_workspace_api as api_fixture
     import test_workspace_refresh_cache as refresh_fixture
 
-import workspace_explore_queries as queries
+import disco.metadata.explore_queries as queries
 
 
 class RequestedSummaryTests(unittest.TestCase):
@@ -58,7 +58,7 @@ class RequestedSummaryTests(unittest.TestCase):
             'protocol_uuid': self.service.protocol_id, 'revision_uuid': str(uuid.uuid4()),
             'version': 1, 'bound_at': datetime.datetime(2026, 10, 1)})
         self.jobs.autostart = False
-        with patch.object(self.jobs, '_calculate', return_value={'matched_count': 0, 'summaries': {}}), patch('workspace_explore_queries.typed_scope', return_value=(None, None)):
+        with patch.object(self.jobs, '_calculate', return_value={'matched_count': 0, 'summaries': {}}), patch('disco.metadata.explore_queries.typed_scope', return_value=(None, None)):
             response = self.submit(protocol_uuid=self.service.protocol_id, summary_fields=[])
             self.assertEqual(response.status_code, 202, response.get_json())
             ack = response.get_json()
@@ -238,7 +238,7 @@ class RequestedSummaryTests(unittest.TestCase):
             entered.set()
             self.assertTrue(release.wait(3))
             return {'matched_count': 99, 'summaries': {}}
-        from workspace_typed_index import TypedMetadataIndex
+        from disco.metadata.typed_index import TypedMetadataIndex
         owner, method = (TypedMetadataIndex, 'summaries') if getattr(self.service, 'typed_index', None) else (queries, '_native_summaries')
         with patch.object(owner, method, side_effect=blocked):
             request = self.submit().get_json()
@@ -285,8 +285,8 @@ class TypedServiceAdapterTests(RequestedSummaryTests):
     def setUp(self):
         super().setUp()
         from pathlib import Path
-        from workspace_disk_index import DiskMetadataIndex
-        from workspace_typed_lifecycle import prepare
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.metadata.typed_lifecycle import prepare
         path = Path(self.fixture.temp.name) / 'cache' / 'metadata' / ('d' * 64 + '.sqlite')
         self.service.details[self.service.ids[0]]['parameters']['optional'] = None
         index = DiskMetadataIndex.build(path, self.service.rows, self.service.details,
@@ -373,7 +373,7 @@ class TypedServiceAdapterTests(RequestedSummaryTests):
         self.assertEqual(self.jobs.poll(request['request_id'])['result']['matched_count'], 2)
 
     def test_typed_aggregate_does_not_hold_navigation_lock_or_native_reader(self):
-        from workspace_typed_index import TypedMetadataIndex
+        from disco.metadata.typed_index import TypedMetadataIndex
         entered, release = threading.Event(), threading.Event()
         original = TypedMetadataIndex.summaries
         def blocked(reader, *args, **kwargs):
@@ -392,7 +392,7 @@ class TypedServiceAdapterTests(RequestedSummaryTests):
         self.assertEqual(self.jobs.poll(request['request_id'])['status'], 'ready')
 
     def test_annotation_changed_while_typed_summary_runs_refuses_result(self):
-        from workspace_typed_index import TypedMetadataIndex
+        from disco.metadata.typed_index import TypedMetadataIndex
         original = TypedMetadataIndex.summaries
         def changed(reader, *args, **kwargs):
             result = original(reader, *args, **kwargs)
@@ -406,7 +406,7 @@ class TypedServiceAdapterTests(RequestedSummaryTests):
         self.assertNotIn('result', result)
 
     def test_native_details_preserved_and_sidecar_reuse_keeps_verified_generation(self):
-        from workspace_typed_lifecycle import prepare
+        from disco.metadata.typed_lifecycle import prepare
         owner = self.service.typed_index
         same, status = prepare(self.service.disk_index, owner)
         self.assertIs(same, owner)
@@ -434,7 +434,7 @@ class PublicationCacheTests(unittest.TestCase):
     def test_typed_build_failure_does_not_publish_or_discard_prior_generation(self):
         owner, rows, token = self.service.typed_index, self.service.rows, self.service._explore_publication
         cache = self.service._tree_page_scope_cache = object()
-        with patch('workspace_typed_lifecycle.prepare', side_effect=RuntimeError('typed build interrupted')):
+        with patch('disco.metadata.typed_lifecycle.prepare', side_effect=RuntimeError('typed build interrupted')):
             with self.assertRaisesRegex(RuntimeError, 'typed build interrupted'):
                 self.service.refresh()
         self.assertIs(self.service.typed_index, owner)

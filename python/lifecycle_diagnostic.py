@@ -52,7 +52,7 @@ def install_read_observers():
     """Opt-in timing wrappers; preserve cache contracts and scientific behavior."""
     if not os.environ.get('DISCO_LIFECYCLE_DIAGNOSTIC_DIR'):
         return
-    import workspace_project_database, workspace_api, workspace_service
+    import disco.projects.project_database as workspace_project_database, workspace_api, workspace_service
     targets = [(workspace_project_database, 'ensure_project_database'),
                (workspace_api, 'create_app'), (workspace_service, 'read_response_window'),
                (workspace_service, 'connect'), (workspace_service, 'evaluate_protocol_file')]

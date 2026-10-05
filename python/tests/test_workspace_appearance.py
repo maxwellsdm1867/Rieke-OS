@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 from flask import Flask
 from workspace_app_routes import register_app_routes
-from workspace_author_preferences import appearance_preferences, remember_appearance
+from disco.decisions.author_preferences import appearance_preferences, remember_appearance
 
 class AppearanceTests(unittest.TestCase):
     def setUp(self):

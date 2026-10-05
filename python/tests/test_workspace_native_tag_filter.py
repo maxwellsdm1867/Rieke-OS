@@ -1,8 +1,8 @@
 """Independent exact predicate oracle for persistent native target lookups."""
 import copy
 import unittest
-from workspace_native_tag_filter import matching,FIELDS
-from workspace_predicates import matches
+from disco.navigation.native_tag_filter import matching,FIELDS
+from disco.navigation.predicates import matches
 from test_workspace_shared_tag_index import Fixture
 
 

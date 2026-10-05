@@ -13,10 +13,10 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-import workspace_curation
+import disco.decisions.curation as workspace_curation
 from workspace_api import create_app
-from workspace_explorer import ExplorerHistory
-from workspace_datastores import DataStores
+from disco.decisions.explorer import ExplorerHistory
+from disco.projects.datastores import DataStores
 from workspace_service import WorkspaceService
 if __package__:
     from .test_workspace_curation import Connection, Table
@@ -157,12 +157,12 @@ class WorkspaceAPITests(unittest.TestCase):
         # Some API tests expose a noncallable Schema sentinel to activate the
         # recovery hook. Supply explicit transactional Workbench relations for
         # these SQL doubles; production still declares real native tables.
-        workbench_schema = patch('workspace_workbench.workbench_tables', return_value=self.workbench_tables)
+        workbench_schema = patch('disco.workbench.workbench.workbench_tables', return_value=self.workbench_tables)
         workbench_schema.start()
         self.addCleanup(workbench_schema.stop)
         self.group_receipts = Table(('project_uuid', 'operation_uuid'))
         self.connection.tables.append(self.group_receipts)
-        group_schema = patch('workspace_annotation_groups.group_receipt_table', return_value=self.group_receipts)
+        group_schema = patch('disco.decisions.annotation_groups.group_receipt_table', return_value=self.group_receipts)
         group_schema.start()
         self.addCleanup(group_schema.stop)
         self.explorer_history = ExplorerHistory(self.service.dj, self.service.project['project_uuid'],
@@ -171,7 +171,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.connection.tables.append(self.data_store_states)
         self.data_stores = DataStores(self.service, self.store, self.explorer_history,
             state_table=self.data_store_states, source_table=self.sources, event_table=self.events)
-        from workspace_suggestions import ProtocolSuggestions
+        from disco.workbench.suggestions import ProtocolSuggestions
         self.suggestion_rows = Table(('project_uuid', 'suggestion_uuid'))
         self.connection.tables.append(self.suggestion_rows)
         self.protocol_suggestions = ProtocolSuggestions(self.service, self.explorer_history, table=self.suggestion_rows)
@@ -725,7 +725,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(first['preview']['membership'], first['recipe']['epochs'])
         self.assertEqual(first['recipe']['tree_view']['fields'], ['cell', 'date'])
         self.assertEqual(first['recipe']['provenance']['contracts']['source_predicate'], 1)
-        self.assertEqual(first['recipe']['provenance']['code']['python/workspace_predicates.py']['status'], 'recorded')
+        self.assertEqual(first['recipe']['provenance']['code']['python/disco/navigation/predicates.py']['status'], 'recorded')
         self.assertEqual(self.events.rows[0]['action'], 'explorer_revision_created')
         self.assertEqual(self.events.rows[0]['payload']['recipe_sha256'], first['recipe']['content_sha256'])
         self.assertEqual(self.events.rows[0]['event_uuid'], first['revision_uuid'])

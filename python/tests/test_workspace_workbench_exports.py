@@ -68,7 +68,7 @@ class IncomingExportTests(unittest.TestCase):
         root, body = self.receipt_export_request(acceptance)
         before = copy.deepcopy(self.case.protocol_bindings.rows)
         self.case.app.config['TESTING'] = False
-        with patch('workspace_workbench_exports.write_json', side_effect=OSError('Artifact staging failed')):
+        with patch('disco.workbench.workbench_exports.write_json', side_effect=OSError('Artifact staging failed')):
             failed = self.case.client.post(root + '/exports', json=body, headers=self.case.headers)
         self.assertEqual(failed.status_code, 500)
         self.assertEqual(self.case.protocol_bindings.rows, before)
@@ -118,13 +118,13 @@ class IncomingExportTests(unittest.TestCase):
         self.assertEqual(self.case.client.post(root + '/exports', json=body, headers=self.case.headers).status_code, 201)
 
     def test_matlab_annotation_grouping_is_explicitly_unsupported_before_staging(self):
-        from workspace_workbench_exports import formats_for_candidate, publish_incoming_export
+        from disco.workbench.workbench_exports import formats_for_candidate, publish_incoming_export
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
         context['candidate'] = copy.deepcopy(context['candidate'])
         context['candidate']['tree_view']['fields'] = ['annotations/effective/tags']
         context['candidate']['splits'] = 'annotations/effective/tags'
         self.assertNotIn('matlab-mat', formats_for_candidate(context['candidate']))
-        with patch('workspace_workbench_exports.managed_directory', side_effect=AssertionError('Never stage unsupported format')):
+        with patch('disco.workbench.workbench_exports.managed_directory', side_effect=AssertionError('Never stage unsupported format')):
             with self.assertRaisesRegex(ValueError, 'MATLAB export cannot preserve'):
                 publish_incoming_export(self.manager, self.case.store, context, context['incoming'], 'actor-one',
                     dict(format='matlab-mat', operation_uuid=str(uuid.uuid4())))

@@ -2,7 +2,7 @@ import tempfile
 import threading
 import unittest
 
-from workspace_search import register_search_routes, search_workspace
+from disco.metadata.search import register_search_routes, search_workspace
 try:
     from .test_workspace_api import FixtureService
 except ImportError:

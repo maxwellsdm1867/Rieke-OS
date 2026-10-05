@@ -227,8 +227,8 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertFalse(self.service._loaded)
 
     def test_warm_restart_uses_sealed_index_without_projection_decode_or_h5_headers(self):
-        from workspace_disk_index import DiskMetadataIndex
-        from workspace_projection_cache import ProjectionCache
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.metadata.projection_cache import ProjectionCache
         expected = copy.deepcopy((self.service.rows, self.service.cells, self.service.sources, self.service._fingerprints))
         expected_details = dict(self.service.details.items())
         initial_queries = self.evaluator.call_count
@@ -263,7 +263,7 @@ class RefreshCacheTests(unittest.TestCase):
         self.assertEqual(reopened.last_refresh['metadata_index'],'reopened')
 
     def test_failure_after_index_build_does_not_publish_or_reclaim_last_valid_generation(self):
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         previous=self.service.disk_index
         manifest=previous.path.parent/'.current-generations.json'
         before=manifest.read_bytes();old_bytes=previous.path.read_bytes()
@@ -291,7 +291,7 @@ class RefreshCacheTests(unittest.TestCase):
 
     def test_new_source_reuses_unchanged_lazy_projections_without_eager_merge(self):
         from workspace_service import _SourceDetails
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         old_index = self.service.disk_index
         old_ids = set(self.service.rows)
         self.add_source('three')
@@ -351,7 +351,7 @@ class RefreshCacheTests(unittest.TestCase):
                          {field['id'] for field in registered[0]['fields']})
 
     def test_warm_refresh_preserves_discovery_but_new_source_invalidates(self):
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         index = self.service.disk_index
         fields = self.service.tree_fields(None)
         predicate_fields = self.service.predicate_fields()

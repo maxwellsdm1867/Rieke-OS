@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from workspace_projects import create_project, create_project_at
-from workspace_project_validation import inspect_project_folder, validate_project_folder
+from disco.projects.project_validation import inspect_project_folder, validate_project_folder
 
 
 class ProjectValidationTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class ProjectValidationTests(unittest.TestCase):
     def test_prepared_copy_is_recognized_without_runtime_or_file_changes(self):
         package = self.prepared()
         before = {p.name: p.read_bytes() for p in package.iterdir()}
-        with patch('workspace_project_database.ensure_project_database', side_effect=AssertionError('No server')):
+        with patch('disco.projects.project_database.ensure_project_database', side_effect=AssertionError('No server')):
             result = inspect_project_folder(package)
         self.assertEqual(result['kind'], 'prepared-transfer')
         self.assertEqual(result['database_status'], 'restore_required')
@@ -131,7 +131,7 @@ class ProjectValidationTests(unittest.TestCase):
 
     def test_nested_selection_suggests_closest_root_without_opening_or_changes(self):
         before = {str(p): (p.read_bytes(), p.stat().st_mode) for p in self.root.rglob('*') if p.is_file()}
-        with patch('workspace_project_database.ensure_project_database', side_effect=AssertionError('No server')):
+        with patch('disco.projects.project_database.ensure_project_database', side_effect=AssertionError('No server')):
             result = inspect_project_folder(self.root / 'logs/imports')
         self.assertFalse(result['valid'])
         self.assertEqual(result['kind'], 'project-root-suggestions')
@@ -146,7 +146,7 @@ class ProjectValidationTests(unittest.TestCase):
         broken.mkdir()
         (broken / 'project.json').write_text('{"format":"unknown"}')
         (self.root.parent / 'project alias').symlink_to(self.root, target_is_directory=True)
-        with patch('workspace_project_database.ensure_project_database', side_effect=AssertionError('No server')):
+        with patch('disco.projects.project_database.ensure_project_database', side_effect=AssertionError('No server')):
             result = inspect_project_folder(self.root.parent)
         self.assertFalse(result['valid'])
         self.assertEqual(result['kind'], 'project-root-suggestions')

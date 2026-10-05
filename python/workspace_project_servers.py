@@ -121,7 +121,7 @@ def open_project(project_dir, identity, retinanalysis_dir, *, timeout=300, manag
         existing = ready_url(directory, identity)
         if existing:
             return remember_project_result(directory, {'url': existing, 'project_uuid': identity}, set_last=True)
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         ensure_project_database(directory)
         config = json.loads((directory / 'catalog.json').read_text())
         if config.get('connection', {}).get('credential_provider', {}).get('kind') == 'native-project':

@@ -9,8 +9,8 @@ from threading import RLock
 from unittest.mock import patch
 
 from flask import Flask
-from workspace_tree_pages import TreePages, StaleTreePage, register_tree_page_routes
-from workspace_tree import joint_id, value_key
+from disco.navigation.tree_pages import TreePages, StaleTreePage, register_tree_page_routes
+from disco.navigation.tree import joint_id, value_key
 from test_workspace_api import FixtureService
 
 
@@ -129,7 +129,7 @@ class TreePageTests(unittest.TestCase):
 
     def test_disk_adapter_reads_only_navigation_columns_and_preserves_missing(self):
         from unittest.mock import Mock
-        from workspace_predicates import evaluate
+        from disco.navigation.predicates import evaluate
         catalog,values = self.service._registered_tree_fields()
         class Index:
             calls=[]
@@ -156,7 +156,7 @@ class TreePageTests(unittest.TestCase):
 
     def test_real_disk_index_pages_match_in_memory_tree_exactly(self):
         from pathlib import Path
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         combined=joint_id(['parameters/value','parameters/other'])
         bodies=[{'splits':'parameters/value','limit':3},
                 {'splits':combined,'limit':2},

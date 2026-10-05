@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from workspace_diff import summarize_diff
+from disco.workbench.diff import summarize_diff
 
 
 class MembershipSummaryTests(unittest.TestCase):

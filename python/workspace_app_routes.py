@@ -65,7 +65,7 @@ def register_app_routes(app, *, application_dir=None):
 
     @app.get('/api/app/appearance')
     def appearance_status():
-        from workspace_author_preferences import appearance_preferences
+        from disco.decisions.author_preferences import appearance_preferences
         return jsonify(appearance_preferences())
 
     @app.post('/api/app/appearance')
@@ -74,7 +74,7 @@ def register_app_routes(app, *, application_dir=None):
         if (request.args or not isinstance(body, dict) or not body or set(body) - {'icon', 'theme'}
                 or any(not isinstance(value, str) for value in body.values())):
             return jsonify(error='Choose a supported application appearance.'), 400
-        from workspace_author_preferences import remember_appearance
+        from disco.decisions.author_preferences import remember_appearance
         return jsonify(remember_appearance(body.get('icon'), theme=body.get('theme')))
 
     @app.get('/api/app/updates')
@@ -131,7 +131,7 @@ def register_app_routes(app, *, application_dir=None):
             try:
                 from workspace_portability import prepare_project, restore_project
                 if operation == 'migrate-source':
-                    from workspace_migration import migrate_source_project
+                    from disco.projects.migration import migrate_source_project
                     function = migrate_source_project
                 else:
                     function = prepare_project if operation == 'prepare' else restore_project

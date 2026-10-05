@@ -10,7 +10,7 @@ import time
 import uuid
 
 from workspace_import_progress import atomic_json
-from workspace_storage import managed_directory, log_dir
+from disco.projects.storage import managed_directory, log_dir
 
 
 class H5Inbox:

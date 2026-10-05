@@ -8,8 +8,8 @@ import gc
 import weakref
 from unittest.mock import patch
 
-from workspace_disk_index import DiskMetadataIndex
-from workspace_tree_pages import TreePages, StaleTreePage, _NavigationValues
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.navigation.tree_pages import TreePages, StaleTreePage, _NavigationValues
 from test_workspace_api import FixtureService
 import test_workspace_refresh_cache as refresh_fixture
 
@@ -165,7 +165,7 @@ class StructuralNavigationTests(unittest.TestCase):
         self.assertIsNone(old())
 
     def test_matching_immutable_binding_owner_and_mismatched_header_owner(self):
-        from workspace_explorer import ExplorerHistory
+        from disco.decisions.explorer import ExplorerHistory
         from test_workspace_curation import Table
         self.index()
         service = self.service

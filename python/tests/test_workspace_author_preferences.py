@@ -3,7 +3,7 @@ import tempfile
 import unittest
 import uuid
 from unittest.mock import patch
-from workspace_author_preferences import selected_author, author_profiles, remember_author
+from disco.decisions.author_preferences import selected_author, author_profiles, remember_author
 import test_workspace_annotations as annotation_fixture
 
 

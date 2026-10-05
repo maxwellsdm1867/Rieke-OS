@@ -31,8 +31,8 @@ def browser_safe(value):
 class IntegratedServiceTruth(unittest.TestCase):
     def setUp(self):
         import test_workspace_annotations as fixtures
-        from workspace_disk_index import DiskMetadataIndex
-        from workspace_typed_lifecycle import prepare
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.metadata.typed_lifecycle import prepare
         self.truth=Truth();data=self.truth.fixture()
         self.case=fixtures.SharedAnnotationTests();self.case.setUp()
         self.addCleanup(self.case.doCleanups)

@@ -10,10 +10,10 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-from workspace_datastore_deletion import DataStoreDeletion, managed_recording, prune_preview
-from workspace_datastores import DataStores
-from workspace_explorer import ExplorerHistory
-from workspace_recipes import checksum
+from disco.projects.datastore_deletion import DataStoreDeletion, managed_recording, prune_preview
+from disco.projects.datastores import DataStores
+from disco.decisions.explorer import ExplorerHistory
+from disco.workbench.recipes import checksum
 if __package__:
     from .test_workspace_curation import Table, Connection
 else:
@@ -199,9 +199,9 @@ class NativeDeletionTests(unittest.TestCase):
         import datetime as dt
         from recording_workspace import connect, workspace_tables, write_json, digest
         from workspace_projects import create_project_at
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         from workspace_native_mysql import stop_native_database
-        from workspace_curation import CurationStore
+        from disco.decisions.curation import CurationStore
         from workspace_service import WorkspaceService
         with tempfile.TemporaryDirectory(prefix='rieke-native-delete-') as temporary:
             root = Path(temporary).resolve() / 'project'

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 import test_workspace_api as fixtures
 from test_workspace_curation import Table
-from workspace_search_presets import SearchPresets
+from disco.navigation.search_presets import SearchPresets
 
 
 class PresetTable(Table):
@@ -156,7 +156,7 @@ class SearchPresetTests(unittest.TestCase):
         self.assertEqual(resolved['preset']['preset_uuid'],saved['preset_uuid'])
 
     def test_commutative_normalization_preserves_types_and_array_order(self):
-        from workspace_search_presets import query_key
+        from disco.navigation.search_presets import query_key
         a={'field':'parameters/example','operator':'eq','value':1}
         b={'field':'protocol','operator':'contains','value':'example'}
         self.assertEqual(query_key({'all':[a,b]}),query_key({'all':[b,{'all':[a,a]}]}))

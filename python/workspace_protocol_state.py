@@ -13,14 +13,14 @@ import sys
 import uuid
 from itertools import chain
 from dataclasses import asdict
-from workspace_recipes import checksum
-from workspace_curation import RevisionConflict
+from disco.workbench.recipes import checksum
+from disco.decisions.curation import RevisionConflict
 
-from workspace_disk_index import DiskMetadataIndex
-from workspace_curation import CurationStore
-from workspace_explorer import ExplorerHistory
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.decisions.curation import CurationStore
+from disco.decisions.explorer import ExplorerHistory
 from workspace_service import WorkspaceService
-from workspace_annotations import SharedAnnotations
+from disco.decisions.annotations import SharedAnnotations
 
 STATE_CACHE_BYTES = 64 * 1024 * 1024
 STATE_CACHE_SCOPES = 8

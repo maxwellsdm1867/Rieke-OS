@@ -11,7 +11,7 @@ import numpy as np
 from scipy.io import loadmat
 
 from workspace_matlab import build_matlab_export
-from workspace_recipes import capture_query, prepare_export, seal
+from disco.workbench.recipes import capture_query, prepare_export, seal
 if __package__:
     from .test_workspace_api import FixtureService
 else:
@@ -120,8 +120,8 @@ class MatlabExportTests(unittest.TestCase):
 
     def test_matlab_value_order_matches_web_numeric_missing_and_typed_values(self):
         from workspace_matlab import _grouping_order, _grouping_value
-        from workspace_recipes import build_tree
-        from workspace_tree import catalog, value_key
+        from disco.workbench.recipes import build_tree
+        from disco.navigation.tree import catalog, value_key
         values=[25,100,'25',[1,2],None,True,'<not recorded>']
         rows=[];details={}
         for index,value in enumerate(values):

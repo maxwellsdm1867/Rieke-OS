@@ -51,7 +51,7 @@ class PackageValidationTests(unittest.TestCase):
                     (self.package / 'database.sql').write_text('changed')
                 else:
                     (self.package / 'surprise').write_text('unlisted')
-                with patch('workspace_project_database.ensure_project_database') as start:
+                with patch('disco.projects.project_database.ensure_project_database') as start:
                     with self.assertRaisesRegex(ValueError, 'checksum|inventory'):
                         transfer.restore_project(self.package, self.root / 'restored')
                     start.assert_not_called()
@@ -113,7 +113,7 @@ class PackageValidationTests(unittest.TestCase):
         self.seal(database_inventory={'recording_workspace.search_preset':
                                     {'rows': 2, 'sha256': 'a' * 64}})
         destination = self.root / 'missing-history'
-        with patch('workspace_project_database.ensure_project_database'), \
+        with patch('disco.projects.project_database.ensure_project_database'), \
              patch.object(transfer, '_import'), \
              patch.object(transfer, '_connection', return_value=MagicMock()), \
              patch.object(transfer, '_database_inventory', return_value={}), \
@@ -158,19 +158,19 @@ class PackageValidationTests(unittest.TestCase):
                            'recording_ref': recording.relative_to(self.package).as_posix(),
                            'metadata_ref': metadata.relative_to(self.package).as_posix(),
                            'metadata_sha256': transfer._hash(metadata)}])
-        with patch('workspace_project_database.ensure_project_database') as runtime:
+        with patch('disco.projects.project_database.ensure_project_database') as runtime:
             with self.assertRaisesRegex(ValueError, 'External H5 links'):
                 transfer.restore_project(self.package, self.root / 'external-dependent')
         runtime.assert_not_called()
         self.assertFalse((self.root / 'external-dependent').exists())
 
     def test_received_preferences_are_validated_before_database_start(self):
-        from workspace_project_preferences import ProjectPreferences, REFERENCE
+        from disco.projects.project_preferences import ProjectPreferences, REFERENCE
         preferences = ProjectPreferences(self.package, self.identity).read()
         preferences['project_uuid'] = str(uuid.uuid4())
         transfer._write(self.package / REFERENCE, preferences)
         self.seal()
-        with patch('workspace_project_database.ensure_project_database') as runtime:
+        with patch('disco.projects.project_database.ensure_project_database') as runtime:
             with self.assertRaisesRegex(ValueError, 'preference file|identity'):
                 transfer.restore_project(self.package, self.root / 'foreign-preferences')
         runtime.assert_not_called()
@@ -187,7 +187,7 @@ class PackageValidationTests(unittest.TestCase):
         for checksum in (None, '', 'a' * 64):
             with self.subTest(checksum=checksum):
                 self.seal(sources=[{**source, 'metadata_sha256': checksum}])
-                with patch('workspace_project_database.ensure_project_database') as runtime:
+                with patch('disco.projects.project_database.ensure_project_database') as runtime:
                     with self.assertRaisesRegex(ValueError, 'metadata checksum|missing a registered source dependency'):
                         transfer.restore_project(self.package, self.root / 'missing-metadata')
                 runtime.assert_not_called()
@@ -206,7 +206,7 @@ class PackageValidationTests(unittest.TestCase):
         root = Path(project['path'])
         with (root / '.app-state-session.lock').open('a') as active:
             fcntl.flock(active, fcntl.LOCK_SH | fcntl.LOCK_NB)
-            with patch('workspace_project_database.ensure_project_database') as start:
+            with patch('disco.projects.project_database.ensure_project_database') as start:
                 with self.assertRaisesRegex(ValueError, 'Close all project sessions'):
                     transfer.prepare_project(root, self.root / 'outgoing')
                 start.assert_not_called()
@@ -217,7 +217,7 @@ class PackageValidationTests(unittest.TestCase):
         root = Path(project['path'])
         original = (root / 'project.json').read_bytes()
         connection = MagicMock()
-        with patch('workspace_project_database.ensure_project_database'), \
+        with patch('disco.projects.project_database.ensure_project_database'), \
              patch.object(transfer, '_connection', return_value=connection), \
              patch.object(transfer, '_sources', return_value=[]), \
              patch.object(transfer, '_dump', side_effect=ValueError('dump failed')):
@@ -231,7 +231,7 @@ class PackageValidationTests(unittest.TestCase):
     def test_failed_sql_restore_removes_only_its_new_runtime_and_folder(self):
         before = transfer._files(self.package)
         destination = self.root / 'failed-restore'
-        with patch('workspace_project_database.ensure_project_database'), \
+        with patch('disco.projects.project_database.ensure_project_database'), \
              patch.object(transfer, '_import', side_effect=ValueError('SQL failed')), \
              patch.object(transfer, '_remove_runtime') as cleanup:
             with self.assertRaisesRegex(ValueError, 'SQL failed'):
@@ -247,8 +247,8 @@ class PackageValidationTests(unittest.TestCase):
         (root / transfer.PENDING).write_text('{}')
         with self.assertRaisesRegex(ValueError, 'incomplete'):
             _project_record(root)
-        with patch('workspace_project_database._run') as docker:
-            from workspace_project_database import ensure_project_database
+        with patch('disco.projects.project_database._run') as docker:
+            from disco.projects.project_database import ensure_project_database
             with self.assertRaisesRegex(ValueError, 'incomplete'):
                 ensure_project_database(root)
             docker.assert_not_called()
@@ -448,7 +448,7 @@ class NativeRoundTripTests(unittest.TestCase):
         import datajoint as dj
         from workspace_native_mysql import connection_parameters
         from workspace_state_generation import bootstrap, verify_export_triggers
-        from workspace_recovery_generation import RecoveryTracker
+        from disco.backup.recovery_generation import RecoveryTracker
         parameters = connection_parameters(root)
         connection = dj.Connection(**{key: parameters[key] for key in ('host', 'port', 'user', 'password')})
         try:
@@ -469,7 +469,7 @@ class NativeRoundTripTests(unittest.TestCase):
             connection.close()
 
     def test_new_empty_projects_open_close_prepare_and_restore(self):
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         open_app = """
 import sys
 from workspace_api import create_app
@@ -537,7 +537,7 @@ assert not app.extensions['workspace_service'].rows
         self.assertEqual(json.loads(stored_recipe), recipe)
 
     def test_plain_closed_project_folder_opens_after_copy_without_a_package(self):
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         with tempfile.TemporaryDirectory(prefix='rieke-direct-copy-test-') as temporary:
             base = Path(temporary).resolve()
             project = create_project(base / 'workspace', 'Direct copy fixture')
@@ -598,7 +598,7 @@ assert not app.extensions['workspace_service'].rows
     def test_complete_project_survives_fresh_path_and_fresh_runtime(self):
         import h5py
         import numpy as np
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         with tempfile.TemporaryDirectory(prefix='rieke-transfer-test-') as temporary:
             base = Path(temporary).resolve()
             project = create_project(base / 'workspace', 'Transfer fixture')

@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 
 from workspace_sqlite import build_sqlite_export, load_frozen_record, SCHEMA_VERSION
-from workspace_recipes import capture_query, prepare_export
+from disco.workbench.recipes import capture_query, prepare_export
 if __package__:
     from . import test_workspace_matlab as matlab_tests
 else:

@@ -5,8 +5,8 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-from workspace_recipes import build_tree, parse_splits
-from workspace_tree import catalog, field_id, value_key, HISTORY_JOINT
+from disco.workbench.recipes import build_tree, parse_splits
+from disco.navigation.tree import catalog, field_id, value_key, HISTORY_JOINT
 if __package__:
     from .test_workspace_api import FixtureService
 else:

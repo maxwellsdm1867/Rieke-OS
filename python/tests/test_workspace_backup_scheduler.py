@@ -3,7 +3,7 @@ import time
 import unittest
 from unittest.mock import Mock
 
-from workspace_backup_scheduler import BackupScheduler
+from disco.backup.backup_scheduler import BackupScheduler
 
 
 class BackupSchedulerTests(unittest.TestCase):

@@ -62,7 +62,7 @@ class LocalProjectIndexTests(unittest.TestCase):
         self.assertFalse(list(self.index.parent.glob('.project-index-*')))
 
     def test_managed_and_exact_creation_of_same_folder_share_one_lock(self):
-        from workspace_storage import initialize_layout
+        from disco.projects.storage import initialize_layout
         preferred = self.base / 'preferred'
         selected = preferred / 'study'
         first_entered, finish_first = threading.Event(), threading.Event()
@@ -79,7 +79,7 @@ class LocalProjectIndexTests(unittest.TestCase):
                 return create_project_at(str(selected), 'Exact study')
             finally:
                 second_finished.set()
-        with patch('workspace_storage.initialize_layout', side_effect=paused_layout), concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        with patch('disco.projects.storage.initialize_layout', side_effect=paused_layout), concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
             first = pool.submit(create_project, preferred, 'Managed study', directory='study')
             try:
                 self.assertTrue(first_entered.wait(5))

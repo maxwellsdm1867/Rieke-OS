@@ -13,16 +13,16 @@ import tempfile
 import time
 import unittest
 
-from workspace_disk_index import DiskMetadataIndex
-from test_workspace_disk_index import fixture
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.metadata.tests.test_workspace_disk_index import fixture
 
 
 WORKER = r'''
 import os,sys,time
 from pathlib import Path
 sys.path.insert(0,sys.argv[1]);sys.path.insert(0,sys.argv[2])
-from workspace_disk_index import DiskMetadataIndex
-from test_workspace_disk_index import fixture
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.metadata.tests.test_workspace_disk_index import fixture
 target,marker,stage=Path(sys.argv[3]),Path(sys.argv[4]),sys.argv[5]
 rows,details,sources=fixture(512)
 def checkpoint():

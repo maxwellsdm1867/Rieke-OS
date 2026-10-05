@@ -5,7 +5,7 @@ import types
 import unittest
 from unittest.mock import patch
 
-from workspace_datastores import migrate_query_eligibility
+from disco.projects.datastores import migrate_query_eligibility
 if __package__:
     from .test_workspace_curation import Table
 else:

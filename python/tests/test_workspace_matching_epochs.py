@@ -5,7 +5,7 @@ import uuid
 from unittest.mock import patch
 
 import test_workspace_api as api_fixture
-from workspace_recipes import capture_query
+from disco.workbench.recipes import capture_query
 
 
 class MatchingEpochTests(unittest.TestCase):

@@ -173,7 +173,7 @@ def create_project(root, name, *, directory=None, code_root=None, _lock_path=Non
     import datetime as dt
     from contextlib import ExitStack
     from recording_workspace import write_json
-    from workspace_storage import initialize_layout
+    from disco.projects.storage import initialize_layout
     # An explicit exact project folder does not select/create a new workspace.
     # It may be grouped under one, but never inside another project.
     root = managed_root(root, allow_workspace_descendant=_lock_path is not None)

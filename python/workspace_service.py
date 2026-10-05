@@ -18,9 +18,9 @@ from collections.abc import Mapping
 
 from recording_workspace import (connect, digest, epochs, evaluate_protocol_file,
                                  validate_protocol_definition, workspace_tables)
-from workspace_recipes import build_tree, parse_splits, checksum
-from workspace_tree import catalog as tree_catalog, value_label, humanize as field_label
-from workspace_predicates import validate as validate_predicate, matches as predicate_matches, predicate_catalog
+from disco.workbench.recipes import build_tree, parse_splits, checksum
+from disco.navigation.tree import catalog as tree_catalog, value_label, humanize as field_label
+from disco.navigation.predicates import validate as validate_predicate, matches as predicate_matches, predicate_catalog
 
 TREE_CACHE_VALUE_BUDGET = 2_000_000
 TREE_CACHE_MAX_SCOPES = 8
@@ -78,7 +78,7 @@ def validate_filters(filters):
     if any(not isinstance(value, str) for value in filters.values()):
         raise ValueError('Filter values must be text')
     if 'tag' in filters:
-        from workspace_annotations import text
+        from disco.decisions.annotations import text
         text(filters['tag'])
     if 'tagged' in filters and filters['tagged'] != 'true':
         raise ValueError('The tagged filter must be the text true')
@@ -116,7 +116,7 @@ def validate_tag_filter_predicate(value):
         predicate = json.loads(value)
     except (ValueError, RecursionError) as error:
         raise ValueError('Malformed tag predicate JSON') from error
-    from workspace_predicates import validate
+    from disco.navigation.predicates import validate
     return validate(predicate, {'fields': [{'id': key} for key in TAG_FILTER_FIELDS]},
                     {'tag_schema': {key: ['example tag'] for key in TAG_FILTER_FIELDS}})
 
@@ -184,7 +184,7 @@ def read_response_window(path, signature, row, stream, start=0, count=20000):
             'source_sha256': row['source_sha256'], 'decimated': False}
 
 
-from workspace_tree import materialize_combinations, predicate_scope, component_display
+from disco.navigation.tree import materialize_combinations, predicate_scope, component_display
 
 
 class WorkspaceService:
@@ -200,8 +200,8 @@ class WorkspaceService:
         self.curation_provider = curation_provider
         self._loaded = False
         self._source_signatures = {}
-        from workspace_projection_cache import ProjectionCache
-        import workspace_projection_cache, workspace_metadata_objects
+        from disco.metadata.projection_cache import ProjectionCache
+        import disco.metadata.projection_cache as workspace_projection_cache, disco.metadata.metadata_objects as workspace_metadata_objects
         self._projection_store = ProjectionCache(self.project_dir / 'cache' / 'source-projections')
         import recording_workspace
         self._projection_contract = checksum([digest(Path(module.__file__)) for module in
@@ -215,7 +215,7 @@ class WorkspaceService:
 
     def manager_recovery(self, error):
         """Expose registrations for repair; all scientific reads remain blocked."""
-        from workspace_recording_files import recording_display_name
+        from disco.projects.recording_files import recording_display_name
         _, Source, _, _ = workspace_tables(self.dj)
         records = (Source & {'project_uuid': self.project['project_uuid']}).to_dicts()
         self.sources = [{'source_sha256': row['source_sha256'], 'source_path': row['manifest']['source_path'],
@@ -237,16 +237,16 @@ class WorkspaceService:
     def _with_annotation_fields(self, data):
         if not getattr(self, 'annotation_provider', None) and not getattr(self, 'shared_annotations', None):
             return data
-        from workspace_tag_predicates import TagPredicates
+        from disco.navigation.tag_predicates import TagPredicates
         fields = TagPredicates(self).catalog_fields([row['epoch_uuid'] for row in self._tree_rows(None)])
         return {**data, 'fields': [*data['fields'], *fields]}
 
     def _match_metadata_predicate(self, predicate, ids):
         index = getattr(self, 'disk_index', None)
         typed = getattr(self, 'typed_index', None)
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         if typed is not None and type(index) is DiskMetadataIndex and isinstance(ids, (list, tuple)):
-            from workspace_explore_queries import typed_reader
+            from disco.metadata.explore_queries import typed_reader
             with typed_reader(self) as reader:
                 validated = reader._validate(predicate)
                 matched = set(reader.iter_membership(validated, {'epoch_ids': iter(ids)}))
@@ -261,7 +261,7 @@ class WorkspaceService:
     def match_predicate(self, predicate, ids=None):
         """Return validated predicate, exact IDs and optional tag provenance."""
         self._ready()
-        from workspace_tag_predicates import TagPredicates
+        from disco.navigation.tag_predicates import TagPredicates
         eligible = [row['epoch_uuid'] for row in self._tree_rows(None)] if ids is None else list(ids)
         if set(eligible) - self.rows.keys():
             raise ValueError('Predicate scope contains unavailable epochs')
@@ -390,7 +390,7 @@ class WorkspaceService:
         after = path.stat()
         if signature != (str(path), after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns):
             raise ValueError('Source recording changed while reading metadata')
-        from workspace_recording_files import recording_display_name
+        from disco.projects.recording_files import recording_display_name
         summary = {'source_sha256': source['source_sha256'], 'filename': recording_display_name(manifest),
             'source_path': str(path), 'imported_at': manifest.get('imported_at', manifest['validated_at']),
             'counts': manifest['counts'], 'warnings': manifest.get('warnings', []),
@@ -489,8 +489,8 @@ class WorkspaceService:
         projection_leases=projection_store.hold(entry['key'] for entry in next_cache.values()) if projection_store else None
         disk_index, previous_index, location, generation = None, getattr(self, 'disk_index', None), None, None
         if projection_store:
-            from workspace_disk_index import DiskMetadataIndex
-            import workspace_disk_index, workspace_tree, workspace_predicates, workspace_metadata_objects
+            from disco.metadata.disk_index import DiskMetadataIndex
+            import disco.metadata.disk_index as workspace_disk_index, disco.navigation.tree as workspace_tree, disco.navigation.predicates as workspace_predicates, disco.metadata.metadata_objects as workspace_metadata_objects
             import sqlite3
             generation = checksum({'project_uuid':project['project_uuid'],
                 'sources':{identity:entry['key'] for identity,entry in next_cache.items()},
@@ -607,7 +607,7 @@ class WorkspaceService:
                     raise ValueError('Recorded input changed while building metadata index')
         typed_index = None
         if disk_index is not None:
-            from workspace_typed_lifecycle import prepare as prepare_typed
+            from disco.metadata.typed_lifecycle import prepare as prepare_typed
             typed_started = time.perf_counter()
             typed_index, metrics['typed_metadata_index'] = prepare_typed(disk_index, getattr(self, 'typed_index', None))
             metrics['typed_metadata_index_seconds'] = time.perf_counter() - typed_started
@@ -718,14 +718,14 @@ class WorkspaceService:
         filters = validate_filters(filters)
         if 'metadata_predicate' in filters:
             predicate = metadata_filter_predicate(filters['metadata_predicate'])
-            from workspace_tag_predicates import referenced_fields
+            from disco.navigation.tag_predicates import referenced_fields
             foreign = {field for field in referenced_fields(predicate)
                        if field.startswith('curation/') and field.split('/')[1] != protocol_uuid}
             if foreign:
                 raise ValueError('Scoped filters support only this protocol\'s curation tags; foreign protocol curation fields are unavailable')
             # Validation never reads saved annotation rows. Native leaf validators
             # retain complete registered types; shared/curation arrays are strings.
-            from workspace_tag_predicates import TagPredicates
+            from disco.navigation.tag_predicates import TagPredicates
             tags = TagPredicates(self).definitions()
             registered = [field for field in self._registered_tree_fields()[0]['fields']
                           if not field['id'].startswith('joint/')]
@@ -759,7 +759,7 @@ class WorkspaceService:
                 rows = [row for row in rows if row['epoch_uuid'] in selected]
             else:
                 annotations = shared.for_epochs(rows) if shared else {}
-                from workspace_predicates import matches
+                from disco.navigation.predicates import matches
                 predicate = validate_tag_filter_predicate(filters['tag_predicate']) if 'tag_predicate' in filters else None
                 selected = []
                 for row in rows:
@@ -887,7 +887,7 @@ class WorkspaceService:
         members = (binding['recipe']['epochs'] if binding else protocol['result']['epochs'])
         signature = None if header_provider and header is not None else tuple(member['uuid'] for member in members)
         key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
         cache = None
         overhead = sys.getsizeof(self._fingerprints) + 16 * 1024
@@ -990,13 +990,13 @@ class WorkspaceService:
             else:
                 result = tree_catalog(rows, self.details, known, sources=self.sources)
         if tag_generation is not None and shared.generation_token()!=tag_generation:
-            from workspace_shared_tag_index import SharedTagsChanged
+            from disco.decisions.shared_tag_index import SharedTagsChanged
             raise SharedTagsChanged('Shared tags changed while loading this tree. Refresh and try again.')
         return result if 'metadata_predicate' in filters else self._remember_tree_catalog(key, result)
 
     def tree_fields(self, protocol_uuid, filters=None, *, splits=None):
         filters = self.validate_metadata_filters(filters, protocol_uuid)
-        from workspace_explore_queries import generation, StaleQuery
+        from disco.metadata.explore_queries import generation, StaleQuery
         context = {'protocol_uuid': protocol_uuid, 'filters': filters}
         before = generation(self, context) if 'metadata_predicate' in filters else None
         catalog, values = self._tree_fields(protocol_uuid, filters)
@@ -1038,7 +1038,7 @@ class WorkspaceService:
 
     def tree(self, protocol_uuid, filters=None, splits='date, cell, block'):
         filters = self.validate_metadata_filters(filters, protocol_uuid)
-        from workspace_explore_queries import generation, StaleQuery
+        from disco.metadata.explore_queries import generation, StaleQuery
         context = {'protocol_uuid': protocol_uuid, 'filters': filters}
         before = generation(self, context) if 'metadata_predicate' in filters else None
         rows = self._tree_rows(protocol_uuid, filters)
@@ -1084,11 +1084,11 @@ class WorkspaceService:
         return self._with_annotation_fields({**cached[1], 'source_scope': scope, 'total_catalog': len(self.rows)})
 
     def explore_field_registry(self):
-        from workspace_explore_queries import field_registry
+        from disco.metadata.explore_queries import field_registry
         return field_registry(self)
 
     def explore_page(self, predicate, **options):
-        from workspace_explore_queries import explore_page
+        from disco.metadata.explore_queries import explore_page
         return explore_page(self, predicate, **options)
 
     def explore_preview(self, predicate, splits='date,protocol,cell', *, include_tree=True, include_catalog_summary=True):
@@ -1107,7 +1107,7 @@ class WorkspaceService:
                       for field in registered['fields']]
             definitions = {field['id']: field for field in fields}
             order = parse_splits(splits, definitions)
-            from workspace_tree import joint_definition
+            from disco.navigation.tree import joint_definition
             fields.extend(joint_definition(field, definitions) for field in order if field not in definitions)
             rows = [self.rows[key] for key in identities]
             scoped_catalog = {'fields': fields, 'total': len(rows), 'summary_available': False}
@@ -1128,7 +1128,7 @@ class WorkspaceService:
             scoped_catalog, scoped_values = materialize_combinations(scoped_catalog, scoped_values, order)
         tree = self._render_tree(rows, scoped_catalog, scoped_values, splits) if include_tree else {
             'count': len(rows), 'split_order': order}
-        from workspace_tree_pages import selection_revision
+        from disco.navigation.tree_pages import selection_revision
         return {'predicate': validated, 'splits': splits, 'tree': tree, 'catalog': scoped_catalog,
                 **({'catalog_summary': False} if not include_catalog_summary else {}),
                 'tree_revision': selection_revision(self, None, validated, {}, order, rows, annotation_scope=annotation_scope),

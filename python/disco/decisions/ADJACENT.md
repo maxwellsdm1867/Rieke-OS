@@ -1,0 +1,55 @@
+# Adjacent decision owners
+
+This extends the authored-decision contract without combining command authority.
+All leaves are substantive public named modules; the initializer remains inert.
+
+| Task | Start here |
+| --- | --- |
+| Save/restore explicitly sealed shared-tag checkpoints | [annotation_checkpoint.py](annotation_checkpoint.py) |
+| Prepare discardable indexes at existing lifecycle boundaries | [annotation_preparation.py](annotation_preparation.py) |
+| Count dataset tags across protocol epoch unions | [curation_vocabulary.py](curation_vocabulary.py) |
+| Apply immutable source-query/tree revisions transactionally | [explorer.py](explorer.py) |
+| Maintain exact native trigger-backed lookup | [native_tag_lookup.py](native_tag_lookup.py) |
+| Build disposable token-fenced SQLite membership/aggregates | [shared_tag_index.py](shared_tag_index.py) |
+| Lazily count distinct shared annotation targets | [shared_vocabulary.py](shared_vocabulary.py) |
+| Return bounded response-only inverse facts | [undo.py](undo.py) |
+
+Canonical annotation JSON remains authoritative. Preparation retains source links,
+fresh native authority, failure cleanup and unsupported-policy results; it does
+not rewrite canonical annotations. Applied queries are distinct from preview,
+saved methods and frozen exports. Working indexes remain discardable and preserve
+source-token fencing, exact text semantics, locks, callbacks and transactions.
+
+Preserve the initialization cycle: shared_tag_index imports shared_vocabulary
+inside its operation, shared_vocabulary imports curation_vocabulary inside its
+operation, and curation_vocabulary imports shared_tag_index at module scope.
+Autocomplete counts distinct kind/target pairs with exact author UUID winners
+and deterministic casefold/tie ordering. Undo supplies bounded inverse facts,
+not a persisted journal or permission to replay writes.
+
+Checkpoint `_contract()` hashes actual annotations, shared_tag_index,
+shared_vocabulary, annotation_preparation and checkpoint source files in that
+order using the existing basename-to-content-hash dictionary algorithm. New leaf
+basenames and changed source bytes conservatively invalidate old checkpoints.
+Restore compares exact recorded source/proof with fresh source/proof before
+creating a working index or opening saved SQLite. Rejection preserves old receipt
+bytes and does not automatically rebuild, reseal or emulate old keys. Saving a
+new checkpoint still requires current prepared state and fresh canonical proof.
+Integration of the other annotations/metadata moves can invalidate the contract
+again; compute the integrated hash from actual files, never relabel old evidence.
+
+Run the bounded public examples separately from repository root:
+
+```sh
+PYTHONPATH=python python3 -B -m unittest -v disco.decisions.tests.test_workspace_undo
+python3 -I -B python/disco/decisions/tests/test_checkpoint_refusal_public.py
+```
+
+The isolated restore example loads owned source bytes with strict upstream
+stand-ins and forbids scientific imports, recording operations and SQLite open.
+It proves stale-contract orchestration/refusal and unchanged receipt bytes only.
+It does not prove native freshness, a successful checkpoint rebuild, SQL durability
+or app/HTTP behavior. Existing central native/preparation suites remain deferred.
+The retained [protocol-state owner](../../workspace_protocol_state.py) spans
+WorkspaceService, CurationStore, SharedAnnotations, ExplorerHistory and native
+reader authority and therefore remains at its existing path.

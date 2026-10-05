@@ -6,8 +6,8 @@ import uuid
 from types import SimpleNamespace
 
 import test_workspace_annotations as fixture
-from workspace_curation import RevisionConflict
-from workspace_tag_predicates import TagPredicates,SHARED_FIELDS
+from disco.decisions.curation import RevisionConflict
+from disco.navigation.tag_predicates import TagPredicates,SHARED_FIELDS
 
 
 class DenseAnnotationSelectionTests(unittest.TestCase):

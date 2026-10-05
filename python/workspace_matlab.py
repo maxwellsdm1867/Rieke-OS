@@ -16,9 +16,9 @@ import numpy as np
 import scipy.io
 
 from field_mapper import build_response_struct, build_stimulus_struct, flatten_json_params
-from workspace_tag_exchange import frozen_annotation_entries, frozen_document
-from workspace_recipes import verify, parse_splits, SPLIT_FIELDS
-from workspace_tree import catalog, value_key, field_value_order, materialize_combinations
+from disco.decisions.tag_exchange import frozen_annotation_entries, frozen_document
+from disco.workbench.recipes import verify, parse_splits, SPLIT_FIELDS
+from disco.navigation.tree import catalog, value_key, field_value_order, materialize_combinations
 
 MATLAB_DATA_GUIDE = """Disco MATLAB data export
 

@@ -168,7 +168,7 @@ def query_members(service, recipe):
 
 def query_service(root):
     from workspace_service import WorkspaceService
-    from workspace_annotations import SharedAnnotations
+    from disco.decisions.annotations import SharedAnnotations
     service = WorkspaceService(root)
     service.shared_annotations = SharedAnnotations(service)
     service._ready()
@@ -207,7 +207,7 @@ def compact_queries(state, service):
 
 def expand_queries(state, service):
     import uuid
-    from workspace_recipes import checksum
+    from disco.workbench.recipes import checksum
     remap = {}
     for row in state['tables'].get('explorer_revision', []):
         recipe = row['recipe']; reference=recipe.pop('requery',None)
@@ -281,7 +281,7 @@ def _save(project_dir, connection, *, day=None, service=None):
     # A verified native change feed makes ordinary tag saves proportional to
     # changed rows. The full capture remains the correctness fallback when the
     # authority cannot prove coverage, including unsupported SQL providers.
-    from workspace_recovery_store import inspect as inspect_recovery, write as write_recovery
+    from disco.backup.recovery_store import inspect as inspect_recovery, write as write_recovery
     root = Path(project_dir).resolve()
     if connection.in_transaction:
         raise ValueError('Snapshot must follow the completed app transaction')
@@ -290,7 +290,7 @@ def _save(project_dir, connection, *, day=None, service=None):
     tracker = getattr(service, '_recovery_tracker', None) if service is not None else None
     if (tracker is None or tracker.connection is not connection
             or tracker.project_uuid != identity):
-        from workspace_recovery_generation import RecoveryTracker
+        from disco.backup.recovery_generation import RecoveryTracker
         tracker = RecoveryTracker(connection, identity)
         if service is not None:
             service._recovery_tracker = tracker
@@ -383,7 +383,7 @@ def load(path):
     if path.suffix == '.sqlite':
         with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro', uri=True)) as database:
             if database.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='recovery_header'").fetchone():
-                from workspace_recovery_store import load_database
+                from disco.backup.recovery_store import load_database
                 return load_database(path)
             rows = database.execute('SELECT format,version,sha256,document FROM snapshot').fetchall()
         if len(rows) != 1:
@@ -395,7 +395,7 @@ def load(path):
     else:
         state = json.loads(path.read_text())
         if state.get('format') == FORMAT and state.get('version') == 2:
-            from workspace_recovery_store import load_database, pointer_path
+            from disco.backup.recovery_store import load_database, pointer_path
             return load_database(pointer_path(path.parent, state), expected=state)
     if state.get('format') != FORMAT or state.get('version') != 1 or set(state.get('tables', {}))-set(TABLES):
         raise ValueError('Unsupported app state snapshot')

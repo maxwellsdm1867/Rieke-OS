@@ -19,7 +19,7 @@ from scipy.io import loadmat
 
 import test_workspace_candidate_exports as fixtures
 import workspace_api
-import workspace_candidate_exports
+import disco.workbench.candidate_exports as workspace_candidate_exports
 import workspace_matlab
 import workspace_sqlite
 
@@ -170,7 +170,7 @@ class ExportBoundaryTests(unittest.TestCase):
     def test_return_folder_failure_retains_sqlite_without_publication(self):
         for kind in ('protocol', 'candidate'):
             with self.subTest(kind=kind), self.caller(kind) as (fixture, owner, request, outputs, before):
-                with patch('workspace_external_tags.prepare_return_folder', side_effect=ValueError('return folder fault')):
+                with patch('disco.decisions.external_tags.prepare_return_folder', side_effect=ValueError('return folder fault')):
                     response = request('wheeler-sqlite')
                 self.assertEqual(response.status_code, 400)
                 root, = outputs()

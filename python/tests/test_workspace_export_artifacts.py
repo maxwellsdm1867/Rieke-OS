@@ -39,10 +39,10 @@ class ExportArtifactTests(unittest.TestCase):
         def imports(name, *args, **kwargs):
             events.append(name)
             return {'workspace_sqlite': SimpleNamespace(build_sqlite_export=build),
-                'workspace_external_tags': SimpleNamespace(prepare_return_folder=prepare)}[name]
+                'disco.decisions.external_tags': SimpleNamespace(prepare_return_folder=prepare)}[name]
         with patch.object(builtins, '__import__', side_effect=imports):
             self.assertEqual(self.materialize('wheeler-sqlite'), self.output / 'recordings.sqlite')
-        self.assertEqual(events, ['workspace_sqlite', 'write', 'workspace_external_tags', 'return'])
+        self.assertEqual(events, ['workspace_sqlite', 'write', 'disco.decisions.external_tags', 'return'])
         self.matlab.assert_not_called()
         self.json.assert_not_called()
 

@@ -8,9 +8,9 @@ from unittest.mock import patch
 from urllib.parse import quote
 
 from scipy.io import loadmat
-from workspace_tree import (catalog, joint_id, joint_components, HISTORY_JOINT, HISTORY_COMPONENTS,
+from disco.navigation.tree import (catalog, joint_id, joint_components, HISTORY_JOINT, HISTORY_COMPONENTS,
                             materialize_combinations, value_key)
-from workspace_recipes import build_tree, parse_splits, seal
+from disco.workbench.recipes import build_tree, parse_splits, seal
 from workspace_matlab import build_matlab_export
 if __package__:
     from . import test_workspace_tree as tree_tests

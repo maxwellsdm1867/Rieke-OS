@@ -15,7 +15,7 @@ class CumulativePendingTests(unittest.TestCase):
 
     def native_transaction_receipts(self):
         from workspace_state_generation import GenerationToken
-        from workspace_recipes import checksum
+        from disco.workbench.recipes import checksum
         connection=self.case.connection
         original_transaction=type(connection).transaction.fget
         original_state=self.manager.state
@@ -43,7 +43,7 @@ class CumulativePendingTests(unittest.TestCase):
                 self.locked_checks+=1
                 owner.assertTrue(connection.in_transaction)
                 if token!=self.value(token.protocol_uuid):
-                    from workspace_curation import RevisionConflict
+                    from disco.decisions.curation import RevisionConflict
                     raise RevisionConflict({'generation':'native fixture changed'})
         tracker=NativeReceipts()
         self.case.service._explore_state_generation=tracker
@@ -57,7 +57,7 @@ class CumulativePendingTests(unittest.TestCase):
             def guard():
                 owner.assertTrue(connection.in_transaction)
                 if original_state(protocol)[2]!=legacy or checksum(owner.case.service._fingerprints)!=metadata:
-                    from workspace_curation import RevisionConflict
+                    from disco.decisions.curation import RevisionConflict
                     raise RevisionConflict({'query_revision':'changed under native guard'})
                 return 'protocol-state-v3:'+legacy
             return guard
@@ -218,7 +218,7 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(self.prepare()[0], prepared)
         edited = self.patch_draft(prepared, [dict(epoch_uuid=self.added, selected=True, reviewed=True, excluded=True)], deferred=True)
         counts = len(self.case.explorer_revisions.rows)
-        with patch('workspace_author_preferences.selected_author', return_value={'profile_uuid': 'actor-two'}):
+        with patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'actor-two'}):
             other, _ = self.prepare()
             self.assertTrue(other['reused'])
             self.assertEqual(other['candidate_revision_uuid'], prepared['candidate_revision_uuid'])
@@ -292,7 +292,7 @@ class CumulativePendingTests(unittest.TestCase):
     def test_source_authority_change_during_preparation_rolls_back_and_old_scope_never_rebases(self):
         body = dict(expected_queue_revision=self.queue()['queue_revision'])
         before = copy.deepcopy([table.rows for table in self.case.connection.tables])
-        import workspace_workbench_pending as pending
+        import disco.workbench.workbench_pending as pending
         original = pending.snapshot_authority
         calls = [0]
         def changing(*args, **kwargs):

@@ -4,7 +4,7 @@ import copy
 import threading
 import unittest
 
-from workspace_shared_tag_index import SharedTagIndex
+from disco.decisions.shared_tag_index import SharedTagIndex
 
 
 class SharedTagThreadTests(unittest.TestCase):

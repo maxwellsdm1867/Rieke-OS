@@ -8,7 +8,7 @@ import tempfile
 import unittest
 import uuid
 
-from workspace_native_tag_lookup import NativeTagLookup,bootstrap,TRIGGER_MANIFEST,TABLE,MARKER
+from disco.decisions.native_tag_lookup import NativeTagLookup,bootstrap,TRIGGER_MANIFEST,TABLE,MARKER
 
 
 class TagLookupTests(unittest.TestCase):

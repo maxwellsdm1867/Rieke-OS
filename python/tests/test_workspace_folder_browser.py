@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from flask import Flask
 
-import workspace_folder_browser as browser
+import disco.projects.folder_browser as browser
 
 
 class FolderBrowserTests(unittest.TestCase):

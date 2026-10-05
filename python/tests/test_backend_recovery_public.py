@@ -3,7 +3,7 @@ import threading
 import unittest
 from unittest.mock import Mock, patch
 
-import workspace_backup_scheduler as backup
+import disco.backup.backup_scheduler as backup
 import workspace_state_snapshot as snapshot
 
 

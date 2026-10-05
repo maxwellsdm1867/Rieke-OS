@@ -10,9 +10,9 @@ from unittest.mock import patch
 import uuid
 
 from test_workspace_state_generation import NativeConnection
-from workspace_annotations import SharedAnnotations
-from workspace_annotation_preparation import prepare_project_annotations
-from workspace_native_tag_lookup import TABLE,MARKER,DICTIONARY,AUTHORS,TRIGGER_MANIFEST,NativeTagLookup
+from disco.decisions.annotations import SharedAnnotations
+from disco.decisions.annotation_preparation import prepare_project_annotations
+from disco.decisions.native_tag_lookup import TABLE,MARKER,DICTIONARY,AUTHORS,TRIGGER_MANIFEST,NativeTagLookup
 from workspace_projects import create_project
 from workspace_state_generation import bootstrap as generation_bootstrap,verify_export_triggers
 from workspace_state_snapshot import save as save_recovery
@@ -190,7 +190,7 @@ class NativeTagIntegrationTests(unittest.TestCase):
         self.assertTrue(self.shared.native_tag_lookup.validate_current())
 
     def test_legacy_lookup_migration_and_compact_table_truncation_rebuild(self):
-        from workspace_native_tag_lookup import LEGACY_TRIGGER_MANIFEST
+        from disco.decisions.native_tag_lookup import LEGACY_TRIGGER_MANIFEST
         self.write('epoch',identity(1),identity(101),['Straße'],'Historical author');self.prepare()
         for name in TRIGGER_MANIFEST:self.connection.query('DROP TRIGGER recording_workspace.'+name)
         for table in (DICTIONARY,AUTHORS):self.connection.query('DROP TABLE recording_workspace.'+table)
@@ -245,7 +245,7 @@ class NativeTagIntegrationTests(unittest.TestCase):
         self.prepare();self.assertEqual(self.shared.native_tag_lookup.targets('changed after proof'),{('epoch',identity(1))})
 
     def test_utf8_canonical_trigger_delete_uses_ascii_primary_key_with_unrelated_rows(self):
-        from workspace_native_tag_lookup import _delete
+        from disco.decisions.native_tag_lookup import _delete
         # Every target has five memberships. Unrelated targets must not turn a
         # ten-target edit into ten scans of all 7,500 index records.
         records=[(self.project_id,'epoch',identity(n),identity(101),json.dumps(['one','two','three','four','five']),
@@ -281,7 +281,7 @@ class NativeTagIntegrationTests(unittest.TestCase):
         self.assertLess(sum(after[key]-before[key] for key in before),1000,'Ten edits must not scan 7,500 unrelated memberships each')
         self.assertEqual(self.shared.native_tag_lookup.targets('edited'),{('epoch',identity(n)) for n in range(1,11)})
         self.assertEqual(len(self.shared.native_tag_lookup.targets('one')),1490)
-        from workspace_native_tag_filter import suggestions
+        from disco.navigation.native_tag_filter import suggestions
         lookup=self.shared.native_tag_lookup;queries=[];query_reads=[];original=lookup._rows
         def capture(sql,args=()):
             queries.append((sql,args));start=scanned();rows=original(sql,args);end=scanned()
@@ -329,7 +329,7 @@ class NativeTagIntegrationTests(unittest.TestCase):
         self.assertFalse(refused['safe_to_omit'])
 
     def test_bootstrap_rejects_source_change_after_refreshed_proof(self):
-        import workspace_native_tag_lookup as module
+        import disco.decisions.native_tag_lookup as module
         self.write('epoch',identity(1),identity(101),['start'],'Author');self.prepare()
         self.shared.native_tag_lookup=None
         original=module.bootstrap

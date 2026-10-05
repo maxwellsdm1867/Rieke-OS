@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 from unittest.mock import patch
 from core_adapter import CoreAdapter
-from workspace_typed_index import TypedMetadataIndex
+from disco.metadata.typed_index import TypedMetadataIndex
 
 
 def changed(path):

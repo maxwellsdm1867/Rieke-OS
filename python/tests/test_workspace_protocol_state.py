@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-from workspace_disk_index import DiskMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
 from workspace_protocol_state import ProtocolStateReader
 from workspace_service import WorkspaceService
 import test_workspace_annotations as annotation_fixture
@@ -35,7 +35,7 @@ class ProtocolStateTests(unittest.TestCase):
 
     def native_generation(self):
         from workspace_state_generation import GenerationToken
-        from workspace_recipes import checksum
+        from disco.workbench.recipes import checksum
         owner=self
         class FixtureAuthority:
             def __init__(self):self.locked_checks=0;self.disabled=False;self.in_transaction=False
@@ -48,7 +48,7 @@ class ProtocolStateTests(unittest.TestCase):
                     'shared-epoch',int(shared[:12],16),protocol,'protocol-epoch' if protocol else None,
                     int(saved[:12],16) if protocol else None)
             def assert_current_locked(self,expected):
-                from workspace_curation import RevisionConflict
+                from disco.decisions.curation import RevisionConflict
                 self.locked_checks+=1
                 if self._token(expected.protocol_uuid)!=expected:raise RevisionConflict({'generation':'changed'})
         tracker=FixtureAuthority()
@@ -101,7 +101,7 @@ class ProtocolStateTests(unittest.TestCase):
         self.assertFalse(self.case.curation.rows)
 
     def test_baseline_freeze_rejects_real_generation_change_without_partial_publication(self):
-        from workspace_curation import RevisionConflict
+        from disco.decisions.curation import RevisionConflict
         tracker=self.native_generation()
         def guard(protocol):
             context=self.reader.native_context(protocol)
@@ -130,7 +130,7 @@ class ProtocolStateTests(unittest.TestCase):
         self.assertEqual(page['expected_binding_version'],0)
 
     def test_native_response_scope_rejects_metadata_and_raw_saved_row_races(self):
-        from workspace_curation import RevisionConflict
+        from disco.decisions.curation import RevisionConflict
         self.native_generation()
         self.page()
         provider=self.service.curation_provider
@@ -198,8 +198,8 @@ class ProtocolStateTests(unittest.TestCase):
     def test_scoped_shared_index_rebuilds_after_refresh_provenance_metadata_or_final_sql_race(self):
         from types import SimpleNamespace
         from workspace_state_generation import StateGenerationAuthority
-        from workspace_shared_tag_index import SharedTagIndex
-        from workspace_recipes import checksum
+        from disco.decisions.shared_tag_index import SharedTagIndex
+        from disco.workbench.recipes import checksum
         self.fixture.edit('epoch',self.ids[0],['keep'])
         original_rows=copy.deepcopy(self.fixture.records.rows)
         original_fingerprints=dict(self.service._fingerprints)

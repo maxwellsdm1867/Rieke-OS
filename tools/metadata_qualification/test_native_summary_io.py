@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from .truth import equal, kind
-import workspace_explore_queries as queries
+import disco.metadata.explore_queries as queries
 
 
 def oracle(identities, records, annotations, fields):

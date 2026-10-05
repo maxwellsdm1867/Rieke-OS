@@ -7,7 +7,7 @@ import unittest
 import uuid
 
 from flask import Flask
-from workspace_project_preferences import ProjectPreferences, PreferenceConflict, REFERENCE, register_project_preference_routes
+from disco.projects.project_preferences import ProjectPreferences, PreferenceConflict, REFERENCE, register_project_preference_routes
 
 
 class PortablePreferenceTests(unittest.TestCase):

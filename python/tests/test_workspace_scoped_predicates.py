@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 import test_workspace_api as fixture
-from workspace_tree_pages import TreePages
+from disco.navigation.tree_pages import TreePages
 
 class ScopedPredicates(unittest.TestCase):
     def setUp(self):
@@ -70,8 +70,8 @@ class ScopedPredicates(unittest.TestCase):
         self.s.shared_annotations=SimpleNamespace(snapshot=lambda:{'revision':'a','records':[]},for_epochs=lambda rows:{})
         filters=self.filters({'not':{'field':'annotations/effective/tags','operator':'contains','value':'absent'}})
         body={'protocol_uuid':self.p,'filters':filters,'splits':'date,cell,block'}
-        with patch('workspace_explore_queries.generation',return_value={'annotation':'a'}):a=TreePages(self.s).page(body)
-        with patch('workspace_explore_queries.generation',return_value={'annotation':'b'}):b=TreePages(self.s).page(body)
+        with patch('disco.metadata.explore_queries.generation',return_value={'annotation':'a'}):a=TreePages(self.s).page(body)
+        with patch('disco.metadata.explore_queries.generation',return_value={'annotation':'b'}):b=TreePages(self.s).page(body)
         self.assertEqual(a['total_epochs'],b['total_epochs']);self.assertNotEqual(a['revision'],b['revision'])
     def test_selected_curation_scope_enforces_metadata(self):
         summary=self.c.get(self.root).get_json()
@@ -83,7 +83,7 @@ class ScopedPredicates(unittest.TestCase):
         with patch.object(self.s,'annotation_provider',side_effect=AssertionError('validation read live curation')):
             self.s.validate_metadata_filters(self.filters(own),self.p)
     def test_internal_conjunction_budget_preserves_admitted_ast(self):
-        import workspace_explore_queries as queries
+        import disco.metadata.explore_queries as queries
         leaf={'field':'parameters/example','operator':'eq','value':0}
         deep=leaf
         for _ in range(8):deep={'not':deep}
@@ -93,7 +93,7 @@ class ScopedPredicates(unittest.TestCase):
                 self.s.validate_metadata_filters(filters,self.p)
                 context={'predicate':{'all':[]},'protocol_uuid':self.p,'filters':filters,'scope':{}}
                 self.assertTrue(queries.typed_combination_over_budget(context))
-                with patch('workspace_explore_queries.typed_policy',return_value=True):
+                with patch('disco.metadata.explore_queries.typed_policy',return_value=True):
                     job=self.jobs.submit({**context,'summary_fields':[]})
                     self.jobs.drive_worker()
                 result=self.jobs.poll(job['request_id'])
@@ -101,12 +101,12 @@ class ScopedPredicates(unittest.TestCase):
                 self.assertEqual(result['result']['matched_count'],1)
     def test_full_tree_has_surrounding_annotation_fence(self):
         filters=self.filters({'all':[]})
-        with patch('workspace_explore_queries.generation',side_effect=[{'a':1},{'a':2}]):
+        with patch('disco.metadata.explore_queries.generation',side_effect=[{'a':1},{'a':2}]):
             with self.assertRaisesRegex(ValueError,'annotations changed'):
                 self.s.tree(self.p,filters)
 
     def test_independent_annotation_discovery_retains_late_curation_owner(self):
-        import workspace_explore_queries as queries
+        import disco.metadata.explore_queries as queries
         field=f'curation/{self.p}/tags'
         leaf={'field':'parameters/example','operator':'eq','value':0}
         context={'predicate':{'field':field,'operator':'contains','value':'QC'},'protocol_uuid':None,'filters':self.filters({'all':[leaf for _ in range(127)]}),'scope':{},'summary_fields':['annotations/effective/tags']}
@@ -114,6 +114,6 @@ class ScopedPredicates(unittest.TestCase):
         # The lock gets the complete explicit protocol union, with no AST scan.
         self.s.shared_annotations=SimpleNamespace(snapshot=lambda:{'revision':'a','records':[]})
         from contextlib import nullcontext
-        with patch('workspace_explore_queries.annotation_locks',return_value=nullcontext()) as locks:
+        with patch('disco.metadata.explore_queries.annotation_locks',return_value=nullcontext()) as locks:
             with queries.context_annotation_locks(self.s,context):pass
         self.assertEqual(locks.call_args.args[2],{self.p})

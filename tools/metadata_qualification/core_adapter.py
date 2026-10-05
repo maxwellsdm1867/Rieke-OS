@@ -1,7 +1,7 @@
 """Adapter for committed full typed core; source truth never imports this module."""
 from pathlib import Path
-from workspace_disk_index import DiskMetadataIndex
-from workspace_typed_index import build, TypedMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.metadata.typed_index import build, TypedMetadataIndex
 
 
 class CoreAdapter:

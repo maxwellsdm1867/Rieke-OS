@@ -28,9 +28,9 @@ from werkzeug.exceptions import HTTPException
 from werkzeug.utils import secure_filename
 
 from recording_workspace import digest, now, write_json
-from workspace_recipes import capture_query, checksum, compare_query, parse_splits, prepare_export, save_snapshot
-from workspace_storage import ManagedStorage, log_dir, managed_directory
-from workspace_diff import summarize_diff
+from disco.workbench.recipes import capture_query, checksum, compare_query, parse_splits, prepare_export, save_snapshot
+from disco.projects.storage import ManagedStorage, log_dir, managed_directory
+from disco.workbench.diff import summarize_diff
 from workspace_protocol_identity import selection_protocols, protocol_compatibility, require_protocol_compatibility
 from workspace_import_check import classify_source
 from workspace_audit import build_audit_payload, normalize_event, normalize_events, repeat_suggestions
@@ -88,11 +88,11 @@ def import_worker_process(command, log, app):
 
 def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, explorer_history=None, data_stores=None, protocol_suggestions=None, shared_annotations=None, desktop_session_lock=None):
     from workspace_service import WorkspaceService
-    from workspace_curation import CurationStore, RevisionConflict
-    from workspace_explorer import ExplorerHistory
-    from workspace_datastores import DataStores
-    from workspace_suggestions import ProtocolSuggestions
-    from workspace_tag_predicates import annotation_locks
+    from disco.decisions.curation import CurationStore, RevisionConflict
+    from disco.decisions.explorer import ExplorerHistory
+    from disco.projects.datastores import DataStores
+    from disco.workbench.suggestions import ProtocolSuggestions
+    from disco.navigation.tag_predicates import annotation_locks
 
     project_dir, retinanalysis_dir = Path(project_dir).resolve(), Path(retinanalysis_dir).resolve()
     if (project_dir / '.app-state-restore.pending').exists():
@@ -136,7 +136,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     data_stores = data_stores or DataStores(service, store, explorer_history)
     app.extensions["data_stores"] = data_stores
     if hasattr(service.dj, 'Schema'):
-        from workspace_datastore_deletion import DataStoreDeletion
+        from disco.projects.datastore_deletion import DataStoreDeletion
         with db_lock:
             deletion = DataStoreDeletion(data_stores)
             with deletion._locks():
@@ -152,20 +152,20 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             store.read(protocol_uuid, list(fingerprints), fingerprints))
     page_curation_provider=service.curation_provider
     if shared_annotations is None and hasattr(service.dj,'Schema'):
-        from workspace_annotations import SharedAnnotations
+        from disco.decisions.annotations import SharedAnnotations
         shared_annotations=SharedAnnotations(service)
     service.shared_annotations=shared_annotations
     app.extensions['shared_annotations']=shared_annotations
     # Declare the durable whole-group operation table before generation and
     # recovery bootstrap, outside any data transaction. Registration below
     # reuses this exact table rather than lazily introducing unwatched writes.
-    from workspace_annotation_groups import group_receipt_table
+    from disco.decisions.annotation_groups import group_receipt_table
     annotation_group_receipts = group_receipt_table(service.dj) if hasattr(service.dj, 'Schema') else None
     frontend = (Path(os.environ['RIEKE_DESKTOP_FRONTEND']) if os.environ.get('RIEKE_DESKTOP_MODE') == '1'
                 else Path(__file__).resolve().parents[1] / "workspace-app/dist")
     app.extensions["workspace_service"] = service
     app.extensions["curation_store"] = store
-    from workspace_project_preferences import register_project_preference_routes
+    from disco.projects.project_preferences import register_project_preference_routes
     register_project_preference_routes(app, project_dir, service.project['project_uuid'], db_lock)
 
     def filters(allowed=()):
@@ -197,7 +197,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     def prepare_annotations(*,reuse=False,progress=None):
         if not hasattr(service.dj,'Schema'):return {'status':'unavailable','reason':'Native SQL is unavailable'}
-        from workspace_annotation_preparation import prepare_project_annotations
+        from disco.decisions.annotation_preparation import prepare_project_annotations
         return prepare_project_annotations(service,store,shared_annotations,
             protocol_state=selected_state,reuse=reuse,progress=progress)
 
@@ -457,7 +457,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_frontend import ProjectHandoffUnavailable
         if isinstance(error, ProjectHandoffUnavailable):
             return jsonify(error=str(error), code='project_handoff_unavailable'), 409
-        from workspace_shared_tag_index import SharedTagsChanged
+        from disco.decisions.shared_tag_index import SharedTagsChanged
         if isinstance(error, (RevisionConflict, StaleWorkspace, SharedTagsChanged)):
             return jsonify(error=str(error), code="stale_workspace"), 409
         if isinstance(error, (ValueError, KeyError, FileNotFoundError)):
@@ -605,7 +605,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def describe_data_store_deletion(source_sha256):
         if request.args:
             raise ValueError('Deletion confirmation takes no query options')
-        from workspace_datastore_deletion import DataStoreDeletion
+        from disco.projects.datastore_deletion import DataStoreDeletion
         with db_lock, data_stores.registration_locks():
             return jsonify(DataStoreDeletion(data_stores).describe(source_sha256))
 
@@ -617,7 +617,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not importing.acquire(blocking=False):
             raise StaleWorkspace('An import or metadata refresh is running; wait before deleting')
         try:
-            from workspace_datastore_deletion import DataStoreDeletion
+            from disco.projects.datastore_deletion import DataStoreDeletion
             with db_lock:
                 try:
                     result = DataStoreDeletion(data_stores).delete(source_sha256, body['expected_revision'], confirmed=body['confirmed'])
@@ -740,7 +740,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     def protocol(protocol_uuid):
         with db_lock:
             query_filters=filters()
-            from workspace_explore_queries import generation
+            from disco.metadata.explore_queries import generation
             context={'protocol_uuid':protocol_uuid,'filters':query_filters}
             before=generation(service,context) if 'metadata_predicate' in query_filters else None
             native=native_protocol_summary(protocol_uuid,query_filters)
@@ -751,7 +751,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     def tree_layout_store():
         if 'tree_layouts' not in app.extensions:
-            from workspace_tree_layouts import TreeLayouts
+            from disco.navigation.tree_layouts import TreeLayouts
             app.extensions['tree_layouts'] = TreeLayouts(store)
         return app.extensions['tree_layouts']
 
@@ -796,7 +796,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             if native is not None:arguments['include_curation']=False
             if include_cells=='true':arguments['include_cells']=True
             query_filters=filters({'anchor_uuid','include_cells'})
-            from workspace_explore_queries import generation
+            from disco.metadata.explore_queries import generation
             scoped_context={'protocol_uuid':protocol_uuid,'filters':query_filters}
             scoped_generation=generation(service,scoped_context) if 'metadata_predicate' in query_filters else None
             page = service.epoch_page(protocol_uuid, query_filters, int(request.args.get("offset", 0)),
@@ -860,7 +860,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             raise ValueError('Malformed explorer predicate request or unsupported fields')
         return body
 
-    from workspace_explore_queries import register_explore_query_routes
+    from disco.metadata.explore_queries import register_explore_query_routes
     register_explore_query_routes(app, service, db_lock, data_stores.registration_locks, explorer_request)
 
     @app.get('/api/explore/predicate-fields')
@@ -944,7 +944,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     def search_preset_store():
         if 'search_presets' not in app.extensions:
-            from workspace_search_presets import SearchPresets
+            from disco.navigation.search_presets import SearchPresets
             app.extensions['search_presets'] = SearchPresets(store)
         return app.extensions['search_presets']
 
@@ -1508,7 +1508,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                     export_scope=scope, export_intent={'name': recipe['options']['name'], 'format': recipe['destination']},
                     source_export_uuid=dataset_uuid, review_required=True)
             if scope and scope.get('kind') == 'explorer_candidate':
-                from workspace_candidate_exports import candidate_scope_uuid
+                from disco.workbench.candidate_exports import candidate_scope_uuid
                 saved = explorer_history.get(scope['revision_uuid'])['recipe']
                 expected_scope = candidate_scope_uuid(service.project['project_uuid'], scope['revision_uuid'])
                 if (recipe['protocol_uuid'] != expected_scope or scope.get('export_only_scope_uuid') != expected_scope
@@ -1607,7 +1607,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                         job['duplicate_staging_removed'] = False
                         job['staging_cleanup_error'] = str(cleanup_error)
                 return
-            from workspace_recording_files import retain_recording
+            from disco.projects.recording_files import retain_recording
             original_source = source
             source = retain_recording(project_dir, source, check['source_sha256'])
             job.update(source=str(source), retained_in_project=True,
@@ -1842,37 +1842,37 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         return project_frontend_response(frontend, path, lambda: list_projects(project_dir))
 
     if shared_annotations:
-        from workspace_external_tags import register_external_tag_routes
+        from disco.decisions.external_tags import register_external_tag_routes
         register_external_tag_routes(app,service,store,shared_annotations,db_lock)
-        from workspace_annotations import register_annotation_routes
+        from disco.decisions.annotations import register_annotation_routes
         register_annotation_routes(app,service,shared_annotations,db_lock)
-        from workspace_tag_exchange import register_tag_exchange_routes
+        from disco.decisions.tag_exchange import register_tag_exchange_routes
         register_tag_exchange_routes(app,service,shared_annotations,db_lock)
     from workspace_qc import register_qc_routes
     register_qc_routes(app, service, db_lock)
     if hasattr(service.dj, 'Schema'):
         with db_lock:
             app.extensions['supporting_voltage_backfill']=app.extensions['cell_qc'].prepare_baselines()
-    from workspace_search import register_search_routes
+    from disco.metadata.search import register_search_routes
     register_search_routes(app, service, db_lock)
 
-    from workspace_tree_pages import register_tree_page_routes
+    from disco.navigation.tree_pages import register_tree_page_routes
     register_tree_page_routes(app, service, db_lock, data_stores.registration_locks)
-    from workspace_matching_epochs import register_matching_epoch_routes
+    from disco.navigation.matching_epochs import register_matching_epoch_routes
     register_matching_epoch_routes(app, service, db_lock, data_stores.registration_locks, explorer_request)
-    from workspace_candidate_exports import register_candidate_export_routes
+    from disco.workbench.candidate_exports import register_candidate_export_routes
     register_candidate_export_routes(app, service, store, explorer_history, db_lock, data_stores.registration_locks)
-    from workspace_workbench import register_workbench_routes
+    from disco.workbench.workbench import register_workbench_routes
     register_workbench_routes(app, service, explorer_history, protocol_suggestions, state, revision_guard,
                               db_lock, data_stores.registration_locks)
-    from workspace_annotation_groups import register_group_annotation_routes
+    from disco.decisions.annotation_groups import register_group_annotation_routes
     register_group_annotation_routes(app, service, shared_annotations, db_lock, data_stores.registration_locks,
                                     revision_guard=revision_guard, receipt_table=annotation_group_receipts)
     # Current-state recovery is independent of the action log. Fake services in
     # route tests have no SQL schema; real servers always enable these backups.
     if hasattr(service.dj, 'Schema'):
         from workspace_state_snapshot import save as save_app_state
-        from workspace_backup_scheduler import BackupScheduler
+        from disco.backup.backup_scheduler import BackupScheduler
         with db_lock:
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:

@@ -18,7 +18,7 @@ import sqlite3
 import uuid
 
 from recording_workspace import digest
-from workspace_recipes import verify, member_map
+from disco.workbench.recipes import verify, member_map
 from workspace_service import read_response_window, bounded_window
 from workspace_sqlite import FORMAT, _fingerprint
 

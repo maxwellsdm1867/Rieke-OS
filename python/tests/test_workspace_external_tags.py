@@ -9,8 +9,8 @@ from unittest.mock import patch
 import uuid
 
 import test_workspace_annotations as annotations_tests
-from workspace_external_tags import ExternalTags, submit_tags
-from workspace_tag_predicates import TagPredicates
+from disco.decisions.external_tags import ExternalTags, submit_tags
+from disco.navigation.tag_predicates import TagPredicates
 
 
 class ExternalTagTests(unittest.TestCase):

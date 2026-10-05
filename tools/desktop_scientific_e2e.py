@@ -472,7 +472,7 @@ def legacy_copy(h, donor, counts):
     source = h.state / 'legacy-source'
     subprocess.run(['/bin/cp', '-cR', donor['path'], str(source)], check=True)
     native_catalog = json.loads((source / 'catalog.json').read_text())
-    source_settings = h.python_code("from workspace_project_database import ensure_project_database; "
+    source_settings = h.python_code("from disco.projects.project_database import ensure_project_database; "
         "from workspace_portability import rebase_project_paths,_database_inventory; "
         "from workspace_native_mysql import connection_parameters; import pymysql,json; "
         "ensure_project_database(sys.argv[2]); rebase_project_paths(sys.argv[2]); "

@@ -10,16 +10,16 @@ import tempfile
 import time
 import unittest
 
-from workspace_cache_lifecycle import CacheNamespace
-from workspace_disk_index import DiskMetadataIndex
-from workspace_projection_cache import ProjectionCache
-from test_workspace_disk_index import fixture
+from disco.metadata.cache_lifecycle import CacheNamespace
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.metadata.projection_cache import ProjectionCache
+from disco.metadata.tests.test_workspace_disk_index import fixture
 
 
 READER=r'''
 import json,sys
 from pathlib import Path
-from workspace_disk_index import DiskMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
 index=DiskMetadataIndex.open(sys.argv[1],sys.argv[2],'project')
 Path(sys.argv[3]).write_text('ready')
 sys.stdin.readline()

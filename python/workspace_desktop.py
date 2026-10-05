@@ -832,7 +832,7 @@ def main(argv=None):
         session_lock = acquire_project_session(project)
         from lifecycle_diagnostic import install_read_observers
         install_read_observers()
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         ensure_project_database(project)
         from workspace_api import create_app
         app = create_app(project, retinanalysis, desktop_session_lock=session_lock)

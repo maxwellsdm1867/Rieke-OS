@@ -118,7 +118,7 @@ class CurationBatchTests(unittest.TestCase):
     def test_batch_read_skips_snapshot_but_successful_mutation_keeps_recovery(self):
         self.service.dj.Schema=object()
         checkpoint=Mock()
-        with patch('workspace_annotations.SharedAnnotations',return_value=None), \
+        with patch('disco.decisions.annotations.SharedAnnotations',return_value=None), \
              patch('workspace_state_snapshot.save',checkpoint):
             app=create_app(self.fixture.temp.name,self.fixture.temp.name,service=self.service,
                 store=self.fixture.store,explorer_history=self.fixture.explorer_history,

@@ -129,7 +129,7 @@ def register_empty_project(project_dir, connection=None):
                 folder = _inside(root, directory)
                 files = _files(folder, skip_marker=False) if folder.exists() else {}
                 if directory == 'protocols':
-                    from workspace_project_preferences import ProjectPreferences, REFERENCE
+                    from disco.projects.project_preferences import ProjectPreferences, REFERENCE
                     if REFERENCE.removeprefix('protocols/') in files:
                         ProjectPreferences(root, identity).read()
                         files.pop(REFERENCE.removeprefix('protocols/'))
@@ -276,7 +276,7 @@ def _connection(project_dir):
     if provider['kind'] != 'docker-container-env':
         raise ValueError('Project transfer requires an explicitly configured local MySQL runtime')
     container = provider['container']
-    from workspace_project_database import _run
+    from disco.projects.project_database import _run
     result = _run(['inspect', container])
     if result.returncode:
         raise ValueError('Transfer database is unavailable')
@@ -443,7 +443,7 @@ def inspect_package(package_dir):
         raise ValueError('Prepared project identity or format is invalid')
     if not isinstance(project.get('name'), str) or not project['name'].strip() or project.get('catalog_ref', 'catalog.json') != 'catalog.json':
         raise ValueError('Prepared project manifest is invalid')
-    from workspace_project_preferences import ProjectPreferences
+    from disco.projects.project_preferences import ProjectPreferences
     ProjectPreferences(root, project['project_uuid']).read()
     if 'database_inventory' in value:
         _validate_database_inventory(value['database_inventory'])
@@ -584,14 +584,14 @@ def restore_project(package_dir, destination):
                 raise ValueError('Prepared project changed during restore')
         _write(target / 'catalog.json', catalog)
         _write(target / 'database/service.json', catalog['managed_database'])
-        from workspace_storage import initialize_layout
+        from disco.projects.storage import initialize_layout
         initialize_layout(target, identity, Path(__file__).resolve().parents[1])
         # Seal our own dump copy so a package change cannot alter SQL mid-import.
         dump = target / 'database' / 'transfer.sql'
         shutil.copyfile(package / 'database.sql', dump)
         if _hash(dump) != manifest['files']['database.sql']['sha256']:
             raise ValueError('Prepared database changed during restore')
-        from workspace_project_database import ensure_project_database
+        from disco.projects.project_database import ensure_project_database
         runtime_attempted = True
         desktop_services.enter_context(_desktop_database_session(target))
         ensure_project_database(target, _restoring=True)
@@ -612,7 +612,7 @@ def restore_project(package_dir, destination):
                     mapping = mappings[source['source_sha256']]
                     if record.get('metadata_sha256') != mapping['metadata_sha256']:
                         raise ValueError('Restored metadata checksum disagrees with database')
-                    from workspace_recording_files import recording_display_name
+                    from disco.projects.recording_files import recording_display_name
                     record['source_filename'] = mapping.get('source_filename') or recording_display_name(record)
                     record['source_path'] = str(target / mapping['recording_ref'])
                     record['metadata_path'] = str(target / mapping['metadata_ref'])
@@ -652,7 +652,7 @@ def restore_project(package_dir, destination):
 def prepare_project(project_dir, destination):
     """Capture a complete offline package and prove its logical backup restores."""
     from workspace_projects import _project_record
-    from workspace_project_database import ensure_project_database
+    from disco.projects.project_database import ensure_project_database
     raw = Path(project_dir).expanduser()
     if raw.is_symlink() or not raw.is_dir():
         raise ValueError('Choose an existing regular project folder')
@@ -661,7 +661,7 @@ def prepare_project(project_dir, destination):
     target = _destination(destination, root)
     identity = record['uuid']
     with _offline(root), _desktop_database_session(root):
-        from workspace_project_preferences import ProjectPreferences
+        from disco.projects.project_preferences import ProjectPreferences
         ProjectPreferences(root, identity).read()
         ensure_project_database(root)
         connection = _connection(root)
@@ -713,7 +713,7 @@ def prepare_project(project_dir, destination):
                 if _hash(output) != source['source_sha256']:
                     raise ValueError('Recording checksum changed or a recording is missing')
                 _verify_recording_dependencies(output)
-                from workspace_recording_files import recording_display_name
+                from disco.projects.recording_files import recording_display_name
                 inventory.append({'source_sha256': source['source_sha256'], 'source_filename': recording_display_name(manifest), 'recording_ref': recording_ref,
                                   'metadata_ref': reference, 'metadata_sha256': manifest['metadata_sha256']})
             _dump(root, staging / 'database.sql')

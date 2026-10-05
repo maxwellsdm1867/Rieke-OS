@@ -11,7 +11,7 @@ import unittest
 import uuid
 
 from flask import Flask
-from workspace_tag_exchange import (normalize_document, preview_import, export_document,
+from disco.decisions.tag_exchange import (normalize_document, preview_import, export_document,
     register_tag_exchange_routes, samarjit_document, frozen_document)
 from workspace_sqlite import build_sqlite_export
 from workspace_matlab import build_matlab_export
@@ -119,7 +119,7 @@ class FrozenSharedTagTests(unittest.TestCase):
             self.assertEqual({r[0] for r in db.execute('SELECT profile_uuid FROM shared_annotations')},{author})
         from scipy.io import loadmat
         recipe=copy.deepcopy(self.package['recipe']);recipe['destination']='matlab-mat'
-        from workspace_recipes import seal
+        from disco.workbench.recipes import seal
         recipe=seal(recipe)
         target=Path(self.case.temp.name)/'mat-shared'
         build_matlab_export(self.service,recipe,target,epoch_records=self.package['epochs'])

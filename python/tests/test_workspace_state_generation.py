@@ -257,7 +257,7 @@ class NativeGenerationTests(unittest.TestCase):
         finally:
             self.connection._conn.rollback();self.connection.in_transaction=False
         self.assertNotEqual(before,self.token())
-        from workspace_curation import RevisionConflict
+        from disco.decisions.curation import RevisionConflict
         self.connection._conn.begin();self.connection.in_transaction=True
         try:
             with self.assertRaises(RevisionConflict):self.authority.assert_current_locked(before)

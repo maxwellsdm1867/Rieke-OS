@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 import test_workspace_annotations as fixtures
 from test_workspace_curation import Table
-from workspace_curation import RevisionConflict
+from disco.decisions.curation import RevisionConflict
 
 
 class TrackedConnection:

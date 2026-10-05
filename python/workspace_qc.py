@@ -11,7 +11,7 @@ import uuid
 
 import numpy as np
 
-from workspace_recipes import checksum
+from disco.workbench.recipes import checksum
 
 FAMILIES = {
     'expanding_spots': ('Expanding spots', {'ExpandingSpots'}),
@@ -305,7 +305,7 @@ class CellQC:
                 | {'metadata_fingerprint': self.service._fingerprints[row['epoch_uuid']]} for row in rows]})
 
     def _baseline_path(self, cell_uuid):
-        from workspace_storage import managed_directory
+        from disco.projects.storage import managed_directory
         path = managed_directory(self.service.project_dir, 'cache/block-onset-voltage') / (str(uuid.UUID(cell_uuid)) + '.json')
         if path.is_symlink():
             raise ValueError('Prepared voltage result cannot be a symbolic link')

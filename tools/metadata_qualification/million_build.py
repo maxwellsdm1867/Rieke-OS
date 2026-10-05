@@ -19,7 +19,7 @@ def main():
     verified=json.loads(args.verified_corpus.read_bytes())
     if verified['status']!='seals_counts_generation_verified':raise ValueError('Verify exact corpus before construction')
     sys.path.insert(0,str(args.implementation_root/'python'))
-    from workspace_typed_index import build,TypedMetadataIndex
+    from disco.metadata.typed_index import build,TypedMetadataIndex
     receipt=dict(status='running',target_commit=subprocess.check_output(['git','-C',str(args.implementation_root),'rev-parse','HEAD'],text=True).strip(),
         corpus=verified,target=str(args.target),source=str(args.source),
         caps=dict(build_seconds=300,max_rss_bytes=1024**3,min_disk_bytes=4*1024**3,min_available_ram_bytes=768*1024**2),

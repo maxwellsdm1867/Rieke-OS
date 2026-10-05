@@ -20,7 +20,7 @@ class ProjectServerTests(unittest.TestCase):
         index.start()
         self.addCleanup(index.stop)
         self.path.mkdir()
-        bootstrap = patch('workspace_project_database.ensure_project_database')
+        bootstrap = patch('disco.projects.project_database.ensure_project_database')
         bootstrap.start()
         self.addCleanup(bootstrap.stop)
         frontend = patch('workspace_project_servers.require_project_page')

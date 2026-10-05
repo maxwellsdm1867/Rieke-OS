@@ -95,7 +95,7 @@ class InboxTests(unittest.TestCase):
 
     def test_folder_drop_is_retained_in_place_without_second_copy(self):
         import hashlib
-        from workspace_recording_files import retain_recording
+        from disco.projects.recording_files import retain_recording
         source = self.add()
         self.settle()
         watched = self.jobs[0][0]

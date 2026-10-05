@@ -8,9 +8,9 @@ import uuid
 from unittest.mock import patch
 
 import test_workspace_api as api_fixture
-from workspace_disk_index import DiskMetadataIndex
-from workspace_tree_pages import TreePages, StaleTreePage
-from workspace_tag_predicates import annotation_locks
+from disco.metadata.disk_index import DiskMetadataIndex
+from disco.navigation.tree_pages import TreePages, StaleTreePage
+from disco.navigation.tag_predicates import annotation_locks
 
 
 class TagLifecycleTests(unittest.TestCase):
@@ -128,7 +128,7 @@ class TagLifecycleTests(unittest.TestCase):
         self.assertEqual(self.raw_path.read_bytes(),self.initial_raw)
 
     def test_global_search_delegates_protocol_tags_and_inclusion_stays_local(self):
-        from workspace_search import search_workspace
+        from disco.metadata.search import search_workspace
         self.tag({'tags_add':['keep'],'included':False})
         result=search_workspace(self.service,'',field=self.field,operator='contains',value='keep')
         self.assertEqual(result['results'][0]['count'],1)

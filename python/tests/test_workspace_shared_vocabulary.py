@@ -2,7 +2,7 @@
 import unittest
 from unittest.mock import patch
 from test_workspace_shared_tag_index import Fixture
-from workspace_shared_tag_index import SharedTagsChanged
+from disco.decisions.shared_tag_index import SharedTagsChanged
 
 
 class SharedVocabularyTests(unittest.TestCase):
@@ -80,7 +80,7 @@ class SharedVocabularyTests(unittest.TestCase):
         self.assertEqual(f.index.suggestions('tag-000',1),self.expected('tag-000',1))
 
     def test_failed_initialization_discards_partial_derived_schema_and_retries_safely(self):
-        from workspace_shared_vocabulary import SharedVocabulary
+        from disco.decisions.shared_vocabulary import SharedVocabulary
         original=SharedVocabulary.__init__
         def fail_after_schema(vocabulary,index):
             original(vocabulary,index)
@@ -93,7 +93,7 @@ class SharedVocabularyTests(unittest.TestCase):
     def test_large_external_batch_rebuilds_only_vocabulary_without_old_union_copies(self):
         f=self.fixture;self.check()
         f.put('epoch','e1','p2',['new']);f.put('epoch','e2','p1',['new','QC'])
-        with patch('workspace_shared_tag_index.MATCH_DELTA_MAX_RECORDS',1), \
+        with patch('disco.decisions.shared_tag_index.MATCH_DELTA_MAX_RECORDS',1), \
              patch.object(f.index.shared_vocabulary,'before',side_effect=AssertionError('No large old-union copy')):
             f.index.refresh()
         self.assertIsNone(f.index.shared_vocabulary)
@@ -106,7 +106,7 @@ class SharedVocabularyTests(unittest.TestCase):
         def race(keys):
             yield from records(keys)
             f.version+=1
-        with patch('workspace_shared_tag_index.MATCH_DELTA_MAX_RECORDS',1), \
+        with patch('disco.decisions.shared_tag_index.MATCH_DELTA_MAX_RECORDS',1), \
              patch.object(f.index,'records',side_effect=race):
             with self.assertRaises(SharedTagsChanged):f.index.refresh()
         self.assertIs(f.index.shared_vocabulary,original)

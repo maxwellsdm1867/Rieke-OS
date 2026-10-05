@@ -5,7 +5,7 @@ import tempfile
 import unittest
 import uuid
 
-from workspace_recipes import (build_tree, capture_query, compare_query,
+from disco.workbench.recipes import (build_tree, capture_query, compare_query,
                                prepare_export, save_snapshot, verify, parse_splits)
 
 

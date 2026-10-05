@@ -14,7 +14,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
     """Used by both the launcher and an opened project's API."""
     from workspace_app_routes import register_app_routes
     register_app_routes(app)
-    from workspace_folder_browser import register_folder_browser_routes
+    from disco.projects.folder_browser import register_folder_browser_routes
     register_folder_browser_routes(app, project_dir=project_dir)
     current = Path(project_dir).resolve() if project_dir else None
     root_provider = root if callable(root) else lambda: managed_root(root or current.parent)
@@ -75,7 +75,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         body = request.get_json(silent=True)
         if request.args or not isinstance(body, dict) or set(body) != {'directory'}:
             raise ValueError('Choose an existing project folder')
-        from workspace_project_validation import inspect_project_folder
+        from disco.projects.project_validation import inspect_project_folder
         return jsonify(inspect_project_folder(body['directory']))
 
     @app.post('/api/projects/open-folder')
@@ -94,7 +94,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
             raise ValueError('This is a prepared project copy. Add it through project setup and choose a new project folder to restore it.')
         if not (directory / 'project.json').is_file() or not (directory / 'catalog.json').is_file():
             raise ValueError('Choose the project folder containing project.json and catalog.json, not its parent workspace')
-        from workspace_project_validation import validate_project_folder
+        from disco.projects.project_validation import validate_project_folder
         project = validate_project_folder(str(directory))['project']
         if not project['available']:
             raise ValueError('Project manifests are invalid: ' + project['unavailable_reason'])

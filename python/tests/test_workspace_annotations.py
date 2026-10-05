@@ -8,10 +8,10 @@ import uuid
 
 import test_workspace_api as fixture
 from test_workspace_curation import Table
-from workspace_annotations import SharedAnnotations
+from disco.decisions.annotations import SharedAnnotations
 from workspace_api import create_app
-from workspace_curation import RevisionConflict
-from workspace_tag_predicates import TagPredicates
+from disco.decisions.curation import RevisionConflict
+from disco.navigation.tag_predicates import TagPredicates
 
 
 class SharedAnnotationTests(unittest.TestCase):
@@ -152,7 +152,7 @@ class SharedAnnotationTests(unittest.TestCase):
     def test_project_scope_case_exactness_and_cached_bounded_vocabulary(self):
         self.edit('epoch',self.first,['ON','on'])
         foreign=copy.deepcopy(self.records.rows[0]);foreign['project_uuid']=str(uuid.uuid4());foreign['tags']=['Secret'];self.records.insert1(foreign)
-        with patch('workspace_annotations.time.monotonic',return_value=1):
+        with patch('disco.decisions.annotations.time.monotonic',return_value=1):
             result=self.store.suggestions('oN',1);reads=len(self.records.read_log)
             self.assertEqual(result['tags'][0]['tag'],'ON');self.assertEqual(result['total'],2)
             self.assertEqual(self.store.suggestions('s')['tags'],[]);self.assertEqual(len(self.records.read_log),reads)
@@ -271,7 +271,7 @@ class SharedAnnotationTests(unittest.TestCase):
         from unittest.mock import Mock
         save=Mock();self.service.dj.Schema=object()
         with patch('workspace_state_snapshot.save',save), \
-             patch('workspace_annotation_preparation.prepare_project_annotations',return_value={'status':'unavailable'}):
+             patch('disco.decisions.annotation_preparation.prepare_project_annotations',return_value={'status':'unavailable'}):
             app=create_app(self.case.temp.name,self.case.temp.name,service=self.service,store=self.case.store,
                 explorer_history=self.case.explorer_history,data_stores=self.case.data_stores,
                 protocol_suggestions=self.case.protocol_suggestions,shared_annotations=self.store)

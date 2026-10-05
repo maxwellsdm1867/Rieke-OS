@@ -5,12 +5,12 @@ import sqlite3
 import unittest
 from unittest.mock import patch
 
-from workspace_annotations import tags
-from workspace_predicates import matches
-from workspace_predicates import predicate_catalog
-from workspace_tree import value_key,value_order,value_label
+from disco.decisions.annotations import tags
+from disco.navigation.predicates import matches
+from disco.navigation.predicates import predicate_catalog
+from disco.navigation.tree import value_key,value_order,value_label
 from workspace_service import validate_tag_filter_predicate
-from workspace_shared_tag_index import SharedTagIndex,SharedTagsChanged,FIELDS
+from disco.decisions.shared_tag_index import SharedTagIndex,SharedTagsChanged,FIELDS
 
 
 class Fixture:
@@ -99,7 +99,7 @@ class SharedTagIndexTests(unittest.TestCase):
         f=self.f;f.index.refresh();f.index.matching(f.rows,{'tag':'QC'})
         f.put('epoch','e2','p1',['different','unrelated'])
         f.put('epoch','e3','p1',['unrelated'])
-        with patch('workspace_shared_tag_index.MATCH_DELTA_MAX_RECORDS',1):f.index.refresh()
+        with patch('disco.decisions.shared_tag_index.MATCH_DELTA_MAX_RECORDS',1):f.index.refresh()
         self.assertEqual(f.index.match_cache_bytes,0)
         self.assertEqual(f.index.matching(f.rows,{'tag':'QC'})[0],('e0','e1'))
 
@@ -234,7 +234,7 @@ class SharedTagIndexTests(unittest.TestCase):
         f=self.f;f.index.refresh()
         first=f.index.matching(f.rows,{'tag':'QC'})[0]
         self.assertIs(f.index.matching(f.rows,{'tag':'QC'})[0],first)
-        with patch('workspace_shared_tag_index.MATCH_CACHE_BYTES',1):
+        with patch('disco.decisions.shared_tag_index.MATCH_CACHE_BYTES',1):
             f.put('epoch','e2','p1',['QC']);f.index.refresh()
             self.assertEqual(f.index.matching(f.rows,{'tag':'QC'})[0],('e0','e1','e2'))
             self.assertEqual(f.index.match_cache_bytes,0)

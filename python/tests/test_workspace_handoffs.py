@@ -92,7 +92,7 @@ class HandoffTests(unittest.TestCase):
         self.assertEqual(len(failures), 1)
 
     def test_legacy_matlab_history_and_exact_zip_download_survive_but_new_gui_exports_reject(self):
-        from workspace_recipes import seal
+        from disco.workbench.recipes import seal
         response = self.client.post(self.base + '/exports', headers=self.headers,
             json={'query_revision': self.revision(), 'format': 'reference-json'})
         self.assertEqual(response.status_code, 201, response.get_json())

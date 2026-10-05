@@ -43,7 +43,7 @@ class NativeTruthTests(unittest.TestCase):
             self.assertEqual(str(caught.exception),error)
 
     def test_generation_project_corruption_and_failed_publication(self):
-        from workspace_disk_index import DiskMetadataIndex
+        from disco.metadata.disk_index import DiskMetadataIndex
         with tempfile.TemporaryDirectory() as folder:
             path=Path(folder)/'fault.sqlite'; data=self.truth.fixture()
             index=DiskMetadataIndex.build(path,data['rows'],data['details'],data['sources'],'old','project')

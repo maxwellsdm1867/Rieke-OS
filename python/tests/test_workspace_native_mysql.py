@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 import uuid
 
 import workspace_native_mysql as native
-from workspace_project_database import ensure_project_database
+from disco.projects.project_database import ensure_project_database
 
 
 class NativeMysqlTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class NativeMysqlTests(unittest.TestCase):
         (self.root / 'database/service.json').write_text(json.dumps(self.descriptor))
 
     def test_native_dispatch_never_calls_docker(self):
-        with patch('workspace_project_database._run') as docker, patch.object(native, 'ensure_native_database', return_value={'pid': 42}) as start:
+        with patch('disco.projects.project_database._run') as docker, patch.object(native, 'ensure_native_database', return_value={'pid': 42}) as start:
             self.assertEqual(ensure_project_database(self.root), {'pid': 42})
             start.assert_called_once_with(self.root, timeout=120)
             docker.assert_not_called()
@@ -260,7 +260,7 @@ connection.close()
         copy = self.root.parent / 'copied-project'
         active = []
         try:
-            with patch('workspace_project_database._run', side_effect=AssertionError('Docker must never run')):
+            with patch('disco.projects.project_database._run', side_effect=AssertionError('Docker must never run')):
                 first = ensure_project_database(self.root)
                 active.append(self.root)
                 settings = native.connection_parameters(self.root)

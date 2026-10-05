@@ -5,8 +5,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock
 
-from workspace_external_tags import ExternalTags
-from workspace_tag_exchange import canonical
+from disco.decisions.external_tags import ExternalTags
+from disco.decisions.tag_exchange import canonical
 
 
 class DecisionsPublicTests(unittest.TestCase):

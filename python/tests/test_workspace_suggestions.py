@@ -9,7 +9,7 @@ from unittest.mock import patch
 import uuid
 
 import test_workspace_import_api as import_tests
-from workspace_suggestions import ProtocolSuggestions
+from disco.workbench.suggestions import ProtocolSuggestions
 
 
 class ImportSuggestionTests(unittest.TestCase):

@@ -8,9 +8,9 @@ import uuid
 from unittest.mock import patch
 import zlib
 
-from workspace_metadata_objects import canonical
-from workspace_projection_cache import ProjectionCache, VERSION
-from workspace_recipes import checksum
+from disco.metadata.metadata_objects import canonical
+from disco.metadata.projection_cache import ProjectionCache, VERSION
+from disco.workbench.recipes import checksum
 
 
 def fixture(count=60):

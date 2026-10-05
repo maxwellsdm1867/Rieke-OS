@@ -11,10 +11,10 @@ from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
-import workspace_disk_index as disk
-import workspace_predicates as predicates
-import workspace_tree as tree
-from test_workspace_disk_index import fixture
+import disco.metadata.disk_index as disk
+import disco.navigation.predicates as predicates
+import disco.navigation.tree as tree
+from disco.metadata.tests.test_workspace_disk_index import fixture
 
 
 def serialized(value):

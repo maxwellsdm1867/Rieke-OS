@@ -25,9 +25,15 @@ def main():
     verified=json.loads(Path('/tmp/typed-qualification-corpus-verified.json').read_bytes())
     base=Path('/private/tmp/disco-real-million-20261001/base.sqlite');real=Path('/private/tmp/disco-real-data-evals-20261001/engines/real.sqlite')
     target=args.root/'candidate.sqlite';before={str(p):signature(p) for p in (base,real,target)}
-    sys.path[:0]=[str(args.baseline_root/'python'),str(args.implementation_root/'python')]
+    sys.path.insert(0,str(args.baseline_root/'python'))
     import workspace_disk_index as native_module
-    from workspace_typed_index import TypedMetadataIndex
+    if Path(native_module.__file__).resolve()!=(args.baseline_root/'python/workspace_disk_index.py').resolve():
+        raise AssertionError('Native comparator did not load from the baseline root')
+    sys.path.insert(0,str(args.implementation_root/'python'))
+    import disco.metadata.typed_index as candidate_module
+    if Path(candidate_module.__file__).resolve()!=(args.implementation_root/'python/disco/metadata/typed_index.py').resolve():
+        raise AssertionError('Typed candidate did not load from the implementation root')
+    TypedMetadataIndex=candidate_module.TypedMetadataIndex
     reader=TypedMetadataIndex(target,expected_generation=verified['lineage_receipt']['generation'],expected_project_uuid=verified['lineage_receipt']['project_uuid'])
     index=native_module.DiskMetadataIndex();index.path=base;index.generation=verified['lineage_receipt']['generation'];index.project_uuid=verified['lineage_receipt']['project_uuid']
     index._lease=None;index._closed=False;index._signature=native_module._signature(base)

@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from workspace_projects import create_project, list_managed_projects
 from workspace_startup_registry import remember_project, read_registry
 from workspace_launcher import create_launcher
-from workspace_project_database import ensure_project_database
+from disco.projects.project_database import ensure_project_database
 
 
 class ProjectStartupTests(unittest.TestCase):
@@ -25,7 +25,7 @@ class ProjectStartupTests(unittest.TestCase):
     def test_zero_projects_welcome_requires_no_database_or_h5(self):
         app=create_launcher(self.root, self.root/'unused-retinanalysis')
         client=app.test_client()
-        with patch('workspace_project_database._run') as docker:
+        with patch('disco.projects.project_database._run') as docker:
             result=client.get('/api/projects').get_json()
             self.assertEqual(result['projects'],[])
             self.assertTrue(result['launcher'])
@@ -73,7 +73,7 @@ class ProjectStartupTests(unittest.TestCase):
 
     def test_precreated_empty_folder_accepted_and_creation_has_no_docker_side_effect(self):
         folder=self.root/'chosen';folder.mkdir(parents=True)
-        with patch('workspace_project_database._run') as docker:
+        with patch('disco.projects.project_database._run') as docker:
             project=create_project(self.root,'Chosen',directory=str(folder))
             self.assertEqual(project['path'],str(folder.resolve()))
             docker.assert_not_called()
@@ -179,7 +179,7 @@ class ProjectStartupTests(unittest.TestCase):
         project=self._legacy_project('Owned')
         info=self._info(project)
         result=lambda code=0,stdout='':SimpleNamespace(returncode=code,stdout=stdout,stderr='')
-        with patch('workspace_project_database._run',side_effect=[result(),result(1),result(),result(stdout=json.dumps([info])),result(stdout='1')]) as run:
+        with patch('disco.projects.project_database._run',side_effect=[result(),result(1),result(),result(stdout=json.dumps([info])),result(stdout='1')]) as run:
             ensure_project_database(project['path'])
             create=run.call_args_list[2]
             self.assertIn('127.0.0.1::3306',create.args[0])
@@ -191,11 +191,11 @@ class ProjectStartupTests(unittest.TestCase):
         project=self._legacy_project('Owned')
         info=self._info(project)
         result=lambda stdout='':SimpleNamespace(returncode=0,stdout=stdout,stderr='')
-        with patch('workspace_project_database._run',side_effect=[result(),result(json.dumps([info])),result('1')]) as run:
+        with patch('disco.projects.project_database._run',side_effect=[result(),result(json.dumps([info])),result('1')]) as run:
             ensure_project_database(project['path'])
             self.assertFalse(any(call.args[0][0]=='run' for call in run.call_args_list))
         info['Config']['Labels']['rieke-os.project_uuid']='foreign'
-        with patch('workspace_project_database._run',side_effect=[result(),result(json.dumps([info]))]) as run:
+        with patch('disco.projects.project_database._run',side_effect=[result(),result(json.dumps([info]))]) as run:
             with self.assertRaisesRegex(ValueError,'ownership'):ensure_project_database(project['path'])
             self.assertFalse(any(call.args[0][0]=='start' for call in run.call_args_list))
 
@@ -205,14 +205,14 @@ class ProjectStartupTests(unittest.TestCase):
         catalog=json.loads(path.read_text());catalog.pop('managed_database');path.write_text(json.dumps(catalog))
         info=self._info(project);info['Config']['Labels']['rieke-os.project_uuid']='another-project'
         result=lambda stdout='':SimpleNamespace(returncode=0,stdout=stdout,stderr='')
-        with patch('workspace_project_database._run',side_effect=[result(),result(json.dumps([info]))]):
+        with patch('disco.projects.project_database._run',side_effect=[result(),result(json.dumps([info]))]):
             with self.assertRaisesRegex(ValueError,'ownership'):ensure_project_database(project['path'])
 
     def test_orphaned_database_storage_never_reinitialized(self):
         project=self._legacy_project('Orphan')
         data=Path(project['path'])/'database/mysql';data.mkdir();(data/'existing-data').write_text('preserve')
         result=lambda code=0:SimpleNamespace(returncode=code,stdout='',stderr='')
-        with patch('workspace_project_database._run',side_effect=[result(),result(1)]):
+        with patch('disco.projects.project_database._run',side_effect=[result(),result(1)]):
             with self.assertRaisesRegex(ValueError,'Recover'):ensure_project_database(project['path'])
         self.assertEqual((data/'existing-data').read_text(),'preserve')
 

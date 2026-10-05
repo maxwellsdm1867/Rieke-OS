@@ -8,8 +8,8 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-import workspace_curation as curation
-from workspace_recipes import capture_query, prepare_export, seal
+import disco.decisions.curation as curation
+from disco.workbench.recipes import capture_query, prepare_export, seal
 
 
 class Table:

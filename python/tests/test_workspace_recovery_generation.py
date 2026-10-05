@@ -9,9 +9,9 @@ import uuid
 
 import test_workspace_state_generation as fixtures
 NativeConnection=fixtures.NativeConnection
-from workspace_recovery_generation import RecoveryTracker, CLOCK, FEED, recovery_trigger_manifest
+from disco.backup.recovery_generation import RecoveryTracker, CLOCK, FEED, recovery_trigger_manifest
 import workspace_native_mysql as native
-import workspace_recovery_generation as generation
+import disco.backup.recovery_generation as generation
 
 
 class RecoveryKeyCapacityTests(unittest.TestCase):
@@ -74,7 +74,7 @@ class RecoveryGenerationTests(unittest.TestCase):
 
     def test_cached_source_schema_is_reused_and_ddl_invalidates_it(self):
         from unittest.mock import patch
-        import workspace_recovery_generation as generation
+        import disco.backup.recovery_generation as generation
         initial,_=self.capture()
         with patch.object(generation,'table_specs',wraps=generation.table_specs) as specs:
             repeated,_=self.capture(initial.watermark)
@@ -249,7 +249,7 @@ class RecoveryGenerationTests(unittest.TestCase):
         self.tracker.bootstrap()
 
     def test_curation_vocabulary_exact_union_case_unicode_and_incremental_reads(self):
-        from workspace_curation_vocabulary import CurationVocabulary
+        from disco.decisions.curation_vocabulary import CurationVocabulary
         from unittest.mock import patch
         other,second=str(uuid.uuid4()),str(uuid.uuid4())
         records=[(self.protocol,self.epoch,['ON','Straße','dup','dup']),

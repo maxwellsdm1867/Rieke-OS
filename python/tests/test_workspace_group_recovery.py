@@ -8,10 +8,10 @@ import tempfile
 import unittest
 from unittest.mock import patch, Mock
 
-import workspace_recovery_store as recovery
+import disco.backup.recovery_store as recovery
 from workspace_state_snapshot import (LEGACY_TABLES, WORKBENCH_TABLES, TABLES,
     migrate_restore_tables, restore_table_order)
-from workspace_recovery_generation import TABLE_NAMES, TABLE_IDS
+from disco.backup.recovery_generation import TABLE_NAMES, TABLE_IDS
 from test_workspace_recovery_store import scientific_fixture, canonical, identity
 
 
@@ -88,7 +88,7 @@ class GroupRecoveryHookTests(unittest.TestCase):
     def setUp(self):
         from test_workspace_api import WorkspaceAPITests
         from workspace_api import create_app
-        module=types.ModuleType('workspace_annotation_groups')
+        module=types.ModuleType('disco.decisions.annotation_groups')
         module.group_receipt_table=Mock()
         self.registered=[];self.operations={};self.writes=0;self.stages=[]
         def register(app,service,shared,db_lock,registration_locks,*,revision_guard=None,receipt_table=None):
@@ -108,11 +108,11 @@ class GroupRecoveryHookTests(unittest.TestCase):
             app.add_url_rule('/api/annotations/group/<original>/undo','group_annotation_undo',
                 lambda original:apply(),methods=['POST'])
         module.register_group_annotation_routes=register
-        previous=sys.modules.get('workspace_annotation_groups')
-        sys.modules['workspace_annotation_groups']=module
+        previous=sys.modules.get('disco.decisions.annotation_groups')
+        sys.modules['disco.decisions.annotation_groups']=module
         def restore_module():
-            if previous is None:sys.modules.pop('workspace_annotation_groups',None)
-            else:sys.modules['workspace_annotation_groups']=previous
+            if previous is None:sys.modules.pop('disco.decisions.annotation_groups',None)
+            else:sys.modules['disco.decisions.annotation_groups']=previous
         self.addCleanup(restore_module)
         self.fixture=WorkspaceAPITests();self.fixture.setUp();self.addCleanup(self.fixture.doCleanups)
         self.fixture.service.dj.Schema=object()
@@ -124,7 +124,7 @@ class GroupRecoveryHookTests(unittest.TestCase):
             self.stages.append('generation')
             return Mock()
         with patch.object(module,'group_receipt_table',side_effect=declare), \
-                patch('workspace_annotations.SharedAnnotations',return_value=None), \
+                patch('disco.decisions.annotations.SharedAnnotations',return_value=None), \
                 patch('workspace_state_generation.bootstrap',side_effect=bootstrap), \
                 patch('workspace_state_snapshot.save',self.save):
             self.app=create_app(self.fixture.temp.name,self.fixture.temp.name,service=self.fixture.service,

@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 import unittest
-from workspace_projection_cache import ProjectionCache
+from disco.metadata.projection_cache import ProjectionCache
 
 
 class ProjectionCacheTests(unittest.TestCase):

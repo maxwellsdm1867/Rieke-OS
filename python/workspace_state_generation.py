@@ -385,7 +385,7 @@ class StateGenerationAuthority:
         Trigger writers acquire these same rows, closing the ordinary external
         DML race between preflight and the saved decisions.
         """
-        from workspace_curation import RevisionConflict
+        from disco.decisions.curation import RevisionConflict
         if not self.ready or not self._in_transaction():raise RevisionConflict({'generation':'unavailable'})
         try:
             # Short transaction-only metadata locks prevent trigger DDL during
@@ -442,11 +442,11 @@ def verify_export_triggers(connection, schemas):
             'WHERE TRIGGER_SCHEMA=%s', (schema,), as_dict=True).fetchall())
     rows.sort(key=lambda row: (row['TRIGGER_SCHEMA'], row['TRIGGER_NAME']))
     recovery_prefix = 'rieke_recovery_v1_'
-    from workspace_native_tag_lookup import PREFIX as lookup_prefix, TRIGGER_MANIFEST
+    from disco.decisions.native_tag_lookup import PREFIX as lookup_prefix, TRIGGER_MANIFEST
     expected = {**MANIFEST, **TRIGGER_MANIFEST}
     if any(row['TRIGGER_SCHEMA'] == SCHEMA and row['TRIGGER_NAME'].startswith(recovery_prefix) for row in rows):
         try:
-            from workspace_recovery_generation import recovery_trigger_manifest
+            from disco.backup.recovery_generation import recovery_trigger_manifest
             expected.update(recovery_trigger_manifest(connection))
         except Exception:
             # A schema/observer mismatch cannot authorize stripping a trigger.

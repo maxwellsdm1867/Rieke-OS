@@ -4,9 +4,9 @@ import unittest
 
 import test_workspace_tree_pages as pages_fixture
 import test_workspace_annotations as annotations_fixture
-from workspace_recipes import checksum
-from workspace_tree import joint_id
-from workspace_tree_pages import TreePages, TreePath, validate_tree_path
+from disco.workbench.recipes import checksum
+from disco.navigation.tree import joint_id
+from disco.navigation.tree_pages import TreePages, TreePath, validate_tree_path
 
 
 class TreePathTests(unittest.TestCase):

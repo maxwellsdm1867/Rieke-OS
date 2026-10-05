@@ -18,7 +18,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-import workspace_recovery_store as recovery
+import disco.backup.recovery_store as recovery
 from workspace_state_snapshot import TABLES
 
 

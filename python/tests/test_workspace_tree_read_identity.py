@@ -6,9 +6,9 @@ from threading import RLock
 from types import SimpleNamespace
 from pathlib import Path
 from unittest.mock import patch
-from workspace_disk_index import DiskMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
 from flask import Flask
-from workspace_tree_pages import register_tree_page_routes
+from disco.navigation.tree_pages import register_tree_page_routes
 from test_workspace_api import FixtureService
 from test_workspace_curation import Connection
 
@@ -72,7 +72,7 @@ class TreeReadIdentityTests(unittest.TestCase):
         self.assertNotIn('read_identity', self.read())
 
     def test_mutation_during_construction_is_not_stamped_with_new_generation(self):
-        pager = self.app.extensions['workspace_tree_pages']
+        pager = self.app.extensions['disco.navigation.tree_pages']
         original = pager.page
         def racing(body):
             result = original(body)

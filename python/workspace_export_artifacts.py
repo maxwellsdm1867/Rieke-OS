@@ -19,7 +19,7 @@ def materialize_export_format(package, output, *, format, matlab_writer, write_j
         from workspace_sqlite import build_sqlite_export
         artifact = output / 'recordings.sqlite'
         build_sqlite_export(package, artifact)
-        from workspace_external_tags import prepare_return_folder
+        from disco.decisions.external_tags import prepare_return_folder
         prepare_return_folder(output, package)
         return artifact
     if format == 'matlab-mat':

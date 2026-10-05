@@ -5,7 +5,7 @@ import unittest
 import uuid
 from unittest.mock import patch
 
-import workspace_tree as tree
+import disco.navigation.tree as tree
 import test_workspace_tree_pages as page_tests
 
 
@@ -98,7 +98,7 @@ class CanonicalPageTests(unittest.TestCase):
             with self.subTest(split=split):
                 body = {'splits':split,'limit':2,'protocol_uuid':self.service.protocol_id}
                 self.service._tree_page_scope_cache = None
-                with patch('workspace_tree_pages.field_value_order', side_effect=legacy):
+                with patch('disco.navigation.tree_pages.field_value_order', side_effect=legacy):
                     expected = self.responses(body)
                 self.service._tree_page_scope_cache = None
                 self.assertEqual(self.responses(body),expected)

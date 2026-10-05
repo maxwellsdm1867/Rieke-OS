@@ -5,8 +5,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO/'python'))
-from workspace_disk_index import DiskMetadataIndex
-import workspace_predicates as predicates
+from disco.metadata.disk_index import DiskMetadataIndex
+import disco.navigation.predicates as predicates
 
 
 class NativeAdapter:

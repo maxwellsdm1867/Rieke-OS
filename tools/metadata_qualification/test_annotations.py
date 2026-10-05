@@ -12,8 +12,8 @@ import uuid
 REPO=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(REPO/'python'),str(REPO/'python'/'tests')]
 import test_workspace_annotations as fixtures
-from workspace_tag_exchange import export_document, preview_import
-from workspace_curation import RevisionConflict
+from disco.decisions.tag_exchange import export_document, preview_import
+from disco.decisions.curation import RevisionConflict
 
 
 class IsolatedAnnotationQualification(unittest.TestCase):

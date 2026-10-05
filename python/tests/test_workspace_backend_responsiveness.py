@@ -7,10 +7,10 @@ import unittest
 from unittest.mock import Mock, patch
 
 from workspace_api import create_app
-from workspace_disk_index import DiskMetadataIndex
+from disco.metadata.disk_index import DiskMetadataIndex
 from workspace_service import _SourceDetails
-from workspace_tree import joint_id
-from workspace_tree_pages import TreePages, StaleTreePage, _retained_scope_bytes, TREE_SCOPE_CACHE_OVERHEAD
+from disco.navigation.tree import joint_id
+from disco.navigation.tree_pages import TreePages, StaleTreePage, _retained_scope_bytes, TREE_SCOPE_CACHE_OVERHEAD
 import test_workspace_api as api_fixture
 
 
@@ -68,7 +68,7 @@ class BackendResponsivenessTests(unittest.TestCase):
         root = pager.page(body)
         with patch.object(self.service, '_tree_rows', side_effect=AssertionError('No membership rescan')), \
              patch.object(self.index, 'values', side_effect=AssertionError('No projection reread')), \
-             patch('workspace_tree_pages.selection_revision', side_effect=AssertionError('No membership rehash')):
+             patch('disco.navigation.tree_pages.selection_revision', side_effect=AssertionError('No membership rehash')):
             self.assertEqual(TreePages(self.service).page(body), root)
         child = {**body, 'path':root['branches'][0]['path'], 'revision':root['revision']}
         expected = pager.page(child)
@@ -150,7 +150,7 @@ class BackendResponsivenessTests(unittest.TestCase):
         # Current catalog discovery excludes very large vectors. Supply a large
         # projection through the index interface to keep cache safety independent
         # of that separate discovery policy and future index formats.
-        with patch('workspace_tree_pages.TREE_SCOPE_BYTE_BUDGET',32*1024), \
+        with patch('disco.navigation.tree_pages.TREE_SCOPE_BYTE_BUDGET',32*1024), \
              patch.object(self.index,'values',return_value=projected), \
              patch.object(pager,'_build_scope',wraps=pager._build_scope) as builds:
             first, second = pager.page(body), pager.page(body)
@@ -167,7 +167,7 @@ class BackendResponsivenessTests(unittest.TestCase):
                  for body in (first,second)]
         # Each scope fits, but the pair cannot remain resident together.
         budget = sys.getsizeof(self.service._fingerprints) + TREE_SCOPE_CACHE_OVERHEAD + max(sizes) + min(sizes)//2
-        with patch('workspace_tree_pages.TREE_SCOPE_BYTE_BUDGET',budget), \
+        with patch('disco.navigation.tree_pages.TREE_SCOPE_BYTE_BUDGET',budget), \
              patch.object(pager,'_build_scope',wraps=pager._build_scope) as builds:
             pager.page(first)
             pager.page(second)
@@ -204,7 +204,7 @@ class RecoveryHookTests(unittest.TestCase):
         self.addCleanup(self.fixture.doCleanups)
         self.fixture.service.dj.Schema = object()
         self.save = Mock()
-        with patch('workspace_annotations.SharedAnnotations', return_value=None), \
+        with patch('disco.decisions.annotations.SharedAnnotations', return_value=None), \
              patch('workspace_state_snapshot.save', self.save):
             self.app = create_app(self.fixture.temp.name, self.fixture.temp.name,
                 service=self.fixture.service, store=self.fixture.store,
@@ -218,7 +218,7 @@ class RecoveryHookTests(unittest.TestCase):
 
     def test_native_close_refuses_shutdown_when_mandatory_backup_fails(self):
         self.fixture.service.config['connection']={'credential_provider':{'kind':'native-project'}}
-        with patch('workspace_annotations.SharedAnnotations',return_value=None), \
+        with patch('disco.decisions.annotations.SharedAnnotations',return_value=None), \
              patch('workspace_state_snapshot.save',self.save):
             app=create_app(self.fixture.temp.name,self.fixture.temp.name,
                 service=self.fixture.service,store=self.fixture.store,
