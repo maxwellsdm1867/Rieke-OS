@@ -239,3 +239,20 @@ meaningful tests, packaging/discovery closure and independent source review.
 Documentation, contracts, benchmarks and historical evidence already have purpose
 roots and retain their identities. Final exact-package UI/native acceptance remains
 mandatory and unrun. No individual slice closes the whole goal.
+
+### Desktop-close folder and retained tooling guidance
+
+Reviewed implementation `18b3de9f9d0219a97b0d846274dddcbc8fc55b97` is integrated
+at `1b456ee44a627a683844708dc4a8c7528c26911c`. Two public CJS owners and their
+original tests moved byte-for-byte to `desktop/close/`. All caller/interceptor
+paths, exact packaging entries, narrow discovery and release planning moved with
+them. Exact-candidate evidence records 62 mapped desktop and 33 Python
+guard/planner passes, zero skips, plus detected window-correlation and false-clean
+Quit faults. Source packaging checks cover exact default/preview selection and
+staged direct imports; actual ASAR/native qualification remains pending.
+
+[Retained tooling guidance](../../tools/AGENTS.md) now links all 48 existing runtime
+tool paths with their interfaces, dependencies, command/test entrypoints and
+qualification limits. Its source-only review checked 91 links and 12 named test
+methods. No tooling runtime or benchmark qualification is implied. The path
+companion preserves baseline assignments and records accepted current-path changes.

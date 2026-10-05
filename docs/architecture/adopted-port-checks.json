@@ -69,6 +69,10 @@
     {
       "from": "desktop/close/AGENTS.md",
       "to": "desktop/close/README.md"
+    },
+    {
+      "from": "AGENTS.md",
+      "to": "tools/AGENTS.md"
     }
   ],
   "shared_paths": [

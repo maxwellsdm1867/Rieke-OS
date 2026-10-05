@@ -8788,7 +8788,11 @@
           "phase": "first_candidate_pending_parent_go",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "close",
-          "reason": "First candidate only; keep strict replacement in main distinct from bounded explicit Quit."
+          "reason": "First candidate only; keep strict replacement in main distinct from bounded explicit Quit.",
+          "current_path": "desktop/close/draft-barrier.cjs",
+          "organization_acceptance": "reviewed integrated source; final assembled-app qualification pending",
+          "accepted_implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97",
+          "current_disposition": "organized"
         },
         {
           "path": "desktop/draft-store.cjs",
@@ -9000,7 +9004,11 @@
           "phase": "first_candidate_pending_parent_go",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "close",
-          "reason": "First candidate only; keep strict replacement in main distinct from bounded explicit Quit."
+          "reason": "First candidate only; keep strict replacement in main distinct from bounded explicit Quit.",
+          "current_path": "desktop/close/quit-coordinator.cjs",
+          "organization_acceptance": "reviewed integrated source; final assembled-app qualification pending",
+          "accepted_implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97",
+          "current_disposition": "organized"
         },
         {
           "path": "desktop/recovery-install.cjs",
@@ -9572,7 +9580,10 @@
           "proposed_path": "desktop/close/tests/draft-barrier.test.cjs",
           "policy": "first_close_slice_move",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "close"
+          "group": "close",
+          "current_path": "desktop/close/tests/draft-barrier.test.cjs",
+          "organization_acceptance": "reviewed integrated source; final assembled-app qualification pending",
+          "accepted_implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97"
         },
         {
           "path": "desktop/tests/draft-store.test.cjs",
@@ -9737,7 +9748,10 @@
           "proposed_path": "desktop/close/tests/quit-coordinator.test.cjs",
           "policy": "first_close_slice_move",
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
-          "group": "close"
+          "group": "close",
+          "current_path": "desktop/close/tests/quit-coordinator.test.cjs",
+          "organization_acceptance": "reviewed integrated source; final assembled-app qualification pending",
+          "accepted_implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97"
         },
         {
           "path": "desktop/tests/recovery-ui.test.cjs",
@@ -10145,5 +10159,35 @@
     "The existing contracts, benchmark records, documentation and historical receipts retain their purpose roots and evidence identity.",
     "A keep-in-place decision requires navigable public contract/tests and independent review before whole completion.",
     "Paused acquisition/Ovation/H5-port and native-export experiments stay deferred; final assembled acceptance is separate."
-  ]
+  ],
+  "accepted_increments": [
+    {
+      "id": "desktop-close",
+      "implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97",
+      "integration_commit": "1b456ee44a627a683844708dc4a8c7528c26911c",
+      "moves": {
+        "desktop/draft-barrier.cjs": "desktop/close/draft-barrier.cjs",
+        "desktop/quit-coordinator.cjs": "desktop/close/quit-coordinator.cjs",
+        "desktop/tests/draft-barrier.test.cjs": "desktop/close/tests/draft-barrier.test.cjs",
+        "desktop/tests/quit-coordinator.test.cjs": "desktop/close/tests/quit-coordinator.test.cjs"
+      },
+      "new_test_paths": [
+        "desktop/close/tests/public-examples.test.cjs",
+        "desktop/tests/close-packaging.test.cjs"
+      ],
+      "new_guidance_paths": [
+        "desktop/AGENTS.md",
+        "desktop/close/AGENTS.md",
+        "desktop/close/README.md"
+      ]
+    },
+    {
+      "id": "retained-tool-guidance",
+      "status": "independently reviewed documentation integrated; no broader tool runtime requalification",
+      "new_guidance_paths": [
+        "tools/AGENTS.md"
+      ]
+    }
+  ],
+  "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."
 }

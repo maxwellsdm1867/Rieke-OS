@@ -1,5 +1,7 @@
 # Architecture entry point
 
+For tooling work, start at [retained tooling navigation](tools/AGENTS.md).
+
 For desktop work, start at [desktop navigation](desktop/AGENTS.md).
 
 For frontend work, start at [module navigation](workspace-app/src/AGENTS.md).

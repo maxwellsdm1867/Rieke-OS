@@ -5426,7 +5426,9 @@
     },
     {
       "id": "desktop.close-coordination",
-      "implementation_commits": [],
+      "implementation_commits": [
+        "18b3de9f9d0219a97b0d846274dddcbc8fc55b97"
+      ],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
       "purpose": "Correlate draft acknowledgements and distinguish strict replacement from bounded explicit app exit.",
       "owner": "DraftBarrier owns window-correlated requests; QuitCoordinator owns finite exit; main prepareQuit owns strict replacement.",
@@ -5559,7 +5561,38 @@
         }
       ],
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
-      "not_newly_run_fault_ideas": []
+      "not_newly_run_fault_ideas": [],
+      "source_paths": [
+        "desktop/close/draft-barrier.cjs",
+        "desktop/close/quit-coordinator.cjs",
+        "desktop/main.cjs"
+      ],
+      "organization": {
+        "status": "integrated; final assembled-app qualification pending",
+        "implementation_commit": "18b3de9f9d0219a97b0d846274dddcbc8fc55b97",
+        "integration_commit": "1b456ee44a627a683844708dc4a8c7528c26911c",
+        "public_entries": [
+          "desktop/close/draft-barrier.cjs",
+          "desktop/close/quit-coordinator.cjs"
+        ],
+        "guidance": "desktop/close/AGENTS.md",
+        "independent_review": "GO exact clean implementation commit",
+        "verification": {
+          "mapped_desktop_passed": 62,
+          "python_guard_and_planner_passed": 33,
+          "skipped": 0,
+          "guard": "all languages passed",
+          "source_profile": "tracked source-exclusion validation passed",
+          "behavior_faults": [
+            "foreign-window acknowledgment",
+            "falsely clean explicit Quit outcome"
+          ],
+          "packaging_faults": "exact default/preview file selection and staged direct requires only",
+          "evidence_directory": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/desktop-close-folder"
+        },
+        "preservation": "Both owners and both original interface tests byte-identical after relocation. Historical source_pointers/test-detector fields retain original review context.",
+        "qualification_limit": "No complete transitive desktop closure, actual ASAR, native process exit or performance proof."
+      }
     },
     {
       "id": "desktop.integrity-recovery",
@@ -7100,7 +7133,7 @@
   "organization_rollout": {
     "baseline": "500983f69829a52d49a9f5c18c2064538911efe4",
     "goal": "Organize the complete eligible codebase into coherent responsibility folders and navigable public contracts, preserving exact behavior. This worklist groups work; it is not a claim these groups are individual modules.",
-    "status": "active; tree-selection and group-save bounded increments locally verified; remaining module organization and final E2E pending",
+    "status": "active; presentation/tree/group/desktop-close folders integrated; remaining finite coverage and assembled E2E pending",
     "work_items": [
       {
         "id": "presentation",
@@ -7159,15 +7192,16 @@
         "contract_records": [
           "desktop.close-coordination"
         ],
-        "status": "design-reviewed",
+        "status": "integrated",
         "stages": {
           "goal_contract": "complete",
-          "refactor_files_and_local_contract": "pending",
-          "public_seam_and_fault_tests": "pending",
-          "independent_source_review": "pending",
-          "local_integration": "pending"
+          "refactor_files_and_local_contract": "complete",
+          "public_seam_and_fault_tests": "complete",
+          "independent_source_review": "complete",
+          "local_integration": "complete"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "integrated_commit": "1b456ee44a627a683844708dc4a8c7528c26911c"
       },
       {
         "id": "backend-completion",
@@ -7499,7 +7533,7 @@
     "runtime_path_coverage": {
       "path": "docs/architecture/core-module-paths.json",
       "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
-      "status": "finite complete assignment of stated roots; implementation acceptance pending",
+      "status": "finite baseline assignment plus reviewed current-path updates; remaining implementation acceptance pending",
       "runtime_or_config_paths": 465,
       "frontend": 279,
       "backend_and_tools": 144,
