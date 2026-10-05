@@ -10,7 +10,7 @@ async function fixture(t) {
   const runtime = path.join(bundle, 'Contents/Resources/runtime'), commit = 'a'.repeat(40);
   const renderer = path.join(source, 'desktop/build/renderer');
   const modules = ['workspace_typed_index.py','workspace_typed_query.py','workspace_typed_lifecycle.py','workspace_explore_queries.py'];
-  const profile = {python_modules:modules}, manifest = {source_commit:commit, source_dirty:false, application_version:'0.1.6',resources:{}};
+  const profile = {format:'rieke-application-profile',version:1,python_modules:modules}, manifest = {source_commit:commit, source_dirty:false, application_version:'0.1.6',resources:{}};
   async function write(file, value) {await fs.mkdir(path.dirname(file), {recursive:true}); await fs.writeFile(file, typeof value === 'string' ? value : JSON.stringify(value));}
   await write(path.join(source, 'rieke-release.json'), {version:'0.1.6'});
   await write(path.join(source, 'desktop/application-profile.json'), profile);
@@ -46,7 +46,7 @@ async function fixture(t) {
   const run = async (_command, args) => ({stdout:args.includes('rev-parse') ? commit :
     args.includes('ls-files') ? Object.keys(frontendSources).join('\0') + '\0' : ''});
   async function saveManifest() {await write(path.join(runtime, 'runtime-manifest.json'), manifest);}
-  return {bundle, source, project, runtime, renderer, commit, run, write, manifest, saveManifest};
+  return {bundle, source, project, runtime, renderer, commit, run, write, manifest, saveManifest, profile};
 }
 test('packaged source assertion records all module hashes and rejects stale modules or dirty provenance', async t => {
   const f = await fixture(t), evidence = await verifyPackagedSource(f);
@@ -129,4 +129,60 @@ test('typed assertion requires publication plus a live API token matching a seal
   await assert.rejects(assertTypedPublication({...f, page, run:async() => ({stdout:JSON.stringify({token:'wrong',project_uuid:'copied-project'})})}), /did not exercise/);
   response.registry.generation.typed = null;
   await assert.rejects(assertTypedPublication({...f, page, run}));
+});
+
+async function nestedProfile(f) {
+  f.profile.version = 2;
+  for (const name of ['disco/__init__.py', 'disco/recovery/__init__.py', 'disco/recovery/policy.py']) {
+    f.profile.python_modules.push(name);
+    const bytes = '# fixture ' + name;
+    await f.write(path.join(f.source, 'python', name), bytes);
+    await f.write(path.join(f.runtime, 'application/python', name), bytes);
+    f.manifest.resources['application/python/' + name] = {sha256:createHash('sha256').update(bytes).digest('hex')};
+  }
+  await saveProfile(f); await f.saveManifest();
+}
+async function saveProfile(f) {
+  await f.write(path.join(f.source, 'desktop/application-profile.json'), f.profile);
+  await f.write(path.join(f.runtime, 'application/application-profile.json'), f.profile);
+}
+test('v2 nested Python source proof rejects stale bytes, missing parents and extra modules', async t => {
+  const f = await fixture(t); await nestedProfile(f);
+  assert.equal(Object.keys((await verifyPackagedSource(f)).python_module_hashes).length, 7);
+  const name = 'disco/recovery/policy.py', target = path.join(f.runtime, 'application/python', name);
+  await f.write(target, '# stale');
+  await assert.rejects(verifyPackagedSource(f), /Stale packaged module/);
+  await f.write(target, '# fixture ' + name);
+  const extra = path.join(f.runtime, 'application/python/disco/recovery/unreviewed.py');
+  await f.write(extra, '# extra');
+  await assert.rejects(verifyPackagedSource(f), /Python inventory differs/);
+  await fs.rm(extra);
+  f.profile.python_modules = f.profile.python_modules.filter(n => n !== 'disco/__init__.py'); await saveProfile(f);
+  await assert.rejects(verifyPackagedSource(f), /Missing application package initializer/);
+});
+test('profile reader rejects unsafe v2 names, collisions, excluded modules and unknown versions', async t => {
+  const faults = [
+    ['../escape.py', /Unsafe/], ['/absolute.py', /Unsafe/], ['C:drive.py', /Unsafe/],
+    ['a\\b.py', /Unsafe/], ['a//b.py', /Unsafe/], ['bad-name.py', /identifier/],
+    ['test_runtime.py', /Test source/], ['WORKSPACE_TYPED_INDEX.py', /Case-colliding/],
+  ];
+  for (const [name, error] of faults) {
+    const f = await fixture(t); f.profile.version = 2; f.profile.python_modules.push(name); await saveProfile(f);
+    await assert.rejects(verifyPackagedSource(f), error);
+  }
+  const f = await fixture(t); await nestedProfile(f);
+  f.profile.python_modules.push('disco.py'); await saveProfile(f);
+  await assert.rejects(verifyPackagedSource(f), /Ambiguous/);
+  f.profile.python_modules.pop(); f.profile.source_exclusions = [{pattern:'python/disco/*'}]; await saveProfile(f);
+  await assert.rejects(verifyPackagedSource(f), /Excluded/);
+  f.profile.version = 3; await saveProfile(f);
+  await assert.rejects(verifyPackagedSource(f), /Unsupported/);
+});
+test('nested Python source and packaged symlink parents cannot satisfy matching hashes', async t => {
+  for (const side of ['source', 'runtime']) {
+    const f = await fixture(t); await nestedProfile(f);
+    const parent = path.join(side === 'source' ? path.join(f.source, 'python') : path.join(f.runtime, 'application/python'), 'disco');
+    const moved = parent + '-outside'; await fs.rename(parent, moved); await fs.symlink(moved, parent);
+    await assert.rejects(verifyPackagedSource(f), /Redirected Python/);
+  }
 });

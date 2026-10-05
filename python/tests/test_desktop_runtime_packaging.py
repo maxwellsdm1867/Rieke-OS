@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
 from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, refresh_native_license_inventory, copy_application
 from desktop_runtime_manifest import inventory
-from desktop_application_profile import audit_application, load_profile, validate_source_closure, validate_release_source
+from desktop_application_profile import audit_application, load_profile, validate_source_closure, validate_release_source, copy_python_application, validate_profile
 
 
 class DesktopPackagingTests(unittest.TestCase):
@@ -140,6 +140,7 @@ class DesktopPackagingTests(unittest.TestCase):
             (root / 'python').mkdir(parents=True)
             profile = load_profile()
             for name in profile['python_modules']:
+                (root / 'python' / name).parent.mkdir(parents=True, exist_ok=True)
                 (root / 'python' / name).write_text('# reviewed module\n')
             for name in ('export_mat.py', 'import_ugm.py', 'workspace_matlab_routes.py', 'unreviewed.py'):
                 (root / 'python' / name).write_text('# excluded or unknown\n')
@@ -181,7 +182,7 @@ class DesktopPackagingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / 'python').mkdir()
-            profile = {'python_modules': ['workspace_matlab.py'],
+            profile = {'format': 'rieke-application-profile', 'version': 1, 'python_modules': ['workspace_matlab.py'],
                        'source_exclusions': [{'pattern': 'python/export_mat.py'}]}
             source = root / 'python/workspace_matlab.py'
             source.write_text('from export_mat import export\n')
@@ -244,6 +245,179 @@ class DesktopPackagingTests(unittest.TestCase):
             (root / 'desktop/build/license-cache/mysql-LICENSE.txt').write_bytes(b'corrupted cached notice')
             with self.assertRaisesRegex(ValueError, 'checksum'):
                 refresh_native_license_inventory(output, root)
+
+
+class PythonPackageProfileTests(unittest.TestCase):
+    """Tool-only synthetic source/staging; no scientific/parser imports or services."""
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name) / 'source'
+        self.application = Path(self.temporary.name) / 'stage'
+        self.profile_path = self.root / 'desktop/application-profile.json'
+        self.profile = {'format': 'rieke-application-profile', 'version': 2,
+            'python_modules': ['disco/__init__.py', 'disco/recovery/__init__.py', 'disco/recovery/policy.py'],
+            'source_exclusions': [], 'capabilities': {'mat_data_export': 'fixture'}}
+        self.write('disco/__init__.py', '"""Fixture package."""\n')
+        self.write('disco/recovery/__init__.py', 'from .policy import acknowledge\n__all__ = ("acknowledge",)\n')
+        self.write('disco/recovery/policy.py', 'def acknowledge(value):\n    return {"saved": value}\n')
+        self.save()
+
+    def write(self, name, text):
+        path = self.root / 'python' / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+        return path
+
+    def save(self):
+        self.profile_path.parent.mkdir(parents=True, exist_ok=True)
+        self.profile_path.write_text(json.dumps(self.profile))
+
+    def test_nested_copy_exact_audit_and_isolated_public_import(self):
+        import subprocess
+        self.write('unlisted.py', 'raise AssertionError("must not stage")')
+        self.write('disco/recovery/tests/test_policy.py', 'raise AssertionError("must not stage")')
+        copy_python_application(self.root, self.application, self.profile_path)
+        self.assertEqual(audit_application(self.application, self.profile)['python_modules'], 3)
+        self.assertEqual(sorted(p.relative_to(self.application / 'python').as_posix()
+            for p in (self.application / 'python').rglob('*.py')), sorted(self.profile['python_modules']))
+        # Only disposable fixture code is imported; -I ignores source PYTHONPATH.
+        script = """import pathlib, sys
+sys.path.insert(0, sys.argv[1])
+import disco.recovery as public
+assert pathlib.Path(public.__file__).is_relative_to(pathlib.Path(sys.argv[1]))
+assert public.acknowledge(True) == {'saved': True}
+"""
+        run = subprocess.run([sys.executable, '-I', '-B', '-c', script, str(self.application / 'python')],
+                             cwd=self.temporary.name, capture_output=True, text=True, timeout=10)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        (self.application / 'python/extra.py').write_text('# extra')
+        with self.assertRaisesRegex(ValueError, 'allowlist'):
+            audit_application(self.application)
+
+    def test_v1_compatibility_and_v2_path_faults(self):
+        valid = {'format': 'rieke-application-profile', 'version': 1, 'python_modules': ['flat.py']}
+        self.assertEqual(validate_profile(valid), valid)
+        faults = [('../escape.py', 'Unsafe'), ('/absolute.py', 'Unsafe'), ('C:drive.py', 'Unsafe'),
+                  ('a\\b.py', 'Unsafe'), ('a//b.py', 'Unsafe'), ('a/./b.py', 'Unsafe'),
+                  ('a/../b.py', 'Unsafe'), ('bad-name.py', 'identifier'), ('bad\x00.py', 'Unsafe'),
+                  ('__init__.py', 'source root'), ('test_policy.py', 'Test source'), ('disco/tests/__init__.py', 'Test source'),
+                  ('DISCO/__init__.py', 'Case-colliding'), ('disco.py', 'Ambiguous')]
+        for name, message in faults:
+            with self.subTest(name=name), self.assertRaisesRegex(ValueError, message):
+                validate_profile({**self.profile, 'python_modules': self.profile['python_modules'] + [name]})
+        for version in (True, 0, 3, '2'):
+            with self.subTest(version=version), self.assertRaisesRegex(ValueError, 'Unrecognized'):
+                validate_profile({**self.profile, 'version': version})
+        with self.assertRaisesRegex(ValueError, 'Unsafe'):
+            validate_profile({**self.profile, 'version': 1})
+        for key, value in [('source_exclusions', [{'pattern': 'python/disco/*'}]),
+                           ('source_excluded_paths', ['python/disco/recovery/policy.py']),
+                           ('runtime_only_exclusions', [{'path': 'python/disco/recovery/policy.py'}])]:
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'Excluded'):
+                validate_profile({**self.profile, key: value})
+
+    def test_direct_closure_validation_rejects_missing_parents_children_and_excluded_imports(self):
+        with self.assertRaisesRegex(ValueError, 'initializer'):
+            validate_source_closure(self.root, {**self.profile, 'python_modules': self.profile['python_modules'][1:]})
+        self.write('disco/recovery/policy.py', 'from . import missing')
+        with self.assertRaisesRegex(ValueError, 'Unresolved application package export'):
+            validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/hidden.py', 'VALUE = 1')
+        for statement in ('from . import hidden', 'import disco.recovery.hidden',
+                          'from disco.recovery.hidden import VALUE', 'from .hidden import VALUE'):
+            self.write('disco/recovery/policy.py', statement)
+            with self.subTest(statement=statement), self.assertRaisesRegex(ValueError, 'closure excludes'):
+                validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/policy.py', 'from ... import outside')
+        with self.assertRaisesRegex(ValueError, 'escapes package'):
+            validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/policy.py', 'import retired')
+        self.profile['source_exclusions'] = [{'pattern': 'python/retired.py'}]
+        with self.assertRaisesRegex(ValueError, 'closure excludes retired'):
+            validate_source_closure(self.root, self.profile)
+
+    def test_package_locals_are_not_exports_and_v2_release_source_reader_remains_strict(self):
+        self.write('disco/__init__.py', 'def outer():\n    value = 1\n')
+        self.write('disco/recovery/policy.py', 'from disco import value\nacknowledge = None\n')
+        with self.assertRaisesRegex(ValueError, 'Unresolved application package export disco.value'):
+            validate_source_closure(self.root, self.profile)
+        tracked = ['desktop/application-profile.json', *['python/' + n for n in self.profile['python_modules']]]
+        self.assertEqual(validate_release_source(self.root, tracked)['version'], 2)
+        self.profile['source_exclusions'] = [{'pattern': 'src/**'}]; self.save()
+        with self.assertRaisesRegex(ValueError, 'excluded paths'):
+            validate_release_source(self.root, tracked + ['src/legacy.m'])
+
+    def test_source_and_destination_redirects_fail_before_copy(self):
+        for side in ('source', 'destination'):
+            with self.subTest(side=side):
+                base = self.root / 'python' if side == 'source' else self.application / 'python'
+                if side == 'destination': base.mkdir(parents=True)
+                parent = base / 'disco'
+                outside = Path(self.temporary.name) / (side + '-outside')
+                if side == 'source': parent.rename(outside)
+                else: outside.mkdir()
+                parent.symlink_to(outside, target_is_directory=True)
+                with self.assertRaisesRegex(ValueError, 'redirected'):
+                    copy_python_application(self.root, self.application, self.profile_path)
+                self.assertFalse((self.application / 'application-profile.json').exists())
+                parent.unlink()
+                if side == 'source': outside.rename(parent)
+        target = self.application / 'application-profile.json'
+        target.symlink_to(Path(self.temporary.name) / 'outside-profile')
+        with self.assertRaisesRegex(ValueError, 'redirected'):
+            copy_python_application(self.root, self.application, self.profile_path)
+
+    def test_missing_or_ambiguous_source_and_audit_redirects(self):
+        source = self.root / 'python/disco/recovery/policy.py'
+        source.unlink()
+        with self.assertRaisesRegex(ValueError, 'Missing or redirected'):
+            validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/policy.py', 'acknowledge = None')
+        collision = self.write('disco.py', '# ambiguous')
+        with self.assertRaisesRegex(ValueError, 'Ambiguous local'):
+            validate_source_closure(self.root, self.profile)
+        collision.unlink()
+        copy_python_application(self.root, self.application, self.profile_path)
+        staged = self.application / 'python/disco/recovery/policy.py'
+        staged.unlink(); staged.symlink_to(source)
+        with self.assertRaisesRegex(ValueError, 'redirected'):
+            audit_application(self.application)
+
+    def test_dynamic_literal_aliases_are_checked_and_unclassified_loaders_fail(self):
+        self.write('disco/recovery/hidden.py', '# unlisted')
+        for statement in ('import importlib as loader; loader.import_module("disco.recovery.hidden")',
+                          'from importlib import import_module as load; load(".hidden", "disco.recovery")',
+                          '__import__("disco.recovery.hidden")',
+                          'import importlib; load = importlib.import_module; load("disco.recovery.hidden")',
+                          '__import__("disco.recovery", fromlist=["hidden"])'):
+            self.write('disco/recovery/policy.py', 'acknowledge = None\n' + statement)
+            with self.subTest(statement=statement), self.assertRaisesRegex(ValueError, 'closure excludes'):
+                validate_source_closure(self.root, self.profile)
+        for statement in ('import importlib; importlib.import_module(name)',
+                          'from importlib.util import spec_from_file_location as load; load(name, path)',
+                          'exec(source)', 'import runpy; runpy.run_path(path)'):
+            self.write('disco/recovery/policy.py', 'acknowledge = None\n' + statement)
+            with self.subTest(statement=statement), self.assertRaisesRegex(ValueError, 'Unclassified'):
+                validate_source_closure(self.root, self.profile)
+        self.write('disco/recovery/policy.py', 'acknowledge = None\nimport importlib; importlib.import_module(".policy", package="disco.recovery")')
+        self.assertEqual(validate_source_closure(self.root, self.profile)['external_loader_boundaries'], [])
+
+    def test_existing_external_loader_boundaries_are_source_bound_not_executed(self):
+        report = validate_source_closure(ROOT, load_profile())
+        self.assertEqual([item['file'] for item in report['external_loader_boundaries']],
+                         ['recording_workspace.py', 'workspace_bootstrap.py'])
+        actual = load_profile()
+        for name in actual['python_modules']:
+            self.write(name, (ROOT / 'python' / name).read_text())
+        boundary = self.root / 'python/recording_workspace.py'
+        boundary.write_text(boundary.read_text() + '\n# changed boundary\n')
+        with self.assertRaisesRegex(ValueError, 'Unclassified external application loader: recording_workspace.py'):
+            validate_source_closure(self.root, actual)
+        # A copied external loader spelling in an ordinary package is never approved.
+        self.write('disco/recovery/policy.py', 'acknowledge = None\nimport importlib.util\nimportlib.util.spec_from_file_location("parser", path)')
+        with self.assertRaisesRegex(ValueError, 'Unclassified external'):
+            validate_source_closure(self.root, self.profile)
 
 
 if __name__ == '__main__':

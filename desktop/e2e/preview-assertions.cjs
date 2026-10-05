@@ -82,6 +82,62 @@ async function rendererProvenance({runtime, source, renderer, manifest, commit, 
     asset_inventory_sha256:sha(JSON.stringify(packagedHashes)), script_entrypoints:scripts,
     static_route:'application/workspace-app/dist -> ../../frontend'};
 }
+function validatePythonProfile(profile) {
+  assert.equal(profile.format, 'rieke-application-profile', 'Invalid application profile format');
+  assert.ok([1, 2].includes(profile.version), 'Unsupported application profile version');
+  const names = profile.python_modules;
+  assert.ok(Array.isArray(names) && names.length && names.every(name => typeof name === 'string' && name), 'Invalid application module list');
+  assert.equal(new Set(names).size, names.length, 'Duplicate application module');
+  const folded = new Set(), identities = new Set();
+  for (const name of names) {
+    const parts = name.split('/');
+    assert.ok(!parts.some(part => ['', '.', '..'].includes(part)) && !/[\\\0:]/.test(name) && name.endsWith('.py') &&
+      (profile.version !== 1 || parts.length === 1), 'Unsafe application Python path: ' + name);
+    if (profile.version === 2) {
+      assert.ok([...parts.slice(0, -1), parts.at(-1).slice(0, -3)].every(part => /^[A-Za-z_][A-Za-z_0-9]*$/.test(part)), 'Invalid application module identifier: ' + name);
+      assert.notEqual(name, '__init__.py', 'Python source root is not an application package');
+      assert.ok(!parts.includes('tests') && !parts.at(-1).startsWith('test_'), 'Test source in application profile: ' + name);
+      assert.ok(!folded.has(name.toLowerCase()), 'Case-colliding application paths: ' + name); folded.add(name.toLowerCase());
+      const identity = name.slice(0, -3).replace(/\/__init__$/, '').split('/').join('.');
+      assert.ok(!identities.has(identity), 'Ambiguous application module identity: ' + name); identities.add(identity);
+      for (let end = 1; end < parts.length; end++)
+        assert.ok(names.includes(parts.slice(0, end).join('/') + '/__init__.py'), 'Missing application package initializer: ' + name);
+      const sourceName = 'python/' + name;
+      assert.ok(!(profile.source_excluded_paths || []).includes(sourceName) &&
+        !(profile.runtime_only_exclusions || []).some(item => item.path === sourceName), 'Excluded application source: ' + name);
+      // Source exclusions use the profile's fnmatch subset (* and ?). Reject
+      // unsupported patterns rather than silently disagree with Python.
+      for (const {pattern} of profile.source_exclusions || []) {
+        assert.ok(typeof pattern === 'string' && !/[\[\]\\]/.test(pattern), 'Unsupported source exclusion pattern');
+        const expression = '^' + pattern.split('').map(c => c === '*' ? '.*' : c === '?' ? '.' : c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('') + '$';
+        assert.ok(!new RegExp(expression).test(sourceName), 'Excluded application source: ' + name);
+      }
+    }
+  }
+}
+async function regularPythonFile(base, relative) {
+  let target = base;
+  const baseStat = await fs.lstat(base);
+  assert.ok(baseStat.isDirectory() && !baseStat.isSymbolicLink(), 'Redirected Python root: ' + base);
+  const parts = relative.split('/');
+  for (let i = 0; i < parts.length; i++) {
+    target = path.join(target, parts[i]);
+    const stat = await fs.lstat(target);
+    assert.ok(!stat.isSymbolicLink() && (i === parts.length - 1 ? stat.isFile() : stat.isDirectory()), 'Redirected Python file/parent: ' + relative);
+  }
+  return target;
+}
+async function pythonInventory(base) {
+  const files = [];
+  async function visit(relative) {
+    const current = path.join(base, relative), stat = await fs.lstat(current);
+    assert.ok(!stat.isSymbolicLink(), 'Redirected Python inventory: ' + relative);
+    if (stat.isDirectory()) for (const name of await fs.readdir(current)) await visit(relative ? relative + '/' + name : name);
+    else if (relative.endsWith('.py')) {assert.ok(stat.isFile(), 'Non-file Python source'); files.push(relative);}
+  }
+  await visit('');
+  return files.sort();
+}
 async function verifyPackagedSource({bundle, source, commit, renderer = path.join(source, 'desktop/build/renderer'), run = runFile}) {
   assert.match(commit, /^[a-f0-9]{40}$/);
   assert.equal((await run('git', ['-C', source, 'rev-parse', 'HEAD'])).stdout.trim(), commit);
@@ -91,14 +147,15 @@ async function verifyPackagedSource({bundle, source, commit, renderer = path.joi
   assert.equal(manifest.source_commit, commit); assert.equal(manifest.source_dirty, false);
   const release = JSON.parse(await fs.readFile(path.join(source, 'rieke-release.json')));
   assert.equal(manifest.application_version, release.version);
-  const profile = JSON.parse(await fs.readFile(path.join(source, 'desktop/application-profile.json')));
-  assert.deepEqual(JSON.parse(await fs.readFile(path.join(runtime, 'application/application-profile.json'))), profile);
+  const profile = JSON.parse(await fs.readFile(await regularPythonFile(source, 'desktop/application-profile.json')));
+  assert.deepEqual(JSON.parse(await fs.readFile(await regularPythonFile(runtime, 'application/application-profile.json'))), profile);
+  validatePythonProfile(profile);
+  assert.deepEqual(await pythonInventory(path.join(runtime, 'application/python')), [...profile.python_modules].sort(), 'Packaged Python inventory differs');
   for (const name of REQUIRED) assert.ok(profile.python_modules.includes(name), 'Application allowlist omits ' + name);
   const hashes = {};
   for (const name of profile.python_modules) {
-    assert.equal(path.basename(name), name);
-    const packaged = sha(await fs.readFile(path.join(runtime, 'application/python', name)));
-    assert.equal(packaged, sha(await fs.readFile(path.join(source, 'python', name))), 'Stale packaged module ' + name);
+    const packaged = sha(await fs.readFile(await regularPythonFile(runtime, 'application/python/' + name)));
+    assert.equal(packaged, sha(await fs.readFile(await regularPythonFile(source, 'python/' + name))), 'Stale packaged module ' + name);
     assert.equal(packaged, manifest.resources['application/python/' + name]?.sha256, 'Manifest module hash differs: ' + name);
     hashes[name] = packaged;
   }

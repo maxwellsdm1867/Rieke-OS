@@ -187,6 +187,29 @@ MATLAB masks. MAT data export runs with bundled Python/SciPy; no MATLAB install
 is required. Source and artifact audits enforce this boundary. See
 [architecture](../docs/RIEKE_OS_ARCHITECTURE.md).
 
+The current shipping profile remains **v1**, with its existing flat module list.
+The profile helper and packaged-source assertion also understand **v2** explicit
+nested Python paths, currently exercised only by disposable source fixtures.
+V2 requires regular-package `__init__.py` files, portable ASCII module identifiers,
+no ambiguous/case-colliding paths, no tests or excluded source, and no redirected
+files/parents. Staging copies only listed files; it never copies a package tree.
+No application package has moved or become a newly qualified capability.
+
+`validate_source_closure` checks static and literal local imports, including package
+parents, relative imports and simple loader aliases, without executing product
+code. Its result separately names the existing source-hash-bound parser loader and
+bootstrap probe string. New recognized computed/file loaders fail; arbitrary
+reflection, third-party imports and subprocess code are not runtime closure proof.
+Changing a bound source file requires explicit review/rebinding. The guard's later
+public/private Python policy and actual package migration remain separate work.
+
+Source-only examples and deliberate faults are in
+[`PythonPackageProfileTests`](../python/tests/test_desktop_runtime_packaging.py)
+and [packaged-source helper tests](tests/preview-assertions.test.cjs). They exercise
+owned temporary paths and a synthetic stdlib-only public package, not an assembled
+app, scientific parser, native service or installer. Final native/ASAR qualification
+still requires its separate exact-candidate plan.
+
 ### macOS product name and update compatibility
 
 The visible product name, `CFBundleName`, and `CFBundleDisplayName` are `Disco`.
