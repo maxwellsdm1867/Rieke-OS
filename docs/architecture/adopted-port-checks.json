@@ -2196,7 +2196,7 @@
       },
       {
         "file": "python/tests/test_benchmark.py",
-        "file_sha256": "c27b26d991a99a7edd6540157507e4f12c92aeb1940a5d3987f5a9001b29783c",
+        "file_sha256": "61ada59c561812d3a2e435daaf081dc486840e512b18d7a5aa057f579807ceae",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -2209,7 +2209,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Existing repository-tool test loader; unchanged source and AST binding"
+        "reason": "Reviewed current navigation paths changed; both existing loader AST sites unchanged. Historical recipes retain original paths."
       },
       {
         "file": "python/tests/test_benchmark_native.py",
