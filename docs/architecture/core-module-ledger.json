@@ -7495,6 +7495,20 @@
       "No force-kills",
       "No restart of unrelated paused legacy/Ovation/new-H5-port/native-export experiment"
     ],
-    "metrics": "All whole-app cost shifts remain unmeasured; correctness smoke is not performance evidence."
+    "metrics": "All whole-app cost shifts remain unmeasured; correctness smoke is not performance evidence.",
+    "runtime_path_coverage": {
+      "path": "docs/architecture/core-module-paths.json",
+      "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
+      "status": "finite complete assignment of stated roots; implementation acceptance pending",
+      "runtime_or_config_paths": 465,
+      "frontend": 279,
+      "backend_and_tools": 144,
+      "desktop": 42,
+      "proposed_moves": 318,
+      "keep_in_place": 131,
+      "deferred": 12,
+      "already_organized": 4,
+      "qualification": "Counts are paths, not modules or validated behavior. No coverage percentage or performance inference."
+    }
   }
 }

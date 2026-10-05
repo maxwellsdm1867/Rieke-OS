@@ -223,3 +223,19 @@ new folders’ private/export/test-import faults. Exact source-review GO and all
 This documentation update does not relabel those runs as later-commit executions. Prior ledger review/receipt fields remain
 historical; live paths and organization status are explicit in the JSON records.
 No native, packaged-app or performance qualification follows from this increment.
+
+## Finite remaining path coverage
+
+The [path companion](core-module-paths.json) assigns the current frontend source,
+Python/tools and desktop inventory exactly once. It is part of this ledger: 465
+runtime/configuration paths (279 frontend, 144 Python/tools, 42 desktop), with tests
+and exclusions separately accounted for. There are 318 proposed moves, 131
+keep-in-place decisions, 12 deferred paths and 4 already organized runtime files.
+These are path counts, not module counts or a completion percentage.
+
+Whole completion requires every eligible assignment to reach actual implementation
+or a reviewed, navigable keep-in-place outcome, with public contracts/examples,
+meaningful tests, packaging/discovery closure and independent source review.
+Documentation, contracts, benchmarks and historical evidence already have purpose
+roots and retain their identities. Final exact-package UI/native acceptance remains
+mandatory and unrun. No individual slice closes the whole goal.
