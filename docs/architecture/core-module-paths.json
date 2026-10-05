@@ -1336,7 +1336,7 @@
           "reason": "Existing responsibility grouped without behavior or export changes.",
           "group": "renderer-drafts",
           "current_path": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "workspace-app/src/desktopLifecycle.js",
@@ -1870,7 +1870,7 @@
           "reason": "Existing responsibility grouped without behavior or export changes.",
           "group": "renderer-drafts",
           "current_path": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "workspace-app/src/useEpochBrowserPage.js",
@@ -3046,7 +3046,7 @@
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
           "group": "renderer-drafts",
           "current_path": "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "workspace-app/src/desktopLifecycle.test.js",
@@ -8814,7 +8814,7 @@
           "group": "drafts",
           "reason": "Later independent move preserving private-file ownership, schema, unreadable recovery latch and security dependency.",
           "current_path": "desktop/drafts/draft-store.cjs",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "desktop/entitlements.mac.plist",
@@ -9173,7 +9173,7 @@
           "group": "startup",
           "reason": "Later preference-only move; retain supervisor atomicJSON and security dependencies; restoration composition stays main.",
           "current_path": "desktop/startup/startup-session.cjs",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "desktop/supervisor.cjs",
@@ -9607,7 +9607,7 @@
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
           "group": "drafts",
           "current_path": "desktop/drafts/tests/draft-store.test.cjs",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "desktop/tests/e2e/updater-client.cjs",
@@ -9826,7 +9826,7 @@
           "qualification": "source association only; not executed; host/native use requires individually scoped execution",
           "group": "startup",
           "current_path": "desktop/startup/tests/startup-session.test.cjs",
-          "current_disposition": "organized; aggregate checks pending"
+          "current_disposition": "organized; reviewed and aggregate verified at ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
         },
         {
           "path": "desktop/tests/supervisor-runtime-inspection.test.cjs",
@@ -10204,7 +10204,7 @@
     },
     {
       "id": "renderer-drafts-and-desktop-state",
-      "status": "source-reviewed implementation; aggregate validation pending",
+      "status": "independently reviewed and aggregate verified local increment",
       "moves": {
         "workspace-app/src/desktopDraftSession.js": "workspace-app/src/renderer-drafts/desktopDraftSession.js",
         "workspace-app/src/useDesktopDraft.js": "workspace-app/src/renderer-drafts/useDesktopDraft.js",
@@ -10225,7 +10225,8 @@
         "desktop/drafts/README.md",
         "desktop/startup/AGENTS.md",
         "desktop/startup/README.md"
-      ]
+      ],
+      "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e"
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

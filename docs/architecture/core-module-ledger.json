@@ -4941,7 +4941,7 @@
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "not_newly_run_fault_ideas": [],
       "organization": {
-        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "status": "independently reviewed and aggregate-verified local folder increment",
         "current_source_paths": [
           "desktop/startup/startup-session.cjs"
         ],
@@ -4952,7 +4952,12 @@
         "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
         "guidance": "desktop/startup/AGENTS.md",
         "worker_evidence": "evidence/desktop-state-folders",
-        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification.",
+        "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e",
+        "evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/state-folder-integration/final-binding.json",
+          "sha256": "d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82"
+        }
       }
     },
     {
@@ -5211,7 +5216,7 @@
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "not_newly_run_fault_ideas": [],
       "organization": {
-        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "status": "independently reviewed and aggregate-verified local folder increment",
         "current_source_paths": [
           "desktop/drafts/draft-store.cjs"
         ],
@@ -5222,7 +5227,12 @@
         "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
         "guidance": "desktop/drafts/AGENTS.md",
         "worker_evidence": "evidence/desktop-state-folders",
-        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification.",
+        "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e",
+        "evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/state-folder-integration/final-binding.json",
+          "sha256": "d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82"
+        }
       }
     },
     {
@@ -5343,7 +5353,7 @@
       "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
       "not_newly_run_fault_ideas": [],
       "organization": {
-        "status": "independently source-reviewed folder implementation; combined validation pending",
+        "status": "independently reviewed and aggregate-verified local folder increment",
         "current_source_paths": [
           "workspace-app/src/renderer-drafts/desktopDraftSession.js",
           "workspace-app/src/renderer-drafts/useDesktopDraft.js"
@@ -5355,7 +5365,12 @@
         "preservation": "Existing owner behavior and original tests retained; relative dependency paths changed.",
         "guidance": "workspace-app/src/renderer-drafts/AGENTS.md",
         "worker_evidence": "evidence/renderer-drafts-folder",
-        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification."
+        "qualification": "Worker checks are source/frontend tests, not assembled/native or performance qualification.",
+        "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e",
+        "evidence": {
+          "path": "/Users/maxwellsdm/Documents/Codex/2026-10-04/task-4/evidence/state-folder-integration/final-binding.json",
+          "sha256": "d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82"
+        }
       }
     },
     {
@@ -6955,12 +6970,28 @@
       ]
     },
     {
-      "id": "state-folder-integration-pending",
-      "status": "Independent source GO; aggregate checks pending",
+      "id": "state-folder-integration",
+      "status": "independently reviewed; exact source aggregate checks passed",
       "renderer_worker": "74 focused passes and four deliberate faults detected",
       "desktop_worker": "1554cf38e8cfc7d05fcc16b0d831c746cfb990db: 48 Node and37 Python passes; two deliberate faults detected",
       "profile_worker": "764b40386e76a3861f8c04afa3f95abb22fb7b72:20 Python and9 Node passes; independent review corrected three faults; shipping profile remains v1",
-      "whole_app_costs": "all unmeasured"
+      "whole_app_costs": "all unmeasured",
+      "tested_commit": "ebdbfdb9b2dc5881973eb3955449b209c3c84a7e",
+      "results": {
+        "frontend_full": 771,
+        "frontend_mapped": 222,
+        "desktop_mapped": 81,
+        "python_guard_planner": 37,
+        "python_profile": 20,
+        "node_profile": 9,
+        "build": "passed",
+        "guard": "passed",
+        "explicit_base_plan": "passed",
+        "failed": 0,
+        "skipped": 0
+      },
+      "binding_sha256": "d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82",
+      "qualification": "Exact local source/frontend/desktop composition checks; no assembled app, native, benchmark or performance qualification. Broad mapped Python scientific/export suites were not run."
     }
   ],
   "deferred": [

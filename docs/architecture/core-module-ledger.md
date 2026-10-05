@@ -275,11 +275,11 @@ separate public entries. Desktop drafts and startup preferences retain distinct
 folders and owners. Independent source review confirmed behavior preservation,
 original-suite retention and exact worker evidence (74 renderer checks; 48 desktop
 and 37 Python checks). Four renderer and two desktop deliberate faults were
-detected. Combined catalog/build/test validation is pending for this candidate.
+detected. Combined validation passed at `ebdbfdb9b2dc5881973eb3955449b209c3c84a7e`:771 full frontend,222 mapped frontend,81 mapped desktop,37 Python guard/planner,20 Python profile and9 Node profile tests; zero failures/skips. Build, guard and explicit-base plan also passed. Exact binding: `d15a766f65167f82fe409396a4a2c6565899ca2ede54667477be70b893c37b82`. A missing-PYTHONPATH first profile attempt is preserved separately; corrected invocation passed.
 
 The profile-tooling prerequisite also passed independent review after three
 regression fixes (20 Python, 9 Node checks); the shipping manifest stays v1 and no
 Python runtime relocation has occurred. Historical source pointers and receipts
 remain unchanged; JSON organization fields and path overrides locate current code.
 All seven whole-app costs remain unmeasured. Final assembled E2E is blocked on a
-reviewed no-force-kill launcher, pinned Python runtime and exact package gate.
+reviewed no-force-kill launcher implementation, pinned runtime qualification and exact package gate. An existing Python3.11.13 source-test runtime was located; that is not final app/native qualification.
