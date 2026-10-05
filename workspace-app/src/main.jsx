@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
 import './themes.css';
-import {applyTheme,readCachedAppearance} from './appearanceThemes.js';
+import {applyTheme,readCachedAppearance} from './appearance/appearanceThemes.js';
 import {installDesktopLifecycle} from './desktopLifecycle.js';
 installDesktopLifecycle();
 applyTheme(readCachedAppearance());

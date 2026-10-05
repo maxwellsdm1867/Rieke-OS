@@ -6,7 +6,7 @@ import {Activity,ArrowLeft,ArrowRight,ChevronDown,ChevronRight,Folder,FolderOpen
 import {api,number,duration} from '../api.js';
 import {treePageRequest} from '../pagedTreeRequest.js';
 import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from '../treeBranchPresentation.js';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {hierarchyKey,pathContains,mergeHierarchyPage,collapseHierarchy,expandHierarchy,hierarchySnapshot,hierarchyRestore,cancelUnloadedExpansion} from '../hierarchyTreeState.js';
 import {IncomingEpochSelect,useIncomingTreeSelection} from '../incoming-workbench/ui/IncomingTreeSelection.jsx';
 import {TreeGroupTagButton,useTreeGroupTags} from './TreeGroupTags.jsx';

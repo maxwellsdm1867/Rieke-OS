@@ -3,9 +3,9 @@ import {ArrowRight,Check,GitMerge,LoaderCircle,Sparkles,Pin,Database,FileCheck2,
 import {humanize,time,number} from '../api.js';
 import ProtocolDiff from './ProtocolDiff.jsx';
 import './ProtocolSuggestion.css';
-import {importReadiness} from '../importReadiness.js';
-import {useProjectPreference} from '../useProjectPreference.js';
-import {importReviewStatusLabel} from '../useImportReviewStatus.js';
+import {importReadiness} from '../recording-import/importReadiness.js';
+import {useProjectPreference} from '../project-preferences/useProjectPreference.js';
+import {importReviewStatusLabel} from '../recording-import/useImportReviewStatus.js';
 
 export default function ProtocolSuggestion({suggestion,onMerge,onProtocol,importView=false,disabled=false}){
   const launching=useRef(false),[error,setError]=useState('');

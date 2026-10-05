@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
-import {api} from './api.js';
-import {desktopBridge} from './desktopLifecycle.js';
+import {api} from '../api.js';
+import {desktopBridge} from '../desktopLifecycle.js';
 import {applyTheme,cacheAppearance,normalizeAppearance,readCachedAppearance,watchSystemTheme} from './appearanceThemes.js';
 export const iconSource=icon=>icon==='rieke'?'/rieke-emblem.png':'/disco-icon.png';
 export function applyBrowserIcon(icon,documentObject=globalThis.document){

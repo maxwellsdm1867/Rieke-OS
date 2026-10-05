@@ -1,13 +1,13 @@
-import {useUnmountGuard} from '../useUnmountGuard.js';
-import H5Inbox from './H5Inbox.jsx';
+import {useUnmountGuard} from '../../useUnmountGuard.js';
+import H5Inbox from '../../recording-import/ui/H5Inbox.jsx';
 import {useDeferredValue,useEffect,useMemo,useRef,useState} from 'react';
 import {Archive,ArrowLeft,ArrowRight,Check,ChevronRight,Database,FileClock,FileUp,FolderOpen,HardDrive,History,Link2,LockKeyhole,MoreHorizontal,RefreshCw,Search,ShieldCheck,UnlockKeyhole,Trash2,X} from 'lucide-react';
-import {api,duration,humanize,number,useResource} from '../api.js';
-import {Badge,Empty,Metadata,Status} from './Common.jsx';
+import {api,duration,humanize,number,useResource} from '../../api.js';
+import {Badge,Empty,Metadata,Status} from '../../components/Common.jsx';
 import './DataStores.css';
-import {epochResourceCache} from '../resourceCache.js';
-import SourcePropagation from './SourcePropagation.jsx';
-import {availabilityLabel,availabilityExplanation} from '../metadataRefresh.js';
+import {epochResourceCache} from '../../resourceCache.js';
+import SourcePropagation from '../../components/SourcePropagation.jsx';
+import {availabilityLabel,availabilityExplanation} from '../../metadataRefresh.js';
 
 const PAGE_SIZE=50;
 const actions={

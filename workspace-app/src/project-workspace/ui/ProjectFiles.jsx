@@ -4,8 +4,8 @@ import {
   File, FileJson, Folder, FolderOpen, Link2, LockKeyhole,
   RefreshCw, ShieldCheck, Upload, AlertTriangle, Copy, BookOpen, Download, Settings2, Activity, Package,
 } from 'lucide-react';
-import { useResource, number } from '../api.js';
-import { Badge, Empty, Status } from './Common.jsx';
+import { useResource, number } from '../../api.js';
+import { Badge, Empty, Status } from '../../components/Common.jsx';
 import './ProjectFiles.css';
 
 function fileSize(bytes) {

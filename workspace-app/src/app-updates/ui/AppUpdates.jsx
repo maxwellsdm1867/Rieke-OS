@@ -1,10 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {ArrowUpCircle,RefreshCw,X} from 'lucide-react';
-import {api} from '../api.js';
+import {api} from '../../api.js';
 import {updateNotice,releaseLink,watchAppUpdates,mergeUpdateCheck,claimUpdateDiscovery} from '../appUpdates.js';
 import './AppUpdates.css';
-import {desktopBridge} from '../desktopLifecycle.js';
+import {desktopBridge} from '../../desktopLifecycle.js';
 
 function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,onRestart,download}){
   const dialog=useRef(null);

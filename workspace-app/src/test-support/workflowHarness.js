@@ -106,7 +106,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,en
         if(id==='./components/ProtocolInfographic.jsx')return '\0workflow-lazy';
         if(id==='./workspace-navigation/useWorkspaceNavigation.js')return '\0workflow-navigation';
         if(id==='./protocol-tree-layout/useProtocolTreeLayout.js')return '\0workflow-layout';
-        if(id==='./useImportQueue.js')return '\0workflow-import-queue';
+        if(id==='./recording-import/useImportQueue.js')return '\0workflow-import-queue';
         if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./incoming-workbench/ui/IncomingWorkbench.jsx','./components/Inspector.jsx','./components/Common.jsx','./components/MetadataRefresh.jsx','./components/UndoControls.jsx','./components/GroupAnnotationRecovery.jsx'].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
       if(importer?.endsWith('/components/Inspector.jsx')&&id.endsWith('.jsx')&&!['../tree-ancestors/treeBranchReads.jsx','./AnnotationTags.jsx','./EpochTags.jsx','./Common.jsx','./NavigationLoading.jsx','../incoming-workbench/ui/IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';

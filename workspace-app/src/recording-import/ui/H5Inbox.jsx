@@ -1,6 +1,6 @@
 import {useState} from 'react';
 import {FolderOpen} from 'lucide-react';
-import {api} from '../api.js';
+import {api} from '../../api.js';
 import './H5Inbox.css';
 
 export default function H5Inbox(){

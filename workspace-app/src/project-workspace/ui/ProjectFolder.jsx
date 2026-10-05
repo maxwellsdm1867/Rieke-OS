@@ -2,11 +2,11 @@ import ProjectStartupError from './ProjectStartupError.jsx';
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {Activity,ArrowRight,Check,CheckCircle2,ChevronRight,Clock3,Copy,Database,Download,Files,FolderOpen,LoaderCircle,LogOut,Package,Search,ShieldCheck,Tags,X} from 'lucide-react';
-import {api} from '../api.js';
-import {flushDesktopDrafts} from '../desktopLifecycle.js';
+import {api} from '../../api.js';
+import {flushDesktopDrafts} from '../../desktopLifecycle.js';
 import {inspectAndOpenProject,localProjectUrl,runProjectTransfer} from '../projectTransfer.js';
 import './ProjectFolder.css';
-import FolderPathInput from './FolderPathInput.jsx';
+import FolderPathInput from '../../file-picker/ui/FolderPathInput.jsx';
 
 const tasks=[{mode:'open',label:'Open a project',icon:FolderOpen},{mode:'prepare',label:'Share a project',icon:Package}];
 const contents=[{label:'Recordings',icon:Activity},{label:'Database',icon:Database},{label:'Saved queries',icon:Search},{label:'Tags',icon:Tags},{label:'History',icon:Clock3},{label:'Exports',icon:Download}];

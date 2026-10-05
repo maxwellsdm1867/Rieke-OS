@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {pendingProtocolSuggestions,suggestionBadge,importCompletionKey,sameSuggestionComparison} from './protocolSuggestions.js';
-import {datedCellLabel} from './recordingIdentity.js';
+import {datedCellLabel} from './recording-import/recordingIdentity.js';
 
 test('only persisted pending candidates produce update badges',()=>{
   const source=[{protocol_uuid:'mean',candidate_revision_uuid:'m',status:'applied'},{protocol_uuid:'history',candidate_revision_uuid:'h',status:'pending'},{protocol_uuid:'old',candidate_revision_uuid:'o',status:'superseded'}];

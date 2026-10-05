@@ -7,7 +7,7 @@ import StableContent from './StableContent.jsx';
 import MetadataPanel from './MetadataPanel.jsx';
 import AnnotationTags from './AnnotationTags.jsx';
 import TagExchangeControls from './TagExchangeControls.jsx';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import './CellQC.css';
 
 const numeric=value=>typeof value==='number'&&Number.isFinite(value);

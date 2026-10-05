@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ChevronRight, CornerDownRight, FolderOpen, GitBranch, Home, List, Search, X } from 'lucide-react';
 import { duration, number } from '../api.js';
 import './TreePreview.css';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from '../treeBranchPresentation.js';
 
 export const treeNodeKey = node => String(node.key ?? JSON.stringify([node.missing===true,node.value]));

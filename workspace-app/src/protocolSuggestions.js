@@ -1,4 +1,4 @@
-import {IMPORT_TERMINAL,jobProgressView} from './importProgress.js';
+import {IMPORT_TERMINAL,jobProgressView} from './recording-import/importProgress.js';
 export function pendingProtocolSuggestions(data){
   const rows=Array.isArray(data?.suggestions)?data.suggestions:[];
   return rows.filter(item=>item.status==='pending'&&typeof item.protocol_uuid==='string'&&typeof item.candidate_revision_uuid==='string');

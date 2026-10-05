@@ -4,7 +4,7 @@ import {useMemo,useState} from 'react';
 import {groupedCellPage} from '../boundedTree.js';
 import './CellList.css';
 import MetadataTable from './MetadataTable.jsx';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import { AlertTriangle, LoaderCircle, ArrowRight, CheckCircle2, Circle } from 'lucide-react';
 import { number, duration } from '../api.js';
 export function Status({loading, error, children, retry, data}) {

@@ -5,7 +5,7 @@ import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShor
 import { startPointerDrag } from '../pointerDrag.js';
 import './ProtocolSidebar.css';
 import {pendingReviewBadge} from '../incoming-workbench/incomingReview.js';
-import {useProjectPreference} from '../useProjectPreference.js';
+import {useProjectPreference} from '../project-preferences/useProjectPreference.js';
 
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };
 export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],workbenchCounts=[],suggestionsError,onRetrySuggestions }) {

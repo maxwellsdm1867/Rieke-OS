@@ -1,4 +1,4 @@
-import {recordingDate} from './recordingIdentity.js';
+import {recordingDate} from './recording-import/recordingIdentity.js';
 
 // Build the overview from the full cell summary, never an epoch page.
 export function inspectionDates(cells=[]){

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {inspectionDates,epochTagOverview} from './inspectionCellTree.js';
-import {datedCellLabel} from './recordingIdentity.js';
+import {datedCellLabel} from './recording-import/recordingIdentity.js';
 
 test('full date overview keeps all four cells independently of 60-epoch pages and repeated labels',()=>{
   const cells=[

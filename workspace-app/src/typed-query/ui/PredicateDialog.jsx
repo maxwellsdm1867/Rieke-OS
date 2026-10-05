@@ -7,11 +7,11 @@ import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summar
 import SummaryStatus from '../../components/SummaryStatus.jsx';
 import SummaryPreferences from '../../components/SummaryPreferences.jsx';
 import {useProtocolSummaryPreferences} from '../../useProtocolSummaryPreferences.js';
-import {useProjectPreference} from '../../useProjectPreference.js';
+import {useProjectPreference} from '../../project-preferences/useProjectPreference.js';
 import {api,number,time} from '../../api.js';
 import {candidatePreviewReceipt} from '../../frozenReadContext.js';
 import {predicateIdentity} from '../predicateIdentity.js';
-import {presetKey} from '../../searchPresets.js';
+import {presetKey} from '../../project-preferences/searchPresets.js';
 import StableContent from '../../components/StableContent.jsx';
 import './PredicateDialog.css';
 

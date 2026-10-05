@@ -3,7 +3,7 @@ import {useState} from 'react';
 import {ArrowRight,ChevronDown,Clock3,Layers3,RefreshCw,Activity} from 'lucide-react';
 import {duration,number} from '../api.js';
 import './ProtocolDiff.css';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 
 const length=value=>Array.isArray(value)?value.length:value??0;
 const signed=value=>value>0?`+${number(value)}`:value<0?`−${number(Math.abs(value))}`:'No change';

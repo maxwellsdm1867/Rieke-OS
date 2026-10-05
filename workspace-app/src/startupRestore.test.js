@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createStartupRestore} from './startupRestore.js';
+import {createStartupRestore} from './project-workspace/startupRestore.js';
 const saved={projectPath:'/owned/a',projectId:'uuid'},project={path:'/owned/a',uuid:'uuid',name:'Owned',available:true};
 const tick=()=>new Promise(r=>setImmediate(r));
 function setup(overrides={}){let calls=[],states=[],finish=[],cancelled=false;const options={inventory:{projects:[project]},bridge:{startupSession:async()=>saved,chooseStartup:async()=>{cancelled=true;},cancelStartup:async()=>{cancelled=true;},openStartup:async()=>{finish.push(true);return {restored:!cancelled,closed:cancelled};}},request:async route=>{calls.push(route);return route.endsWith('inspect-folder')?{valid:true,kind:'project',project}: {url:'http://127.0.0.1:12345'};},onState:s=>states.push(s),...overrides};return {control:createStartupRestore(options),options,calls,states,finish};}

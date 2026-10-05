@@ -16,7 +16,7 @@ import SelectionOverview from './SelectionOverview.jsx';
 import ProtocolViewFilter from '../typed-query/ui/ProtocolViewFilter.jsx';
 import {clearTagFilters,tagFilterLabel} from '../typed-query/protocolViewFilter.js';
 import {Empty} from './Common.jsx';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import AnnotationTags from './AnnotationTags.jsx';
 import useTreeCellSelection from '../useTreeCellSelection.js';
 

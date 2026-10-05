@@ -10,7 +10,7 @@ test('startup recovery details can be copied, repeated failure stays visible, re
   const old=Object.getOwnPropertyDescriptor(globalThis,'navigator');let renderer,copied,deny=false,waitForCopy;
   Object.defineProperty(globalThis,'navigator',{configurable:true,value:{clipboard:{writeText:async value=>{if(deny)throw Error('denied');copied=value;if(waitForCopy)await waitForCopy;}}}});
   try{
-    const {default:ErrorView}=await server.ssrLoadModule('/src/components/ProjectStartupError.jsx');
+    const {default:ErrorView}=await server.ssrLoadModule('/src/project-workspace/ui/ProjectStartupError.jsx');
     const message='Disco could not open this project. The bundled MySQL client is missing. Recovery log: /owned/log';
     await act(async()=>{renderer=TestRenderer.create(React.createElement(ErrorView,{message}));});
     await act(async()=>renderer.root.findByType('button').props.onClick());assert.equal(copied,message);

@@ -1,9 +1,9 @@
 import {useEffect,useRef,useState} from 'react';
 import {Pin,Search,X} from 'lucide-react';
 import {api} from '../api.js';
-import {searchPresetPayload,validatePresetReceipt,resolvedPresetMatch,presetSaveTarget,samePresetTarget} from '../projectSearchPresets.js';
-import {predicateSummary} from '../searchPresets.js';
-import './SearchPresets.css';
+import {searchPresetPayload,validatePresetReceipt,resolvedPresetMatch,presetSaveTarget,samePresetTarget} from '../project-preferences/projectSearchPresets.js';
+import {predicateSummary} from '../project-preferences/searchPresets.js';
+import '../project-preferences/ui/SearchPresets.css';
 
 export default function QueryPresetDialog({predicate,splits,preset=null,defaults={},onClose,onSaved,onRefresh}){
   const dialog=useRef(null),[mode,setMode]=useState(preset?'update':'new');

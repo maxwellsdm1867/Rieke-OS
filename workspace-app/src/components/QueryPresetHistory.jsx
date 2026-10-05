@@ -1,7 +1,7 @@
 import {useState} from 'react';
 import {Clock3,ChevronDown} from 'lucide-react';
 import {useResource,time} from '../api.js';
-import {predicateSummary,presetKey} from '../searchPresets.js';
+import {predicateSummary,presetKey} from '../project-preferences/searchPresets.js';
 export default function QueryPresetHistory({preset,onEdit,disabled}){
  const [open,setOpen]=useState(false),[offset,setOffset]=useState(0);
  const history=useResource(open?`/search-presets/${preset.preset_uuid}/versions?limit=10&offset=${offset}`:null,preset.version);

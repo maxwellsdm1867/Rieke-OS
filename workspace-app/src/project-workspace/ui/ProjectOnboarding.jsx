@@ -1,11 +1,11 @@
 import ProjectStartupError from './ProjectStartupError.jsx';
 import {useEffect,useState} from 'react';
 import {Activity,ArrowRight,Check,ChevronDown,Database,Download,FolderOpen,GitBranch,History,LoaderCircle,Plus,Folder,MapPin,Tags,X,LogOut} from 'lucide-react';
-import {api} from '../api.js';
+import {api} from '../../api.js';
 import {projectColor} from './ProjectNavigator.jsx';
 import {isCurrentProject} from '../projectNavigation.js';
 import './ProjectOnboarding.css';
-import FolderPathInput from './FolderPathInput.jsx';
+import FolderPathInput from '../../file-picker/ui/FolderPathInput.jsx';
 
 const folderName=path=>String(path||'').replace(/\/+$/,'').split('/').pop()||path;
 const shortPath=path=>{const parts=String(path||'').split('/').filter(Boolean);return parts.length>2?`…/${parts.slice(-2).join('/')}`:path;};

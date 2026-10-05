@@ -1,8 +1,8 @@
 import {useEffect,useRef,useState} from 'react';
 import {LoaderCircle,RefreshCw,Plus,X,LogOut,FolderOpen} from 'lucide-react';
-import {api} from '../api.js';
-import {reorderIds} from '../ordering.js';
-import {startPointerDrag} from '../pointerDrag.js';
+import {api} from '../../api.js';
+import {reorderIds} from '../../ordering.js';
+import {startPointerDrag} from '../../pointerDrag.js';
 import {orderedProjectRecords,projectKey} from '../projectNavigation.js';
 import './ProjectNavigator.css';
 

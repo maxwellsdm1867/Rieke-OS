@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import React from 'react';
 import TestRenderer,{act} from 'react-test-renderer';
-import useImportReviewStatus,{importReviewStatusLabel} from './useImportReviewStatus.js';
+import useImportReviewStatus,{importReviewStatusLabel} from './recording-import/useImportReviewStatus.js';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
 const resource=counts=>({loading:false,error:null,data:{workbench_counts:counts.map(([protocol_uuid,pending_epoch_count])=>({protocol_uuid,pending_epoch_count}))}});
 test('pending status follows authoritative cumulative counts, survives refresh, and resets between projects',async()=>{

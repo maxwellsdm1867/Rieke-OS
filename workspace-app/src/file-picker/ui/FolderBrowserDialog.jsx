@@ -1,7 +1,7 @@
 import {useEffect,useId,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {ArrowLeft,ArrowRight,ChevronRight,Folder,FolderOpen,FolderPlus,Home,LoaderCircle,MapPin,Pencil,X} from 'lucide-react';
-import {api} from '../api.js';
+import {api} from '../../api.js';
 import {absoluteFolderPath,folderParentPath,newFolderPath,readFolderListing,shouldCreateNewFolder} from '../folderBrowser.js';
 import './FolderBrowserDialog.css';
 

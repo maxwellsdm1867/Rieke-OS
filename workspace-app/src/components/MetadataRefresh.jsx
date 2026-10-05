@@ -1,7 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {AlertTriangle,Check,ChevronDown,RefreshCw,X} from 'lucide-react';
 import {api,number,useResource} from '../api.js';
-import {elapsedLabel} from '../importProgress.js';
+import {elapsedLabel} from '../recording-import/importProgress.js';
 import {validMetadataRefresh} from '../metadataRefresh.js';
 import './MetadataRefresh.css';
 

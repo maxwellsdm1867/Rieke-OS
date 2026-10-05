@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {Check,CopyCheck,FileWarning,LoaderCircle,ChevronRight} from 'lucide-react';
-import {time} from '../api.js';
-import {Empty} from './Common.jsx';
+import {time} from '../../api.js';
+import {Empty} from '../../components/Common.jsx';
 import {ImportProgressMeter} from './ImportStatusBar.jsx';
 import {IMPORT_TERMINAL,isImportPending,jobProgressView,sourceName,elapsedLabel,sourceCountsLabel} from '../importProgress.js';
 import './ImportHistory.css';

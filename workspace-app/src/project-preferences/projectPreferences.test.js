@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createProjectPreferenceClient,preferenceStorageKey} from './projectPreferences.js';
-import {moveProtocolPreference} from './ordering.js';
+import {moveProtocolPreference} from '../ordering.js';
 
 const projectId='a5790c6c-ddc0-40c0-8a98-66f7a613e82b';
 function backend(state={}){

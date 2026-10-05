@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
-import {api} from './api.js';
+import {api} from '../api.js';
 import {createProjectPreferenceClient,preferenceStorageKey} from './projectPreferences.js';
-import {registerDraftSaver} from './desktopLifecycle.js';
+import {registerDraftSaver} from '../desktopLifecycle.js';
 
 const clients=new Map();
 function clientFor(projectId){

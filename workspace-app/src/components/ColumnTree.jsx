@@ -11,7 +11,7 @@ import {loadColumnTreePages} from '../tree-ancestors/columnTreeReads.js';
 import {treeNavigationStart,treeNavigationSnapshot} from '../pagedTreeRequest.js';
 import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from '../treeBranchPresentation.js';
 import {columnSelectionNeedsAnchor,columnBranchNavigation,columnWheelDelta} from '../columnTreeNavigation.js';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import './TreePreview.css';
 import './ColumnTree.css';
 import {IncomingEpochSelect,useIncomingTreeSelection} from '../incoming-workbench/ui/IncomingTreeSelection.jsx';

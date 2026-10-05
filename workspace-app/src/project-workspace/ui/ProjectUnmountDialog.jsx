@@ -1,8 +1,8 @@
 import {useState} from 'react';
 import {LoaderCircle,LogOut} from 'lucide-react';
 import ProjectSetupDialog from './ProjectSetupDialog.jsx';
-import {api} from '../api.js';
-import {unmountProject} from '../projectUnmount.js';
+import {api} from '../../api.js';
+import {unmountProject} from '../../projectUnmount.js';
 import './ProjectUnmountDialog.css';
 
 export default function ProjectUnmountDialog({project,pending,launcherUrl,onClose,onUnmount,saveView}){

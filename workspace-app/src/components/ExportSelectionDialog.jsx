@@ -4,7 +4,7 @@ import CandidateExportPanel from './CandidateExportPanel.jsx';
 import ProtocolApplyPanel from './ProtocolApplyPanel.jsx';
 import NewPinnedProtocol from './NewPinnedProtocol.jsx';
 import {exportProtocolGroups,pinProtocolPreference} from '../exportProtocolTargets.js';
-import {useProjectPreference} from '../useProjectPreference.js';
+import {useProjectPreference} from '../project-preferences/useProjectPreference.js';
 import './ExportSelectionDialog.css';
 
 export default function ExportSelectionDialog({candidate,protocols,projectId,directOnly=false,initialProtocolId,defaultName,defaultFormat,disabled,onClose,onApplied,onChanged}){

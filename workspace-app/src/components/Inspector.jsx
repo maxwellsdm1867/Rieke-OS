@@ -29,7 +29,7 @@ import {inspectionSearches} from '../inspectionScope.js';
 import {saveCurationSelection} from '../curationSelection.js';
 import {useAnnotationReceipts} from '../useAnnotationReceipts.js';
 import {fastAnnotationReceipt} from '../annotationReceipts.js';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {restoredEpochFocus} from '../workspace-navigation/workspaceNavigation.js';
 import Trace from '../traces/ui/TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';

@@ -8,7 +8,7 @@ async function mountedPicker(selection){
  const old=globalThis.window,values=[];let chooseCount=0;
  globalThis.window={riekeDesktop:{chooseProjectFolder:async()=>{chooseCount++;return selection;}}};
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'}});
- const {default:FolderPathInput}=await server.ssrLoadModule('/src/components/FolderPathInput.jsx');let renderer;
+ const {default:FolderPathInput}=await server.ssrLoadModule('/src/file-picker/ui/FolderPathInput.jsx');let renderer;
  await act(async()=>{renderer=TestRenderer.create(React.createElement(FolderPathInput,{value:'/chosen/project',onChange:value=>values.push(value),title:'Project folder',purpose:'existing'}),{createNodeMock:()=>({focus(){}})});});
  return {values,get input(){return renderer.root.findByType('input');},get button(){return renderer.root.findByType('button');},get chooseCount(){return chooseCount;},
    async browse(){await act(async()=>renderer.root.findByType('button').props.onClick());},

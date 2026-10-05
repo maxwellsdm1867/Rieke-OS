@@ -10,7 +10,7 @@ import {api,humanize,number} from '../api.js';
 import {epochPageRequest,epochPageRevision} from '../epochBrowserSource.js';
 import {epochSelectionRange,toggleEpochSelection,mergeEpochSelection} from '../epochSelection.js';
 import {inspectionDates} from '../inspectionCellTree.js';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {Status} from './Common.jsx';
 import {incomingRowAnnotation} from '../annotationTags.js';
 import './InspectionCellTree.css';

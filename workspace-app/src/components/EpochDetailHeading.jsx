@@ -1,5 +1,5 @@
 import {humanize} from '../api.js';
-import {datedCellLabel} from '../recordingIdentity.js';
+import {datedCellLabel} from '../recording-import/recordingIdentity.js';
 import {Badge} from './Common.jsx';
 
 export default function EpochDetailHeading({epoch,onQC,disabled=false}){

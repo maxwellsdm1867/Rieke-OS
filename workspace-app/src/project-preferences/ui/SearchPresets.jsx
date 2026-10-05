@@ -1,7 +1,7 @@
-import QueryPresetHistory from './QueryPresetHistory.jsx';
+import QueryPresetHistory from '../../components/QueryPresetHistory.jsx';
 import {useRef,useState} from 'react';
 import {ArrowRight,Clock3,Search,Filter,Pin,PinOff,Pencil,RefreshCw,Sparkles,Download,Upload,Database,Users,Activity} from 'lucide-react';
-import {number,time} from '../api.js';
+import {number,time} from '../../api.js';
 import {predicateSummary,suggestedSearches,presetKey,searchRunSummary} from '../searchPresets.js';
 import {parsePresetRecipe,sortedProjectPresets} from '../projectSearchPresets.js';
 import './SearchPresets.css';

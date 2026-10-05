@@ -39,7 +39,7 @@ export async function readFolderListing({directory='',offset=0,request}){
   return data;
 }
 async function chooseFolderDialog(options){
-  const {openFolderBrowserDialog}=await import('./components/FolderBrowserDialog.jsx');
+  const {openFolderBrowserDialog}=await import('./ui/FolderBrowserDialog.jsx');
   return openFolderBrowserDialog(options);
 }
 export async function browseFolder({directory='',purpose='existing',title,suggestedName,parentDirectory,

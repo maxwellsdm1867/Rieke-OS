@@ -26,7 +26,7 @@ async function harness(initial=testing,{source=false}={}){
     server:{middlewareMode:true,hmr:false,ws:false},ssr:{noExternal:['react-dom']},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},
     plugins:[{name:'update-dialog-browser-boundary',enforce:'pre',resolveId:id=>id==='react-dom'?'\0update-portal':undefined,
       load:id=>id==='\0update-portal'?'export const createPortal=children=>children;':undefined}]});
-  const {default:AppUpdates}=await server.ssrLoadModule('/src/components/AppUpdates.jsx');let renderer;
+  const {default:AppUpdates}=await server.ssrLoadModule('/src/app-updates/ui/AppUpdates.jsx');let renderer;
   await act(async()=>{renderer=TestRenderer.create(React.createElement(AppUpdates),{createNodeMock:node=>node.type==='dialog'?{showModal(){},close(){}}:null});});
   const h={fixture,get text(){return text(renderer.toJSON());},get buttons(){return renderer.root.findAllByType('button');},
     async click(name){const button=h.buttons.find(node=>text(node).trim()===name||node.props['aria-label']===name);assert.ok(button,`Button missing: ${name}`);await act(async()=>button.props.onClick());},
