@@ -237,6 +237,42 @@
     {
       "from": "python/disco/recovery/CONTRACT.md",
       "to": "python/disco/recovery/tests/test_workspace_mutation_outcomes.py"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/search-activation/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/requested-summaries/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/tree-ancestors/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/typed-query/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/incoming-workbench/AGENTS.md"
+    },
+    {
+      "from": "workspace-app/src/AGENTS.md",
+      "to": "workspace-app/src/traces/AGENTS.md"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/INSTALLATION.md"
+    },
+    {
+      "from": "desktop/AGENTS.md",
+      "to": "desktop/RETAINED_OWNERS.md"
+    },
+    {
+      "from": "README.md",
+      "to": "python/AGENTS.md"
     }
   ],
   "shared_paths": [
@@ -291,7 +327,7 @@
           "deny": [
             "workspace-app/src/api.js",
             "workspace-app/src/pagedTreeRequest.js",
-            "workspace-app/src/treeBranchReadCache.js",
+            "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
             "node:module",
             "module"
           ],
@@ -602,7 +638,9 @@
           "desktop/startup/tests/public-examples.test.cjs",
           "desktop/integrity/tests/verify-application.test.cjs",
           "desktop/integrity/tests/public-examples.test.cjs",
-          "desktop/updates/tests/public-examples.test.cjs"
+          "desktop/updates/tests/public-examples.test.cjs",
+          "desktop/tests/installation-keep-public.test.cjs",
+          "desktop/tests/retained-owners-public-examples.test.cjs"
         ]
       }
     },
@@ -900,6 +938,669 @@
           "python/tests/test_benchmark.py"
         ]
       }
+    },
+    {
+      "id": "search-activation",
+      "contract": {
+        "path": "workspace-app/src/search-activation/AGENTS.md",
+        "heading": "Search activation"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/search-activation/GlobalSearch.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/search-activation/navigationReadCache.jsx",
+            "workspace-app/src/search-activation/GlobalSearch.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/search-activation/metadataSearch.js",
+          "allow": [
+            "workspace-app/src/components/metadataValues.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/search-activation/navigationReadCache.jsx",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/annotationProfile.js",
+            "workspace-app/src/search-activation/pageReadCache.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/search-activation/pageReadCache.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/search-activation/GlobalSearch.jsx",
+            "workspace-app/src/search-activation/navigationReadCache.jsx"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/search-activation/globalSearchCache.test.js",
+          "workspace-app/src/search-activation/metadataSearch.test.js",
+          "workspace-app/src/search-activation/navigationReadStrictMode.test.js",
+          "workspace-app/src/search-activation/pageReadCache.test.js",
+          "workspace-app/src/globalSearchBaseline.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "requested-summaries",
+      "contract": {
+        "path": "workspace-app/src/requested-summaries/AGENTS.md",
+        "heading": "Requested summaries"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/requested-summaries/requestedSummaries.js",
+          "allow": [
+            "workspace-app/src/typed-query/jointGrouping.js",
+            "workspace-app/src/typed-query/predicateIdentity.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/requested-summaries/summaryApi.js",
+          "allow": [
+            "workspace-app/src/api.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+          "allow": [
+            "react",
+            "workspace-app/src/requested-summaries/requestedSummaries.js",
+            "workspace-app/src/requested-summaries/summaryApi.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+            "workspace-app/src/requested-summaries/requestedSummaries.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/requested-summaries/requestedSummaries.test.js",
+          "workspace-app/src/requested-summaries/requestedSummariesLifecycle.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "tree-ancestors",
+      "contract": {
+        "path": "workspace-app/src/tree-ancestors/AGENTS.md",
+        "heading": "Attested tree ancestors"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/tree-ancestors/columnTreeReads.js",
+          "allow": [
+            "workspace-app/src/search-activation/pageReadCache.js",
+            "workspace-app/src/pagedTreeRequest.js",
+            "workspace-app/src/columnTreeNavigation.js",
+            "workspace-app/src/tree-ancestors/treeBranchReadCache.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
+          "allow": [
+            "@tanstack/react-query",
+            "workspace-app/src/search-activation/pageReadCache.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
+          "allow": [
+            "@tanstack/react-query",
+            "react",
+            "workspace-app/src/annotationProfile.js",
+            "workspace-app/src/tree-ancestors/treeBranchReadCache.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/tree-ancestors/treeBranchReads.jsx"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/tree-ancestors/treeBranchReadCache.test.js",
+          "workspace-app/src/tree-ancestors/treeBranchReads.test.js",
+          "workspace-app/src/columnTreeNavigation.test.js",
+          "workspace-app/src/inspectorTreeAuthority.test.js",
+          "workspace-app/src/workbenchSessionLifecycle.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/presentationSessionsIntegration.test.js",
+          "workspace-app/src/workflowResponsiveness.test.js",
+          "workspace-app/src/inspectorNavigationLifecycle.test.js",
+          "workspace-app/src/inspectorCurationLifecycle.test.js",
+          "workspace-app/src/selectionMaskDownload.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "typed-query",
+      "contract": {
+        "path": "workspace-app/src/typed-query/AGENTS.md",
+        "heading": "Typed query presentation"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/jointGrouping.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/predicateFieldPresentation.js",
+          "allow": [
+            "workspace-app/src/typed-query/ui/predicateEditor.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/predicateIdentity.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/predicateValueSuggestions.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/protocolViewFilter.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/typed-query/jointGrouping.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
+          "allow": [
+            "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
+            "workspace-app/src/typed-query/predicateFieldPresentation.js",
+            "react",
+            "react-dom",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/typed-query/ui/predicateState.js",
+            "workspace-app/src/typed-query/ui/predicateEditor.js",
+            "workspace-app/src/typed-query/ui/PredicateBuilder.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
+            "workspace-app/src/typed-query/ui/predicateState.js",
+            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+            "workspace-app/src/requested-summaries/requestedSummaries.js",
+            "workspace-app/src/components/SummaryStatus.jsx",
+            "workspace-app/src/components/SummaryPreferences.jsx",
+            "workspace-app/src/useProtocolSummaryPreferences.js",
+            "workspace-app/src/useProjectPreference.js",
+            "workspace-app/src/api.js",
+            "workspace-app/src/frozenReadContext.js",
+            "workspace-app/src/typed-query/predicateIdentity.js",
+            "workspace-app/src/searchPresets.js",
+            "workspace-app/src/components/StableContent.jsx",
+            "workspace-app/src/typed-query/ui/PredicateDialog.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
+          "allow": [
+            "react",
+            "react-dom",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/typed-query/predicateValueSuggestions.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/typed-query/protocolViewFilter.js",
+            "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
+            "workspace-app/src/typed-query/ui/ProtocolViewFilter.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
+          "allow": [
+            "react",
+            "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+            "workspace-app/src/typed-query/ui/predicateState.js",
+            "workspace-app/src/useFieldRegistry.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/TreeBuilder.jsx",
+          "allow": [
+            "react",
+            "react-dom",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/useFieldRegistry.js",
+            "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+            "workspace-app/src/useProtocolSummaryPreferences.js",
+            "workspace-app/src/requested-summaries/requestedSummaries.js",
+            "workspace-app/src/components/SummaryStatus.jsx",
+            "workspace-app/src/components/SummaryPreferences.jsx",
+            "workspace-app/src/typed-query/ui/TreeBuilder.css",
+            "workspace-app/src/ordering.js",
+            "workspace-app/src/pointerDrag.js",
+            "workspace-app/src/treeFieldPresentation.js",
+            "workspace-app/src/typed-query/jointGrouping.js",
+            "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
+            "workspace-app/src/components/NavigationLoading.jsx",
+            "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
+            "workspace-app/src/components/TreeGroupTags.jsx"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/predicateEditor.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/typed-query/ui/predicateState.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+            "workspace-app/src/typed-query/protocolViewFilter.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/typed-query/jointGrouping.test.js",
+          "workspace-app/src/typed-query/predicateEditor.test.js",
+          "workspace-app/src/typed-query/predicateFieldPresentation.test.js",
+          "workspace-app/src/typed-query/predicateIdentity.test.js",
+          "workspace-app/src/typed-query/predicateState.test.js",
+          "workspace-app/src/typed-query/predicateValueSuggestions.test.js",
+          "workspace-app/src/typed-query/protocolViewFilter.test.js",
+          "workspace-app/src/predicateDialogLifecycle.test.js",
+          "workspace-app/src/scopedPredicateLifecycle.test.js",
+          "workspace-app/src/scopedPredicateFilter.test.js",
+          "workspace-app/src/protocolPredicateWorkflow.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "incoming-workbench",
+      "contract": {
+        "path": "workspace-app/src/incoming-workbench/AGENTS.md",
+        "heading": "Incoming workbench"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+          "allow": [
+            "workspace-app/src/cellTypes.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingReview.js",
+          "allow": [
+            "workspace-app/src/protocolSuggestions.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingReviewDecision.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingSelection.js",
+          "allow": [
+            "workspace-app/src/epochBrowserSource.js",
+            "workspace-app/src/epochSelection.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
+          "allow": [
+            "workspace-app/src/annotationTags.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js",
+            "lucide-react",
+            "workspace-app/src/components/NeuronIcon.jsx",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+            "workspace-app/src/components/WorkbenchExportDialog.jsx"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+          "allow": [
+            "react",
+            "react-dom",
+            "workspace-app/src/api.js",
+            "lucide-react",
+            "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+            "workspace-app/src/components/NeuronIcon.jsx",
+            "workspace-app/src/typed-query/protocolViewFilter.js",
+            "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+            "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+            "workspace-app/src/components/Inspector.jsx",
+            "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+            "workspace-app/src/components/WorkbenchExportDialog.jsx",
+            "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
+            "workspace-app/src/workbenchExport.js",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+          "allow": [
+            "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+            "workspace-app/src/cellTypes.js",
+            "workspace-app/src/api.js",
+            "workspace-app/src/components/NeuronIcon.jsx"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingEpochReview.jsx",
+          "allow": [
+            "lucide-react",
+            "workspace-app/src/incoming-workbench/incomingReviewDecision.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
+          "allow": [
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/components/NeuronIcon.jsx"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingSelectionTools.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/incoming-workbench/incomingSelection.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingTagSummary.jsx",
+          "allow": [
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/annotationTags.js",
+            "workspace-app/src/components/AnnotationTags.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/treeGroupTargets.js",
+            "workspace-app/src/epochSelection.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/protocolSuggestions.js",
+            "workspace-app/src/incoming-workbench/incomingReview.js",
+            "workspace-app/src/components/IncomingExportDialog.jsx",
+            "workspace-app/src/components/WorkbenchExportDialog.jsx",
+            "workspace-app/src/workbenchExport.js",
+            "workspace-app/src/components/MetadataExplorer.jsx",
+            "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+            "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
+            "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+            "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+          "allow": [
+            "react",
+            "workspace-app/src/incoming-workbench/incomingMergeIntent.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/App.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+            "workspace-app/src/incoming-workbench/incomingMergeIntent.js"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/incoming-workbench/incomingCellTypes.test.js",
+          "workspace-app/src/incoming-workbench/incomingReview.test.js",
+          "workspace-app/src/incoming-workbench/incomingSelection.test.js",
+          "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.test.js",
+          "workspace-app/src/incoming-workbench/workbenchAuthority.test.js",
+          "workspace-app/src/incomingReviewDecision.test.js",
+          "workspace-app/src/incomingCellTypesRendering.test.js",
+          "workspace-app/src/incomingInclusionRendering.test.js",
+          "workspace-app/src/incomingSelectionRendering.test.js",
+          "workspace-app/src/incomingTagSummary.test.js",
+          "workspace-app/src/incomingWorkbenchRendering.test.js",
+          "workspace-app/src/incomingWorkbenchStrictMode.test.js",
+          "workspace-app/src/workbenchSessionLifecycle.test.js",
+          "workspace-app/src/workbenchRouteRendering.test.js",
+          "workspace-app/src/incomingAuthorityRecovery.test.js",
+          "workspace-app/src/importMergeWorkflow.test.js",
+          "workspace-app/src/importMergeAppRoute.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
+    },
+    {
+      "id": "traces",
+      "contract": {
+        "path": "workspace-app/src/traces/AGENTS.md",
+        "heading": "Trace window presentation"
+      },
+      "affected_paths": [
+        "workspace-app/**"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/traceReadContext.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/ui/TraceViewer.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/traces/ui/traceGeometry.js",
+            "workspace-app/src/traces/ui/TraceViewer.css",
+            "workspace-app/src/traces/traceReadContext.js",
+            "workspace-app/src/components/NavigationLoading.jsx"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/ui/traceGeometry.js",
+          "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/components/EpochViewer.jsx",
+          "deny": [],
+          "require": [
+            "workspace-app/src/traces/ui/TraceViewer.jsx"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/traces/traceGeometry.test.js",
+          "workspace-app/src/traceReadContext.test.js",
+          "workspace-app/src/epochResourceLifecycle.test.js",
+          "workspace-app/src/architectureModulePolicy.test.js",
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/testDiscovery.test.js"
+        ],
+        "python": [
+          "python/tests/test_architecture_guard.py"
+        ]
+      }
     }
   ],
   "javascript_module_policy": {
@@ -922,7 +1623,7 @@
     "dom_override_test_files": [
       "workspace-app/src/importMergeWorkflow.test.js",
       "workspace-app/src/incomingWorkbenchStrictMode.test.js",
-      "workspace-app/src/navigationReadStrictMode.test.js",
+      "workspace-app/src/search-activation/navigationReadStrictMode.test.js",
       "workspace-app/src/workbenchSessionLifecycle.test.js"
     ],
     "modules": [
@@ -1034,6 +1735,407 @@
             ]
           }
         ]
+      },
+      {
+        "contract_id": "search-activation",
+        "root": "workspace-app/src/search-activation",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/search-activation/GlobalSearch.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/search-activation/metadataSearch.js",
+            "exports": [
+              "parseMetadataSearch",
+              "matchesMetadataSearch"
+            ]
+          },
+          {
+            "path": "workspace-app/src/search-activation/navigationReadCache.jsx",
+            "exports": [
+              "NavigationReadProvider",
+              "WorkspaceReadCacheOwner",
+              "useSearchSnapshot"
+            ]
+          },
+          {
+            "path": "workspace-app/src/search-activation/pageReadCache.js",
+            "exports": [
+              "PAGE_READ_CACHE_VERSION",
+              "PAGE_READ_CACHE_LIMITS",
+              "canonicalReadIdentity",
+              "pageReadKey",
+              "validSearchResponse",
+              "createPageReadCache",
+              "searchReadDescriptor"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "requested-summaries",
+        "root": "workspace-app/src/requested-summaries",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/requested-summaries/requestedSummaries.js",
+            "exports": [
+              "SUMMARY_PREFERENCES_VERSION",
+              "summaryPreferenceKey",
+              "summaryPreferences",
+              "predicateSummaryFields",
+              "requestedSummaryFields",
+              "summaryRequestKey",
+              "fieldsWithSummaries",
+              "registryMatchesSummaryGeneration",
+              "createSummaryController"
+            ]
+          },
+          {
+            "path": "workspace-app/src/requested-summaries/summaryApi.js",
+            "exports": [
+              "summaryApi"
+            ]
+          },
+          {
+            "path": "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+            "exports": [
+              "useRequestedSummaries"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "tree-ancestors",
+        "root": "workspace-app/src/tree-ancestors",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/tree-ancestors/columnTreeReads.js",
+            "exports": [
+              "loadColumnTreePages"
+            ]
+          },
+          {
+            "path": "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
+            "exports": [
+              "TREE_BRANCH_LIMITS",
+              "reusableTreeBody",
+              "createTreeBranchReadCache"
+            ]
+          },
+          {
+            "path": "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
+            "exports": [
+              "TreeBranchReadOwner",
+              "useTreeBranchReads"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "typed-query",
+        "root": "workspace-app/src/typed-query",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/typed-query/jointGrouping.js",
+            "exports": [
+              "jointId",
+              "jointComponents",
+              "shortFieldLabel",
+              "jointDefinition",
+              "combineLevels",
+              "uncombineLevel"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/predicateFieldPresentation.js",
+            "exports": [
+              "predicateFieldLabel",
+              "predicateFieldGroup",
+              "predicateFieldRank",
+              "predicateFieldSearch"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/predicateIdentity.js",
+            "exports": [
+              "predicateIdentity"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/predicateValueSuggestions.js",
+            "exports": [
+              "predicateValueSuggestions"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/protocolViewFilter.js",
+            "exports": [
+              "readTagRules",
+              "compileTagRules",
+              "clearTagFilters",
+              "tagFilterLabel",
+              "predicateWithTagFilters",
+              "predicateWithProtocolFilters"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/TreeBuilder.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/predicateEditor.js",
+            "exports": [
+              "valueTypes",
+              "groupChoice",
+              "setGroupChoice",
+              "fieldCategory",
+              "preferredValueType",
+              "blankValue",
+              "operatorChoices",
+              "canUseDateInput",
+              "recordedValueChoices",
+              "isTagField",
+              "fieldCondition"
+            ]
+          },
+          {
+            "path": "workspace-app/src/typed-query/ui/predicateState.js",
+            "exports": [
+              "newCondition",
+              "newGroup",
+              "predicateToDraft",
+              "typedValue",
+              "compilePredicate",
+              "conditionCount"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "incoming-workbench",
+        "root": "workspace-app/src/incoming-workbench",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+            "exports": [
+              "incomingCellTypes"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+            "exports": [
+              "mergeIntentMatches",
+              "createIncomingMergeIntents"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingReview.js",
+            "exports": [
+              "reviewKey",
+              "reviewSessionKey",
+              "reviewWorklist",
+              "acceptedBinding",
+              "acceptIncoming",
+              "exportIncoming",
+              "currentProposalCellCount",
+              "currentProposalCellBadge",
+              "pendingReviewBadge"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingReviewDecision.js",
+            "exports": [
+              "incomingReviewDecision",
+              "epochIncluded"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingSelection.js",
+            "exports": [
+              "incomingSelectionCount",
+              "loadIncomingSelection"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
+            "exports": [
+              "incomingTagSummary"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+            "exports": [
+              "exactSelectedIds",
+              "selectedReview",
+              "prepareSelectedIncoming",
+              "selectedViewFilters"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
+            "exports": [
+              "requirePreparedWorkbench",
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingEpochReview.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionTools.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingTagSummary.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
+            "exports": [
+              "IncomingEpochSelect",
+              "useIncomingTreeSelection"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "exports": [
+              "workbenchRoot",
+              "workbenchCandidateRoot",
+              "requireWorkbenchQueue",
+              "requireWorkbenchContext",
+              "saveWorkbenchDecisions",
+              "previewWorkbench",
+              "workbenchPreviewCounts",
+              "acceptWorkbench",
+              "selectionDecisions",
+              "acceptanceFailureKind"
+            ]
+          }
+        ]
+      },
+      {
+        "contract_id": "traces",
+        "root": "workspace-app/src/traces",
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/traces/traceReadContext.js",
+            "exports": [
+              "traceRequestPath",
+              "traceCacheRevision"
+            ]
+          },
+          {
+            "path": "workspace-app/src/traces/ui/TraceViewer.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/traces/ui/traceGeometry.js",
+            "exports": [
+              "MAX_TRACE_SAMPLES",
+              "clampWindow",
+              "zoomWindow",
+              "dragWindow",
+              "sampleAtPixel",
+              "timeRange",
+              "finiteExtent",
+              "finiteSegments",
+              "ticks",
+              "formatTick"
+            ]
+          }
+        ]
       }
     ],
     "additional_sources": [
@@ -1054,14 +2156,14 @@
         "specifier": "../api.js",
         "to": "workspace-app/src/api.js",
         "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
-        "resolver_sha256": "bd6dfe50f8670f07ea0809a6a8f987f67acfef9df49174d1af2d2846137a9187"
+        "resolver_sha256": "c89dc36d6669a53d10553d751baefede7094f7a4c607063324ddd8943a923de8"
       },
       {
         "from": "workspace-app/src/test-support/fixtures/globalSearch-checkpoint.jsx",
         "specifier": "./GlobalSearch.css",
-        "to": "workspace-app/src/components/GlobalSearch.css",
+        "to": "workspace-app/src/search-activation/GlobalSearch.css",
         "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
-        "resolver_sha256": "bd6dfe50f8670f07ea0809a6a8f987f67acfef9df49174d1af2d2846137a9187"
+        "resolver_sha256": "c89dc36d6669a53d10553d751baefede7094f7a4c607063324ddd8943a923de8"
       }
     ]
   },

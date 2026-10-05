@@ -54,7 +54,7 @@ The adoption record adds cross-owner obligations; it does not replace those loca
 contracts. Folder organization is partial: functional areas in the system table
 below describe responsibilities, not completed physical modules.
 
-For retained backend owners, use [backend navigation](python/AGENTS.md).
+For organized recovery and retained backend owners, use [backend navigation](python/AGENTS.md).
 
 | Responsibility | Canonical local guide |
 | --- | --- |
@@ -65,17 +65,26 @@ For retained backend owners, use [backend navigation](python/AGENTS.md).
 | Renderer draft queue, recovery and React lifetime | [Renderer drafts](workspace-app/src/renderer-drafts/AGENTS.md) |
 | Versioned tree-layout saves and load lifetime | [Protocol tree layout](workspace-app/src/protocol-tree-layout/AGENTS.md) |
 | Route identity, history and navigation intent | [Workspace navigation](workspace-app/src/workspace-navigation/AGENTS.md) |
+| Search activation, typed identity and bounded reuse | [Search activation](workspace-app/src/search-activation/AGENTS.md) |
+| Requested-field jobs, scope witnesses and cancellation | [Requested summaries](workspace-app/src/requested-summaries/AGENTS.md) |
+| Witnessed ancestor reuse and provider lifetime | [Attested tree ancestors](workspace-app/src/tree-ancestors/AGENTS.md) |
+| Typed predicates, split recipes and editor lifetime | [Typed query presentation](workspace-app/src/typed-query/AGENTS.md) |
+| Incoming queue, frozen review and distinct consent/command entries | [Incoming workbench](workspace-app/src/incoming-workbench/AGENTS.md) |
+| Bounded trace geometry and scoped request identity | [Trace windows](workspace-app/src/traces/AGENTS.md) |
 | Draft barriers and bounded ordinary Quit | [Desktop close](desktop/close/README.md) |
 | Scoped persistent renderer drafts | [Desktop draft store](desktop/drafts/README.md) |
 | Startup preference validation and one-time claim | [Desktop startup](desktop/startup/README.md) |
 | Explicit application verification and recovery ordering | [Desktop integrity](desktop/integrity/README.md) |
 | Signed and unsigned-testing update coordination | [Desktop updates](desktop/updates/README.md) |
+| Retained installed helper and rollback paths | [Installation and rollback](desktop/INSTALLATION.md) |
+| Retained supervisor, restoration, profile and location ownership | [Startup and state owners](desktop/RETAINED_OWNERS.md) |
 
 [Frontend instructions](workspace-app/src/AGENTS.md),
 [desktop instructions](desktop/AGENTS.md) and [retained tooling instructions](tools/AGENTS.md)
-provide area-specific check commands and remaining owners. Python runtime owners
-currently retain their existing paths; the system table below links them. The
-first recovery package remains gated. See the [current path ledger](docs/architecture/core-module-paths.json)
+provide area-specific check commands and remaining owners. Mutation recovery uses
+its public Python package; other Python runtime owners retain their existing paths.
+These source-level ownership checks do not establish assembled-app qualification.
+See the [current path ledger](docs/architecture/core-module-paths.json)
 for baseline versus current paths; historical evidence must retain its original
 source identity. No folder-count or test result substitutes for native/package
 acceptance or a measured performance comparison.
@@ -118,7 +127,7 @@ have different authority and lifecycle from disposable SQLite query sidecars.
 | Canonical catalog | RetinAnalysis acquisition schema, [workspace tables](python/recording_workspace.py), [curation](python/workspace_curation.py), [annotations](python/workspace_annotations.py), [explorer/bindings](python/workspace_explorer.py) | MySQL stores project registrations and authored state; original H5 retains samples. Sealed imported metadata is checked against registered manifests. |
 | Metadata read model | [WorkspaceService](python/workspace_service.py), [disk index](python/workspace_disk_index.py), [metadata objects](python/workspace_metadata_objects.py) | Source identity and eligibility, exact rows/details, immutable generations and bounded caches. |
 | Typed filtering / aggregates | [typed index](python/workspace_typed_index.py), [typed query](python/workspace_typed_query.py), [lifecycle](python/workspace_typed_lifecycle.py), [explore queries](python/workspace_explore_queries.py) | Derived SQLite accelerates supported reads; service adapters retain source, annotation and frozen-binding authority. |
-| Tree navigation | [selection reader](workspace-app/src/tree-selection/treeSelectionReader.js), [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
+| Tree navigation | [selection reader](workspace-app/src/tree-selection/treeSelectionReader.js), [tree semantics](python/workspace_tree.py), [tree pages](python/workspace_tree_pages.py), [ColumnTree](workspace-app/src/components/ColumnTree.jsx), [branch cache](workspace-app/src/tree-ancestors/treeBranchReadCache.js) | Exact typed grouping/order and revision-checked bounded pages; narrow attested ancestor reuse. |
 | Scientific decisions | [shared annotations](python/workspace_annotations.py), [curation](python/workspace_curation.py), [workbench](python/workspace_workbench.py), [state generation](python/workspace_state_generation.py) | Author/scope/identity and expected revisions; transactionally related audit and generation. |
 | Exports | [format materializer](python/workspace_export_artifacts.py), [recipes](python/workspace_recipes.py), [SQLite writer](python/workspace_sqlite.py), [standalone reader](python/query_workspace_export.py), [MATLAB writer](python/workspace_matlab.py) | Caller-owned frozen membership, metadata, source references, decisions and provenance; shared format tail retains caller publication authority. |
 | Recovery | [HTTP completion policy](python/disco/recovery/__init__.py), [recovery store](python/workspace_recovery_store.py), [state snapshots](python/workspace_state_snapshot.py), [backup scheduler](python/workspace_backup_scheduler.py) | Backup completion is separate from an already committed native write. |

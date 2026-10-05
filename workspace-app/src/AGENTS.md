@@ -20,6 +20,21 @@ Start in the module folder for the responsibility you are changing:
 - [Workspace navigation](workspace-navigation/AGENTS.md): route/history identity and
   React navigation lifetime; restored views do not restore scientific consent.
 
+- [Search activation](search-activation/AGENTS.md): bounded global-search reuse,
+  App-shell activation and action-time freshness; typed metadata matching remains
+  a named public entry.
+- [Requested summaries](requested-summaries/AGENTS.md): requested-field policy,
+  controller, React lifetime and submit/poll/cancel adapter; backend computation
+  and scientific membership remain separate.
+- [Attested tree ancestors](tree-ancestors/AGENTS.md): bounded nonterminal reuse,
+  fresh witness leases, provider lifetime and column orchestration.
+- [Typed query presentation](typed-query/AGENTS.md): typed predicate and split
+  editors, registry identity and ordered joint recipes.
+- [Incoming workbench](incoming-workbench/AGENTS.md): queue and frozen review
+  presentation; command choreography and ephemeral consent retain separate entries.
+- [Trace windows](traces/AGENTS.md): bounded recorded samples, inclusive time and
+  missing-sample segmentation; resource/cache lifetime remains shared.
+
 Other frontend owners retain their existing named files pending the organization
 worklist; each ledger record need not become a separate module. See the
 [architecture map](../../ARCHITECTURE.md) for other adopted interfaces.

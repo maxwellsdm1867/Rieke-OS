@@ -90,8 +90,8 @@ allowlist. Loading/closure validation rejects malformed, missing, redirected or
 excluded modules; copy stages that allowlist; audit compares the actual file set.
 Do not invoke copy while intending only to inspect. Its CLI `--root` checks tracked
 release-source exclusions, not the entire staged runtime. The shipping profile
-remains v1 with flat Python filenames; the helper also supports v2 explicit package
-paths. Follow the canonical [application boundary](../desktop/README.md#application-boundary)
+uses v2 explicit regular-package paths, including the public recovery package;
+the helper retains support for v1 flat profiles. Follow the canonical [application boundary](../desktop/README.md#application-boundary)
 for package rules, source-only examples and qualification limits. Actual package
 relocation still requires reviewed closure/discovery changes and separate
 qualification, not a silent relaxation of the allowlist.
@@ -184,10 +184,10 @@ Both start a server/browser and write evidence. Neither is a live backend or
 native trace qualification. Missing dependencies/history, occupied ports, browser
 failures or assertions must remain failures, not partial passing receipts.
 
-Related existing behavior tests are [protocolViewFilter.test.js](../workspace-app/src/protocolViewFilter.test.js),
+Related existing behavior tests are [protocolViewFilter.test.js](../workspace-app/src/typed-query/protocolViewFilter.test.js),
 [scopedPredicateFilter.test.js](../workspace-app/src/scopedPredicateFilter.test.js),
 [scopedPredicateLifecycle.test.js](../workspace-app/src/scopedPredicateLifecycle.test.js),
-[traceGeometry.test.js](../workspace-app/src/traceGeometry.test.js) and
+[traceGeometry.test.js](../workspace-app/src/traces/traceGeometry.test.js) and
 [traceReadContext.test.js](../workspace-app/src/traceReadContext.test.js).
 These cover product behavior; they do not prove these browser scripts ran. Respect
 the trace script's serialized numeric/E2E/UI window before a scoped run.

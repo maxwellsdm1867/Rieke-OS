@@ -62,7 +62,8 @@ Start with [the architecture and module guide](ARCHITECTURE.md#module-guide) and
 [repository instructions](AGENTS.md). The guide links each organized folder to
 its public interface, ownership rules, examples and tests. Follow
 [frontend navigation](workspace-app/src/AGENTS.md),
-[desktop navigation](desktop/AGENTS.md), or [tooling navigation](tools/AGENTS.md)
+[desktop navigation](desktop/AGENTS.md), [backend navigation](python/AGENTS.md),
+or [tooling navigation](tools/AGENTS.md)
 for the area you are changing. The [module ledger](docs/architecture/core-module-ledger.md)
 separates verified local increments, retained owners and remaining work; these
 source checks do not establish final assembled-app qualification.
