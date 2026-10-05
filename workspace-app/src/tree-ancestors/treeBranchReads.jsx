@@ -1,6 +1,6 @@
 import {QueryClientProvider} from '@tanstack/react-query';
 import {createContext,useContext,useEffect,useLayoutEffect,useMemo,useState} from 'react';
-import {useAnnotationProfile} from './annotationProfile.js';
+import {useAnnotationProfile} from '../annotationProfile.js';
 import {createTreeBranchReadCache} from './treeBranchReadCache.js';
 
 const Context=createContext(null);let nextOwner=0;

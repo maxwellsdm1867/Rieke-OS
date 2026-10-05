@@ -1,5 +1,5 @@
 import {createStartupRestore} from './startupRestore.js';
-import {TreeBranchReadOwner} from './treeBranchReads.jsx';
+import {TreeBranchReadOwner} from './tree-ancestors/treeBranchReads.jsx';
 import ProtocolSelectionSummary from './components/ProtocolSelectionSummary.jsx';
 import {useAppAppearance} from './appAppearance.js';
 import AppAppearance,{AppearanceButton} from './components/AppAppearance.jsx';

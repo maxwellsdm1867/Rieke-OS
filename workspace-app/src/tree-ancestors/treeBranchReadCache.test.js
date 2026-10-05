@@ -130,15 +130,15 @@ import React,{act as domAct} from 'react';
 import {createRoot} from 'react-dom/client';
 import {JSDOM} from 'jsdom';
 import TestRenderer,{act} from 'react-test-renderer';
-import {createServer} from './test-support/isolatedVite.js';
+import {createServer} from '../test-support/isolatedVite.js';
 import {fileURLToPath} from 'node:url';
 test('mounted current lease expiry clears loading and explicit retry obtains a fresh witness',async()=>{
  let clock=0,calls=0,witnesses=0;const retryBodies=[];const hold=deferred(),cache=createTreeBranchReadCache({now:()=>clock});cache.activate(scope);
  const key='__treeLeaseFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'fixture',attest:(request,response)=>{witnesses++;return cache.attest(scope,request,response);}},
   api:async(_,{body:request})=>{retryBodies.push(request);if((request.path.length||request.offset)&&!request.revision)throw Error('A tree revision is required for continuation pages');calls++;return calls===1?leaf:calls===2?hold.promise:request.anchor_uuid||request.path.length===2?leaf:ancestor(request);}};
- const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
-   if(id==='../api.js')return '\0lease-api';if(id==='../treeBranchReads.jsx')return '\0lease-owner';
+   if(id==='../api.js')return '\0lease-api';if(id==='../tree-ancestors/treeBranchReads.jsx')return '\0lease-owner';
    if(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx')return '\0lease-actions';
   }},load(id){if(id==='\0lease-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
@@ -181,9 +181,9 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
 test('one retained tree keeps mounted rows while hidden, aborts reads, fences actions, and freshly validates return',async()=>{
  const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0,selected=0,hold=null,lastSignal;const requests=[];const statuses=[];
  const key='__retainedTreeFixture';globalThis[key]={owner:{...ownerFor(cache),identity:'owner-A'},api:async(_,{body:request,signal})=>{lastSignal=signal;calls++;requests.push(request);if(hold)return hold.promise;return request.anchor_uuid||request.path.length===2?{...leaf,offset:request.offset,has_more:!request.offset,total:120,epochs:[{epoch_uuid:request.anchor_uuid||'epoch-A'}]}:ancestor(request);}};
- const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'retained-fixture',enforce:'pre',resolveId(id,importer){
-   if(id==='../treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
+   if(id==='../tree-ancestors/treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
    if(id==='../api.js'&&/\/(ColumnTree|PagedTree)\.jsx$/.test(importer||''))return '\0retained-api';
    if(importer?.endsWith('/components/ColumnTree.jsx')&&(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx'))return '\0retained-actions';
   },load(id){if(id==='\0retained-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;

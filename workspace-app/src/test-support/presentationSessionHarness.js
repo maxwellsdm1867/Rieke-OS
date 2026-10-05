@@ -58,7 +58,7 @@ export async function createPresentationSessionHarness({route={page:'overview',k
     if(id==='./components/ProtocolInfographic.jsx')return '\0presentation-lazy';
     const probes={'./components/Inspector.jsx':'inspector','./components/MetadataExplorer.jsx':'explorer','./components/DataStores.jsx':'stores','./components/CellQC.jsx':'qc','./components/Overview.jsx':'overview','./components/ProtocolSidebar.jsx':'sidebar','./components/DesktopDraftRecovery.jsx':'draft-recovery','./components/ProjectNavigator.jsx':'project-navigation','./components/ProjectUnmountDialog.jsx':'unmount'};
     if(probes[id])return `\0presentation-probe-${probes[id]}`;
-    if(id.endsWith('.jsx')&&!['./treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./components/IncomingWorkbench.jsx','./components/Common.jsx'].includes(id))return '\0presentation-child';
+    if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./components/IncomingWorkbench.jsx','./components/Common.jsx'].includes(id))return '\0presentation-child';
    }
   },
   load(id){

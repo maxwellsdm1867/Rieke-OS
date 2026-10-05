@@ -1,5 +1,5 @@
 import {Activity,useState} from 'react';
-import {useTreeBranchReads} from '../treeBranchReads.jsx';
+import {useTreeBranchReads} from '../tree-ancestors/treeBranchReads.jsx';
 import {canonicalReadIdentity} from '../search-activation/pageReadCache.js';
 import PagedTree from './PagedTree.jsx';
 

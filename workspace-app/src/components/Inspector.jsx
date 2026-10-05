@@ -1,4 +1,4 @@
-import {useTreeBranchReads} from '../treeBranchReads.jsx';
+import {useTreeBranchReads} from '../tree-ancestors/treeBranchReads.jsx';
 import {createPortal} from 'react-dom';
 import {useUnmountGuard} from '../useUnmountGuard.js';
 import EpochViewer from './EpochViewer.jsx';
