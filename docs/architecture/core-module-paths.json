@@ -137,7 +137,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-ancestors/columnTreeReads.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-ancestors"
+          "group": "tree-ancestors",
+          "current_path": "workspace-app/src/tree-ancestors/columnTreeReads.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/AnnotationIndicator.jsx",
@@ -305,7 +308,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/DataStores.css",
@@ -480,21 +486,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/GlobalSearch.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/search-activation/ui/GlobalSearch.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/GlobalSearch.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/GlobalSearch.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/search-activation/ui/GlobalSearch.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/GlobalSearch.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/GroupAnnotationRecovery.css",
@@ -571,14 +586,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingEpochReview.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingEpochReview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingEpochReview.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingExportDialog.jsx",
@@ -592,42 +613,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingSelectionTools.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionTools.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionTools.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingTagSummary.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingTagSummary.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingTagSummary.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingTreeSelection.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingWorkbench.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/IncomingWorkbench.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/InspectionCellTree.css",
@@ -676,7 +715,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/LocalExportFolder.jsx",
@@ -830,35 +872,50 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/PredicateBuilder.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/PredicateBuilder.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/PredicateBuilder.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/PredicateDialog.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/PredicateDialog.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/PredicateDialog.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/PredicateDialog.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/PredicateValueInput.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/ProjectClosedNotice.css",
@@ -1075,14 +1132,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/ProtocolViewFilter.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/ProtocolViewFilter.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/ProtocolViewFilter.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/QueryPresetDialog.jsx",
@@ -1124,7 +1187,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/SearchPresets.css",
@@ -1222,28 +1288,40 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/traces/ui/TraceViewer.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "traces"
+          "group": "traces",
+          "current_path": "workspace-app/src/traces/ui/TraceViewer.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/TraceViewer.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/traces/ui/TraceViewer.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "traces"
+          "group": "traces",
+          "current_path": "workspace-app/src/traces/ui/TraceViewer.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/TreeBuilder.css",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/TreeBuilder.css",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/TreeBuilder.css",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/TreeBuilder.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/TreeBuilder.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/TreeBuilder.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/TreeGroupTags.css",
@@ -1306,21 +1384,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/predicateEditor.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/predicateEditor.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/predicateState.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/ui/predicateState.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/ui/predicateState.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/components/traceGeometry.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/traces/ui/traceGeometry.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "traces"
+          "group": "traces",
+          "current_path": "workspace-app/src/traces/ui/traceGeometry.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/curationSelection.js",
@@ -1462,42 +1549,60 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/incomingMergeIntent.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/incomingReview.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingReview.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingReview.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/incomingReviewDecision.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingReviewDecision.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingReviewDecision.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/incomingSelection.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingSelection.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingSelection.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/incomingTagSummary.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/inspectionCellTree.js",
@@ -1532,7 +1637,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/jointGrouping.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/jointGrouping.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/loadingNotice.js",
@@ -1560,7 +1668,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/search-activation/metadataSearch.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/metadataSearch.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/mutationUndo.js",
@@ -1574,7 +1685,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/search-activation/navigationReadCache.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/navigationReadCache.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/ordering.js",
@@ -1588,7 +1702,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/search-activation/pageReadCache.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/pageReadCache.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/pagedTreeRequest.js",
@@ -1609,21 +1726,30 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/predicateFieldPresentation.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateFieldPresentation.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/predicateIdentity.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/predicateIdentity.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateIdentity.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/predicateValueSuggestions.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/predicateValueSuggestions.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateValueSuggestions.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/presentation/internal/deletedSourceSelections.js",
@@ -1693,7 +1819,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/typed-query/protocolViewFilter.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/protocolViewFilter.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/recordingIdentity.js",
@@ -1707,7 +1836,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/requestedSummaries.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/requested-summaries/requestedSummaries.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/resourceCache.js",
@@ -1749,7 +1881,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/startupRestore.js",
@@ -1770,7 +1905,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/summaryApi.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/requested-summaries/summaryApi.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/tagExchange.js",
@@ -1791,7 +1929,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/traces/traceReadContext.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "traces"
+          "group": "traces",
+          "current_path": "workspace-app/src/traces/traceReadContext.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/tree-selection/treeSelectionReader.js",
@@ -1812,14 +1953,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-ancestors"
+          "group": "tree-ancestors",
+          "current_path": "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/treeBranchReads.jsx",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "tree-ancestors"
+          "group": "tree-ancestors",
+          "current_path": "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/treeFieldPresentation.js",
@@ -1914,7 +2061,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/useMutationUndo.js",
@@ -1951,7 +2101,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/summary-jobs/useRequestedSummaries.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "summary-jobs"
+          "group": "summary-jobs",
+          "current_path": "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/useTreeCellSelection.js",
@@ -1972,14 +2125,20 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/useWorkspaceChanges.js",
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/metadata-refresh/useWorkspaceChanges.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "metadata-refresh"
+          "group": "metadata-refresh",
+          "current_path": "workspace-app/src/useWorkspaceChanges.js",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Display invalidation clock remains shared across owners with distinct freshness authorities; see src/READ-OWNERS.md."
         },
         {
           "path": "workspace-app/src/useWorkspaceNavigation.js",
@@ -1995,7 +2154,10 @@
           "disposition": "move-proposed",
           "target_path": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
           "reason": "Existing responsibility grouped without behavior or export changes.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "workspace-app/src/workbenchExport.js",
@@ -3246,7 +3408,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/globalSearchCache.test.js"
         },
         {
           "path": "workspace-app/src/group-save/groupAnnotationRecovery.test.js",
@@ -3331,7 +3494,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingCellTypes.test.js"
         },
         {
           "path": "workspace-app/src/incomingCellTypesRendering.test.js",
@@ -3358,7 +3522,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingReview.test.js"
         },
         {
           "path": "workspace-app/src/incomingReviewDecision.test.js",
@@ -3376,7 +3541,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/incomingSelection.test.js"
         },
         {
           "path": "workspace-app/src/incomingSelectionRendering.test.js",
@@ -3506,7 +3672,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/jointGrouping.test.js"
         },
         {
           "path": "workspace-app/src/loadingNotice.test.js",
@@ -3542,7 +3709,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/metadataSearch.test.js"
         },
         {
           "path": "workspace-app/src/metadataValues.test.js",
@@ -3578,7 +3746,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Keep current path until benchmark historical-path reconstruction is reviewed; do not create forwarding tests.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/navigationReadStrictMode.test.js"
         },
         {
           "path": "workspace-app/src/ordering.test.js",
@@ -3614,7 +3783,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Keep current path until benchmark historical-path reconstruction is reviewed; do not create forwarding tests.",
-          "group": "search-activation"
+          "group": "search-activation",
+          "current_path": "workspace-app/src/search-activation/pageReadCache.test.js"
         },
         {
           "path": "workspace-app/src/pagedTreeLifecycle.test.js",
@@ -3660,7 +3830,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateEditor.test.js"
         },
         {
           "path": "workspace-app/src/predicateFieldPresentation.test.js",
@@ -3669,7 +3840,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateFieldPresentation.test.js"
         },
         {
           "path": "workspace-app/src/predicateIdentity.test.js",
@@ -3678,7 +3850,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateIdentity.test.js"
         },
         {
           "path": "workspace-app/src/predicateState.test.js",
@@ -3687,7 +3860,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateState.test.js"
         },
         {
           "path": "workspace-app/src/predicateValueSuggestions.test.js",
@@ -3696,7 +3870,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/predicateValueSuggestions.test.js"
         },
         {
           "path": "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
@@ -3836,7 +4011,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "typed-query"
+          "group": "typed-query",
+          "current_path": "workspace-app/src/typed-query/protocolViewFilter.test.js"
         },
         {
           "path": "workspace-app/src/requestedSummaries.test.js",
@@ -3846,7 +4022,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/requested-summaries/requestedSummaries.test.js"
         },
         {
           "path": "workspace-app/src/requestedSummariesLifecycle.test.js",
@@ -3856,7 +4033,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "cross-owner-integration"
+          "group": "cross-owner-integration",
+          "current_path": "workspace-app/src/requested-summaries/requestedSummariesLifecycle.test.js"
         },
         {
           "path": "workspace-app/src/resourceCache.test.js",
@@ -3923,7 +4101,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.test.js"
         },
         {
           "path": "workspace-app/src/selectionMaskDownload.test.js",
@@ -3978,7 +4157,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "traces"
+          "group": "traces",
+          "current_path": "workspace-app/src/traces/traceGeometry.test.js"
         },
         {
           "path": "workspace-app/src/traceReadContext.test.js",
@@ -4014,7 +4194,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "tree-ancestors"
+          "group": "tree-ancestors",
+          "current_path": "workspace-app/src/tree-ancestors/treeBranchReadCache.test.js"
         },
         {
           "path": "workspace-app/src/treeCellTagWorkflow.test.js",
@@ -4091,7 +4272,8 @@
           ],
           "disposition": "keep_current_pending_slice",
           "path_constraint": "Associate with owner; relocate only in reviewed slice. Cross-owner/integration tests stay in place by default.",
-          "group": "incoming-workbench"
+          "group": "incoming-workbench",
+          "current_path": "workspace-app/src/incoming-workbench/workbenchAuthority.test.js"
         },
         {
           "path": "workspace-app/src/workbenchExport.test.js",
@@ -4699,7 +4881,10 @@
           "contract_records": [
             "mutation-recovery"
           ],
-          "proposed_path": "python/disco/recovery/mutation_outcomes.py"
+          "proposed_path": "python/disco/recovery/mutation_outcomes.py",
+          "current_path": "python/disco/recovery/mutation_outcomes.py",
+          "current_disposition": "organized; independent source GO, combined aggregate pending",
+          "organization_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307"
         },
         {
           "path": "python/workspace_mysql_profile.py",
@@ -7220,7 +7405,8 @@
             "tools/metadata_qualification/native.py"
           ],
           "association_basis": "Exact test filename match plus available source references; not execution evidence.",
-          "disposition": "keep-in-place"
+          "disposition": "keep-in-place",
+          "current_path": "python/disco/recovery/tests/test_workspace_mutation_outcomes.py"
         },
         {
           "path": "python/tests/test_workspace_mysql_runtime.py",
@@ -8765,7 +8951,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "installation",
-          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice."
+          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice.",
+          "current_path": "desktop/bootstrap.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/branding.cjs",
@@ -8886,7 +9075,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "installation",
-          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice."
+          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice.",
+          "current_path": "desktop/install-name.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/local-preview.cjs",
@@ -9060,7 +9252,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "installation",
-          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice."
+          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice.",
+          "current_path": "desktop/recovery-install.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/recovery.css",
@@ -9217,7 +9412,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "runtime",
-          "reason": "Later earned owner; audit resource bases, process proof, fixtures and manifest identity before relocation."
+          "reason": "Later earned owner; audit resource bases, process proof, fixtures and manifest identity before relocation.",
+          "current_path": "desktop/supervisor.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/testing-install.cjs",
@@ -9231,7 +9429,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "installation",
-          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice."
+          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice.",
+          "current_path": "desktop/testing-install.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/testing-update-validation.cjs",
@@ -9277,7 +9478,10 @@
           "phase": "later_separate_review",
           "shipping_role": "app_source_selected_by_current_root_cjs_pattern (may be build hook/config, not proof of runtime execution)",
           "group": "installation",
-          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice."
+          "reason": "Later coordinated move; spawned helper paths and bundle validation require separate review. No bootstrap relocation in first close slice.",
+          "current_path": "desktop/update-recovery.cjs",
+          "current_disposition": "keep-in-place; independently reviewed rationale and public examples",
+          "current_reason": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale."
         },
         {
           "path": "desktop/updater-validation.cjs",
@@ -10345,6 +10549,98 @@
         "workspace-app/src/workspace-navigation/AGENTS.md"
       ],
       "tested_commit": "268de3e24bb93c140849f302a22c4ca7047f4d80"
+    },
+    {
+      "id": "parallel-organization-wave-1",
+      "source_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307",
+      "status": "independent source GO and worker-scoped checks; combined metadata/build/test aggregate pending",
+      "moves": {
+        "python/workspace_mutation_outcomes.py": "python/disco/recovery/mutation_outcomes.py",
+        "python/tests/test_workspace_mutation_outcomes.py": "python/disco/recovery/tests/test_workspace_mutation_outcomes.py",
+        "workspace-app/src/incomingCellTypes.js": "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+        "workspace-app/src/incomingCellTypes.test.js": "workspace-app/src/incoming-workbench/incomingCellTypes.test.js",
+        "workspace-app/src/incomingMergeIntent.js": "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
+        "workspace-app/src/incomingReview.js": "workspace-app/src/incoming-workbench/incomingReview.js",
+        "workspace-app/src/incomingReview.test.js": "workspace-app/src/incoming-workbench/incomingReview.test.js",
+        "workspace-app/src/incomingReviewDecision.js": "workspace-app/src/incoming-workbench/incomingReviewDecision.js",
+        "workspace-app/src/incomingSelection.js": "workspace-app/src/incoming-workbench/incomingSelection.js",
+        "workspace-app/src/incomingSelection.test.js": "workspace-app/src/incoming-workbench/incomingSelection.test.js",
+        "workspace-app/src/incomingTagSummary.js": "workspace-app/src/incoming-workbench/incomingTagSummary.js",
+        "workspace-app/src/selectedIncomingWorkflow.js": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
+        "workspace-app/src/selectedIncomingWorkflow.test.js": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.test.js",
+        "workspace-app/src/components/CumulativeIncomingReview.jsx": "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
+        "workspace-app/src/components/FrozenIncomingReview.jsx": "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
+        "workspace-app/src/components/IncomingCellTypes.jsx": "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+        "workspace-app/src/components/IncomingEpochReview.jsx": "workspace-app/src/incoming-workbench/ui/IncomingEpochReview.jsx",
+        "workspace-app/src/components/IncomingMergePreview.jsx": "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
+        "workspace-app/src/components/IncomingSelectionTools.jsx": "workspace-app/src/incoming-workbench/ui/IncomingSelectionTools.jsx",
+        "workspace-app/src/components/IncomingTagSummary.jsx": "workspace-app/src/incoming-workbench/ui/IncomingTagSummary.jsx",
+        "workspace-app/src/components/IncomingTreeSelection.jsx": "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
+        "workspace-app/src/components/IncomingWorkbench.css": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
+        "workspace-app/src/components/IncomingWorkbench.jsx": "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
+        "workspace-app/src/useIncomingMergeIntent.js": "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
+        "workspace-app/src/useWorkbenchQueue.js": "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
+        "workspace-app/src/workbenchAuthority.js": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+        "workspace-app/src/workbenchAuthority.test.js": "workspace-app/src/incoming-workbench/workbenchAuthority.test.js",
+        "workspace-app/src/requestedSummaries.js": "workspace-app/src/requested-summaries/requestedSummaries.js",
+        "workspace-app/src/requestedSummaries.test.js": "workspace-app/src/requested-summaries/requestedSummaries.test.js",
+        "workspace-app/src/requestedSummariesLifecycle.test.js": "workspace-app/src/requested-summaries/requestedSummariesLifecycle.test.js",
+        "workspace-app/src/summaryApi.js": "workspace-app/src/requested-summaries/summaryApi.js",
+        "workspace-app/src/useRequestedSummaries.js": "workspace-app/src/requested-summaries/useRequestedSummaries.js",
+        "workspace-app/src/components/GlobalSearch.css": "workspace-app/src/search-activation/GlobalSearch.css",
+        "workspace-app/src/components/GlobalSearch.jsx": "workspace-app/src/search-activation/GlobalSearch.jsx",
+        "workspace-app/src/globalSearchCache.test.js": "workspace-app/src/search-activation/globalSearchCache.test.js",
+        "workspace-app/src/metadataSearch.js": "workspace-app/src/search-activation/metadataSearch.js",
+        "workspace-app/src/metadataSearch.test.js": "workspace-app/src/search-activation/metadataSearch.test.js",
+        "workspace-app/src/navigationReadCache.jsx": "workspace-app/src/search-activation/navigationReadCache.jsx",
+        "workspace-app/src/navigationReadStrictMode.test.js": "workspace-app/src/search-activation/navigationReadStrictMode.test.js",
+        "workspace-app/src/pageReadCache.js": "workspace-app/src/search-activation/pageReadCache.js",
+        "workspace-app/src/pageReadCache.test.js": "workspace-app/src/search-activation/pageReadCache.test.js",
+        "workspace-app/src/traceGeometry.test.js": "workspace-app/src/traces/traceGeometry.test.js",
+        "workspace-app/src/traceReadContext.js": "workspace-app/src/traces/traceReadContext.js",
+        "workspace-app/src/components/TraceViewer.css": "workspace-app/src/traces/ui/TraceViewer.css",
+        "workspace-app/src/components/TraceViewer.jsx": "workspace-app/src/traces/ui/TraceViewer.jsx",
+        "workspace-app/src/components/traceGeometry.js": "workspace-app/src/traces/ui/traceGeometry.js",
+        "workspace-app/src/columnTreeReads.js": "workspace-app/src/tree-ancestors/columnTreeReads.js",
+        "workspace-app/src/treeBranchReadCache.js": "workspace-app/src/tree-ancestors/treeBranchReadCache.js",
+        "workspace-app/src/treeBranchReadCache.test.js": "workspace-app/src/tree-ancestors/treeBranchReadCache.test.js",
+        "workspace-app/src/treeBranchReads.jsx": "workspace-app/src/tree-ancestors/treeBranchReads.jsx",
+        "workspace-app/src/jointGrouping.js": "workspace-app/src/typed-query/jointGrouping.js",
+        "workspace-app/src/jointGrouping.test.js": "workspace-app/src/typed-query/jointGrouping.test.js",
+        "workspace-app/src/predicateEditor.test.js": "workspace-app/src/typed-query/predicateEditor.test.js",
+        "workspace-app/src/predicateFieldPresentation.js": "workspace-app/src/typed-query/predicateFieldPresentation.js",
+        "workspace-app/src/predicateFieldPresentation.test.js": "workspace-app/src/typed-query/predicateFieldPresentation.test.js",
+        "workspace-app/src/predicateIdentity.js": "workspace-app/src/typed-query/predicateIdentity.js",
+        "workspace-app/src/predicateIdentity.test.js": "workspace-app/src/typed-query/predicateIdentity.test.js",
+        "workspace-app/src/predicateState.test.js": "workspace-app/src/typed-query/predicateState.test.js",
+        "workspace-app/src/predicateValueSuggestions.js": "workspace-app/src/typed-query/predicateValueSuggestions.js",
+        "workspace-app/src/predicateValueSuggestions.test.js": "workspace-app/src/typed-query/predicateValueSuggestions.test.js",
+        "workspace-app/src/protocolViewFilter.js": "workspace-app/src/typed-query/protocolViewFilter.js",
+        "workspace-app/src/protocolViewFilter.test.js": "workspace-app/src/typed-query/protocolViewFilter.test.js",
+        "workspace-app/src/components/JointGroupingEditor.jsx": "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
+        "workspace-app/src/components/PredicateBuilder.css": "workspace-app/src/typed-query/ui/PredicateBuilder.css",
+        "workspace-app/src/components/PredicateBuilder.jsx": "workspace-app/src/typed-query/ui/PredicateBuilder.jsx",
+        "workspace-app/src/components/PredicateDialog.css": "workspace-app/src/typed-query/ui/PredicateDialog.css",
+        "workspace-app/src/components/PredicateDialog.jsx": "workspace-app/src/typed-query/ui/PredicateDialog.jsx",
+        "workspace-app/src/components/PredicateValueInput.jsx": "workspace-app/src/typed-query/ui/PredicateValueInput.jsx",
+        "workspace-app/src/components/ProtocolViewFilter.css": "workspace-app/src/typed-query/ui/ProtocolViewFilter.css",
+        "workspace-app/src/components/ProtocolViewFilter.jsx": "workspace-app/src/typed-query/ui/ProtocolViewFilter.jsx",
+        "workspace-app/src/components/ScopedPredicateFilter.jsx": "workspace-app/src/typed-query/ui/ScopedPredicateFilter.jsx",
+        "workspace-app/src/components/TreeBuilder.css": "workspace-app/src/typed-query/ui/TreeBuilder.css",
+        "workspace-app/src/components/TreeBuilder.jsx": "workspace-app/src/typed-query/ui/TreeBuilder.jsx",
+        "workspace-app/src/components/predicateEditor.js": "workspace-app/src/typed-query/ui/predicateEditor.js",
+        "workspace-app/src/components/predicateState.js": "workspace-app/src/typed-query/ui/predicateState.js"
+      },
+      "reviewed_keep_paths": {
+        "desktop/bootstrap.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "desktop/install-name.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "desktop/recovery-install.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "desktop/testing-install.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "desktop/update-recovery.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "desktop/supervisor.cjs": "Installed/helper or already substantive process owner retains exact physical paths; desktop/INSTALLATION.md and desktop/RETAINED_OWNERS.md contain reviewed rationale.",
+        "workspace-app/src/useWorkspaceChanges.js": "Display invalidation clock remains shared across owners with distinct freshness authorities; see src/READ-OWNERS.md."
+      },
+      "qualification": "No native/HTTP/app or performance qualification. Earlier aggregate receipts retain their tested identities."
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

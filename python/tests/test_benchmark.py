@@ -199,8 +199,8 @@ class SuitePathTests(unittest.TestCase):
         'python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
         'python/tests/test_workspace_matlab.py',
     ]
-    NAV = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'pageReadCache',
-           'traceReadContext', 'navigationReadStrictMode', 'inspectorNavigationLifecycle']
+    NAV = ['workspace-navigation/workspaceNavigation', 'inspectionNavigation', 'search-activation/pageReadCache',
+           'traceReadContext', 'search-activation/navigationReadStrictMode', 'inspectorNavigationLifecycle']
     DB = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_import_identities',
           'test_workspace_epoch_page_performance']
     SUPPORT = 'workspace-app/src/test-support/'

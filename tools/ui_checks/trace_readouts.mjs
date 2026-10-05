@@ -19,14 +19,14 @@ const port=Number(process.env.TRACE_QA_PORT||5187);
 const before=file=>execFileSync('git',['show',`${baseline}:workspace-app/src/${file}`],{cwd:root,encoding:'utf8'});
 const baselineJs=before('components/TraceViewer.jsx')
  .replace("'../api.js'","'/src/api.js'")
- .replace("'./traceGeometry.js'","'/src/components/traceGeometry.js'")
+ .replace("'./traceGeometry.js'","'/src/traces/ui/traceGeometry.js'")
  .replace("'./NavigationLoading.jsx'","'/src/components/NavigationLoading.jsx'")
  .replace("'./TraceViewer.css'","'virtual:trace-before.css'");
 const entry=`import React,{useState} from 'react';import {createRoot} from 'react-dom/client';
 import '/src/styles.css';import '/src/themes.css';import '/src/components/Inspector.css';
 import {applyTheme} from '/src/appearanceThemes.js';
 const before=new URLSearchParams(location.search).has('before');
-const {default:Trace}=await (before?import('virtual:trace-before'):import('/src/components/TraceViewer.jsx'));
+const {default:Trace}=await (before?import('virtual:trace-before'):import('/src/traces/ui/TraceViewer.jsx'));
 if(before)await import('virtual:scroll-before.css');
 window.qaTheme=(theme)=>applyTheme({theme});window.qaTheme('dark');
 const epoch=(id,units='pA',sample_rate=10000)=>({epoch_uuid:id,streams:id==='empty'?[]:[{kind:'responses',uuid:id+'-stream',sample_count:80000,sample_rate,units,device:'Recorded amplifier'},{kind:'responses',uuid:id+'-alternate',sample_count:800,sample_rate:10000,units:'nA',device:'Second recorded amplifier'}]});

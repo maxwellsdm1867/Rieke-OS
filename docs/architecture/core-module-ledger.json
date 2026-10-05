@@ -7173,6 +7173,19 @@
         "explicit_base_plan": "passed"
       },
       "qualification": "Exact local source/frontend/scoped desktop composition checks. Benchmark tests use mocked workers and temporary Git; no benchmark workloads. Full original updater host/native tests unrun. No native/app/installer/signing, broad mapped Python scientific/export suites, finalpackage or performance qualification."
+    },
+    {
+      "id": "parallel-organization-wave-1-source",
+      "source_commit": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307",
+      "worker_candidates": {
+        "frontend_reads": "0251e2b6d94534d0018831450229d2ee8796fc88",
+        "ancestors": "cf7345153ee567812e8f5d4ab30f836b86d45168",
+        "scientific_views": "d136d1bea9a017cd25cb9fc44767c0e158f3f50a",
+        "backend_completion": "a594cf401040c1a417230fb843ed00330d89d5f3",
+        "desktop_keep": "d47981ca79ce6754b0cc269ba8311f31a13444c0",
+        "backend_preparation": "36638295c135dd6034be56c6ee933d37833c21f7"
+      },
+      "qualification": "Independent source GO on each candidate; worker-scoped test receipts external. Counts overlap and must not be summed as an aggregate. Combined mappings/build/checks pending. HTTP/native/app and seven whole-app costs unmeasured."
     }
   ],
   "deferred": [
@@ -7490,7 +7503,7 @@
         "contract_records": [
           "mutation-recovery"
         ],
-        "status": "reader-integrated-move-gated",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7499,7 +7512,7 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "Pythonv4 reader A independently reviewed/integrated and aggregate verified; shippingcatalogv3/profilev1 unchanged. Actualrecoverymove B requires refreshedexactbindings and parentgate."
+        "progress_note": "Existing recovery registration moved byte-identically behind disco.recovery; catalogv4/profilev2/explicitlocaldiscovery source-reviewed.56guardplanner/11profile/9preview workerchecks pass.26HTTP tests and stagedFlask smoke unrun; combined aggregate pending."
       },
       {
         "id": "frontend-navigation",
@@ -7534,7 +7547,7 @@
           "requested-summary-jobs",
           "display-invalidation-clocks"
         ],
-        "status": "queued",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7552,7 +7565,7 @@
           "incoming-read-presentation",
           "trace-window-presentation"
         ],
-        "status": "queued",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7703,7 +7716,7 @@
           "desktop.startup-preference",
           "desktop.startup-restoration"
         ],
-        "status": "partially-integrated",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7722,7 +7735,7 @@
           "desktop.profile-path-policy",
           "desktop.project-location-index"
         ],
-        "status": "partially-integrated",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7741,7 +7754,7 @@
           "desktop.update-coordinators",
           "desktop.bundle-install-recovery"
         ],
-        "status": "partially-integrated",
+        "status": "source-reviewed-integration-aggregate-pending",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7785,12 +7798,12 @@
           "local_integration": "pending"
         },
         "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
-        "progress_note": "JSv3 multi-entry guard, explicit desktop test lanes, profile v2 reader (shipping v1), revision-owned benchmark recipes and retained-tool navigation integrated/reviewed. Python v4 reader A integrated; catalog v4 adoption remains pending. Whole-codebase ownership/discovery remains incomplete."
+        "progress_note": "JS multi-entry and Python v4 package reader adopted; explicit desktop lanes, profile v2, revision-owned benchmark recipes retained. New named-file Python mode under design; no silent facade or private demotion. Combined path/mapping aggregate pending."
       }
     ],
-    "coverage_status": "All59records assigned once to20workitems; all465baseline paths assigned.11verifiedfolders cover19baseline runtimepaths;302proposedmoves,132keep classifications,12deferred. No completion percentage.",
+    "coverage_status": "All59 records assigned once to20 workitems; all465 baseline paths assigned. Current source wave: {'keep-in-place': 139, 'move-proposed': 241, 'organized': 73, 'deferred': 12}. Previous aggregate snapshot preserved; combined qualification pending.",
     "stage_rules": [
-      "One selected coherent owner at a time; shared guard/catalog/packaging edits and heavy runs serialize.",
+      "Independent owners progress in parallel owned worktrees; shared contract/catalog/build edits and resource-contending runs serialize under one integration owner.",
       "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
       "Local examples exercise public call shapes/results/errors; private tests never substitute for the seam.",
       "Retire an old test only after equivalent or stronger public behavior coverage is demonstrated.",
@@ -7876,6 +7889,44 @@
         }
       },
       "qualification": "Counts partition original465runtime/config paths, not newtests/docs or module-depth metrics.19organized paths in11verifiedfolders.302proposed moves,132keep decisions (one newly reviewed shared-validator rationale) and12deferred. Functional areas are not completed physical modules. Wholeapp/finalqualification incomplete."
+    },
+    "pending_wave_snapshot": {
+      "source_checkpoint": "50ff9bd77b72c7a4e39444b4f2c653cbb0a27307",
+      "status": "source integrated; shared metadata and combined aggregate pending",
+      "runtime_or_config_path_counts": {
+        "keep-in-place": 139,
+        "move-proposed": 241,
+        "organized": 73,
+        "deferred": 12
+      },
+      "by_area": {
+        "frontend": {
+          "keep-in-place": 29,
+          "move-proposed": 185,
+          "organized": 63,
+          "deferred": 2
+        },
+        "backend": {
+          "keep-in-place": 77,
+          "deferred": 10,
+          "move-proposed": 56,
+          "organized": 1
+        },
+        "desktop": {
+          "keep-in-place": 33,
+          "organized": 9
+        }
+      },
+      "new_source_approved_folders": [
+        "workspace-app/src/search-activation",
+        "workspace-app/src/requested-summaries",
+        "workspace-app/src/tree-ancestors",
+        "workspace-app/src/typed-query",
+        "workspace-app/src/incoming-workbench",
+        "workspace-app/src/traces",
+        "python/disco/recovery"
+      ],
+      "qualification": "Prior progress_snapshot is the last aggregate-verified snapshot, not relabeled by this wave. Counts describe original465 paths; KEEP classifications are not all qualification-complete."
     }
   }
 }

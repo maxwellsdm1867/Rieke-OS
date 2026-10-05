@@ -357,3 +357,9 @@ loader bindings and separate gate. Existing runtime reuse is a preparation
 candidate pending full byte verification and static audit; final application
 assembly/imports/UI acceptance and all whole-app costs remain unqualified or
 unmeasured.
+
+## Parallel source wave awaiting aggregate verification
+
+Source checkpoint `50ff9bd77b72c7a4e39444b4f2c653cbb0a27307` integrates reviewed search activation, requested summaries, tree ancestors, scientific presentation folders and the byte-identical Python recovery registration package. Desktop installation/startup/state owners have explicit KEEP rationale and injected public examples. The JSON pending-wave snapshot and path companion record current paths; the earlier aggregate snapshot and receipts retain their original source identity.
+
+Current baseline-path dispositions: 139 keep-in-place, 241 move-proposed, 73 organized, 12 deferred. These are path classifications, not completion or depth metrics. Shared mappings, aggregate build/tests, HTTP completion checks and final assembled-app acceptance remain pending. Independent owners proceed in parallel; one integration owner serializes shared edits. Interface review emphasizes clear caller knowledge and progressive disclosure, not export counts or implementation size.

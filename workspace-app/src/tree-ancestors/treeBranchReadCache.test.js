@@ -139,7 +139,7 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom',logLevel:'error',esbuild:{jsx:'automatic'},plugins:[{
   name:'lease-fixture',enforce:'pre',resolveId(id,importer){if(importer?.endsWith('/components/ColumnTree.jsx')){
    if(id==='../api.js')return '\0lease-api';if(id==='../tree-ancestors/treeBranchReads.jsx')return '\0lease-owner';
-   if(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx')return '\0lease-actions';
+   if(id==='./TreeGroupTags.jsx'||id==='../incoming-workbench/ui/IncomingTreeSelection.jsx')return '\0lease-actions';
   }},load(id){if(id==='\0lease-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
@@ -185,7 +185,7 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
   name:'retained-fixture',enforce:'pre',resolveId(id,importer){
    if(id==='../tree-ancestors/treeBranchReads.jsx'&&/\/(ColumnTree|RetainedTreePresentation)\.jsx$/.test(importer||''))return '\0retained-owner';
    if(id==='../api.js'&&/\/(ColumnTree|PagedTree)\.jsx$/.test(importer||''))return '\0retained-api';
-   if(importer?.endsWith('/components/ColumnTree.jsx')&&(id==='./TreeGroupTags.jsx'||id==='./IncomingTreeSelection.jsx'))return '\0retained-actions';
+   if(importer?.endsWith('/components/ColumnTree.jsx')&&(id==='./TreeGroupTags.jsx'||id==='../incoming-workbench/ui/IncomingTreeSelection.jsx'))return '\0retained-actions';
   },load(id){if(id==='\0retained-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0retained-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
