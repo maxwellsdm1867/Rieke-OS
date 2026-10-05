@@ -310,7 +310,7 @@ class RecoveryStoreTests(unittest.TestCase):
         request_path=self.root/'child-request.json';request_path.write_text(json.dumps(request))
         script='''import json,os,sys,time
 from contextlib import contextmanager
-import workspace_recovery_store as recovery
+from disco.backup import recovery_store as recovery
 request=json.load(open(sys.argv[1]));phase=sys.argv[2]
 def stop():
  os.write(1,b'READY\\n');time.sleep(30)
@@ -332,7 +332,7 @@ else:
 recovery.write(**request)
 '''
         process=subprocess.Popen([sys.executable,'-c',script,str(request_path),phase],stdout=subprocess.PIPE,stderr=subprocess.PIPE,
-                                 env={**os.environ,'PYTHONPATH':str(Path(recovery.__file__).parent)})
+                                 env={**os.environ,'PYTHONPATH':str(Path(__file__).resolve().parents[1])})
         try:
             ready,_,_=select.select([process.stdout],[],[],10)
             self.assertTrue(ready,'Recovery subprocess did not reach its crash cut')

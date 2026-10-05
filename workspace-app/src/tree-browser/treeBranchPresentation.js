@@ -40,3 +40,16 @@ export function epochLeafLabel(epoch){
   const time=epoch.start_time?.split(/[ T]/)[1]?.slice(0,8);
   return `${ordinal}${time?` · ${time}`:''}`;
 }
+
+// Coverage is supplied for the complete frozen branch, never inferred from the
+// displayed page, a direct cell chip, incoming selection or merge receipts.
+export function branchTagCoverage(node,{current=true}={}){
+  const coverage=node?.shared_tag_coverage;
+  if(!current||!coverage||!Number.isSafeInteger(node.count)||node.count<=0||
+    coverage.total_epochs!==node.count||!Number.isSafeInteger(coverage.tagged_epochs)||
+    coverage.tagged_epochs<0||coverage.tagged_epochs>node.count)return null;
+  const tagged=coverage.tagged_epochs,total=node.count;
+  const state=tagged===total?'all':tagged?'partial':'none';
+  return {state,label:state==='all'?`All ${total.toLocaleString()} epochs tagged`:`${tagged.toLocaleString()} of ${total.toLocaleString()} tagged`,
+    title:'Shared tags, direct or inherited, across every epoch in this group. Tags may differ; this does not indicate approval or merge.'};
+}

@@ -50,7 +50,7 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
       }else publish({receipt,phase:phase==='accepting'?'acceptance-unconfirmed':receipt?'export-failed':saved.current.prepared?'export-unconfirmed':'failed',error:error.message});
     }finally{publish({pending:false});inFlight.current=false;setBusy(false);}
   }
-  return <dialog ref={dialog} className="export-selection-dialog" aria-label={accepting?'Accept and export incoming additions':'Export incoming additions'} onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
+  return <dialog ref={dialog} className="export-selection-dialog workbench-export-dialog" aria-label={accepting?'Accept and export incoming additions':'Export incoming additions'} onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
     <header><h2>{accepting?'Accept & export':'Export new additions'}</h2><button disabled={busy} onClick={onClose}>Close</button></header>
     <div className="export-selection-body">
       <p>{accepting?'Add eligible incoming epochs to main, then export only those newly accepted epochs. Existing main epochs and curation stay included.':'Export only new incoming epochs absent from main. Main membership stays unchanged.'} Shared tags are saved separately; this action does not publish scientific approval tags.</p>
@@ -60,10 +60,10 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
       {state.phase==='acceptance-unconfirmed'&&<p>Acceptance may have committed. Retry the same saved operation to recover its receipt before exporting.</p>}
       {state.phase==='export-unconfirmed'&&<p>Export may have committed. Retry the same export operation to recover its artifact.</p>}
       {selectedOnly&&!committed&&!state.prepared&&!state.preview&&<p role="status">Close this dialog and choose Export again to verify the current exact selection.</p>}
-      {!state.exported&&<form onSubmit={submit}>
-        {!committed&&!selectedOnly&&<fieldset disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>{setMode('selected');publish({preview:null});}}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>{setMode('all');publish({preview:null});}}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
-        {state.preview&&!committed&&<dl aria-label="Incoming export preview counts">{workbenchPreviewCounts(state.preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl>}
-        <label>Export name (optional)<input value={name} maxLength={120} disabled={locked} onChange={event=>setName(event.target.value)}/></label>
+      {!state.exported&&<form className="workbench-export-form" onSubmit={submit}>
+        {!committed&&!selectedOnly&&<fieldset className="workbench-export-scope" disabled={locked}><legend>Incoming additions</legend><label><input type="radio" name="incoming-mode" checked={mode==='selected'} onChange={()=>{setMode('selected');publish({preview:null});}}/> Saved selected and reviewed epochs</label><label><input type="radio" name="incoming-mode" checked={mode==='all'} onChange={()=>{setMode('all');publish({preview:null});}}/> Explicitly approve all eligible incoming additions, keeping draft exclusions</label></fieldset>}
+        {state.preview&&!committed&&<dl className="workbench-export-counts" aria-label="Incoming export preview counts">{workbenchPreviewCounts(state.preview).map(({key,label,count})=><div key={key}><dt>{label}</dt><dd>{number(count)}</dd></div>)}</dl>}
+        <label className="workbench-export-name">Export name (optional)<input value={name} maxLength={120} disabled={locked} onChange={event=>setName(event.target.value)}/></label>
         <ExportDestination value={format} onChange={setFormat} disabled={locked}/>
         <button className="primary" disabled={busy||externalBusy||selectedOnly&&!committed&&!state.prepared&&!state.preview||(!committed&&!state.prepared&&!state.preview&&!context)||state.phase==='rejected'}>{busy?'Working…':state.phase==='acceptance-unconfirmed'?'Recover acceptance & export':committed?'Export accepted additions':state.prepared?'Recover export receipt':!state.preview?'Preview additions':accepting?'Accept & export':'Export'}</button>
       </form>}

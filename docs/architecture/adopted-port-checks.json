@@ -1667,7 +1667,8 @@
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
-          "workspace-app/src/testDiscovery.test.js"
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/treeTagCoverageWorkflow.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3540,7 +3541,7 @@
       },
       {
         "file": "python/disco/projects/tests/test_public_examples.py",
-        "file_sha256": "41aa9af5a1a82ae3653548ede15d783f5b37a4f7edc0ff34e102bd87b5d93fea",
+        "file_sha256": "326b1ad93482abb36546860c52d93c363a0621c446980028b90e80af2fda72cb",
         "sites": [
           {
             "selector": "call:__import__:1",
@@ -3548,7 +3549,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Source-bound isolated projects public examples retain the original guarded import delegation. The wrapper rejects scientific/native import roots; only stdlib and owned temporary retention/admission bytes are exercised. This classification is not runtime or scientific qualification."
+        "reason": "Source-bound isolated projects public examples retain guarded import delegation in a standalone child. Discovery invokes the same file with -I so its forbidden scientific/native imports and recording stand-in cannot affect neighboring tests. Original temporary retention/admission examples and reviewed call AST are unchanged; not runtime or scientific qualification."
       }
     ],
     "modules": [
@@ -4391,7 +4392,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "f517d1c92a7109a42280218a8a43ab689d94e5c5266d7c9e0aa4c095c0e490c7",
+        "file_sha256": "f69921fff521be0fa2946cac7b77dfd8bfd68082f8b254151b55010adb259ac6",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
         "sites": [
           {
@@ -4601,7 +4602,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "f517d1c92a7109a42280218a8a43ab689d94e5c5266d7c9e0aa4c095c0e490c7",
+                "file_sha256": "f69921fff521be0fa2946cac7b77dfd8bfd68082f8b254151b55010adb259ac6",
                 "contract_id": "backend-navigation"
               }
             ]

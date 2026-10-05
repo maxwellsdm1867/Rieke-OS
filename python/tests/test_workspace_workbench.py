@@ -115,6 +115,87 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409, response.get_json())
         self.assertNotIn('counts', response.get_json())
 
+    def coverage_annotations(self):
+        from disco.decisions.annotations import SharedAnnotations
+        profiles = Table(('project_uuid', 'profile_uuid'))
+        records = Table(('project_uuid', 'target_kind', 'target_uuid', 'profile_uuid'))
+        self.case.connection.tables.extend([profiles, records])
+        store = SharedAnnotations(self.case.service, (profiles, records, self.case.events))
+        self.case.service.shared_annotations = store
+        return store
+
+    def test_tree_shared_tag_coverage_inherits_deduplicates_and_removes(self):
+        shared = self.coverage_annotations()
+        rows = list(self.case.service.rows.values())[:2]
+        records = []
+        def snapshot():
+            return dict(revision=str(records), records=copy.deepcopy(records))
+        with patch.object(shared, 'snapshot', side_effect=snapshot):
+            def coverage():
+                context = self.manager.context(self.protocol, self.revision, 'actor-one')
+                return self.manager.frozen_service(context).tree_annotation_coverage(rows)
+            self.assertEqual(coverage(), dict(total_epochs=2, tagged_epochs=0))
+            records.append(dict(target_kind='epoch', target_uuid=rows[0]['epoch_uuid'], tags=['one']))
+            self.assertEqual(coverage()['tagged_epochs'], 1)
+            records.append(dict(target_kind='cell', target_uuid=rows[1]['cell_uuid'], tags=['other']))
+            self.assertEqual(coverage()['tagged_epochs'], 2)
+            records.append(dict(target_kind='epoch', target_uuid=rows[1]['epoch_uuid'], tags=['duplicate']))
+            self.assertEqual(coverage()['tagged_epochs'], 2)
+            for record in records:
+                record['tags'] = []
+            self.assertEqual(coverage()['tagged_epochs'], 0)
+            context = self.manager.context(self.protocol, self.revision, 'actor-one')
+            scoped = self.manager.frozen_service(context)
+            records.append(dict(target_kind='cell', target_uuid=rows[0]['cell_uuid'], tags=['changed']))
+            with patch.object(shared, 'snapshot', side_effect=AssertionError('Coverage must reuse captured snapshot')):
+                self.assertEqual(scoped.tree_annotation_coverage(rows)['tagged_epochs'], 0)
+            self.assertNotEqual(context['candidate_scope_revision'],
+                self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'])
+        with patch.object(self.case.service, 'shared_annotations', None):
+            context = self.manager.context(self.protocol, self.revision, 'actor-one')
+            self.assertIsNone(self.manager.frozen_service(context).tree_annotation_coverage(rows))
+
+    def test_frozen_tree_coverage_is_scope_fenced_and_review_does_not_create_tags(self):
+        shared = self.coverage_annotations()
+        snapshot = shared.snapshot()
+        # Review/selection is independent from shared tags.
+        context = self.get_context()
+        self.assertNotIn('_shared_annotation_snapshot', context)
+        context = self.save(context, [dict(epoch_uuid=self.added, selected=True, reviewed=True)]).get_json()
+        def read(token):
+            return self.case.client.post(self.root + '/tree/page', json=dict(
+                candidate_scope_revision=token, splits='cell'), headers=self.case.headers)
+        response = read(context['candidate_scope_revision'])
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['branches'][0]['shared_tag_coverage'],
+                         dict(total_epochs=1, tagged_epochs=0))
+        changed = dict(snapshot, revision='changed', records=[dict(target_kind='epoch',
+            target_uuid=self.added, tags=['checked'])])
+        with patch.object(shared, 'snapshot', return_value=changed):
+            self.assertEqual(read(context['candidate_scope_revision']).status_code, 409)
+            fresh = self.get_context()
+            response = read(fresh['candidate_scope_revision'])
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertEqual(response.get_json()['branches'][0]['shared_tag_coverage'],
+                             dict(total_epochs=1, tagged_epochs=1))
+        # A read that changes after coverage evaluation cannot publish green.
+        original = self.manager.frozen_service
+        def changing(context):
+            scoped = original(context)
+            coverage = scoped.tree_annotation_coverage
+            def changed_after(rows):
+                result = coverage(rows)
+                shared.snapshot = lambda: changed
+                return result
+            scoped.tree_annotation_coverage = changed_after
+            return scoped
+        with patch.object(shared, 'snapshot', return_value=snapshot), patch.object(self.manager, 'frozen_service', side_effect=changing):
+            response = read(context['candidate_scope_revision'])
+            self.assertEqual(response.status_code, 409, response.get_json())
+        accepted = self.accept(self.accepted_request())
+        self.assertEqual(accepted.status_code, 200, accepted.get_json())
+        self.assertEqual(shared.snapshot(), snapshot, 'Merging must never author shared tags')
+
     def test_frozen_tree_leaf_has_saved_proposal_decision_without_scientific_curation(self):
         context = self.get_context()
         context = self.save(context, [dict(epoch_uuid=self.added, reviewed=True, excluded=True)]).get_json()

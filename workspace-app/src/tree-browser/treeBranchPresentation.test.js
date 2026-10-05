@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from './treeBranchPresentation.js';
+import {branchTagCoverage,branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from './treeBranchPresentation.js';
 const uuid='b5e8b847-3830-45e3-b46f-d6c2fa84e91c';
 test('tree labels never use opaque identity keys as display fallbacks',()=>{
   assert.equal(branchLabel({value:uuid,key:'encoded-identity'},'cell'),'Cell · label not recorded');
@@ -35,4 +35,16 @@ test('subsecond timestamp precision remains in metadata tooltip, not dense tree 
   assert.match(branchTooltip(node,'block'),/16:45:07:922947/);
   assert.equal(epochLeafLabel({label:'Epoch 1 · 16:45:10:056084'}),'1 · 16:45:10');
   assert.equal(node.value,uuid);
+});
+
+test('shared coverage requires exact complete branch counts and a current read',()=>{
+ const node=(tagged,total=123)=>({count:123,shared_tag_coverage:{total_epochs:total,tagged_epochs:tagged}});
+ assert.equal(branchTagCoverage(node(123)).state,'all');
+ assert.equal(branchTagCoverage(node(123)).label,'All 123 epochs tagged');
+ assert.equal(branchTagCoverage(node(1)).state,'partial');
+ assert.equal(branchTagCoverage(node(1)).label,'1 of 123 tagged');
+ assert.equal(branchTagCoverage(node(0)).state,'none');
+ for(const value of [null,{}, {count:0,shared_tag_coverage:{total_epochs:0,tagged_epochs:0}},node(123,124),node(124),node(-1),node('123'),node(null)])assert.equal(branchTagCoverage(value),null);
+ assert.equal(branchTagCoverage(node(123),{current:false}),null);
+ assert.equal(branchTagCoverage({count:123,merged:true,annotations:{cell_tags:[{tag:'good'}]}}),null);
 });

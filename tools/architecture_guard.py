@@ -22,6 +22,27 @@ LANGUAGES = ('python', 'javascript')
 RUNNERS = (*LANGUAGES, 'desktop')
 
 
+def canonical_reviewed_ast(node):
+    """Stable parsed-AST encoding matching the catalog's Python 3.14 dumps.
+
+    Omit empty list fields and declared optional None fields, not literal List
+    nodes or Constant(value=None). Keep every other field, value and ordering;
+    source bytes, reviewed selectors and provenance remain separately checked.
+    """
+    if isinstance(node, ast.AST):
+        fields = []
+        for name, value in ast.iter_fields(node):
+            if isinstance(value, list) and not value:
+                continue
+            if value is None and getattr(type(node), name, ...) is None:
+                continue
+            fields.append(f'{name}={canonical_reviewed_ast(value)}')
+        return f'{type(node).__name__}(' + ', '.join(fields) + ')'
+    if isinstance(node, list):
+        return '[' + ', '.join(canonical_reviewed_ast(item) for item in node) + ']'
+    return repr(node)
+
+
 def contained(root, name, *, exists=True):
     if not isinstance(name, str) or not name or Path(name).is_absolute():
         raise ValueError(f'Expected repository-relative path: {name!r}')
@@ -332,7 +353,7 @@ class PythonModulePolicy:
                 node = nodes.get(site['selector'])
                 if node is None or key in self.reviewed_uses:
                     raise ValueError('Missing or duplicate reviewed Python use site')
-                digest = hashlib.sha256(ast.dump(node, annotate_fields=True, include_attributes=False).encode()).hexdigest()
+                digest = hashlib.sha256(canonical_reviewed_ast(node).encode()).hexdigest()
                 context = self.use_context(name, node, site['category'])
                 if (not self.sha(site['ast_sha256']) or digest != site['ast_sha256'] or context is None or
                         any(site[k] != context[k] for k in ('origins', 'targets', 'owners'))):
@@ -903,7 +924,7 @@ class PythonModulePolicy:
                                         raise ValueError(name + ': dynamic access to adopted Python binding')
                         if not literal:
                             found_loaders[selector] = {'selector': selector, 'kind': 'ast-call',
-                                'ast_sha256': hashlib.sha256(ast.dump(node, annotate_fields=True, include_attributes=False).encode()).hexdigest()}
+                                'ast_sha256': hashlib.sha256(canonical_reviewed_ast(node).encode()).hexdigest()}
                 if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'PROBE' for t in node.targets) and name == 'python/workspace_bootstrap.py':
                     if not isinstance(node.value, ast.Constant) or not isinstance(node.value.value, str):
                         raise ValueError('Python embedded PROBE must remain literal')

@@ -43,3 +43,8 @@ central tree canonical-sort or native-filter suites: they import service/scienti
 fixtures. Native triggers, HTTP, H5, trace/export and application qualification
 remain deferred. Relocation changes source witnesses where source bytes change;
 no cache identity or performance preservation is claimed.
+
+Frozen workbench services may supply `tree_annotation_coverage(rows)` for exact
+branch/ancestor buckets. TreePages forwards its display-only shared-tag counts;
+it does not derive membership or approval. Ordinary navigation omits this field.
+See the [workbench coverage contract](../workbench/CONTRACT.md#frozen-tree-tag-coverage).

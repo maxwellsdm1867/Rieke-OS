@@ -425,3 +425,41 @@ from the finite backend baseline. The [local contract](trace-worker-execution.md
 keeps admission/source authority in WorkspaceService and records process/close
 ownership. The application profile includes the helper; historical finite-path
 counts and source receipts are unchanged.
+
+## Workbench loading and tag coverage follow-up
+
+The current App composition mounts incoming review independently of the main
+protocol summary and saved main-tree layout. Main inspection and export retain
+their readiness gates; frozen review continues to obtain its own context. This
+removes a serialized presentation dependency, not a measured native latency
+guarantee. The local incoming-workbench and protocol-tree-layout guides record
+the composition and delayed/failed-summary examples.
+
+Frozen tree pages may include exact descendant shared-tag coverage from the
+Workbench's already captured annotation snapshot. The existing response-end
+scope check still owns freshness. The tree view treats complete, partial and
+unavailable coverage separately and does not equate tags with merge membership
+or scientific approval. See the backend workbench/navigation contracts and tree
+browser guide for the narrow optional callback and presentation fences. The
+catalog adds the mounted coverage regression; the reviewed tree-page observer
+ASTs, identities and targets are unchanged while source hashes are updated.
+
+New audit events now fingerprint the current organized frontend paths. Previously
+recorded audit events remain unchanged. The source-install workflow fetches the
+Git history required by historical benchmark tests; recovery subprocess tests
+use the organized backup module. Chooser validation tests distinguish required
+launch resources from MySQL's later scientific activation and full byte audit.
+These changes preserve the existing organization rather than restoring flat
+compatibility modules.
+
+Reviewed Python AST identities retain their existing Python 3.14 encoding through
+an explicit serializer. This removes dependence on `ast.dump` defaults when CI
+uses Python 3.11; it does not regenerate catalog AST hashes or relax source-byte,
+selector, provenance or owner-byte checks. The tooling guide and guard examples
+cover literal empty lists/None and changed nonempty arguments and keywords.
+
+Project public examples retain their standalone import guard and upstream
+stand-in in an isolated child when invoked by combined test discovery. This
+prevents their process-wide substitutions from affecting neighboring recovery
+tests. The exact delegated import AST remains unchanged; its source hash and
+catalog explanation record the discovery wrapper.

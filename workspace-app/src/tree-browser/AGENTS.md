@@ -58,3 +58,10 @@ identity, error, cancellation and lifetime contracts. Authority or runtime body
 changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
+
+Workbench branch coverage uses exact backend `shared_tag_coverage` counts, never
+loaded children or direct cell chips as a descendant-total substitute. All epochs
+with any direct/inherited shared tag are green; partial coverage shows a count.
+Tag names may differ. Neither appearance nor tags grant approval/merge membership.
+Missing, malformed, stale-scope and refreshing coverage cannot paint green. Keep
+`treeTagCoverageWorkflow.test.js` with the pure branch presentation examples.

@@ -259,7 +259,8 @@ class ProtocolWorkbench:
             origin_witnesses.append(dict(candidate_revision_uuid=origin['revision_uuid'], recipe_sha256=origin['content_sha256'],
                 annotation_scope_revision=(witness or {}).get('revision')))
         shared = getattr(self.service, 'shared_annotations', None)
-        shared_revision = shared.snapshot()['revision'] if shared else None
+        shared_snapshot = shared.snapshot() if shared else None
+        shared_revision = shared_snapshot['revision'] if shared_snapshot else None
         valid_base = bool(main and self._additive_lineage(main, baseline, protocol,
             binding['version'], summary['baseline_binding_version'])) and origins_valid
         pending = {key: value for key, value in incoming.items() if key not in previous}
@@ -277,7 +278,8 @@ class ProtocolWorkbench:
             incoming_sha256=checksum(incoming), current_fingerprints_sha256=checksum(
                 {key: self.service._fingerprints.get(key) for key in proposed.keys() | previous.keys()}))
         evidence['candidate_scope_revision'] = checksum(evidence)
-        return dict(**evidence, summary=summary, baseline=baseline, candidate=candidate, main=main,
+        return dict(**evidence, _shared_annotation_snapshot=shared_snapshot,
+            summary=summary, baseline=baseline, candidate=candidate, main=main,
             previous=previous, incoming=incoming, pending=pending, decisions=decisions,
             conflicts=conflicts, base_conflicts=base_conflicts, main_conflicts=main_conflicts,
             unavailable=unavailable, ineligible=ineligible,
@@ -503,6 +505,25 @@ class ProtocolWorkbench:
                 tags=[], revision=0, metadata_fingerprint=value, approval_stale=False)
                 for key, value in fingerprints.items() if key in context['pending']}
         scoped.curation_provider = decisions
+        # Display coverage uses shared annotations only. It never grants review
+        # or main membership, and finish() rechecks the shared scope witness.
+        coverage_index = None
+        def annotation_coverage(rows):
+            nonlocal coverage_index
+            snapshot = context.get('_shared_annotation_snapshot')
+            if snapshot is None:
+                return None
+            if coverage_index is None:
+                if snapshot['revision'] != context['shared_annotations_revision']:
+                    raise WorkbenchConflict('Shared annotations changed while reading tree coverage')
+                coverage_index = {'cell': set(), 'epoch': set()}
+                for record in snapshot['records']:
+                    if record['tags']:
+                        coverage_index[record['target_kind']].add(record['target_uuid'])
+            return dict(total_epochs=len(rows), tagged_epochs=sum(
+                row['epoch_uuid'] in coverage_index['epoch'] or row['cell_uuid'] in coverage_index['cell']
+                for row in rows))
+        scoped.tree_annotation_coverage = annotation_coverage
         return scoped
 
     def queue(self, protocol, actor, limit=20, cursor=None):

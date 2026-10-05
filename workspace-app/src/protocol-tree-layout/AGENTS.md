@@ -42,8 +42,8 @@ updates local order immediately and does not return or await the saver promise.
 Readiness and load errors are distinct from save status. Cleanup aborts loading
 and suppresses late load/error/save publication; it does not cancel accepted
 writes or clear the old saver. While a replacement load is pending, `remember`
-and `retrySave` can still reach that prior saver. App gates its content through
-readiness; do not silently strengthen the hook's authority or reset behavior.
+and `retrySave` can still reach that prior saver. App gates main Inspect/Overview content through
+readiness; incoming Workbench owns its frozen scope/layout and mounts independently; do not silently strengthen the hook's authority or reset behavior.
 
 ## Executable public example
 

@@ -17,6 +17,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Historical benchmark provenance tests require original Git objects.
       - name: Prepare a fresh client folder with spaces
         run: |
           mkdir -p "$RUNNER_TEMP/Rieke Client"

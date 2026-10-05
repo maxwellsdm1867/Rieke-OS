@@ -43,9 +43,15 @@ class VerificationBoundaryTests(unittest.TestCase):
             validate_desktop_runtime(self.root, verify_hashes=True)
 
     def test_missing_required_runtime_never_passes_launch(self):
-        (self.root / 'mysql/bin/mysqld').unlink()
+        (self.root / 'python/bin/python3.11').unlink()
         with self.assertRaisesRegex(ValueError, 'Required packaged resource is absent'):
             validate_desktop_runtime(self.root)
+
+    def test_chooser_launch_defers_mysql_but_full_audit_requires_it(self):
+        (self.root / 'mysql/bin/mysqld').unlink()
+        validate_desktop_runtime(self.root)
+        with self.assertRaisesRegex(ValueError, 'Required packaged resource is absent'):
+            validate_desktop_runtime(self.root, verify_hashes=True)
 
     def test_launch_rejects_required_path_escape(self):
         file = self.root / 'frontend/index.html'

@@ -29,6 +29,14 @@ for frontend guard/test execution. Missing catalog paths, unknown fields, invali
 ancestry, forbidden dependencies and failed mapped tests must remain failures.
 Source-hash validation and a passing import guard do not establish behavior.
 
+Reviewed Python AST hashes use `canonical_reviewed_ast`: the existing Python
+3.14 catalog encoding, independent of the checking interpreter's `ast.dump`
+defaults. It omits empty list fields and declared optional None fields while
+preserving literal empty-list nodes, literal None, nonempty fields and order.
+Both reviewed-use and dynamic-loader sites use this encoding; source-byte,
+selector, provenance and owner-byte checks remain unchanged. Do not regenerate
+catalog AST hashes merely because the checker runs on another Python version.
+
 Existing source-checked command example, from the repository root:
 
 ```sh

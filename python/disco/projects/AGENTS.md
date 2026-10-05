@@ -11,3 +11,7 @@ The source-only public examples use owned temporary bytes and explicit upstream
 stand-ins; they do not load scientific libraries, start a database or transfer data.
 Native/HTTP/app and export qualification remain separately deferred. The integration
 owner serializes catalog, application-profile, CI, ledger and path-companion updates.
+
+The isolated public examples also support combined unittest discovery through a
+wrapper that invokes the same file with `-I -B`. Their import guard and recording
+stand-in remain inside that child; they must not alter other test modules' imports.

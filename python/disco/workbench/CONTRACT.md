@@ -113,3 +113,22 @@ fixtures, real database, scientific imports, app launch or HTTP runtime checks.
 Source-body/import verification does not replace these gates. The parent owns shared
 profile/catalog/CI/path-companion registration and coordinated package closure;
 source organization claims no benchmark improvement or release support.
+
+## Frozen tree tag coverage
+
+Frozen paged tree branches and ancestors include `shared_tag_coverage` with exact
+`total_epochs` and `tagged_epochs`, or null if shared annotations are unavailable.
+Coverage counts each descendant epoch once when it has any direct or inherited
+shared tag; tag names and authors may differ. It does not imply scientific review,
+approval, incoming selection or main membership. A merged epoch is removed from
+pending scope; merge alone never creates tags.
+
+The read reuses the private shared-annotation snapshot already captured by
+`context`, builds a request-local UUID index only when branch coverage is requested,
+and applies it to exact bucket membership. No per-epoch queries or extra snapshot
+read is added. The existing response-end scope check rejects changed annotation
+witnesses. Private snapshot records are never part of the public context payload.
+Frontend green coverage requires matching current candidate scope and complete
+validated counts; partial coverage and unavailable/retained reads remain distinct.
+Executable cases: `test_workspace_workbench.WorkbenchTests` coverage tests and
+`workspace-app/src/treeTagCoverageWorkflow.test.js`.

@@ -30,6 +30,17 @@ Preserve abort signals plus generation/isCurrent publication fences on refresh,
 paging, scope changes and unmount. Retained data may display inert after failure;
 closing a review proves no rollback. UI labels never create recorded identities.
 
+## Entry readiness
+
+App mounts Workbench independently of the main protocol summary and main tree
+layout. Incoming queue negotiation, preparation and fresh candidate context still
+gate the frozen browser. A pending or failed main summary cannot block incoming
+queue loading; main Inspect and protocol export retain their own readiness gates.
+Workbench does not request a filtered main summary for retained browsing filters.
+`workbenchRouteRendering.test.js` holds or rejects the main summary and verifies
+this separation without connecting to a user project. It is ordering/correctness
+evidence, not a measured native latency improvement.
+
 ## Factoring decision
 
 Pure selection/count/review policy is in-process; queue and scientific commands use

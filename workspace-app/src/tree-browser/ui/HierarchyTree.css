@@ -53,3 +53,8 @@
 .hierarchy-tree .ht-pagination{margin-top:4px;padding:6px 5px}
 
 .hierarchy-tree .ht-leaf:has(>.epoch-inclusion-toggle[aria-pressed=false])>button:first-child>.ht-value{color:var(--ink-muted)}
+
+.hierarchy-tree .ht-branch>button.tag-coverage-all{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.hierarchy-tree .ht-branch>button.tag-coverage-partial{border-color:var(--warning-border,var(--border-strong));background:var(--warning-soft,var(--surface-subtle))}
+.hierarchy-tree .ht-branch>button.selected{box-shadow:inset 3px 0 var(--accent)}
+.hierarchy-tree .ht-branch>button .tree-tag-coverage{font-size:10px;font-weight:600;line-height:1.4;white-space:normal}

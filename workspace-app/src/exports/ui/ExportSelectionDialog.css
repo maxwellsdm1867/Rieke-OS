@@ -19,3 +19,24 @@
 @media(max-width:680px){.export-selection-dialog>nav{grid-template-columns:1fr;padding:10px}.export-selection-dialog>nav button{padding:9px}.export-selection-body{max-height:calc(90vh - 280px)}}
 
 .protocol-export-dialog[open]{display:flex;flex-direction:column;max-height:90vh}.protocol-export-dialog>header,.protocol-export-dialog>.export-footer{flex-shrink:0}.protocol-export-body{min-height:0;overflow:auto;padding:18px 20px}.protocol-export-body>.export-panel{border:0;margin:0;padding:0}.protocol-export-body .export-grid{margin-top:16px}.protocol-export-dialog>.export-footer{margin:0;border-top:1px solid var(--border);padding:12px 20px;background:var(--surface)}.protocol-export-history{margin-top:16px}.protocol-export-history>summary{font-size:12px;color:var(--ink-secondary);cursor:pointer}
+
+.workbench-export-dialog{width:min(760px,calc(100vw - 32px))}
+.workbench-export-dialog[open]{display:flex;flex-direction:column}
+.workbench-export-dialog>header{flex-shrink:0;gap:16px}
+.workbench-export-dialog>.export-selection-body{min-height:0;max-height:none;padding:18px 20px 20px;overflow-wrap:anywhere}
+.workbench-export-dialog .export-selection-body>p{margin-bottom:16px;color:var(--ink-secondary)}
+.workbench-export-dialog .export-selection-body>p[role=alert]{color:var(--error-ink)}
+.workbench-export-form{display:flex;flex-direction:column;gap:20px;min-width:0}
+.workbench-export-scope{display:flex;flex-direction:column;gap:10px;min-width:0;margin:0;padding:12px;border:1px solid var(--border);border-radius:8px}
+.workbench-export-scope legend{font-size:12px;font-weight:650;color:var(--ink-secondary);padding:0 4px}
+.workbench-export-scope label{display:flex;align-items:flex-start;gap:8px;line-height:1.5}
+.workbench-export-scope input{flex-shrink:0;margin:3px 0 0;accent-color:var(--accent)}
+.workbench-export-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--border)}
+.workbench-export-counts>div{display:flex;flex-direction:column;justify-content:space-between;gap:9px;padding:14px;background:var(--surface-subtle);min-width:0}
+.workbench-export-counts dt{font-size:11px;line-height:1.45;color:var(--ink-secondary)}
+.workbench-export-counts dd{margin:0;font-size:23px;line-height:1.2;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink)}
+.workbench-export-name{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:650;color:var(--ink-secondary)}
+.workbench-export-name input{width:100%;font-weight:400}
+.workbench-export-form>.export-destinations{padding:0}
+.workbench-export-form>button{align-self:flex-end;white-space:normal;max-width:100%}
+@media(max-width:600px){.workbench-export-counts{grid-template-columns:repeat(2,minmax(0,1fr))}.workbench-export-dialog>header{padding:14px 16px}.workbench-export-dialog>.export-selection-body{padding:16px}.workbench-export-counts>div{padding:12px}.workbench-export-form>button{width:100%}}

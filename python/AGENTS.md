@@ -40,7 +40,7 @@ Metadata's [KEEP rationale](disco/metadata/KEEP.md) preserves scientific authori
 and source-verified trace composition outside disposable read owners.
 
 The [application profile](../desktop/application-profile.json) explicitly lists
-98 production Python files using v2 regular-package paths; tests and guides are
+production Python files using v2 regular-package paths; tests and guides are
 excluded. Its closure/staging helper remains the packaging authority.
 The [module ledger](../docs/architecture/core-module-ledger.md) and
 [finite path companion](../docs/architecture/core-module-paths.json) distinguish

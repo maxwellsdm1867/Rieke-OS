@@ -13,3 +13,8 @@
 
 /* Size the adjacent trace against the actual navigation viewport. */
 .column-tree .tp-columns{container-type:inline-size}
+
+.column-tree .tp-branch.tag-coverage-all{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.column-tree .tp-branch.tag-coverage-partial{border-color:var(--warning-border,var(--border-strong));background:var(--warning-soft,var(--surface-subtle))}
+.column-tree .tp-branch.selected{box-shadow:inset 3px 0 var(--accent)}
+.column-tree .tp-branch .tree-tag-coverage{font-size:10px;font-weight:600;line-height:1.4;white-space:normal}

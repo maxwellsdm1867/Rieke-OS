@@ -494,6 +494,8 @@ class TreePages:
                 result.append({'key':key,'label':child['label'],'value':bucket['value'],
                     'missing':bucket['missing'], 'path':[*parent_path,key],
                     'has_children':depth + 1 < len(order), **summary,
+                    **({'shared_tag_coverage': self.service.tree_annotation_coverage(bucket['rows'])}
+                       if callable(getattr(self.service, 'tree_annotation_coverage', None)) else {}),
                     **{name:child[name] for name in ('components','has_missing_components','start_time') if name in child}})
             return result
 
