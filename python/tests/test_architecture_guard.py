@@ -392,6 +392,7 @@ class PythonPackagePolicyTests(unittest.TestCase):
         for source in ('from disco.recovery import callback\ncallback(1)',
                        'from disco.recovery import callback as cb\ncb(1)',
                        'import disco.recovery as recovery\nrecovery.callback(1)',
+                       'import disco.recovery as recovery\nalias = recovery\nalias.callback(1)',
                        'def use():\n from disco.recovery import callback\n return callback(1)'):
             self.write('python/consumer.py', source)
             self.assertEqual(self.check()['checked'], ['metadata', 'python'])
@@ -405,6 +406,8 @@ class PythonPackagePolicyTests(unittest.TestCase):
                        'from disco.recovery import implementation',
                        'from disco import recovery', 'from disco.recovery import *',
                        'import disco.recovery as r\nr.implementation.callback(1)',
+                       'import disco.recovery as r\nalias = r\nalias.implementation.callback(1)',
+                       'import disco.recovery as r\nalias = r\nalias = object()',
                        'import disco.recovery as r\ngetattr(r, "implementation")',
                        'import disco.recovery as r\nforward(r)',
                        'import disco.recovery as r\nr = object()',
@@ -419,13 +422,24 @@ class PythonPackagePolicyTests(unittest.TestCase):
         self.write('python/tests/helper.py', 'from disco.recovery import callback as cb\nalias = cb\ndef ordinary(): return 1\n')
         self.write('python/tests/test_central.py', 'from helper import ordinary\n')
         self.check()
-        for source in ('from helper import cb', 'from helper import alias', 'import helper as h\nh.cb(1)', 'from helper import *'):
+        for source in ('from helper import cb', 'from helper import alias', 'import helper as h\nh.cb(1)', 'import helper as h\nalias = h\nalias.cb(1)', 'from helper import *'):
             with self.subTest(source=source):
                 self.write('python/tests/test_central.py', source)
                 self.assertIn('re-export shim', self.check(False)['error'])
         self.write('python/tests/test_central.py', 'from helper import ordinary')
         self.write('python/tests/helper.py', 'from disco.recovery import callback\n__all__ = ["callback"]')
         self.assertIn('re-export declaration', self.check(False)['error'])
+
+    def test_downstream_module_binding_shims_cannot_expose_public_package(self):
+        self.write('python/tests/helper.py', 'import disco.recovery as recovery\ndef ordinary(): return 1')
+        for source in ('from helper import recovery\nrecovery.callback(1)',
+                       'import helper\nhelper.recovery.callback(1)',
+                       'import helper as h\nalias = h\nalias.recovery.callback(1)',
+                       '__import__("helper", fromlist=["recovery"])'):
+            with self.subTest(source=source):
+                self.write('python/tests/test_central.py', source); self.check(False)
+        self.write('python/tests/test_central.py', 'from helper import ordinary')
+        self.check()
 
     def test_public_surface_and_inert_ancestor_faults_fail(self):
         name = 'python/disco/recovery/__init__.py'; original = (self.root / name).read_text()

@@ -359,9 +359,13 @@ class PythonModulePolicy:
             return result
         return set()
 
+    def adopted_origin(self, value):
+        return value[0] == 'adopted' or value[0] == 'module' and any(
+            value[1] == module['public_module'] or value[1].startswith(module['public_module'] + '.') for module in self.modules)
+
     def has_adopted_bindings(self, identity):
         target = self.target(identity)
-        return bool(target and any(any(v[0] == 'adopted' for v in self.binding(self.scopes[target], key))
+        return bool(target and any(any(self.adopted_origin(v) for v in self.binding(self.scopes[target], key))
                                    for key in self.scopes[target]['bindings']))
 
     def defined(self, source, symbol, seen=frozenset()):
@@ -454,7 +458,7 @@ class PythonModulePolicy:
                             if alias.name == '*':
                                 origins = set().union(*(self.binding(self.scopes[target], key) for key in self.scopes[target]['bindings']))
                             else: origins = self.binding(self.scopes[target], alias.name)
-                            if any(value[0] == 'adopted' for value in origins):
+                            if any(self.adopted_origin(value) for value in origins):
                                 raise ValueError(name + ': forbidden Python public re-export shim')
                 elif isinstance(node, ast.Attribute):
                     for value in self.expression(node.value, scope):
@@ -469,7 +473,7 @@ class PythonModulePolicy:
                         edge(name, child)
                         if child and any(child == m['public_entry'] for m in self.modules) and not public:
                             raise ValueError(name + ': public Python import must use canonical package')
-                        if target and not public and any(v[0] == 'adopted' for v in self.expression(node, scope)):
+                        if target and not public and any(self.adopted_origin(v) for v in self.expression(node, scope)):
                             raise ValueError(name + ': forbidden Python public re-export shim')
                 # Module-object forwarding/reflection is outside supported syntax.
                 if isinstance(node, (ast.Name, ast.Attribute)) and isinstance(node.ctx, ast.Load):
@@ -477,7 +481,9 @@ class PythonModulePolicy:
                     protected = [v for v in values if v[0] == 'module' and (any(v[1] == m['public_module'] for m in self.modules) or self.has_adopted_bindings(v[1]))]
                     loaders = [v for v in values if v[0] in ('external', 'module') and v[1].rsplit('.', 1)[-1] in PYTHON_LOADERS]
                     parent = self.parents.get(id(node))
-                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node):
+                    simple_alias = ((isinstance(parent, ast.Assign) and len(parent.targets) == 1 and isinstance(parent.targets[0], ast.Name) or
+                                     isinstance(parent, ast.AnnAssign) and isinstance(parent.target, ast.Name)) and parent.value is node)
+                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node or simple_alias):
                         raise ValueError(name + ': opaque Python public module use')
                     if loaders and not (isinstance(parent, ast.Call) and parent.func is node or isinstance(parent, (ast.Assign, ast.AnnAssign)) and parent.value is node):
                         raise ValueError(name + ': opaque Python loader use')
@@ -492,7 +498,7 @@ class PythonModulePolicy:
                     if any(isinstance(t, ast.Name) and t.id == '__all__' for t in targets) and not any(name == m['public_entry'] for m in self.modules):
                         try: exports = ast.literal_eval(node.value)
                         except (ValueError, TypeError): exports = []
-                        if isinstance(exports, (list, tuple)) and any(any(v[0] == 'adopted' for v in self.binding(scope, key)) for key in exports if isinstance(key, str)):
+                        if isinstance(exports, (list, tuple)) and any(any(self.adopted_origin(v) for v in self.binding(scope, key)) for key in exports if isinstance(key, str)):
                             raise ValueError(name + ': forbidden Python public re-export declaration')
                 if isinstance(node, ast.Call):
                     if isinstance(node.func, ast.Name) and node.func.id in ('getattr', 'setattr', 'delattr', 'vars') and any(any(v[0] == 'adopted' for v in self.expression(arg, scope)) for arg in node.args):
@@ -537,7 +543,7 @@ class PythonModulePolicy:
                                 for symbol in from_names:
                                     child = self.target(identity + '.' + symbol)
                                     if child: edge(name, child)
-                                    if target and any(v[0] == 'adopted' for v in self.binding(self.scopes[target], symbol)):
+                                    if target and any(self.adopted_origin(v) for v in self.binding(self.scopes[target], symbol)):
                                         raise ValueError(name + ': dynamic access to adopted Python binding')
                         if not literal:
                             found_loaders[selector] = {'selector': selector, 'kind': 'ast-call',
