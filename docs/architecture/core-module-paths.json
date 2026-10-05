@@ -2105,7 +2105,8 @@
           "public_entries": [
             "workspace-app/src/useWorkspaceNavigation.js",
             "workspace-app/src/workspaceNavigation.js"
-          ]
+          ],
+          "current_status": "Revision-owned benchmark path prerequisite integrated7d8c68d; per-slice source/characterization/relocation review still required."
         },
         {
           "id": "renderer-drafts",
@@ -2128,6 +2129,14 @@
             "workspace-app/src/components/DesktopDraftRecovery.jsx",
             "workspace-app/src/desktopDraftSession.js",
             "workspace-app/src/useDesktopDraft.js"
+          ],
+          "current_status": "Factory/hook folder independently reviewed and aggregate verified at ebdbfdb9; recovery UI remains caller-owned in components.",
+          "current_public_entries": [
+            "workspace-app/src/renderer-drafts/desktopDraftSession.js",
+            "workspace-app/src/renderer-drafts/useDesktopDraft.js"
+          ],
+          "current_remaining_gates": [
+            "Final assembled app acceptance; no dedicated performance measurement"
           ]
         },
         {
@@ -2589,7 +2598,8 @@
           "public_entries": [
             "workspace-app/src/treeLayoutPersistence.js",
             "workspace-app/src/useProtocolTreeLayout.js"
-          ]
+          ],
+          "current_status": "Real-hook characterization source GO; folder implementation in progress; not integrated."
         },
         {
           "id": "project-preferences",

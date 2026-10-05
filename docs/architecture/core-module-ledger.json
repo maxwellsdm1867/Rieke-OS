@@ -7319,7 +7319,7 @@
         "contract_records": [
           "mutation-recovery"
         ],
-        "status": "prerequisite-design",
+        "status": "reader-implementation-in-progress",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7327,7 +7327,8 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "Profile prerequisite reviewed and integrated. v4 reader/fixtures A in progress; recovery runtime move B awaits independent A review and parent design gate."
       },
       {
         "id": "frontend-navigation",
@@ -7338,7 +7339,7 @@
           "renderer.desktop-draft-session",
           "renderer.lifecycle-fence"
         ],
-        "status": "queued",
+        "status": "partially-integrated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7346,7 +7347,8 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "Renderer draft factory/hook folder reviewed and aggregate verified at ebdbfdb9. Tree-layout real-hook characterization independently reviewed (9 checks,6 faults); folder implementation in progress. Navigation/preferences/shared lifecycle remain pending."
       },
       {
         "id": "frontend-reads",
@@ -7530,7 +7532,7 @@
           "desktop.startup-preference",
           "desktop.startup-restoration"
         ],
-        "status": "queued",
+        "status": "partially-integrated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7538,7 +7540,8 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "StartupSession folder reviewed and aggregate verified at ebdbfdb9. Root supervisor/backend admission/project process ownership/restoration composition remain pending or need reviewed keep-current decisions."
       },
       {
         "id": "desktop-state",
@@ -7548,7 +7551,7 @@
           "desktop.profile-path-policy",
           "desktop.project-location-index"
         ],
-        "status": "queued",
+        "status": "partially-integrated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7556,7 +7559,8 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "DraftStore folder reviewed and aggregate verified at ebdbfdb9. Profile/path policy and project-location ownership remain pending."
       },
       {
         "id": "desktop-updates",
@@ -7566,7 +7570,7 @@
           "desktop.update-coordinators",
           "desktop.bundle-install-recovery"
         ],
-        "status": "queued",
+        "status": "implementation-under-review",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7574,7 +7578,8 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "Integrity-folder candidate3f4aa0a independently under source review; not integrated. Update/install groups remain pending."
       },
       {
         "id": "desktop-entrypoints",
@@ -7600,7 +7605,7 @@
         "contract_records": [
           "contract-enforcement"
         ],
-        "status": "queued",
+        "status": "partially-integrated",
         "stages": {
           "goal_contract": "pending",
           "refactor_files_and_local_contract": "pending",
@@ -7608,10 +7613,11 @@
           "independent_source_review": "pending",
           "local_integration": "pending"
         },
-        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes."
+        "acceptance": "Actual coherent folders and public entry; nearby public-seam tests/usage examples/AGENTS; actual caller wiring preserved; stale-path/build/packaging checks; exact source-bound review and evidence. Folder grouping must not merge separate authority or lifetimes.",
+        "progress_note": "JSv3 multi-entry guard, explicit desktop test lanes, profile v2 reader (shipping v1), revision-owned benchmark recipes and retained-tool navigation integrated/reviewed. Pythonv4 policy under implementation; whole-codebase ownership/discovery remains incomplete."
       }
     ],
-    "coverage_status": "All 59 existing contract records assigned to work items; actual runtime-file coverage assessment remains pending. Record coverage is not filesystem completion.",
+    "coverage_status": "All59contractrecords assigned exactly once to20workitems; all465baseline runtime/config paths assigned.7verified folders cover10baseline runtimepaths;312proposed moves,131keep decisions requiring acceptance,12deferred paths remain separately classified.",
     "stage_rules": [
       "One selected coherent owner at a time; shared guard/catalog/packaging edits and heavy runs serialize.",
       "Public-seam behavior tests are primary; integration and final actual-app E2E remain required.",
@@ -7653,6 +7659,48 @@
       "deferred": 12,
       "already_organized": 4,
       "qualification": "Counts are paths, not modules or validated behavior. No coverage percentage or performance inference."
+    },
+    "progress_snapshot": {
+      "baseline": "4c9e128f1b606bcc47d265b0953005dcfdf359db",
+      "source_checkpoint": "76962c6c5b028d2c6181cfb42a6946fecf27e103",
+      "work_items_total": 20,
+      "work_items_locally_integrated": 4,
+      "work_items_partial_or_active": 6,
+      "work_items_queued_or_keep_design": 10,
+      "verified_responsibility_folders": [
+        "workspace-app/src/presentation",
+        "workspace-app/src/tree-selection",
+        "workspace-app/src/group-save",
+        "workspace-app/src/renderer-drafts",
+        "desktop/close",
+        "desktop/drafts",
+        "desktop/startup"
+      ],
+      "runtime_or_config_path_counts": {
+        "keep-in-place": 131,
+        "move-proposed": 312,
+        "deferred": 12,
+        "organized": 10
+      },
+      "by_area": {
+        "frontend": {
+          "keep-in-place": 28,
+          "move-proposed": 243,
+          "deferred": 2,
+          "organized": 6
+        },
+        "backend": {
+          "keep-in-place": 77,
+          "deferred": 10,
+          "move-proposed": 57
+        },
+        "desktop": {
+          "keep-in-place": 26,
+          "move-proposed": 12,
+          "organized": 4
+        }
+      },
+      "qualification": "Counts partition the original465runtime/config paths, not tests/newdocs or module-depth metrics. Organized10paths are in7verified responsibility folders. Baseline131keep-in-place and12deferred paths are not blanket-accepted completion. Remaining312moves require per-slice review; no completion percentage or performance claim. Four complete workitems plus partials does not complete final app gates."
     }
   }
 }

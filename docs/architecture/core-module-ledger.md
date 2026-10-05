@@ -285,3 +285,30 @@ All seven whole-app costs remain unmeasured. Final assembled E2E is blocked on a
 reviewed no-force-kill launcher implementation, pinned runtime qualification and exact package gate. An existing Python3.11.13 source-test runtime was located; that is not final app/native qualification.
 
 Benchmark path prerequisite integrated as `7d8c68d` from reviewed `9c92a24`: revision-owned recipes and four exact legacy runner hashes preserve historical suite identity.21 source cases passed plus one separate YAML workflow case using existing Python3.11.13; three deliberate faults detected. Initial missing-PyYAML evidence remains preserved. No benchmark workload ran, no registry/schema changed, and whole-app costs remain unmeasured.
+
+### Finite organization progress at `76962c6`
+
+The 20 work items include 4 locally integrated items (presentation, tree selection,
+group save and desktop close), 6 partial/active items and 10 queued or keep-current
+design items. Seven responsibility folders are verified: presentation, tree
+selection, group save, renderer drafts, desktop close, desktop drafts and startup.
+Renderer drafts, startup and drafts complete only parts of their broader work items.
+
+The original 465 runtime/config paths partition into 10 organized paths, 312
+proposed moves, 131 keep-in-place decisions awaiting per-scope acceptance, and 12
+explicitly deferred paths. These are path counts, not module-depth or completion
+percentages. New tests/docs are tracked as accepted increments, outside that
+baseline count.
+
+| Area | Organized | Proposed moves | Keep decisions | Deferred |
+| --- | ---: | ---: | ---: | ---: |
+| Frontend | 6 | 243 | 28 | 2 |
+| Backend/tools | 0 | 57 | 77 | 10 |
+| Desktop | 4 | 12 | 26 | 0 |
+
+Active next increments: tree-layout folder after reviewed real-hook
+characterization; desktop integrity folder under independent source review;
+Python v4 reader/fixture implementation before the first recovery move. Retained
+tool guidance and provenance/packaging prerequisites are integrated but do not
+count as runtime folder completion. Final assembled UI/native/package acceptance
+and all seven whole-app cost measurements remain outstanding.
