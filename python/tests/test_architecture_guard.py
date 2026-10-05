@@ -663,6 +663,246 @@ class PythonNamedEntryPolicyTests(unittest.TestCase):
                     self.write(test_path, source)
                     self.assertIn('public re-export shim', self.check(False)['error'])
 
+    def test_named_class_dunder_allows_same_owner_production_and_aliases(self):
+        path = 'python/disco/backup/snapshot.py'
+        original = (self.root / path).read_text()
+        self.write(path, original + '\ninstance = Snapshot.__new__(Snapshot)\n')
+        self.check()
+        self.write(path, original)
+        self.contract['rules'][2]['allow'].append('disco.backup.snapshot')
+        for source in (
+            'from .snapshot import Snapshot\ninstance = Snapshot.__new__(Snapshot)',
+            'from .snapshot import Snapshot as Imported\nAlias = Imported\ninstance = Alias.__new__(Alias)',
+            'import disco.backup.snapshot as snapshot\nAlias = snapshot.Snapshot\ninstance = Alias.__new__(Alias)',
+        ):
+            with self.subTest(source=source):
+                self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\n' + source)
+                self.check()
+
+    def test_named_class_dunder_rejects_cross_owner_production_and_same_owner_tests(self):
+        self.catalog['contracts'][0]['rules'][1]['allow'].append('disco.backup.snapshot')
+        for path in ('python/disco/recovery/implementation.py',
+                     'python/disco/backup/tests/test_snapshot.py'):
+            original = (self.root / path).read_text()
+            for expression in ('Snapshot.__new__(Snapshot)', 'Alias.__new__(Alias)'):
+                with self.subTest(path=path, expression=expression):
+                    self.write(path, original + '\nfrom disco.backup.snapshot import Snapshot\n'
+                               'Alias = Snapshot\ninstance = ' + expression + '\n')
+                    self.assertIn('reflective Python named value attribute', self.check(False)['error'])
+            self.write(path, original)
+
+    def test_named_class_dunder_uses_imported_and_reexported_origin_owner(self):
+        self.write('python/disco/foreign/__init__.py', '"""Inert foreign owner."""\n')
+        self.write('python/disco/foreign/model.py', 'class ForeignSnapshot: pass\n')
+        self.write('python/disco/foreign/tests/__init__.py', '')
+        self.catalog['python_module_policy']['test_roots'].append('python/disco/foreign/tests')
+        self.catalog['python_module_policy']['modules'].append({
+            'contract_id': 'foreign', 'root': 'python/disco/foreign', 'private_test_edges': [],
+            'public_entries': [{'path': 'python/disco/foreign/model.py',
+                                'module': 'disco.foreign.model', 'exports': ['ForeignSnapshot']}]})
+        self.catalog['contracts'].append({
+            'id': 'foreign', 'contract': {'path': 'docs/contract.md', 'heading': 'Recovery'},
+            'affected_paths': ['python/disco/foreign/**'],
+            'rules': [{'language': 'python', 'file': 'python/disco/foreign/' + leaf, 'allow': []}
+                      for leaf in ('__init__.py', 'model.py')],
+            'tests': {'python': ['python/tests/test_central.py'], 'javascript': []}})
+        path = 'python/disco/backup/snapshot.py'
+        self.write(path, (self.root / path).read_text() +
+                   '\nfrom disco.foreign.model import ForeignSnapshot\n')
+        self.module['public_entries'][0]['exports'].append('ForeignSnapshot')
+        self.contract['rules'][1]['allow'].append('disco.foreign.model')
+        self.contract['rules'][2]['allow'].extend(['disco.foreign.model', 'disco.backup.snapshot'])
+        for origin in ('disco.foreign.model', 'disco.backup.snapshot'):
+            with self.subTest(origin=origin):
+                self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\n'
+                           f'from {origin} import ForeignSnapshot\nAlias = ForeignSnapshot\n'
+                           'instance = Alias.__new__(Alias)\n')
+                self.assertIn('reflective Python named value attribute', self.check(False)['error'])
+
+    def test_named_class_dunder_exception_keeps_legacy_callable_rejection(self):
+        self.contract['rules'][2]['allow'].append('disco.recovery')
+        self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\n'
+                   'from disco.recovery import callback\nAlias = callback\nname = Alias.__name__\n')
+        self.assertIn('reflective Python public callable attribute', self.check(False)['error'])
+
+    def thread_local_fixture(self):
+        path = 'python/disco/backup/snapshot.py'
+        self.write(path, (self.root / path).read_text() + '\nimport threading\n_LOCAL_STATE = threading.local()\n')
+        self.contract['rules'][1]['allow'].append('threading')
+        self.module['public_entries'][0]['exports'].append('_LOCAL_STATE')
+        return path
+
+    def test_named_getattr_allows_same_owner_thread_local_and_alias(self):
+        path = self.thread_local_fixture()
+        self.write(path, (self.root / path).read_text() +
+                   '\nlocked = getattr(_LOCAL_STATE, "locked", False)\n'
+                   'Alias = _LOCAL_STATE\nprevious = getattr(Alias, "locked", False)\n')
+        self.check()
+        self.contract['rules'][2]['allow'].append('disco.backup.snapshot')
+        self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\n'
+                   'from .snapshot import _LOCAL_STATE as state\nlocked = getattr(state, "locked", False)\n')
+        self.check()
+
+    def test_named_getattr_rejects_external_owner_and_same_owner_tests(self):
+        self.thread_local_fixture()
+        self.catalog['contracts'][0]['rules'][1]['allow'].append('disco.backup.snapshot')
+        for path in ('python/consumer.py', 'python/disco/recovery/implementation.py',
+                     'python/disco/backup/tests/test_snapshot.py'):
+            original = (self.root / path).read_text()
+            with self.subTest(path=path):
+                self.write(path, original + '\nfrom disco.backup.snapshot import _LOCAL_STATE as state\n'
+                           'locked = getattr(state, "locked", False)\n')
+                self.assertIn('reflective Python public callable access', self.check(False)['error'])
+            self.write(path, original)
+
+    def test_named_getattr_rejects_foreign_reexported_thread_local(self):
+        self.thread_local_fixture()
+        self.write('python/disco/foreign/__init__.py', '"""Inert foreign owner."""\n')
+        self.write('python/disco/foreign/model.py', 'from disco.backup.snapshot import _LOCAL_STATE\n')
+        self.write('python/disco/foreign/consumer.py',
+                   'from .model import _LOCAL_STATE as state\nlocked = getattr(state, "locked", False)\n')
+        self.write('python/disco/foreign/tests/__init__.py', '')
+        self.catalog['python_module_policy']['test_roots'].append('python/disco/foreign/tests')
+        self.catalog['python_module_policy']['modules'].append({
+            'contract_id': 'foreign', 'root': 'python/disco/foreign', 'private_test_edges': [],
+            'public_entries': [{'path': 'python/disco/foreign/model.py',
+                                'module': 'disco.foreign.model', 'exports': ['_LOCAL_STATE']}]})
+        self.catalog['contracts'].append({
+            'id': 'foreign', 'contract': {'path': 'docs/contract.md', 'heading': 'Recovery'},
+            'affected_paths': ['python/disco/foreign/**'],
+            'rules': [{'language': 'python', 'file': 'python/disco/foreign/' + leaf, 'allow': allow}
+                      for leaf, allow in [('__init__.py', []), ('model.py', ['disco.backup.snapshot']),
+                                          ('consumer.py', ['disco.foreign.model'])]],
+            'tests': {'python': ['python/tests/test_central.py'], 'javascript': []}})
+        self.assertIn('reflective Python public callable access', self.check(False)['error'])
+
+    def test_named_getattr_keeps_mutation_default_and_legacy_reflection_rejected(self):
+        path = self.thread_local_fixture()
+        original = (self.root / path).read_text()
+        self.contract['rules'][1]['allow'].append('disco.recovery')
+        for operation in ('setattr(_LOCAL_STATE, "locked", True)', 'delattr(_LOCAL_STATE, "locked")',
+                          'vars(_LOCAL_STATE)', 'getattr(object(), "locked", _LOCAL_STATE)',
+                          'getattr(callback, "__name__")'):
+            with self.subTest(operation=operation):
+                self.write(path, original + '\nfrom disco.recovery import callback\n' + operation + '\n')
+                self.assertIn('reflective Python public callable access', self.check(False)['error'])
+
+    def add_reviewed_use(self, path, category, select):
+        import ast
+        import hashlib
+        previous = sys.path[:]
+        try:
+            sys.path.insert(0, str(ROOT / 'tools'))
+            from architecture_guard import PythonModulePolicy as policy_class
+        finally:
+            sys.path[:] = previous
+        policy = policy_class(self.root.resolve(), self.catalog)
+        node = next(n for n in ast.walk(policy.trees[path]) if select(n))
+        context = policy.use_context(path, node, category)
+        self.assertIsNotNone(context)
+        record = {'file': path, 'file_sha256': hashlib.sha256((self.root / path).read_bytes()).hexdigest(),
+                  'reason': 'Owned inert regression for one explicitly reviewed existing source use.',
+                  'sites': [{'selector': policy.use_selectors[id(node)][1],
+                             'ast_sha256': hashlib.sha256(ast.dump(node, annotate_fields=True, include_attributes=False).encode()).hexdigest(),
+                             'category': category, **context}]}
+        self.catalog['python_module_policy'].setdefault('reviewed_use_sites', []).append(record)
+        return record
+
+    def reviewed_constructor_fixture(self):
+        import ast
+        path = 'python/disco/backup/tests/test_snapshot.py'
+        self.write(path, 'from disco.backup.snapshot import Snapshot\nvalue = Snapshot.__new__(Snapshot)\n')
+        return path, self.add_reviewed_use(path, 'test-constructor-capture',
+                                         lambda n: isinstance(n, ast.Attribute) and n.attr == '__new__')
+
+    def test_reviewed_use_admits_exact_site_but_not_copied_or_private_use(self):
+        import hashlib
+        path, record = self.reviewed_constructor_fixture()
+        self.check()
+        self.write('python/tests/test_central.py', (self.root / path).read_text())
+        self.assertIn('reflective Python named value attribute', self.check(False)['error'])
+        self.write('python/tests/test_central.py', '')
+        self.write(path, (self.root / path).read_text() + 'from disco.backup.private import secret\n')
+        record['file_sha256'] = hashlib.sha256((self.root / path).read_bytes()).hexdigest()
+        self.assertIn('forbidden private Python dependency', self.check(False)['error'])
+
+    def test_reviewed_use_binds_source_ast_target_origin_and_owner_bytes(self):
+        import copy
+        import hashlib
+        path, record = self.reviewed_constructor_fixture()
+        original = copy.deepcopy(record)
+        source = (self.root / path).read_text()
+        self.write(path, source + '# changed source\n')
+        self.assertIn('Reviewed Python use source changed', self.check(False)['error'])
+        self.write(path, source.replace('__new__', '__init__'))
+        record['file_sha256'] = hashlib.sha256((self.root / path).read_bytes()).hexdigest()
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+        self.write(path, source)
+        for field, replacement in (('targets', ['disco.backup.clock.tick']), ('origins', [['named', 'disco.backup.clock', 'Snapshot']]),
+                                   ('owners', []), ('ast_sha256', '0' * 64)):
+            with self.subTest(field=field):
+                record.clear(); record.update(copy.deepcopy(original))
+                record['sites'][0][field] = replacement
+                self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+        record.clear(); record.update(copy.deepcopy(original))
+        owner = self.root / 'python/disco/backup/snapshot.py'
+        owner.write_text(owner.read_text() + '# changed owner bytes\n')
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+
+    def test_reviewed_use_rejects_alias_provenance_rebinding(self):
+        import hashlib
+        path, record = self.reviewed_constructor_fixture()
+        self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\nclass Clock: pass\n')
+        self.module['public_entries'][1]['exports'].append('Clock')
+        self.write(path, 'from disco.backup.clock import Clock as Snapshot\nvalue = Snapshot.__new__(Snapshot)\n')
+        record['file_sha256'] = hashlib.sha256((self.root / path).read_bytes()).hexdigest()
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+
+    def test_reviewed_use_rejects_duplicate_missing_category_and_production_test_record(self):
+        import copy
+        import hashlib
+        path, record = self.reviewed_constructor_fixture()
+        records = self.catalog['python_module_policy']['reviewed_use_sites']
+        records.append(copy.deepcopy(record))
+        self.assertIn('duplicate reviewed Python use file', self.check(False)['error'])
+        records.pop()
+        site = copy.deepcopy(record['sites'][0])
+        record['sites'].append(copy.deepcopy(site))
+        self.assertIn('duplicate reviewed Python use site', self.check(False)['error'])
+        record['sites'].pop()
+        record['sites'][0]['selector'] = 'Attribute:9999'
+        self.assertIn('Missing or duplicate reviewed Python use site', self.check(False)['error'])
+        record['sites'][0] = copy.deepcopy(site)
+        record['sites'][0]['category'] = 'production-method-capture'
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+        record['sites'][0] = copy.deepcopy(site)
+        self.write('python/consumer.py', (self.root / path).read_text())
+        record['file'] = 'python/consumer.py'
+        record['file_sha256'] = hashlib.sha256((self.root / 'python/consumer.py').read_bytes()).hexdigest()
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+
+    def test_reviewed_use_rejects_unused_record_and_keeps_legacy_reflection_denied(self):
+        import ast
+        path = 'python/disco/backup/tests/test_snapshot.py'
+        self.write(path, 'from disco.backup.snapshot import Snapshot\nvalue = Snapshot.empty()\n')
+        self.add_reviewed_use(path, 'test-oracle-call', lambda n: isinstance(n, ast.Attribute))
+        self.assertIn('Unused reviewed Python use site', self.check(False)['error'])
+        self.catalog['python_module_policy']['reviewed_use_sites'] = []
+        self.write(path, 'from disco.recovery import callback\nvalue = callback.__name__\n')
+        self.assertIn('reflective Python public callable attribute', self.check(False)['error'])
+
+    def test_reviewed_use_binds_finite_computed_mock_targets(self):
+        import ast
+        path = 'python/disco/backup/tests/test_snapshot.py'
+        self.write(path, 'from unittest.mock import patch\nfor name in ("save", "_existing"):\n'
+                   ' with patch("disco.backup.snapshot." + name): pass\n')
+        record = self.add_reviewed_use(path, 'test-computed-mock-target',
+                                      lambda n: isinstance(n, ast.Call) and isinstance(n.func, ast.Name) and n.func.id == 'patch')
+        self.assertEqual(record['sites'][0]['targets'], ['disco.backup.snapshot._existing', 'disco.backup.snapshot.save'])
+        self.check()
+        record['sites'][0]['targets'] = ['disco.backup.snapshot.secret']
+        self.assertIn('Changed category, provenance or target', self.check(False)['error'])
+
     def test_named_import_forms_classes_constants_and_leaf_identity(self):
         sources = [
             'import disco.backup.snapshot as snapshot\nanswer = snapshot.save(snapshot.LIMIT)',

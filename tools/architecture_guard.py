@@ -74,7 +74,8 @@ class PythonModulePolicy:
     def __init__(self, root, value):
         self.root, self.value, self.policy = root, value, value['python_module_policy']
         policy = self.policy
-        keys(policy, ('source_root', 'test_roots', 'fixture_pythonpath', 'reviewed_loader_sites', 'modules'))
+        keys(policy, ('source_root', 'test_roots', 'fixture_pythonpath', 'reviewed_loader_sites', 'modules'),
+             ('reviewed_use_sites',) if value['version'] == 5 else ())
         if policy['source_root'] != 'python' or policy['fixture_pythonpath'] != ['python/tests']:
             raise ValueError('Python policy requires the existing source and fixture roots')
         self.safe('python', directory=True)
@@ -302,6 +303,163 @@ class PythonModulePolicy:
                     self.parents[id(part)] = node
                     visit(part, scope)
             visit(tree, top)
+        self.use_selectors, self.reviewed_uses, self.used_uses = {}, {}, set()
+        for name, tree in self.trees.items():
+            counts = {}
+            for node in sorted(ast.walk(tree), key=lambda n: (getattr(n, 'lineno', 0), getattr(n, 'col_offset', 0), type(n).__name__)):
+                kind = type(node).__name__
+                counts[kind] = counts.get(kind, 0) + 1
+                self.use_selectors[id(node)] = (name, kind + ':' + str(counts[kind]))
+        records = policy.get('reviewed_use_sites', [])
+        if not isinstance(records, list): raise ValueError('Reviewed Python uses must be a list')
+        files = set()
+        for record in records:
+            keys(record, ('file', 'file_sha256', 'reason', 'sites'))
+            name = record['file']
+            if name not in self.sources or name in files:
+                raise ValueError('Missing or duplicate reviewed Python use file')
+            files.add(name)
+            if not isinstance(record['reason'], str) or not record['reason'].strip():
+                raise ValueError('Reviewed Python use requires a reason')
+            if not self.sha(record['file_sha256']) or hashlib.sha256((root / name).read_bytes()).hexdigest() != record['file_sha256']:
+                raise ValueError('Reviewed Python use source changed: ' + name)
+            if not isinstance(record['sites'], list) or not record['sites']:
+                raise ValueError('Reviewed Python use requires sites')
+            nodes = {self.use_selectors[id(n)][1]: n for n in ast.walk(self.trees[name])}
+            for site in record['sites']:
+                keys(site, ('selector', 'ast_sha256', 'category', 'origins', 'targets', 'owners'))
+                key = (name, site['selector'], site['category'])
+                node = nodes.get(site['selector'])
+                if node is None or key in self.reviewed_uses:
+                    raise ValueError('Missing or duplicate reviewed Python use site')
+                digest = hashlib.sha256(ast.dump(node, annotate_fields=True, include_attributes=False).encode()).hexdigest()
+                context = self.use_context(name, node, site['category'])
+                if (not self.sha(site['ast_sha256']) or digest != site['ast_sha256'] or context is None or
+                        any(site[k] != context[k] for k in ('origins', 'targets', 'owners'))):
+                    raise ValueError('Changed category, provenance or target of reviewed Python use: ' + name)
+                self.reviewed_uses[key] = site
+
+    def use_context(self, name, node, category):
+        """Exact reviewed syntax and current provenance; never execute inspected source."""
+        scope = self.node_scopes[id(node)]
+        test = self.is_test(name)
+        values, targets = set(), []
+        def identity(value): return '.'.join(value[1:])
+        def finite_names(variable):
+            parent = node
+            while id(parent) in self.parents:
+                parent = self.parents[id(parent)]
+                generators = parent.generators if isinstance(parent, (ast.DictComp, ast.ListComp, ast.SetComp, ast.GeneratorExp)) else [parent] if isinstance(parent, ast.For) else []
+                for generator in generators:
+                    if isinstance(generator.target, ast.Name) and generator.target.id == variable:
+                        try: result = ast.literal_eval(generator.iter)
+                        except (ValueError, TypeError): return None
+                        if isinstance(result, (tuple, list)) and result and all(isinstance(x, str) for x in result): return list(result)
+                        return None
+            return None
+        def string_origin(target):
+            def symbol_origin(module, symbol, seen=frozenset()):
+                source = self.target(module)
+                if source is None or (module, symbol) in seen: return set()
+                resolved = self.binding(self.scopes[source], symbol)
+                if resolved: return resolved
+                # The general ownership resolver intentionally omits ordinary
+                # flat-file functions. Bind only explicit import/definition
+                # provenance for a reviewed literal mock target, without
+                # changing that resolver or following computed expressions.
+                result = set()
+                for item in self.scopes[source]['bindings'].get(symbol, []):
+                    if item[0] == 'symbol':
+                        result.update(symbol_origin(item[1], item[2], seen | {(module, symbol)}))
+                    elif item[0] == 'ordinary' and any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.name == symbol for n in self.trees[source].body):
+                        result.add(('source-symbol', self.identities[source], symbol))
+                return result
+            parts = target.split('.')
+            for stop in range(len(parts), 0, -1):
+                module = '.'.join(parts[:stop]); source = self.target(module)
+                if source:
+                    origins = {('module', module)}
+                    for part in parts[stop:]:
+                        following = set()
+                        for value in origins:
+                            if value[0] == 'module' and self.target(value[1]):
+                                following.update(symbol_origin(value[1], part))
+                            elif value[0] == 'module': following.add(('external', value[1] + '.' + part))
+                            elif value[0] == 'named': following.add(('named', value[1], value[2] + '.' + part))
+                            elif value[0] == 'external': following.add(('external', value[1] + '.' + part))
+                        origins = following
+                    return origins
+            return set()
+        if category in ('test-mock-target', 'test-computed-mock-target'):
+            if not test or not isinstance(node, ast.Call) or not node.args: return None
+            kind = self.patch_kind(node, scope)
+            if kind == 'unittest.mock.patch.object' and category == 'test-mock-target':
+                if len(node.args) < 2 or not isinstance(node.args[1], ast.Constant) or not isinstance(node.args[1].value, str): return None
+                values = self.expression(node.args[0], scope)
+                targets = [identity(v) + '.' + node.args[1].value for v in values]
+            elif kind == 'unittest.mock.patch':
+                target = node.args[0]
+                if category == 'test-mock-target' and isinstance(target, ast.Constant) and isinstance(target.value, str):
+                    targets = [target.value]
+                elif (category == 'test-computed-mock-target' and isinstance(target, ast.BinOp) and isinstance(target.op, ast.Add) and
+                      isinstance(target.left, ast.Constant) and isinstance(target.left.value, str) and isinstance(target.right, ast.Name)):
+                    names = finite_names(target.right.id)
+                    if names is None: return None
+                    targets = [target.left.value + suffix for suffix in names]
+                else: return None
+                for target in targets: values.update(string_origin(target))
+            else: return None
+        elif category == 'production-method-capture':
+            if (test or not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name) or node.func.id != 'getattr' or
+                    len(node.args) != 2 or node.keywords or not isinstance(node.args[1], ast.Name)): return None
+            names = finite_names(node.args[1].id)
+            if names is None: return None
+            values = self.expression(node.args[0], scope)
+            if not values or any(v[0] != 'named' for v in values): return None
+            targets = [identity(v) + '.' + attribute for v in values for attribute in names]
+        elif category in ('test-module-object', 'production-observer-table'):
+            if test != (category == 'test-module-object') or not isinstance(node, (ast.Name, ast.Attribute)) or not isinstance(node.ctx, ast.Load): return None
+            if not test and not isinstance(self.parents.get(id(node)), ast.Tuple): return None
+            values = self.expression(node, scope)
+            if not values or any(v[0] != 'module' for v in values): return None
+            targets = [identity(v) for v in values]
+        elif category == 'test-module-alias':
+            if not test or not isinstance(node, ast.Assign): return None
+            values = self.expression(node.value, scope)
+            if not values or any(v[0] != 'module' for v in values): return None
+            targets = [identity(v) for v in values]
+        elif category in ('test-constructor-capture', 'test-oracle-call'):
+            if not test or not isinstance(node, ast.Attribute): return None
+            if category == 'test-constructor-capture':
+                if node.attr not in ('__new__', '__init__'): return None
+                values = self.expression(node.value, scope)
+                if not values or any(v[0] != 'named' for v in values): return None
+                targets = [identity(v) + '.' + node.attr for v in values]
+            else:
+                values = self.expression(node.value, scope) | self.expression(node, scope)
+                targets = [identity(v) for v in self.expression(node, scope)]
+        else: return None
+        if not values or not targets or any(v[0] == 'adopted' for v in values): return None
+        owners = {}
+        for target in [*targets, *(v[1] for v in values)]:
+            parts = target.split('.')
+            for stop in range(len(parts), 0, -1):
+                module = '.'.join(parts[:stop]); source = self.target(module)
+                if source:
+                    owner = self.owner(source)
+                    owners[source] = {'module': self.identities[source], 'file': source,
+                        'file_sha256': hashlib.sha256((self.root / source).read_bytes()).hexdigest(),
+                        'contract_id': owner['contract_id'] if owner else None}
+                    break
+        if not owners: return None
+        return {'origins': [list(v) for v in sorted(values)], 'targets': sorted(set(targets)),
+                'owners': [owners[p] for p in sorted(owners)]}
+
+    def reviewed_use(self, name, node, category):
+        key = (*self.use_selectors[id(node)], category)
+        if key not in self.reviewed_uses: return False
+        self.used_uses.add(key)
+        return True
 
     @staticmethod
     def unique(value):
@@ -477,9 +635,11 @@ class PythonModulePolicy:
             if (not self.is_test(scope['file']) or len(origins) != 1 or len(call.args) < 2 or
                     not isinstance(call.args[1], ast.Constant) or not isinstance(call.args[1].value, str) or
                     call.args[1].value not in {e['name'] for e in public[0]['public_exports']}):
-                raise ValueError(scope['file'] + ': invalid Python named-module patch')
+                if not self.reviewed_use(scope['file'], call, 'test-mock-target'):
+                    raise ValueError(scope['file'] + ': invalid Python named-module patch')
             return target
         if not isinstance(target, ast.Constant) or not isinstance(target.value, str):
+            if self.reviewed_use(scope['file'], call, 'test-computed-mock-target'): return None
             raise ValueError(scope['file'] + ': computed Python mock patch target is unsupported')
         identity = target.value
         if not any(identity.startswith(namespace + '.') or identity == namespace for namespace in self.namespaces):
@@ -492,7 +652,8 @@ class PythonModulePolicy:
         if (not self.is_test(scope['file']) or not entry or not parts or
                 parts[0] not in {e['name'] for e in entry['public_exports']} or
                 any(not part.isidentifier() or part.startswith('__') for part in parts)):
-            raise ValueError(scope['file'] + ': invalid Python named-module string patch')
+            if not self.reviewed_use(scope['file'], call, 'test-mock-target'):
+                raise ValueError(scope['file'] + ': invalid Python named-module string patch')
         origins = {('module', entry['public_module'])}
         for part in parts:
             resolved = set()
@@ -501,7 +662,8 @@ class PythonModulePolicy:
                     public = self.public(origin[1])
                     if public:
                         if part not in {e['name'] for e in public['public_exports']}:
-                            raise ValueError(scope['file'] + ': invalid Python named-module string patch')
+                            if not self.reviewed_use(scope['file'], call, 'test-mock-target'):
+                                raise ValueError(scope['file'] + ': invalid Python named-module string patch')
                         resolved.update(self.public_value(public, part, frozenset()))
                     elif self.owner(self.target(origin[1]) or ''):
                         raise ValueError(scope['file'] + ': private Python string patch origin')
@@ -643,7 +805,7 @@ class PythonModulePolicy:
                                 raise ValueError(name + ': forbidden Python public re-export shim')
                 elif isinstance(node, ast.Attribute):
                     for value in self.expression(node.value, scope):
-                        if value[0] == 'named' and node.attr.startswith('__'):
+                        if value[0] == 'named' and node.attr.startswith('__') and not self.internal_named(name, self.target(value[1])) and not self.reviewed_use(name, node, 'test-constructor-capture'):
                             raise ValueError(name + ': reflective Python named value attribute')
                         if value[0] == 'adopted':
                             raise ValueError(name + ': reflective Python public callable attribute')
@@ -658,7 +820,7 @@ class PythonModulePolicy:
                         edge(name, child)
                         if child and any(child == m['public_entry'] and not m['named'] for m in self.entries) and not public:
                             raise ValueError(name + ': public Python import must use canonical package')
-                        if target and not public and value[1] not in self.namespaces and not self.internal_named(name, target) and not ((name, target) in used_edges and 'public_entries' in (self.owner(target) or {})) and any(self.adopted_origin(v) for v in self.expression(node, scope)):
+                        if target and not public and value[1] not in self.namespaces and not self.internal_named(name, target) and not ((name, target) in used_edges and 'public_entries' in (self.owner(target) or {})) and any(self.adopted_origin(v) for v in self.expression(node, scope)) and not self.reviewed_use(name, node, 'test-oracle-call'):
                             raise ValueError(name + ': forbidden Python public re-export shim')
                         if target and not public and self.has_adopted_bindings(value[1]) and (node.attr.startswith('__') or node.attr not in self.scopes[target]['bindings']):
                             raise ValueError(name + ': reflective or unresolved Python shim attribute')
@@ -671,7 +833,7 @@ class PythonModulePolicy:
                     simple_alias = ((isinstance(parent, ast.Assign) and len(parent.targets) == 1 and isinstance(parent.targets[0], ast.Name) or
                                      isinstance(parent, ast.AnnAssign) and isinstance(parent.target, ast.Name)) and parent.value is node)
                     named_patch = isinstance(parent, ast.Call) and self.named_patch(parent, scope) is node
-                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node or simple_alias or named_patch or self.witness_element(node, scope)):
+                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node or simple_alias or named_patch or self.witness_element(node, scope) or self.reviewed_use(name, node, 'test-module-object' if self.is_test(name) else 'production-observer-table')):
                         raise ValueError(name + ': opaque Python public module use')
                     if loaders and not (isinstance(parent, ast.Call) and parent.func is node or isinstance(parent, (ast.Assign, ast.AnnAssign)) and parent.value is node):
                         raise ValueError(name + ': opaque Python loader use')
@@ -679,7 +841,7 @@ class PythonModulePolicy:
                     targets = node.targets if isinstance(node, ast.Assign) else [node.target]
                     for target_node in targets:
                         if isinstance(target_node, ast.Name) and len(scope['bindings'].get(target_node.id, [])) > 1:
-                            if any(v[0] == 'module' and any(v[1] == m['public_module'] for m in self.entries) for v in self.binding(scope, target_node.id)):
+                            if any(v[0] == 'module' and any(v[1] == m['public_module'] for m in self.entries) for v in self.binding(scope, target_node.id)) and not self.reviewed_use(name, node, 'test-module-alias'):
                                 raise ValueError(name + ': reassigned Python public module alias')
                             if any(v[0] in ('module', 'external') and v[1].rsplit('.', 1)[-1] in PYTHON_LOADERS for v in self.binding(scope, target_node.id)):
                                 raise ValueError(name + ': reassigned Python loader alias')
@@ -691,8 +853,12 @@ class PythonModulePolicy:
                 self.mock_mutation(node, scope)
                 if isinstance(node, ast.Call):
                     self.named_patch(node, scope)
-                    if isinstance(node.func, ast.Name) and node.func.id in ('getattr', 'setattr', 'delattr', 'vars') and any(any(v[0] in ('adopted', 'named') for v in self.expression(arg, scope)) for arg in node.args):
-                        raise ValueError(name + ': reflective Python public callable access')
+                    if isinstance(node.func, ast.Name) and node.func.id in ('getattr', 'setattr', 'delattr', 'vars') and any(
+                            v[0] == 'adopted' or v[0] == 'named' and not (
+                                node.func.id == 'getattr' and index == 0 and self.internal_named(name, self.target(v[1])))
+                            for index, arg in enumerate(node.args) for v in self.expression(arg, scope)):
+                        if not self.reviewed_use(name, node, 'production-method-capture'):
+                            raise ValueError(name + ': reflective Python public callable access')
                     loader = self.loader(node, scope)
                     if loader:
                         counts[loader] = counts.get(loader, 0) + 1
@@ -748,6 +914,8 @@ class PythonModulePolicy:
         expected_edges = {(e['from'], e['to']) for m in self.modules for e in m['private_test_edges']}
         if used_edges != expected_edges:
             raise ValueError('Unused Python private test exception')
+        if self.used_uses != set(self.reviewed_uses):
+            raise ValueError('Unused reviewed Python use site')
 
 
 def python_policy(root, value):

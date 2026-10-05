@@ -1,6 +1,6 @@
 {
   "format": "disco-adopted-port-checks",
-  "version": 4,
+  "version": 5,
   "discovery": [
     {
       "from": "AGENTS.md",
@@ -551,7 +551,7 @@
           "allow": [
             "pathlib",
             "workspace_sqlite",
-            "workspace_external_tags"
+            "disco.decisions.external_tags"
           ]
         },
         {
@@ -566,13 +566,13 @@
         },
         {
           "language": "python",
-          "file": "python/workspace_candidate_exports.py",
+          "file": "python/disco/workbench/candidate_exports.py",
           "require": [
             "workspace_export_artifacts"
           ],
           "deny": [
             "workspace_sqlite",
-            "workspace_external_tags"
+            "disco.decisions.external_tags"
           ]
         }
       ],
@@ -780,7 +780,7 @@
       },
       "affected_paths": [
         "workspace-app/**",
-        "python/workspace_annotation_groups.py",
+        "python/disco/decisions/annotation_groups.py",
         "python/workspace_api.py",
         "python/disco/recovery/**",
         "python/tests/test_workspace_annotation_groups.py",
@@ -1729,6 +1729,969 @@
           "python/tests/test_architecture_guard.py"
         ]
       }
+    },
+    {
+      "id": "backend-backup",
+      "contract": {
+        "path": "python/disco/backup/CONTRACT.md",
+        "heading": "Current-state backup ownership"
+      },
+      "affected_paths": [
+        "python/disco/backup/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/backup/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/backup/backup_scheduler.py",
+          "allow": [
+            "__future__",
+            "datetime",
+            "threading",
+            "time"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/backup/recovery_generation.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "dataclasses",
+            "hashlib",
+            "json",
+            "re",
+            "uuid",
+            "workspace_state_generation"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/backup/recovery_store.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "datetime",
+            "hashlib",
+            "json",
+            "logging",
+            "os",
+            "pathlib",
+            "re",
+            "sqlite3",
+            "struct",
+            "tempfile",
+            "uuid",
+            "workspace_state_snapshot",
+            "zlib"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/backup/tests/test_backend_recovery_public.py"
+        ],
+        "javascript": []
+      }
+    },
+    {
+      "id": "backend-decisions",
+      "contract": {
+        "path": "python/disco/decisions/CONTRACT.md",
+        "heading": "Authored decisions ownership"
+      },
+      "affected_paths": [
+        "python/disco/decisions/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/decisions/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/annotation_checkpoint.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "disco.backup.recovery_store",
+            "disco.decisions.annotation_preparation",
+            "disco.decisions.annotations",
+            "disco.decisions.shared_tag_index",
+            "disco.decisions.shared_vocabulary",
+            "disco.workbench.recipes",
+            "fcntl",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "re",
+            "recording_workspace",
+            "sqlite3",
+            "tempfile"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/annotation_groups.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "dataclasses",
+            "datetime",
+            "disco.decisions.annotations",
+            "disco.decisions.curation",
+            "disco.metadata.explore_queries",
+            "disco.navigation.tree",
+            "disco.navigation.tree_pages",
+            "disco.workbench.recipes",
+            "flask",
+            "getpass",
+            "re",
+            "sys",
+            "time",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/annotation_preparation.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "disco.backup.recovery_store",
+            "disco.decisions.annotations",
+            "disco.decisions.native_tag_lookup",
+            "disco.decisions.shared_tag_index",
+            "time",
+            "workspace_protocol_state",
+            "workspace_state_snapshot"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/annotations.py",
+          "allow": [
+            "__future__",
+            "collections",
+            "contextlib",
+            "contextvars",
+            "copy",
+            "datetime",
+            "disco.decisions.author_preferences",
+            "disco.decisions.curation",
+            "disco.decisions.shared_tag_index",
+            "disco.decisions.undo",
+            "disco.navigation.native_tag_filter",
+            "disco.workbench.recipes",
+            "flask",
+            "getpass",
+            "hashlib",
+            "json",
+            "re",
+            "recording_workspace",
+            "threading",
+            "time",
+            "uuid",
+            "workspace_audit",
+            "workspace_service"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/author_preferences.py",
+          "allow": [
+            "fcntl",
+            "json",
+            "os",
+            "pathlib",
+            "recording_workspace",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/curation.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.decisions.curation_vocabulary",
+            "disco.decisions.undo",
+            "disco.workbench.recipes",
+            "hashlib",
+            "pathlib",
+            "recording_workspace",
+            "time",
+            "uuid",
+            "workspace_audit"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/curation_vocabulary.py",
+          "allow": [
+            "__future__",
+            "disco.decisions.shared_tag_index",
+            "json"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/explorer.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.decisions.curation",
+            "disco.workbench.recipes",
+            "hashlib",
+            "recording_workspace",
+            "uuid",
+            "workspace_audit"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/external_tags.py",
+          "allow": [
+            "__future__",
+            "argparse",
+            "datetime",
+            "disco.decisions.tag_exchange",
+            "flask",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "tempfile",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/native_tag_lookup.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "disco.decisions.annotations",
+            "json",
+            "unicodedata",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/shared_tag_index.py",
+          "allow": [
+            "__future__",
+            "collections",
+            "copy",
+            "disco.decisions.shared_vocabulary",
+            "functools",
+            "hashlib",
+            "json",
+            "pathlib",
+            "sqlite3",
+            "sys",
+            "tempfile",
+            "threading",
+            "zlib"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/shared_vocabulary.py",
+          "allow": [
+            "__future__",
+            "disco.decisions.curation_vocabulary"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/tag_exchange.py",
+          "allow": [
+            "__future__",
+            "collections",
+            "flask",
+            "hashlib",
+            "json",
+            "pathlib",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/decisions/undo.py",
+          "allow": [
+            "json"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/decisions/tests/test_checkpoint_refusal_public.py",
+          "python/disco/decisions/tests/test_workspace_undo.py"
+        ],
+        "javascript": []
+      }
+    },
+    {
+      "id": "backend-metadata",
+      "contract": {
+        "path": "python/disco/metadata/CONTRACT.md",
+        "heading": "Existing metadata interfaces"
+      },
+      "affected_paths": [
+        "python/disco/metadata/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/metadata/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/cache_lifecycle.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "fcntl",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "re",
+            "tempfile",
+            "threading",
+            "weakref"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/disk_index.py",
+          "allow": [
+            "__future__",
+            "collections",
+            "collections.abc",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.metadata.cache_lifecycle",
+            "disco.metadata.metadata_objects",
+            "disco.navigation.predicates",
+            "disco.navigation.tree",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "sqlite3",
+            "sys",
+            "tempfile",
+            "threading",
+            "urllib.parse",
+            "weakref",
+            "zlib"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/explore_queries.py",
+          "allow": [
+            "__future__",
+            "base64",
+            "collections",
+            "contextlib",
+            "copy",
+            "dataclasses",
+            "disco.navigation.predicates",
+            "disco.navigation.tag_predicates",
+            "disco.navigation.tree",
+            "disco.navigation.tree_pages",
+            "disco.workbench.recipes",
+            "flask",
+            "hashlib",
+            "hmac",
+            "json",
+            "threading",
+            "uuid",
+            "workspace_service",
+            "workspace_state_generation"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/metadata_objects.py",
+          "allow": [
+            "collections",
+            "copy",
+            "hashlib",
+            "json",
+            "os",
+            "sys",
+            "threading",
+            "uuid",
+            "zlib"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/projection_cache.py",
+          "allow": [
+            "__future__",
+            "base64",
+            "collections.abc",
+            "copy",
+            "disco.metadata.cache_lifecycle",
+            "disco.metadata.metadata_objects",
+            "disco.workbench.recipes",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "sqlite3",
+            "tempfile",
+            "zlib"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/search.py",
+          "allow": [
+            "__future__",
+            "disco.navigation.predicates",
+            "flask",
+            "json",
+            "pathlib",
+            "re",
+            "urllib.parse"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/typed_index.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "disco.metadata.typed_query",
+            "functools",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "resource",
+            "shutil",
+            "sqlite3",
+            "sys",
+            "threading",
+            "time"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/typed_lifecycle.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "disco.metadata.cache_lifecycle",
+            "disco.metadata.typed_index",
+            "disco.metadata.typed_query",
+            "disco.workbench.recipes",
+            "os",
+            "pathlib",
+            "recording_workspace",
+            "sqlite3",
+            "tempfile"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/metadata/typed_query.py",
+          "allow": [
+            "__future__",
+            "disco.metadata.metadata_objects",
+            "disco.navigation.predicates",
+            "hashlib",
+            "json",
+            "pathlib"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/metadata/tests/test_workspace_disk_index.py",
+          "python/disco/metadata/tests/test_workspace_metadata_object_contract.py",
+          "python/disco/metadata/tests/test_workspace_metadata_objects.py",
+          "python/disco/metadata/tests/test_workspace_typed_index.py"
+        ],
+        "javascript": []
+      }
+    },
+    {
+      "id": "backend-navigation",
+      "contract": {
+        "path": "python/disco/navigation/CONTRACT.md",
+        "heading": "Navigation contract"
+      },
+      "affected_paths": [
+        "python/disco/navigation/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/navigation/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/matching_epochs.py",
+          "allow": [
+            "disco.navigation.tree_pages",
+            "flask",
+            "re",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/native_tag_filter.py",
+          "allow": [
+            "__future__",
+            "disco.decisions.native_tag_lookup"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/predicates.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "json",
+            "math"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/search_presets.py",
+          "allow": [
+            "copy",
+            "datetime",
+            "disco.decisions.curation",
+            "hashlib",
+            "json",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/tag_predicates.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "disco.navigation.predicates",
+            "disco.navigation.tree",
+            "disco.workbench.recipes",
+            "hashlib",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/tree.py",
+          "allow": [
+            "__future__",
+            "collections.abc",
+            "copy",
+            "functools",
+            "json",
+            "math",
+            "re",
+            "urllib.parse"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/tree_layouts.py",
+          "allow": [
+            "copy",
+            "datetime",
+            "disco.decisions.curation",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/navigation/tree_pages.py",
+          "allow": [
+            "__future__",
+            "collections.abc",
+            "contextlib",
+            "disco.decisions.explorer",
+            "disco.metadata.disk_index",
+            "disco.metadata.explore_queries",
+            "disco.navigation.predicates",
+            "disco.navigation.tag_predicates",
+            "disco.navigation.tree",
+            "disco.workbench.recipes",
+            "flask",
+            "itertools",
+            "re",
+            "sys",
+            "uuid",
+            "workspace_service",
+            "workspace_state_generation"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/navigation/tests/test_workspace_predicates.py"
+        ],
+        "javascript": []
+      }
+    },
+    {
+      "id": "backend-projects",
+      "contract": {
+        "path": "python/disco/projects/CONTRACT.md",
+        "heading": "Project storage and provisioning"
+      },
+      "affected_paths": [
+        "python/disco/projects/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/projects/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/datastore_deletion.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.projects.datastores",
+            "disco.projects.recording_files",
+            "disco.projects.storage",
+            "disco.workbench.recipes",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "recording_workspace",
+            "retinanalysis.config",
+            "stat",
+            "uuid",
+            "workspace_audit"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/datastores.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.decisions.curation",
+            "disco.workbench.diff",
+            "disco.workbench.recipes",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "recording_workspace",
+            "uuid",
+            "workspace_audit"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/folder_browser.py",
+          "allow": [
+            "__future__",
+            "flask",
+            "os",
+            "pathlib",
+            "subprocess",
+            "sys",
+            "urllib.parse"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/migration.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "disco.projects.recording_files",
+            "fcntl",
+            "http.client",
+            "json",
+            "os",
+            "pathlib",
+            "pymysql",
+            "re",
+            "shutil",
+            "socket",
+            "stat",
+            "subprocess",
+            "tempfile",
+            "urllib.parse",
+            "workspace_native_mysql",
+            "workspace_portability",
+            "workspace_projects",
+            "workspace_startup_registry",
+            "workspace_state_generation"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/project_database.py",
+          "allow": [
+            "__future__",
+            "json",
+            "os",
+            "pathlib",
+            "secrets",
+            "subprocess",
+            "time",
+            "uuid",
+            "workspace_mysql_profile",
+            "workspace_native_mysql",
+            "workspace_projects"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/project_preferences.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "disco.navigation.predicates",
+            "fcntl",
+            "flask",
+            "json",
+            "os",
+            "pathlib",
+            "tempfile",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/project_validation.py",
+          "allow": [
+            "disco.projects.storage",
+            "itertools",
+            "os",
+            "pathlib",
+            "workspace_native_mysql",
+            "workspace_portability",
+            "workspace_projects"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/recording_files.py",
+          "allow": [
+            "disco.projects.storage",
+            "hashlib",
+            "pathlib",
+            "shutil",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/storage.py",
+          "allow": [
+            "__future__",
+            "datetime",
+            "json",
+            "pathlib",
+            "recording_workspace",
+            "subprocess",
+            "workspace_native_mysql"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/projects/tests/test_public_examples.py"
+        ],
+        "javascript": []
+      }
+    },
+    {
+      "id": "backend-workbench",
+      "contract": {
+        "path": "python/disco/workbench/CONTRACT.md",
+        "heading": "Frozen review, recipes and export publication"
+      },
+      "affected_paths": [
+        "python/disco/workbench/**",
+        "python/workspace_api.py",
+        "python/workspace_service.py"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/disco/workbench/__init__.py",
+          "allow": []
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/candidate_exports.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "copy",
+            "disco.navigation.tag_predicates",
+            "disco.projects.storage",
+            "disco.workbench.recipes",
+            "flask",
+            "os",
+            "recording_workspace",
+            "uuid",
+            "workspace_export_artifacts",
+            "workspace_matlab"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/diff.py",
+          "allow": [
+            "__future__"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/recipes.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "datetime",
+            "disco.navigation.tree",
+            "hashlib",
+            "json",
+            "os",
+            "pathlib",
+            "re",
+            "recording_workspace",
+            "tempfile",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/suggestions.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "datetime",
+            "disco.workbench.diff",
+            "disco.workbench.recipes",
+            "pathlib",
+            "recording_workspace",
+            "uuid",
+            "workspace_audit"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/workbench.py",
+          "allow": [
+            "__future__",
+            "base64",
+            "contextlib",
+            "copy",
+            "datetime",
+            "disco.decisions.author_preferences",
+            "disco.decisions.curation",
+            "disco.metadata.explore_queries",
+            "disco.navigation.tag_predicates",
+            "disco.navigation.tree_pages",
+            "disco.workbench.diff",
+            "disco.workbench.recipes",
+            "disco.workbench.workbench_exports",
+            "disco.workbench.workbench_pending",
+            "flask",
+            "json",
+            "os",
+            "uuid",
+            "workspace_audit",
+            "workspace_protocol_identity",
+            "workspace_service"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/workbench_exports.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "disco.decisions.external_tags",
+            "disco.navigation.tree",
+            "disco.projects.storage",
+            "disco.workbench.candidate_exports",
+            "disco.workbench.recipes",
+            "disco.workbench.workbench",
+            "flask",
+            "pathlib",
+            "recording_workspace",
+            "uuid",
+            "workspace_matlab",
+            "workspace_protocol_identity",
+            "workspace_sqlite"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/workbench_pending.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "datetime",
+            "disco.navigation.tag_predicates",
+            "disco.workbench.recipes",
+            "disco.workbench.workbench",
+            "flask",
+            "json",
+            "recording_workspace",
+            "uuid"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/disco/workbench/tests/test_workspace_diff.py"
+        ],
+        "javascript": []
+      }
     }
   ],
   "javascript_module_policy": {
@@ -2284,14 +3247,14 @@
         "specifier": "../api.js",
         "to": "workspace-app/src/api.js",
         "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
-        "resolver_sha256": "c89dc36d6669a53d10553d751baefede7094f7a4c607063324ddd8943a923de8"
+        "resolver_sha256": "c27fa00d3816871875f5fa048ddbc09894666b45701be7d8f169ad1689bbd1ae"
       },
       {
         "from": "workspace-app/src/test-support/fixtures/globalSearch-checkpoint.jsx",
         "specifier": "./GlobalSearch.css",
         "to": "workspace-app/src/search-activation/GlobalSearch.css",
         "resolver_path": "workspace-app/src/test-support/globalSearchHarness.js",
-        "resolver_sha256": "c89dc36d6669a53d10553d751baefede7094f7a4c607063324ddd8943a923de8"
+        "resolver_sha256": "c27fa00d3816871875f5fa048ddbc09894666b45701be7d8f169ad1689bbd1ae"
       }
     ]
   },
@@ -2299,7 +3262,13 @@
     "source_root": "python",
     "test_roots": [
       "python/tests",
-      "python/disco/recovery/tests"
+      "python/disco/recovery/tests",
+      "python/disco/decisions/tests",
+      "python/disco/metadata/tests",
+      "python/disco/navigation/tests",
+      "python/disco/projects/tests",
+      "python/disco/backup/tests",
+      "python/disco/workbench/tests"
     ],
     "fixture_pythonpath": [
       "python/tests"
@@ -2324,7 +3293,7 @@
       },
       {
         "file": "python/tests/test_benchmark.py",
-        "file_sha256": "61ada59c561812d3a2e435daaf081dc486840e512b18d7a5aa057f579807ceae",
+        "file_sha256": "965847df1ba0a04ed41d8b9f501e84617e45e578187e878bec2cbd34ed76ed28",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -2337,7 +3306,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Reviewed current navigation paths changed; both existing loader AST sites unchanged. Historical recipes retain original paths."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
       },
       {
         "file": "python/tests/test_benchmark_native.py",
@@ -2443,7 +3412,7 @@
       },
       {
         "file": "python/tests/test_desktop_runtime_packaging.py",
-        "file_sha256": "ce100ce752348df1367f3838a335c4e83e4cfe39e2c0dc7c7650f2ac45a4f3e0",
+        "file_sha256": "528964cbe6f2b95e76b5325711eb399da57f644571a1f390713350a546ed8803",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -2456,7 +3425,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Existing temporary parser-settings loader; whole-file binding proposed for independent review after resetting synthetic package export before copied-loader fault. Both loader ASTs unchanged; no loader execution permission."
+        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
       },
       {
         "file": "python/tests/test_desktop_test_release.py",
@@ -2486,6 +3455,30 @@
           }
         ],
         "reason": "Existing embedded bootstrap third-party/parser probe; no execution permission"
+      },
+      {
+        "file": "python/disco/decisions/tests/test_checkpoint_refusal_public.py",
+        "file_sha256": "d51e5baef64b3b7e41357fb50bbd899b5dc32116a57d10d2a100a815540fee7d",
+        "sites": [
+          {
+            "selector": "call:__import__:1",
+            "kind": "ast-call",
+            "ast_sha256": "88c2bce04eafcd37c409231cbb0db363e1673c4d64b2c2887fb9e755dafd1d33"
+          }
+        ],
+        "reason": "Exact standalone public checkpoint refusal fixture import guard, source-reviewed with navigation candidate and preserved byte-identically in integration. Forwards imports after rejecting native/scientific roots; not production loading or scientific execution authorization."
+      },
+      {
+        "file": "python/disco/projects/tests/test_public_examples.py",
+        "file_sha256": "41aa9af5a1a82ae3653548ede15d783f5b37a4f7edc0ff34e102bd87b5d93fea",
+        "sites": [
+          {
+            "selector": "call:__import__:1",
+            "ast_sha256": "30e77e88585e2671435f2760f55dd84290f2496cb4e8f676050db45d9af6dbb3",
+            "kind": "ast-call"
+          }
+        ],
+        "reason": "Source-bound isolated projects public examples retain the original guarded import delegation. The wrapper rejects scientific/native import roots; only stdlib and owned temporary retention/admission bytes are exercised. This classification is not runtime or scientific qualification."
       }
     ],
     "modules": [
@@ -2501,6 +3494,2228 @@
           }
         ],
         "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-backup",
+        "root": "python/disco/backup",
+        "public_entries": [
+          {
+            "path": "python/disco/backup/backup_scheduler.py",
+            "module": "disco.backup.backup_scheduler",
+            "exports": [
+              "BackupScheduler",
+              "threading"
+            ]
+          },
+          {
+            "path": "python/disco/backup/recovery_generation.py",
+            "module": "disco.backup.recovery_generation",
+            "exports": [
+              "ANCHOR_LOCK",
+              "CLOCK",
+              "CONTRACT_VERSION",
+              "FEED",
+              "FEED_KEY_BYTES",
+              "IDENTIFIER",
+              "INSTANCE",
+              "PREFIX",
+              "RECOVERY_WINDOW",
+              "RecoveryCapture",
+              "RecoveryGenerationAuthority",
+              "RecoveryTracker",
+              "TABLE_IDS",
+              "TABLE_NAMES",
+              "TRIM_INTERVAL",
+              "_change",
+              "_equal_trigger",
+              "_legacy_change",
+              "_name",
+              "bootstrap",
+              "manifest_from_specs",
+              "recovery_trigger_manifest",
+              "table_specs"
+            ]
+          },
+          {
+            "path": "python/disco/backup/recovery_store.py",
+            "module": "disco.backup.recovery_store",
+            "exports": [
+              "CHECKPOINT_BYTES",
+              "CHECKPOINT_COUNT",
+              "CHECKPOINT_PATTERN",
+              "CURRENT_PATTERN",
+              "FORMAT",
+              "VERSION",
+              "_accumulate",
+              "_clean_orphans",
+              "_connect",
+              "_digest",
+              "_directory_sync",
+              "_folder",
+              "_json",
+              "_key_blob",
+              "_key_values",
+              "_metadata",
+              "_pack",
+              "_regular",
+              "_remove_row",
+              "_row_key",
+              "_unpack",
+              "_validate_keys",
+              "_write_rows",
+              "checkpoint",
+              "inspect",
+              "load_database",
+              "os",
+              "pointer_path",
+              "storage",
+              "verified_table_content",
+              "write"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-decisions",
+        "root": "python/disco/decisions",
+        "public_entries": [
+          {
+            "path": "python/disco/decisions/annotation_checkpoint.py",
+            "module": "disco.decisions.annotation_checkpoint",
+            "exports": [
+              "FORMAT",
+              "HEX",
+              "SUMMARY_TABLES",
+              "VERSION",
+              "_contract",
+              "_locked",
+              "_metadata",
+              "_proof",
+              "_regular",
+              "_same_source",
+              "_sha",
+              "_signature",
+              "_source",
+              "_sync_directory",
+              "restore_shared_checkpoint",
+              "save_shared_checkpoint"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/annotation_groups.py",
+            "module": "disco.decisions.annotation_groups",
+            "exports": [
+              "AnnotationGroups",
+              "MAX_PREVIEWS",
+              "OPERATION_BYTES",
+              "PREVIEW_SECONDS",
+              "PROJECT_LIMIT",
+              "RETAINED_BYTES",
+              "RetainedBudget",
+              "SCOPE_BYTES",
+              "group_receipt_table",
+              "register_group_annotation_routes"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/annotation_preparation.py",
+            "module": "disco.decisions.annotation_preparation",
+            "exports": [
+              "_links",
+              "_ordered_rows",
+              "prepare_annotation_indexes",
+              "prepare_project_annotations"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/annotations.py",
+            "module": "disco.decisions.annotations",
+            "exports": [
+              "MAX_OPERATIONS",
+              "MAX_TARGETS",
+              "SharedAnnotations",
+              "_NATIVE_ANNOTATION_ROWS",
+              "annotation_tables",
+              "identity",
+              "register_annotation_routes",
+              "tags",
+              "text"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/author_preferences.py",
+            "module": "disco.decisions.author_preferences",
+            "exports": [
+              "appearance_preferences",
+              "author_preferences",
+              "author_profiles",
+              "preference_path",
+              "remember_appearance",
+              "remember_author",
+              "selected_author",
+              "validate_profile"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/curation.py",
+            "module": "disco.decisions.curation",
+            "exports": [
+              "CurationStore",
+              "RevisionConflict",
+              "_actor",
+              "_changes",
+              "_expectations",
+              "_fingerprint",
+              "_scope",
+              "_uuid",
+              "curation_tables"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/curation_vocabulary.py",
+            "module": "disco.decisions.curation_vocabulary",
+            "exports": [
+              "CurationVocabulary"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/explorer.py",
+            "module": "disco.decisions.explorer",
+            "exports": [
+              "ACTION",
+              "ExplorerHistory",
+              "explorer_table",
+              "protocol_binding_table"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/external_tags.py",
+            "module": "disco.decisions.external_tags",
+            "exports": [
+              "ExternalTags",
+              "FORMAT",
+              "atomic_json",
+              "main",
+              "prepare_return_folder",
+              "register_external_tag_routes",
+              "submit_tags"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/native_tag_lookup.py",
+            "module": "disco.decisions.native_tag_lookup",
+            "exports": [
+              "AUTHORS",
+              "COLUMNS",
+              "DICTIONARY",
+              "FOLD_BYTES",
+              "FOLD_VERSION",
+              "INDEX",
+              "LEGACY_TRIGGER_MANIFEST",
+              "MARKER",
+              "NativeTagLookup",
+              "PREFIX",
+              "SCHEMA",
+              "TABLE",
+              "TRIGGER_MANIFEST",
+              "VERSION",
+              "_cleanup",
+              "_delete",
+              "_dirty",
+              "_identity",
+              "_insert",
+              "_manifest",
+              "_normal",
+              "_proof",
+              "_scope_lock",
+              "_tag",
+              "_tag_loop",
+              "_valid",
+              "bootstrap"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/shared_tag_index.py",
+            "module": "disco.decisions.shared_tag_index",
+            "exports": [
+              "CATALOG_FIELDS",
+              "FIELDS",
+              "MATCH_CACHE_BYTES",
+              "MATCH_DELTA_MAX_RECORDS",
+              "SCOPE_CACHE_ROWS",
+              "SharedTagIndex",
+              "SharedTagsChanged",
+              "_serialized"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/shared_vocabulary.py",
+            "module": "disco.decisions.shared_vocabulary",
+            "exports": [
+              "SharedVocabulary"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/tag_exchange.py",
+            "module": "disco.decisions.tag_exchange",
+            "exports": [
+              "FORMAT",
+              "MAX_BYTES",
+              "MAX_OPERATIONS",
+              "_read_targets",
+              "_text",
+              "canonical",
+              "export_document",
+              "frozen_annotation_entries",
+              "frozen_document",
+              "identity",
+              "normalize_document",
+              "preview_import",
+              "register_tag_exchange_routes",
+              "samarjit_document"
+            ]
+          },
+          {
+            "path": "python/disco/decisions/undo.py",
+            "module": "disco.decisions.undo",
+            "exports": [
+              "MAX_UNDO_BYTES",
+              "MAX_UNDO_TARGETS",
+              "_pattern",
+              "annotation_inverse",
+              "bounded_inverse",
+              "curation_inverse"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-metadata",
+        "root": "python/disco/metadata",
+        "public_entries": [
+          {
+            "path": "python/disco/metadata/cache_lifecycle.py",
+            "module": "disco.metadata.cache_lifecycle",
+            "exports": [
+              "CacheLease",
+              "CacheLeaseGroup",
+              "CacheNamespace",
+              "_HEX",
+              "_LOCAL_LOCK",
+              "_LOCAL_STATE",
+              "_open_lock",
+              "_release",
+              "_release_group"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/disk_index.py",
+            "module": "disco.metadata.disk_index",
+            "exports": [
+              "CACHE_SIZE",
+              "CHUNK_SIZE",
+              "DETAIL_CACHE_BYTES",
+              "DiskMetadataIndex",
+              "FORMAT",
+              "_Details",
+              "_ScopedDetails",
+              "_Values",
+              "_json",
+              "_raw_definition",
+              "_sha",
+              "_signature",
+              "_suggest",
+              "json",
+              "zlib"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/explore_queries.py",
+            "module": "disco.metadata.explore_queries",
+            "exports": [
+              "MAX_JOBS",
+              "MAX_RESULT_BYTES",
+              "StaleQuery",
+              "SummaryCapacity",
+              "SummaryJobs",
+              "TagPredicates",
+              "_native_rows",
+              "_native_summaries",
+              "context_annotation_fields",
+              "context_annotation_locks",
+              "context_predicate",
+              "explore_page",
+              "field_operators",
+              "field_registry",
+              "generation",
+              "query_context",
+              "register_explore_query_routes",
+              "typed_combination_over_budget",
+              "typed_policy",
+              "typed_reader",
+              "typed_scope"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/metadata_objects.py",
+            "module": "disco.metadata.metadata_objects",
+            "exports": [
+              "CACHE_BYTES",
+              "CACHE_ENTRIES",
+              "Decoder",
+              "Encoder",
+              "KINDS",
+              "_Cache",
+              "_UNSET",
+              "_identity",
+              "_retained_bytes",
+              "_uuid",
+              "canonical"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/projection_cache.py",
+            "module": "disco.metadata.projection_cache",
+            "exports": [
+              "ProjectionCache",
+              "VERSION",
+              "_Cursor",
+              "_ObjectRows",
+              "_ProjectionDetails",
+              "_REQUIRED"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/search.py",
+            "module": "disco.metadata.search",
+            "exports": [
+              "_json",
+              "register_search_routes",
+              "search_workspace"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/typed_index.py",
+            "module": "disco.metadata.typed_index",
+            "exports": [
+              "Budget",
+              "FORMAT",
+              "QueryCancelled",
+              "TypedMetadataIndex",
+              "_guard",
+              "_rss_bytes",
+              "_signature",
+              "attach_native",
+              "build"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/typed_lifecycle.py",
+            "module": "disco.metadata.typed_lifecycle",
+            "exports": [
+              "TypedGeneration",
+              "prepare"
+            ]
+          },
+          {
+            "path": "python/disco/metadata/typed_query.py",
+            "module": "disco.metadata.typed_query",
+            "exports": [
+              "CORE_COLUMNS",
+              "CORE_FIELDS",
+              "Decoder",
+              "ORIGINAL_TABLES",
+              "_TypedQueries",
+              "canonical",
+              "equality_json",
+              "file_sha",
+              "predicates"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-navigation",
+        "root": "python/disco/navigation",
+        "public_entries": [
+          {
+            "path": "python/disco/navigation/matching_epochs.py",
+            "module": "disco.navigation.matching_epochs",
+            "exports": [
+              "register_matching_epoch_routes"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/native_tag_filter.py",
+            "module": "disco.navigation.native_tag_filter",
+            "exports": [
+              "FIELDS",
+              "matching",
+              "suggestions"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/predicates.py",
+            "module": "disco.navigation.predicates",
+            "exports": [
+              "MAX_CHOICES",
+              "MAX_DEPTH",
+              "MAX_NODES",
+              "OPERATORS",
+              "UNARY",
+              "equal",
+              "equality_key",
+              "evaluate",
+              "kind",
+              "literal",
+              "matches",
+              "predicate_catalog",
+              "validate"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/search_presets.py",
+            "module": "disco.navigation.search_presets",
+            "exports": [
+              "SearchPresets",
+              "canonical_predicate",
+              "preset_tables",
+              "query_key",
+              "query_run_table"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/tag_predicates.py",
+            "module": "disco.navigation.tag_predicates",
+            "exports": [
+              "PREFIX",
+              "SHARED_FIELDS",
+              "TagPredicates",
+              "_protocol_locks",
+              "annotation_locks",
+              "referenced_fields"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/tree.py",
+            "module": "disco.navigation.tree",
+            "exports": [
+              "BASE_FIELDS",
+              "HISTORY_COMPONENTS",
+              "HISTORY_JOINT",
+              "PROTOCOL_AXES",
+              "StreamingValueView",
+              "TECHNICAL_PARAMETERS",
+              "_descriptive_metadata",
+              "_joint_summary",
+              "_leaves",
+              "_scalar_value_key",
+              "annotate_grouping_fields",
+              "catalog",
+              "component_display",
+              "field_id",
+              "field_value_order",
+              "humanize",
+              "joint_components",
+              "joint_definition",
+              "joint_id",
+              "joint_value",
+              "materialize_combinations",
+              "predicate_scope",
+              "protocol_family",
+              "protocol_layout",
+              "suggest_fields",
+              "value_key",
+              "value_label",
+              "value_order"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/tree_layouts.py",
+            "module": "disco.navigation.tree_layouts",
+            "exports": [
+              "TreeLayouts",
+              "layout_table"
+            ]
+          },
+          {
+            "path": "python/disco/navigation/tree_pages.py",
+            "module": "disco.navigation.tree_pages",
+            "exports": [
+              "StaleTreePage",
+              "TREE_SCOPE_BYTE_BUDGET",
+              "TREE_SCOPE_CACHE_OVERHEAD",
+              "TreePages",
+              "TreePath",
+              "_NavigationValues",
+              "_STRUCTURAL_HISTORY_METHODS",
+              "_STRUCTURAL_METHODS",
+              "_chronology",
+              "_epoch",
+              "_retained_scope_bytes",
+              "_structural_contract",
+              "_structural_scope",
+              "_summary",
+              "_uuid",
+              "register_tree_page_routes",
+              "selection_revision",
+              "validate_tree_path",
+              "witnessed_tree_page"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-projects",
+        "root": "python/disco/projects",
+        "public_entries": [
+          {
+            "path": "python/disco/projects/datastore_deletion.py",
+            "module": "disco.projects.datastore_deletion",
+            "exports": [
+              "DataStoreDeletion",
+              "managed_recording",
+              "prune_preview"
+            ]
+          },
+          {
+            "path": "python/disco/projects/datastores.py",
+            "module": "disco.projects.datastores",
+            "exports": [
+              "ACTIONS",
+              "DataStoreConflict",
+              "DataStores",
+              "SCOPE_NOTE",
+              "iso",
+              "lifecycle_table",
+              "metadata_file_size",
+              "migrate_query_eligibility",
+              "sha",
+              "storage_summary"
+            ]
+          },
+          {
+            "path": "python/disco/projects/folder_browser.py",
+            "module": "disco.projects.folder_browser",
+            "exports": [
+              "MAX_ENTRIES",
+              "PAGE_LIMIT",
+              "_directory",
+              "_locations",
+              "_open_exports_folder",
+              "list_folder",
+              "os",
+              "register_folder_browser_routes",
+              "subprocess",
+              "sys"
+            ]
+          },
+          {
+            "path": "python/disco/projects/migration.py",
+            "module": "disco.projects.migration",
+            "exports": [
+              "MAX_INSPECT_BYTES",
+              "_UnixHTTPConnection",
+              "_source_dump",
+              "_source_trigger_contract",
+              "inspect_source_container",
+              "migrate_source_project",
+              "readonly_project_session",
+              "snapshot_source_project",
+              "source_connection"
+            ]
+          },
+          {
+            "path": "python/disco/projects/project_database.py",
+            "module": "disco.projects.project_database",
+            "exports": [
+              "_run",
+              "ensure_project_database"
+            ]
+          },
+          {
+            "path": "python/disco/projects/project_preferences.py",
+            "module": "disco.projects.project_preferences",
+            "exports": [
+              "FIELDS",
+              "FORMAT",
+              "MAX_BYTES",
+              "PreferenceConflict",
+              "ProjectPreferences",
+              "REFERENCE",
+              "_predicate",
+              "_uuid",
+              "register_project_preference_routes",
+              "validate_field"
+            ]
+          },
+          {
+            "path": "python/disco/projects/project_validation.py",
+            "module": "disco.projects.project_validation",
+            "exports": [
+              "_inspect_exact",
+              "_manifest",
+              "inspect_project_folder",
+              "validate_project_folder"
+            ]
+          },
+          {
+            "path": "python/disco/projects/recording_files.py",
+            "module": "disco.projects.recording_files",
+            "exports": [
+              "recording_display_name",
+              "retain_recording"
+            ]
+          },
+          {
+            "path": "python/disco/projects/storage.py",
+            "module": "disco.projects.storage",
+            "exports": [
+              "DIRECTORIES",
+              "LOG_FOLDERS",
+              "ManagedStorage",
+              "initialize_layout",
+              "log_dir",
+              "managed_directory",
+              "migrate_legacy_logs"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      },
+      {
+        "contract_id": "backend-workbench",
+        "root": "python/disco/workbench",
+        "public_entries": [
+          {
+            "path": "python/disco/workbench/candidate_exports.py",
+            "module": "disco.workbench.candidate_exports",
+            "exports": [
+              "FORMATS",
+              "StaleCandidateExport",
+              "_default_curation",
+              "_export_candidate_locked",
+              "candidate_scope_uuid",
+              "export_candidate",
+              "register_candidate_export_routes"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/diff.py",
+            "module": "disco.workbench.diff",
+            "exports": [
+              "summarize_diff"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/recipes.py",
+            "module": "disco.workbench.recipes",
+            "exports": [
+              "LEGACY_SPLIT_FIELDS",
+              "SPLIT_FIELDS",
+              "build_tree",
+              "capture_query",
+              "checksum",
+              "compare_query",
+              "member_map",
+              "parse_splits",
+              "prepare_export",
+              "save_snapshot",
+              "seal",
+              "verify"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/suggestions.py",
+            "module": "disco.workbench.suggestions",
+            "exports": [
+              "ProtocolSuggestions",
+              "suggestion_table"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/workbench.py",
+            "module": "disco.workbench.workbench",
+            "exports": [
+              "ProtocolWorkbench",
+              "WorkbenchConflict",
+              "_members",
+              "public_receipt",
+              "register_workbench_routes",
+              "workbench_tables"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/workbench_exports.py",
+            "module": "disco.workbench.workbench_exports",
+            "exports": [
+              "accepted_export_context",
+              "formats_for_candidate",
+              "publish_incoming_export",
+              "register_workbench_export_routes"
+            ]
+          },
+          {
+            "path": "python/disco/workbench/workbench_pending.py",
+            "module": "disco.workbench.workbench_pending",
+            "exports": [
+              "draft_carry",
+              "register_pending_routes",
+              "snapshot_authority"
+            ]
+          }
+        ],
+        "private_test_edges": []
+      }
+    ],
+    "reviewed_use_sites": [
+      {
+        "file": "python/disco/metadata/tests/test_workspace_typed_index.py",
+        "file_sha256": "27b2d4f861f6bf93508784bf5c7a33eeb354dc182f9b508b938412d67169a624",
+        "reason": "Inject a forbidden rehash to prove verified-open reuses the donor seal while retaining changed/closed donor refusal.",
+        "sites": [
+          {
+            "selector": "Call:125",
+            "ast_sha256": "22b5abb6605f33f13e7420419bc0d683fada41a08b35432c493cec2d467d2a4c",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "named",
+                "disco.metadata.typed_query",
+                "file_sha"
+              ]
+            ],
+            "targets": [
+              "disco.metadata.typed_index.file_sha"
+            ],
+            "owners": [
+              {
+                "module": "disco.metadata.typed_index",
+                "file": "python/disco/metadata/typed_index.py",
+                "file_sha256": "a526fee7012ae034e96b8163dfbbc9d1d43e3c460936590f000278e37b3bf892",
+                "contract_id": "backend-metadata"
+              },
+              {
+                "module": "disco.metadata.typed_query",
+                "file": "python/disco/metadata/typed_query.py",
+                "file_sha256": "5873851d5082e33137654eeb62163065a54cffdf66ea7adc554dbed6bf3a1298",
+                "contract_id": "backend-metadata"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/disco/navigation/tree_pages.py",
+        "file_sha256": "703956899511b2707f0db1bcdeeae91822d1392aff48feefc9ede3bf31888789",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
+        "sites": [
+          {
+            "selector": "Call:2",
+            "ast_sha256": "88c7997cd15a0c50ff0c211fddd57e22fa319aee17076fd3d7a41a3da427d0ef",
+            "category": "production-method-capture",
+            "origins": [
+              [
+                "named",
+                "disco.decisions.explorer",
+                "ExplorerHistory"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.explorer.ExplorerHistory.get",
+              "disco.decisions.explorer.ExplorerHistory.protocol_binding",
+              "disco.decisions.explorer.ExplorerHistory.protocol_binding_header"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.explorer",
+                "file": "python/disco/decisions/explorer.py",
+                "file_sha256": "9c756106722e6e5d6731dfb0c1656113867ddfef3eb6e2c9bf3622d581674cce",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/lifecycle_diagnostic.py",
+        "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
+        "reason": "Install opt-in timing observers on the fixed module/function table, preserving wrapped call behavior and opt-in gate.",
+        "sites": [
+          {
+            "selector": "Name:56",
+            "ast_sha256": "a82c7efc8f7fa5b32ca217c3fdc93a037a8b1802a127b243deb418d9febf646b",
+            "category": "production-observer-table",
+            "origins": [
+              [
+                "module",
+                "disco.projects.project_database"
+              ]
+            ],
+            "targets": [
+              "disco.projects.project_database"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.project_database",
+                "file": "python/disco/projects/project_database.py",
+                "file_sha256": "bfa69cfcef0ba0f566e520e42e07fd31751c410ce7637662b162bae4a55ccbf3",
+                "contract_id": "backend-projects"
+              }
+            ]
+          },
+          {
+            "selector": "Name:57",
+            "ast_sha256": "f66b54b2358af77cceca5348b9181ecc7c7cd968fc64373fc6bef1a8757c94b8",
+            "category": "production-observer-table",
+            "origins": [
+              [
+                "module",
+                "workspace_api"
+              ]
+            ],
+            "targets": [
+              "workspace_api"
+            ],
+            "owners": [
+              {
+                "module": "workspace_api",
+                "file": "python/workspace_api.py",
+                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:59",
+            "ast_sha256": "0790806b7b11f5b9b345c9892e4336a00b8d2b31de812598955818671044f7c6",
+            "category": "production-observer-table",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:60",
+            "ast_sha256": "0790806b7b11f5b9b345c9892e4336a00b8d2b31de812598955818671044f7c6",
+            "category": "production-observer-table",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:58",
+            "ast_sha256": "0790806b7b11f5b9b345c9892e4336a00b8d2b31de812598955818671044f7c6",
+            "category": "production-observer-table",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_recording_workspace.py",
+        "file_sha256": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+        "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions.",
+        "sites": [
+          {
+            "selector": "Call:52",
+            "ast_sha256": "f058efe6d9b4b496b82d975d099ccf7047d066361e3bdbc53cfc43b251035a91",
+            "category": "test-computed-mock-target",
+            "origins": [
+              [
+                "external",
+                "os.fsync"
+              ],
+              [
+                "external",
+                "os.replace"
+              ]
+            ],
+            "targets": [
+              "workspace_state_snapshot.os.fsync",
+              "workspace_state_snapshot.os.replace"
+            ],
+            "owners": [
+              {
+                "module": "workspace_state_snapshot",
+                "file": "python/workspace_state_snapshot.py",
+                "file_sha256": "9f27b6269fc1c071b8c20b99fa6731066510af04cdc016e0743656b1ce1670ee",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_tree_canonical_sort.py",
+        "file_sha256": "6a00fb326d3172e702262a01bada8a5b99a776e873e549cb2f7ee739fe0704c3",
+        "reason": "Patch historical field ordering oracle and compare current page responses against it.",
+        "sites": [
+          {
+            "selector": "Call:70",
+            "ast_sha256": "68b5bfec68ea8c22a4d374f163502e0e8c7bd3600869d918e0577645974f621a",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "named",
+                "disco.navigation.tree",
+                "field_value_order"
+              ]
+            ],
+            "targets": [
+              "disco.navigation.tree_pages.field_value_order"
+            ],
+            "owners": [
+              {
+                "module": "disco.navigation.tree",
+                "file": "python/disco/navigation/tree.py",
+                "file_sha256": "1a8a0d5766957ffcb3cf0a353d60c75e7442da765752c480302986080896f8cf",
+                "contract_id": "backend-navigation"
+              },
+              {
+                "module": "disco.navigation.tree_pages",
+                "file": "python/disco/navigation/tree_pages.py",
+                "file_sha256": "703956899511b2707f0db1bcdeeae91822d1392aff48feefc9ede3bf31888789",
+                "contract_id": "backend-navigation"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_annotations.py",
+        "file_sha256": "1b05b9d8d95d7fb94d06b1fa29e045fff6bf8323057256eb63c9442557a8de74",
+        "reason": "Freeze monotonic time to verify scoped autocomplete cache contents and reads.",
+        "sites": [
+          {
+            "selector": "Call:135",
+            "ast_sha256": "a48a0df891f075fd434d8818aceea4e40bf9b746c05525b952354d56ed56369f",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "time.monotonic"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.annotations.time.monotonic"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.annotations",
+                "file": "python/disco/decisions/annotations.py",
+                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_api.py",
+        "file_sha256": "fa2d75f7122634dda27caf31122671477cfee4ff2cdcd40625951cb592cf263e",
+        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction.",
+        "sites": [
+          {
+            "selector": "Call:74",
+            "ast_sha256": "0bf6ec386fe05c1092dd0d5f5b55eb0162cbfa70997b0211d832edae4400897f",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "module",
+                "disco.decisions.curation"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.curation.workspace_tables"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.curation",
+                "file": "python/disco/decisions/curation.py",
+                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_cache_publication.py",
+        "file_sha256": "2e3340d1a463c6c59a4ac5b8f2ab436fb8cf21b532beb7a9f6f7f17e44af2629",
+        "reason": "Interrupt atomic cache replacement and verify concurrent reader/publication behavior.",
+        "sites": [
+          {
+            "selector": "Call:66",
+            "ast_sha256": "fa450b7f8aed027db7b2ca315eec92a8fb7714b963ea6758c3eb80e3ec9402c0",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "os.replace"
+              ]
+            ],
+            "targets": [
+              "disco.metadata.projection_cache.os.replace"
+            ],
+            "owners": [
+              {
+                "module": "disco.metadata.projection_cache",
+                "file": "python/disco/metadata/projection_cache.py",
+                "file_sha256": "a49da9dbddefd6fb8d617e13e4956bcf07a9110c8bbf8f9d82207f3281942ae9",
+                "contract_id": "backend-metadata"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_candidate_exports.py",
+        "file_sha256": "c729d93b329794492feb1e9f136c00a7a09e5b05c1855c5af183265f178ec46c",
+        "reason": "Inject post-serialization decision/source changes and assert refusal before publication.",
+        "sites": [
+          {
+            "selector": "Name:546",
+            "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_sqlite"
+              ]
+            ],
+            "targets": [
+              "workspace_sqlite"
+            ],
+            "owners": [
+              {
+                "module": "workspace_sqlite",
+                "file": "python/workspace_sqlite.py",
+                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:584",
+            "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_sqlite"
+              ]
+            ],
+            "targets": [
+              "workspace_sqlite"
+            ],
+            "owners": [
+              {
+                "module": "workspace_sqlite",
+                "file": "python/workspace_sqlite.py",
+                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_curation.py",
+        "file_sha256": "9127c1b08146e41cca46b04ef8e7ffd68f0ba572427046ef1932adab73ee866d",
+        "reason": "Inject owned in-memory workspace table fixtures during curation construction.",
+        "sites": [
+          {
+            "selector": "Call:48",
+            "ast_sha256": "c7ae650a387b60a4e7aa7a8eb3ae52bdc75fd5d265280a160b679509d228bc13",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "module",
+                "disco.decisions.curation"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.curation.workspace_tables"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.curation",
+                "file": "python/disco/decisions/curation.py",
+                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_epoch_page_performance.py",
+        "file_sha256": "9d84a4eb9649d6acccd68d5e15c5ed3d44f1b79e221d3a0e5770f9b8e0caff9b",
+        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior.",
+        "sites": [
+          {
+            "selector": "Call:55",
+            "ast_sha256": "8746977c1fb9778fad058e177faf4b10370b4c674ba75afc9bc0da891c0c57f5",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "copy.deepcopy"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.explorer.copy.deepcopy"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.explorer",
+                "file": "python/disco/decisions/explorer.py",
+                "file_sha256": "9c756106722e6e5d6731dfb0c1656113867ddfef3eb6e2c9bf3622d581674cce",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          },
+          {
+            "selector": "Attribute:268",
+            "ast_sha256": "6e2ce45252bd401339b1c4f2f757de855613ea3f6e4dbb3682d3df58bb7c4314",
+            "category": "test-constructor-capture",
+            "origins": [
+              [
+                "named",
+                "disco.metadata.disk_index",
+                "DiskMetadataIndex"
+              ]
+            ],
+            "targets": [
+              "disco.metadata.disk_index.DiskMetadataIndex.__new__"
+            ],
+            "owners": [
+              {
+                "module": "disco.metadata.disk_index",
+                "file": "python/disco/metadata/disk_index.py",
+                "file_sha256": "94d1914e923933e7e284ea59e4cc0018d33222ca46319cc3dccc9452ffcae15c",
+                "contract_id": "backend-metadata"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_explore_queries.py",
+        "file_sha256": "89b7259eee5d461285f5b27636f0762fa4dedc493a9e744f060fae35d0b665da",
+        "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle.",
+        "sites": [
+          {
+            "selector": "Name:384",
+            "ast_sha256": "3b92482e5a4aa63362ae393d02c498b327780db95feaf43851045621432b20a6",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "disco.metadata.explore_queries"
+              ]
+            ],
+            "targets": [
+              "disco.metadata.explore_queries"
+            ],
+            "owners": [
+              {
+                "module": "disco.metadata.explore_queries",
+                "file": "python/disco/metadata/explore_queries.py",
+                "file_sha256": "002d309398c7080cfcd793c2cac8cb21eba519bf3deadd0bddebb7551f39ccaf",
+                "contract_id": "backend-metadata"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_export_boundary.py",
+        "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
+        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries.",
+        "sites": [
+          {
+            "selector": "Assign:7",
+            "ast_sha256": "520e9102339d1c32c164274dd96cce38e76702849a1ec81da65714798185b89c",
+            "category": "test-module-alias",
+            "origins": [
+              [
+                "module",
+                "disco.workbench.candidate_exports"
+              ]
+            ],
+            "targets": [
+              "disco.workbench.candidate_exports"
+            ],
+            "owners": [
+              {
+                "module": "disco.workbench.candidate_exports",
+                "file": "python/disco/workbench/candidate_exports.py",
+                "file_sha256": "666af203058d1c196fb6f277c9be4ebb14ea65dbdee43bd796c1b6e700abc955",
+                "contract_id": "backend-workbench"
+              }
+            ]
+          },
+          {
+            "selector": "Assign:10",
+            "ast_sha256": "06ef0aa9e73847515397e28ab6468825d7303e6c9f83bfc3382debcdda8eda14",
+            "category": "test-module-alias",
+            "origins": [
+              [
+                "module",
+                "workspace_api"
+              ]
+            ],
+            "targets": [
+              "workspace_api"
+            ],
+            "owners": [
+              {
+                "module": "workspace_api",
+                "file": "python/workspace_api.py",
+                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:53",
+            "ast_sha256": "263f3ef9a802acbd1a67ffb7954854c192681461b2b656eb0f90c17d8e537ae9",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "disco.workbench.candidate_exports"
+              ],
+              [
+                "module",
+                "workspace_api"
+              ]
+            ],
+            "targets": [
+              "disco.workbench.candidate_exports",
+              "workspace_api"
+            ],
+            "owners": [
+              {
+                "module": "disco.workbench.candidate_exports",
+                "file": "python/disco/workbench/candidate_exports.py",
+                "file_sha256": "666af203058d1c196fb6f277c9be4ebb14ea65dbdee43bd796c1b6e700abc955",
+                "contract_id": "backend-workbench"
+              },
+              {
+                "module": "workspace_api",
+                "file": "python/workspace_api.py",
+                "file_sha256": "c89a70d42ecc4fe71416682fc7c063906d82ec23e33f682290c71a0b52809ff8",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:294",
+            "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_sqlite"
+              ]
+            ],
+            "targets": [
+              "workspace_sqlite"
+            ],
+            "owners": [
+              {
+                "module": "workspace_sqlite",
+                "file": "python/workspace_sqlite.py",
+                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:467",
+            "ast_sha256": "e2c893d0e9f27f7613b32a89d1e6e859c5de8c844015ed9a76ad72e09f87d751",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_matlab"
+              ]
+            ],
+            "targets": [
+              "workspace_matlab"
+            ],
+            "owners": [
+              {
+                "module": "workspace_matlab",
+                "file": "python/workspace_matlab.py",
+                "file_sha256": "f3bd00d7b0f3c2cc8c68d18a0242cbb4a10f4c998726c75b79f412da76893f94",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:586",
+            "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_sqlite"
+              ]
+            ],
+            "targets": [
+              "workspace_sqlite"
+            ],
+            "owners": [
+              {
+                "module": "workspace_sqlite",
+                "file": "python/workspace_sqlite.py",
+                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:632",
+            "ast_sha256": "bb3ec10adc4d6b64350a7c6c332dd93892ed65f75eac2ad309ed48d3c03c1b11",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_sqlite"
+              ]
+            ],
+            "targets": [
+              "workspace_sqlite"
+            ],
+            "owners": [
+              {
+                "module": "workspace_sqlite",
+                "file": "python/workspace_sqlite.py",
+                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_migration.py",
+        "file_sha256": "c47705178461b51e6f28c41941d8d7e0ba20f7e590c1450679b68db156f7c2f1",
+        "reason": "Simulate missing source/path, reject unsupported connection profiles, and capture mysqldump command arguments without running transfer.",
+        "sites": [
+          {
+            "selector": "Call:7",
+            "ast_sha256": "1c80b8b127d5d0dd82e189be923febd0c656731df410bd91b34601c19097492b",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "pathlib.Path.home"
+              ]
+            ],
+            "targets": [
+              "disco.projects.migration.Path.home"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.migration",
+                "file": "python/disco/projects/migration.py",
+                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "contract_id": "backend-projects"
+              }
+            ]
+          },
+          {
+            "selector": "Call:9",
+            "ast_sha256": "4034f5dfc9259e8142e203698894b9a5ce298fc2a97af214cb5f1ca9d8fa0312",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "pathlib.Path.resolve"
+              ]
+            ],
+            "targets": [
+              "disco.projects.migration.Path.resolve"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.migration",
+                "file": "python/disco/projects/migration.py",
+                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "contract_id": "backend-projects"
+              }
+            ]
+          },
+          {
+            "selector": "Call:29",
+            "ast_sha256": "5019ac6ea5ede0fff9bdd26832eb5786945b21a83b5a420a5ba8d749c7e5becc",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "source-symbol",
+                "workspace_portability",
+                "_json"
+              ]
+            ],
+            "targets": [
+              "disco.projects.migration._json"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.migration",
+                "file": "python/disco/projects/migration.py",
+                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "contract_id": "backend-projects"
+              },
+              {
+                "module": "workspace_portability",
+                "file": "python/workspace_portability.py",
+                "file_sha256": "049538364b3ce882a4cce1b9d93a68d09b1cff3bdb88aa1449d44d65e51bb452",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Call:43",
+            "ast_sha256": "4668df5992ef88a088a8069d07b859cf3d5ae3f652178569b501fc07996833aa",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "subprocess.run"
+              ]
+            ],
+            "targets": [
+              "disco.projects.migration.subprocess.run"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.migration",
+                "file": "python/disco/projects/migration.py",
+                "file_sha256": "4423cbdbd9dd77194091d069537ca6c15d0d532ec580f57e1ee547d28c712753",
+                "contract_id": "backend-projects"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_refresh_cache.py",
+        "file_sha256": "8d42e6ce3a27e87e4652286f5daf15715b83b3015857504ae5ffecc98cfac2bf",
+        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation.",
+        "sites": [
+          {
+            "selector": "Name:40",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:43",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:46",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Attribute:459",
+            "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
+            "category": "test-oracle-call",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ],
+              [
+                "named",
+                "disco.navigation.tree",
+                "catalog"
+              ]
+            ],
+            "targets": [
+              "disco.navigation.tree.catalog"
+            ],
+            "owners": [
+              {
+                "module": "disco.navigation.tree",
+                "file": "python/disco/navigation/tree.py",
+                "file_sha256": "1a8a0d5766957ffcb3cf0a353d60c75e7442da765752c480302986080896f8cf",
+                "contract_id": "backend-navigation"
+              },
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Attribute:467",
+            "ast_sha256": "9b66d8b81a7b15352c762eb8b15859183009e5c548da4cd1150e527c832c7ef5",
+            "category": "test-oracle-call",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ],
+              [
+                "named",
+                "disco.navigation.predicates",
+                "predicate_catalog"
+              ]
+            ],
+            "targets": [
+              "disco.navigation.predicates.predicate_catalog"
+            ],
+            "owners": [
+              {
+                "module": "disco.navigation.predicates",
+                "file": "python/disco/navigation/predicates.py",
+                "file_sha256": "c8b7a4b44a8c051b0216eaaa939f4278ea591c41772a7ec9af8e8899756aa2bd",
+                "contract_id": "backend-navigation"
+              },
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:675",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:704",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:774",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:777",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:799",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:802",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Attribute:566",
+            "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
+            "category": "test-oracle-call",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ],
+              [
+                "named",
+                "disco.navigation.tree",
+                "catalog"
+              ]
+            ],
+            "targets": [
+              "disco.navigation.tree.catalog"
+            ],
+            "owners": [
+              {
+                "module": "disco.navigation.tree",
+                "file": "python/disco/navigation/tree.py",
+                "file_sha256": "1a8a0d5766957ffcb3cf0a353d60c75e7442da765752c480302986080896f8cf",
+                "contract_id": "backend-navigation"
+              },
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:853",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:855",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Name:893",
+            "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "workspace_service"
+              ]
+            ],
+            "targets": [
+              "workspace_service"
+            ],
+            "owners": [
+              {
+                "module": "workspace_service",
+                "file": "python/workspace_service.py",
+                "file_sha256": "6fb767d71dbeb04edf86db3df716d94876e69720b4ad7dd5f02c22363372ad84",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_registered_recovery_policy.py",
+        "file_sha256": "3e563a4c1f934c83a41c09cb425cdf46ec9ea1f005b3da03b218a0f93d5f21f4",
+        "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy.",
+        "sites": [
+          {
+            "selector": "Name:33",
+            "ast_sha256": "80a06728f1dd21087b431bbb71541183d4513416d056fc13435c93992abd35d8",
+            "category": "test-module-object",
+            "origins": [
+              [
+                "module",
+                "test_workspace_api"
+              ]
+            ],
+            "targets": [
+              "test_workspace_api"
+            ],
+            "owners": [
+              {
+                "module": "tests.test_workspace_api",
+                "file": "python/tests/test_workspace_api.py",
+                "file_sha256": "fa2d75f7122634dda27caf31122671477cfee4ff2cdcd40625951cb592cf263e",
+                "contract_id": null
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_scoped_predicates.py",
+        "file_sha256": "efd596da924301418aa6d294296a04081be1c68e1dad7e15d2489cf8e207d938",
+        "reason": "Capture annotation-lock protocol scope without taking native locks; preserve exact expected scope assertion.",
+        "sites": [
+          {
+            "selector": "Call:110",
+            "ast_sha256": "42e1eb92e9a4c6adab668478a2493750228cc840fe69143e58ad413e3baa3f46",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "named",
+                "disco.navigation.tag_predicates",
+                "annotation_locks"
+              ]
+            ],
+            "targets": [
+              "disco.metadata.explore_queries.annotation_locks"
+            ],
+            "owners": [
+              {
+                "module": "disco.metadata.explore_queries",
+                "file": "python/disco/metadata/explore_queries.py",
+                "file_sha256": "002d309398c7080cfcd793c2cac8cb21eba519bf3deadd0bddebb7551f39ccaf",
+                "contract_id": "backend-metadata"
+              },
+              {
+                "module": "disco.navigation.tag_predicates",
+                "file": "python/disco/navigation/tag_predicates.py",
+                "file_sha256": "dc975a1aa0b3aff1631d53b191cee357a633774f8d9d7fdd96908cf34b0f49f6",
+                "contract_id": "backend-navigation"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_shared_vocabulary.py",
+        "file_sha256": "abb453eca9fa91f9afbc8a2fb637ba8c25dc699723d291416904f47374a45904",
+        "reason": "Capture real initializer, inject failure after schema creation, and assert disposable schema cleanup and safe retry.",
+        "sites": [
+          {
+            "selector": "Attribute:97",
+            "ast_sha256": "3b7d47218700801e658e57bd6d7e4316d67963200a0aebfe25d7a0b5bc882705",
+            "category": "test-constructor-capture",
+            "origins": [
+              [
+                "named",
+                "disco.decisions.shared_vocabulary",
+                "SharedVocabulary"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.shared_vocabulary.SharedVocabulary.__init__"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.shared_vocabulary",
+                "file": "python/disco/decisions/shared_vocabulary.py",
+                "file_sha256": "e09f62e5550f647ba3f33ccdbbe835121fd71c71b8c4c7795e325a2bc8812e46",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_tags.py",
+        "file_sha256": "d9a3d99626e35e745e9e0515655caa0a2bb8312e9aa2b7dc04111222b93c8527",
+        "reason": "Freeze monotonic clock for TTL reuse and immediate invalidation versus rollback assertions.",
+        "sites": [
+          {
+            "selector": "Call:82",
+            "ast_sha256": "bd3513f838005c5001e6d293e2eecdfe4936eff80391a8b72f153a684ef1a881",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "time.monotonic"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.curation.time.monotonic"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.curation",
+                "file": "python/disco/decisions/curation.py",
+                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          },
+          {
+            "selector": "Call:102",
+            "ast_sha256": "86159c0c19dc9228c40a5ea896ee1cf78eddbb79e0321a67c9bdf4a6df35ab60",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "external",
+                "time.monotonic"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.curation.time.monotonic"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.curation",
+                "file": "python/disco/decisions/curation.py",
+                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/tests/test_workspace_workbench_exports.py",
+        "file_sha256": "34e08d4d2d39ae2f78146b2648d758a605e96694d9fb1d17303c1741334b03b3",
+        "reason": "Inject artifact staging failure and reject unsupported MATLAB shape before directory materialization; preserve bindings/publication assertions.",
+        "sites": [
+          {
+            "selector": "Call:55",
+            "ast_sha256": "f23a8e331c7c6d58cb63e490969ba9476a6b881150f03b9669fd74802cbfb6aa",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "source-symbol",
+                "recording_workspace",
+                "write_json"
+              ]
+            ],
+            "targets": [
+              "disco.workbench.workbench_exports.write_json"
+            ],
+            "owners": [
+              {
+                "module": "disco.workbench.workbench_exports",
+                "file": "python/disco/workbench/workbench_exports.py",
+                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "contract_id": "backend-workbench"
+              },
+              {
+                "module": "recording_workspace",
+                "file": "python/recording_workspace.py",
+                "file_sha256": "fbddb153b5984cc4158091ed5df7e11073d5076eef991d4dd4dde4c02118e9bf",
+                "contract_id": null
+              }
+            ]
+          },
+          {
+            "selector": "Call:118",
+            "ast_sha256": "f032ba229b1926a424836a0c4c52992f929d85c69efe6f4d863aaa2ce5d02fa1",
+            "category": "test-mock-target",
+            "origins": [
+              [
+                "named",
+                "disco.projects.storage",
+                "managed_directory"
+              ]
+            ],
+            "targets": [
+              "disco.workbench.workbench_exports.managed_directory"
+            ],
+            "owners": [
+              {
+                "module": "disco.projects.storage",
+                "file": "python/disco/projects/storage.py",
+                "file_sha256": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+                "contract_id": "backend-projects"
+              },
+              {
+                "module": "disco.workbench.workbench_exports",
+                "file": "python/disco/workbench/workbench_exports.py",
+                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "contract_id": "backend-workbench"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "file": "python/workspace_protocol_state.py",
+        "file_sha256": "7ecd66e10cf48bd7f104db0bcb081faf55312c72831ce944644ba6f90014c179",
+        "reason": "Capture exact decision-store/shared-annotation/history methods for structural identity checks and fallback oracle; preserve all response/transaction proof behavior.",
+        "sites": [
+          {
+            "selector": "Call:1",
+            "ast_sha256": "c17a08d2400979f6716513d787513c23d9a00081d928a1794ce04636d0e7268c",
+            "category": "production-method-capture",
+            "origins": [
+              [
+                "named",
+                "disco.decisions.curation",
+                "CurationStore"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.curation.CurationStore._rows",
+              "disco.decisions.curation.CurationStore._state",
+              "disco.decisions.curation.CurationStore.read",
+              "disco.decisions.curation.CurationStore.summary_decisions"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.curation",
+                "file": "python/disco/decisions/curation.py",
+                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          },
+          {
+            "selector": "Call:2",
+            "ast_sha256": "f1eaf1c9d65255f929540efadd9954a6539d57e410b4eb74326a012b56e30ce5",
+            "category": "production-method-capture",
+            "origins": [
+              [
+                "named",
+                "disco.decisions.annotations",
+                "SharedAnnotations"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.annotations.SharedAnnotations._rows",
+              "disco.decisions.annotations.SharedAnnotations._validated_tags",
+              "disco.decisions.annotations.SharedAnnotations.for_epochs",
+              "disco.decisions.annotations.SharedAnnotations.read_targets",
+              "disco.decisions.annotations.SharedAnnotations.snapshot",
+              "disco.decisions.annotations.SharedAnnotations.summary"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.annotations",
+                "file": "python/disco/decisions/annotations.py",
+                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          },
+          {
+            "selector": "Call:4",
+            "ast_sha256": "88c7997cd15a0c50ff0c211fddd57e22fa319aee17076fd3d7a41a3da427d0ef",
+            "category": "production-method-capture",
+            "origins": [
+              [
+                "named",
+                "disco.decisions.explorer",
+                "ExplorerHistory"
+              ]
+            ],
+            "targets": [
+              "disco.decisions.explorer.ExplorerHistory.get",
+              "disco.decisions.explorer.ExplorerHistory.protocol_binding",
+              "disco.decisions.explorer.ExplorerHistory.protocol_binding_header"
+            ],
+            "owners": [
+              {
+                "module": "disco.decisions.explorer",
+                "file": "python/disco/decisions/explorer.py",
+                "file_sha256": "9c756106722e6e5d6731dfb0c1656113867ddfef3eb6e2c9bf3622d581674cce",
+                "contract_id": "backend-decisions"
+              }
+            ]
+          }
+        ]
       }
     ]
   }
