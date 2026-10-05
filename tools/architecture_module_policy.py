@@ -67,7 +67,7 @@ def public_entries(module, version):
     if version == 2:
         exact(module, ['contract_id', 'root', 'public_entry', 'public_exports', 'private_test_edges'])
         entries = [{'path': module['public_entry'], 'exports': module['public_exports']}]
-    elif version in (3, 4):
+    elif version in (3, 4, 5):
         exact(module, ['contract_id', 'root', 'public_entries', 'private_test_edges'])
         entries = module['public_entries']
         if not isinstance(entries, list) or not entries:
@@ -77,7 +77,7 @@ def public_entries(module, version):
     seen = set()
     for entry in entries:
         exact(entry, ['path', 'exports'])
-        if version in (3, 4):
+        if version in (3, 4, 5):
             if not isinstance(entry['path'], str) or not entry['path']:
                 raise ValueError('Public entry path must be a nonempty string')
             if entry['path'] in seen:
@@ -85,7 +85,7 @@ def public_entries(module, version):
             seen.add(entry['path'])
         if not strings(entry['exports']):
             raise ValueError('Public exports cannot be empty')
-        if version in (3, 4) and '*' in entry['exports']:
+        if version in (3, 4, 5) and '*' in entry['exports']:
             raise ValueError('Public exports cannot contain a star')
     return entries
 
@@ -185,7 +185,7 @@ def validate(root, catalog):
                 raise ValueError('Public entry must be module production source')
             # V2 keeps its historical path validation; V3 entries must also be
             # parsed executable sources, never CSS or another unscanned asset.
-            if catalog['version'] in (3, 4) and entry['path'] not in available:
+            if catalog['version'] in (3, 4, 5) and entry['path'] not in available:
                 raise ValueError('Public entry must be scanned executable production source')
         entry_paths = {entry['path'] for entry in entries}
         rules = {rule['file']: rule for rule in contracts[module['contract_id']]['rules'] if rule['language'] == 'javascript'}

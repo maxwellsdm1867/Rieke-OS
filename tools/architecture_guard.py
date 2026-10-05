@@ -70,7 +70,7 @@ def python_test_name(root, value, name):
 
 
 class PythonModulePolicy:
-    """One v4 policy snapshot. No imports of inspected Python are executed."""
+    """One versioned policy snapshot. No imports of inspected Python are executed."""
     def __init__(self, root, value):
         self.root, self.value, self.policy = root, value, value['python_module_policy']
         policy = self.policy
@@ -116,12 +116,15 @@ class PythonModulePolicy:
                               if Path(name).parent.as_posix() == 'python/tests' and not name.endswith('/__init__.py')}
         self.roots = {identity.split('.')[0] for identity in self.names if identity}
         self.modules = policy['modules']
+        self.entries, self.namespaces = [], set()
         if not isinstance(self.modules, list) or not self.modules:
             raise ValueError('Python policy requires adopted modules')
         ids, roots, entries = set(), [], set()
         contracts = {item['id']: item for item in value['contracts']}
         for module in self.modules:
-            keys(module, ('contract_id', 'root', 'public_module', 'public_entry', 'public_exports', 'private_test_edges'))
+            named = value['version'] == 5 and 'public_entries' in module
+            keys(module, ('contract_id', 'root', 'public_entries', 'private_test_edges') if named else
+                 ('contract_id', 'root', 'public_module', 'public_entry', 'public_exports', 'private_test_edges'))
             owner = module['root']
             self.safe(owner, directory=True)
             if (not owner.startswith('python/') or self.is_test(owner) or
@@ -134,31 +137,54 @@ class PythonModulePolicy:
             if any(not part.isidentifier() for part in owner.split('/')[1:]):
                 raise ValueError('Python owner requires canonical identifiers')
             expected = owner[len('python/'):].replace('/', '.')
-            if module['public_module'] != expected or module['public_entry'] != owner + '/__init__.py':
-                raise ValueError('Python public entry must be its canonical package initializer')
-            self.safe(module['public_entry'])
-            entries.add(module['public_entry'])
-            # No namespace package or executable ancestor initialization.
-            parent = Path(owner).parent
+            if named:
+                declarations = module['public_entries']
+                if not isinstance(declarations, list) or not declarations:
+                    raise ValueError('Python named public entries must be nonempty')
+                for declaration in declarations:
+                    keys(declaration, ('path', 'module', 'exports'))
+                    path = declaration['path']
+                    self.safe(path)
+                    if (Path(path).parent.as_posix() != owner or not path.endswith('.py') or
+                            Path(path).name == '__init__.py' or self.is_test(path) or path in entries or
+                            not Path(path).stem.isidentifier() or declaration['module'] != self.identities.get(path)):
+                        raise ValueError('Python named entry requires a unique canonical owned leaf')
+                    names = self.unique(declaration['exports'])
+                    if not names or any(not name.isidentifier() or name.startswith('__') for name in names):
+                        raise ValueError('Invalid Python named public exports')
+                    entries.add(path)
+                    self.entries.append({'public_entry': path, 'public_module': declaration['module'],
+                                         'public_exports': [{'name': name, 'from': path} for name in names], 'named': True})
+            else:
+                if module['public_module'] != expected or module['public_entry'] != owner + '/__init__.py':
+                    raise ValueError('Python public entry must be its canonical package initializer')
+                self.safe(module['public_entry'])
+                entries.add(module['public_entry'])
+                self.entries.append({**module, 'named': False})
+                exports = module['public_exports']
+                if not isinstance(exports, list) or not exports:
+                    raise ValueError('Python public exports must be nonempty')
+                exported = set()
+                for item in exports:
+                    keys(item, ('name', 'from'))
+                    if not isinstance(item['name'], str) or not item['name'].isidentifier() or item['name'].startswith('_') or item['name'] in exported:
+                        raise ValueError('Invalid or duplicate Python public export')
+                    exported.add(item['name'])
+                    self.safe(item['from'])
+                    if (not item['from'].startswith(owner + '/') or item['from'] == module['public_entry'] or
+                            self.is_test(item['from']) or item['from'] not in self.sources):
+                        raise ValueError('Python public export requires its owned implementation file')
+            # Named owners themselves are inert namespaces; legacy public roots
+            # retain their exact initializer contract. Both require inert ancestors.
+            parent = Path(owner) if named else Path(owner).parent
             while parent.as_posix() != 'python':
                 initializer = parent.as_posix() + '/__init__.py'
                 tree = self.trees.get(initializer)
                 if tree is None or any(not self.docstring(node) for node in tree.body):
                     raise ValueError('Python package ancestor must have an inert initializer: ' + initializer)
+                if named:
+                    self.namespaces.add(self.identities[initializer])
                 parent = parent.parent
-            exports = module['public_exports']
-            if not isinstance(exports, list) or not exports:
-                raise ValueError('Python public exports must be nonempty')
-            exported = set()
-            for item in exports:
-                keys(item, ('name', 'from'))
-                if not isinstance(item['name'], str) or not item['name'].isidentifier() or item['name'].startswith('_') or item['name'] in exported:
-                    raise ValueError('Invalid or duplicate Python public export')
-                exported.add(item['name'])
-                self.safe(item['from'])
-                if (not item['from'].startswith(owner + '/') or item['from'] == module['public_entry'] or
-                        self.is_test(item['from']) or item['from'] not in self.sources):
-                    raise ValueError('Python public export requires its owned implementation file')
             rules = [rule for rule in contracts[module['contract_id']]['rules'] if rule['language'] == 'python']
             for name in self.sources:
                 if name.startswith(owner + '/') and not self.is_test(name):
@@ -177,7 +203,7 @@ class PythonModulePolicy:
                 for name in pair: self.safe(name)
                 if (not edge['from'].startswith(owner + '/tests/') or not self.is_test(edge['from']) or
                         not Path(edge['from']).name.startswith('test_') or not edge['to'].startswith(owner + '/') or
-                        self.is_test(edge['to']) or edge['to'] == module['public_entry']):
+                        self.is_test(edge['to']) or edge['to'] in entries):
                     raise ValueError('Python private test edge must stay inside its owner')
         if set(self.test_roots) != {'python/tests', *[module['root'] + '/tests' for module in self.modules]}:
             raise ValueError('Python test roots must be central or adopted owner tests')
@@ -238,6 +264,8 @@ class PythonModulePolicy:
                             if arg is not None: child['bindings'][arg.arg] = [('ordinary',)]
                     if isinstance(node, (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)):
                         for index, generator in enumerate(node.generators):
+                            if value['version'] == 5 and isinstance(generator.target, ast.Name) and isinstance(generator.iter, (ast.Tuple, ast.List)):
+                                child['bindings'].setdefault(generator.target.id, []).append(('iteration', generator.iter, scope if index == 0 else child))
                             self.node_scopes[id(generator)] = child
                             self.parents[id(generator)] = node
                             for part in ast.iter_child_nodes(generator):
@@ -266,6 +294,8 @@ class PythonModulePolicy:
                     for target in targets:
                         if isinstance(target, ast.Name):
                             scope['bindings'].setdefault(target.id, []).append(('expression', node.value, scope))
+                elif value['version'] == 5 and isinstance(node, ast.For) and isinstance(node.target, ast.Name) and isinstance(node.iter, (ast.Tuple, ast.List)):
+                    scope['bindings'].setdefault(node.target.id, []).append(('iteration', node.iter, scope))
                 elif isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                     scope['bindings'].setdefault(node.id, [('ordinary',)])
                 for part in ast.iter_child_nodes(node):
@@ -323,22 +353,32 @@ class PythonModulePolicy:
         if key in seen: return set()
         seen = seen | {key}
         if name not in scope['bindings']:
-            return self.binding(scope['parent'], name, seen) if scope['parent'] else ({('external', 'builtins.' + name)} if name in ('__import__', 'exec', 'eval') else set())
+            return self.binding(scope['parent'], name, seen) if scope['parent'] else ({('external', 'builtins.' + name)} if name in ('__import__', 'exec', 'eval', 'setattr', 'delattr') else set())
         values = set()
         for item in scope['bindings'][name]:
-            if item[0] == 'module': values.add(item)
+            if item[0] == 'ordinary' and scope['kind'] == 'module':
+                owner = self.owner(scope['file'])
+                if owner and 'public_entries' in owner and not self.is_test(scope['file']):
+                    values.add(('named', self.identities[scope['file']], name))
+            elif item[0] == 'module': values.add(item)
             elif item[0] == 'symbol':
                 target = self.target(item[1])
-                public = next((module for module in self.modules if module['public_module'] == item[1]), None)
+                public = self.public(item[1])
                 if public and item[2] in {entry['name'] for entry in public['public_exports']}:
-                    values.add(('adopted', item[1], item[2]))
+                    values.update(self.public_value(public, item[2], seen))
                 elif target:
                     child = self.target(item[1] + '.' + item[2])
                     if child: values.add(('module', item[1] + '.' + item[2]))
                     else: values.update(self.binding(self.scopes[target], item[2], seen))
                 else: values.add(('external', item[1] + '.' + item[2]))
+            elif item[0] == 'iteration':
+                values.update(self.module_tuple(item[1], item[2], seen))
             elif item[0] == 'expression' and item[1] is not None:
-                values.update(self.expression(item[1], item[2], seen))
+                resolved = self.expression(item[1], item[2], seen)
+                owner = self.owner(scope['file'])
+                if not resolved and scope['kind'] == 'module' and owner and 'public_entries' in owner and not self.is_test(scope['file']):
+                    resolved = {('named', self.identities[scope['file']], name)}
+                values.update(resolved)
         return values
 
     def expression(self, node, scope, seen=frozenset()):
@@ -349,19 +389,143 @@ class PythonModulePolicy:
                 if value[0] == 'module':
                     identity = value[1] + '.' + node.attr
                     target = self.target(value[1])
-                    public = next((m for m in self.modules if m['public_module'] == value[1]), None)
+                    public = self.public(value[1])
                     if public and node.attr in {e['name'] for e in public['public_exports']}:
-                        result.add(('adopted', value[1], node.attr))
+                        result.update(self.public_value(public, node.attr, seen))
                     elif self.target(identity): result.add(('module', identity))
                     elif target: result.update(self.binding(self.scopes[target], node.attr, seen))
                     else: result.add(('external', identity))
                 elif value[0] == 'external': result.add(('external', value[1] + '.' + node.attr))
+                elif value[0] == 'named': result.add(('named', value[1], value[2] + '.' + node.attr))
             return result
         return set()
 
     def adopted_origin(self, value):
-        return value[0] == 'adopted' or value[0] == 'module' and any(
-            value[1] == module['public_module'] or value[1].startswith(module['public_module'] + '.') for module in self.modules)
+        return value[0] in ('adopted', 'named') or value[0] == 'module' and any(
+            value[1] == module['public_module'] or value[1].startswith(module['public_module'] + '.') for module in self.entries)
+
+    def module_tuple(self, node, scope, seen=frozenset()):
+        """Only literal, finite module aliases used by a direct iteration."""
+        if not isinstance(node, (ast.Tuple, ast.List)) or not node.elts:
+            return set()
+        values = set()
+        for element in node.elts:
+            if not isinstance(element, (ast.Name, ast.Attribute)):
+                return set()
+            found = self.expression(element, scope, seen)
+            if not found or any(value[0] != 'module' for value in found):
+                return set()
+            values.update(found)
+        return values if any(self.public(v[1]) and self.public(v[1])['named'] for v in values) else set()
+
+    def witness_element(self, node, scope):
+        sequence = self.parents.get(id(node))
+        loop = self.parents.get(id(sequence))
+        return (isinstance(loop, (ast.For, ast.comprehension)) and loop.iter is sequence and
+                isinstance(loop.target, ast.Name) and bool(self.module_tuple(sequence, scope)))
+
+    def unambiguous(self, node, scope, seen=frozenset()):
+        """Do not grant mock syntax exceptions to reassigned or shadowed aliases."""
+        if isinstance(node, ast.Attribute): return self.unambiguous(node.value, scope, seen)
+        if not isinstance(node, ast.Name): return False
+        if node.id not in scope['bindings']:
+            return bool(scope['parent'] and self.unambiguous(node, scope['parent'], seen))
+        key = (id(scope), node.id)
+        bindings = scope['bindings'][node.id]
+        if key in seen or len(bindings) != 1: return False
+        item = bindings[0]
+        if item[0] == 'expression': return self.unambiguous(item[1], item[2], seen | {key})
+        if item[0] == 'symbol' and self.target(item[1]):
+            return self.unambiguous(ast.Name(id=item[2]), self.scopes[self.target(item[1])], seen | {key})
+        return item[0] in ('module', 'symbol')
+
+    def patch_kind(self, call, scope):
+        if self.value['version'] != 5 or not any(e['named'] for e in self.entries): return None
+        values = self.expression(call.func, scope)
+        for kind in ('unittest.mock.patch', 'unittest.mock.patch.object'):
+            if ('external', kind) in values:
+                if values != {('external', kind)} or not self.unambiguous(call.func, scope):
+                    raise ValueError(scope['file'] + ': ambiguous Python mock patch binding')
+                return kind
+        return None
+
+    def mock_mutation(self, node, scope):
+        """Reject bounded writes that invalidate a recognized mock call identity."""
+        if self.value['version'] != 5 or not any(e['named'] for e in self.entries): return
+        target = None
+        if isinstance(node, (ast.Attribute, ast.Subscript)) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            target = node if isinstance(node, ast.Attribute) else node.value
+        elif isinstance(node, ast.Call) and node.args:
+            functions = self.expression(node.func, scope)
+            reflective = isinstance(node.func, ast.Name) and node.func.id in ('setattr', 'delattr')
+            reflective = reflective or bool(functions & {('external', 'builtins.setattr'), ('external', 'builtins.delattr')})
+            if reflective: target = node.args[0]
+        if target is not None and any(
+                value[0] in ('external', 'module') and (value[1] == 'unittest.mock' or value[1].startswith('unittest.mock.'))
+                for value in self.expression(target, scope)):
+            raise ValueError(scope['file'] + ': mutated Python mock patch binding')
+
+    def named_patch(self, call, scope):
+        """Validate only known mock calls; return the admitted module argument."""
+        kind = self.patch_kind(call, scope)
+        if not kind or not call.args: return None
+        target = call.args[0]
+        if kind.endswith('.object'):
+            origins = self.expression(target, scope)
+            public = [self.public(v[1]) for v in origins if v[0] == 'module' and self.public(v[1]) and self.public(v[1])['named']]
+            if not public: return None
+            if (not self.is_test(scope['file']) or len(origins) != 1 or len(call.args) < 2 or
+                    not isinstance(call.args[1], ast.Constant) or not isinstance(call.args[1].value, str) or
+                    call.args[1].value not in {e['name'] for e in public[0]['public_exports']}):
+                raise ValueError(scope['file'] + ': invalid Python named-module patch')
+            return target
+        if not isinstance(target, ast.Constant) or not isinstance(target.value, str):
+            raise ValueError(scope['file'] + ': computed Python mock patch target is unsupported')
+        identity = target.value
+        if not any(identity.startswith(namespace + '.') or identity == namespace for namespace in self.namespaces):
+            return None
+        # Legacy roots retain existing semantics, including their old test rules.
+        if any(not e['named'] and (identity == e['public_module'] or identity.startswith(e['public_module'] + '.')) for e in self.entries):
+            return None
+        entry = next((e for e in self.entries if e['named'] and identity.startswith(e['public_module'] + '.')), None)
+        parts = identity[len(entry['public_module']) + 1:].split('.') if entry else []
+        if (not self.is_test(scope['file']) or not entry or not parts or
+                parts[0] not in {e['name'] for e in entry['public_exports']} or
+                any(not part.isidentifier() or part.startswith('__') for part in parts)):
+            raise ValueError(scope['file'] + ': invalid Python named-module string patch')
+        origins = {('module', entry['public_module'])}
+        for part in parts:
+            resolved = set()
+            for origin in origins:
+                if origin[0] == 'module':
+                    public = self.public(origin[1])
+                    if public:
+                        if part not in {e['name'] for e in public['public_exports']}:
+                            raise ValueError(scope['file'] + ': invalid Python named-module string patch')
+                        resolved.update(self.public_value(public, part, frozenset()))
+                    elif self.owner(self.target(origin[1]) or ''):
+                        raise ValueError(scope['file'] + ': private Python string patch origin')
+                    else:
+                        resolved.add(('external', origin[1] + '.' + part))
+                elif origin[0] == 'named': resolved.add(('named', origin[1], origin[2] + '.' + part))
+                elif origin[0] == 'external': resolved.add(('external', origin[1] + '.' + part))
+                else: raise ValueError(scope['file'] + ': invalid Python string patch origin')
+            origins = resolved
+        return None
+
+    def internal_named(self, importer, target):
+        owner = self.owner(target) if target else None
+        return bool(owner and 'public_entries' in owner and not self.is_test(importer) and self.owner(importer) == owner)
+
+    def public(self, identity):
+        return next((entry for entry in self.entries if entry['public_module'] == identity), None)
+
+    def public_value(self, entry, symbol, seen):
+        if not entry['named']:
+            return {('adopted', entry['public_module'], symbol)}
+        source = entry['public_entry']
+        values = self.binding(self.scopes[source], symbol, seen)
+        return values or {('named', entry['public_module'], symbol)}
 
     def has_adopted_bindings(self, identity):
         target = self.target(identity)
@@ -375,6 +539,8 @@ class PythonModulePolicy:
             if item[0] in ('ordinary', 'module') or item[0] == 'expression' and item[1] is not None: return True
             if item[0] == 'symbol':
                 target = self.target(item[1])
+                public = self.public(self.identities[source])
+                if public and public['named'] and self.target(item[1] + '.' + item[2]): return True
                 if target and self.defined(target, item[2], seen | {key}): return True
                 if not target and item[1].split('.')[0] not in self.roots: return True
         return False
@@ -395,7 +561,8 @@ class PythonModulePolicy:
             if not self.is_test(importer) and self.is_test(target):
                 raise ValueError(importer + ': production cannot import Python test source ' + target)
             owner = self.owner(target)
-            if not owner or target == owner['public_entry']: return
+            if owner and 'public_entries' in owner and self.is_test(importer) and self.is_test(target): return
+            if not owner or self.public(self.identities[target]) or self.identities[target] in self.namespaces: return
             if not self.is_test(importer) and self.owner(importer) == owner: return
             pair = {'from': importer, 'to': target}
             if pair in owner['private_test_edges']:
@@ -405,15 +572,29 @@ class PythonModulePolicy:
         def public_import(importer, identity, symbol=None, alias=True):
             target = self.target(identity)
             edge(importer, target)
-            public = next((m for m in self.modules if m['public_module'] == identity), None)
-            if public and (symbol is not None and symbol not in {e['name'] for e in public['public_exports']} or not alias):
+            public = self.public(identity)
+            if public and (symbol is not None and symbol not in {e['name'] for e in public['public_exports']} or not alias and not public['named']):
                 raise ValueError(importer + ': invalid Python public import ' + identity)
+            if identity in self.namespaces and symbol is not None:
+                child = identity + '.' + symbol
+                if not self.public(child) and child not in self.namespaces and not self.internal_named(importer, self.target(child)):
+                    raise ValueError(importer + ': invalid Python namespace import ' + child)
             if not target and identity.split('.')[0] in self.roots:
                 # Module attributes in from-imports are handled by their parent.
                 raise ValueError(importer + ': unresolved local Python module ' + identity)
             return target
 
-        for module in self.modules:
+        for module in self.entries:
+            if module['named']:
+                for export in module['public_exports']:
+                    if not self.defined(module['public_entry'], export['name']):
+                        raise ValueError('Missing Python named export: ' + export['name'])
+                    for origin in self.public_value(module, export['name'], frozenset()):
+                        if origin[0] in ('module', 'named'):
+                            target = self.target(origin[1])
+                            if target and self.owner(target) and not self.public(origin[1]):
+                                raise ValueError('Python named export exposes private module: ' + export['name'])
+                continue
             actual, all_names = [], None
             for node in self.trees[module['public_entry']].body:
                 if self.docstring(node): continue
@@ -451,10 +632,10 @@ class PythonModulePolicy:
                         public_import(name, identity, alias.name)
                         child = self.target(identity + '.' + alias.name)
                         if child:
-                            if any(child == m['public_entry'] and identity != m['public_module'] for m in self.modules):
+                            if any(child == m['public_entry'] and identity != m['public_module'] and not m['named'] for m in self.entries):
                                 raise ValueError(name + ': public Python import must use canonical package')
                             edge(name, child)
-                        if target and not any(identity == m['public_module'] for m in self.modules):
+                        if target and identity not in self.namespaces and not self.public(identity) and not self.internal_named(name, target) and not ((name, target) in used_edges and 'public_entries' in (self.owner(target) or {})):
                             if alias.name == '*':
                                 origins = set().union(*(self.binding(self.scopes[target], key) for key in self.scopes[target]['bindings']))
                             else: origins = self.binding(self.scopes[target], alias.name)
@@ -462,30 +643,35 @@ class PythonModulePolicy:
                                 raise ValueError(name + ': forbidden Python public re-export shim')
                 elif isinstance(node, ast.Attribute):
                     for value in self.expression(node.value, scope):
+                        if value[0] == 'named' and node.attr.startswith('__'):
+                            raise ValueError(name + ': reflective Python named value attribute')
                         if value[0] == 'adopted':
                             raise ValueError(name + ': reflective Python public callable attribute')
                         if value[0] != 'module': continue
                         target = self.target(value[1])
-                        public = next((m for m in self.modules if m['public_module'] == value[1]), None)
-                        if public and node.attr not in {e['name'] for e in public['public_exports']}:
+                        public = self.public(value[1])
+                        if value[1] in self.namespaces and not self.public(value[1] + '.' + node.attr) and value[1] + '.' + node.attr not in self.namespaces and not self.internal_named(name, self.target(value[1] + '.' + node.attr)):
+                            raise ValueError(name + ': forbidden Python namespace attribute ' + node.attr)
+                        if public and node.attr not in {e['name'] for e in public['public_exports']} and not (public['named'] and node.attr == '__file__' and isinstance(node.ctx, ast.Load)):
                             raise ValueError(name + ': forbidden Python public attribute ' + node.attr)
                         child = self.target(value[1] + '.' + node.attr)
                         edge(name, child)
-                        if child and any(child == m['public_entry'] for m in self.modules) and not public:
+                        if child and any(child == m['public_entry'] and not m['named'] for m in self.entries) and not public:
                             raise ValueError(name + ': public Python import must use canonical package')
-                        if target and not public and any(self.adopted_origin(v) for v in self.expression(node, scope)):
+                        if target and not public and value[1] not in self.namespaces and not self.internal_named(name, target) and not ((name, target) in used_edges and 'public_entries' in (self.owner(target) or {})) and any(self.adopted_origin(v) for v in self.expression(node, scope)):
                             raise ValueError(name + ': forbidden Python public re-export shim')
                         if target and not public and self.has_adopted_bindings(value[1]) and (node.attr.startswith('__') or node.attr not in self.scopes[target]['bindings']):
                             raise ValueError(name + ': reflective or unresolved Python shim attribute')
                 # Module-object forwarding/reflection is outside supported syntax.
                 if isinstance(node, (ast.Name, ast.Attribute)) and isinstance(node.ctx, ast.Load):
                     values = self.expression(node, scope)
-                    protected = [v for v in values if v[0] == 'module' and (any(v[1] == m['public_module'] for m in self.modules) or self.has_adopted_bindings(v[1]))]
+                    protected = [v for v in values if v[0] == 'module' and (any(v[1] == m['public_module'] for m in self.entries) or v[1] in self.namespaces or self.has_adopted_bindings(v[1]))]
                     loaders = [v for v in values if v[0] in ('external', 'module') and v[1].rsplit('.', 1)[-1] in PYTHON_LOADERS]
                     parent = self.parents.get(id(node))
                     simple_alias = ((isinstance(parent, ast.Assign) and len(parent.targets) == 1 and isinstance(parent.targets[0], ast.Name) or
                                      isinstance(parent, ast.AnnAssign) and isinstance(parent.target, ast.Name)) and parent.value is node)
-                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node or simple_alias):
+                    named_patch = isinstance(parent, ast.Call) and self.named_patch(parent, scope) is node
+                    if protected and not (isinstance(parent, ast.Attribute) and parent.value is node or simple_alias or named_patch or self.witness_element(node, scope)):
                         raise ValueError(name + ': opaque Python public module use')
                     if loaders and not (isinstance(parent, ast.Call) and parent.func is node or isinstance(parent, (ast.Assign, ast.AnnAssign)) and parent.value is node):
                         raise ValueError(name + ': opaque Python loader use')
@@ -493,17 +679,19 @@ class PythonModulePolicy:
                     targets = node.targets if isinstance(node, ast.Assign) else [node.target]
                     for target_node in targets:
                         if isinstance(target_node, ast.Name) and len(scope['bindings'].get(target_node.id, [])) > 1:
-                            if any(v[0] == 'module' and any(v[1] == m['public_module'] for m in self.modules) for v in self.binding(scope, target_node.id)):
+                            if any(v[0] == 'module' and any(v[1] == m['public_module'] for m in self.entries) for v in self.binding(scope, target_node.id)):
                                 raise ValueError(name + ': reassigned Python public module alias')
                             if any(v[0] in ('module', 'external') and v[1].rsplit('.', 1)[-1] in PYTHON_LOADERS for v in self.binding(scope, target_node.id)):
                                 raise ValueError(name + ': reassigned Python loader alias')
-                    if any(isinstance(t, ast.Name) and t.id == '__all__' for t in targets) and not any(name == m['public_entry'] for m in self.modules):
+                    if any(isinstance(t, ast.Name) and t.id == '__all__' for t in targets) and not any(name == m['public_entry'] for m in self.entries):
                         try: exports = ast.literal_eval(node.value)
                         except (ValueError, TypeError): exports = []
                         if isinstance(exports, (list, tuple)) and any(any(self.adopted_origin(v) for v in self.binding(scope, key)) for key in exports if isinstance(key, str)):
                             raise ValueError(name + ': forbidden Python public re-export declaration')
+                self.mock_mutation(node, scope)
                 if isinstance(node, ast.Call):
-                    if isinstance(node.func, ast.Name) and node.func.id in ('getattr', 'setattr', 'delattr', 'vars') and any(any(v[0] == 'adopted' for v in self.expression(arg, scope)) for arg in node.args):
+                    self.named_patch(node, scope)
+                    if isinstance(node.func, ast.Name) and node.func.id in ('getattr', 'setattr', 'delattr', 'vars') and any(any(v[0] in ('adopted', 'named') for v in self.expression(arg, scope)) for arg in node.args):
                         raise ValueError(name + ': reflective Python public callable access')
                     loader = self.loader(node, scope)
                     if loader:
@@ -539,7 +727,7 @@ class PythonModulePolicy:
                                     if level > len(parts): raise ValueError(name + ': relative Python loader escapes package')
                                     identity = '.'.join(parts[:len(parts) - level + 1] + [identity[level:]])
                             if literal:
-                                if any(identity == m['public_module'] or identity.startswith(m['public_module'] + '.') or m['public_module'].startswith(identity + '.') for m in self.modules) or self.has_adopted_bindings(identity):
+                                if any(identity == m['public_module'] or identity.startswith(m['public_module'] + '.') or m['public_module'].startswith(identity + '.') for m in self.entries) or self.has_adopted_bindings(identity):
                                     raise ValueError(name + ': dynamic access to adopted Python module')
                                 target = public_import(name, identity)
                                 for symbol in from_names:
@@ -563,22 +751,22 @@ class PythonModulePolicy:
 
 
 def python_policy(root, value):
-    return PythonModulePolicy(root, value) if value['version'] == 4 else None
+    return PythonModulePolicy(root, value) if value['version'] in (4, 5) else None
 
 
 def catalog(root):
     value = json.loads(contained(root, CATALOG).read_text())
     keys(value, ('format', 'version', 'discovery', 'shared_paths', 'contracts'),
-         ('javascript_module_policy', 'python_module_policy') if value.get('version') == 4 else ('javascript_module_policy',))
-    if value['format'] != 'disco-adopted-port-checks' or value['version'] not in (1, 2, 3, 4):
+         ('javascript_module_policy', 'python_module_policy') if value.get('version') in (4, 5) else ('javascript_module_policy',))
+    if value['format'] != 'disco-adopted-port-checks' or value['version'] not in (1, 2, 3, 4, 5):
         raise ValueError('Unsupported adopted-port catalog format/version')
     if value['version'] == 1 and 'javascript_module_policy' in value:
         raise ValueError('Catalog version 1 forbids module policy')
-    if value['version'] in (2, 3, 4) and 'javascript_module_policy' not in value:
+    if value['version'] in (2, 3, 4, 5) and 'javascript_module_policy' not in value:
         raise ValueError(f"Catalog version {value['version']} requires module policy")
-    if value['version'] == 4 and not isinstance(value.get('javascript_module_policy'), dict):
+    if value['version'] in (4, 5) and not isinstance(value.get('javascript_module_policy'), dict):
         raise ValueError('Catalog version 4 requires JavaScript module policy')
-    if value['version'] == 4 and not isinstance(value.get('python_module_policy'), dict):
+    if value['version'] in (4, 5) and not isinstance(value.get('python_module_policy'), dict):
         raise ValueError('Catalog version 4 requires Python module policy')
     for pattern in string_list(value['shared_paths'], 'shared_paths'):
         contained(root, pattern, exists=False)
@@ -609,12 +797,12 @@ def catalog(root):
         keys(entry['tests'], LANGUAGES, ('desktop',))
         for language in RUNNERS:
             declared_tests = string_list(entry['tests'].get(language, []), 'test paths')
-            if value['version'] == 4 and len(declared_tests) != len(set(declared_tests)):
+            if value['version'] in (4, 5) and len(declared_tests) != len(set(declared_tests)):
                 raise ValueError('Duplicate test path within contract: ' + entry['id'])
             for path in declared_tests:
                 contained(root, path)
                 if language == 'python' and not (path.endswith('.py') and (path.startswith('python/tests/') or
-                        value['version'] == 4 and any(path.startswith(prefix + '/') for prefix in value['python_module_policy'].get('test_roots', [])))):
+                        value['version'] in (4, 5) and any(path.startswith(prefix + '/') for prefix in value['python_module_policy'].get('test_roots', [])))):
                     raise ValueError(f'Invalid Python test path: {path}')
                 if language == 'javascript' and not (path.startswith('workspace-app/src/') and path.endswith('.test.js')):
                     raise ValueError(f'Invalid JavaScript test path: {path}')

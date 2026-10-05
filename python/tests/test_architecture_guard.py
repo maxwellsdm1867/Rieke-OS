@@ -183,7 +183,7 @@ class ArchitectureGuardTests(unittest.TestCase):
         self.assertTrue(result['javascript_required'])
 
     def test_unknown_versions_and_python_policy_are_not_implicitly_adopted(self):
-        for version in (0, 5, 99):
+        for version in (0, 6, 99):
             with self.subTest(version=version):
                 self.catalog['version'] = version
                 self.write_catalog()
@@ -597,6 +597,303 @@ class PythonPackagePolicyTests(unittest.TestCase):
         target = self.root / 'python/disco/recovery/tests/test_policy.py'; target.unlink()
         target.symlink_to(self.root / 'python/tests/test_central.py')
         self.assertIn('symlink', self.check(False, 'metadata')['error'])
+
+
+class PythonNamedEntryPolicyTests(unittest.TestCase):
+    """v5 named leaves via the existing CLI; no product imports or fixtures."""
+    write = PythonPackagePolicyTests.write
+    git = PythonPackagePolicyTests.git
+    cli = PythonPackagePolicyTests.cli
+    check = PythonPackagePolicyTests.check
+    fault = PythonPackagePolicyTests.fault
+
+    def setUp(self):
+        PythonPackagePolicyTests.setUp(self)
+        self.catalog['version'] = 5
+        self.write('python/disco/backup/__init__.py', '"""Inert backup namespace."""\n')
+        self.write('python/disco/backup/snapshot.py',
+                   'import pathlib\nLIMIT = 4\ndef save(value): return value\n'
+                   'def _existing(value): return value\nclass Snapshot:\n @staticmethod\n def empty(): return 0\n')
+        self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\n')
+        self.write('python/disco/backup/private.py', 'def secret(): return 9\n')
+        self.write('python/disco/backup/tests/__init__.py', '')
+        self.write('python/disco/backup/tests/test_snapshot.py',
+                   'import unittest\nfrom disco.backup.snapshot import save\n'
+                   'class Public(unittest.TestCase):\n def test_public(self): self.assertEqual(save(73), 73)\n')
+        self.module = {'contract_id': 'backup', 'root': 'python/disco/backup',
+                       'public_entries': [
+                           {'path': 'python/disco/backup/snapshot.py', 'module': 'disco.backup.snapshot',
+                            'exports': ['LIMIT', 'save', '_existing', 'Snapshot', 'pathlib']},
+                           {'path': 'python/disco/backup/clock.py', 'module': 'disco.backup.clock',
+                            'exports': ['LIMIT', 'tick']}], 'private_test_edges': []}
+        self.catalog['python_module_policy']['modules'].append(self.module)
+        self.catalog['python_module_policy']['test_roots'].append('python/disco/backup/tests')
+        self.contract = {'id': 'backup', 'contract': {'path': 'docs/contract.md', 'heading': 'Recovery'},
+                         'affected_paths': ['python/disco/backup/**'],
+                         'rules': [{'language': 'python', 'file': 'python/disco/backup/' + leaf,
+                                    'allow': ['pathlib'] if leaf == 'snapshot.py' else []}
+                                   for leaf in ('__init__.py', 'snapshot.py', 'clock.py', 'private.py')],
+                         'tests': {'python': ['python/disco/backup/tests/test_snapshot.py'], 'javascript': []}}
+        self.catalog['contracts'].append(self.contract)
+
+    def test_legacy_private_test_edge_does_not_allow_public_shim(self):
+        path = 'python/disco/recovery/implementation.py'
+        self.write(path, (self.root / path).read_text() + '\nfrom disco.recovery import callback as forwarded\n')
+        self.catalog['contracts'][0]['rules'][1]['allow'].append('disco.recovery')
+        test_path = 'python/disco/recovery/tests/test_policy.py'
+        self.catalog['python_module_policy']['modules'][0]['private_test_edges'] = [{'from': test_path, 'to': path}]
+        for version in (4, 5):
+            if version == 4:
+                self.catalog['version'] = 4
+                named = self.catalog['python_module_policy']['modules'].pop()
+                named_contract = self.catalog['contracts'].pop()
+                named_test_path = self.root / 'python/disco/backup/tests/test_snapshot.py'
+                named_test = named_test_path.read_text()
+                named_test_path.unlink()
+                self.catalog['python_module_policy']['test_roots'].remove('python/disco/backup/tests')
+            else:
+                self.catalog['version'] = 5
+                self.catalog['python_module_policy']['modules'].append(named)
+                self.catalog['contracts'].append(named_contract)
+                named_test_path.write_text(named_test)
+                self.catalog['python_module_policy']['test_roots'].append('python/disco/backup/tests')
+            for source in ('from disco.recovery.implementation import forwarded\nforwarded(1)',
+                           'import disco.recovery.implementation as impl\nimpl.forwarded(1)'):
+                with self.subTest(version=version, source=source):
+                    self.write(test_path, source)
+                    self.assertIn('public re-export shim', self.check(False)['error'])
+
+    def test_named_import_forms_classes_constants_and_leaf_identity(self):
+        sources = [
+            'import disco.backup.snapshot as snapshot\nanswer = snapshot.save(snapshot.LIMIT)',
+            'from disco.backup import snapshot as snapshot\nanswer = snapshot._existing(1)',
+            'from disco.backup.snapshot import Snapshot, LIMIT\nanswer = Snapshot.empty() + LIMIT',
+            'import disco.backup.snapshot\nanswer = disco.backup.snapshot.save(1)',
+            'from disco.backup.snapshot import pathlib\nanswer = pathlib.Path("owned")',
+        ]
+        for source in sources:
+            with self.subTest(source=source):
+                self.write('python/consumer.py', source); self.check()
+        # Import execution only in this inert fixture: prove no facade/module copy.
+        self.write('python/disco/backup/tests/test_snapshot.py',
+                   'import unittest\nimport disco.backup.snapshot as direct\n'
+                   'from disco.backup import snapshot as parent\n'
+                   'class Identity(unittest.TestCase):\n def test_identity(self): self.assertIs(direct.save, parent.save)\n')
+        result = self.cli('test', '--all', '--language', 'python')
+        self.assertEqual(result['status'], 'passed')
+
+    def test_entry_specific_exports_and_default_private_edges(self):
+        for source in (
+            'from disco.backup.clock import save',
+            'import disco.backup.clock as clock\nclock.save(1)',
+            'from disco.backup import private',
+            'import disco.backup.private as private',
+            'from disco.backup.snapshot import *',
+            'from disco.backup import *',
+            'import disco.backup as backup\nbackup.private.secret()',
+            'from disco.backup.snapshot import Snapshot\nSnapshot.__dict__',
+            'from disco.backup.snapshot import save\nsave.__globals__',
+            'import disco.backup.snapshot as s\nforward(s)',
+            'import disco.backup.snapshot as s\ngetattr(s,"save")',
+        ):
+            with self.subTest(source=source): self.fault(source)
+
+    def test_v4_rejects_new_shape_and_v5_does_not_loosen_legacy_entry(self):
+        self.catalog['version'] = 4
+        self.assertIn('catalog fields', self.check(False, 'metadata')['error'])
+        self.catalog['version'] = 5
+        for source in ('from disco import recovery', 'import disco.recovery',
+                       'from disco.recovery import implementation',
+                       'from disco.recovery import callback\ncallback.__globals__',
+                       'import disco.recovery as r\nforward(r)'):
+            with self.subTest(source=source): self.fault(source)
+        self.write('python/consumer.py', 'from disco.recovery import callback\ncallback(1)')
+        self.check()
+
+    def test_namespace_initializers_and_exact_entry_declarations(self):
+        for path in ('python/disco/__init__.py', 'python/disco/backup/__init__.py'):
+            original = (self.root / path).read_text()
+            for source in ('import flask', 'VALUE = 1', 'from . import snapshot'):
+                self.write(path, source)
+                self.assertIn('inert initializer', self.check(False, 'metadata')['error'])
+            self.write(path, original)
+        entry = self.module['public_entries'][0]
+        for key, value in [('module', 'disco.backup.wrong'), ('path', 'python/disco/backup/__init__.py'),
+                           ('exports', ['save', 'save']), ('exports', ['*']), ('exports', ['__dict__'])]:
+            original = entry[key]; entry[key] = value
+            self.check(False, 'metadata'); entry[key] = original
+        self.module['public_entries'].append(dict(entry)); self.check(False, 'metadata')
+        self.module['public_entries'].pop()
+        self.write('python/disco/backup/snapshot.py', 'save: object')
+        self.assertIn('Missing Python named export', self.check(False)['error'])
+
+    def test_named_shims_private_exports_and_dynamic_loaders_fail(self):
+        self.write('python/helper.py', 'from disco.backup.snapshot import save\n')
+        for source in ('from helper import save', 'import helper\nhelper.save(1)',
+                       'from importlib import import_module\nimport_module("disco.backup.snapshot")',
+                       '__import__("disco.backup", fromlist=["snapshot"])',
+                       'from importlib import import_module as load\nload(".snapshot", "disco.backup")'):
+            with self.subTest(source=source): self.fault(source)
+        self.write('python/consumer.py', '')
+        self.write('python/disco/backup/snapshot.py',
+                   (self.root / 'python/disco/backup/snapshot.py').read_text() + '\nfrom . import private as hidden\n')
+        self.contract['rules'][1]['allow'].append('disco.backup')
+        self.module['public_entries'][0]['exports'].append('hidden')
+        self.assertIn('exposes private module', self.check(False)['error'])
+
+    def test_same_owner_private_use_and_classified_test_fixture_imports(self):
+        path = 'python/disco/backup/snapshot.py'
+        self.write(path, (self.root / path).read_text() + '\nfrom .private import secret\ndef use_private(): return secret()\n')
+        self.contract['rules'][1]['allow'].append('disco.backup.private')
+        self.check()
+        self.module['public_entries'][0]['exports'].append('secret')
+        self.assertIn('exposes private module', self.check(False)['error'])
+        self.module['public_entries'][0]['exports'].remove('secret')
+        self.write('python/disco/backup/tests/helper.py', 'VALUE = 71\n')
+        self.write('python/tests/test_central.py', 'from disco.backup.tests.helper import VALUE\n')
+        self.check()
+        self.write('python/consumer.py', 'from disco.backup.tests.helper import VALUE\n')
+        self.assertIn('production cannot import', self.check(False)['error'])
+
+    def test_private_constant_and_alias_cannot_be_declared_public_indirectly(self):
+        self.write('python/disco/backup/private.py', 'VALUE = 91\n')
+        original = (self.root / 'python/disco/backup/snapshot.py').read_text()
+        self.contract['rules'][1]['allow'].append('disco.backup.private')
+        self.module['public_entries'][0]['exports'].append('leak')
+        for source in ('from .private import VALUE as leak',
+                       'from .private import VALUE\nleak = VALUE',
+                       'from . import private\nleak = private.VALUE'):
+            self.write('python/disco/backup/snapshot.py', original + '\n' + source + '\n')
+            if source.startswith('from . import'): self.contract['rules'][1]['allow'].append('disco.backup')
+            self.assertIn('exposes private module', self.check(False)['error'])
+
+    def test_named_mode_cannot_expand_private_test_exception(self):
+        test = 'python/disco/backup/tests/test_snapshot.py'
+        self.write(test, 'from disco.backup.private import secret\n')
+        self.assertIn('private Python', self.check(False)['error'])
+        self.module['private_test_edges'] = [{'from': test, 'to': 'python/disco/backup/private.py'}]
+        self.check()
+        self.write(test, 'from disco.backup.snapshot import save\n')
+        self.assertIn('Unused Python private test', self.check(False)['error'])
+
+    def test_new_consumer_maps_both_owners_and_runs_local_public_tests(self):
+        self.cli('check', '--language', 'metadata')
+        self.git('add', '-A'); self.git('commit', '-qm', 'named baseline')
+        base = self.git('rev-parse', 'HEAD')
+        self.write('python/new_consumer.py', 'from disco.backup.snapshot import save\n')
+        self.git('add', '-A'); self.git('commit', '-qm', 'new named consumer')
+        result = self.cli('plan', '--base', base)
+        self.assertIn('backup', result['affected_contracts'])
+        self.assertIn('recovery', result['affected_contracts'])
+        self.assertIn('python/disco/backup/tests/test_snapshot.py', result['tests']['python'])
+        self.assertIn('python/new_consumer.py', result['source_sha256'])
+        self.assertEqual(self.cli('test', '--base', base, '--language', 'python')['status'], 'passed')
+
+    def test_named_test_patches_preserve_module_and_declared_values(self):
+        sources = [
+            'from unittest.mock import patch\nimport disco.backup.snapshot as s\nwith patch.object(s,"LIMIT",9): pass',
+            'from unittest.mock import patch as p\nfrom disco.backup import snapshot as s\nwith p.object(s,"_existing",return_value=9): pass',
+            'import unittest.mock as mock\nimport disco.backup.snapshot as s\nwith mock.patch.object(s.pathlib.Path,"home"): pass',
+            'from unittest.mock import patch\nwith patch("disco.backup.snapshot.LIMIT",9): pass',
+            'from unittest.mock import patch\nwith patch("disco.backup.snapshot.pathlib.Path.home"): pass',
+        ]
+        for source in sources:
+            with self.subTest(source=source):
+                self.write('python/tests/test_central.py', source); self.check()
+        self.write('python/disco/backup/tests/test_snapshot.py',
+                   'import unittest\nfrom unittest.mock import patch\nimport disco.backup.snapshot as snapshot\n'
+                   'class Identity(unittest.TestCase):\n def test_patch(self):\n'
+                   '  with patch.object(snapshot,"_existing",return_value=91): self.assertEqual(snapshot._existing(0),91)\n'
+                   '  self.assertEqual(snapshot._existing(0),0)\n')
+        self.write('python/tests/test_central.py', '')
+        self.assertEqual(self.cli('test', '--all', '--language', 'python')['status'], 'passed')
+
+    def test_named_module_patch_exception_is_not_general_reflection(self):
+        prefix = 'from unittest.mock import patch\nimport disco.backup.snapshot as s\n'
+        for tail in ('patch.object(s,"unknown",9)', 'patch.object(s,name,9)',
+                     'patch.object(s,"__dict__",{})', 'patch = object()\npatch.object(s,"LIMIT",9)',
+                     'def use(patch):\n patch.object(s,"LIMIT",9)',
+                     'def fake(*args): pass\nfake(s,"LIMIT",9)',
+                     'forward(s)', 'getattr(s,"LIMIT")', 'vars(s)',
+                     'patch("disco.backup.private.secret",9)',
+                     'patch("disco.backup.snapshot.unknown",9)',
+                     'patch("disco.backup.snapshot.Snapshot.__dict__",{})',
+                     'patch(target,9)'):
+            with self.subTest(tail=tail):
+                self.write('python/tests/test_central.py', prefix + tail); self.check(False)
+        self.write('python/tests/test_central.py', '')
+        for source in (prefix + 'patch.object(s,"LIMIT",9)',
+                       prefix + 'patch("disco.backup.snapshot.LIMIT",9)'):
+            with self.subTest(production=source): self.fault(source)
+
+    def test_string_patch_checks_every_owned_module_attribute(self):
+        path = 'python/disco/backup/snapshot.py'
+        self.write(path, (self.root / path).read_text() + '\nfrom . import clock\n')
+        self.module['public_entries'][0]['exports'].append('clock')
+        self.contract['rules'][1]['allow'].append('disco.backup')
+        self.write('python/disco/backup/clock.py', 'LIMIT = 8\ndef tick(): return 1\nhidden = 12\n')
+        for target in ('clock.LIMIT', 'Snapshot.empty', 'pathlib.Path.home'):
+            self.write('python/tests/test_central.py',
+                       f'from unittest.mock import patch\npatch("disco.backup.snapshot.{target}", 9)\n')
+            self.check()
+        self.write('python/tests/test_central.py',
+                   'from unittest.mock import patch\npatch("disco.backup.snapshot.clock.hidden", 9)\n')
+        self.check(False)
+
+    def test_mock_attribute_mutations_cannot_spoof_patch_identity(self):
+        prefix = ('from unittest.mock import patch\nimport unittest.mock as mock\n'
+                  'import disco.backup.snapshot as s\ndef fake(*args): pass\n')
+        for mutation in ('patch.object = fake', 'mock.patch = fake',
+                         'del patch.object', 'del mock.patch',
+                         'setattr(patch, "object", fake)', 'delattr(mock, "patch")',
+                         'from builtins import setattr as change\nchange(mock, "patch", fake)',
+                         'change = setattr\nchange(mock, "patch", fake)',
+                         'alias = patch\nalias.object = fake',
+                         'mock.__dict__["patch"] = fake',
+                         'del patch.__dict__["object"]'):
+            with self.subTest(mutation=mutation):
+                self.write('python/tests/test_central.py', prefix + mutation + '\npatch.object(s,"LIMIT",9)\n')
+                self.check(False)
+
+    def test_finite_witness_iteration_reads_exact_leaf_files(self):
+        prefix = 'from pathlib import Path\nimport disco.backup.snapshot as snapshot\nimport disco.backup.clock as clock\n'
+        for source in (
+            prefix + 'witness = [Path(module.__file__) for module in (snapshot,clock)]',
+            prefix + 'witness = tuple(Path(module.__file__) for module in [snapshot,clock])',
+            prefix + 'for module in (snapshot,clock):\n witness = Path(module.__file__)',
+            prefix + 'witness = Path(snapshot.__file__)',
+        ):
+            with self.subTest(source=source):
+                self.write('python/consumer.py', source); self.check()
+        self.write('python/disco/backup/tests/test_snapshot.py',
+                   'import unittest\nfrom pathlib import Path\nimport disco.backup.snapshot as snapshot\n'
+                   'class Leaf(unittest.TestCase):\n def test_file(self): self.assertEqual(Path(snapshot.__file__).name,"snapshot.py")\n')
+        self.assertEqual(self.cli('test', '--all', '--language', 'python')['status'], 'passed')
+
+    def test_witness_iteration_does_not_expose_private_or_opaque_modules(self):
+        prefix = 'import disco.backup.snapshot as snapshot\n'
+        for tail in (
+            'files = [module.__dict__ for module in (snapshot,)]',
+            'files = [module.unknown for module in (snapshot,)]',
+            'files = [forward(module) for module in (snapshot,)]',
+            'modules = (snapshot,)\nfiles = [m.__file__ for m in modules]',
+            'modules = [snapshot]\nmodules.append(other)',
+            'snapshot.__file__ = "wrong.py"',
+            'for module in (snapshot,):\n module = other\n path = module.__file__',
+            'for module in (snapshot,):\n def leak(): return module',
+            'files = [getattr(module,"LIMIT") for module in (snapshot,)]',
+        ):
+            with self.subTest(tail=tail): self.fault(prefix + tail)
+
+    def test_named_value_reflection_and_private_loader_remain_rejected(self):
+        for source in (
+            'from disco.backup.snapshot import save\ngetattr(save,"__globals__")',
+            'from disco.backup.snapshot import Snapshot\nSnapshot.empty.__globals__',
+            'from disco.backup.snapshot import Snapshot\nvars(Snapshot)',
+            'from importlib import import_module as load\nload("disco.backup.snapshot")',
+            'import disco.backup.snapshot as s\ns.__dict__["private"]',
+        ):
+            with self.subTest(source=source): self.fault(source)
 
 
 if __name__ == '__main__': unittest.main()
