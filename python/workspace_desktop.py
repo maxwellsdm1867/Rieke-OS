@@ -807,8 +807,9 @@ def main(argv=None):
     # and explicit Verify. Normal launches check compatibility and required paths;
     # project ownership, recovery and scientific source validation remain separate.
     manifest = validate_desktop_runtime(runtime)
-    from workspace_bootstrap import runtime_paths
-    runtime_config = runtime_paths()
+    runtime_config = {'retinanalysis': str(runtime / 'parser'),
+                      'managed_root': str(Path(os.environ.get('RECORDING_WORKSPACE_ROOT') or
+                                              Path.home() / 'Documents/RecordingWorkspace').expanduser().resolve())}
     preference = user_state / 'preferences/workspace-selection.json'
     if preference.exists():
         if preference.is_symlink() or preference.stat().st_size > 65536:

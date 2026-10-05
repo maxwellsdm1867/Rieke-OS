@@ -45,7 +45,7 @@ if (bootstrap) {
   require('node:fs').mkdirSync(installerState, {recursive:true,mode:0o700});
   app.setPath('userData', installerState);
 }
-let supervisor, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
+let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
 let draftStore, viewUnavailable = false;
 let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Opening your workspace.'};
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
@@ -231,7 +231,12 @@ async function startScientificUI() {
   startupInProgress = true;
   try {
     let origin;
-    if (supervisor.child && !supervisor.exited) {
+    if (backendStartup) {
+      const started=await backendStartup;backendStartup=null;
+      if(started.error)throw started.error;
+      if(supervisor.exited||!supervisor.ready)throw Error('The backend stopped before the workspace window was ready.');
+      origin=started.origin;
+    } else if (supervisor.child && !supervisor.exited) {
       const health = await supervisor.api('/api/desktop/health');
       if (!matchesHealth(health, supervisor.expectedHealth())) throw new Error('Existing backend is not ready for recovery');
       origin = supervisor.origin; supervisor.ready = true; supervisor.origins.add(origin);
@@ -361,10 +366,13 @@ else {
   app.on('window-all-closed', () => { if (quitAuthorized) app.quit(); });
   app.whenReady().then(async () => {
     app.setAboutPanelOptions({applicationName:preview ? 'DISCO Preview' : 'Disco',applicationVersion:app.getVersion(),copyright:preview ? `Source ${preview.source_commit}` : 'Data Inspection, Selection, Comparison Operations · A Rieke Lab OS'});
-    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
-    draftStore = new DraftStore(app.getPath('userData'));
     supervisor = new ServiceSupervisor({resourcesPath: app.isPackaged ? process.resourcesPath : path.join(__dirname, 'build'),
       userData: app.getPath('userData'), appVersion: app.getVersion(), onFailure: recovery});
+    // Backend ownership/readiness can progress while the native window and its
+    // presentation preferences initialize. Store rejection until UI can show it.
+    if(!bootstrap)backendStartup=supervisor.start().then(origin=>({origin}),error=>({error}));
+    appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
+    draftStore = new DraftStore(app.getPath('userData'));
     startupSession=new StartupSession(app.getPath('userData'),app.getVersion()+':view-v1');
     await startupSession.load();
     if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
