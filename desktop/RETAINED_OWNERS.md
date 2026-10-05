@@ -13,6 +13,39 @@ own contracts. This guide covers the remaining startup/state owners, not install
 | Profile/path policy: [configureBranding](branding.cjs), [localPreview](local-preview.cjs), [require_external_data_path](../python/workspace_desktop_paths.py) | Shared policy spans Electron startup, isolated preview and Python mutable-data callers. It is not subordinate to startup preference. Existing entry/config paths stay stable. |
 | Location index: [workspace_startup_registry](../python/workspace_startup_registry.py) | Existing bounded preference/index owner serves launcher inventory and project transfer. Moving it under Electron startup would obscure Python callers and imply runtime authority it does not have. |
 
+## Design assessment and progressive disclosure
+
+Use the owner table to choose the entry, then read only its contract below and its
+linked examples. These decisions follow the installed Codebase Design/Deepening
+and Improve Codebase Architecture guidance: clarity means callers need less
+knowledge, not fewer exports or fewer lines.
+
+The deletion test favors retaining these owners. Removing ServiceSupervisor moves
+manifest/bind/recovery/control knowledge into main and other callers; it does not
+remove that knowledge. Removing DesktopServices or DesktopBoundary redistributes
+process and admission obligations among HTTP/native callers. Removing the index or
+path-policy module repeats preference validation and resource protection across
+launcher/transfer callers. Conversely, adding a forwarding runtime facade or merely
+moving restoration HTTP leaves the same knowledge with main and adds navigation.
+Branding is deliberately small policy used during composition; inventing a profile
+manager around it would make callers learn an additional interface without hiding
+more obligations. KEEP is a locality decision, not a claim that every current
+interface is optimal or that native proof has been requalified.
+
+| Dependency category | Existing seam and appropriate evidence |
+| --- | --- |
+| In-process | Health comparisons, manifest checks, branding sequence and index ordering are exercised through their owner interfaces. No new adapter is needed. |
+| Local-substitutable | Filesystem paths/manifests use owned temporary fixtures; preview accepts filesystem and Electron app stand-ins. This checks decisions, not filesystem durability or real Electron initialization. |
+| Remote but owned | Root/child desktop HTTP belongs to this application. ServiceSupervisor already accepts a request adapter; injected responses check transport admission. Existing restoration handler examples use fake owned transport. A new startup-cancel port must hide proof and cleanup knowledge and needs separate contract review. |
+| True external | OS process inspection, native database/process behavior and Electron/macOS integration cannot be certified by those local stand-ins. Existing injection keeps selected decisions testable; host/native qualification stays separate. |
+
+There is no replaced shallow module in this KEEP change, so existing contract tests
+remain. The three small public examples add executable discovery of resource,
+transport and preview obligations without creating new runtime seams. In particular,
+the transport example supplies synthetic post-bind state through existing instance
+properties; it does not execute or claim coverage of the bind handshake. The existing
+supervisor startup/inspection suites retain that separate responsibility.
+
 ## Root and child contract
 
 Construct `ServiceSupervisor` with explicit `resourcesPath`, `userData` and
