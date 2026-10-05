@@ -46,6 +46,34 @@ function twoEntryFixture(){
  return f;
 }
 
+test('v4 requires Python policy and preserves v3 multi-entry JavaScript checks',()=>{
+ const f=twoEntryFixture();try{
+  f.catalog.version=4;
+  fails(f,/requires Python module policy/);
+  f.write('python/disco/__init__.py','');
+  f.write('python/disco/recovery/__init__.py','from .implementation import callback\n__all__ = ("callback",)\n');
+  f.write('python/disco/recovery/implementation.py','def callback(): pass\n');
+  f.write('python/disco/recovery/tests/__init__.py','');
+  f.write('python/disco/recovery/tests/test_public.py','from disco.recovery import callback\n');
+  f.write('python/tests/__init__.py','');
+  copyFileSync(fileURLToPath(new URL('../../tools/architecture_guard.py',import.meta.url)),join(f.root,'tools/architecture_guard.py'));
+  f.catalog.contracts.push({id:'recovery',contract:{path:'docs/contract.md',heading:'Presentation'},affected_paths:['python/**'],
+   rules:[{language:'python',file:'python/disco/recovery/__init__.py',allow:['disco.recovery.implementation']},
+          {language:'python',file:'python/disco/recovery/implementation.py',allow:[]}],
+   tests:{python:['python/disco/recovery/tests/test_public.py'],javascript:[]}});
+  f.catalog.python_module_policy={source_root:'python',test_roots:['python/tests','python/disco/recovery/tests'],fixture_pythonpath:['python/tests'],reviewed_loader_sites:[],
+   modules:[{contract_id:'recovery',root:'python/disco/recovery',public_module:'disco.recovery',public_entry:'python/disco/recovery/__init__.py',
+    public_exports:[{name:'callback',from:'python/disco/recovery/implementation.py'}],private_test_edges:[]}]};
+  assert.equal(f.check().exit,0);
+  assert.equal(f.check({language:'python'}).exit,0);
+  const entry=f.policy.modules[0].public_entries[1];
+  f.write(entry.path,'export const wrong=1;');fails(f,/export/);
+  f.write(entry.path,'export default function hook(){}');
+  f.write(f.s+'consumer.js',"import './presentation/internal/helper.js';");fails(f,/forbidden private/);
+  f.catalog.version=3;fails(f,/Invalid catalog fields/);
+ }finally{f.close();}
+});
+
 test('v3 two-entry modules preserve per-file named/default surfaces and public consumers',()=>{
  const f=twoEntryFixture();try{
   assert.equal(f.check().exit,0);
@@ -98,7 +126,7 @@ test('versioned schemas retain v1/v2 and reject mixed, missing and future polici
   f.catalog.version=2;fails(f,/version 2 requires/);
   f.catalog.version=1;assert.equal(f.check().exit,0);
   f.catalog.javascript_module_policy=f.policy;fails(f,/version 1 forbids/);
-  for(const version of [0,4,99]){f.catalog.version=version;fails(f,/Unsupported adopted-port/);}
+  for(const version of [0,5,99]){f.catalog.version=version;fails(f,/Unsupported adopted-port/);}
   for(const version of [1,2,3]){
    f.catalog.version=version;f.catalog.python_module_policy={};fails(f,/Invalid catalog fields/);delete f.catalog.python_module_policy;
   }
