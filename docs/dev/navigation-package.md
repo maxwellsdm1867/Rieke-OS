@@ -38,3 +38,18 @@ whole-bundle audit and actual waveform/list UI evidence must refer to those byte
 This is a local unsigned testing package for Apple silicon, not release promotion.
 The host is macOS 27.0.1; macOS 14 runtime behavior and Developer ID/notarization
 remain unqualified. A source test or static native audit does not establish them.
+
+## Installed package and main handoff (2026-10-05)
+
+[The local package record](local-package-0.1.8.json) binds the installed 0.1.8
+app and ZIP to clean source commit `5417c5fa26662dd73e4e21ef12a6eec2ce1133b7`,
+including the scoped clipboard-write fix. Its SHA-256 identifies the exact ZIP;
+the package and full raw receipts remain in the local kit directory recorded
+there. The binary is not stored in Git.
+
+GitHub main at handoff preparation was `d47dcab534220fa940f917f66f90e71af4dd2f56`,
+an ancestor of this source. Startup branch tip `a294c908` has two UI commits
+after the shared startup base; their changes are incorporated by `cde28e3`
+with the optional-metadata integration retained. This records content inclusion,
+not merge ancestry. The tracking commit changes documentation only and does not
+relabel the packaged source or benchmark commit.

@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "product": "Disco",
+  "version": "0.1.8",
+  "recorded_date": "2026-10-05",
+  "status": "local unsigned testing package; not release promotion",
+  "platform": "macOS arm64",
+  "source_commit": "5417c5fa26662dd73e4e21ef12a6eec2ce1133b7",
+  "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
+  "included_startup_ui_commits": [
+    "ecbff41",
+    "a294c908d5dac1071ee23ee821ce62988fac4412"
+  ],
+  "archive": {
+    "filename": "Disco-0.1.8-clipboard-arm64.zip",
+    "bytes": 622054330,
+    "sha256": "981288d4b89eb5f82735e59a7a01f7a3914774203d47b34e223ab6849ddfcfb0"
+  },
+  "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
+  "installed_app": "~/Applications/Disco.app",
+  "evidence": {
+    "frontend": {
+      "source_commit": "cde28e3f3a83f17f2a87f2771c1327c242b946cb",
+      "passed": 843,
+      "unchanged_in_packaged_source": true
+    },
+    "desktop": {
+      "passed": 89,
+      "failed": 0
+    },
+    "architecture_guard": "passed",
+    "core_benchmark": "package-source/benchmarks/results/clipboard-package-001/benchmark.json",
+    "packaged_smoke": {
+      "field_id_copy": "passed; OS clipboard matched epoch",
+      "clipboard_read": "denied as intended",
+      "waveform_navigation": "passed",
+      "clean_shutdown": true
+    },
+    "local_receipts": [
+      "clipboard-validation.json",
+      "clipboard-package-provenance.json",
+      "clipboard-native-compatibility.json",
+      "clipboard-native/receipt.json",
+      "clipboard-installed.json"
+    ]
+  },
+  "qualification_limits": [
+    "No Developer ID signature or notarization",
+    "macOS 14 runtime behavior unqualified",
+    "Intel unsupported by this artifact",
+    "Complete release promotion requirements remain unqualified"
+  ]
+}
