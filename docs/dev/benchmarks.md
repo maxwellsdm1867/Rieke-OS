@@ -44,6 +44,20 @@ including an OS upgrade. The gate independently resolves the expected commit
 and reconstructs tree, release metadata, schema versions and source hashes from
 Git objects. Matching start/end declarations alone are insufficient. Comparison
 also verifies both recorded commits; keep the necessary Git history available.
+Suite provenance reads the exact revision's runner path recipe without executing
+historical Python. New runners declare literal recipe version 1; the four reviewed
+legacy runner blobs are accepted by exact source hash, including the original
+recipe without pinned requirements. Unknown legacy bytes, malformed declarations,
+missing files and symlink inputs fail closed. Navigation tests may use explicit
+nested paths; execution and hashing share those declarations. Historical support
+files come from that commit's Git tree, not the current checkout.
+
+The receipt schema and registry are unchanged. A test relocation changes path keys
+and therefore suite identity. Reconstructing an old receipt's original digest does
+not make it current or comparable to a different suite; comparison still requires
+full suite equality and the gate still checks the current working suite. Preserve
+original receipts rather than renaming their paths or rewriting their hashes.
+
 CPU identity, positive logical CPU count and numeric positive RAM size must be
 known for gate/comparison qualification. Matching `unavailable` values are not
 hardware equivalence. Sandbox-denied hardware reads yield diagnostic-only evidence;

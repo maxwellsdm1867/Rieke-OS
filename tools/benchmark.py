@@ -2,6 +2,7 @@
 """Repo-local fixed core benchmark runner, comparison and fail-closed release gate."""
 from __future__ import annotations
 import argparse
+import ast
 import datetime as dt
 import hashlib
 import importlib.metadata
@@ -14,6 +15,7 @@ import re
 import signal
 import sqlite3
 import statistics
+import stat
 import subprocess
 import sys
 import tempfile
@@ -27,13 +29,42 @@ DB_TESTS = ['test_workspace_sqlite', 'test_workspace_recipes', 'test_workspace_i
             'test_workspace_epoch_page_performance']
 
 
-def frontend_command(*, correctness=False):
-    # Fixed committed preload: its bytes are included by suite_identity.
-    command = ['node', '--import', str(ROOT / 'workspace-app/src/test-support/reactTestEnvironment.js')]
-    if correctness:
-        return command + ['--test', '--test-reporter=tap', '--test-concurrency=1',
-                          *[str(ROOT / f'workspace-app/src/{n}.test.js') for n in NAV_TESTS]]
-    return command + [str(ROOT / 'workspace-app/src/benchmarkNavigation.mjs')]
+SUITE_PATHS_VERSION = 1
+SUITE_STATIC_FILES = [
+    'tools/benchmark.py',
+    'benchmarks/requirements-py311.txt',
+    'benchmarks/registry.json',
+    'benchmarks/receipt.schema.json',
+    'benchmarks/database.py',
+    'workspace-app/src/benchmarkNavigation.mjs',
+    'workspace-app/isolatedViteCache.js',
+    'tools/metadata_qualification/core_adapter.py',
+    'tools/metadata_qualification/truth.py',
+    'tools/metadata_qualification/native-truth.json',
+    'tools/metadata_qualification/native-truth.seal.json',
+    'python/tests/test_workspace_api.py',
+    'python/tests/test_workspace_curation.py',
+    'python/tests/test_workspace_matlab.py',
+]
+SUITE_SUPPORT_ROOT = 'workspace-app/src/test-support'
+
+
+def _navigation_paths(recipe):
+    return [f'workspace-app/src/{name}.test.js' for name in recipe['nav_tests']]
+
+
+def _frontend_command(recipe, root, correctness):
+    paths = _navigation_paths(recipe) if correctness else ['workspace-app/src/benchmarkNavigation.mjs']
+    preload = 'workspace-app/src/test-support/reactTestEnvironment.js'
+    for name in [preload, *paths]:
+        _working_bytes(root, name)  # Missing/mislocated inputs fail before launch.
+    command = ['node', '--import', str(root / preload)]
+    flags = ['--test', '--test-reporter=tap', '--test-concurrency=1'] if correctness else []
+    return command + flags + [str(root / name) for name in paths]
+
+
+def frontend_command(*, correctness=False, root=ROOT):
+    return _frontend_command(_suite_recipe(_working_bytes(root, 'tools/benchmark.py')), root, correctness)
 
 
 def canonical(value):
@@ -63,19 +94,194 @@ def resolve_commit(value, root=ROOT):
         raise ValueError('Expected commit cannot be resolved in this repository') from exc
 
 
+def _path_identity(value):
+    if (not isinstance(value, str) or not value or '\\' in value or
+            any(ord(char) < 32 or ord(char) == 127 for char in value) or
+            any(part in ('', '.', '..') for part in value.split('/'))):
+        raise ValueError(f'Noncanonical suite path: {value!r}')
+    return value
+
+
+def _literal_declarations(tree, names):
+    declarations = {}
+    targets = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name) and node.targets[0].id in names:
+            name = node.targets[0].id
+            if name in declarations:
+                raise ValueError(f'Rebound suite declaration: {name}')
+            try:
+                declarations[name] = ast.literal_eval(node.value)
+            except (ValueError, TypeError) as exc:
+                raise ValueError(f'Nonliteral suite declaration: {name}') from exc
+            targets.add(id(node.targets[0]))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign, ast.Delete)):
+            bindings = node.targets if isinstance(node, (ast.Assign, ast.Delete)) else [node.target]
+            for binding in bindings:
+                if id(binding) not in targets and any(isinstance(part, ast.Name) and part.id in names for part in ast.walk(binding)):
+                    raise ValueError('Unsupported suite declaration mutation/binding')
+        if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)) and node.id in names and id(node) not in targets:
+            raise ValueError(f'Unsupported suite declaration binding: {node.id}')
+        if isinstance(node, (ast.Global, ast.Nonlocal)) and names.intersection(node.names):
+            raise ValueError('Rebound suite declaration')
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and node.name in names:
+            raise ValueError('Unsupported suite declaration binding')
+        if isinstance(node, (ast.ExceptHandler, ast.MatchAs, ast.MatchStar)) and node.name in names:
+            raise ValueError('Unsupported suite declaration binding')
+        if isinstance(node, ast.MatchMapping) and node.rest in names:
+            raise ValueError('Unsupported suite declaration binding')
+        if isinstance(node, ast.alias) and (node.asname or node.name.split('.')[0]) in names:
+            raise ValueError('Unsupported suite declaration import')
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) and node.func.value.id in names:
+            raise ValueError('Suite declaration mutation is unsupported')
+    if set(declarations) != names:
+        raise ValueError('Missing required suite declarations')
+    return declarations
+
+
+def _suite_recipe(raw):
+    """Read bounded literal metadata; never execute a revision's runner."""
+    try:
+        tree = ast.parse(raw.decode('utf-8'))
+    except (SyntaxError, UnicodeDecodeError) as exc:
+        raise ValueError('Invalid suite runner source') from exc
+    names = {'SUITE_PATHS_VERSION', 'SUITE_STATIC_FILES', 'SUITE_SUPPORT_ROOT', 'NAV_TESTS', 'DB_TESTS'}
+    versioned = any(isinstance(node, ast.Name) and node.id == 'SUITE_PATHS_VERSION' for node in ast.walk(tree))
+    if versioned:
+        values = _literal_declarations(tree, names)
+        if type(values['SUITE_PATHS_VERSION']) is not int or values['SUITE_PATHS_VERSION'] != 1:
+            raise ValueError('Unsupported suite path version')
+        # Version 1 is this fixed recipe, not a configurable manifest language.
+        expected = ['tools/benchmark.py', 'benchmarks/requirements-py311.txt',
+                    'benchmarks/registry.json', 'benchmarks/receipt.schema.json', 'benchmarks/database.py',
+                    'workspace-app/src/benchmarkNavigation.mjs', 'workspace-app/isolatedViteCache.js',
+                    'tools/metadata_qualification/core_adapter.py', 'tools/metadata_qualification/truth.py',
+                    'tools/metadata_qualification/native-truth.json', 'tools/metadata_qualification/native-truth.seal.json',
+                    'python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
+                    'python/tests/test_workspace_matlab.py']
+        if values['SUITE_STATIC_FILES'] != expected or values['SUITE_SUPPORT_ROOT'] != 'workspace-app/src/test-support':
+            raise ValueError('Unsupported version 1 static/support recipe')
+        static = values['SUITE_STATIC_FILES']
+    else:
+        if sha(raw) not in {
+            '1a6cf6e7b458e53b420060ef2c1ca6fd995414b027e986ccef3cf634ff1b4c15',
+            '7f869968d21470947c1eff71039da07700e90b226d8297c37b29003f77730a86',
+            'e55f10ae86eea89ea2a47ffd494b66ff5ede1c0e0404adcfcfaf6895431cc3ef',
+            '45e45f94f40f7272a67a5588b405fc47ada401a9ab61329293c208e51bceff60',
+        }:
+            raise ValueError('Unsupported legacy suite recipe')
+        values = _literal_declarations(tree, {'NAV_TESTS', 'DB_TESTS'})
+        owner = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'suite_identity')
+        initial = next(node.value for node in owner.body if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name) and node.targets[0].id == 'paths')
+        helpers = [node.value for node in owner.body if isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name) and node.target.id == 'paths' and isinstance(node.value, ast.List)][-1]
+        static = ast.literal_eval(initial) + ast.literal_eval(helpers)
+    for name in ('NAV_TESTS', 'DB_TESTS'):
+        items = values[name]
+        if not isinstance(items, list) or not items or any(not isinstance(item, str) or not item for item in items) or len(set(items)) != len(items):
+            raise ValueError(f'Invalid suite list: {name}')
+        for item in items:
+            _path_identity(item)
+            if name == 'NAV_TESTS' and any(not re.fullmatch(r'[A-Za-z0-9_-]+', part) for part in item.split('/')):
+                raise ValueError('NAV_TESTS entries must be suffix-free paths')
+            if name == 'DB_TESTS' and not re.fullmatch(r'test_[A-Za-z0-9_]+', item):
+                raise ValueError('DB_TESTS entries must be Python test module basenames')
+    recipe = {'version': 1 if versioned else 0, 'static_files': static,
+              'support_root': 'workspace-app/src/test-support',
+              'nav_tests': values['NAV_TESTS'], 'db_tests': values['DB_TESTS']}
+    paths = _recipe_paths(recipe)
+    for name in paths:
+        _path_identity(name)
+    if len(set(paths)) != len(paths):
+        raise ValueError('Duplicate expanded suite paths')
+    return recipe
+
+
+def _recipe_paths(recipe):
+    return [*recipe['static_files'], *_navigation_paths(recipe),
+            *[f'python/tests/{name}.py' for name in recipe['db_tests']]]
+
+
+def _working_bytes(root, name):
+    _path_identity(name)
+    current = root
+    try:
+        for part in name.split('/'):
+            current = current / part
+            mode = current.lstat().st_mode
+            if stat.S_ISLNK(mode):
+                raise ValueError(f'Unsupported suite symlink: {name}')
+        if not stat.S_ISREG(mode):
+            raise ValueError(f'Unsupported suite file: {name}')
+        return current.read_bytes()
+    except OSError as exc:
+        raise ValueError(f'Cannot read suite file: {name}') from exc
+
+
+def _support_paths(root, revision, recipe):
+    support = recipe['support_root']
+    if revision:
+        directory = subprocess.check_output(['git', '-C', str(root), 'ls-tree', '-z', revision, '--', support], stderr=subprocess.DEVNULL)
+        if not directory or directory.split(b'\t', 1)[0].split()[:2] != [b'040000', b'tree']:
+            raise ValueError('Missing/unsupported committed support root')
+        raw = subprocess.check_output(['git', '-C', str(root), 'ls-tree', '-r', '-z', revision, '--', support], stderr=subprocess.DEVNULL)
+        paths = []
+        for entry in raw.split(b'\0'):
+            if not entry:
+                continue
+            header, name = entry.split(b'\t', 1)
+            mode, kind, _ = header.split()
+            if mode not in (b'100644', b'100755') or kind != b'blob':
+                raise ValueError('Unsupported committed support entry')
+            paths.append(_path_identity(name.decode('utf-8')))
+    else:
+        # os.walk never follows directory links; reject them rather than omit them.
+        base = root / support
+        for directory in [base, *base.parents]:
+            if directory == root:
+                break
+            if directory.is_symlink():
+                raise ValueError('Unsupported support directory symlink')
+        if not base.is_dir():
+            raise ValueError('Missing suite support root')
+        paths = []
+        def failed(error):
+            raise ValueError('Cannot enumerate suite support files') from error
+        for directory, dirs, files in os.walk(base, followlinks=False, onerror=failed):
+            for name in dirs + files:
+                path = Path(directory) / name
+                if path.is_symlink():
+                    raise ValueError('Unsupported suite support symlink')
+            paths.extend(_path_identity((Path(directory) / name).relative_to(root).as_posix()) for name in files)
+    if recipe['version'] == 1 and support + '/reactTestEnvironment.js' not in paths:
+        raise ValueError('Missing fixed suite preload')
+    return paths
+
+
 def suite_identity(root=ROOT, revision=None):
-    paths = ['tools/benchmark.py', 'benchmarks/requirements-py311.txt', 'benchmarks/registry.json', 'benchmarks/receipt.schema.json', 'benchmarks/database.py',
-             'workspace-app/src/benchmarkNavigation.mjs', 'workspace-app/isolatedViteCache.js',
-             'tools/metadata_qualification/core_adapter.py', 'tools/metadata_qualification/truth.py',
-             'tools/metadata_qualification/native-truth.json', 'tools/metadata_qualification/native-truth.seal.json']
-    paths += [f'workspace-app/src/{name}.test.js' for name in NAV_TESTS]
-    paths += [f'python/tests/{name}.py' for name in DB_TESTS]
-    paths += (git('ls-tree', '-r', '--name-only', revision, '--', 'workspace-app/src/test-support', root=root).splitlines() if revision else [str(p.relative_to(root)) for p in (root / 'workspace-app/src/test-support').rglob('*') if p.is_file()])
-    # Test fixture helpers transitively define the scientific data being exercised.
-    paths += ['python/tests/test_workspace_api.py', 'python/tests/test_workspace_curation.py',
-              'python/tests/test_workspace_matlab.py']
-    files = {name: sha(committed_bytes(revision, name, root) if revision else (root / name).read_bytes()) for name in sorted(set(paths))}
-    return {'sha256': sha(canonical(files)), 'files': files}
+    try:
+        if revision:
+            revision = resolve_commit(revision, root)
+        raw = committed_bytes(revision, 'tools/benchmark.py', root) if revision else _working_bytes(root, 'tools/benchmark.py')
+        recipe = _suite_recipe(raw)
+        paths = _recipe_paths(recipe) + _support_paths(root, revision, recipe)
+        if len(set(paths)) != len(paths):
+            raise ValueError('Duplicate expanded suite paths')
+        if revision:
+            # Check modes for all explicit inputs too; symlink blobs are not source bytes.
+            entries = subprocess.check_output(['git', '-C', str(root), 'ls-tree', '-r', '-z', revision, '--', *[':(literal)' + name for name in paths]], stderr=subprocess.DEVNULL)
+            modes = {}
+            for entry in entries.split(b'\0'):
+                if entry:
+                    header, name = entry.split(b'\t', 1)
+                    modes[name.decode('utf-8')] = header.split()[:2]
+            for name in paths:
+                if modes.get(name) not in ([b'100644', b'blob'], [b'100755', b'blob']):
+                    raise ValueError(f'Missing/unsupported committed suite file: {name}')
+        files = {name: sha(committed_bytes(revision, name, root) if revision else _working_bytes(root, name)) for name in sorted(set(paths))}
+        return {'sha256': sha(canonical(files)), 'files': files}
+    except (OSError, subprocess.CalledProcessError, UnicodeDecodeError) as exc:
+        raise ValueError('Cannot reconstruct suite source') from exc
 
 
 def source(root=ROOT):
@@ -319,8 +525,9 @@ def run(output):
                'source_start': source(), 'environment': environment(), 'load_average_start': list(os.getloadavg()), 'method': reg['method'], 'samples': reg['samples'],
                'cases': [], 'release_requirements': reg['release_requirements'], 'gaps': reg['gaps'], 'fixture_cleaned': False}
     try:
+        recipe = _suite_recipe(_working_bytes(ROOT, 'tools/benchmark.py'))
         for name, command in [('database', [sys.executable, '-B', str(ROOT / 'benchmarks/database.py')]),
-                              ('frontend', frontend_command())]:
+                              ('frontend', _frontend_command(recipe, ROOT, False))]:
             result_path = output / f'{name}.json'
             duration = execute(command + [str(reg['samples']), str(result_path)], output / f'{name}.log')
             result = json.loads(result_path.read_text())
@@ -328,7 +535,7 @@ def run(output):
             receipt['cases'].extend(result['cases'])
             receipt[name] = {k:v for k,v in result.items() if k != 'cases'}
             receipt[name]['execution_ms'] = duration
-        node_ms = execute(frontend_command(correctness=True), output / 'frontend-tests.log')
+        node_ms = execute(_frontend_command(recipe, ROOT, True), output / 'frontend-tests.log')
         log = (output / 'frontend-tests.log').read_text()
         count = re.search(r'^# tests (\d+)$', log, re.M)
         skipped = re.search(r'^# skipped (\d+)$', log, re.M)
@@ -339,7 +546,7 @@ def run(output):
         receipt['cases'].append({'id':'correctness.navigation', 'status':'passed', 'tests':int(count[1]), 'skipped':int(skipped[1]), 'execution_ms':node_ms})
         script = "import unittest,sys,json; suite=unittest.defaultTestLoader.loadTestsFromNames(sys.argv[2:]); result=unittest.TextTestRunner(verbosity=2).run(suite); open(sys.argv[1],'w').write(json.dumps({'tests':result.testsRun,'skipped':len(result.skipped)})); sys.exit(0 if result.wasSuccessful() and result.testsRun and not result.skipped else 1)"
         stats = output / 'database-tests.json'
-        db_ms = execute([sys.executable, '-B', '-c', script, str(stats), *DB_TESTS], output / 'database-tests.log')
+        db_ms = execute([sys.executable, '-B', '-c', script, str(stats), *recipe['db_tests']], output / 'database-tests.log')
         receipt['cases'].append({'id':'correctness.frozen_export_tags_ingest', 'status':'passed', **json.loads(stats.read_text()), 'execution_ms':db_ms})
         receipt['fixture_cleaned'] = True
     except Exception as exc:
