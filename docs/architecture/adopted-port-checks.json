@@ -1,6 +1,6 @@
 {
   "format": "disco-adopted-port-checks",
-  "version": 2,
+  "version": 3,
   "discovery": [
     {
       "from": "AGENTS.md",
@@ -460,36 +460,48 @@
       {
         "contract_id": "presentation-session-owner",
         "root": "workspace-app/src/presentation",
-        "public_entry": "workspace-app/src/presentation/workspacePresentationSessions.js",
-        "public_exports": [
-          "createWorkspacePresentationSessions"
-        ],
         "private_test_edges": [
           {
             "from": "workspace-app/src/presentation/internal/deletedSourceSelections.test.js",
             "to": "workspace-app/src/presentation/internal/deletedSourceSelections.js"
+          }
+        ],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/presentation/workspacePresentationSessions.js",
+            "exports": [
+              "createWorkspacePresentationSessions"
+            ]
           }
         ]
       },
       {
         "contract_id": "p03-selection-reader",
         "root": "workspace-app/src/tree-selection",
-        "public_entry": "workspace-app/src/tree-selection/treeSelectionReader.js",
-        "public_exports": [
-          "createTreeSelectionReader"
-        ],
-        "private_test_edges": []
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/tree-selection/treeSelectionReader.js",
+            "exports": [
+              "createTreeSelectionReader"
+            ]
+          }
+        ]
       },
       {
         "contract_id": "p04-group-save-session",
         "root": "workspace-app/src/group-save",
-        "public_entry": "workspace-app/src/group-save/groupAnnotationRecovery.js",
-        "public_exports": [
-          "groupAnnotationRecovery",
-          "createGroupSaveSession",
-          "confirmGroupReceipt"
-        ],
-        "private_test_edges": []
+        "private_test_edges": [],
+        "public_entries": [
+          {
+            "path": "workspace-app/src/group-save/groupAnnotationRecovery.js",
+            "exports": [
+              "groupAnnotationRecovery",
+              "createGroupSaveSession",
+              "confirmGroupReceipt"
+            ]
+          }
+        ]
       }
     ],
     "additional_sources": [

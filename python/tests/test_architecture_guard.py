@@ -160,9 +160,11 @@ class ArchitectureGuardTests(unittest.TestCase):
         self.assertEqual(len(result['source_sha256']['docs/contract.md']),64)
 
     def test_module_policy_version_is_explicit_and_nested_test_paths_remain_mapped(self):
-        self.catalog['version'] = 2
-        self.write_catalog()
-        self.assertIn('requires module policy', self.cli('check', '--language', 'metadata', success=False)['error'])
+        for version in (2, 3):
+            with self.subTest(version=version):
+                self.catalog['version'] = version
+                self.write_catalog()
+                self.assertIn(f'version {version} requires module policy', self.cli('check', '--language', 'metadata', success=False)['error'])
         self.catalog['version'] = 1
         self.catalog['javascript_module_policy'] = {}
         self.write_catalog()
@@ -179,6 +181,19 @@ class ArchitectureGuardTests(unittest.TestCase):
         result = self.cli('plan', '--base', base)
         self.assertEqual(result['tests']['javascript'], [path])
         self.assertTrue(result['javascript_required'])
+
+    def test_unknown_versions_and_python_policy_are_not_implicitly_adopted(self):
+        for version in (0, 4, 99):
+            with self.subTest(version=version):
+                self.catalog['version'] = version
+                self.write_catalog()
+                self.assertIn('Unsupported adopted-port', self.cli('check', '--language', 'metadata', success=False)['error'])
+        for version in (1, 2, 3):
+            with self.subTest(python_policy_version=version):
+                self.catalog['version'] = version
+                self.catalog['python_module_policy'] = {}
+                self.write_catalog()
+                self.assertIn('Invalid catalog fields', self.cli('check', '--language', 'metadata', success=False)['error'])
 
     def desktop_contract(self):
         self.write('desktop/tests/lifecycle.test.cjs',

@@ -31,6 +31,156 @@ function fixture(){
 }
 function fails(f,pattern){const r=f.check();assert.equal(r.exit,1,JSON.stringify(r));assert.match(r.result.error,pattern);}
 
+function migrateV3(f){
+ f.catalog.version=3;
+ f.policy.modules=f.policy.modules.map(({public_entry,public_exports,...module})=>({...module,public_entries:[{path:public_entry,exports:public_exports}]}));
+}
+function twoEntryFixture(){
+ const f=fixture();migrateV3(f);
+ const module=f.policy.modules[0],first=module.public_entries[0].path,second=module.root+'/hook.js';
+ module.public_entries.push({path:second,exports:['default']});
+ f.catalog.contracts[0].rules.push({language:'javascript',file:second,allow:[first]});
+ f.write(second,"import {factory} from './public.js';export default function hook(){return factory();}");
+ f.write(f.s+'consumer.js',"import {factory} from './presentation/public.js';import hook from './presentation/hook.js';");
+ f.write(f.s+'consumer.test.js',"import {factory} from './presentation/public.js';import hook from './presentation/hook.js';");
+ return f;
+}
+
+test('v3 two-entry modules preserve per-file named/default surfaces and public consumers',()=>{
+ const f=twoEntryFixture();try{
+  assert.equal(f.check().exit,0);
+  const module=f.policy.modules[0];
+  module.public_entries[0].exports=['default'];
+  f.write(module.public_entries[0].path,'export default function factory(){}');
+  f.write(module.public_entries[1].path,"import factory from './public.js';export default function hook(){return factory();}");
+  assert.equal(f.check().exit,0,'default is scoped to each entry, not globally unique');
+  for(const entry of module.public_entries){entry.exports=['default','named'];f.write(entry.path,'export default function value(){};export const named=1;');}
+  assert.equal(f.check().exit,0,'both default and named must be declared per file');
+  f.write(f.s+'bridge.js',"export {named} from './presentation/public.js';");
+  assert.equal(f.check().exit,0,'outside re-export of public entry retains existing behavior');
+ }finally{f.close();}
+});
+
+test('v3 export faults cannot hide behind another entry or an unchanged union',()=>{
+ const f=twoEntryFixture();try{
+  const [first,second]=f.policy.modules[0].public_entries;
+  for(const entry of [first,second]){
+   const original=readFileSync(join(f.root,entry.path),'utf8');
+   const wrong=entry===first?'default':'factory';
+   const permitted=entry===first?'./internal/helper.js':'./public.js';
+   const variants=['export {};',original+'\nexport const extra=1;',
+    wrong==='default'?'export default 1;':'export const factory=1;',
+    `export * from '${permitted}';`, `export {value as default} from '${permitted}';`];
+   if(entry===first)variants.push(original+'\nexport default 1;');
+   for(const source of variants){
+    f.write(entry.path,source);const result=f.check();
+    assert.equal(result.exit,1);assert.match(result.result.error,/public export surface/);assert.ok(result.result.error.includes(entry.path));
+   }
+   f.write(entry.path,original);
+  }
+  f.write(first.path,'export default 1;');f.write(second.path,'export const factory=1;');
+  fails(f,/public export surface/);
+ }finally{f.close();}
+});
+
+test('versioned schemas retain v1/v2 and reject mixed, missing and future policies',()=>{
+ const f=fixture();try{
+  assert.equal(f.check().exit,0,'original v2 fixture remains valid');
+  const legacy=structuredClone(f.policy.modules[0]);migrateV3(f);
+  assert.equal(f.check().exit,0,'single-entry v3 migration is equivalent');
+  const modern=structuredClone(f.policy.modules[0]);
+  f.catalog.version=2;fails(f,/Invalid module policy fields/);
+  f.catalog.version=3;f.policy.modules[0]=legacy;fails(f,/Invalid module policy fields/);
+  f.policy.modules[0]={...modern,public_entry:legacy.public_entry};fails(f,/Invalid module policy fields/);
+  f.policy.modules[0]={...modern,public_exports:legacy.public_exports};fails(f,/Invalid module policy fields/);
+  f.policy.modules[0]=modern;
+  delete f.catalog.javascript_module_policy;fails(f,/version 3 requires/);
+  f.catalog.version=2;fails(f,/version 2 requires/);
+  f.catalog.version=1;assert.equal(f.check().exit,0);
+  f.catalog.javascript_module_policy=f.policy;fails(f,/version 1 forbids/);
+  for(const version of [0,4,99]){f.catalog.version=version;fails(f,/Unsupported adopted-port/);}
+  for(const version of [1,2,3]){
+   f.catalog.version=version;f.catalog.python_module_policy={};fails(f,/Invalid catalog fields/);delete f.catalog.python_module_policy;
+  }
+ }finally{f.close();}
+});
+
+test('v3 rejects malformed entry declarations, assets and nonproduction paths',()=>{
+ const f=twoEntryFixture();try{
+  const module=f.policy.modules[0],original=structuredClone(module.public_entries);
+  const variants=[null,{},'entry',[],[null],[{}],
+   [{...original[0],unknown:true}],
+   [{...original[0],path:''}],[{...original[0],path:[]}],
+   [{...original[0],exports:[]}],[{...original[0],exports:null}],
+   [{...original[0],exports:['']}],[{...original[0],exports:[1]}],
+   [{...original[0],exports:['factory','factory']}],[{...original[0],exports:['*']}],
+   [original[0],{...original[0],exports:['different']}]];
+  for(const entries of variants){module.public_entries=entries;fails(f,/Invalid module policy|Public entr|Public export|unique nonempty|Duplicate public/);}
+  module.public_entries=original;
+  for(const [name,content] of [['asset.css','body{}'],['asset.txt','text'],['inside.test.js','export {};']])f.write(module.root+'/'+name,content);
+  for(const name of [module.root+'/missing.js',f.s+'consumer.js',module.root,module.root+'/asset.css',module.root+'/asset.txt',module.root+'/inside.test.js',module.root+'/./public.js',module.root+'/../presentation/public.js']){
+   module.public_entries=[{path:name,exports:['factory']}];fails(f,/Missing or escaping|module production|scanned executable|Invalid module policy path/);
+  }
+  module.public_entries=original;
+  const support=module.root+'/support';f.write(support+'/probe.js','export const probe=1;');f.policy.test_support_roots.push(support);
+  module.public_entries=[{path:support+'/probe.js',exports:['probe']}];fails(f,/module production/);
+  module.public_entries=original;
+  const tool=module.root+'/tool.js';f.write(tool,'export const tool=1;');f.policy.test_tool_files.push(tool);
+  module.public_entries=[{path:tool,exports:['tool']}];fails(f,/module production/);
+  module.public_entries=original;
+  f.write(module.root+'/unsupported.ts','export const typed=1;');
+  module.public_entries=[{path:module.root+'/unsupported.ts',exports:['typed']}];fails(f,/Unsupported source/);
+  rmSync(join(f.root,module.root+'/unsupported.ts'));module.public_entries=original;
+  symlinkSync(join(f.root,original[0].path),join(f.root,module.root+'/alias.js'));
+  module.public_entries=[{path:module.root+'/alias.js',exports:['factory']}];fails(f,/symlink/);
+ }finally{f.close();}
+});
+
+test('v3 retains disjoint roots, unique contracts and strict module fields',()=>{
+ const f=twoEntryFixture();try{
+  const module=f.policy.modules[0];module.extra=true;fails(f,/Invalid module policy fields/);delete module.extra;
+  f.policy.modules.push(structuredClone(module));fails(f,/Contract must exist and be unique|contract must exist and be unique/);f.policy.modules.pop();
+  const duplicate=structuredClone(f.catalog.contracts[0]);duplicate.id='second';f.catalog.contracts.push(duplicate);
+  f.policy.modules.push({...structuredClone(module),contract_id:'second'});fails(f,/disjoint source descendants/);
+  f.policy.modules[1].root=module.root+'/internal';fails(f,/disjoint source descendants/);
+ }finally{f.close();}
+});
+
+test('v3 entries still need ownership rules and do not grant private or test access',()=>{
+ const f=twoEntryFixture();try{
+  const module=f.policy.modules[0],rules=f.catalog.contracts[0].rules;
+  const secondRule=rules.pop();fails(f,/needs an ownership allow rule/);rules.push(secondRule);
+  const allowed=secondRule.allow;secondRule.allow=[];fails(f,/forbidden dependency/);secondRule.allow=allowed;
+  const third=module.root+'/third.js';f.write(third,'export const third=1;');fails(f,/needs an ownership allow rule/);
+  rules.push({language:'javascript',file:third,allow:[]});assert.equal(f.check().exit,0);
+  const attempts=["import './presentation/third.js'","import './presentation/../presentation/third'",
+   "export {third} from './presentation/third.js'","export * from './presentation/third.js'",
+   "async function load(){return import('./presentation/third.js')}","require('./presentation/third')"];
+  for(const consumer of ['outside.js','outside.test.js']){
+   for(const source of attempts){f.write(f.s+consumer,source);fails(f,/forbidden private/);}
+   f.write(f.s+consumer,'export {};');
+  }
+  for(const entry of module.public_entries){
+   const edge={from:module.root+'/inside.test.js',to:entry.path};f.write(edge.from,'export {};');
+   module.private_test_edges.push(edge);fails(f,/Private test edge/);module.private_test_edges.pop();
+  }
+  f.write(f.s+'outside.js',"import './consumer.test.js';");fails(f,/production cannot import test/);
+  f.write(f.s+'outside.js','export {};');
+  const edge=module.private_test_edges[0];module.private_test_edges.push({...edge});fails(f,/Duplicate private test/);module.private_test_edges.pop();
+  f.write(edge.from,'export {};');fails(f,/Unused private test/);
+ }finally{f.close();}
+});
+
+test('v2 metadata keeps its legacy entry validation while v3 requires scanned executable entries',()=>{
+ const f=fixture();try{
+  const module=f.policy.modules[0];f.write(module.root+'/entry.css','body{}');
+  module.public_entry=module.root+'/entry.css';
+  assert.equal(f.check({language:'metadata'}).exit,0,'historical v2 metadata semantics are preserved');
+  migrateV3(f);const result=f.check({language:'metadata'});
+  assert.equal(result.exit,1);assert.match(result.result.error,/scanned executable/);
+ }finally{f.close();}
+});
+
 test('new outside consumers cannot bypass private imports with normalization, extensions, exports or loaders',()=>{
  const f=fixture();try{
   assert.equal(f.check().exit,0);
@@ -146,20 +296,23 @@ for (const id of ['p03-selection-reader', 'p04-group-save-session']) {
   assert.ok(declared, `${id} must have a folder policy`);
   assert.deepEqual(declared.private_test_edges, []);
   const f = fixture();
+  migrateV3(f);
+  assert.equal(declared.public_entries.length, 1);
+  const entry = declared.public_entries[0];
   try {
    // Exercise the catalog's real root/entry/export names in an isolated source tree.
    // The injected helper is a future private file, not a new runtime abstraction.
    const helper = `${declared.root}/internal/helper.js`;
-   const publicTest = declared.public_entry.replace(/\.js$/, '.test.js');
-   const publicSource = `import {value} from './internal/helper.js';\n${declared.public_exports.map(name => `export const ${name}=value;`).join('\n')}`;
+   const publicTest = entry.path.replace(/\.js$/, '.test.js');
+   const publicSource = `import {value} from './internal/helper.js';\n${entry.exports.map(name => `export const ${name}=value;`).join('\n')}`;
    f.policy.modules.push({...declared, private_test_edges: []});
    f.catalog.contracts.push({id, contract: {path:'docs/contract.md',heading:'Presentation'}, affected_paths:['workspace-app/**'], rules:[
-    {language:'javascript',file:declared.public_entry,allow:[helper]},
+    {language:'javascript',file:entry.path,allow:[helper]},
     {language:'javascript',file:helper,allow:[]},
    ], tests:{python:[],javascript:[publicTest]}});
    f.write(helper, 'export const value=1;');
-   f.write(declared.public_entry, publicSource);
-   f.write(publicTest, `import {${declared.public_exports.join(',')}} from './${declared.public_entry.split('/').at(-1)}';`);
+   f.write(entry.path, publicSource);
+   f.write(publicTest, `import {${entry.exports.join(',')}} from './${entry.path.split('/').at(-1)}';`);
    assert.equal(f.check().exit, 0);
    const relative = helper.slice(f.s.length);
    for (const consumer of ['outside.js','outside.test.js']) {
@@ -167,9 +320,9 @@ for (const id of ['p03-selection-reader', 'p04-group-save-session']) {
     fails(f, /forbidden private/);
     f.write(f.s+consumer, 'export {};');
    }
-   f.write(declared.public_entry, publicSource+'\nexport const accidentalPublicName=1;');
+   f.write(entry.path, publicSource+'\nexport const accidentalPublicName=1;');
    fails(f, /public export surface/);
-   f.write(declared.public_entry, publicSource);
+   f.write(entry.path, publicSource);
    f.write(f.s+'outside.js', `import './${publicTest.slice(f.s.length)}';`);
    fails(f, /production cannot import test/);
   } finally { f.close(); }

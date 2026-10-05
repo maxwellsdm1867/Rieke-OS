@@ -62,6 +62,34 @@ def is_test(name, policy):
             any(name.startswith(prefix + '/') for prefix in policy['test_support_roots']))
 
 
+def public_entries(module, version):
+    """Normalize strict versioned records without changing catalog/receipt bytes."""
+    if version == 2:
+        exact(module, ['contract_id', 'root', 'public_entry', 'public_exports', 'private_test_edges'])
+        entries = [{'path': module['public_entry'], 'exports': module['public_exports']}]
+    elif version == 3:
+        exact(module, ['contract_id', 'root', 'public_entries', 'private_test_edges'])
+        entries = module['public_entries']
+        if not isinstance(entries, list) or not entries:
+            raise ValueError('Public entries must be a nonempty list')
+    else:
+        raise ValueError('Unsupported JavaScript module policy version')
+    seen = set()
+    for entry in entries:
+        exact(entry, ['path', 'exports'])
+        if version == 3:
+            if not isinstance(entry['path'], str) or not entry['path']:
+                raise ValueError('Public entry path must be a nonempty string')
+            if entry['path'] in seen:
+                raise ValueError('Duplicate public entry path')
+            seen.add(entry['path'])
+        if not strings(entry['exports']):
+            raise ValueError('Public exports cannot be empty')
+        if version == 3 and '*' in entry['exports']:
+            raise ValueError('Public exports cannot contain a star')
+    return entries
+
+
 def validate(root, catalog):
     policy = catalog.get('javascript_module_policy')
     if policy is None:
@@ -144,7 +172,7 @@ def validate(root, catalog):
         if hashlib.sha256((root/edge['resolver_path']).read_bytes()).hexdigest() != edge['resolver_sha256']:
             raise ValueError('Virtual resolver hash changed; review required')
     for module in policy['modules']:
-        exact(module, ['contract_id', 'root', 'public_entry', 'public_exports', 'private_test_edges'])
+        entries = public_entries(module, catalog['version'])
         if module['contract_id'] not in contracts or module['contract_id'] in ids:
             raise ValueError('Module contract must exist and be unique')
         ids.add(module['contract_id'])
@@ -152,10 +180,14 @@ def validate(root, catalog):
         if not module_root.is_relative_to(source_root) or any(module_root.is_relative_to(r) or r.is_relative_to(module_root) for r in roots):
             raise ValueError('Module roots must be disjoint source descendants')
         roots.append(module_root)
-        if not path(root, module['public_entry']).is_relative_to(module_root) or is_test(module['public_entry'], policy):
-            raise ValueError('Public entry must be module production source')
-        if not strings(module['public_exports']):
-            raise ValueError('Public exports cannot be empty')
+        for entry in entries:
+            if not path(root, entry['path']).is_relative_to(module_root) or is_test(entry['path'], policy):
+                raise ValueError('Public entry must be module production source')
+            # V2 keeps its historical path validation; V3 entries must also be
+            # parsed executable sources, never CSS or another unscanned asset.
+            if catalog['version'] == 3 and entry['path'] not in available:
+                raise ValueError('Public entry must be scanned executable production source')
+        entry_paths = {entry['path'] for entry in entries}
         rules = {rule['file']: rule for rule in contracts[module['contract_id']]['rules'] if rule['language'] == 'javascript'}
         for name in available:
             if name.startswith(module['root'] + '/') and not is_test(name, policy):
@@ -173,7 +205,7 @@ def validate(root, catalog):
             for name in pair:
                 if not path(root, name).is_relative_to(module_root):
                     raise ValueError('Private test edge must stay in its module')
-            if not edge['from'].endswith('.test.js') or edge['to'] == module['public_entry'] or is_test(edge['to'], policy):
+            if not edge['from'].endswith('.test.js') or edge['to'] in entry_paths or is_test(edge['to'], policy):
                 raise ValueError('Private test edge must run from colocated test to private production')
 
 
@@ -239,10 +271,12 @@ def check(root, catalog, node):
         if target.suffix in EXTENSIONS and identity not in names:
             raise ValueError(f'{importer}: executable dependency outside scanned sources: {specifier}')
         return identity
+    modules = [(module, {entry['path']: entry['exports'] for entry in public_entries(module, catalog['version'])})
+               for module in policy['modules']]
     for item in parsed:
         importer = item['filename']
-        for module in policy['modules']:
-            if importer == module['public_entry'] and (item['hasReexports'] or sorted(item['exports']) != sorted(module['public_exports'])):
+        for module, entries in modules:
+            if importer in entries and (item['hasReexports'] or sorted(item['exports']) != sorted(entries[importer])):
                 raise ValueError(f'{importer}: public export surface changed')
         for specifier in item['dependencies']:
             target = resolve(importer, specifier, set(item['builtins']))
@@ -250,8 +284,8 @@ def check(root, catalog, node):
                 continue
             if not is_test(importer, policy) and is_test(target, policy):
                 raise ValueError(f'{importer}: production cannot import test source {target}')
-            for module in policy['modules']:
-                if not target.startswith(module['root'] + '/') or target == module['public_entry']:
+            for module, entries in modules:
+                if not target.startswith(module['root'] + '/') or target in entries:
                     continue
                 if not is_test(importer, policy) and importer.startswith(module['root'] + '/'):
                     continue  # all module production has a separately checked allow rule

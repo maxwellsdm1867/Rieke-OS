@@ -47,10 +47,12 @@ def keys(value, required, optional=()):
 def catalog(root):
     value = json.loads(contained(root, CATALOG).read_text())
     keys(value, ('format', 'version', 'discovery', 'shared_paths', 'contracts'), ('javascript_module_policy',))
-    if value['format'] != 'disco-adopted-port-checks' or value['version'] not in (1, 2):
+    if value['format'] != 'disco-adopted-port-checks' or value['version'] not in (1, 2, 3):
         raise ValueError('Unsupported adopted-port catalog format/version')
-    if (value['version'] == 2) != ('javascript_module_policy' in value):
-        raise ValueError('Catalog version 2 requires module policy; version 1 forbids it')
+    if value['version'] == 1 and 'javascript_module_policy' in value:
+        raise ValueError('Catalog version 1 forbids module policy')
+    if value['version'] in (2, 3) and 'javascript_module_policy' not in value:
+        raise ValueError(f"Catalog version {value['version']} requires module policy")
     for pattern in string_list(value['shared_paths'], 'shared_paths'):
         contained(root, pattern, exists=False)
     if not isinstance(value['discovery'], list) or not value['discovery']:
