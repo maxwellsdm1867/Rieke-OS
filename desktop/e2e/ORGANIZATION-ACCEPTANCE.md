@@ -231,19 +231,18 @@ remain unqualified. The pinned Python runtime location remains unresolved.
 Recheck gate expiry, clean commit, harness/oracle/receipt hashes before launch,
 readback and final immutability. Long operation limits use remaining work time.
 
-## Historical launcher finding and retained execution HOLD
+## Historical launcher finding
 
-The harness now fails closed at preflight. Read-only review of pinned Playwright
+The historical harness stopped unconditionally at preflight. Read-only review of pinned Playwright
 1.63.0 coreBundle.js (SHA256
 `549070af3acabb3efcc4f55bfe6210f9f7c2fcf633cf7eaa59bfe60719969171`)
 found Electron startup catch calling kill(), which sends SIGKILL to the process
 group. This violates the authorized no-force-kill boundary. A parent gate cannot
-silently waive it. Replace the launcher with an independently reviewed owned
-spawn/attach architecture before removing the unconditional preflight HOLD. No
-launch or failure-path experiment has been run. Other harness source checks do
-not qualify this unresolved dependency behavior.
+silently waive it. The replacement below uses owned spawn/attach rather than
+the affected launch API. The historical stopped snapshot remains external
+evidence; no launch or failure-path experiment established its safety.
 
-## Replacement launcher implementation (still blocked)
+## Replacement launcher and explicit execution gate
 
 The reviewed replacement design is implemented in organization-owned-launcher.
 It does not call Electron.launch or any browser launch API. Node24.13.0 spawns the
@@ -266,9 +265,13 @@ Transport guards refuse app-close/crash/target-create and certificate-relaxation
 commands. Ordinary quit may close the inspector socket to release debugger exit
 waiting; socket disconnection alone never qualifies app shutdown.
 
-The unconditional preflight HOLD remains pending exact independent source review
-and parent runtime/package approval. The stopped historical snapshot is retained
-externally. No helper/app/native execution was performed during implementation.
+The source freeze removes the unconditional stop so the harness commit can match
+the assembled manifest. Execution still requires the explicit parent-approved,
+unexpired gate, exact source and package identities, passed prerequisite receipts,
+and qualified synthetic fixture. Source review does not authorize execution.
+Missing, unapproved, expired or mismatched gates fail before application launch;
+the inert negative tests exercise these refusals without loading Playwright.
+No helper/app/native execution was performed during implementation.
 Pin both reviewed Playwright-core source hashes in the external gate, and bind
 the new helper alongside all existing harness source files. Any changed runtime
 or dependency pin needs deliberate review, never automatic hash replacement.

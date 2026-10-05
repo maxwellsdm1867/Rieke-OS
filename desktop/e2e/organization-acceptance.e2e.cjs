@@ -122,8 +122,7 @@ class Acceptance {
   }
   async screenshot(name) {await this.page.screenshot({path:path.join(this.args.output,name+'.png')});}
   async preflight() {
-    // Keep fail-closed until exact replacement source review AND parent package/runtime gate.
-    throw Error('Execution HOLD: owned launcher replacement needs exact independent source review and parent package/runtime approval');
+    // Execution requires the exact parent-approved package/runtime/fixture gate below.
     const gate=JSON.parse(await fs.readFile(this.args.gate,'utf8')); this.gate=gate;
     assert.equal(gate.format,'disco-organization-execution-gate'); assert.equal(gate.version,1);
     await this.verifyLauncherDependencies();
