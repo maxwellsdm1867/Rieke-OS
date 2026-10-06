@@ -136,3 +136,27 @@ test('cell traversal rejects a server revision change before selecting',async()=
     assert.deepEqual(published,[]);assert.match(h.errors[0],/Tree changed/);
   }finally{await h.close();}
 });
+
+
+test('incoming tree modifier gestures highlight without changing selected UUIDs',async()=>{
+ const h=await createPagedTreeHarness();let highlighted=[],selectedCalls=0;
+ const props={...scopeA,readContext:{root:'/candidate',candidate_scope_revision:'scope'},selectedEpochs:['epoch-A-9'],highlightedEpochs:highlighted,setHighlightedEpochs:ids=>{highlighted=ids;},setSelectedEpochs:()=>{selectedCalls++;}};
+ try{
+  await h.render(props);await h.act(()=>h.tree.onSelectEpoch('epoch-A-0',pageAt(0).epochs[0],{},pageAt(0),0));
+  assert.deepEqual(highlighted,['epoch-A-0']);await h.render({...props,highlightedEpochs:highlighted});
+  await h.act(()=>h.tree.onSelectEpoch('epoch-A-2',pageAt(0).epochs[2],{shiftKey:true},pageAt(0),2));
+  assert.deepEqual(highlighted,['epoch-A-0','epoch-A-1','epoch-A-2']);await h.render({...props,highlightedEpochs:highlighted});
+  await h.act(()=>h.tree.onSelectEpoch('epoch-A-1',pageAt(0).epochs[1],{metaKey:true},pageAt(0),1));
+  assert.deepEqual(highlighted,['epoch-A-0','epoch-A-2']);assert.equal(selectedCalls,0);
+ }finally{await h.close();}
+});
+
+test('a retired incoming highlight range cannot publish into the next scope',async()=>{
+ const h=await createPagedTreeHarness(),pending=deferred(),highlights=[];
+ h.network.api=()=>pending.promise;
+ const props={...scopeA,highlightedEpochs:[],setHighlightedEpochs:ids=>highlights.push(ids),setSelectedEpochs:()=>assert.fail('Highlight must not select')};
+ try{
+  await h.render(props);const {work}=await startSelection(h,'range');highlights.length=0;
+  await h.render({...props,revision:'new'});await h.act(async()=>{pending.resolve(pageAt(0));await work;});assert.deepEqual(highlights,[]);
+ }finally{await h.close();}
+});

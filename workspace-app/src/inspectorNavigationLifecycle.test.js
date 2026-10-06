@@ -193,3 +193,25 @@ test('Inspector emits new list intent for same-target focus, outside-pane next a
   assert.notEqual(h.viewer.treePane.listProps.navigationRequest,before,'parent keyboard');
  }finally{await h.close();}
 });
+
+
+test('highlight toolbar explicitly selects or deselects only highlights and clears on scope changes',async()=>{
+ const h=await createInspectorHarness(),published=[];
+ const incoming={...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'},draftSelection:{selected:['epoch-C'],disabled:false},onSelectionChange:ids=>published.push(ids)};
+ try{
+  h.fixture.page=page;await h.render(incoming);
+  await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A','epoch-B']));
+  assert.deepEqual(published,[]);assert.equal(h.viewer.treePane.highlightTools.props.count,2);
+  await h.act(()=>h.viewer.treePane.highlightTools.props.onSelect());assert.deepEqual(published.pop(),['epoch-C','epoch-A','epoch-B']);
+  await h.render({...incoming,draftSelection:{...incoming.draftSelection,selected:['epoch-A','epoch-C']}});
+  await h.act(()=>h.viewer.treePane.highlightTools.props.onDeselect());assert.deepEqual(published.pop(),['epoch-C']);
+  const old=h.viewer.treePane.highlightTools.props.onSelect;
+  await h.render({...incoming,revision:1});assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+  await h.act(()=>old());assert.deepEqual(published,[]);
+  await h.render(incoming);assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+  await h.act(()=>old());assert.deepEqual(published,[]);
+  await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A']));
+  await h.act(()=>h.viewer.treePane.onDesign());await h.act(()=>h.viewer.toolbar.onBrowse());
+  assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+ }finally{await h.close();}
+});

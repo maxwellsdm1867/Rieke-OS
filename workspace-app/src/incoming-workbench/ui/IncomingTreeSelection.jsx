@@ -7,7 +7,7 @@ import {incomingTreeSelectionScope,incomingBranchOn,incomingBranchCommand} from 
 export function IncomingEpochSelect({epoch,selected=[],onSelect,disabled=false}){
   if(!onSelect)return null;
   const checked=selected.includes(epoch.epoch_uuid);
-  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={checked?'Deselect this epoch':'Select this epoch'} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Selected':'Select'}</span></button>;
+  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={checked?'Deselect this epoch':'Select this epoch'} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
 }
 export function useIncomingTreeSelection(props,page=null){
   const [error,setError]=useState(''),[working,setWorking]=useState(false),[localIntent,setLocalIntent]=useState(null),controller=useRef(null),interrupted=useRef(false),current=useRef(props),committed=useRef(null);

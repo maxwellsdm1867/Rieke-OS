@@ -198,3 +198,14 @@ test('malformed continuation renders retry instead of publishing rows or crashin
   assert.match(h.errors.join(' '),/list changed/i);
  }finally{await h.close();}
 });
+
+
+test('left epoch list uses a separate bounded highlight store for plain, command and shift clicks',async()=>{
+ const h=await createInspectionHarness();let highlighted=[],selectedCalls=0;
+ const props={...base,source:{...sourceA,readContext:{root:'/candidate',candidate_scope_revision:'query-A'}},highlightedEpochs:highlighted,setHighlightedEpochs:ids=>{highlighted=ids;},setTargets:()=>{selectedCalls++;}};
+ try{
+  await h.render(props);await h.selectEpoch(0);assert.deepEqual(highlighted,['cell-A-0']);
+  await h.render({...props,highlightedEpochs:highlighted});await h.selectEpoch(2,{shiftKey:true});assert.deepEqual(highlighted,['cell-A-0','cell-A-1','cell-A-2']);
+  await h.render({...props,highlightedEpochs:highlighted});await h.selectEpoch(1,{metaKey:true});assert.deepEqual(highlighted,['cell-A-0','cell-A-2']);assert.equal(selectedCalls,0);
+ }finally{await h.close();}
+});

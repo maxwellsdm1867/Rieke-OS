@@ -19,6 +19,7 @@ export async function createInspectorHarness({liveMetadata=true}={}){
       if(id==='../../api.js')return '\0inspector-api';
       if(id==='../../components/NavigationLoading.jsx')return '\0inspector-loading';
       if(id==='../../components/Common.jsx')return '\0inspector-common';
+      if(id==='./EpochBrowserChrome.jsx')return;
       if(id.endsWith('.jsx'))return '\0inspector-child:'+id;
     }},
     load(id){

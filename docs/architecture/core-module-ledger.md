@@ -500,3 +500,10 @@ distinct-cell and shared-tag-coverage scans. The legacy page contract and bounde
 representative label renderer remain. Cache keys separate response modes; membership,
 revision, closing authority and scientific action owners are unchanged. Query-tag
 previews explicitly omit this presentation option from their membership scope.
+
+
+Incoming highlight follow-up: Inspector owns ephemeral row highlights independently
+of selected UUIDs. Existing tree/list gesture readers retain range bounds and stale
+completion fences; explicit toolbar actions apply only the highlighted UUIDs to
+selection. The left browser hides branch actions while Edit Tree retains them.
+This does not change scientific membership, persisted consent or request authority.

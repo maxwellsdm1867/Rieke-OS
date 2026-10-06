@@ -93,3 +93,13 @@ of sentinel visibility. The accessible Load more fallback replaces pagination.
 Fast trace-first navigation and optional metadata values use the tested cache and
 request owners; startup App/data activation remain unchanged. See
 [trace worker execution](../../../docs/architecture/trace-worker-execution.md).
+
+
+Incoming left browsing uses optional ephemeral highlighted UUIDs separate from
+selected UUIDs. Plain/Command/Shift gestures affect highlights through existing
+bounded range readers and freshness fences. Select Highlighted and Deselect
+Highlighted explicitly union/subtract this set, with the existing 1,000 limit.
+Candidate/query/revision/split or presentation changes mask old highlights before
+paint; highlights are not persisted and never imply merge/export consent.
+Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
+epoch switches retain actual selection and show Select/Deselect action labels.

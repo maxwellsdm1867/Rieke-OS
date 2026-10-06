@@ -54,11 +54,12 @@ export default function PagedTree(props){
       if(isCurrent()&&epoch)callbacks.current.onSelectCell?.(item.value,epoch);
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
+  const gestures=current=>({ids:current.setHighlightedEpochs?current.highlightedEpochs||[]:current.selectedEpochs||[],set:current.setHighlightedEpochs||current.setSelectedEpochs});
   async function selectEpoch(uuid,item,event,page,index){
     if(props.active===false||props.actionsDisabled||!continuityCurrent(props)||selectionScope.current!==scopeKey)return;
     selectionRequest.current?.abort();setSelectionError('');
     props.onSelectEpoch?.(uuid,item);
-    if(!props.setSelectedEpochs||!event)return;
+    if(!gestures(props).set||!event)return;
     const target={uuid,index:page.offset+index,path:page.path,revision:page.revision};
     const token=generation.current;
     let request;
@@ -68,16 +69,16 @@ export default function PagedTree(props){
         if(JSON.stringify(anchor.current.path)!==JSON.stringify(page.path)||anchor.current.revision!==page.revision)throw new Error('Select a range within one tree branch, or use Command/Ctrl-click across branches.');
         const lo=Math.min(anchor.current.index,target.index),hi=Math.max(anchor.current.index,target.index);
         request=new AbortController();selectionRequest.current=request;
-        const before=JSON.stringify(props.selectedEpochs||[]);
+        const before=JSON.stringify(gestures(props).ids);
         const result=selectionReader.rangeEpochIds(props,{page,firstIndex:lo,lastIndex:hi,signal:request.signal});
         // Same-page selection remains synchronous; fetched ranges await transport.
         const ids=Array.isArray(result)?result:await result;
         if(!isCurrent())return;
-        if(JSON.stringify(callbacks.current.selectedEpochs||[])!==before)throw new Error('Selection changed while loading. Select the range again.');
-        callbacks.current.setSelectedEpochs?.(mergeEpochSelection(callbacks.current.selectedEpochs||[],ids));
+        if(JSON.stringify(gestures(callbacks.current).ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
+        gestures(callbacks.current).set?.(mergeEpochSelection(gestures(callbacks.current).ids,ids));
       }else{
         anchor.current=target;
-        if(event.metaKey||event.ctrlKey)props.setSelectedEpochs(toggleEpochSelection(props.selectedEpochs||[],uuid));else if(!props.readContext)props.setSelectedEpochs([]);
+        if(event.metaKey||event.ctrlKey)gestures(props).set(toggleEpochSelection(gestures(props).ids,uuid));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }

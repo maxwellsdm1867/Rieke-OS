@@ -73,3 +73,13 @@ Inspector keeps commands only in ephemeral scoped state across tree presentation
 Fresh global Select/Deselect all commands explicitly seed a root switch; individual
 leaf changes do not clear parent commands. Scope/revision changes clear markers.
 See `treeTagCoverageWorkflow.test.js` and the incoming branch selection tests.
+
+
+Incoming left browsing uses optional ephemeral highlighted UUIDs separate from
+selected UUIDs. Plain/Command/Shift gestures affect highlights through existing
+bounded range readers and freshness fences. Select Highlighted and Deselect
+Highlighted explicitly union/subtract this set, with the existing 1,000 limit.
+Candidate/query/revision/split or presentation changes mask old highlights before
+paint; highlights are not persisted and never imply merge/export consent.
+Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
+epoch switches retain actual selection and show Select/Deselect action labels.

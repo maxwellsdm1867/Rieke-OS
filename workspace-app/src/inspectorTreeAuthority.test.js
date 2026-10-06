@@ -81,7 +81,7 @@ test('tree 60/61 range retains its first-click anchor through same-authority fla
   await h.click(h.leaf(59));
   await h.wait(()=>h.fixture.requests.some(row=>row.path.includes('anchor_uuid=big-59')),'flat focus locator started');
   assert.equal(h.leaf(59).disabled,true,'Selection initiation stays gated during pending receipt');
-  assert.equal(document.querySelector('.hierarchy-tree .tree-group-tag-button').disabled,true,'Tree group tag mutation remains gated');
+  assert.equal(document.querySelector('.ht-branch>.tree-group-tag-button'),null,'Group tag actions belong in Edit Tree, not the left browser');
   // StableContent retains prior metadata under aria-hidden while loading. Its
   // preexisting inert='' React warning is disclosed; not a disabled-input proof.
   assert.equal(document.querySelector('.ht-leaf .epoch-inclusion-toggle').disabled,true,'Inclusion remains gated');
@@ -151,7 +151,7 @@ for(const change of ['revision','binding','filter','query','paused','draft-disab
 
 test('actual retained design tree preserves active focus anchor across its column pages',async()=>{
  const h=await mountFixture();try{
-  await h.open();await h.click(h.button('Open and edit tree'));
+  await h.open();await h.click(h.button('Edit Tree'));
   await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]')&&!document.querySelector('.column-tree [data-epoch-uuid="big-0"]').disabled,'design first page');
   const leaf=i=>document.querySelector(`.column-tree [data-epoch-uuid="big-${i}"]`);
   const first=leaf(59);await h.click(first);
@@ -183,7 +183,7 @@ test('actual retained wrapper evicts hidden A/B/A and changed-on-return focus wi
 
 test('design tree external out-of-page focus blocks old mutation controls until originating locator finishes',async()=>{
  const h=await mountFixture();let release;try{
-  await h.open();await h.click(h.button('Open and edit tree'));
+  await h.open();await h.click(h.button('Edit Tree'));
   await h.wait(()=>document.querySelector('.column-tree .epoch-inclusion-toggle')&&!document.querySelector('.column-tree .epoch-inclusion-toggle').disabled,'validated design mutation baseline');
   const pending=new Promise(resolve=>{release=resolve;});h.fixture.hold=request=>request.path==='/api/tree-pages'&&request.body.anchor_uuid==='big-120'?pending:undefined;
   await h.render({initialEpochUuid:'big-120'});
@@ -198,7 +198,7 @@ test('design tree external out-of-page focus blocks old mutation controls until 
 for(const change of ['unchanged','revision','binding','owner-replaced','owner-retired','hide','hide-late-failure']){
  test(`actual design range delayed publication: ${change}`,async()=>{
   const h=await mountFixture();let release;try{
-   await h.open();await h.click(h.button('Open and edit tree'));await h.click(h.button('Show tree selection tags'));
+   await h.open();await h.click(h.button('Edit Tree'));await h.click(h.button('Show tree selection tags'));
    const leaf=i=>document.querySelector(`.column-tree [data-epoch-uuid="big-${i}"]`);
    const ready=()=>leaf(0)&&!document.querySelector('.column-tree .tree-group-tag-button').disabled;
    await h.wait(ready,'design ready');await h.click(leaf(0));
@@ -258,7 +258,7 @@ test('actual retained wrapper rejects malformed opt-in authority and keeps omitt
 
 test('old design locator completion cannot relabel metadata or release replacement-scope controls',async()=>{
  const h=await mountFixture();let releaseOld,releaseNew;try{
-  await h.open();await h.click(h.button('Open and edit tree'));
+  await h.open();await h.click(h.button('Edit Tree'));
   await h.wait(()=>document.querySelector('.column-tree .epoch-inclusion-toggle')&&!document.querySelector('.column-tree .epoch-inclusion-toggle').disabled,'initial design ready');
   const old=new Promise(resolve=>{releaseOld=resolve;}),fresh=new Promise(resolve=>{releaseNew=resolve;});
   h.fixture.hold=request=>request.path==='/api/tree-pages'?(request.body.filters?.cell_type==='replacement'?fresh:request.body.anchor_uuid==='big-120'?old:undefined):undefined;
@@ -314,7 +314,7 @@ for(const design of [false,true])test(`filter change retires excluded focus befo
  const h=await mountFixture();try{
   await h.open();await h.click(h.leaf(0));
   await h.wait(()=>h.leaf(0)?.classList.contains('selected'),'initial focused epoch');
-  if(design){await h.click(h.button('Open and edit tree'));await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]'),'focused design');}
+  if(design){await h.click(h.button('Edit Tree'));await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]'),'focused design');}
   const start=h.fixture.requests.length;
   const filters={tag_predicate:JSON.stringify({all:[{not:{field:'annotations/epoch/tags',operator:'contains',value:'tagged'}}]})};
   await h.render({filters});
@@ -334,7 +334,7 @@ for(const design of [false,true])test(`filter change retires excluded focus befo
 
 test('explicit replacement-scope epoch navigation still anchors its requested target',async()=>{
  const h=await mountFixture();try{
-  await h.open();await h.click(h.leaf(0));await h.click(h.button('Open and edit tree'));
+  await h.open();await h.click(h.leaf(0));await h.click(h.button('Edit Tree'));
   await h.wait(()=>document.querySelector('.column-tree [data-epoch-uuid="big-0"]'),'initial design focus');
   const start=h.fixture.requests.length;
   await h.render({filters:{cell_type:'replacement'},initialEpochUuid:'big-120'});
@@ -347,7 +347,7 @@ test('explicit replacement-scope epoch navigation still anchors its requested ta
 
 test('column design keeps a trace-only pane beside terminal epochs and closes it with its branch',async()=>{
  const h=await mountFixture({siblingBranch:true});try{
-  await h.open();await h.click(h.button('Open and edit tree'));
+  await h.open();await h.click(h.button('Edit Tree'));
   await h.wait(()=>document.querySelector('.tree-trace-pane .tree-preview-identity'),'trace pane');
   const pane=document.querySelector('.tree-trace-pane');
   assert.equal(pane.parentElement.className,'tp-columns');

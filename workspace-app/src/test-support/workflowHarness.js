@@ -109,7 +109,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
         if(id==='./recording-import/useImportQueue.js')return '\0workflow-import-queue';
         if(id.endsWith('.jsx')&&!['./tree-ancestors/treeBranchReads.jsx','./search-activation/navigationReadCache.jsx','./incoming-workbench/ui/IncomingWorkbench.jsx','./epoch-browser/ui/Inspector.jsx','./components/Common.jsx','./metadata-refresh/ui/MetadataRefresh.jsx',"./undo/ui/UndoControls.jsx","./annotations/ui/GroupAnnotationRecovery.jsx"].includes(id))return id.includes('ProtocolExportDialog')?'\0workflow-dialog':'\0workflow-child';
       }
-      if(importer?.endsWith('/epoch-browser/ui/Inspector.jsx')&&id.endsWith('.jsx')&&!['../../tree-ancestors/treeBranchReads.jsx','../../annotations/ui/AnnotationTags.jsx','../../annotations/ui/EpochTags.jsx','../../components/Common.jsx','../../components/NavigationLoading.jsx','../../incoming-workbench/ui/IncomingEpochReview.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
+      if(importer?.endsWith('/epoch-browser/ui/Inspector.jsx')&&id.endsWith('.jsx')&&!['../../tree-ancestors/treeBranchReads.jsx','../../annotations/ui/AnnotationTags.jsx','../../annotations/ui/EpochTags.jsx','../../components/Common.jsx','../../components/NavigationLoading.jsx','../../incoming-workbench/ui/IncomingEpochReview.jsx','./EpochBrowserChrome.jsx'].includes(id))return id==='./EpochViewer.jsx'?'\0workflow-viewer':'\0workflow-child';
     },
     async load(id){
       if(id==='\0workflow-portals')return 'export const createPortal=children=>children;';

@@ -63,3 +63,22 @@
 .hierarchy-tree .ht-branch>button.incoming-branch-off{background:var(--accent-soft);border-color:var(--border);color:var(--accent)}
 .hierarchy-tree .ht-leaf.incoming-epoch-on{background:var(--success-soft);color:var(--success-ink)}
 .hierarchy-tree .ht-leaf.incoming-epoch-off{background:var(--accent-soft)}
+
+/* Narrow left-pane rows keep actions beside labels without covering their text. */
+.hierarchy-tree .ht-branch{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:4px;align-items:start}
+.hierarchy-tree .ht-branch>ul,.hierarchy-tree .ht-branch>.ht-loading{grid-column:1/-1;min-width:0}
+.hierarchy-tree .ht-branch>button:first-child{display:grid;grid-template-columns:12px minmax(0,1fr);column-gap:6px;row-gap:0;min-width:0;padding:5px 4px;align-items:start}
+.hierarchy-tree .ht-branch>button:first-child>.ht-value{grid-column:2;min-width:0;overflow-wrap:anywhere}
+.hierarchy-tree .ht-branch>button:first-child>.ht-count{grid-column:2;white-space:nowrap;font-size:10px;line-height:15px;color:var(--ink-secondary)}
+.hierarchy-tree .ht-children{margin-left:12px}
+.hierarchy-tree .ht-children .ht-children .ht-children{margin-left:0;padding-left:0}
+.hierarchy-tree .incoming-tree-actions>.tree-group-tag-button{width:26px;min-width:26px;padding:4px}
+.hierarchy-tree .incoming-tree-actions>.tree-group-tag-button>span{display:none}
+.hierarchy-tree .incoming-selection-switch{min-width:82px;width:82px;min-height:26px;padding:3px 5px;font-size:10px}
+.hierarchy-tree .ht-leaf:has(>.incoming-selection-switch){grid-template-columns:minmax(0,1fr) 82px 26px 24px;gap:3px;min-height:30px;padding:2px 4px}
+.hierarchy-tree .ht-leaf>.incoming-selection-switch{width:82px;min-height:26px;flex-wrap:nowrap;border:0;background:transparent}
+.hierarchy-tree .ht-leaf>.tree-group-tag-button{width:26px;min-width:26px;min-height:26px;padding:4px;border:0;background:transparent}
+.hierarchy-tree .ht-leaf>.tree-group-tag-button>span{display:none}
+.hierarchy-tree .ht-leaf>.epoch-inclusion-toggle{width:24px;min-width:24px;min-height:26px;padding:3px;border:0;background:transparent}
+.hierarchy-tree .ht-leaf:has(>.incoming-selection-switch)>.ht-inclusion-state{grid-column:1/-1}
+.hierarchy-tree .ht-leaf>button:first-child>.ht-value{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

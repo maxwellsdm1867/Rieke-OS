@@ -33,5 +33,6 @@ for(const name of ['ColumnTree','HierarchyTree'])test(`${name} requests counts o
   await h.act(()=>release({...page,candidate_scope_revision:'scope-1',branches:page.branches.map(row=>({...row,shared_tag_coverage:null}))}));
   await h.settle(20);assert.equal(withClass('tag-coverage-all').length,0,'unavailable coverage stays neutral');
   assert.equal(h.root.findAllByProps({className:'tree-tag-coverage'}).length,0);
+  if(name==='HierarchyTree'){await h.render(ObservedTree,{...props,browseOnly:true});await h.settle(20);assert.equal(h.root.findAllByProps({className:'incoming-tree-actions'}).length,0);}
  }finally{await h.close();}
 });
