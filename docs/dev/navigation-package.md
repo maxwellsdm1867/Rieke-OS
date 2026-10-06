@@ -42,8 +42,8 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `7dda9006902628a68616a87bcc9fae29618a2575`,
-including the clipboard fix and the Workbench follow-up below. Its SHA-256 identifies the exact ZIP;
+app and ZIP to clean source commit `ee616dc41d1b9f825ec982291959ad90852e346a`,
+including the clipboard fix and Workbench loading update below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
 
@@ -75,10 +75,44 @@ focus or click. Export preview content uses the available dialog width. Final
 source, package and native receipts must identify the later clean candidate;
 earlier package evidence does not qualify these changes.
 
-Final local validation: 862 frontend tests, the architecture guard, exact clean
+The preceding `7dda900` package validation: 862 frontend tests, the architecture guard, exact clean
 core benchmark, relocated scientific imports and 813-file native audit passed.
 The unattended packaged smoke verified real descendant selection across pages,
 green/blue rendering, automatic tree-mode retention after tagging, cell-type
 disclosure and export preview layout, followed by clean shutdown. It did not
 merge or export data. The final native run did not encounter selection interruption;
 the mounted real-tree remount regression covers its explicit feedback/retry path.
+
+
+## Workbench loading update
+
+The `ee616dc` package reuses the already verified catalog connection during one
+refresh, retains normal admission for a different catalog, initializes tree-layout
+storage before recovery captures state, and uses the existing response-local
+schema attestation for read-only Workbench requests. Transactional mutation and
+backup checks are unchanged. Lazy layout DDL and its recovery triggers previously
+changed the native authority after preparation, causing another preparation on
+the first return.
+
+An identical five-click controller ran on the same owned 2,041-epoch fixture
+with 63 pending epochs. One baseline session and two final-package sessions found:
+
+| Time until branch selection is enabled | Baseline | Final package |
+| --- | ---: | ---: |
+| Initial entry | 2.552 s | 1.457 s median |
+| First return | 2.315 s | 0.333 s median |
+| Later returns | 0.593 s median | 0.286 s median |
+
+The final package prepares once across these five entries. The second candidate
+session also passed descendant/epoch selection, computed highlight colors,
+tagging, tree-mode preservation and export preview, followed by clean shutdown.
+Raw receipts, controller copies and comparison limitations are identified in the
+package record. These are small-fixture observations, not percentile guarantees
+or measurements of the user's live project. No merge or export was published.
+
+The full backend run on `6bae2bf` passed 1,517 tests with 36 opt-in skips, plus 86
+owner-module tests. The final catalog-fallback refinement passed 40 scoped tests
+with one opt-in skip. The exact clean `ee616dc` core benchmark gate, architecture
+checks, 813-file native audit, source/resource verification and relocated scientific
+imports passed. Frontend implementation bytes remain unchanged from `7dda900`;
+its full frontend result remains attributed to that source.

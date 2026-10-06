@@ -5,16 +5,16 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
+  "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-workbench-arm64.zip",
-    "bytes": 621195902,
-    "sha256": "17242570ec6603b23bdfb85100912ded1e604e17ddc614a09ba35c0ce40839f6"
+    "filename": "Disco-0.1.8-workbench-fast-arm64.zip",
+    "bytes": 621196440,
+    "sha256": "775017616353fbf00254f8db0c86b05670e9ddfe38bd7e713ddc8856647fad87"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
@@ -22,18 +22,26 @@
     "frontend": {
       "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
       "passed": 862,
-      "failed": 0
+      "failed": 0,
+      "implementation_unchanged_in_packaged_source": true
     },
     "backend": {
-      "source_commit": "c85a4659243d878651a63057e43d8be4bea9c461",
-      "python_tests_passed": 1546,
+      "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
+      "python_tests_passed": 1517,
+      "python_tests_skipped": 36,
       "organized_module_tests_passed": 86,
-      "python_implementation_unchanged_in_packaged_source": true
+      "final_source_scoped_checks": {
+        "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
+        "passed": 40,
+        "skipped": 1,
+        "scope": "catalog connection reuse/fallback and desktop runtime packaging"
+      },
+      "final_source_difference": "Connection-hint mismatch retains original standalone catalog admission; covered by the final scoped checks."
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/workbench-delivery-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/workbench-optimization-001/benchmark.json",
     "packaged_smoke": {
-      "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
+      "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
       "downstream_selection": "63 exact epochs, including off-page epochs; parent and epoch overrides passed",
       "selected_highlight": "native computed green/blue colors verified",
@@ -41,7 +49,7 @@
       "cell_type_disclosure": "hover, keyboard focus and Escape passed",
       "export_preview": "63 selected/new, 63 main retained, 126 after acceptance; no export publication",
       "clean_shutdown": true,
-      "refresh_interruption_retry": "mounted real-tree remount regression passed; final native run selected directly without interruption"
+      "refresh_interruption_retry": "Final native run selected directly without interruption; existing mounted regression covers explicit feedback/retry."
     },
     "native_static_audit": {
       "binaries": 813,
@@ -49,21 +57,48 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "workbench-delivery-frontend.log",
-      "workbench-delivery-guard.log",
-      "workbench-delivery-provenance.json",
-      "workbench-delivery-native-compatibility.json",
-      "workbench-delivery-relocated-imports.json",
-      "workbench-native-2026-10-06T00-01-03-915Z/receipt.json",
-      "workbench-native-2026-10-06T00-01-03-915Z/qualification.md",
-      "workbench-delivery-installed.json"
-    ]
+      "workbench-optimization-backend-final.log",
+      "workbench-optimization-owners-final.log",
+      "workbench-optimization-catalog-fallback.log",
+      "workbench-optimization-guard-final.log",
+      "workbench-optimization-core-gate.json",
+      "workbench-optimization-provenance.json",
+      "workbench-optimization-native-compatibility.json",
+      "workbench-optimization-relocated-imports.json",
+      "workbench-switch-trace-2026-10-06T00-37-27-516Z/receipt.json",
+      "workbench-switch-trace-2026-10-06T00-38-36-821Z/receipt.json",
+      "workbench-loading-comparison.json",
+      "workbench-optimization-installed.json"
+    ],
+    "workbench_loading": {
+      "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
+      "candidate_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
+      "fixture_epochs": 2041,
+      "pending_epochs": 63,
+      "controller_sha256": "26c7989730a0c44e25286cccb8972b89bae1a0abd91a69cd77cfa7e69d3a69f8",
+      "baseline_sessions": 1,
+      "candidate_sessions": 2,
+      "initial_ready_ms": {
+        "before": 2552,
+        "after_median": 1457
+      },
+      "first_return_ready_ms": {
+        "before": 2315,
+        "after_median": 333
+      },
+      "later_return_ready_ms": {
+        "before_median": 593,
+        "after_median": 286
+      },
+      "local_comparison": "workbench-loading-comparison.json",
+      "preparation_repeated_on_first_return": false
+    }
   },
   "qualification_limits": [
     "No Developer ID signature or notarization",
     "macOS 14 runtime behavior unqualified",
     "Intel unsupported by this artifact",
     "Complete release promotion requirements remain unqualified",
-    "Workbench entry timing is one diagnostic observation, with no comparable before/after baseline"
+    "Small owned-fixture click comparison, one identical-controller baseline session and two candidate sessions; uncontrolled OS caches, no calibrated performance budget or live-user-project timing."
   ]
 }
