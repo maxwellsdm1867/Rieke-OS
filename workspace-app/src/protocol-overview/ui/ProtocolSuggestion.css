@@ -64,6 +64,6 @@
 .import-review-button{position:relative}
 .import-review-button.has-pending{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-weight:650}
 .import-review-button.has-pending:hover{background:var(--accent);color:var(--on-accent);border-color:var(--border-strong)}
-.import-review-dot{position:absolute;right:-4px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--warning-ink);border:2px solid var(--surface);box-shadow:0 0 0 1px var(--warning-ink)}
+.import-review-dot{position:absolute;right:-5px;top:-5px;width:14px;height:14px;border-radius:50%;background:#ef4444;border:2px solid var(--surface);box-shadow:0 0 0 1px #dc2626}
 .import-review-button:focus-visible{outline:3px solid var(--accent);outline-offset:4px}
 @media(forced-colors:active){.import-review-button.has-pending{border:2px solid Highlight}.import-review-dot{background:Highlight;border-color:Canvas;forced-color-adjust:none}}
