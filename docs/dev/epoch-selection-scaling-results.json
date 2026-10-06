@@ -1,0 +1,190 @@
+{
+  "baseline_commit": "238e15cc954ed12c301f42b4aa983802efc3a9e8",
+  "candidate_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+  "source_clean": true,
+  "controller_sha256": "795ff79544bafa07014fda70eb9515b40268c8a852dc19013b0043e4b13de94f",
+  "baseline": "epoch-scale-comparison-2026-10-06T11-03-12/receipt.json",
+  "candidate": "epoch-scale-comparison-2026-10-06T11-09-39/receipt.json",
+  "conditions": [
+    "Diagnostic production Flask routes with disposable in-memory SQL doubles and real SQLite metadata index; not native MySQL, HTTP, UI paint or H5 import throughput",
+    "Three sequential unprofiled samples, 15-second wall-time per-operation budget; setup excluded. Separate dense-1000 profile is untimed and does not patch reader methods.",
+    "Synthetic sparse scalar metadata; no waveform access; dataset size and grouping shape varied separately"
+  ],
+  "rows": [
+    {
+      "pending_epochs": 100,
+      "epochs_per_cell": 100,
+      "selected_epochs": 100,
+      "root_page": {
+        "baseline_ms": 6.62,
+        "candidate_ms": 7.26,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": -9.6
+      },
+      "next_column": {
+        "baseline_ms": 10.96,
+        "candidate_ms": 7.77,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 29.1
+      },
+      "selection": {
+        "baseline_ms": 14.9,
+        "candidate_ms": 7.44,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 50.1
+      }
+    },
+    {
+      "pending_epochs": 1000,
+      "epochs_per_cell": 1000,
+      "selected_epochs": 1000,
+      "root_page": {
+        "baseline_ms": 30.57,
+        "candidate_ms": 29.47,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 3.6
+      },
+      "next_column": {
+        "baseline_ms": 60.76,
+        "candidate_ms": 36.95,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 39.2
+      },
+      "selection": {
+        "baseline_ms": 344.19,
+        "candidate_ms": 35.22,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 89.8
+      }
+    },
+    {
+      "pending_epochs": 1000,
+      "epochs_per_cell": 10,
+      "selected_epochs": 1000,
+      "root_page": {
+        "baseline_ms": 30.45,
+        "candidate_ms": 31.54,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": -3.6
+      },
+      "next_column": {
+        "baseline_ms": 60.91,
+        "candidate_ms": 38.78,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 36.3
+      },
+      "selection": {
+        "baseline_ms": 3319.77,
+        "candidate_ms": 38.26,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 98.8
+      }
+    },
+    {
+      "pending_epochs": 1000,
+      "epochs_per_cell": 1,
+      "selected_epochs": 1000,
+      "root_page": {
+        "baseline_ms": 31.69,
+        "candidate_ms": 32.0,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": -1.0
+      },
+      "next_column": {
+        "baseline_ms": 72.78,
+        "candidate_ms": 41.59,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 42.9
+      },
+      "selection": {
+        "baseline_ms": 15013.16,
+        "candidate_ms": 44.28,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": true,
+        "reduction_percent": null
+      }
+    },
+    {
+      "pending_epochs": 10000,
+      "epochs_per_cell": 1000,
+      "selected_epochs": 1000,
+      "root_page": {
+        "baseline_ms": 310.68,
+        "candidate_ms": 308.26,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 0.8
+      },
+      "next_column": {
+        "baseline_ms": 657.4,
+        "candidate_ms": 377.87,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 42.5
+      },
+      "selection": {
+        "baseline_ms": 3500.37,
+        "candidate_ms": 359.54,
+        "baseline_samples": 3,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 89.7
+      }
+    },
+    {
+      "pending_epochs": 50000,
+      "epochs_per_cell": 1000,
+      "selected_epochs": 1000,
+      "root_page": {
+        "baseline_ms": 1733.6,
+        "candidate_ms": 1736.95,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": -0.2
+      },
+      "next_column": {
+        "baseline_ms": 3733.77,
+        "candidate_ms": 2135.13,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": false,
+        "reduction_percent": 42.8
+      },
+      "selection": {
+        "baseline_ms": 15031.53,
+        "candidate_ms": 2024.06,
+        "baseline_samples": 1,
+        "candidate_samples": 3,
+        "baseline_budget_exceeded": true,
+        "reduction_percent": null
+      }
+    }
+  ],
+  "all_fixtures_cleaned": true
+}

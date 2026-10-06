@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `bce0092b1d2e00a8490f88ff59832d4bc7d8f15f`,
+app and ZIP to clean source commit `362c33027b8085c785e69b8a814519fb18116f66`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -358,3 +358,34 @@ clean core gate passed. Source/frontend/ASAR identity, whole-bundle static audit
 relocated scientific imports passed. Native smoke exited cleanly with no page errors.
 Earlier visual and full-workflow evidence retains its original source attribution.
 This remains a local testing package; public prerelease assets are unchanged.
+
+
+## Resolve frozen metadata once per response
+
+Canonical branch selection resolves one metadata projection and emits exact typed
+DFS UUID order directly. Column batches share their target projection with ancestor
+prefixes. This removes repeated scope construction within a response. Overridden
+pagers retain independent reads; closing authority and the 1,000 UUID limit remain.
+
+The [research](epoch-selection-scaling-research.md) and
+[comparison](epoch-selection-scaling-results.json) preserve methods and limits.
+Three unprofiled samples on identical synthetic workloads showed 1,000 epochs
+across 100 cells improving from 3,319.77 to 38.26 ms; selecting 1,000 out of 10,000
+improved from 3,500.37 to 359.54 ms. At 50,000 epochs, the baseline selection
+exceeded the 15-second diagnostic budget; the candidate completed in 2,024.06 ms
+median. The baseline 50k next-column observation was 3,733.77 ms; candidate median
+was 2,135.13 ms. Timeout cases have one baseline observation, not three completed
+samples. Root-page time is essentially unchanged and still grows with scope size.
+
+These are Flask route diagnostics using SQL doubles and a real SQLite metadata
+index, not native/MySQL/paint/H5-import timings. Separate profiling identifies
+remaining whole-state and recipe validation cost. Existing annotation-generation
+authority does not attest recipe storage; no unsafe recipe memo was introduced.
+All disposable fixtures were cleaned; raw receipts, profiles, sealed baseline
+source manifest and controller hashes are retained in the local kit.
+
+158 focused backend checks, independent research/design/source review and the
+exact clean core gate passed. The final packaged native fixture verified exact
+selection, queued clicks and held navigation, with no page errors and clean exit.
+Source/frontend/ASAR identity, full static native audit and relocated scientific
+imports passed. Public prerelease assets remain unchanged.

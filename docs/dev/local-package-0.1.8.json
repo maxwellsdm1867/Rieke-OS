@@ -5,16 +5,16 @@
   "recorded_date": "2026-10-06",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+  "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-selection-speed-arm64.zip",
-    "bytes": 621201829,
-    "sha256": "6343fcb6c16f06492bb7cd9c25bd2ba2c5d05f52a1cd91d594235519bfbab2f0"
+    "filename": "Disco-0.1.8-epoch-scale-arm64.zip",
+    "bytes": 621202568,
+    "sha256": "a74803f73c9a788f2f58f505396d53afa20f494a50b45a839ffcb4e5fc959d2b"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
@@ -24,7 +24,8 @@
       "passed": 890,
       "failed": 0,
       "scope": "Full recursive suite including queued selection, pending navigation, stale activation and existing scientific action fences",
-      "independent_source_review": "passed"
+      "independent_source_review": "passed",
+      "final_source_difference": "Backend-only tree membership/projection change; existing renderer source and prior full frontend attribution retained."
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -37,21 +38,22 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Adds bounded exact tree/selection POST under one opening/closing guard; existing traversal remains authority. No scientific writes.",
+      "final_source_difference": "Canonical tree selection resolves metadata once without descendant page rendering; column responses reuse one target projection. Custom pager fallback and opening/closing authority remain; no new cross-request cache.",
       "current_source_scoped_checks": {
+        "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+        "passed": 158,
+        "failed": 0,
+        "scope": "118 tree/workbench/recovery tests plus 40 cache/identity/path/matching/typed-order tests; native and core results separate"
+      },
+      "previous_source_scoped_checks": {
         "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
         "passed": 62,
         "failed": 0,
         "scope": "Workbench frozen read contracts, exact bounded branch selection, mutation recovery and registered endpoint policy"
-      },
-      "previous_source_scoped_checks": {
-        "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
-        "passed": 61,
-        "scope": "Workbench, registered recovery policy and mutation outcomes; exact bounded summaries, invalid/unavailable metadata and closing scope checks"
       }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/selection-speed-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/epoch-scale-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -69,17 +71,16 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "selection-speed-frontend-final.log",
-      "selection-speed-backend.log",
-      "selection-speed-guard-final.log",
-      "selection-speed-core-gate.json",
-      "selection-speed-core-comparison.md",
-      "selection-speed-provenance.json",
-      "selection-speed-native-audit.json",
-      "selection-speed-imports.json",
-      "selection-speed-native-comparison.json",
-      "selection-speed-installed.json",
-      "selection-speed-installed-ui.json"
+      "epoch-scale-tests-final.log",
+      "epoch-scale-cache-tests.log",
+      "epoch-scale-guard.log",
+      "epoch-scale-core-gate.json",
+      "epoch-scale-provenance.json",
+      "epoch-scale-native-audit.json",
+      "epoch-scale-imports.json",
+      "epoch-scale-comparison-final.json",
+      "epoch-scale-installed.json",
+      "epoch-scale-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -106,89 +107,18 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
-      "verification": "See selection-speed-installed-ui.json"
+      "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+      "verification": "See epoch-scale-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
-      "receipt": "selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
-      "controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
+      "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+      "receipt": "epoch-scale-native-2026-10-06T18-13-53-912Z/receipt.json",
+      "controller_sha256": "a689985b34f52d00e15dff3a1ada2d515f54d5ef8c64a5b3037f17b148b80b33",
       "passed": true,
-      "scope": "Ten selection timings, nine column navigation timings; held reads verify queued sibling selection and latest navigation while scientific actions remain blocked",
+      "scope": "Owned 63-epoch native fixture: exact selection, queued siblings, counts-only pages, held latest navigation and scientific action gates",
       "clean_shutdown": true,
-      "comparison": {
-        "baseline_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-39-29-999Z/receipt.json",
-        "candidate_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
-        "baseline_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
-        "candidate_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
-        "candidate_controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
-        "conditions": "Same host, runtime, source project clone, protocol, 63-epoch branch, 10 alternating clicks and 9 three-level navigation samples; separate sequential app sessions. Native interaction observations, not universal performance or release qualification. Measurement loops match; candidate controller adds a held-navigation acceptance check after timing samples.",
-        "baseline": {
-          "selection": {
-            "median_ms": 395.5,
-            "min_ms": 363,
-            "max_ms": 438,
-            "samples": 10
-          },
-          "selection_read_counts": [
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7,
-            7
-          ],
-          "navigation_visible": {
-            "median_ms": 84,
-            "min_ms": 80,
-            "max_ms": 103,
-            "samples": 9
-          },
-          "navigation_ready": {
-            "median_ms": 88,
-            "min_ms": 85,
-            "max_ms": 120,
-            "samples": 9
-          }
-        },
-        "candidate": {
-          "selection": {
-            "median_ms": 109.5,
-            "min_ms": 97,
-            "max_ms": 125,
-            "samples": 10
-          },
-          "selection_read_counts": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1
-          ],
-          "navigation_visible": {
-            "median_ms": 86,
-            "min_ms": 79,
-            "max_ms": 108,
-            "samples": 9
-          },
-          "navigation_ready": {
-            "median_ms": 92,
-            "min_ms": 83,
-            "max_ms": 129,
-            "samples": 9
-          }
-        },
-        "selection_median_reduction_percent": 72.3
-      }
+      "large_scale_diagnostic": "docs/dev/epoch-selection-scaling-results.json",
+      "qualification_limit": "Large-scale numbers are synthetic Flask/SQLite-index diagnostics with SQL doubles, not native MySQL, UI paint or H5 import throughput."
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -586,6 +516,87 @@
       },
       "scope": "Selected expanded cards have matching 1px side borders and no inset shadow in light/dark themes; selection colors and held-navigation state retained",
       "clean_shutdown": true
+    },
+    "previous_selection_speed_workflow": {
+      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+      "receipt": "selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
+      "controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
+      "passed": true,
+      "scope": "Ten selection timings, nine column navigation timings; held reads verify queued sibling selection and latest navigation while scientific actions remain blocked",
+      "clean_shutdown": true,
+      "comparison": {
+        "baseline_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-39-29-999Z/receipt.json",
+        "candidate_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
+        "baseline_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+        "candidate_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+        "candidate_controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
+        "conditions": "Same host, runtime, source project clone, protocol, 63-epoch branch, 10 alternating clicks and 9 three-level navigation samples; separate sequential app sessions. Native interaction observations, not universal performance or release qualification. Measurement loops match; candidate controller adds a held-navigation acceptance check after timing samples.",
+        "baseline": {
+          "selection": {
+            "median_ms": 395.5,
+            "min_ms": 363,
+            "max_ms": 438,
+            "samples": 10
+          },
+          "selection_read_counts": [
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7
+          ],
+          "navigation_visible": {
+            "median_ms": 84,
+            "min_ms": 80,
+            "max_ms": 103,
+            "samples": 9
+          },
+          "navigation_ready": {
+            "median_ms": 88,
+            "min_ms": 85,
+            "max_ms": 120,
+            "samples": 9
+          }
+        },
+        "candidate": {
+          "selection": {
+            "median_ms": 109.5,
+            "min_ms": 97,
+            "max_ms": 125,
+            "samples": 10
+          },
+          "selection_read_counts": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "navigation_visible": {
+            "median_ms": 86,
+            "min_ms": 79,
+            "max_ms": 108,
+            "samples": 9
+          },
+          "navigation_ready": {
+            "median_ms": 92,
+            "min_ms": 83,
+            "max_ms": 129,
+            "samples": 9
+          }
+        },
+        "selection_median_reduction_percent": 72.3
+      }
     }
   },
   "qualification_limits": [
