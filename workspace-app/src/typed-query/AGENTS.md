@@ -63,3 +63,10 @@ updates the existing catalog, ledger and path companion and runs the coordinated
 import/build checks. Benchmark links in the ledger are historical/indirect;
 relocation establishes neither new performance nor native qualification. Browser
 layout/paint, native data reads and full backend qualification remain separate.
+
+Incoming Arrange tree reads field value/missing counts from the frozen candidate
+`tree-fields` endpoint with revision, filters and split recipe. The shared resource
+owner fences scope changes, cancellation and late responses. These counts are
+field values, not whole-level branch counts or selection membership. Ordinary
+requested-summary jobs remain disabled for frozen candidates. See
+`treeBuilderOverviewLifecycle.test.js`; no full recursive tree read is needed.

@@ -1437,7 +1437,8 @@
           "workspace-app/src/protocolPredicateWorkflow.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
-          "workspace-app/src/testDiscovery.test.js"
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/treeBuilderOverviewLifecycle.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
