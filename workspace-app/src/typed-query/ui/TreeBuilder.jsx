@@ -6,8 +6,6 @@ import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
 import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
 import {useProtocolSummaryPreferences} from '../../summary-jobs/useProtocolSummaryPreferences.js';
 import {fieldsWithSummaries,requestedSummaryFields} from '../../requested-summaries/requestedSummaries.js';
-import SummaryStatus from '../../summary-jobs/ui/SummaryStatus.jsx';
-import SummaryPreferences from '../../summary-jobs/ui/SummaryPreferences.jsx';
 import './TreeBuilder.css';
 import { reorderIds } from '../../ordering.js';
 import { startPointerDrag } from '../../pointerDrag.js';
@@ -33,10 +31,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   if(readContext){catalogQuery.set('candidate_scope_revision',readContext.candidate_scope_revision);catalogQuery.set('splits',value.join(','));}
   const legacyPath=`${readContext?readContext.root+'/tree-fields':catalogPath || `/protocols/${protocolId}/tree-fields`}${catalogQuery.size?'?'+catalogQuery:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
-  const catalogScopeKey=JSON.stringify([legacyPath,revision]);
-  const [fullCatalogKey,setFullCatalogKey]=useState(null);
-  const fullCatalog=!!readContext||fullCatalogKey===catalogScopeKey;
-  useEffect(()=>{if(fullCatalogKey!==null&&fullCatalogKey!==catalogScopeKey)setFullCatalogKey(null);},[fullCatalogKey,catalogScopeKey]);
+  const fullCatalog=!!readContext;
   const fetchedCatalog=useResource(!catalogData&&fullCatalog?legacyPath:null,revision);
   const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog?fetchedCatalog:registry;
   const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
@@ -233,16 +228,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       {showPending?<LoaderCircle size={13} className="spin"/>:error?<X size={13}/>:<Check size={13}/>}
       <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?'Matching epoch count unavailable':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
-    {summaryEnabled&&<SummaryStatus state={{...summaries,retry:()=>{registry.reload();summaries.retry();}}}/>}
     {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
-    {!readContext&&<div className="tb-summary-controls">
-      <details className="tb-advanced-catalog">
-        <summary>Advanced layout suggestions</summary>
-        <p className="tb-note">Compute summaries across all available fields to suggest a layout for this view.</p>
-        <button type="button" onClick={()=>{if(onFullCatalog)onFullCatalog();else setFullCatalogKey(catalogScopeKey);}}>Load full catalog and suggestions</button>
-      </details>
-      <SummaryPreferences fields={definitions} preferences={preferences}/>
-    </div>}
     {open&&position&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
       onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}}}>
       <div className="tb-popup-title"><strong>Split on a recorded field</strong><button aria-label="Close split chooser" onClick={()=>{setOpen(false);trigger.current?.focus();}}><X size={14}/></button></div>

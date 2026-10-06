@@ -79,16 +79,12 @@ test('mounted tree remains editable while pending, keeps saved missing axes and 
   const axes=['date','parameters/field150','history1'],summaryContext={predicate:{all:[]},protocol_uuid:'A',filters:{cell_uuid:'cell-A',tag:'scoped-tag'}};const props={projectId:'P1',protocolId:'A',summaryContext,value:axes,onChange:value=>changes.push(value),preview:{count:7},loading:false};
   await h.render(h.TreeBuilder,props);await h.settle();
   const submit=h.requests.find(item=>item.path==='/explore/summaries');assert.deepEqual(submit.body.summary_fields,['date','parameters/field150']);assert.equal(submit.body.protocol_uuid,'A');assert.deepEqual(submit.body.filters,summaryContext.filters);assert.deepEqual(submit.body.predicate,summaryContext.predicate);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
-  assert.match(h.text(),/pending/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
+  assert.doesNotMatch(h.text(),/Metadata summaries|Advanced layout suggestions|Preferred summaries/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
   assert.equal(h.button('Add a split').props.disabled,false);
-  const chooser=h.root.findByProps({'aria-label':'Add preferred summary'});assert.equal(chooser.findAllByType('option').length,153);
-  assert.ok(chooser.findAllByType('option').some(option=>option.props.value==='parameters/field150'));
   assert.equal(h.button('Summarize all metadata fields'),undefined);
-  const advanced=h.root.findByProps({className:'tb-advanced-catalog'});assert.ok(!advanced.props.open);
   const before=h.requests.length;await h.act(()=>h.button('Add a split').props.onClick());
   assert.equal(h.requests.slice(before).some(item=>item.path.includes('/tree-fields')),false);
   assert.ok(h.requests.filter(item=>item.path==='/explore/summaries').every(item=>item.body.summary_fields.length===2));
-  await h.act(()=>h.button('Load full catalog and suggestions').props.onClick());assert.ok(h.requests.some(item=>item.path==='/protocols/A/tree-fields'));
  }finally{await h.close();}
 });
 
