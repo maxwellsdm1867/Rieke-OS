@@ -2710,8 +2710,8 @@
       "id": "frozen-workbench-review",
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
-      "purpose": "Review immutable incoming additions, persist actor draft decisions and add accepted members without replacing existing protocol membership or curation.",
-      "owner": "ProtocolWorkbench / workspace_workbench_pending; renderer workbenchAuthority/session workflow",
+      "purpose": "Review frozen protocol changes from H5 imports and explicitly submitted predicate results; preserve additive incoming review and separately approve exact replacements including removals.",
+      "owner": "ProtocolWorkbench / workbench_pending for additive review; disco.workbench.replacements for full-change proposal and acceptance; renderer named review/command owners.",
       "status": "existing-implemented; cumulative capability must be negotiated",
       "source_pointers": [
         "python/workspace_workbench.py:222",
@@ -2747,7 +2747,7 @@
           "renderer capability negotiation",
           "workbench export stage"
         ],
-        "integration_capabilities": "Never relabel exact replacement as additive acceptance or infer review from navigation. Negotiate explicit capability flags, preserve existing main curation, refuse frozen identity uncertainty. Cross-protocol batches need fresh per-item receipts, not invented atomicity.",
+        "integration_capabilities": "Never relabel exact replacement as additive acceptance or infer review from navigation. Negotiate explicit capability flags, preserve existing main curation, refuse frozen identity uncertainty. Cross-protocol batches need fresh per-item receipts, not invented atomicity. Full-change proposals stay outside cumulative unions. Exact baseline/version and explicit removal confirmation gate replacement; retry resolves actor/request-bound receipts before stale-state checks.",
         "change_rules": "Never relabel exact replacement as additive acceptance or infer review from navigation. Negotiate explicit capability flags, preserve existing main curation, refuse frozen identity uncertainty. Cross-protocol batches need fresh per-item receipts, not invented atomicity."
       },
       "existing_tests": [
@@ -2756,7 +2756,10 @@
         "python/tests/test_workspace_workbench_history_recovery.py",
         "workspace-app/src/incoming-workbench/workbenchAuthority.test.js",
         "workspace-app/src/workbenchSessionLifecycle.test.js",
-        "workspace-app/src/incomingAuthorityRecovery.test.js"
+        "workspace-app/src/incomingAuthorityRecovery.test.js",
+        "python/tests/test_workspace_workbench_replacements.py",
+        "workspace-app/src/replacementWorkbenchRendering.test.js",
+        "workspace-app/src/predicateWorkbenchAppRoute.test.js"
       ],
       "not_newly_run_fault_ideas": [
         "Rerun live predicate instead of frozen scope",
@@ -2783,7 +2786,8 @@
         "current_backend_status": "Physical paths composed; exact combined review and runtime qualification pending",
         "current_backend_source_paths": [
           "python/disco/workbench/workbench.py",
-          "python/disco/workbench/workbench_pending.py"
+          "python/disco/workbench/workbench_pending.py",
+          "python/disco/workbench/replacements.py"
         ],
         "current_backend_guidance": [
           "python/disco/workbench/AGENTS.md"
@@ -4191,7 +4195,8 @@
         "workspace-app/src/incoming-workbench/workbenchAuthority.js",
         "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
-        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
+        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css",
+        "workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -4201,7 +4206,9 @@
           "workspace-app/src/workbenchRouteRendering.test.js",
           "workspace-app/src/importMergeAppRoute.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
-          "workspace-app/src/incomingSelectionSummaryRendering.test.js"
+          "workspace-app/src/incomingSelectionSummaryRendering.test.js",
+          "workspace-app/src/replacementWorkbenchRendering.test.js",
+          "workspace-app/src/predicateWorkbenchAppRoute.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
@@ -4231,7 +4238,8 @@
       "integration_capabilities": [
         "Current real App onMerge issues/consumes consent; FrozenIncomingReview instructs selection/review before preview, not automatic scientific preview.",
         "Empty queue fixture distinguishes authorized handoff from restored-intent refusal without preview/accept/export/draft writes.",
-        "Current selection header reads only explicit selected UUIDs (max 1000), with exact unique cells/recorded types and pause/owner/candidate/binding lifetime fences. Navigation retains same-scope binary branch appearance while disabling actions during loading. Independent design/source review completed; native visual qualification remains separate."
+        "Current selection header reads only explicit selected UUIDs (max 1000), with exact unique cells/recorded types and pause/owner/candidate/binding lifetime fences. Navigation retains same-scope binary branch appearance while disabling actions during loading. Independent design/source review completed; native visual qualification remains separate.",
+        "Replacement reviews display exact added/removed/updated cells and explicit removal consent separately from additive cumulative browsing. Search submission routes a frozen proposal; exact uncertain requests retain their original root/body."
       ],
       "change_rules": [
         "Maintain capability gating and frozen/global distinction.",

@@ -115,14 +115,17 @@ class ProtocolWorkbench:
         return header, decisions
 
     def original_records(self, protocol):
+        from disco.workbench.replacements import is_replacement
         return [row for row in (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()
-                if row['summary'].get('kind') != 'workbench_pending_union']
+                if row['summary'].get('kind') != 'workbench_pending_union' and not is_replacement(row['summary'])]
 
     def origin_recipes(self, protocol, candidate):
+        from disco.workbench.replacements import is_replacement
         origins = []
         for witness in candidate.get('pending_union_provenance', {}).get('origins', []):
             summary, baseline, recipe = self.proposal(protocol, witness['candidate_revision_uuid'])
-            if (summary.get('kind') == 'workbench_pending_union' or recipe['content_sha256'] != witness['recipe_sha256']):
+            if (summary.get('kind') == 'workbench_pending_union' or is_replacement(summary)
+                    or recipe['content_sha256'] != witness['recipe_sha256']):
                 raise WorkbenchConflict('Cumulative candidate origin authority changed')
             origins.append((summary, baseline, recipe))
         return origins
@@ -184,7 +187,7 @@ class ProtocolWorkbench:
             read_witness = read_generation(self.service, read_context)
             from disco.navigation.tag_predicates import referenced_fields
             predicates = [self.history.get(row['summary']['candidate_revision_uuid'])['recipe']['predicate']
-                for row in self.original_records(protocol)]
+                for row in (self.suggestions.Table & dict(project_uuid=self.project, protocol_uuid=protocol)).to_dicts()]
             binding = self.history.protocol_binding(protocol)
             if binding:
                 predicates.append(binding['recipe']['predicate'])
@@ -222,6 +225,9 @@ class ProtocolWorkbench:
     def context(self, protocol, revision, actor, *, query_revision_guard=None):
         key = self.key(protocol, revision, actor)
         summary, baseline, candidate = self.proposal(protocol, revision)
+        from disco.workbench.replacements import is_replacement
+        if is_replacement(summary):
+            raise ValueError('Full-change proposal requires replacement review')
         header, decisions = self.draft(key)
         binding = self.history.protocol_binding(protocol)
         if query_revision_guard is None:
@@ -586,8 +592,12 @@ class ProtocolWorkbench:
             deferred=bool(review_header.get('deferred')), historical_conflict=historical_conflict,
             decisions={key: {field: saved[field] for field in ('metadata_hash', 'selected', 'reviewed', 'excluded')}
                 for key, saved in (cumulative_decisions or {}).items() if raw_pending.get(key) == saved['metadata_hash']})
+        from disco.workbench.replacements import queue_items
+        replacements, replacement_pending, replacement_cells, replacement_witnesses = queue_items(self, protocol, actor)
+        total_pending = pending | replacement_pending
+        total_cells = {**cell_ids, **replacement_cells}
         revision = checksum(dict(project_uuid=self.project, protocol_uuid=protocol, actor=actor,
-                                 witnesses=witnesses, items=items, cumulative_review=review_witness))
+                                 witnesses=witnesses, items=items, cumulative_review=review_witness, replacements=replacement_witnesses))
         offset = 0
         if cursor:
             try:
@@ -603,12 +613,18 @@ class ProtocolWorkbench:
                 raise ValueError('Malformed queue cursor') from error
         end = offset + limit
         next_cursor = base64.urlsafe_b64encode(json.dumps(dict(revision=revision, offset=end)).encode()).decode() if end < len(items) else None
-        return dict(contract_version=1, candidates=items[offset:end], pending_epoch_count=len(pending),
+        return dict(contract_version=1, candidates=items[offset:end], replacement_reviews=replacements,
+            replacement_pending_count=sum(item['status'] not in ('accepted', 'superseded') for item in replacements),
+            replacement_pending_epoch_count=len(replacement_pending),
+            replacement_pending_cell_count=len(set(replacement_cells.values())) if replacement_pending <= replacement_cells.keys() else None,
+            total_pending_epoch_count=len(total_pending),
+            total_pending_cell_count=len(set(total_cells.values())) if total_pending <= total_cells.keys() else None,
+            pending_epoch_count=len(pending),
             pending_cell_count=len(set(cell_ids.values())) if pending <= cell_ids.keys() else None,
             pending_cell_count_available=pending <= cell_ids.keys(), eligible_pending_epoch_count=len(eligible_union),
             eligible_pending_cell_count=len({self.service.rows[key]['cell_uuid'] for key in eligible_union}),
             queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
-            capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
+            capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True, replacement_review=True,
                 incoming_export=getattr(self, 'incoming_export', False),
                 cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False)))
 
@@ -790,8 +806,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         with guarded(None) as owner:
             for protocol in service.protocols:
                 value = manager.queue(protocol, owner, 1)
-                counts.append(dict(protocol_uuid=protocol, **{key: value[key] for key in
-                    ('pending_cell_count', 'pending_epoch_count', 'queue_revision')}))
+                counts.append(dict(protocol_uuid=protocol, pending_cell_count=value['total_pending_cell_count'],
+                    pending_epoch_count=value['total_pending_epoch_count'], pending_proposal_count=value['replacement_pending_count'],
+                    queue_revision=value['queue_revision']))
         return jsonify(contract_version=1, workbench_counts=counts)
 
     @app.get(candidate + '/context')
@@ -968,5 +985,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     from disco.workbench.workbench_exports import register_workbench_export_routes
     register_workbench_export_routes(app, manager, app.extensions['curation_store'], db_lock, guarded, actor, body)
+    from disco.workbench.replacements import register_routes as register_replacement_routes
+    register_replacement_routes(app, manager, guarded, body, db_lock, actor)
     from disco.workbench.workbench_pending import register_pending_routes
     register_pending_routes(app, manager, db_lock, guarded, actor, body, public_context)

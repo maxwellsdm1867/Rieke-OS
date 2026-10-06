@@ -247,7 +247,7 @@ export default function App(){
     const consumed=navigation.consumeMergeIntent(intent?.request_uuid);
     return mergeIntents.current.claim(intent,projectId,route.protocol)&&consumed;
   }
-  function protocolApplied(id){changed();navigation.go('protocol',{protocol:id});}
+  function protocolApplied(id,proposal){changed();navigation.go('protocol',{protocol:id,...(proposal?.candidate_revision_uuid?{workbench:{candidate_revision_uuid:proposal.candidate_revision_uuid}}:{})});}
   function openQC(cellUuid,epochUuid=null){navigation.go('cell-qc',{cell_uuid:cellUuid,epoch_uuid:epochUuid});}
   function searchEpoch(result){if(result.protocol_uuid)openInspection(result.protocol_uuid,result);else openQC(result.cell_uuid,result.epoch_uuid);}
   function searchPredicate(predicate){navigation.go('explore',{explorePredicate:predicate});}

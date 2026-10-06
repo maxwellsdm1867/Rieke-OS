@@ -51,7 +51,7 @@ export function currentProposalCellBadge(item){
 export function pendingReviewBadge(suggestion,summary){
   if(Number.isSafeInteger(summary?.pending_cell_count)&&summary.pending_cell_count>=0){
     const count=summary.pending_cell_count;
-    return count?`${count} ${count===1?'cell':'cells'}`:'';
+    return count?`${count} ${count===1?'cell':'cells'}`:Number.isSafeInteger(summary.pending_proposal_count)&&summary.pending_proposal_count>0?'Review':'';
   }
   return suggestion?.status==='stale'?'Refresh':suggestion?'Review':'';
 }

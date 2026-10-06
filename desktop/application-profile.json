@@ -65,6 +65,7 @@
     "disco/workbench/candidate_exports.py",
     "disco/workbench/diff.py",
     "disco/workbench/recipes.py",
+    "disco/workbench/replacements.py",
     "disco/workbench/suggestions.py",
     "disco/workbench/workbench.py",
     "disco/workbench/workbench_exports.py",

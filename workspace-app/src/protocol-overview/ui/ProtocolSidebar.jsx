@@ -79,7 +79,7 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
             aria-label={`Reorder ${name}`} aria-describedby={helpId} title="Drag to reorder or change section · Alt + ↑ / ↓"
             onKeyDown={event=>{if(event.altKey&&['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();reorder(items,index,event.key==='ArrowUp'?-1:1);}}}><GripVertical size={14}/></button>}
           <button className={`nav-item protocol-nav ${activeId===id?'active':''}`} onClick={()=>onNavigate(id)} aria-current={activeId===id?'page':undefined} title={name}>
-            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{reviewBadge&&<small className="shortcut-update-badge" title="Distinct incoming cells awaiting review in the authoritative cumulative queue. Open Workbench to review. If the count is unavailable, a generic Review notice is shown.">{reviewBadge}</small>}
+            {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{reviewBadge&&<small className="shortcut-update-badge" title="Distinct affected cells awaiting Workbench review. Predicate changes with unchanged membership show Review.">{reviewBadge}</small>}
           </button>
         </div>
         {organizing&&<div className="protocol-shortcut-actions" role="group" aria-label={`Organize ${name}`}>

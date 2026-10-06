@@ -44,6 +44,7 @@ test('export retry has no membership write and uses immutable hash plus authorit
 test('pending-cell badges use only cumulative authoritative counts, never affected epoch/proposal fallbacks',()=>{
  assert.equal(pendingReviewBadge(item,{pending_cell_count:7}),'7 cells');
  assert.equal(pendingReviewBadge(item,{pending_cell_count:0}),'');
+ assert.equal(pendingReviewBadge(item,{pending_cell_count:0,pending_proposal_count:1}),'Review');
  assert.equal(pendingReviewBadge(item,null),'Review');
  assert.equal(pendingReviewBadge({...item,status:'stale'},null),'Refresh');
 });

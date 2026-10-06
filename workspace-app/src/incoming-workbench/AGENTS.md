@@ -131,3 +131,29 @@ cells and recorded types; unclassified cells stay in the breakdown. Pending/erro
 receipts never borrow old counts. `incomingSelectionSummaryRendering.test.js`
 covers first-paint pause/resume and A-B-A retirement. This is read presentation,
 not a new selection or merge/export authority.
+
+## Full protocol change proposals
+
+`ui/ReplacementIncomingReview.jsx` owns explicit approval presentation for frozen
+predicate submissions and H5 proposals containing removals or metadata changes.
+Queue capability `replacement_review` must be explicitly true before opening
+full-change preview or approval. Missing/false capabilities preserve inert history,
+including direct candidate routes; preview receipts must declare the replacement
+review kind. Queue `replacement_reviews` stays separate from additive cumulative candidates;
+zero additions does not hide a removal-only proposal. `ProtocolApplyPanel` submits
+an immutable proposal through `propose-to-protocol`; exploratory comparison and
+submission do not approve membership. App routes the returned candidate to Workbench.
+
+The full-change review reads `replacement-preview`, shows signed epoch/cell changes,
+and requires a fresh removal checkbox before `replacement-accept`. Frozen scope,
+binding/query version, preview hash and operation UUID fence the exact request.
+Unknown outcomes retain the identical root/body in the candidate session; restoration
+never submits automatically. A definitive unsaved 409 releases that operation for
+fresh comparison and fresh consent. Keyed protocol/candidate lifetimes abort stale
+previews and keep late acceptance callbacks out of another session. Original H5
+additive selection and export choreography remain with their existing owners.
+
+Run `node --import ./src/test-support/reactTestEnvironment.js --test src/replacementWorkbenchRendering.test.js` from `workspace-app` for submission,
+remove-all review, minus-cell presentation, exact retry/remount, stale preview,
+definitive rejection and removal-only queue checks. These are controlled mounted
+UI checks; backend transactions and native end-to-end evidence remain separate.

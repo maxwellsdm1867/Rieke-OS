@@ -55,3 +55,9 @@ mounted workflow tests remain cross-owner detectors after import integration.
 Qualification of actual native export, bytes, transaction durability, backend retry,
 packaged downloads and performance remains deferred. No native/export claims follow
 from moving this UI source or passing controlled public-interface examples.
+
+Updating an existing pinned protocol saves a review proposal; the dialog forwards
+its receipt through sidebar pinning to App. It retains that receipt for pin retry.
+A known empty candidate enables existing-protocol review only; direct export and
+new-protocol creation remain disabled. See `predicateWorkbenchAppRoute.test.js`
+for the real dialog callback and App routing checks.

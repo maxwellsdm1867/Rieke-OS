@@ -1085,6 +1085,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         record, candidate = validated_candidate(revision_uuid)
         result, _, query_revision = state(protocol_uuid)
         compatibility = protocol_compatibility(service, protocol_uuid, candidate)
+        if not candidate:
+            compatibility['compatible'] = True  # Explicit Workbench remove-all review is permitted.
         binding = explorer_history.protocol_binding(protocol_uuid)
         previous = ({row['uuid']: row['metadata_hash'] for row in binding['recipe']['epochs']} if binding else
                     {row['uuid']: row['metadata_hash'] for row in result['epochs']})
@@ -1134,6 +1136,35 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
             return jsonify(compare_protocol_candidate(revision_uuid, body['protocol_uuid']))
 
+    @app.post('/api/explore/revisions/<revision_uuid>/propose-to-protocol')
+    def propose_protocol_revision(revision_uuid):
+        from disco.workbench.replacements import submit
+        body = explorer_request({'protocol_uuid', 'expected_binding_version', 'expected_query_revision', 'operation_uuid'},
+                                {'protocol_uuid', 'expected_binding_version', 'expected_query_revision', 'operation_uuid'})
+        if not isinstance(body['protocol_uuid'], str) or type(body['expected_binding_version']) is not int:
+            raise ValueError('Protocol UUID and integer expected binding version are required')
+        manager = app.extensions['protocol_workbench']
+        from disco.decisions.author_preferences import selected_author
+        profile = selected_author() or (shared_annotations.default_profile if shared_annotations else None)
+        actor = profile['profile_uuid'] if profile else os.environ.get('USER', 'local-user')
+        with db_lock:
+            manager.tables
+            request_hash = checksum(dict(kind='workbench_replacement_proposal', actor=actor, revision=revision_uuid, **body))
+            existing = manager.receipt(body['operation_uuid'], actor, request_hash)
+            if existing:
+                return jsonify(existing)
+        with db_lock, data_stores.registration_locks(), candidate_annotation_guard(revision_uuid, body['protocol_uuid']):
+            existing = manager.receipt(body['operation_uuid'], actor, request_hash)
+            if existing:
+                return jsonify(existing)
+            service.refresh()
+            comparison = compare_protocol_candidate(revision_uuid, body['protocol_uuid'])
+            if (body['expected_binding_version'] != comparison['expected_binding_version'] or
+                    body['expected_query_revision'] != comparison['expected_query_revision']):
+                raise StaleWorkspace('The protocol changed. Compare again before submitting for review.')
+            record, _ = validated_candidate(revision_uuid)
+            return jsonify(submit(manager, body['protocol_uuid'], revision_uuid, actor, body, record)), 201
+
     @app.post('/api/explore/revisions/<revision_uuid>/apply-to-protocol')
     def apply_protocol_revision(revision_uuid):
         body = explorer_request({'protocol_uuid', 'expected_binding_version', 'expected_query_revision'},
@@ -1148,6 +1179,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 raise StaleWorkspace('The protocol working dataset or curation changed. Compare again before applying.')
             require_protocol_compatibility(service, body['protocol_uuid'],
                 [row['uuid'] for row in explorer_history.get(revision_uuid)['recipe']['epochs']])
+            from disco.workbench.replacements import records
+            if any(row['summary']['candidate_revision_uuid'] == revision_uuid for row in
+                    records(app.extensions['protocol_workbench'], body['protocol_uuid'])):
+                raise ValueError('A full-change proposal must be accepted through Workbench review')
             saved = explorer_history.bind(revision_uuid, body['protocol_uuid'], body['expected_binding_version'],
                 os.environ.get('USER', 'local-user'), comparison['diff'], comparison['previous_count'],
                 expected_query_revision=body['expected_query_revision'],

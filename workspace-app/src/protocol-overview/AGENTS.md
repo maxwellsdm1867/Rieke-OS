@@ -42,3 +42,11 @@ node --import ./src/test-support/reactTestEnvironment.js --test src/overviewMode
 workflow tests mount real public components with controlled data after integration
 resolves callers. Keep all original assertions. No actual import, scientific
 application, native approval or performance qualification is part of this move.
+
+Predicate updates now submit `propose-to-protocol` with the comparison fences and
+a stable submission UUID. `ProtocolApplyPanel.onApplied(protocolId, proposal)`
+returns the saved review identity; it no longer means membership was applied.
+`ExportSelectionDialog` preserves this receipt through sidebar pin retry and App
+opens its Workbench review. Creating a new pinned protocol keeps the existing
+one-argument callback. Removal approval belongs to the full-change Workbench
+review, including empty replacement candidates explicitly allowed by the backend.

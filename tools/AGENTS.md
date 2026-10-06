@@ -182,6 +182,19 @@ into approval for native/million qualification.
 
 ## Fixture browser checks
 
+The Workbench full-change workflow has three owned-fixture entries:
+`workbench_replacement_e2e.py --runtime /absolute/runtime` provisions a fresh
+temporary HOME/project, donor-free H5 files and native database, then prints its
+`server-receipt.json` path. Run with the configured runtime's Python. Pass that
+receipt path to `node tools/workbench_replacement_e2e.cjs` for HTTP checks, then
+`node tools/workbench_replacement_browser_e2e.cjs` for the actual renderer flow.
+Build `workspace-app` first. The browser script accepts `DISCO_E2E_PLAYWRIGHT`
+and optional `DISCO_E2E_CHROME` paths; it does not install a browser or packages.
+Send SIGTERM to the owned server afterward and verify `clean_shutdown` and
+`source_unchanged` in its receipt. Preserve failed attempts and final receipts,
+screenshots and source hashes outside the repository. These checks establish
+current-source integration only, not an installed package or release qualification.
+
 [scoped_predicate.mjs](ui_checks/scoped_predicate.mjs) checks the real scoped editor
 against intercepted API replies using Vite/React and Playwright/Chrome. Its inputs
 include `SCOPED_QA_OUTPUT` and `SCOPED_QA_PORT`; installed Playwright and browser

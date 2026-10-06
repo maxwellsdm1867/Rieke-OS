@@ -40,7 +40,7 @@ class ProtocolSuggestions:
             self._table = suggestion_table(self.service.dj)
         return self._table
 
-    def freeze_baselines(self, actor, state, *, revision_guard=None):
+    def freeze_baselines(self, actor, state, *, revision_guard=None, protocol_uuid=None):
         """Caller holds project/database guards, before launching the importer.
 
         Starter files are live acquisition queries. Convert only their current
@@ -49,6 +49,8 @@ class ProtocolSuggestions:
         """
         baselines = []
         for identity, workspace in self.service.protocols.items():
+            if protocol_uuid is not None and identity != protocol_uuid:
+                continue
             binding = self.history.protocol_binding(identity)
             if binding is None:
                 definition = workspace['definition']
@@ -131,6 +133,7 @@ class ProtocolSuggestions:
                         'diff_counts': {name: len(values) for name, values in diff.items()},
                         'diff_summary': summarize_diff(self.service.rows, previous, proposed),
                         'incoming_cell_uuids': {key: self.service.rows[key]['cell_uuid'] for key in diff['added']},
+                        'affected_cell_uuids': {key: self.service.rows[key]['cell_uuid'] for key in set().union(*map(set, diff.values())) if key in self.service.rows},
                         'previous_count': len(previous), 'next_count': len(proposed)}
                     occurred = dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None)
                     table.insert1({'project_uuid': self.project_uuid, 'suggestion_uuid': suggestion_uuid,

@@ -1613,7 +1613,8 @@
             "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
             "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
             "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
-            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css"
+            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
+            "workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx"
           ]
         },
         {
@@ -1670,6 +1671,16 @@
             "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
             "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/protocol-overview/ui/ProtocolDiff.jsx"
+          ]
         }
       ],
       "tests": {
@@ -1696,7 +1707,9 @@
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
           "workspace-app/src/testDiscovery.test.js",
-          "workspace-app/src/treeTagCoverageWorkflow.test.js"
+          "workspace-app/src/treeTagCoverageWorkflow.test.js",
+          "workspace-app/src/replacementWorkbenchRendering.test.js",
+          "workspace-app/src/predicateWorkbenchAppRoute.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -2698,7 +2711,8 @@
             "workspace_audit",
             "workspace_protocol_identity",
             "workspace_service",
-            "workspace_state_generation"
+            "workspace_state_generation",
+            "disco.workbench.replacements"
           ]
         },
         {
@@ -2737,11 +2751,29 @@
             "recording_workspace",
             "uuid"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/workbench/replacements.py",
+          "allow": [
+            "__future__",
+            "copy",
+            "datetime",
+            "disco.navigation.tag_predicates",
+            "disco.workbench.diff",
+            "disco.workbench.recipes",
+            "disco.workbench.workbench",
+            "flask",
+            "recording_workspace",
+            "uuid",
+            "workspace_protocol_identity"
+          ]
         }
       ],
       "tests": {
         "python": [
-          "python/disco/workbench/tests/test_workspace_diff.py"
+          "python/disco/workbench/tests/test_workspace_diff.py",
+          "python/tests/test_workspace_workbench_replacements.py"
         ],
         "javascript": []
       }
@@ -3302,6 +3334,12 @@
           },
           {
             "path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
+            "exports": [
+              "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx",
             "exports": [
               "default"
             ]
@@ -4393,6 +4431,19 @@
               "register_pending_routes",
               "snapshot_authority"
             ]
+          },
+          {
+            "path": "python/disco/workbench/replacements.py",
+            "module": "disco.workbench.replacements",
+            "exports": [
+              "accept",
+              "is_replacement",
+              "preview",
+              "queue_items",
+              "records",
+              "register_routes",
+              "submit"
+            ]
           }
         ],
         "private_test_edges": []
@@ -4511,7 +4562,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "4bb64e1aff694671ac5bbf0e83c71381679c34e1bf9bb56fe70d3b2c62c47dd9",
                 "contract_id": null
               }
             ]
@@ -4946,7 +4997,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "4bb64e1aff694671ac5bbf0e83c71381679c34e1bf9bb56fe70d3b2c62c47dd9",
                 "contract_id": null
               }
             ]
@@ -4979,7 +5030,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "4bb64e1aff694671ac5bbf0e83c71381679c34e1bf9bb56fe70d3b2c62c47dd9",
                 "contract_id": null
               }
             ]
@@ -5715,7 +5766,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "file_sha256": "015062f7cd39a2bede57d2fc1b0a7cc4bb5a0a53f4886eda124e3b1c9f218244",
                 "contract_id": "backend-workbench"
               },
               {
@@ -5750,7 +5801,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "file_sha256": "015062f7cd39a2bede57d2fc1b0a7cc4bb5a0a53f4886eda124e3b1c9f218244",
                 "contract_id": "backend-workbench"
               }
             ]

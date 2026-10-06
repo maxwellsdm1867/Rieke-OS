@@ -12053,6 +12053,29 @@
         "python/tests/test_workspace_diff.py": "python/disco/workbench/tests/test_workspace_diff.py"
       },
       "test_move_qualification": "Six original source-candidate test relocations plus two byte-identical root colocations; no new runtime evidence implied."
+    },
+    {
+      "id": "workbench-predicate-review",
+      "baseline": "f9a7852731a606026b4bebdeb78c49cd05871932",
+      "new_runtime_paths": [
+        "python/disco/workbench/replacements.py",
+        "workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx"
+      ],
+      "new_test_paths": [
+        "python/tests/test_workspace_workbench_replacements.py",
+        "workspace-app/src/replacementWorkbenchRendering.test.js",
+        "workspace-app/src/predicateWorkbenchAppRoute.test.js"
+      ],
+      "new_tool_paths": [
+        "tools/workbench_replacement_e2e.py",
+        "tools/workbench_replacement_e2e.cjs",
+        "tools/workbench_replacement_browser_e2e.cjs"
+      ],
+      "contract_records": [
+        "frozen-workbench-review",
+        "incoming-read-presentation"
+      ],
+      "qualification": "Current source behavior and isolated native workflow checks are recorded separately; no installed-app, packaged release or performance qualification is implied."
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

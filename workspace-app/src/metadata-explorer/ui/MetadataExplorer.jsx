@@ -224,7 +224,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
       try{
         const result=await api('/explore/revisions',{method:'POST',body:{predicate:searchInclusionPredicate(resultPredicate,excludedEpochs),splits:resultSplits,name:name.trim()||'Metadata selection',summary_only:true,catalog_summary:false,...(applied?.revision_uuid?{parent_revision_uuid:applied.revision_uuid}:{})}});
         if(!result.recipe||!result.revision_uuid)throw new Error('The server did not return an export selection.');
-        if(!(result.summary?.matched_count??result.recipe.epoch_count??result.recipe.epochs?.length)){setError('No included epochs remain. Include an epoch before exporting.');return;}
+        if(!(result.summary?.matched_count??result.recipe.epoch_count??result.recipe.epochs?.length)&&(incomingReview||!protocols.length)){setError('No included epochs remain. Include an epoch before exporting.');return;}
         setExportCandidate(result);setHistoryVersion(value=>value+1);setDestination('export');
       }catch(error){setError(error.message);}finally{setBusy(false);}
       return;
@@ -264,7 +264,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     if(undoEnabled)mutationUndo.record({kind:'search-inclusion',viewer:undoViewer.current,generation:undoGeneration,epoch_uuid:epoch.epoch_uuid,prior,after:included});
     setExcludedEpochs(ids=>toggleSearchInclusion(ids,epoch.epoch_uuid,included));setDestination(null);setExportCandidate(null);
   }
-  const exportDisabled=!!annotationHold||busy||resultLoading||!!resultError||!resultPreview?.matched_count;
+  const exportDisabled=!!annotationHold||busy||resultLoading||!!resultError||!resultPreview||(!resultPreview.matched_count&&(!!incomingReview||!protocols.length));
   function openResultsExport(){
     if(step==='tree')prepareDestination('export',false);
     else prepareDestination('export');
@@ -283,7 +283,7 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
       <div className="mx-header-actions">
         {step==='tree'&&<button disabled={busy} onClick={showEpochResults}><ArrowLeft size={15}/> Back to epochs</button>}
         <button disabled={busy} onClick={onNewSearch}><Search size={16}/> New predicate</button>
-        {step!=='filter'&&<button className="primary" disabled={!!annotationHold||busy||resultLoading||!!resultError||!resultPreview?.matched_count} onClick={()=>{if(step==='tree')prepareDestination('export',false);else prepareDestination('export');}}><Download size={15}/> Export</button>}
+        {step!=='filter'&&<button className="primary" disabled={exportDisabled} onClick={()=>{if(step==='tree')prepareDestination('export',false);else prepareDestination('export');}}><Download size={15}/> Export</button>}
         {step==='filter'&&(applied||currentDraftPreview)&&<button disabled={busy} onClick={()=>{setResultsFromDraft(!!currentDraftPreview);setFocused(null);setDestination(null);setStep('results');}}><ArrowLeft size={15}/> Back to results</button>}
         {step!=='filter'&&<button disabled={busy} onClick={()=>{setStep('filter');setFocused(null);setDestination(null);}}><History size={15}/> Search presets</button>}
         {onExit&&<button className="quiet" disabled={busy} onClick={onExit}><X size={15}/> Close search</button>}

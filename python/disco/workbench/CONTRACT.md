@@ -180,3 +180,56 @@ It returns echoed UUIDs, exact epoch/unique-cell counts, and unique recorded
 An empty selection returns zero counts. View filters do not prune explicit selected
 UUIDs. This bounded read does not compute aggregates over unselected branches or
 change scientific/draft state, consent or acceptance authority.
+
+## Full-change proposals from predicate submissions and H5 imports
+
+[replacements.py](replacements.py) owns exact full-change review and acceptance.
+Submitting a saved search to an existing pinned protocol uses
+`POST /explore/revisions/{revision}/propose-to-protocol`, with the comparison's
+binding/query fences and a durable operation UUID. It freezes a candidate against
+the destination's current immutable baseline. An unbound starter is frozen at its
+existing cohort first. Submission never applies the candidate. Searching and
+saving a query alone never create a protocol proposal. Changed predicates remain
+part of the candidate even if membership happens to be unchanged.
+
+Predicate submissions always carry replacement intent. H5 proposals with removed
+or changed epochs use the same full-change review. Pure H5 additions retain the
+existing cumulative additive workflow. Replacement proposals cannot enter the
+additive draft, browse, acceptance or incoming-export APIs, and the legacy apply
+endpoint cannot bind a replacement proposal. Full-change candidates are excluded
+from cumulative unions: contradictory desired cohorts must never be combined.
+
+`GET candidateRoot/replacement-preview` returns a frozen membership comparison,
+full epoch/cell diff counts, compatible acquisition identity, candidate scope,
+main binding/query fences and sealed preview. `POST .../replacement-accept`
+requires those exact fences, operation UUID, and boolean `confirm_removals`;
+removals require true. Acceptance publishes the exact candidate, including an
+explicitly reviewed empty cohort, in one binding/audit/operation-receipt transaction.
+It preserves existing curation records and never assigns approval tags. The exact
+baseline must still be current; no full-change intent is rebased across another
+acceptance. Candidate fingerprints, source eligibility, raw source verification,
+predicate annotation authority and actor/request replay remain fenced. An identical
+retry resolves the durable receipt before testing the now-changed baseline.
+
+Queue `replacement_reviews` contains full-change proposals separately, including
+accepted and superseded entries for durable navigation and replay. A changed
+baseline supersedes an unaccepted full-change proposal; it remains immutable
+history but no longer contributes pending counts and cannot be accepted. It is not truncated by additive
+queue pagination. Existing `pending_*` counts remain additive-only. New
+`replacement_pending_count` counts unresolved proposals; replacement pending epoch
+and cell counts count distinct affected identities. `total_pending_epoch_count`
+and `total_pending_cell_count` are the authoritative distinct union across additive
+and full-change proposals, never sums of overlapping counts. `/workbench/summary`
+uses these total counts for sidebar badges and exposes `pending_proposal_count`
+for unresolved full-change proposals whose predicate changes without affecting any
+epoch or cell. This proposal indicator must not fabricate a positive cell count.
+A missing historical cell identity
+returns null cell count. Negative-only proposals remain visible and pending.
+
+Public HTTP workflow checks:
+`PYTHONPATH=python:python/tests .rieke-runtime/benchmark-python/bin/python -m unittest test_workspace_workbench_replacements`.
+They use isolated transactional doubles for inert submission, removal consent,
+remove-all, legacy/additive bypass refusal, stale baseline rejection, changed
+fingerprints, actor replay, rollback and negative-only queue visibility. Native
+MySQL/browser qualification is separate; these tests do not establish crash or
+cross-process durability.

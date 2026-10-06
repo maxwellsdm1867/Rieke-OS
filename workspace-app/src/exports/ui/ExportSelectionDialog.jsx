@@ -8,31 +8,33 @@ import {useProjectPreference} from "../../project-preferences/useProjectPreferen
 import './ExportSelectionDialog.css';
 
 export default function ExportSelectionDialog({candidate,protocols,projectId,directOnly=false,initialProtocolId,defaultName,defaultFormat,disabled,onClose,onApplied,onChanged}){
-  const dialog=useRef(null),[mode,setMode]=useState(directOnly?'direct':null),[busy,setBusy]=useState(false),[pinError,setPinError]=useState(''),[appliedId,setAppliedId]=useState(null);
+  const dialog=useRef(null),[mode,setMode]=useState(directOnly?'direct':null),[busy,setBusy]=useState(false),[pinError,setPinError]=useState(''),[appliedId,setAppliedId]=useState(null),[proposalReceipt,setProposalReceipt]=useState(null);
+  const emptyCandidate=(candidate?.summary?.matched_count??candidate?.recipe?.epoch_count??candidate?.recipe?.epochs?.length)===0;
   const shortcuts=useProjectPreference(projectId,'protocol_shortcuts');
   const groups=exportProtocolGroups(protocols,shortcuts.value,initialProtocolId);
   useEffect(()=>{const el=dialog.current;el.showModal();return()=>el.close();},[]);
-  async function finishPin(id){
+  async function finishPin(id,receipt=null){
+    setProposalReceipt(receipt);
     setAppliedId(id);setBusy(true);
     try{
       if(!projectId)throw new Error('Project identity unavailable');
       await shortcuts.update(previous=>pinProtocolPreference(previous,id));
       setPinError('');
-      onApplied?.(id);
-    }catch(error){setPinError('Dataset updated, but the sidebar shortcut could not be saved. Retry pinning without applying the dataset again.');onChanged?.();}
+      onApplied?.(id,receipt);
+    }catch(error){setPinError('Dataset or review proposal saved, but the sidebar shortcut could not be saved. Retry pinning without applying the dataset again.');onChanged?.();}
     finally{setBusy(false);}
   }
   return <dialog ref={dialog} className="export-selection-dialog" aria-labelledby="export-selection-title" onCancel={event=>{event.preventDefault();if(!busy)onClose();}}>
     <header><h2 id="export-selection-title"><Download size={17}/> Export selection</h2><button className="icon-button" disabled={busy} aria-label="Close export options" onClick={onClose}><X size={17}/></button></header>
-    <nav aria-label="Export destination"><button disabled={busy} aria-pressed={mode==='direct'} className={mode==='direct'?'active':''} onClick={()=>setMode('direct')}><Download size={18}/><span><strong>Export directly</strong><small>SQLite or MATLAB data (.mat)</small></span></button>{!directOnly&&<><button disabled={busy} aria-pressed={mode==='protocol'} className={mode==='protocol'?'active':''} onClick={()=>setMode('protocol')}><Pin size={18}/><span><strong>Update pinned protocol</strong><small>Match Protocol ID, then review changes</small></span></button><button disabled={busy} aria-pressed={mode==='new'} className={mode==='new'?'active':''} onClick={()=>setMode('new')}><FolderPlus size={18}/><span><strong>Create pinned protocol</strong><small>Keep this selection as a new dataset</small></span></button></>}</nav>
+    <nav aria-label="Export destination"><button disabled={busy||emptyCandidate} aria-pressed={mode==='direct'} className={mode==='direct'?'active':''} onClick={()=>setMode('direct')}><Download size={18}/><span><strong>Export directly</strong><small>SQLite or MATLAB data (.mat)</small></span></button>{!directOnly&&<><button disabled={busy} aria-pressed={mode==='protocol'} className={mode==='protocol'?'active':''} onClick={()=>setMode('protocol')}><Pin size={18}/><span><strong>Update pinned protocol</strong><small>Match Protocol ID, then review changes</small></span></button><button disabled={busy||emptyCandidate} aria-pressed={mode==='new'} className={mode==='new'?'active':''} onClick={()=>setMode('new')}><FolderPlus size={18}/><span><strong>Create pinned protocol</strong><small>Keep this selection as a new dataset</small></span></button></>}</nav>
     <div className="export-selection-body">
-      {!mode&&<p className="export-choice-hint">Choose a destination for these matching epochs.</p>}
+      {!mode&&<p className="export-choice-hint">{emptyCandidate?'This selection is empty. Update a pinned protocol to review removing its current epochs.':'Choose a destination for these matching epochs.'}</p>}
       {mode==='direct'&&<CandidateExportPanel candidate={candidate} defaultName={defaultName} defaultFormat={defaultFormat} disabled={disabled} onBusyChange={setBusy} onExported={onChanged}/>}
       {mode==='new'&&<NewPinnedProtocol candidate={candidate} defaultName={defaultName} disabled={disabled||!!appliedId} onBusyChange={setBusy} onCreated={finishPin}/>}
       {mode==='protocol'&&<><ProtocolApplyPanel candidate={candidate} protocols={groups.flatMap(group=>group.protocols)} targetGroups={groups} initialProtocolId={initialProtocolId} disabled={disabled||!!appliedId} onBusyChange={setBusy} onApplied={finishPin} pinnedExport/>
-        <p className="export-linked-context">Cell typing and backtracking recordings stay linked by cell UUID. The protocol overview refreshes after applying.</p>
+        <p className="export-linked-context">Cell typing and backtracking recordings stay linked by cell UUID. Submitted changes open in Workbench for explicit approval.</p>
       </>}
-      {pinError&&<div role="alert"><p>{pinError}</p><button onClick={()=>finishPin(appliedId)}>Retry sidebar pin</button></div>}
+      {pinError&&<div role="alert"><p>{pinError}</p><button onClick={()=>finishPin(appliedId,proposalReceipt)}>Retry sidebar pin</button></div>}
     </div>
   </dialog>;
 }

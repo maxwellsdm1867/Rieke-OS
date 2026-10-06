@@ -192,7 +192,10 @@ def parse_preflight(source, target, parser_file, oracle):
             assert epoch['start_time'] == row['start_time'] and epoch['end_time']==row['end_time'] and epoch['parameters'] == row['parameters']
             assert epoch['stimuli'] == {} and set(epoch['responses']) == {'Amp1'}
             stream = epoch['responses']['Amp1']
-            assert stream['uuid'] == row['stream_uuid'] and stream['h5path'] == row['stream_path']
+            assert stream['uuid'] == row['stream_uuid']
+            import h5py
+            with h5py.File(source, 'r') as h5:
+                assert h5[stream['h5path']].id == h5[row['stream_path']].id
             assert stream['sampleRate'] == 10000 and stream['sampleRateUnits'] == 'Hz'
             ids.append(epoch['uuid'])
         assert ids == next(c['epoch_ids'] for c in oracle['cells'] if c['uuid'] == cell['uuid'])

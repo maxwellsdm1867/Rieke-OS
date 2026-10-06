@@ -262,6 +262,25 @@ current source behavior.
   See [incoming review](workspace-app/src/incoming-workbench/AGENTS.md) and
   [backend Workbench](python/disco/workbench/CONTRACT.md).
 
+### Protocol change review ownership
+
+Submitting saved predicate results to a pinned protocol creates a frozen Workbench
+proposal. Search alone does not change protocol membership. H5 ingestion continues
+to save proposals through the same history store; proposals with removals or changed
+metadata require full-change review. Pure H5 additions retain cumulative merging.
+
+| Owner | Responsibility |
+| --- | --- |
+| [ProtocolApplyPanel](workspace-app/src/protocol-overview/ui/ProtocolApplyPanel.jsx), [ExportSelectionDialog](workspace-app/src/exports/ui/ExportSelectionDialog.jsx), App | Submit an immutable search candidate, retain retry identity and navigate to its Workbench review. |
+| [API composition](python/workspace_api.py), [suggestions](python/disco/workbench/suggestions.py) | Validate destination and current comparison; capture the baseline and persist H5 proposals. |
+| [Full-change review](python/disco/workbench/replacements.py) | Persist predicate proposals, compare exact frozen cohorts and publish explicitly approved replacement membership with transactional receipts. |
+| [Workbench](python/disco/workbench/workbench.py), [cumulative pending](python/disco/workbench/workbench_pending.py) | Present both review kinds; keep replacement intent outside additive unions and retain additive draft/merge authority. |
+| [ReplacementIncomingReview](workspace-app/src/incoming-workbench/ui/ReplacementIncomingReview.jsx) | Show added, removed and updated cells; capture removal consent and recover the exact approval request. |
+
+The [local contract](python/disco/workbench/CONTRACT.md#full-change-proposals-from-predicate-submissions-and-h5-imports)
+owns version fences, count units, replay and acceptance semantics. Tree paging,
+selection commands and export publication keep their existing owners.
+
 The [navigation package history](docs/dev/navigation-package.md) records the exact
 source checks, small-fixture timing observations and packaged smoke/workflow runs.
 Earlier measurements are not relabeled as later-source results. The 0.1.8 testing

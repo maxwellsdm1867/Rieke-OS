@@ -50,3 +50,8 @@ identity, error, cancellation and lifetime contracts. Authority or runtime body
 changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
+
+A verified empty search can open the existing-protocol destination to propose
+removing all pinned members. The destination dialog disables direct export and
+new-protocol creation for that empty candidate; only explicit Workbench review
+can approve removal. Unknown/loading results never count as an empty selection.

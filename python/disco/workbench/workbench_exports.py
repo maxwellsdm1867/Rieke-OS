@@ -28,10 +28,19 @@ def formats_for_candidate(candidate):
     return sorted(FORMATS - {'matlab-mat'} if unsupported else FORMATS)
 
 
+def _require_incoming_acceptance(receipt, protocol):
+    if not receipt or receipt.get('protocol_uuid') != protocol:
+        raise KeyError('Acceptance receipt not found for this actor and protocol')
+    # Historical additive receipts have no kind discriminator. Their exact
+    # accepted fingerprints remain required; a full-change/proposal receipt
+    # never grants incoming-only export authority, even if it added epochs.
+    if receipt.get('kind') not in (None, 'workbench_additions_accepted') or 'accepted_fingerprints' not in receipt:
+        raise ValueError('Incoming-only export requires an additive acceptance receipt')
+
+
 def accepted_export_context(manager, protocol, operation, actor):
     receipt = manager.receipt(operation, actor)
-    if not receipt or receipt.get('protocol_uuid') != protocol or 'accepted_fingerprints' not in receipt:
-        raise KeyError('Acceptance receipt not found for this actor and protocol')
+    _require_incoming_acceptance(receipt, protocol)
     record = manager.history.get(receipt['candidate_revision_uuid'])
     candidate = record['recipe']
     fingerprints = receipt['accepted_fingerprints']
@@ -222,8 +231,7 @@ def register_workbench_export_routes(app, manager, store, db_lock, guarded, acto
             raise ValueError('Acceptance export context accepts no query options')
         with db_lock:
             receipt = manager.receipt(operation, actor())
-            if not receipt or receipt.get('protocol_uuid') != protocol or 'accepted_fingerprints' not in receipt:
-                raise KeyError('Acceptance receipt not found')
+            _require_incoming_acceptance(receipt, protocol)
         with guarded(protocol, receipt['candidate_revision_uuid']) as owner:
             context = accepted_export_context(manager, protocol, operation, owner)
             manager.verify_sources(context, context['incoming'])
@@ -236,8 +244,7 @@ def register_workbench_export_routes(app, manager, store, db_lock, guarded, acto
         value = body({'expected_export_scope_revision', 'format', 'operation_uuid'}, {'name'})
         with db_lock:
             receipt = manager.receipt(operation, actor())
-            if not receipt or receipt.get('protocol_uuid') != protocol or 'accepted_fingerprints' not in receipt:
-                raise KeyError('Acceptance receipt not found')
+            _require_incoming_acceptance(receipt, protocol)
         revision = receipt['candidate_revision_uuid']
         existing = existing_export(protocol, revision, operation, value)
         if existing:
