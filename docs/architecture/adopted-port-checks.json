@@ -4451,7 +4451,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "47d9441b51a4351903b23cd2aad87ec2af60b6f400e8126f3ca6eabbf5d9ea23",
+        "file_sha256": "63a35378aeed60df3c5d8387c214f10995cb5b28af5640e2a3c679f79e1352a5",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
         "sites": [
           {
@@ -4661,7 +4661,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "47d9441b51a4351903b23cd2aad87ec2af60b6f400e8126f3ca6eabbf5d9ea23",
+                "file_sha256": "63a35378aeed60df3c5d8387c214f10995cb5b28af5640e2a3c679f79e1352a5",
                 "contract_id": "backend-navigation"
               }
             ]

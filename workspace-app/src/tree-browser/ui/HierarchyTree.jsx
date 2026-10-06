@@ -4,6 +4,7 @@ import {revealWithin} from '../../epoch-browser/epochListScroll.js';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,ChevronDown,ChevronRight,Folder,FolderOpen,LoaderCircle,RefreshCw} from 'lucide-react';
 import {api,number} from '../../api.js';
+import {loadColumnTreePages} from '../../tree-ancestors/columnTreeReads.js';
 import {treePageRequest} from '../../pagedTreeRequest.js';
 import {branchLabel,branchTooltip,componentLabel,componentValue,epochLeafLabel,readableField} from '../treeBranchPresentation.js';
 import {datedCellLabel} from '../../recording-import/recordingIdentity.js';
@@ -41,7 +42,16 @@ export default function HierarchyTree(props){
         for(const savedPage of restore.pages){result=await fetchPage(savedPage.path,savedPage.offset);if(request.signal.aborted||token!==serial.current)return;commit(old=>mergeHierarchyPage(old,result));}
         commit(old=>({...old,expanded:restore.expanded}));restoreTop.current=restore.scrollTop;restoreLeft.current=restore.scrollLeft;
       }else if(anchor){
-        result=await fetchPage([],0,anchor);
+        const batch=scope.readContext?.tree_column_pages===true||root?.tree_column_pages===true;
+        if(batch){
+          const pages=await loadColumnTreePages({scope,anchor,revisionOverride:pinned,retainedPages:current.current.pages,
+            load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+          result=pages.at(-1);
+          if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
+          pinned=result.revision;
+          if(request.signal.aborted||token!==serial.current)return;
+          commit(old=>pages.slice(0,-1).reduce((next,parent)=>mergeHierarchyPage(next,parent),old));
+        }else result=await fetchPage([],0,anchor);
         const ancestry=result.ancestors||[];
         // The locator supplies each ancestor's parent page, including groups
         // past the first60. Fetch only this path and retain existing siblings.

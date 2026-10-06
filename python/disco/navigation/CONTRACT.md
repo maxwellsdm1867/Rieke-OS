@@ -68,3 +68,15 @@ projection and return shape. Workbench retains opening and closing checks.
 Executable equivalence and custom-reader examples are in
 `python/tests/test_workspace_tree_pages.py`; frozen rejection tests remain in
 `python/tests/test_workspace_workbench.py`.
+
+Live `/tree-pages` accepts opt-in boolean `include_ancestors` and at most eight
+null/integer `ancestor_offsets` in 0..10,000,000. Each page retains its 100-row
+maximum. Eligible canonical witnessed reads advertise `tree_column_pages`; a
+requested bundle uses `column_pages` inside the same opening/closing generation,
+annotation locks and response-contract scope, attaching one identity to all pages.
+Source, filtered, annotation/joint, unverifiable or overridden-pager live bundles
+fail closed; ordinary reads retain their prior behavior and no generic retry
+silently changes authority. Frozen custom-reader fallback is unchanged. Capability
+is an optimization advertisement, not a lease. Tests in
+`test_workspace_tree_read_identity.py` cover complete page equivalence, bounded
+options, custom/ineligible rejection and closing-generation discard.

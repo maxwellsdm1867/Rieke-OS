@@ -108,3 +108,46 @@ class TreeReadIdentityTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertNotIn('read_identity', response.get_json())
         self.assertIsNone(tracker._response_contract.get())
+
+    def test_live_bundle_matches_pages_under_one_witness(self):
+        import cProfile
+        anchor = next(iter(self.service.rows))
+        profiler = cProfile.Profile();profiler.enable()
+        result = self.read(anchor_uuid=anchor, include_ancestors=True, counts_only=True)
+        profiler.disable()
+        self.assertTrue(result['tree_column_pages'])
+        parents = result.pop('ancestor_pages')
+        self.assertEqual(result, self.read(anchor_uuid=anchor, counts_only=True))
+        self.assertEqual(len(parents), len(result['path']))
+        for depth, parent in enumerate(parents):
+            self.assertEqual(parent, self.read(path=result['path'][:depth],
+                offset=result['ancestors'][depth]['parent_offset'], revision=result['revision'], counts_only=True))
+        self.assertLessEqual(sum(entry.callcount for entry in profiler.getstats()
+            if getattr(entry.code, 'co_name', '') == '_build_scope'), 1)
+
+    def test_live_bundle_bounds_ineligible_and_custom_readers_fail_closed(self):
+        for changes in ({'include_ancestors': 1}, {'ancestor_offsets': [0]},
+                        {'include_ancestors': True, 'ancestor_offsets': [0]*9},
+                        {'include_ancestors': True, 'ancestor_offsets': [True]},
+                        {'include_ancestors': True, 'filters': {'cell_type': 'fixture-type'}}):
+            self.assertEqual(self.client.post('/api/tree-pages', json={**self.body, **changes}).status_code, 400)
+        pager = self.app.extensions['disco.navigation.tree_pages']
+        original = pager.page
+        with patch.object(pager, 'page', side_effect=original):
+            self.assertNotIn('tree_column_pages', self.read())
+            self.assertEqual(self.client.post('/api/tree-pages', json={**self.body, 'include_ancestors': True}).status_code, 400)
+        self.service._explore_state_generation.token = lambda protocol: None
+        self.assertEqual(self.client.post('/api/tree-pages', json={**self.body, 'include_ancestors': True}).status_code, 400)
+
+    def test_live_bundle_closing_generation_discards_all_pages(self):
+        pager = self.app.extensions['disco.navigation.tree_pages']
+        original = pager.column_pages
+        def racing(*args):
+            result = original(*args)
+            self.annotations['shared'] += 1
+            return result
+        with patch.object(pager, 'column_pages', side_effect=racing):
+            response = self.client.post('/api/tree-pages', json={**self.body,
+                'include_ancestors': True, 'anchor_uuid': next(iter(self.service.rows))})
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('ancestor_pages', response.get_json())

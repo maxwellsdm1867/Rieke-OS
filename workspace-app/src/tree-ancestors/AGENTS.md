@@ -124,3 +124,17 @@ skipped. Legacy requests retain their full response. Mode-specific group caches
 remain bounded; revisions, membership, labels and authority fences are unchanged.
 The existing representative-only label renderer is retained. Live ancestor JSON
 keys include the request mode, so full and count-only responses cannot collide.
+
+Live eligible pages advertise `tree_column_pages` after a successful current
+witness. Column orchestration may use that capability from current-scope retained
+pages or the required fresh continuation root; unknown capability retains ordinary
+reads. Cold/missing parents and anchor reveals share a bounded response-local
+bundle. Retained parent geometry is only a scheduling hint for the existing
+fresh-target/attested-cache path, never read authority. Bundle target and parent
+shape, requested offsets/revision/splits, anchor and equal complete identity are
+validated before publication. Validated parents may enter the existing bounded
+immutable cache through its normal read adapter without further HTTP. Initial
+live anchors without a known capability retain the ordinary path. Hierarchy anchor
+reveal uses this same orchestration, preserving siblings and cancellation; arbitrary
+multi-branch restoration remains independently bounded. See liveColumnReads.test.js
+and mounted live/frozen column/hierarchy cases in treeTagCoverageWorkflow.test.js.

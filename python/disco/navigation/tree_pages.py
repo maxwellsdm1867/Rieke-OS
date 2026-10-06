@@ -667,6 +667,19 @@ def witnessed_tree_page(pager, body):
     client still obtains this witness from an uncached target/anchor request.
     Older/untracked backends and other tree sources keep the ordinary response.
     """
+    if not isinstance(body, dict):
+        return pager.page(body)
+    body = dict(body)
+    batch = body.pop('include_ancestors', False)
+    offsets = body.pop('ancestor_offsets', [])
+    if (type(batch) is not bool or not isinstance(offsets, list) or len(offsets) > 8
+            or any(value is not None and (type(value) is not int or not 0 <= value <= 10_000_000) for value in offsets)
+            or offsets and not batch):
+        raise ValueError('Malformed tree column navigation options')
+    def ordinary():
+        if batch:
+            raise ValueError('Tree column batching is unavailable for this scope; refresh the current tree')
+        return pager.page(body)
     service = pager.service
     from disco.metadata.disk_index import DiskMetadataIndex
     index = getattr(service, 'disk_index', None)
@@ -679,11 +692,11 @@ def witnessed_tree_page(pager, body):
                 and getattr(service, '_explore_state_generation', None) is not None
                 and isinstance(index, DiskMetadataIndex) and _structural_contract(service))
     if not eligible:
-        return pager.page(body)
+        return ordinary()
     definitions = {field['id']: field for field in index.catalog()['fields']}
     if any(field not in definitions or definitions[field].get('annotation_scope')
            or definitions[field].get('components') for field in body['splits'].split(',')):
-        return pager.page(body)
+        return ordinary()
     from disco.metadata.explore_queries import generation, context_annotation_locks, StaleQuery
     context = {'protocol_uuid': str(uuid.UUID(body['protocol_uuid']))}
     from workspace_state_generation import StateGenerationAuthority
@@ -696,8 +709,11 @@ def witnessed_tree_page(pager, body):
         try:
             before = generation(service, context)
         except StaleQuery:
-            return pager.page(body)  # Unverifiable native tracker: fresh canonical reader only.
-        result = pager.page(body)
+            return ordinary()  # Unverifiable native tracker: fresh canonical reader only.
+        canonical = pager._canonical_reader()
+        if batch and not canonical:
+            return ordinary()
+        result, parents = pager.column_pages(body, offsets) if batch else (pager.page(body), [])
         if generation(service, context) != before:
             raise StaleTreePage('Tree read generation changed; retry the current scope')
         result['read_identity'] = {'version': 1,
@@ -705,6 +721,13 @@ def witnessed_tree_page(pager, body):
             'project_path': str(service.project_dir.resolve()),
             'protocol_uuid': context['protocol_uuid'],
             'tree_revision': result['revision'], 'generation': before}
+        if canonical:
+            result['tree_column_pages'] = True
+        if batch:
+            for parent in parents:
+                parent['read_identity'] = result['read_identity']
+                parent['tree_column_pages'] = True
+            result['ancestor_pages'] = parents
         return result
 
 

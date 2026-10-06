@@ -83,7 +83,7 @@ export default function ColumnTree(props){
     setState(old=>({...old,loading:true,error:null}));observer.onStatus?.({loading:true,error:null});
     const scope=JSON.parse(scopeKey);
     try{
-      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+      const columns=await loadColumnTreePages({scope,path,offset,anchor,revisionOverride:revisionOverride||(!reset?prior.at(-1)?.revision:null),columnPositions,freshContinuation,retainedPages:reset?[]:prior,readOwner,load:api,signal:request.signal,isCurrent:()=>token===serial.current});
       const page=columns.at(-1);
       if(request.signal.aborted||token!==serial.current)return;
       const preserve=restorePresentation?.scope===presentationScope&&restorePresentation.selected===latestSelected.current&&restorePresentation.columns.length===columns.length&&columns.every((column,depth)=>{const old=restorePresentation.columns[depth];return old.revision===column.revision&&old.offset===column.offset&&JSON.stringify(old.path)===JSON.stringify(column.path);});

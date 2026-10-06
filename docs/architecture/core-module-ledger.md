@@ -507,3 +507,15 @@ of selected UUIDs. Existing tree/list gesture readers retain range bounds and st
 completion fences; explicit toolbar actions apply only the highlighted UUIDs to
 selection. The left browser hides branch actions while Edit Tree retains them.
 This does not change scientific membership, persisted consent or request authority.
+
+The shared target/ancestor reader now also serves eligible live protocol column
+navigation and live/frozen hierarchy anchor reveal. Live pages advertise scoped
+support only after a successful witness; the existing response-local TreePages
+projection and closing authority cover the complete bounded bundle. Warm retained
+parent geometry keeps the fresh-target/attested-ancestor path, and validated live
+bundle parents can use the existing immutable cache adapter. Capability discovery
+adds no request. Unknown capabilities and distinct multipath restoration/range/tag
+operations retain their own contracts; initial live anchors may still use ordinary
+reads. Local navigation and tree-ancestor contracts define exact validation and
+failure behavior. Independent preimplementation and source reviews were performed;
+source/route tests and native package evidence retain separate attribution.

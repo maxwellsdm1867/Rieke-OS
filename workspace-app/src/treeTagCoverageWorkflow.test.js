@@ -101,3 +101,22 @@ test('ColumnTree replaces pending navigation, accumulates paging and fences old-
   await h.act(()=>held[count].resolve());await h.settle(15);
  }finally{await h.close();}
 });
+
+for(const name of ['ColumnTree','HierarchyTree'])for(const frozen of [false,true])test(`${name} ${frozen?'frozen':'live'} anchor shares one validated ancestor bundle`,async()=>{
+ const priorFrame=globalThis.requestAnimationFrame,priorCancel=globalThis.cancelAnimationFrame;
+ globalThis.requestAnimationFrame=fn=>setTimeout(fn,0);globalThis.cancelAnimationFrame=clearTimeout;
+ const h=await createWorkflowHarness(),calls=[];
+ const revision='a'.repeat(64),key='b'.repeat(64),fence=frozen?{candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:1,generation:{metadata:'m'}}:{tree_column_pages:true,read_identity:{version:1,project_uuid:'project',project_path:'/fixture',protocol_uuid:'p',tree_revision:revision,generation:{metadata:'m',source:'s',annotation:'a',binding:'b',publication:'p',typed:null}}};
+ const branch={key,path:[key],label:'Parent',value:'parent',count:1};
+ const root={...fence,revision,kind:'branches',path:[],depth:0,offset:0,limit:60,total:1,total_epochs:1,selection:{count:1},split_order:['date'],levels:[{field:'date',label:'Date'}],ancestors:[],epochs:[],branches:[branch],has_more:false};
+ const leaf={...root,kind:'epochs',path:[key],depth:1,branches:[],epochs:[{epoch_uuid:'target',cell_uuid:'c',epoch_number:1}],ancestors:[{...branch,parent_offset:0}],anchor:{epoch_uuid:'target',path:[key],index:0,offset:0},ancestor_pages:[root]};
+ const props={protocolId:'p',splits:'date',browseOnly:true,...(frozen?{readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope',tree_column_pages:true}}:{})};
+ h.fixture.respond=(url,options,fallback)=>url.pathname.endsWith(frozen?'/tree/page':'/tree-pages')?(calls.push(JSON.parse(options.body)),JSON.parse(options.body).anchor_uuid?leaf:JSON.parse(options.body).include_ancestors?{...root,ancestor_pages:[]}:root):fallback();
+ try{
+  const Tree=await h.component(name);await h.mount(Tree,props);
+  await h.waitFor(()=>calls.length===1);await h.settle(30);
+  await h.render(Tree,{...props,selected:'target'});
+  await h.waitFor(()=>h.root.findAll(node=>node.props['data-epoch-uuid']==='target').length===1);
+  assert.equal(calls.length,2);assert.equal(calls[1].include_ancestors,true);assert.equal(calls[1].anchor_uuid,'target');
+ }finally{await h.close();if(priorFrame===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=priorFrame;if(priorCancel===undefined)delete globalThis.cancelAnimationFrame;else globalThis.cancelAnimationFrame=priorCancel;}
+});
