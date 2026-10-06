@@ -10,7 +10,7 @@ test('advertised frozen column read obtains fresh target and parents in one boun
  const calls=[];const load=async(path,options)=>{calls.push({path,...options});return structuredClone(target);};
  const pages=await loadColumnTreePages({scope,path:[key],revisionOverride:revision,load});
  assert.equal(calls.length,1);assert.equal(calls[0].path,'/candidates/c/tree/page');
- assert.deepEqual(calls[0].body,{candidate_scope_revision:token,filters:{cell_uuid:'cell'},splits:'date',path:[key],offset:0,limit:60,revision,include_ancestors:true,ancestor_offsets:[]});
+ assert.deepEqual(calls[0].body,{counts_only:true,candidate_scope_revision:token,filters:{cell_uuid:'cell'},splits:'date',path:[key],offset:0,limit:60,revision,include_ancestors:true,ancestor_offsets:[]});
  assert.deepEqual(pages,[parent,Object.fromEntries(Object.entries(target).filter(([key])=>key!=='ancestor_pages'))]);
 });
 test('anchor uses recorded offsets; ordinary restoration retains explicit offsets and absent placeholders',async()=>{

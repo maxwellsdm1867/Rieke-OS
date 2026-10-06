@@ -9,8 +9,8 @@ const hash=value=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const path=value=>Array.isArray(value)&&value.length<=8&&value.every(hash);
 const recorded=field=>['date','cell','cell type','group','block','protocol','source'].includes(field)||/^(parameters|properties)\//.test(field);
 export function reusableTreeBody(body){
- return !!body&&Object.keys(body).every(key=>['protocol_uuid','filters','splits','path','offset','limit','revision'].includes(key))&&
-  nonempty(body.protocol_uuid)&&canonical(body.filters)==='{}'&&nonempty(body.splits)&&body.splits.split(',').length<=8&&body.splits.split(',').every(recorded)&&
+ return !!body&&Object.keys(body).every(key=>['protocol_uuid','filters','splits','path','offset','limit','revision','counts_only'].includes(key))&&
+  (!Object.hasOwn(body,'counts_only')||typeof body.counts_only==='boolean')&&nonempty(body.protocol_uuid)&&canonical(body.filters)==='{}'&&nonempty(body.splits)&&body.splits.split(',').length<=8&&body.splits.split(',').every(recorded)&&
   path(body.path)&&body.path.length<body.splits.split(',').length&&Number.isSafeInteger(body.offset)&&body.offset>=0&&body.limit===60&&hash(body.revision);
 }
 function identityFor(scope,body,page){

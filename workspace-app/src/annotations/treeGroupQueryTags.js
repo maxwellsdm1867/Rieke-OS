@@ -4,7 +4,7 @@ export {confirmGroupReceipt} from "../group-save/groupAnnotationRecovery.js";
 
 export function groupQueryScope(scope,path,revision){
   if(scope.readContext)throw Error('Shared group tags are not supported in Incoming Workbench yet.');
-  const {offset,limit,...query}=treePageRequest(scope,{path,currentRevision:revision});
+  const {offset,limit,counts_only,...query}=treePageRequest(scope,{path,currentRevision:revision});
   return query;
 }
 export async function previewTreeGroup({scope,path,revision,count,profileUuid,request,signal}){

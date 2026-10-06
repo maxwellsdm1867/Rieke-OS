@@ -90,7 +90,7 @@ test('default transport preserves recorded, predicate and workbench HTTP envelop
       {predicate,filters,splits:'date,cell',expectedRevision:'expected'},
       {protocolId:'ignored',predicate,readContext:{root:'/workbench/session',candidate_scope_revision:'candidate'},filters,splits:'date,cell',expectedRevision:'expected'},
     ])await reader.firstEpoch(scope,{path:['opaque'],revision:'older',signal:controller.signal});
-    const common={filters,splits:'date,cell',path:['opaque'],offset:0,limit:60,revision:'expected'};
+    const common={counts_only:true,filters,splits:'date,cell',path:['opaque'],offset:0,limit:60,revision:'expected'};
     assert.deepEqual(seen,[
       {url:'/api/tree-pages',method:'POST',signal:controller.signal,body:{protocol_uuid:'protocol',...common}},
       {url:'/api/tree-pages',method:'POST',signal:controller.signal,body:{predicate,...common}},

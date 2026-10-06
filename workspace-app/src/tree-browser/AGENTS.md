@@ -59,9 +59,9 @@ changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
 
-Workbench saved-tag badges use exact backend `shared_tag_coverage` counts and
-neutral styling; they never color the whole branch green. Missing, malformed,
-stale-scope and refreshing coverage stays unavailable.
+Paged tree browsing requests `counts_only: true`: split group totals and epoch
+counts remain; duration, distinct-cell and branch tag-coverage aggregates are not
+requested or displayed. Direct annotations and tag/selection actions remain separate.
 
 Incoming branch switches are binary user commands: green on, blue off. Descendants
 inherit the nearest branch command; explicit child switches override it without

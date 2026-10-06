@@ -115,3 +115,12 @@ renderer validates parent order/path/offset/revision, candidate token, query and
 binding fences, and equal generation before atomic publication. Unadvertised
 contexts retain individual fresh reads; malformed advertised batches fail closed.
 `frozenColumnReads.test.js` covers this protocol, cancellation and stale responses.
+
+
+Paged browsing opts into strictly boolean `counts_only: true`. Root, selection,
+branch and ancestor summaries then contain epoch counts, with group totals in
+`total`; full-bucket duration, distinct-cell and shared-tag coverage scans are
+skipped. Legacy requests retain their full response. Mode-specific group caches
+remain bounded; revisions, membership, labels and authority fences are unchanged.
+The existing representative-only label renderer is retained. Live ancestor JSON
+keys include the request mode, so full and count-only responses cannot collide.

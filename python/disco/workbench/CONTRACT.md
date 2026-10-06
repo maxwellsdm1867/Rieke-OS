@@ -159,3 +159,12 @@ Parents receive that same final generation, candidate, query and binding fence.
 It neither admits cached candidate data nor changes selection/publication consent.
 The existing Workbench suite compares batched bodies to separate fresh reads and
 covers anchor offsets, malformed options, bounds and closing-scope rejection.
+
+
+Paged browsing opts into strictly boolean `counts_only: true`. Root, selection,
+branch and ancestor summaries then contain epoch counts, with group totals in
+`total`; full-bucket duration, distinct-cell and shared-tag coverage scans are
+skipped. Legacy requests retain their full response. Mode-specific group caches
+remain bounded; revisions, membership, labels and authority fences are unchanged.
+The existing representative-only label renderer is retained. Live ancestor JSON
+keys include the request mode, so full and count-only responses cannot collide.

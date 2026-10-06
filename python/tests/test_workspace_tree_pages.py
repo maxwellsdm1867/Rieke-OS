@@ -49,6 +49,35 @@ class TreePageTests(unittest.TestCase):
         walk(root)
         return leaves, paths
 
+    def test_counts_only_preserves_pages_and_skips_full_bucket_statistics(self):
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        def reduced(page):
+            result = copy.deepcopy(page)
+            for row in [result, result['selection'], *result['branches'], *result['ancestors']]:
+                for key in ('cells', 'duration_seconds', 'shared_tag_coverage'):
+                    row.pop(key, None)
+            return result
+        self.service.tree_annotation_coverage = lambda rows: {'total_epochs': len(rows), 'tagged_epochs': 0}
+        bodies = [{'splits': 'date,cell,block'}, {'splits': 'parameters/value', 'limit': 2},
+                  {'splits': 'cell,parameters/value', 'anchor_uuid': str(uuid.UUID(int=9))},
+                  {'splits': ''}]
+        for indexed in (False, True):
+            if indexed:
+                self.service.disk_index = DiskMetadataIndex.build(Path(self.temp.name)/'counts.sqlite',
+                    list(self.service.rows.values()), self.service.details, self.service.sources,
+                    'counts-fixture', self.service.project['project_uuid'])
+            for body in bodies:
+                legacy = self.pager.page(body)
+                for _ in range(2):
+                    with patch('disco.navigation.tree_pages._summary', side_effect=AssertionError('Full bucket statistics')),                         patch.object(self.service, 'tree_annotation_coverage', side_effect=AssertionError('Coverage scan')):
+                        compact = self.pager.page({**body, 'counts_only': True})
+                    self.assertEqual(compact, reduced(legacy))
+                    self.assertEqual(self.pager.page(body), legacy)
+        for value in (None, 0, 1, 'true', [], {}):
+            with self.assertRaisesRegex(ValueError, 'boolean'):
+                self.pager.page({'counts_only': value})
+
     def test_all_typed_branches_pages_preserve_exact_membership_and_labels(self):
         body = {'protocol_uuid':self.service.protocol_id,'splits':'parameters/value','limit':2}
         before = copy.deepcopy((self.service.rows,self.service.details))

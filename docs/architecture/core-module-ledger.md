@@ -492,3 +492,11 @@ generation fences; client cache admission still excludes frozen candidates.
 Candidate catalog computation is deferred until a split chooser opens. Terminal
 Tag fill follows actual selected epoch UUIDs. These changes received independent
 design review; native timing evidence remains scoped to its owned fixture.
+
+
+Counts-only paged tree follow-up: tree request shaping now opts into epoch counts
+and per-split group totals. Backend count-only pages skip full-bucket duration,
+distinct-cell and shared-tag-coverage scans. The legacy page contract and bounded
+representative label renderer remain. Cache keys separate response modes; membership,
+revision, closing authority and scientific action owners are unchanged. Query-tag
+previews explicitly omit this presentation option from their membership scope.

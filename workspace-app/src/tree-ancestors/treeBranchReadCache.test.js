@@ -252,3 +252,17 @@ test('fresh continuation retry obtains root revision before branch/pagination an
  const work=loadColumnTreePages({scope:{protocolId:protocol,splits:'date,cell'},path:[hex(7)],freshContinuation:true,isCurrent:()=>current,load:()=>{calls++;return hold.promise;}});
  current=false;hold.resolve(page);await assert.rejects(work,{name:'AbortError'});assert.equal(calls,1);
 });
+
+
+test('count-only and full summaries never share retained JSON',async()=>{
+ const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0;
+ const compact={...page};delete compact.cells;delete compact.duration_seconds;
+ const load=async(_,{body:request})=>{calls++;return request.counts_only?compact:page;};
+ for(let repeat=0;repeat<2;repeat++)for(const mode of [true,false]){
+  const request={...body,counts_only:mode};
+  const result=await cache.read(attest(cache),request,{load});
+  assert.equal(Object.hasOwn(result,'cells'),!mode);
+ }
+ assert.equal(calls,2);
+ for(const value of [null,1,0,'true'])await assert.rejects(cache.read(attest(cache),{...body,counts_only:value},{load}),/outside/);
+});

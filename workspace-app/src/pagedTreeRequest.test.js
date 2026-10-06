@@ -5,7 +5,7 @@ import {treePageRequest,treeNavigationSnapshot,treeNavigationStart,treePreviewSc
 test('bounded tree pages preserve filters and opaque paths without posting full memberships',()=>{
   const filters={cell_type:'OFF parasol'};
   const body=treePageRequest({protocolId:'protocol',filters,splits:'date,cell,block'},{path:['opaque-date','opaque-cell'],offset:60,currentRevision:'r1'});
-  assert.deepEqual(body,{protocol_uuid:'protocol',filters,splits:'date,cell,block',path:['opaque-date','opaque-cell'],offset:60,limit:60,revision:'r1'});
+  assert.deepEqual(body,{counts_only:true,protocol_uuid:'protocol',filters,splits:'date,cell,block',path:['opaque-date','opaque-cell'],offset:60,limit:60,revision:'r1'});
   assert.equal(Object.hasOwn(body,'predicate'),false);
 });
 test('explorer page and anchor requests always retain summary revision even on explicit reload',()=>{

@@ -89,6 +89,31 @@ class WorkbenchTests(unittest.TestCase):
             self.assertEqual(fresh.status_code, 200, fresh.get_json())
             self.assertEqual(parent, fresh.get_json())
 
+    def test_count_only_column_batch_skips_statistics_and_preserves_authority(self):
+        context = self.get_context()
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'],
+                    splits='date,cell,block', anchor_uuid=self.added, include_ancestors=True)
+        legacy = self.case.client.post(self.root + '/tree/page', json=body, headers=self.case.headers).get_json()
+        original = self.manager.frozen_service
+        def frozen(*args, **kwargs):
+            value = original(*args, **kwargs)
+            def no_coverage(rows):
+                raise AssertionError('Count-only must not request branch coverage')
+            value.tree_annotation_coverage = no_coverage
+            return value
+        with patch.object(self.manager, 'frozen_service', side_effect=frozen), patch(
+                'disco.navigation.tree_pages._summary', side_effect=AssertionError('Full bucket statistics')):
+            response = self.case.client.post(self.root + '/tree/page', json={**body, 'counts_only': True}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        for page in [legacy, *legacy['ancestor_pages']]:
+            for row in [page, page['selection'], *page['branches'], *page['ancestors']]:
+                for key in ('cells', 'duration_seconds', 'shared_tag_coverage'):
+                    row.pop(key, None)
+        self.assertEqual(response.get_json(), legacy)
+        for value in (None, 1, 0, 'true'):
+            bad = self.case.client.post(self.root + '/tree/page', json={**body, 'counts_only': value}, headers=self.case.headers)
+            self.assertEqual(bad.status_code, 400, bad.get_json())
+
     def test_column_batch_validates_bounds_and_closing_scope(self):
         context = self.get_context()
         body = dict(candidate_scope_revision=context['candidate_scope_revision'], splits='date,cell,block')

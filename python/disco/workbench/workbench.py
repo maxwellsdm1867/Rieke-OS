@@ -883,7 +883,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     @app.post(candidate + '/tree/page')
     def workbench_tree_page(protocol, revision):
         value = body({'candidate_scope_revision'}, {'filters', 'splits', 'path', 'offset', 'limit', 'revision', 'anchor_uuid',
-            'include_ancestors', 'ancestor_offsets'})
+            'include_ancestors', 'ancestor_offsets', 'counts_only'})
         expected = value.pop('candidate_scope_revision')
         include_ancestors = value.pop('include_ancestors', False)
         ancestor_offsets = value.pop('ancestor_offsets', [])

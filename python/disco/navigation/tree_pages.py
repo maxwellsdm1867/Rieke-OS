@@ -72,14 +72,14 @@ class _NavigationValues(Mapping):
     def __sizeof__(self):
         return object.__sizeof__(self) + self.grouping_budget
 
-    def remember_groups(self, key, current, buckets):
+    def remember_groups(self, key, current, buckets, *, counts_only=False):
         # Compute summaries before admission, so neither later dictionary growth
         # nor newly allocated count/duration values can escape the reservation.
         # Rows and structural values are borrowed from service.rows. Container
         # references are charged conservatively even when another entry shares
         # them. The per-entry allowance covers the cache slot/value tuple/cost.
         for bucket in buckets:
-            bucket['summary'] = _summary(bucket['rows'])
+            bucket['summary'] = {'count': len(bucket['rows'])} if counts_only else _summary(bucket['rows'])
         cost = (256 + sys.getsizeof(key) + sys.getsizeof(key[1])
                 + sys.getsizeof(buckets) + sys.getsizeof(current)
                 + sum(sys.getsizeof(bucket) + sys.getsizeof(bucket['rows'])
@@ -401,8 +401,11 @@ class TreePages:
         return rows, catalog, values, definitions, order, revision
 
     def page(self, body):
-        if not isinstance(body, dict) or set(body) - {'protocol_uuid','predicate','filters','splits','path','offset','limit','revision','anchor_uuid'}:
+        if not isinstance(body, dict) or set(body) - {'protocol_uuid','predicate','filters','splits','path','offset','limit','revision','anchor_uuid','counts_only'}:
             raise ValueError('Malformed tree page request or unsupported fields')
+        counts_only = body.get('counts_only', False)
+        if type(counts_only) is not bool:
+            raise ValueError('counts_only must be a boolean')
         limit, offset = body.get('limit', 80), body.get('offset', 0)
         if type(limit) is not int or not 1 <= limit <= 100 or type(offset) is not int or not 0 <= offset <= 10_000_000:
             raise ValueError('Tree pages require limit 1–100 and a nonnegative bounded offset')
@@ -420,7 +423,9 @@ class TreePages:
         if expected is not None and expected != revision:
             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
         structural_path = TreePath(order,definitions,path)
-        if isinstance(values, _NavigationValues):
+        if counts_only:
+            root_summary = {'count': len(rows)}
+        elif isinstance(values, _NavigationValues):
             if values.summary is None:
                 values.summary = _summary(rows)
             root_summary = values.summary
@@ -439,7 +444,7 @@ class TreePages:
 
         def groups(current, depth):
             field = order[depth]
-            cache_key = (field, id(current))
+            cache_key = (field, id(current), counts_only)
             if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
                 return values.group_cache[cache_key][1]
             buckets = {}
@@ -462,7 +467,7 @@ class TreePages:
             for index, key in enumerate(result):
                 result[index] = buckets[key]
             if isinstance(values, _NavigationValues):
-                values.remember_groups(cache_key, current, result)
+                values.remember_groups(cache_key, current, result, counts_only=counts_only)
             return result
 
         def branch_records(buckets, depth, parent_path):
@@ -485,7 +490,9 @@ class TreePages:
             for bucket in buckets:
                 key = key_for(bucket['row'],field)
                 child = labels[key]
-                if isinstance(values, _NavigationValues):
+                if counts_only:
+                    summary = {'count': len(bucket['rows'])}
+                elif isinstance(values, _NavigationValues):
                     if 'summary' not in bucket:
                         bucket['summary'] = _summary(bucket['rows'])
                     summary = bucket['summary']
@@ -495,7 +502,7 @@ class TreePages:
                     'missing':bucket['missing'], 'path':[*parent_path,key],
                     'has_children':depth + 1 < len(order), **summary,
                     **({'shared_tag_coverage': self.service.tree_annotation_coverage(bucket['rows'])}
-                       if callable(getattr(self.service, 'tree_annotation_coverage', None)) else {}),
+                       if not counts_only and callable(getattr(self.service, 'tree_annotation_coverage', None)) else {}),
                     **{name:child[name] for name in ('components','has_missing_components','start_time') if name in child}})
             return result
 
@@ -515,7 +522,9 @@ class TreePages:
             ancestors.extend([{**item,'parent_offset':found[0] // limit * limit} for item in branch_records([current],depth,path[:depth])])
             selected = current['rows']
         depth = len(path)
-        if not isinstance(values, _NavigationValues):
+        if counts_only:
+            selected_summary = {'count': len(selected)}
+        elif not isinstance(values, _NavigationValues):
             selected_summary = _summary(selected)
         elif ancestors:
             selected_summary = {key: ancestors[-1][key]
@@ -523,7 +532,7 @@ class TreePages:
         else:
             selected_summary = root_summary
         payload = {'revision':revision,'split_order':order,'levels':levels,'total_epochs':total_epochs,
-            'count':root_summary['count'],'cells':root_summary['cells'],'duration_seconds':root_summary['duration_seconds'],
+            **root_summary,
             'path':path,'depth':depth,'offset':offset,'limit':limit,'branches':[],'epochs':[],
             'selection':selected_summary, 'ancestors':ancestors,
             'source_scope_revision':self.service.source_scope()['revision'] if body.get('protocol_uuid') is None else None}
