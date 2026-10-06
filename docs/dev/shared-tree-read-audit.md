@@ -363,3 +363,16 @@ index projection supplies values and generation; annotation and joint/component
 fields remain excluded. Renderer cache admission stays unchanged, so metadata
 parents batch freshly even when prior column geometry is retained. A native
 rerun against this exact saved layout is required for final package acceptance.
+
+
+## Final native and source acceptance
+
+Final source `2060575732d059641129a8d521f978fd5486d0bc` passed 916 frontend
+and 144 backend checks and the clean core gate. The packaged owned native fixture
+passed main/incoming columns and hierarchy, including its actual recorded-metadata
+layout. Main first column reveal and hierarchy reveal each used two reads; the
+known-metadata expansion used one; incoming hierarchy used one. Selection, queued
+siblings and held navigation passed with clean shutdown and no renderer errors.
+The exact-source route comparison is in [results](shared-tree-read-results.json).
+Earlier exploratory timings and controller failures above retain their original
+scope; the package record identifies the final artifact and its limitations.

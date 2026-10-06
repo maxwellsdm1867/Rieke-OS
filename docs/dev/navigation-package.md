@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `362c33027b8085c785e69b8a814519fb18116f66`,
+app and ZIP to clean source commit `2060575732d059641129a8d521f978fd5486d0bc`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -389,3 +389,42 @@ exact clean core gate passed. The final packaged native fixture verified exact
 selection, queued clicks and held navigation, with no page errors and clean exit.
 Source/frontend/ASAR identity, full static native audit and relocated scientific
 imports passed. Public prerelease assets remain unchanged.
+
+
+## Shared tree metadata reads across presentations
+
+The local package at source `2060575732d059641129a8d521f978fd5486d0bc`
+uses the same bounded target/ancestor resolver for main and incoming columns and
+hierarchy anchor reveal. Live scope support is advertised by a fresh witness;
+all returned pages keep exact path/offset/revision and generation checks. Initial
+three-level main reveals can discover support on their first target and fetch
+remaining parents together (four reads to two); known-capability reveals use one.
+Warm attested ancestor reuse is preserved. Unsupported contexts retain bounded
+ordinary reads, and arbitrary multipath restore/range/tag operations keep their
+separate contracts. No scientific membership, selection cap or mutation authority
+is widened.
+
+[Audit](shared-tree-read-audit.md) and [route results](shared-tree-read-results.json)
+retain scope and measurement details. At the exact final source, 50k synthetic
+`cell type,metadata/cell/start_time` target-plus-two-parent reads measured
+3326.30 ms cold versus 1224.64 ms bundled, with three scope constructions/requests
+reduced to one. Repeated medians were 3343.02 and 129.82 ms, benefiting from reuse
+of the same server projection; renderer metadata-cache admission remains disabled.
+These are three paired Flask/SQLite-index observations with SQL doubles, not
+native MySQL/network/paint/H5 throughput. One scope construction still grows with
+dataset size. Other layouts and larger metadata values can have different cache
+retention and costs.
+
+916 frontend and 144 scoped backend checks, independent design/source review,
+architecture guard and the exact clean core benchmark gate passed. The final
+packaged owned fixture exercises selection, queued clicks, held navigation and
+main/incoming column and hierarchy behavior. Source/frontend/ASAR identity,
+static native audit (813 files) and scientific imports passed. Earlier extended
+controller attempts stopped at missing focus, a collapsed sidebar folder and a
+hash-only route transition; their clean-exit failure receipts are retained. The
+corrected controller establishes focus and navigates through ordinary sidebar/tab
+UI, including expanding the support section. A separate native metadata-layout
+check then exposed missing batching eligibility; that coverage gap was fixed under
+independent review before this final package. The installed app restored the
+saved Workbench view; its temporary 441-epoch selection was restored through the
+visible root switch. Public prerelease assets remain unchanged. This is local testing evidence, not release promotion.

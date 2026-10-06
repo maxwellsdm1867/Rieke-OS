@@ -1,0 +1,207 @@
+{
+  "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+  "runtime_source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+  "source_sha256": "9a34d0419a42e455a6fb3f28eec63a0b66acf50f50cbcbd30b22c10cdf25b225",
+  "controller_sha256": "70d97a4fe06731bcb1550da087dddae721824753054379fbd2cab53fbee2ccf4",
+  "raw_receipt": "shared-tree-metadata-route-benchmark-2026-10-06T16-28-52/receipt.json",
+  "limits": [
+    "Paired separate-vs-bundle current production Flask routes over synthetic SQL-double FixtureService and real SQLite metadata index. No native MySQL, socket, H5 or UI throughput claim.",
+    "Three unprofiled cold/repeat pairs per operation, source identical; scope cache cleared for cold. OS caches uncontrolled.",
+    "Identity, complete page equivalence and counts asserted; separate cProfile run checks builds."
+  ],
+  "fixtures_cleaned": true,
+  "cases": [
+    {
+      "epochs": 1000,
+      "splits": "cell type,metadata/cell/start_time",
+      "requests": {
+        "individual": 3,
+        "batched": 1
+      },
+      "scope_builds": {
+        "individual": 3,
+        "batched": 1
+      },
+      "median_ms": {
+        "individual": {
+          "cold": 55.79,
+          "warm": 3.98
+        },
+        "batched": {
+          "cold": 21.99,
+          "warm": 3.24
+        }
+      },
+      "raw_samples": {
+        "individual": [
+          {
+            "cold_ms": 56.34037498384714,
+            "warm_ms": 4.383334016893059,
+            "bytes": 23403,
+            "warm_bytes": 23403
+          },
+          {
+            "cold_ms": 54.840541968587786,
+            "warm_ms": 3.9798750076442957,
+            "bytes": 23403,
+            "warm_bytes": 23403
+          },
+          {
+            "cold_ms": 55.790541984606534,
+            "warm_ms": 3.9241249905899167,
+            "bytes": 23403,
+            "warm_bytes": 23403
+          }
+        ],
+        "batched": [
+          {
+            "cold_ms": 20.72904200758785,
+            "warm_ms": 3.671125043183565,
+            "bytes": 23422,
+            "warm_bytes": 23422
+          },
+          {
+            "cold_ms": 23.276708961930126,
+            "warm_ms": 3.16287501482293,
+            "bytes": 23422,
+            "warm_bytes": 23422
+          },
+          {
+            "cold_ms": 21.99054096126929,
+            "warm_ms": 3.2417079783044755,
+            "bytes": 23422,
+            "warm_bytes": 23422
+          }
+        ]
+      }
+    },
+    {
+      "epochs": 10000,
+      "splits": "cell type,metadata/cell/start_time",
+      "requests": {
+        "individual": 3,
+        "batched": 1
+      },
+      "scope_builds": {
+        "individual": 3,
+        "batched": 1
+      },
+      "median_ms": {
+        "individual": {
+          "cold": 585.2,
+          "warm": 25.92
+        },
+        "batched": {
+          "cold": 222.36,
+          "warm": 24.12
+        }
+      },
+      "raw_samples": {
+        "individual": [
+          {
+            "cold_ms": 585.1981659652665,
+            "warm_ms": 25.917458988260478,
+            "bytes": 26403,
+            "warm_bytes": 26403
+          },
+          {
+            "cold_ms": 596.5924590127543,
+            "warm_ms": 26.251208037137985,
+            "bytes": 26403,
+            "warm_bytes": 26403
+          },
+          {
+            "cold_ms": 580.6644579861313,
+            "warm_ms": 25.453415990341455,
+            "bytes": 26403,
+            "warm_bytes": 26403
+          }
+        ],
+        "batched": [
+          {
+            "cold_ms": 209.94741696631536,
+            "warm_ms": 24.144584021996707,
+            "bytes": 26422,
+            "warm_bytes": 26422
+          },
+          {
+            "cold_ms": 222.35720901517197,
+            "warm_ms": 24.1184170008637,
+            "bytes": 26422,
+            "warm_bytes": 26422
+          },
+          {
+            "cold_ms": 224.5666669914499,
+            "warm_ms": 24.042374978307635,
+            "bytes": 26422,
+            "warm_bytes": 26422
+          }
+        ]
+      }
+    },
+    {
+      "epochs": 50000,
+      "splits": "cell type,metadata/cell/start_time",
+      "requests": {
+        "individual": 3,
+        "batched": 1
+      },
+      "scope_builds": {
+        "individual": 3,
+        "batched": 1
+      },
+      "median_ms": {
+        "individual": {
+          "cold": 3326.3,
+          "warm": 3343.02
+        },
+        "batched": {
+          "cold": 1224.64,
+          "warm": 129.82
+        }
+      },
+      "raw_samples": {
+        "individual": [
+          {
+            "cold_ms": 3326.301791006699,
+            "warm_ms": 3343.018874991685,
+            "bytes": 39683,
+            "warm_bytes": 39683
+          },
+          {
+            "cold_ms": 3279.238792019896,
+            "warm_ms": 3431.6463749855757,
+            "bytes": 39683,
+            "warm_bytes": 39683
+          },
+          {
+            "cold_ms": 3357.7637909911573,
+            "warm_ms": 3317.435499979183,
+            "bytes": 39683,
+            "warm_bytes": 39683
+          }
+        ],
+        "batched": [
+          {
+            "cold_ms": 1235.8261669869535,
+            "warm_ms": 130.48966601490974,
+            "bytes": 39702,
+            "warm_bytes": 39702
+          },
+          {
+            "cold_ms": 1198.7509580212645,
+            "warm_ms": 129.81529196258634,
+            "bytes": 39702,
+            "warm_bytes": 39702
+          },
+          {
+            "cold_ms": 1224.6384170139208,
+            "warm_ms": 129.40912501653656,
+            "bytes": 39702,
+            "warm_bytes": 39702
+          }
+        ]
+      }
+    }
+  ]
+}

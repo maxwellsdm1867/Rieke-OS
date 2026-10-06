@@ -5,27 +5,26 @@
   "recorded_date": "2026-10-06",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+  "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-epoch-scale-arm64.zip",
-    "bytes": 621202568,
-    "sha256": "a74803f73c9a788f2f58f505396d53afa20f494a50b45a839ffcb4e5fc959d2b"
+    "filename": "Disco-0.1.8-shared-tree-arm64.zip",
+    "bytes": 621203569,
+    "sha256": "6239bd4a1c0db405a52fc519e03b9d2cf6564c2c8613f7f20f7fcadd233ed184"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
-      "passed": 890,
+      "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+      "passed": 916,
       "failed": 0,
-      "scope": "Full recursive suite including queued selection, pending navigation, stale activation and existing scientific action fences",
-      "independent_source_review": "passed",
-      "final_source_difference": "Backend-only tree membership/projection change; existing renderer source and prior full frontend attribution retained."
+      "scope": "Full recursive frontend suite including main/frozen columns and hierarchy, first-target capability discovery, offsets, generation mismatch, cancellation and immutable ancestor reuse",
+      "independent_source_review": "passed"
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -38,22 +37,28 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Canonical tree selection resolves metadata once without descendant page rendering; column responses reuse one target projection. Custom pager fallback and opening/closing authority remain; no new cross-request cache.",
+      "final_source_difference": "Live eligible witnessed target/ancestor batching shares the existing TreePages projection. Initial live target may discover support and load remaining parents together. Frozen scope, custom fallback and scientific authority remain separate.",
       "current_source_scoped_checks": {
-        "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
-        "passed": 158,
+        "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+        "passed": 144,
         "failed": 0,
-        "scope": "118 tree/workbench/recovery tests plus 40 cache/identity/path/matching/typed-order tests; native and core results separate"
+        "scope": "Tree paging, cache, identity, path, null/order, matching, Workbench, pending and history recovery; recorded metadata eligibility and complete live generation checks included"
       },
       "previous_source_scoped_checks": {
         "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
         "passed": 62,
         "failed": 0,
         "scope": "Workbench frozen read contracts, exact bounded branch selection, mutation recovery and registered endpoint policy"
+      },
+      "previous_frozen_scale_checks": {
+        "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+        "passed": 158,
+        "failed": 0,
+        "scope": "118 tree/workbench/recovery tests plus 40 cache/identity/path/matching/typed-order tests; native and core results separate"
       }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/epoch-scale-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/shared-tree-metadata-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -71,16 +76,16 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "epoch-scale-tests-final.log",
-      "epoch-scale-cache-tests.log",
-      "epoch-scale-guard.log",
-      "epoch-scale-core-gate.json",
-      "epoch-scale-provenance.json",
-      "epoch-scale-native-audit.json",
-      "epoch-scale-imports.json",
-      "epoch-scale-comparison-final.json",
-      "epoch-scale-installed.json",
-      "epoch-scale-installed-ui.json"
+      "shared-tree-metadata-frontend-full.log",
+      "shared-tree-metadata-backend-full.log",
+      "shared-tree-metadata-guard.log",
+      "shared-tree-metadata-core-gate.json",
+      "shared-tree-metadata-provenance.json",
+      "shared-tree-metadata-native-audit.json",
+      "shared-tree-metadata-imports.json",
+      "shared-tree-route-final-results.json",
+      "shared-tree-installed.json",
+      "shared-tree-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -107,18 +112,29 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
-      "verification": "See epoch-scale-installed-ui.json"
+      "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+      "verification": "See shared-tree-installed-ui.json",
+      "selection_restored": {
+        "epochs": 441,
+        "cells": 3,
+        "cell_types": 1
+      }
     },
     "current_native_workflow": {
-      "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
-      "receipt": "epoch-scale-native-2026-10-06T18-13-53-912Z/receipt.json",
-      "controller_sha256": "a689985b34f52d00e15dff3a1ada2d515f54d5ef8c64a5b3037f17b148b80b33",
+      "source_commit": "2060575732d059641129a8d521f978fd5486d0bc",
+      "receipt": "shared-tree-native-2026-10-06T23-33-52-038Z/receipt.json",
+      "controller_sha256": "394d10a796267596792d894f0577a38f5ba3abaf18dc358964beda4be7c65560",
       "passed": true,
-      "scope": "Owned 63-epoch native fixture: exact selection, queued siblings, counts-only pages, held latest navigation and scientific action gates",
+      "scope": "Owned 2041-epoch project/63 pending fixture: selection, queued siblings, held navigation, main/incoming columns and hierarchy, actual live/frozen ancestor bundle requests and clean quit",
       "clean_shutdown": true,
-      "large_scale_diagnostic": "docs/dev/epoch-selection-scaling-results.json",
-      "qualification_limit": "Large-scale numbers are synthetic Flask/SQLite-index diagnostics with SQL doubles, not native MySQL, UI paint or H5 import throughput."
+      "large_scale_diagnostic": "docs/dev/shared-tree-read-results.json",
+      "qualification_limit": "Large timings are synthetic Flask/SQLite-index diagnostics with SQL doubles. Native checks cover behavior on the owned smaller fixture, not large MySQL/H5 throughput.",
+      "request_counts": {
+        "initial_main_columns": 2,
+        "known_recorded_metadata_expansion": 1,
+        "initial_main_hierarchy": 2,
+        "incoming_hierarchy": 1
+      }
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -597,6 +613,24 @@
         },
         "selection_median_reduction_percent": 72.3
       }
+    },
+    "previous_frozen_scale_frontend": {
+      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+      "passed": 890,
+      "failed": 0,
+      "scope": "Full recursive suite including queued selection, pending navigation, stale activation and existing scientific action fences",
+      "independent_source_review": "passed",
+      "final_source_difference": "Backend-only tree membership/projection change; existing renderer source and prior full frontend attribution retained."
+    },
+    "previous_frozen_scale_native_workflow": {
+      "source_commit": "362c33027b8085c785e69b8a814519fb18116f66",
+      "receipt": "epoch-scale-native-2026-10-06T18-13-53-912Z/receipt.json",
+      "controller_sha256": "a689985b34f52d00e15dff3a1ada2d515f54d5ef8c64a5b3037f17b148b80b33",
+      "passed": true,
+      "scope": "Owned 63-epoch native fixture: exact selection, queued siblings, counts-only pages, held latest navigation and scientific action gates",
+      "clean_shutdown": true,
+      "large_scale_diagnostic": "docs/dev/epoch-selection-scaling-results.json",
+      "qualification_limit": "Large-scale numbers are synthetic Flask/SQLite-index diagnostics with SQL doubles, not native MySQL, UI paint or H5 import throughput."
     }
   },
   "qualification_limits": [
