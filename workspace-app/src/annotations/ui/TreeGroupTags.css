@@ -37,3 +37,7 @@
 @media(prefers-reduced-motion:reduce){.incoming-switch-track>span{transition:none}}
 
 .tree-tag-marker{display:inline-flex;align-items:center;padding:1px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink-secondary);font-size:9px;font-weight:500}
+
+/* Transient status must never insert a row or shift the tree under the pointer. */
+.hierarchy-tree{position:relative}
+.tree-transient-status{position:absolute;z-index:5;right:10px;bottom:10px;max-width:calc(100% - 20px);margin:0;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--ink-secondary);font-size:11px;line-height:1.4;box-shadow:0 2px 8px color-mix(in srgb,var(--shadow-base) 10%,transparent);pointer-events:none}

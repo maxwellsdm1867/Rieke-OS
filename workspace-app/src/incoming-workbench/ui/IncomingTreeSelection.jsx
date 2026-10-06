@@ -60,5 +60,5 @@ export function useIncomingTreeSelection(props,page=null){
     }catch(error){if(controller.current===request&&committed.current===operationKey)setError(error.name==='AbortError'?'Tree changed while selecting. Switch the group again.':error.message);}
     finally{if(controller.current===request){controller.current=null;setWorking(false);}}
   }
-  return {select:props.readContext&&props.setSelectedEpochs?select:null,on,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback" role="status">Updating downstream selection…</p>:null};
+  return {select:props.readContext&&props.setSelectedEpochs?select:null,on,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback tree-transient-status" role="status">Updating downstream selection…</p>:null};
 }

@@ -19,7 +19,7 @@ export default function RetainedTreePresentation({active,tree}){
  if(next!==slot)setSlot(next);
  const retained=active||eligible&&next.key===key&&next.seen;
  return retained?<div hidden={!active} aria-busy={active&&!!tree.readPending} style={{display:active?'flex':'none',flexDirection:'column',position:'relative',minWidth:0,minHeight:0,overflow:'hidden'}}>
-  {active&&tree.readPending&&<p role="status" data-retained-tree-status style={{position:'absolute',zIndex:2,top:0,right:8,pointerEvents:'none',background:'var(--surface)',padding:'4px 8px'}}>Refreshing — previous view. Actions are unavailable until validation completes.</p>}
+  {active&&tree.readPending&&<p role="status" data-retained-tree-status className="tree-transient-status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
   <Activity mode={active?'visible':'hidden'}>
   <PagedTree key={next.mount} {...tree} active={active} presentationActivation={next.visit} refreshingLabelOwned={tree.readPending!==undefined} actionsDisabled={!active||tree.actionsDisabled} presentation="columns" design/>
  </Activity></div>:null;
