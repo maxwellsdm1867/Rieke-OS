@@ -105,6 +105,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const protocol=visible?.context.protocol;
   const readContext=visible?{root,candidate_scope_revision:visible.context.candidate_scope_revision,
     ...(visible.context.tree_column_pages===true?{tree_column_pages:true}:{}),
+    ...(visible.context.selection_summary===true?{selection_summary:true,expected_binding_version:visible.context.expected_binding_version}:{}),
     ...(typeof visible.context.candidate_recipe_sha256==='string'&&visible.context.candidate_recipe_sha256&&Number.isSafeInteger(visible.context.expected_binding_version)&&visible.context.expected_binding_version>=0
       ?{cohort_key:JSON.stringify([root,visible.context.candidate_recipe_sha256,visible.context.expected_binding_version])}:{})}:null;
   const adapterReady=capabilities.frozen_browse===true&&InspectorCapabilities.FROZEN_CANDIDATE_INSPECTOR_SUPPORTED===true&&!!protocol;

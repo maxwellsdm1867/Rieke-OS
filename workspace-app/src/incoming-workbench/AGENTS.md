@@ -122,3 +122,12 @@ Candidate/query/revision/split or presentation changes mask old highlights befor
 paint; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
+
+Current selection uses selected UUIDs, independently of visible tree paths.
+`incomingSelectionSummary.js` validates bounded exact receipts;
+`ui/IncomingSelectionSummary.jsx` owns the abortable candidate/binding/owner and
+pause-transition lifetime. The fixed-height header shows selected epochs, unique
+cells and recorded types; unclassified cells stay in the breakdown. Pending/error
+receipts never borrow old counts. `incomingSelectionSummaryRendering.test.js`
+covers first-paint pause/resume and A-B-A retirement. This is read presentation,
+not a new selection or merge/export authority.

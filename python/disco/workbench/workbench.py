@@ -694,7 +694,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
                 readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary'}
+                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary'}
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -753,7 +753,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True,
+        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -921,6 +921,39 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                         'query_revision', 'expected_binding_version')})
                 result['ancestor_pages'] = parents
             return jsonify(result)
+
+    @app.post(candidate + '/selection-summary')
+    def workbench_selection_summary(protocol, revision):
+        value = body({'candidate_scope_revision', 'epoch_uuids'})
+        supplied = value['epoch_uuids']
+        if not isinstance(supplied, list) or len(supplied) > 1000 or any(not isinstance(key, str) for key in supplied):
+            raise ValueError('Selection summary requires at most 1,000 epoch UUIDs')
+        try:
+            ids = [str(uuid.UUID(key)) for key in supplied]
+        except (ValueError, AttributeError) as error:
+            raise ValueError('Selection summary requires valid epoch UUIDs') from error
+        if len(set(ids)) != len(ids):
+            raise ValueError('Selection summary requires distinct epoch UUIDs')
+        with guarded(protocol, revision) as owner:
+            context = checked(protocol, revision, owner, value['candidate_scope_revision'])
+            if set(ids) - set(context['pending']):
+                raise ValueError('Selected epochs are outside the frozen incoming candidate')
+            if set(ids) & context['unavailable']:
+                raise WorkbenchConflict('Selected frozen recording metadata changed or is unavailable')
+            cells = {}
+            for key in ids:
+                row = service.rows.get(key)
+                if row is None or not row.get('cell_uuid'):
+                    raise WorkbenchConflict('Selected recording metadata is unavailable')
+                identity, cell_type = row['cell_uuid'], row.get('cell_type')
+                if cell_type is not None and not isinstance(cell_type, str):
+                    raise WorkbenchConflict('Selected cell type is unavailable')
+                cell = dict(cell_uuid=identity, cell_type=cell_type)
+                if identity in cells and cells[identity] != cell:
+                    raise WorkbenchConflict('Selected recordings disagree on recorded cell type')
+                cells[identity] = cell
+            return jsonify(finish(context, dict(epoch_uuids=ids, counts=dict(epochs=len(ids), cells=len(cells)),
+                cells=[cells[key] for key in sorted(cells)])))
 
     @app.post(candidate + '/summary')
     def workbench_candidate_summary(protocol, revision):

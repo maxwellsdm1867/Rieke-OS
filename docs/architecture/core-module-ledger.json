@@ -4188,7 +4188,10 @@
         "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
         "workspace-app/src/incoming-workbench/incomingMergeIntent.js",
         "workspace-app/src/incoming-workbench/incomingSelection.js",
-        "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+        "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+        "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
+        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
+        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
       ],
       "verification": {
         "existing_tests": [
@@ -4197,7 +4200,8 @@
           "workspace-app/src/workbenchSessionLifecycle.test.js",
           "workspace-app/src/workbenchRouteRendering.test.js",
           "workspace-app/src/importMergeAppRoute.test.js",
-          "workspace-app/src/presentationSessionsApp.test.js"
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/incomingSelectionSummaryRendering.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
@@ -4226,7 +4230,8 @@
       },
       "integration_capabilities": [
         "Current real App onMerge issues/consumes consent; FrozenIncomingReview instructs selection/review before preview, not automatic scientific preview.",
-        "Empty queue fixture distinguishes authorized handoff from restored-intent refusal without preview/accept/export/draft writes."
+        "Empty queue fixture distinguishes authorized handoff from restored-intent refusal without preview/accept/export/draft writes.",
+        "Current selection header reads only explicit selected UUIDs (max 1000), with exact unique cells/recorded types and pause/owner/candidate/binding lifetime fences. Navigation retains same-scope binary branch appearance while disabling actions during loading. Independent design/source review completed; native visual qualification remains separate."
       ],
       "change_rules": [
         "Maintain capability gating and frozen/global distinction.",

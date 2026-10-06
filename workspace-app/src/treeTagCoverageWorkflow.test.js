@@ -36,3 +36,26 @@ for(const name of ['ColumnTree','HierarchyTree'])test(`${name} requests counts o
   if(name==='HierarchyTree'){await h.render(ObservedTree,{...props,browseOnly:true});await h.settle(20);assert.equal(h.root.findAllByProps({className:'incoming-tree-actions'}).length,0);}
  }finally{await h.close();}
 });
+
+for(const name of ['ColumnTree','HierarchyTree'])test(`${name} keeps committed branch selection while expansion waits`,async()=>{
+ const h=await createWorkflowHarness();let release;
+ const revision='a'.repeat(64),item={key:'parent',path:['parent'],label:'Parent',value:'parent',count:2};
+ const page={revision,candidate_scope_revision:'scope',kind:'branches',path:[],depth:0,offset:0,limit:60,total:1,total_epochs:2,selection:{count:2},split_order:['date'],levels:[{field:'date',label:'Date'}],ancestors:[],epochs:[],branches:[item],has_more:false};
+ const child={...page,kind:'epochs',path:['parent'],depth:1,total:2,branches:[],epochs:[{epoch_uuid:'a',cell_uuid:'c'},{epoch_uuid:'b',cell_uuid:'c'}],ancestors:[{...item,parent_offset:0}]};
+ const props={protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope'},splits:'date',revision:0,selectedEpochs:['a','b'],setSelectedEpochs:()=>assert.fail('Navigation must not change selection')};
+ props.treeSelectionIntent={scope:incomingTreeSelectionScope(props),revision,markers:[{path:['parent'],on:true}]};
+ h.fixture.respond=(url,options,fallback)=>url.pathname.endsWith('/tree/page')?(JSON.parse(options.body).path.length?new Promise(resolve=>{release=()=>resolve(child);}):page):fallback();
+ try{
+  const Tree=await h.component(name);await h.mount(Tree,props);
+  const switches=()=>h.root.findAll(node=>node.type==='button'&&node.props.role==='switch');
+  await h.waitFor(()=>switches().length===1&&switches()[0].props['aria-checked']===true);
+  const branch=h.root.findAll(node=>node.type==='button'&&node.props.className?.split(' ').includes('incoming-branch-on'))[0];
+  await h.act(()=>branch.props.onClick());await h.waitFor(()=>!!release);
+  assert.equal(switches()[0].props['aria-checked'],true,'loading must not paint the committed switch off');
+  assert.equal(switches()[0].props.disabled,true,'loading must keep selection inert');
+  assert.ok(h.root.findAll(node=>node.type==='button'&&node.props.className?.split(' ').includes('incoming-branch-on')).length);
+  await h.act(()=>release());await h.settle(25);
+  assert.equal(switches()[0].props['aria-checked'],true);
+  assert.equal(switches()[0].props.disabled,false);
+ }finally{await h.close();}
+});

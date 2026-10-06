@@ -37,6 +37,7 @@ READ_POSTS = (
     ('workbench_preview', '/api/protocols/<protocol>/workbench/candidates/<revision>/preview'),
     ('workbench_tree_page', '/api/protocols/<protocol>/workbench/candidates/<revision>/tree/page'),
     ('workbench_candidate_summary', '/api/protocols/<protocol>/workbench/candidates/<revision>/summary'),
+    ('workbench_selection_summary', '/api/protocols/<protocol>/workbench/candidates/<revision>/selection-summary'),
     ('group_annotation_preview', '/api/annotations/group-preview'),
     ('group_annotation_preview_release', '/api/annotations/group-preview-release'),
 )

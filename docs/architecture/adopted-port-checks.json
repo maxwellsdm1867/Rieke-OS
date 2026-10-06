@@ -1646,6 +1646,30 @@
             "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.jsx",
             "workspace-app/src/incoming-workbench/incomingMergeIntent.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/incomingCellTypes.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
+          "allow": [
+            "react",
+            "lucide-react",
+            "workspace-app/src/api.js",
+            "workspace-app/src/workspaceRequest.js",
+            "workspace-app/src/epoch-browser/frozenReadContext.js",
+            "workspace-app/src/components/NeuronIcon.jsx",
+            "workspace-app/src/incoming-workbench/ui/IncomingCellTypes.jsx",
+            "workspace-app/src/incoming-workbench/incomingCellTypes.js",
+            "workspace-app/src/cell-qc/cellTypes.js",
+            "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
+            "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
+          ]
         }
       ],
       "tests": {
@@ -3267,6 +3291,19 @@
               "acceptWorkbench",
               "selectionDecisions",
               "acceptanceFailureKind"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
+            "exports": [
+              "selectedSummaryIds",
+              "validateSelectionSummary"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
+            "exports": [
+              "default"
             ]
           }
         ]
@@ -5511,7 +5548,7 @@
       },
       {
         "file": "python/tests/test_workspace_registered_recovery_policy.py",
-        "file_sha256": "3e563a4c1f934c83a41c09cb425cdf46ec9ea1f005b3da03b218a0f93d5f21f4",
+        "file_sha256": "6cd8dbd5fa90212684b54059c8db007ae143a8a30193d0eca64918dceb5cf6eb",
         "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy.",
         "sites": [
           {

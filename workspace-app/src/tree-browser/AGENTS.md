@@ -83,3 +83,9 @@ Candidate/query/revision/split or presentation changes mask old highlights befor
 paint; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
+
+Same-scope navigation retains the last verified binary branch appearance while
+loading, with switches disabled until fresh pages arrive. Scope/owner/revision
+changes and errors still invalidate that appearance. Loading must never visually
+turn a committed selected branch off. Held-read tests in
+`treeTagCoverageWorkflow.test.js` cover both column and hierarchy views.

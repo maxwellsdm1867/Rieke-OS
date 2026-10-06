@@ -64,6 +64,60 @@ class WorkbenchTests(unittest.TestCase):
     def accept(self, request, root=None):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
 
+    def test_selection_summary_is_exact_bounded_read_only_and_scope_fenced(self):
+        context = self.get_context()
+        self.assertIs(context['selection_summary'], True)
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], epoch_uuids=[self.added])
+        before = [copy.deepcopy(table.rows) for table in self.tables]
+        response = self.case.client.post(self.root + '/selection-summary', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        value = response.get_json()
+        self.assertEqual(value['epoch_uuids'], [self.added])
+        self.assertEqual(value['counts'], dict(epochs=1, cells=1))
+        row = self.case.service.rows[self.added]
+        self.assertEqual(value['cells'], [dict(cell_uuid=row['cell_uuid'], cell_type=row.get('cell_type'))])
+        self.assertEqual(value['candidate_scope_revision'], context['candidate_scope_revision'])
+        self.assertEqual([table.rows for table in self.tables], before)
+        empty = self.case.client.post(self.root + '/selection-summary', json={**body, 'epoch_uuids': []}, headers=self.case.headers)
+        self.assertEqual(empty.status_code, 200, empty.get_json())
+        self.assertEqual(empty.get_json()['counts'], dict(epochs=0, cells=0))
+        outside = next(key for key in self.case.service.rows if key != self.added)
+        for ids in [[self.added, self.added.upper()], [outside], [str(uuid.uuid4())], ['bad'], [True], None, [self.added] * 1001]:
+            with self.subTest(ids=str(ids)[:90]):
+                invalid = self.case.client.post(self.root + '/selection-summary', json={**body, 'epoch_uuids': ids}, headers=self.case.headers)
+                self.assertEqual(invalid.status_code, 400, invalid.get_json())
+        stale = self.case.client.post(self.root + '/selection-summary', json={**body, 'candidate_scope_revision': 'old'}, headers=self.case.headers)
+        self.assertEqual(stale.status_code, 409)
+        self.assertEqual([table.rows for table in self.tables], before)
+
+    def test_selection_summary_rejects_changed_present_metadata_and_missing_rows(self):
+        context = self.get_context()
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], epoch_uuids=[self.added])
+        row = self.case.service.rows.pop(self.added)
+        missing = self.case.client.post(self.root + '/selection-summary', json=body, headers=self.case.headers)
+        self.assertEqual(missing.status_code, 409, missing.get_json())
+        self.case.service.rows[self.added] = row
+        self.case.service._fingerprints[self.added] = 'c' * 64
+        fresh = self.manager.context(self.protocol, self.revision, 'actor-one')
+        changed = self.case.client.post(self.root + '/selection-summary', json={**body,
+            'candidate_scope_revision': fresh['candidate_scope_revision']}, headers=self.case.headers)
+        self.assertEqual(changed.status_code, 409, changed.get_json())
+
+    def test_selection_summary_closing_scope_discards_counts(self):
+        context = self.get_context()
+        original, calls = self.manager.context, []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs)
+            calls.append(value)
+            if len(calls) == 2:
+                value = {**value, 'candidate_scope_revision': 'changed-during-read'}
+            return value
+        with patch.object(self.manager, 'context', side_effect=changed):
+            response = self.case.client.post(self.root + '/selection-summary', json=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], epoch_uuids=[self.added]), headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertNotIn('counts', response.get_json())
+
     def test_column_batch_matches_fresh_pages_with_one_closing_scope_check(self):
         context = self.get_context()
         self.assertIs(context['tree_column_pages'], True)

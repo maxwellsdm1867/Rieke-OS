@@ -168,3 +168,15 @@ skipped. Legacy requests retain their full response. Mode-specific group caches
 remain bounded; revisions, membership, labels and authority fences are unchanged.
 The existing representative-only label renderer is retained. Live ancestor JSON
 keys include the request mode, so full and count-only responses cannot collide.
+
+## Exact selected summary
+
+Context advertises `selection_summary: true`. Read-only POST `selection-summary`
+accepts only `candidate_scope_revision` and at most 1,000 distinct canonicalizable
+epoch UUIDs. Every UUID must belong to the frozen pending candidate; changed or
+unavailable fingerprints and incomplete/conflicting cell metadata fail closed.
+It returns echoed UUIDs, exact epoch/unique-cell counts, and unique recorded
+`cell_uuid`/`cell_type` pairs under opening/closing scope and native read guards.
+An empty selection returns zero counts. View filters do not prune explicit selected
+UUIDs. This bounded read does not compute aggregates over unselected branches or
+change scientific/draft state, consent or acceptance authority.
