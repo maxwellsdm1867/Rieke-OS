@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CircleMinus, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
 import { number, useResource } from '../../api.js';
 import {useFieldRegistry} from '../../summary-jobs/useFieldRegistry.js';
 import {useRequestedSummaries} from '../../requested-summaries/useRequestedSummaries.js';
@@ -199,7 +199,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
             {!!components.length&&<button aria-label={`Separate ${field?.label || components.map(componentName).join(' + ')} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
             <button disabled={index===order.length-1} aria-label={`Move ${field?.label || id} later`} title="Move down one level" onClick={()=>move(index,1)}><ArrowDown size={13}/></button></>}
-            <button aria-label={`Remove ${field?.label || id} grouping`} title="Remove level" onClick={()=>changeOrder(previous=>previous.filter(key=>key!==id))}><X size={13}/> Remove</button>
+            <button type="button" className="tb-remove-level" aria-label={`Remove ${field?.label || id} grouping`} title={`Remove ${field?.label || id} level`} onClick={()=>changeOrder(previous=>previous.filter(key=>key!==id))}><CircleMinus size={14}/></button>
           </div></li>;
         })}
       </ol>
