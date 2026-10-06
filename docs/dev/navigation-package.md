@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `b11e3e9538457e29999b179ee9a8d5b2d405da41`,
+app and ZIP to clean source commit `9a82a1ef4bfa9c1edd1448d507a5d1ce68c2bb02`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -147,3 +147,14 @@ or blue selection background. Saved tag coverage remains separate and neutral.
 All 864 frontend tests and independent source review passed. The current clean
 core gate, package resource checks, native audit and relocated imports passed.
 Earlier loading timings remain attributed to their original source commit.
+
+
+## Arrange tree summary-control cleanup
+
+The current package removes Metadata summaries, Advanced layout suggestions and
+Preferred summaries from Arrange tree in both main and incoming views. Field
+counts, matching epoch count, missing-field notices, catalog errors/retry and
+Current tags remain. Scoped summary computation retains its existing lifetime.
+Eight focused frontend checks and independent source review passed, along with
+the exact clean core gate and package checks. Earlier full frontend/native evidence
+remains attributed to its original source in the package record.

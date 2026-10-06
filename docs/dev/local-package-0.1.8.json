@@ -5,25 +5,25 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
+  "source_commit": "9a82a1ef4bfa9c1edd1448d507a5d1ce68c2bb02",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-tree-overview-arm64.zip",
-    "bytes": 621196315,
-    "sha256": "419f25190d2243fcdae7fed9fb7bd6ffe1bc3b71a6c99f54b738a66cf2b1fdb6"
+    "filename": "Disco-0.1.8-tree-summary-cleanup-arm64.zip",
+    "bytes": 621196096,
+    "sha256": "564344400b923cb94cf87a36a59a0cb5dc354bd21f23aa888a39e2068fd09675"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
-      "passed": 864,
+      "source_commit": "9a82a1ef4bfa9c1edd1448d507a5d1ce68c2bb02",
+      "passed": 8,
       "failed": 0,
-      "scope": "Full recursive frontend suite, including frozen overview scope and late-response fencing",
+      "scope": "Frozen overview fencing, requested summary lifecycle and combined grouping rendering",
       "independent_source_review": "passed"
     },
     "backend": {
@@ -41,7 +41,7 @@
       "implementation_unchanged_since": "ee616dc41d1b9f825ec982291959ad90852e346a"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/tree-overview-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/tree-summary-controls-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -59,14 +59,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "tree-overview-tests.log",
-      "tree-overview-guard.log",
-      "tree-overview-core-gate.json",
-      "tree-overview-provenance.json",
-      "tree-overview-native-audit.json",
-      "tree-overview-imports.json",
-      "tree-overview-installed.json",
-      "tree-overview-installed-ui.json"
+      "tree-summary-controls-tests.log",
+      "tree-summary-controls-guard.log",
+      "tree-summary-controls-core-gate.json",
+      "tree-summary-controls-provenance.json",
+      "tree-summary-controls-native-audit.json",
+      "tree-summary-controls-imports.json",
+      "tree-summary-controls-installed.json",
+      "tree-summary-controls-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -93,9 +93,8 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
-      "arrange_tree": "Candidate-scoped field value/missing counts and labeled Remove controls",
-      "tree_columns": "Heading selection/tag actions removed; branch actions retained with matching selection color",
+      "source_commit": "9a82a1ef4bfa9c1edd1448d507a5d1ce68c2bb02",
+      "arrange_tree": "Summary status, advanced catalog and preferred-summary controls removed; field and matching epoch counts retained",
       "verification": "native installed application"
     },
     "current_native_workflow": {
