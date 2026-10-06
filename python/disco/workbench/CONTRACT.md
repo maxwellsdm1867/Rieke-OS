@@ -185,8 +185,17 @@ change scientific/draft state, consent or acceptance authority.
 
 Context advertises `tree_selection: true`. POST `tree/selection` accepts a current
 candidate scope and tree revision, exact opaque path, splits/filters and expected
-count 1–1,000. One guarded context resolves the existing counts-only 60-row DFS
-in server order, refusing actual oversized/mismatching groups before descendants.
+count 1–1,000. One guarded context resolves metadata membership once, then emits exact DFS
+UUID order without rendering descendant pages. Typed grouping, missing values,
+joint fields, block chronology and leaf chronology match paged browsing. Actual
+oversized/mismatching groups are refused before descendant enumeration. Custom
+pager overrides retain the existing counts-only 60-row traversal fallback.
 Unique complete UUIDs are returned with path/count/revision and one closing
 authority check. Client offsets, anchors and paging-mode overrides are rejected.
 It creates no draft, annotation, merge or export authority.
+
+For canonical pagers, column batches reuse the target projection across its
+ancestor prefixes only within one guarded response. Target validation and the
+closing generation/scope check remain mandatory. Overridden page/scope readers
+retain independent page reads. No metadata projection or permission is shared
+across requests by this optimization.

@@ -57,3 +57,14 @@ skipped. Legacy requests retain their full response. Mode-specific group caches
 remain bounded; revisions, membership, labels and authority fences are unchanged.
 The existing representative-only label renderer is retained. Live ancestor JSON
 keys include the request mode, so full and count-only responses cannot collide.
+
+`TreePages.selection(body, expected_count)` resolves one full split projection
+and returns at most 1,000 exact UUIDs in the same typed DFS/leaf order as paging.
+`column_pages(body, ancestor_offsets)` reuses one target projection for ancestor
+prefixes within a caller-guarded response. Neither operation creates a cross-request
+cache or authority lease. Canonical page/scope method identity is required; custom
+overrides retain independent page calls. Ordinary `page` keeps its validation,
+projection and return shape. Workbench retains opening and closing checks.
+Executable equivalence and custom-reader examples are in
+`python/tests/test_workspace_tree_pages.py`; frozen rejection tests remain in
+`python/tests/test_workspace_workbench.py`.

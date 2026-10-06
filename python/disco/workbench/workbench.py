@@ -897,17 +897,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             context = checked(protocol, revision, owner, expected, filters)
             try:
                 pager = TreePages(manager.frozen_service(context))
-                page = pager.page(dict(protocol_uuid=protocol, **value))
-                parents = []
                 if include_ancestors:
-                    for depth in range(len(page['path'])):
-                        recorded = page['ancestors'][depth]['parent_offset']
-                        offset = (recorded if value.get('anchor_uuid') or depth >= len(ancestor_offsets) or ancestor_offsets[depth] is None
-                                  else ancestor_offsets[depth])
-                        parent_request = {key: item for key, item in value.items() if key != 'anchor_uuid'}
-                        parent_request.update(protocol_uuid=protocol, path=page['path'][:depth],
-                            offset=offset, revision=page['revision'])
-                        parents.append(pager.page(parent_request))
+                    page, parents = pager.column_pages(dict(protocol_uuid=protocol, **value), ancestor_offsets)
+                else:
+                    page, parents = pager.page(dict(protocol_uuid=protocol, **value)), []
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
             if page.get('epochs'):
@@ -933,31 +926,11 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         with guarded(protocol, revision, filters) as owner:
             context = checked(protocol, revision, owner, expected, filters)
             pager = TreePages(manager.frozen_service(context))
-            query = dict(protocol_uuid=protocol, **value, limit=60, counts_only=True)
             try:
-                first = pager.page(query)
-                if first['selection']['count'] != count or first['selection']['count'] > 1000:
-                    raise WorkbenchConflict('Tree selection count changed; refresh this branch')
-                ids = []
-                def visit(page):
-                    if page['revision'] != value['revision']:
-                        raise WorkbenchConflict('Tree selection revision changed')
-                    if page['kind'] == 'epochs':
-                        ids.extend(row['epoch_uuid'] for row in page['epochs'])
-                        if len(ids) > count:
-                            raise WorkbenchConflict('Tree selection exceeds its verified count')
-                    else:
-                        for branch in page['branches']:
-                            visit(pager.page({**query, 'path': branch['path'], 'offset': 0}))
-                    if page['has_more']:
-                        visit(pager.page({**query, 'path': page['path'], 'offset': page['offset'] + 60}))
-                visit(first)
+                result = pager.selection(dict(protocol_uuid=protocol, **value), count)
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
-            if len(ids) != count or len(set(ids)) != count:
-                raise WorkbenchConflict('Tree selection is incomplete or contains duplicate epochs')
-            return jsonify(finish(context, dict(revision=first['revision'], path=first['path'],
-                count=count, epoch_uuids=ids)))
+            return jsonify(finish(context, result))
 
     @app.post(candidate + '/selection-summary')
     def workbench_selection_summary(protocol, revision):

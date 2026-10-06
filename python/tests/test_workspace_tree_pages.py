@@ -49,6 +49,98 @@ class TreePageTests(unittest.TestCase):
         walk(root)
         return leaves, paths
 
+    def test_direct_selection_matches_paged_dfs_for_typed_joint_and_subbranches(self):
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        for indexed in (False, True):
+            if indexed:
+                self.service.disk_index = DiskMetadataIndex.build(Path(self.temp.name)/'selection.sqlite',
+                    list(self.service.rows.values()), self.service.details, self.service.sources,
+                    'selection-fixture', self.service.project['project_uuid'])
+            for splits in ('', 'date,cell,block', 'parameters/value',
+                           'parameters/other,parameters/value', joint_id(['parameters/value','parameters/other'])):
+                body = dict(protocol_uuid=self.service.protocol_id, splits=splits)
+                root = self.pager.page(body)
+                expected, _ = self.collect(body)
+                result = self.pager.selection({**body, 'revision': root['revision']}, len(expected))
+                self.assertEqual(result['epoch_uuids'], expected)
+                for branch in root['branches']:
+                    request = {**body, 'path': branch['path'], 'revision': root['revision']}
+                    expected, _ = self.collect(request)
+                    self.assertEqual(self.pager.selection(request, len(expected))['epoch_uuids'], expected)
+                with self.assertRaises(StaleTreePage):
+                    self.pager.selection({**body, 'revision': '0'*64}, len(self.service.rows))
+                with self.assertRaises(StaleTreePage):
+                    self.pager.selection({**body, 'revision': root['revision']}, len(self.service.rows)+1)
+
+    def test_direct_selection_preserves_order_across_many_pages(self):
+        template = copy.deepcopy(next(iter(self.service.rows.values())))
+        self.service.rows = {};self.service.details = {};self.service._fingerprints = {}
+        for index in range(121):
+            key = str(uuid.UUID(int=1000+index))
+            self.service.rows[key] = {**template, 'epoch_uuid': key, 'epoch_number': index+1,
+                'start_time': f'09/24/2026 12:{index//60:02d}:{index%60:02d}:000000'}
+            self.service.details[key] = {'parameters': {'value': index%67}, 'properties': {}, 'metadata': {}}
+            self.service._fingerprints[key] = 'b'*64
+        self.service.protocols[self.service.protocol_id]['result']['epochs'] = [
+            {'uuid': key, 'metadata_hash': 'b'*64} for key in self.service.rows]
+        body = dict(protocol_uuid=self.service.protocol_id, splits='parameters/value,block')
+        root = self.pager.page(body)
+        expected, _ = self.collect({**body, 'limit': 7})
+        result = self.pager.selection({**body, 'revision': root['revision']}, 121)
+        self.assertEqual(result['epoch_uuids'], expected)
+        self.assertEqual(len(set(expected)), 121)
+
+    def test_column_batch_matches_independent_pages_and_builds_one_scope(self):
+        import cProfile
+        body = dict(protocol_uuid=self.service.protocol_id, splits='cell,parameters/value', limit=2)
+        root = self.pager.page(body)
+        child = self.pager.page({**body, 'path': root['branches'][0]['path'], 'revision': root['revision']})
+        request = {**body, 'path': child['branches'][0]['path'], 'revision': root['revision']}
+        profiler = cProfile.Profile();profiler.enable()
+        target, parents = self.pager.column_pages(request, [0, 0])
+        profiler.disable()
+        self.assertEqual(target, self.pager.page(request))
+        self.assertEqual(parents, [self.pager.page({**body, 'path': target['path'][:depth],
+            'offset': 0, 'revision': target['revision']}) for depth in range(len(target['path']))])
+        builds = [entry for entry in profiler.getstats() if getattr(entry.code, 'co_name', '') == '_build_scope']
+        self.assertEqual(sum(entry.callcount for entry in builds), 1)
+        anchor = {**body, 'anchor_uuid': self.service.ids[0]} if self.service.ids[0] in self.service.rows else {**body, 'anchor_uuid': next(iter(self.service.rows))}
+        anchored, ancestors = self.pager.column_pages(anchor, [50, 50])
+        self.assertEqual(anchored, self.pager.page(anchor))
+        self.assertTrue(all(page['offset'] == anchored['ancestors'][depth]['parent_offset'] for depth, page in enumerate(ancestors)))
+
+    def test_direct_selection_builds_once_and_custom_readers_keep_paged_policy(self):
+        import cProfile
+        body = dict(protocol_uuid=self.service.protocol_id, splits='parameters/value')
+        root = self.pager.page(body);request = {**body, 'revision': root['revision']}
+        profiler = cProfile.Profile();profiler.enable()
+        result = self.pager.selection(request, 10)
+        profiler.disable()
+        self.assertEqual(sum(entry.callcount for entry in profiler.getstats()
+            if getattr(entry.code, 'co_name', '') == '_build_scope'), 1)
+        class CustomPager(TreePages):
+            calls = 0
+            def page(self, body):
+                self.calls += 1
+                return super().page(body)
+        custom = CustomPager(self.service)
+        self.assertEqual(custom.selection(request, 10), result)
+        self.assertGreater(custom.calls, 1)
+        custom.calls = 0
+        custom.column_pages({**request, 'path': root['branches'][0]['path']})
+        self.assertEqual(custom.calls, 2)
+        class CustomScope(TreePages):
+            calls = 0
+            def _build_scope(self, body):
+                self.calls += 1
+                return super()._build_scope(body)
+        custom = CustomScope(self.service)
+        self.assertEqual(custom.selection(request, 10), result)
+        self.assertGreater(custom.calls, 1)
+        for count in (0, 1001, True):
+            with self.assertRaises(ValueError):self.pager.selection(request, count)
+
     def test_counts_only_preserves_pages_and_skips_full_bucket_statistics(self):
         from pathlib import Path
         from disco.metadata.disk_index import DiskMetadataIndex

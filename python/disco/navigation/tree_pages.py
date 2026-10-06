@@ -249,6 +249,35 @@ def selection_revision(service, protocol, predicate, filters, order, rows, bindi
                    for row in sorted(rows,key=lambda row:row['epoch_uuid'])]})
 
 
+def _group_buckets(current, depth, order, structural_path, values, *, counts_only):
+    field = order[depth]
+    cache_key = (field, id(current), counts_only)
+    if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
+        return values.group_cache[cache_key][1]
+    buckets = {}
+    for row in current:
+        present, value = structural_path.datum(values[row['epoch_uuid']], field)
+        canonical = value_key(value) if present else None
+        bucket = buckets.setdefault((present, canonical), {'row':row, 'value':value,
+            'missing':not present, 'rows':[]})
+        bucket['rows'].append(row)
+    def sorting(key):
+        bucket = buckets[key]
+        if field == 'block' and not bucket['missing']:
+            row = bucket['row']; stamp = row.get('block_start_time')
+            # Same source chronology as the full-tree renderer.
+            from workspace_service import _date
+            return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(bucket['value']))
+        return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value'],canonical=key[1]))
+    # Reuse grouping keys; do not encode every distinct value again.
+    result = sorted(buckets, key=sorting)
+    for index, key in enumerate(result):
+        result[index] = buckets[key]
+    if isinstance(values, _NavigationValues):
+        values.remember_groups(cache_key, current, result, counts_only=counts_only)
+    return result
+
+
 class TreePages:
     """Service adapter with no retained full trees or per-branch membership copies."""
     def __init__(self, service):
@@ -333,7 +362,7 @@ class TreePages:
                 cache.pop(next(iter(cache)))
         return result
 
-    def _build_scope(self, body):
+    def _build_scope(self, body, *, all_fields=False):
         service = self.service
         service._ready()
         protocol = body.get('protocol_uuid')
@@ -386,7 +415,7 @@ class TreePages:
         if structural:
             values = _NavigationValues(service.rows, order)
         elif index is not None:
-            requested = order if body.get('anchor_uuid') else order[:len(body.get('path', []))+1]
+            requested = order if all_fields or body.get('anchor_uuid') else order[:len(body.get('path', []))+1]
             columns = set()
             for field in requested:
                 columns.update(definitions[field].get('components') or [field])
@@ -401,6 +430,9 @@ class TreePages:
         return rows, catalog, values, definitions, order, revision
 
     def page(self, body):
+        return self._page(body, self._scope)
+
+    def _page(self, body, scope_reader):
         if not isinstance(body, dict) or set(body) - {'protocol_uuid','predicate','filters','splits','path','offset','limit','revision','anchor_uuid','counts_only'}:
             raise ValueError('Malformed tree page request or unsupported fields')
         counts_only = body.get('counts_only', False)
@@ -419,7 +451,7 @@ class TreePages:
         anchor = _uuid(body['anchor_uuid']) if 'anchor_uuid' in body else None
         if anchor and (path or offset):
             raise ValueError('An epoch locator cannot also specify a path or offset')
-        rows, catalog, values, definitions, order, revision = self._scope(body)
+        rows, catalog, values, definitions, order, revision = scope_reader(body)
         if expected is not None and expected != revision:
             raise StaleTreePage('Tree metadata or membership changed; reload the root before continuing')
         structural_path = TreePath(order,definitions,path)
@@ -436,39 +468,11 @@ class TreePages:
                    **({'components':definitions[field]['components']} if definitions[field].get('components') else {})}
                   for field in order]
 
-        def datum(row, field):
-            return structural_path.datum(values[row['epoch_uuid']],field)
-
         def key_for(row, field):
             return structural_path.key(values[row['epoch_uuid']],field)
 
         def groups(current, depth):
-            field = order[depth]
-            cache_key = (field, id(current), counts_only)
-            if isinstance(values, _NavigationValues) and cache_key in values.group_cache:
-                return values.group_cache[cache_key][1]
-            buckets = {}
-            for row in current:
-                present, value = datum(row, field)
-                canonical = value_key(value) if present else None
-                bucket = buckets.setdefault((present, canonical), {'row':row, 'value':value,
-                    'missing':not present, 'rows':[]})
-                bucket['rows'].append(row)
-            def sorting(key):
-                bucket = buckets[key]
-                if field == 'block' and not bucket['missing']:
-                    row = bucket['row']; stamp = row.get('block_start_time')
-                    # Same source chronology as the full-tree renderer.
-                    from workspace_service import _date
-                    return (0, (_date(stamp) + stamp[11:]) if stamp else '', str(bucket['value']))
-                return (1,) if bucket['missing'] else (0, field_value_order(field,bucket['value'],canonical=key[1]))
-            # Reuse grouping keys; do not encode every distinct value again.
-            result = sorted(buckets, key=sorting)
-            for index, key in enumerate(result):
-                result[index] = buckets[key]
-            if isinstance(values, _NavigationValues):
-                values.remember_groups(cache_key, current, result, counts_only=counts_only)
-            return result
+            return _group_buckets(current, depth, order, structural_path, values, counts_only=counts_only)
 
         def branch_records(buckets, depth, parent_path):
             if not buckets:
@@ -555,6 +559,105 @@ class TreePages:
                 for row in payload['epochs']:row['annotations']=annotations[row['epoch_uuid']]
         payload['has_more'] = offset + limit < payload['total']
         return payload
+
+
+    def _canonical_reader(self):
+        return all(getattr(getattr(self, name), '__func__', None) is original
+                   for name, original in _BATCH_READER_METHODS.items())
+
+    def column_pages(self, body, ancestor_offsets=None):
+        """One response-local projection; the caller retains closing authority.
+
+        The target projection includes every ancestor prefix. Custom readers keep
+        independent page calls; no cross-request cache or permission is created.
+        """
+        offsets = [] if ancestor_offsets is None else ancestor_offsets
+        if (not isinstance(offsets, list) or len(offsets) > 8
+                or any(value is not None and (type(value) is not int or not 0 <= value <= 10_000_000)
+                       for value in offsets)):
+            raise ValueError('Malformed tree column offsets')
+        snapshot = None
+        def resolve(request):
+            nonlocal snapshot
+            if snapshot is None:
+                snapshot = self._scope(request)
+            return snapshot
+        read = (lambda request: self._page(request, resolve)) if self._canonical_reader() else self.page
+        target = read(body)
+        parents = []
+        for depth in range(len(target['path'])):
+            recorded = target['ancestors'][depth]['parent_offset']
+            offset = (recorded if body.get('anchor_uuid') or depth >= len(offsets) or offsets[depth] is None
+                      else offsets[depth])
+            request = {key: value for key, value in body.items() if key != 'anchor_uuid'}
+            request.update(path=target['path'][:depth], offset=offset, revision=target['revision'])
+            parents.append(read(request))
+        return target, parents
+
+    def selection(self, body, expected_count):
+        """Exact bounded DFS membership without rendering descendant pages."""
+        if (not isinstance(body, dict) or set(body) - {'protocol_uuid', 'predicate', 'filters', 'splits', 'path', 'revision'}
+                or type(expected_count) is not int or not 1 <= expected_count <= 1000):
+            raise ValueError('Tree selection requires 1–1,000 epochs and a bounded scope')
+        path = body.get('path', [])
+        validate_tree_path(path)
+        expected = body.get('revision')
+        if not isinstance(expected, str) or not re.fullmatch('[0-9a-f]{64}', expected):
+            raise ValueError('Tree selection requires a current revision')
+        if not self._canonical_reader():
+            return self._selection_pages(body, expected_count)
+        rows, _, values, definitions, order, revision = self._build_scope(body, all_fields=True)
+        if revision != expected:
+            raise StaleTreePage('Tree selection revision changed')
+        structural_path = TreePath(order, definitions, path)
+        selected = rows
+        for depth, key in enumerate(path):
+            buckets = _group_buckets(selected, depth, order, structural_path, values, counts_only=True)
+            bucket = next((bucket for bucket in buckets
+                if structural_path.key(values[bucket['row']['epoch_uuid']], order[depth]) == key), None)
+            if bucket is None:
+                raise KeyError('Tree branch is outside this selection')
+            selected = bucket['rows']
+        if len(selected) != expected_count:
+            raise StaleTreePage('Tree selection count changed; refresh this branch')
+        ids = []
+        def visit(current, depth):
+            if depth == len(order):
+                ids.extend(row['epoch_uuid'] for row in sorted(current, key=_chronology))
+            else:
+                for bucket in _group_buckets(current, depth, order, structural_path, values, counts_only=True):
+                    visit(bucket['rows'], depth + 1)
+        visit(selected, len(path))
+        if len(ids) != expected_count or len(set(ids)) != expected_count:
+            raise StaleTreePage('Tree selection is incomplete or contains duplicate epochs')
+        return dict(revision=revision, path=path, count=expected_count, epoch_uuids=ids)
+
+    def _selection_pages(self, body, expected_count):
+        # Compatibility oracle for custom pager policies and test adapters.
+        query = dict(body, limit=60, counts_only=True)
+        first = self.page(query)
+        if first['selection']['count'] != expected_count:
+            raise StaleTreePage('Tree selection count changed; refresh this branch')
+        ids = []
+        def visit(page):
+            if page['revision'] != body['revision']:
+                raise StaleTreePage('Tree selection revision changed')
+            if page['kind'] == 'epochs':
+                ids.extend(row['epoch_uuid'] for row in page['epochs'])
+                if len(ids) > expected_count:
+                    raise StaleTreePage('Tree selection exceeds its verified count')
+            else:
+                for branch in page['branches']:
+                    visit(self.page({**query, 'path': branch['path'], 'offset': 0}))
+            if page['has_more']:
+                visit(self.page({**query, 'path': page['path'], 'offset': page['offset'] + 60}))
+        visit(first)
+        if len(ids) != expected_count or len(set(ids)) != expected_count:
+            raise StaleTreePage('Tree selection is incomplete or contains duplicate epochs')
+        return dict(revision=first['revision'], path=first['path'], count=expected_count, epoch_uuids=ids)
+
+
+_BATCH_READER_METHODS = {name: getattr(TreePages, name) for name in ('page', '_page', '_scope', '_build_scope')}
 
 
 def witnessed_tree_page(pager, body):
