@@ -151,7 +151,7 @@ export default function ColumnTree(props){
   return <section className="tree-preview column-tree" aria-label="Tree column overview" aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
     {active&&!ownerBlocked&&groupTags.dialog}{active&&groupSelection.feedback}
     {active&&!props.refreshingLabelOwned&&(state.loading||!state.error&&ownerBlocked)&&state.columns.length>0&&<p className="tree-transient-status" role="status">Refreshing — previous view. Actions are unavailable until validation completes.</p>}
-    {props.design&&<header className="tp-total"><strong>{root?`${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>}
+    {props.design&&<header className="tp-total"><strong>{root?`Current view · ${number(root.total_epochs)} epochs`:'Loading tree…'}</strong><small>{last?.split_order.length??splits.split(',').filter(Boolean).length} split levels</small></header>}
     {props.design&&<nav className="tp-path" aria-label="Tree ancestry"><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:[]})}><Home size={14}/> All matching epochs</button>{ancestors.map((node,index)=><span key={node.key}><ChevronRight size={12}/><button disabled={state.loading||ownerBlocked} onClick={()=>load({path:path.slice(0,index+1)})} title={branchTooltip(node)}>{branchLabel(node)}</button></span>)}</nav>}
     {state.error&&<div className="pt-error" role="alert">{state.error}<button onClick={retry}>Reload tree overview</button></div>}
     <div className="tp-columns" ref={strip} onScroll={()=>{scrollIntent.current++;remember();}} aria-busy={state.loading||active&&!state.error&&ownerBlocked}>
