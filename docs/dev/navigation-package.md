@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `536cc373c85dba2e3b52f9e65545a6ed27d59938`,
+app and ZIP to clean source commit `abef4b349273136716b639ee7fefb138e1e22d06`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -322,3 +322,13 @@ and pending states, unchanged header/ancestry/column geometry, held expansion, a
 light/dark rendering. The initial native harness whitespace assertion was corrected
 and rerun without product changes. Earlier broad workflow evidence retains its
 original source attribution; this is a local package, not release promotion.
+
+
+## Tree cards without blue leading edges
+
+Removed both the thick left border and inset blue shadow from selected/open tree
+branch cards. Cards retain their normal thin borders, selection colors and controls.
+Four existing tree checks and the exact clean core gate passed. Final native
+light/dark checks confirm matching 1px side borders, no inset shadow and retained
+selection during held expansion. Earlier summary/workflow evidence remains bound
+to its original source. Public prerelease assets remain unchanged.

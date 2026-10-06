@@ -5,16 +5,16 @@
   "recorded_date": "2026-10-06",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+  "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-selection-summary-arm64.zip",
-    "bytes": 621200267,
-    "sha256": "fe9e776e0600d3210093d1b9722eb69cc33d982d9b118223514fb4cb12591fbf"
+    "filename": "Disco-0.1.8-tree-no-blue-edge-arm64.zip",
+    "bytes": 621200249,
+    "sha256": "0d2280fa284ab3789d557f5f0714130a9844df2ab7cba3162e28f49903ca95e0"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
@@ -25,8 +25,14 @@
       "failed": 0,
       "scope": "Full recursive frontend suite including exact selected summaries, pause/resume and A-B-A fences, and held-navigation branch appearance",
       "independent_source_review": "passed",
-      "final_source_difference": "Integrated 52px live selection status, inline counts and reduced-motion-aware value emphasis",
+      "final_source_difference": "Integrated live selection status retained; removed the thick blue left border and inset shadow from tree branch cards.",
       "current_scoped_checks": {
+        "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+        "passed": 4,
+        "failed": 0,
+        "scope": "Tree scope invalidation and stable branch selection during navigation"
+      },
+      "previous_scoped_checks": {
         "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
         "passed": 6,
         "failed": 0,
@@ -57,7 +63,7 @@
       }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/selection-summary-002/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/tree-no-blue-edge-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -75,16 +81,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "selection-summary-frontend.log",
-      "selection-summary-backend.log",
-      "selection-summary-status-scoped.log",
-      "selection-summary-status-guard.log",
-      "selection-summary-status-core-gate.json",
-      "selection-summary-provenance.json",
-      "selection-summary-status-native-audit.json",
-      "selection-summary-status-imports.json",
-      "selection-summary-installed.json",
-      "selection-summary-installed-ui.json"
+      "tree-no-blue-edge-tests.log",
+      "tree-no-blue-edge-guard.log",
+      "tree-no-blue-edge-core-gate.json",
+      "tree-no-blue-edge-provenance.json",
+      "tree-no-blue-edge-native-audit.json",
+      "tree-no-blue-edge-imports.json",
+      "tree-no-blue-edge-installed.json",
+      "tree-no-blue-edge-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -111,70 +115,34 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
-      "verification": "See selection-summary-installed-ui.json"
+      "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+      "verification": "See tree-no-blue-edge-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
-      "receipt": "selection-summary-native-2026-10-06T16-07-41-609Z/receipt.json",
-      "controller_sha256": "96944e5f42b9f98f0dfbdebfacf4a7b928495e5d2ccd28fcd68a714ab7674369",
+      "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+      "receipt": "tree-no-blue-edge-native-2026-10-06T16-19-10-484Z/receipt.json",
+      "controller_sha256": "7cfb5d3a556dc54fd264a47f24772d3a9a23b9193eefa0d49ecb46ddd4e2cbcd",
       "passed": true,
-      "scope": "Exact selected summary, selected parent retained during held expansion, disabled loading actions, empty/partial/pending selection and both themes",
-      "observed_metrics": {
-        "empty": [
-          "Current selection",
-          "0",
-          "0",
-          "0"
-        ],
-        "selected": [
-          "Current selection",
-          "63",
-          "2",
-          "0"
-        ],
-        "child_off": [
-          "Current selection",
-          "2",
-          "1",
-          "0"
-        ],
-        "pending": [
-          "Current selection",
-          "63",
-          "\u2014",
-          "\u2014"
-        ]
-      },
-      "fixed_geometry": {
-        ".selection-summary": {
-          "y": 148.3984375,
-          "height": 52
-        },
-        ".tp-path": {
-          "y": 200.3984375,
-          "height": 42.3984375
-        },
-        ".tp-columns": {
-          "y": 242.796875,
-          "height": 637.2578125
-        }
-      },
-      "themes": {
+      "branch_edges": {
         "light": {
-          "height": 52,
-          "background": "rgba(0, 0, 0, 0)",
-          "color": "rgb(70, 82, 105)"
+          "left": "1px",
+          "right": "1px",
+          "leftColor": "rgb(173, 206, 184)",
+          "rightColor": "rgb(173, 206, 184)",
+          "shadow": "none",
+          "background": "rgb(232, 243, 236)"
         },
         "dark": {
-          "height": 52,
-          "background": "rgba(0, 0, 0, 0)",
-          "color": "rgb(197, 206, 223)"
+          "left": "1px",
+          "right": "1px",
+          "leftColor": "rgb(68, 105, 81)",
+          "rightColor": "rgb(68, 105, 81)",
+          "shadow": "none",
+          "background": "rgb(23, 59, 45)"
         }
       },
-      "counts_only_responses": 33,
-      "clean_shutdown": true,
-      "initial_harness_failure": "First attempt stopped on expected whitespace in Unclassified breakdown text; source unchanged; corrected assertion and reran."
+      "scope": "Selected expanded cards have matching 1px side borders and no inset shadow in light/dark themes; selection colors and held-navigation state retained",
+      "clean_shutdown": true
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -464,6 +432,68 @@
       "scope": "Read-only pending import badge styling in light and dark themes",
       "clean_shutdown": true,
       "fixture_setup": "Isolated copy-on-write app clone; theme picker exercised. Earlier setup attempts on wrong page, OS-theme emulation, hidden input and low disk were retained separately and not counted as passes."
+    },
+    "previous_selection_summary_workflow": {
+      "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+      "receipt": "selection-summary-native-2026-10-06T16-07-41-609Z/receipt.json",
+      "controller_sha256": "96944e5f42b9f98f0dfbdebfacf4a7b928495e5d2ccd28fcd68a714ab7674369",
+      "passed": true,
+      "scope": "Exact selected summary, selected parent retained during held expansion, disabled loading actions, empty/partial/pending selection and both themes",
+      "observed_metrics": {
+        "empty": [
+          "Current selection",
+          "0",
+          "0",
+          "0"
+        ],
+        "selected": [
+          "Current selection",
+          "63",
+          "2",
+          "0"
+        ],
+        "child_off": [
+          "Current selection",
+          "2",
+          "1",
+          "0"
+        ],
+        "pending": [
+          "Current selection",
+          "63",
+          "\u2014",
+          "\u2014"
+        ]
+      },
+      "fixed_geometry": {
+        ".selection-summary": {
+          "y": 148.3984375,
+          "height": 52
+        },
+        ".tp-path": {
+          "y": 200.3984375,
+          "height": 42.3984375
+        },
+        ".tp-columns": {
+          "y": 242.796875,
+          "height": 637.2578125
+        }
+      },
+      "themes": {
+        "light": {
+          "height": 52,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "rgb(70, 82, 105)"
+        },
+        "dark": {
+          "height": 52,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "rgb(197, 206, 223)"
+        }
+      },
+      "counts_only_responses": 33,
+      "clean_shutdown": true,
+      "initial_harness_failure": "First attempt stopped on expected whitespace in Unclassified breakdown text; source unchanged; corrected assertion and reran."
     }
   },
   "qualification_limits": [
