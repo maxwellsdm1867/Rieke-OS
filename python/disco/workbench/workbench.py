@@ -753,7 +753,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        return finish(context, dict(contract_version=1, protocol=protocol,
+        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -882,18 +882,45 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/tree/page')
     def workbench_tree_page(protocol, revision):
-        value = body({'candidate_scope_revision'}, {'filters', 'splits', 'path', 'offset', 'limit', 'revision', 'anchor_uuid'})
+        value = body({'candidate_scope_revision'}, {'filters', 'splits', 'path', 'offset', 'limit', 'revision', 'anchor_uuid',
+            'include_ancestors', 'ancestor_offsets'})
         expected = value.pop('candidate_scope_revision')
+        include_ancestors = value.pop('include_ancestors', False)
+        ancestor_offsets = value.pop('ancestor_offsets', [])
+        if (type(include_ancestors) is not bool or not isinstance(ancestor_offsets, list)
+                or len(ancestor_offsets) > 8
+                or any(offset is not None and (type(offset) is not int or not 0 <= offset <= 10_000_000) for offset in ancestor_offsets)
+                or ancestor_offsets and not include_ancestors):
+            raise ValueError('Malformed tree column navigation options')
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
             context = checked(protocol, revision, owner, expected, filters)
             try:
-                page = TreePages(manager.frozen_service(context)).page(dict(protocol_uuid=protocol, **value))
+                pager = TreePages(manager.frozen_service(context))
+                page = pager.page(dict(protocol_uuid=protocol, **value))
+                parents = []
+                if include_ancestors:
+                    for depth in range(len(page['path'])):
+                        recorded = page['ancestors'][depth]['parent_offset']
+                        offset = (recorded if value.get('anchor_uuid') or depth >= len(ancestor_offsets) or ancestor_offsets[depth] is None
+                                  else ancestor_offsets[depth])
+                        parent_request = {key: item for key, item in value.items() if key != 'anchor_uuid'}
+                        parent_request.update(protocol_uuid=protocol, path=page['path'][:depth],
+                            offset=offset, revision=page['revision'])
+                        parents.append(pager.page(parent_request))
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
             if page.get('epochs'):
                 row_decisions(context, page['epochs'])
-            return jsonify(finish(context, page))
+            result = finish(context, page)
+            if include_ancestors:
+                # Every page is freshly read under the same locks and closing
+                # authority check; no retained client page grants permission.
+                for parent in parents:
+                    parent.update({key: result[key] for key in ('generation', 'candidate_scope_revision',
+                        'query_revision', 'expected_binding_version')})
+                result['ancestor_pages'] = parents
+            return jsonify(result)
 
     @app.post(candidate + '/summary')
     def workbench_candidate_summary(protocol, revision):

@@ -27,13 +27,21 @@ function Highlight({text, term}) {
 
 export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
+  const [open,setOpen] = useState(false),[combineOpen,setCombineOpen]=useState(false);
   const catalogQuery=new URLSearchParams(queryString);
   if(readContext){catalogQuery.set('candidate_scope_revision',readContext.candidate_scope_revision);catalogQuery.set('splits',value.join(','));}
   const legacyPath=`${readContext?readContext.root+'/tree-fields':catalogPath || `/protocols/${protocolId}/tree-fields`}${catalogQuery.size?'?'+catalogQuery:''}`;
   const registry=useFieldRegistry(revision,legacyPath);
-  const fullCatalog=!!readContext;
+  const fullCatalog=!!readContext&&(open||combineOpen);
   const fetchedCatalog=useResource(!catalogData&&fullCatalog?legacyPath:null,revision);
-  const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog?fetchedCatalog:registry;
+  // Registry fallback supplies identities/labels only, never global statistics
+  // presented as facts about this frozen candidate.
+  const registryDefinitions=useMemo(()=>!readContext?registry.data:registry.data?{fields:(registry.data.fields||[]).map(field=>{
+    const {distinct_count,recorded_distinct_count,missing_count,null_count,present_count,examples,choices,summary_available,...definition}=field;
+    return definition;
+  })}:null,[!!readContext,registry.data]);
+  const catalog=catalogData?{data:catalogData,loading:false,error:null,reload:()=>{}}:fullCatalog
+    ?{...fetchedCatalog,data:fetchedCatalog.data||registryDefinitions}:{...registry,data:registryDefinitions};
   const preferences=useProtocolSummaryPreferences(projectId,summaryContext?.protocol_uuid||protocolId,'tree');
   const definitions=catalog.data?.tree_fields||catalog.data?.fields||[];
   const context=summaryContext||{predicate:{all:[]},...(protocolId?{protocol_uuid:protocolId}:{}),...(queryString?{filters:Object.fromEntries(new URLSearchParams(queryString))}:{})};
@@ -54,7 +62,6 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const [showMoveControls,setShowMoveControls] = useState(false);
   const [search,setSearch] = useState('');
   const [category,setCategory] = useState('Common');
-  const [open,setOpen] = useState(false);
   const [active,setActive] = useState(0);
   const [visible,setVisible] = useState(40);
   const [position,setPosition] = useState(null);
@@ -168,7 +175,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     return result;
   },[]);
   return <section className="tree-builder" aria-label="Tree builder">
-    <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);}} aria-expanded={expanded}>
+    <div className="tb-heading"><button className="tb-disclosure" onClick={()=>{setExpanded(!expanded);setOpen(false);setCombineOpen(false);}} aria-expanded={expanded}>
       {expanded?<ChevronDown size={14}/>:<ChevronRight size={14}/>}<GitBranch size={15}/><strong>Arrange tree</strong>
     </button><span>{order.length} / 8 levels</span></div>
     <div className="tb-body">{!expanded?<button className="tb-collapsed-summary" onClick={()=>setExpanded(true)}>{heading || 'All epochs · flat view'}</button>:<>
@@ -204,7 +211,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       {layoutError&&<p className="tb-error" role="alert">{layoutError}<button onClick={()=>setLayoutError('')}>Dismiss</button></p>}
       {order.length>1&&<button className="tb-move-controls-toggle" aria-pressed={showMoveControls} onClick={()=>setShowMoveControls(value=>!value)}><Keyboard size={13}/>{showMoveControls?'Hide move controls':'Show move controls'}</button>}
       {!order.length&&<div className="tb-flat"><span className="tb-flat-dot"/> All matching epochs in one list</div>}
-      <JointGroupingEditor fields={fields} order={order} onChange={next=>{changeOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
+      <JointGroupingEditor fields={fields} order={order} onOpenChange={setCombineOpen} onChange={next=>{changeOrder(next);setOpen(false);setAnnouncement('Combined fields into one split. Every component must match.');}}/>
       <button ref={trigger} className="tb-add-split" aria-haspopup="dialog" aria-expanded={open} disabled={order.length>=8 || catalog.loading&&!catalog.data} onClick={()=>{setSearch('');setCategory(suggestions.length?'Suggested':'Common');setOpen(value=>!value);}}><Plus size={16}/>{order.length>=8?'Eight-level limit reached':'Add a split'}<ChevronDown size={14}/></button>
       <button className="tb-acquisition-preset" disabled={['date','cell','group','block'].some(id=>!fieldMap.has(id))} onClick={()=>usePreset({fields:['date','cell','group','block']})}><GitBranch size={14}/><span>Date → Cell → Epoch group → Block</span></button>
       <div className="tb-presets" aria-label="Tree presets">

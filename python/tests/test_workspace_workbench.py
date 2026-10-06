@@ -64,6 +64,58 @@ class WorkbenchTests(unittest.TestCase):
     def accept(self, request, root=None):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
 
+    def test_column_batch_matches_fresh_pages_with_one_closing_scope_check(self):
+        context = self.get_context()
+        self.assertIs(context['tree_column_pages'], True)
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'],
+                    splits='date,cell,block', anchor_uuid=self.added, limit=1)
+        with patch.object(self.manager, 'context', wraps=self.manager.context) as reads:
+            response = self.case.client.post(self.root + '/tree/page', json={**body,
+                'include_ancestors': True, 'ancestor_offsets': [999, None, 999]}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(reads.call_count, 2)  # Opening and closing authority, not once per ancestor.
+        batch = response.get_json()
+        parents = batch.pop('ancestor_pages')
+        self.assertEqual(len(parents), 3)
+        self.assertEqual([row['epoch_uuid'] for row in batch['epochs']], [self.added])
+        legacy = self.case.client.post(self.root + '/tree/page', json=body, headers=self.case.headers)
+        self.assertEqual(batch, legacy.get_json())
+        for depth, parent in enumerate(parents):
+            self.assertEqual(parent['path'], batch['path'][:depth])
+            self.assertEqual(parent['offset'], batch['ancestors'][depth]['parent_offset'])
+            request = {key: value for key, value in body.items() if key != 'anchor_uuid'}
+            request.update(path=parent['path'], offset=parent['offset'], revision=batch['revision'])
+            fresh = self.case.client.post(self.root + '/tree/page', json=request, headers=self.case.headers)
+            self.assertEqual(fresh.status_code, 200, fresh.get_json())
+            self.assertEqual(parent, fresh.get_json())
+
+    def test_column_batch_validates_bounds_and_closing_scope(self):
+        context = self.get_context()
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], splits='date,cell,block')
+        invalid = [{'include_ancestors': 1}, {'include_ancestors': 'true'},
+                   {'ancestor_offsets': [0]}, {'include_ancestors': True, 'ancestor_offsets': [0] * 9}]
+        invalid.extend(dict(include_ancestors=True, ancestor_offsets=value)
+                       for value in (True, {}, '0', [True], [-1], [0.5], ['0'], [10_000_001]))
+        for options in invalid:
+            with self.subTest(options=options):
+                response = self.case.client.post(self.root + '/tree/page', json={**body, **options}, headers=self.case.headers)
+                self.assertEqual(response.status_code, 400, response.get_json())
+        empty = self.case.client.post(self.root + '/tree/page', json={**body,
+            'include_ancestors': True}, headers=self.case.headers).get_json()
+        self.assertEqual(empty['ancestor_pages'], [])
+        original, calls = self.manager.context, []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs)
+            calls.append(value)
+            if len(calls) == 2:
+                value = {**value, 'candidate_scope_revision': 'changed-after-parent-reads'}
+            return value
+        with patch.object(self.manager, 'context', side_effect=changed):
+            response = self.case.client.post(self.root + '/tree/page', json={**body,
+                'anchor_uuid': self.added, 'include_ancestors': True}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 409, response.get_json())
+        self.assertNotIn('ancestor_pages', response.get_json())
+
     def test_read_contract_closes_before_publication_and_never_wraps_mutations(self):
         from workspace_state_generation import StateGenerationAuthority
         tracker = StateGenerationAuthority(self.case.connection, self.case.service.project['project_uuid'])

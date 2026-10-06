@@ -1254,7 +1254,8 @@
           "workspace-app/src/selectionMaskDownload.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
-          "workspace-app/src/testDiscovery.test.js"
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/tree-ancestors/frozenColumnReads.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"

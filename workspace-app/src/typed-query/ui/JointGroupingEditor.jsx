@@ -2,7 +2,7 @@ import {useMemo, useState} from 'react';
 import {Combine, Plus, X} from 'lucide-react';
 import {combineLevels,shortFieldLabel} from '../jointGrouping.js';
 
-export default function JointGroupingEditor({fields,order,onChange}) {
+export default function JointGroupingEditor({fields,order,onChange,onOpenChange}) {
   const [selected,setSelected]=useState([]),[search,setSearch]=useState(''),[error,setError]=useState('');
   const available=useMemo(()=>fields.filter(field=>!field.components&&!field.id.startsWith('joint/')),[fields]);
   const byId=useMemo(()=>new Map(available.map(field=>[field.id,field])),[available]);
@@ -17,7 +17,7 @@ export default function JointGroupingEditor({fields,order,onChange}) {
     }
     catch(e){setError(e.message);}
   }
-  return <details className="tb-joint-editor"><summary><Combine size={14}/> Combine fields into one level</summary>
+  return <details className="tb-joint-editor" onToggle={event=>onOpenChange?.(event.currentTarget.open)}><summary><Combine size={14}/> Combine fields into one level</summary>
     <p>Group epochs only when <strong>every value matches</strong>. Each combination becomes one branch.</p>
     {history.every(id=>byId.has(id))&&<button className="tb-joint-history" onClick={()=>apply(history)}><Combine size={14}/><span>History 1 + History 2 + Target</span></button>}
     <div className="tb-joint-members" aria-label="Fields to combine">{selected.map((id,index)=><span key={id} className={`joint-chip joint-color-${index%3}`}><span>{shortFieldLabel(byId.get(id))}</span><button aria-label={`Remove ${shortFieldLabel(byId.get(id))} from combination`} onClick={()=>setSelected(previous=>previous.filter(key=>key!==id))}><X size={12}/></button></span>)}</div>

@@ -484,3 +484,11 @@ owner retains cancellation and render-time stale-scope fences; selection authori
 is unchanged. `treeBuilderOverviewLifecycle.test.js` is mapped under typed-query.
 Column heading actions are removed, and branch Tag fill follows the existing
 binary selection state. Independent pre-implementation and source reviews passed.
+
+
+Frozen column navigation now uses an advertised, bounded fresh-page batch under
+one Workbench read context. The target and ancestors retain final scope and
+generation fences; client cache admission still excludes frozen candidates.
+Candidate catalog computation is deferred until a split chooser opens. Terminal
+Tag fill follows actual selected epoch UUIDs. These changes received independent
+design review; native timing evidence remains scoped to its owned fixture.

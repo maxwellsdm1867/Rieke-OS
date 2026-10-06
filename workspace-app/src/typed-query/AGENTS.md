@@ -70,3 +70,8 @@ owner fences scope changes, cancellation and late responses. These counts are
 field values, not whole-level branch counts or selection membership. Ordinary
 requested-summary jobs remain disabled for frozen candidates. See
 `treeBuilderOverviewLifecycle.test.js`; no full recursive tree read is needed.
+
+The frozen catalog is now requested only while Add a split or Combine fields is
+open. Collapsed cards use registry labels; fallback definitions strip global
+statistics. Closing both choosers cancels the scoped catalog read. Existing scope
+fences remain in force across filters and candidate replacement.

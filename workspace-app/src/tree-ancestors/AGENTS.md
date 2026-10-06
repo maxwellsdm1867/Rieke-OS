@@ -107,3 +107,11 @@ for safe ancestor reuse and its local evidence; cross-owner Inspector tests rema
 outside. This relocation improves discovery/locality only. It does not simplify
 the public API or prove a deeper abstraction; future interface changes require
 separate review of caller knowledge and coupling.
+
+
+Frozen contexts advertising `tree_column_pages: true` request a fresh target and
+at most eight fresh ancestors in one response. This is not cache admission. The
+renderer validates parent order/path/offset/revision, candidate token, query and
+binding fences, and equal generation before atomic publication. Unadvertised
+contexts retain individual fresh reads; malformed advertised batches fail closed.
+`frozenColumnReads.test.js` covers this protocol, cancellation and stale responses.

@@ -29,3 +29,6 @@
 /* Tag actions follow the branch switch, never saved-tag coverage. */
 .column-tree .tp-group-tag-wrap:has(>.incoming-branch-on)>.incoming-tree-actions>.tree-group-tag-button{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
 .column-tree .tp-group-tag-wrap:has(>.incoming-branch-off)>.incoming-tree-actions>.tree-group-tag-button{background:var(--accent-soft);border-color:var(--border);color:var(--accent)}
+
+.column-tree .tp-epoch-row.incoming-epoch-on>.tree-group-tag-button{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.column-tree .tp-epoch-row.incoming-epoch-off>.tree-group-tag-button{background:var(--accent-soft);border-color:var(--border);color:var(--accent)}

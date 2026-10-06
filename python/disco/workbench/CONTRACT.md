@@ -143,3 +143,19 @@ locks. Schema authority is attested at both boundaries, with live scope counters
 inside. A failed closing check discards the response. Custom authorities retain
 their prior path. Preparation and mutation routes never enter this read lease;
 their independent transaction fences and backup policy are unchanged.
+
+
+## Fresh column navigation batches
+
+A public context advertises `tree_column_pages: true`. Candidate `tree/page`
+accepts `include_ancestors: true` and at most eight `ancestor_offsets`: null means
+use the target receipt's recorded parent offset; integer offsets retain the
+existing 0–10,000,000 bound. Anchor navigation always uses recorded offsets.
+Each target/ancestor remains bounded by the ordinary page limit (at most 100).
+
+The endpoint builds all pages freshly from one frozen service inside one guarded
+read, then runs the existing closing generation/candidate check before returning.
+Parents receive that same final generation, candidate, query and binding fence.
+It neither admits cached candidate data nor changes selection/publication consent.
+The existing Workbench suite compares batched bodies to separate fresh reads and
+covers anchor offsets, malformed options, bounds and closing-scope rejection.
