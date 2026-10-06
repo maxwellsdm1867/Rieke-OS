@@ -5,25 +5,26 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
+  "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-workbench-fast-arm64.zip",
-    "bytes": 621196440,
-    "sha256": "775017616353fbf00254f8db0c86b05670e9ddfe38bd7e713ddc8856647fad87"
+    "filename": "Disco-0.1.8-arrange-tree-arm64.zip",
+    "bytes": 621196246,
+    "sha256": "cc9661948f33e7fbbf48d21486d16b4b4ed8fdea9afc33d1c031558eed7d611a"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
-      "passed": 862,
+      "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
+      "passed": 12,
       "failed": 0,
-      "implementation_unchanged_in_packaged_source": true
+      "scope": "Incoming branch selection workflow, TreeBuilder rendering and combined levels",
+      "independent_source_review": "passed"
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -36,10 +37,11 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Connection-hint mismatch retains original standalone catalog admission; covered by the final scoped checks."
+      "final_source_difference": "Connection-hint mismatch retains original standalone catalog admission; covered by the final scoped checks.",
+      "implementation_unchanged_since": "ee616dc41d1b9f825ec982291959ad90852e346a"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/workbench-optimization-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/arrange-tree-controls-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -57,18 +59,15 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "workbench-optimization-backend-final.log",
-      "workbench-optimization-owners-final.log",
-      "workbench-optimization-catalog-fallback.log",
-      "workbench-optimization-guard-final.log",
-      "workbench-optimization-core-gate.json",
-      "workbench-optimization-provenance.json",
-      "workbench-optimization-native-compatibility.json",
-      "workbench-optimization-relocated-imports.json",
-      "workbench-switch-trace-2026-10-06T00-37-27-516Z/receipt.json",
-      "workbench-switch-trace-2026-10-06T00-38-36-821Z/receipt.json",
-      "workbench-loading-comparison.json",
-      "workbench-optimization-installed.json"
+      "arrange-tree-controls-tests.log",
+      "arrange-tree-controls-guard.log",
+      "arrange-tree-controls-core-gate.json",
+      "arrange-tree-controls-provenance.json",
+      "arrange-tree-controls-native-audit.json",
+      "arrange-tree-controls-imports.json",
+      "arrange-tree-controls-installed.json",
+      "arrange-tree-controls-installed-ui.json",
+      "workbench-loading-comparison.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -91,7 +90,14 @@
         "after_median": 286
       },
       "local_comparison": "workbench-loading-comparison.json",
-      "preparation_repeated_on_first_return": false
+      "preparation_repeated_on_first_return": false,
+      "attribution": "Measured on ee616dc before the Arrange tree card-only cleanup; not relabeled as current-source timing."
+    },
+    "installed_ui": {
+      "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
+      "arrange_tree": "No Select or Tag actions on level cards; reorder/remove/layout controls retained",
+      "tree_columns": "Selection and tagging retained",
+      "verification": "native installed application"
     }
   },
   "qualification_limits": [

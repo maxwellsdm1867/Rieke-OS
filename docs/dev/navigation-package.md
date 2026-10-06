@@ -42,8 +42,8 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `ee616dc41d1b9f825ec982291959ad90852e346a`,
-including the clipboard fix and Workbench loading update below. Its SHA-256 identifies the exact ZIP;
+app and ZIP to clean source commit `b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a`,
+including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
 
@@ -116,3 +116,17 @@ with one opt-in skip. The exact clean `ee616dc` core benchmark gate, architectur
 checks, 813-file native audit, source/resource verification and relocated scientific
 imports passed. Frontend implementation bytes remain unchanged from `7dda900`;
 its full frontend result remains attributed to that source.
+
+
+## Arrange tree card cleanup
+
+The `b0b7dac` package removes both Select and Tag from the Arrange tree level
+cards. These cards retain layout controls; selection and tagging remain in the
+actual tree columns. The shared selection/tag controls are unchanged.
+
+Independent source review and 12 focused frontend cases passed. The exact clean
+core benchmark gate, architecture checks, whole-bundle native audit, resource
+verification and relocated imports passed. The installed native UI was checked
+for the requested card cleanup. Backend implementation is unchanged from
+`ee616dc`; its earlier full native workflow and loading measurements remain
+attributed to that source rather than relabeled as this UI-only package.
