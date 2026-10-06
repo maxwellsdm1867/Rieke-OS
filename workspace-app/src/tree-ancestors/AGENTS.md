@@ -145,3 +145,9 @@ parents previously present in hierarchy state; no extra cache authority is impli
 The view publishes all pages atomically and retains sibling branches. Initial
 live target plus parent bundle uses exact locator offsets and pinned revision;
 identity change or cancellation discards the join before cache/state publication.
+
+Recorded metadata split pages can carry a server response-coherence witness and
+batch capability. They remain excluded from reusableTreeBody; batching support
+must not imply cache admission. Warm scheduling requires both retained geometry
+and an eligible ordinary parent body. Noncacheable metadata parents therefore
+use a fresh bundle, including after capability discovery on the first target.

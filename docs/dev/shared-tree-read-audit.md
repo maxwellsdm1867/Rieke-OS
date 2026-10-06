@@ -352,3 +352,14 @@ this explicit compatibility tradeoff replaces the former sequential partial load
 Arbitrary multipath restoration remains distinct. Follow-up source review and
 cold/offset/generation/cancellation/old-context tests are required separately from
 the earlier 910-test checkpoint.
+
+### Native saved-metadata layout coverage
+
+The actual main fixture uses `cell type,metadata/cell/start_time`. Native testing
+correctly revealed that the initial parameters/properties-only prefix admission
+left this saved layout on ordinary reads. Catalog-known recorded metadata fields
+are now included under the same index/source/opening/closing witness. Their sealed
+index projection supplies values and generation; annotation and joint/component
+fields remain excluded. Renderer cache admission stays unchanged, so metadata
+parents batch freshly even when prior column geometry is retained. A native
+rerun against this exact saved layout is required for final package acceptance.

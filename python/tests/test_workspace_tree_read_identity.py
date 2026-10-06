@@ -151,3 +151,39 @@ class TreeReadIdentityTests(unittest.TestCase):
                 'include_ancestors': True, 'anchor_uuid': next(iter(self.service.rows))})
         self.assertEqual(response.status_code, 409)
         self.assertNotIn('ancestor_pages', response.get_json())
+
+    def test_recorded_metadata_layout_shares_one_guarded_projection(self):
+        import cProfile
+        self.service.disk_index.close()
+        for details in self.service.details.values():
+            details['metadata'] = {'cell': {'start_time': '2026-01-01T00:00:00'}}
+        self.service.disk_index = DiskMetadataIndex.build(Path(self.temp.name)/'metadata-read-index.sqlite',
+            self.service.rows, self.service.details, self.service.sources, 'metadata-fixture', self.service.project['project_uuid'])
+        self.addCleanup(self.service.disk_index.close)
+        splits = 'cell type,metadata/cell/start_time'
+        anchor = next(iter(self.service.rows))
+        expected = self.read(splits=splits, anchor_uuid=anchor, counts_only=True)
+        self.assertTrue(expected['tree_column_pages'])
+        profiler = cProfile.Profile();profiler.enable()
+        actual = self.read(splits=splits, anchor_uuid=anchor, counts_only=True, include_ancestors=True)
+        profiler.disable()
+        parents = actual.pop('ancestor_pages');self.assertEqual(actual, expected)
+        for depth, parent in enumerate(parents):
+            self.assertEqual(parent, self.read(splits=splits, path=actual['path'][:depth],
+                revision=actual['revision'], counts_only=True, offset=actual['ancestors'][depth]['parent_offset']))
+        self.assertLessEqual(sum(entry.callcount for entry in profiler.getstats()
+            if getattr(entry.code, 'co_name', '') == '_build_scope'), 1)
+        self.assertEqual(self.client.post('/api/tree-pages', json={**self.body,
+            'splits': 'metadata/unknown', 'include_ancestors': True}).status_code, 400)
+
+    def test_bundle_closing_source_change_discards_response(self):
+        from disco.metadata import explore_queries
+        original = explore_queries.generation
+        calls = []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs);calls.append(True)
+            return {**value, 'source': 'changed'} if len(calls)>1 else value
+        with patch.object(explore_queries, 'generation', side_effect=changed):
+            response = self.client.post('/api/tree-pages', json={**self.body, 'include_ancestors': True})
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('ancestor_pages', response.get_json())

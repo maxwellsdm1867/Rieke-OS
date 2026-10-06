@@ -81,3 +81,13 @@ test('initial parent bundle cannot publish after cancellation',async()=>{
  let release,current=true;const pending=loadColumnTreePages({scope:deepScope,anchor:'epoch',isCurrent:()=>current,load:async(endpoint,{body})=>body.anchor_uuid?deepResponse(body):new Promise(resolve=>release=()=>resolve(deepResponse(body)))});
  while(!release)await new Promise(resolve=>setTimeout(resolve,0));current=false;release();await assert.rejects(pending,{name:'AbortError'});
 });
+
+test('recorded metadata parents batch even with retained geometry and an available owner, without cache admission',async()=>{
+ const metadataScope={...deepScope,splits:'cell type,metadata/cell/start_time'};
+ const order=metadataScope.splits.split(','),parents=deepParents.slice(0,2).map(page=>({...page,split_order:order}));
+ const page={...deepTarget,split_order:order,path:deepKeys.slice(0,2),depth:2,ancestors:deepTarget.ancestors.slice(0,2),ancestor_pages:parents};delete page.anchor;
+ let calls=0,seeds=0;
+ const owner={available:true,active:()=>true,attest:()=>({}),current:()=>true,read:()=>{seeds++;throw Error('Metadata must not enter ancestor cache');}};
+ const pages=await loadColumnTreePages({scope:metadataScope,path:page.path,revisionOverride:revision,retainedPages:parents,readOwner:owner,load:async(endpoint,{body})=>{calls++;assert.equal(body.include_ancestors,true);return page;}});
+ assert.equal(calls,1);assert.equal(seeds,0);assert.equal(pages.length,3);
+});

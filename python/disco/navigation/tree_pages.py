@@ -687,7 +687,7 @@ def witnessed_tree_page(pager, body):
     eligible = (isinstance(body, dict) and isinstance(body.get('protocol_uuid'), str)
                 and body.get('filters', {}) == {} and 'predicate' not in body
                 and isinstance(body.get('splits'), str) and body['splits']
-                and all(field in recorded or field.startswith(('parameters/', 'properties/'))
+                and all(field in recorded or field.startswith(('parameters/', 'properties/', 'metadata/'))
                         for field in body['splits'].split(','))
                 and getattr(service, '_explore_state_generation', None) is not None
                 and isinstance(index, DiskMetadataIndex) and _structural_contract(service))

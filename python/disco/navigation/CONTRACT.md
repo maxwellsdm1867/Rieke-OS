@@ -80,3 +80,10 @@ silently changes authority. Frozen custom-reader fallback is unchanged. Capabili
 is an optimization advertisement, not a lease. Tests in
 `test_workspace_tree_read_identity.py` cover complete page equivalence, bounded
 options, custom/ineligible rejection and closing-generation discard.
+
+Catalog-known recorded `metadata/` split fields also qualify for the same live
+response witness and batch, alongside built-ins, parameters and properties.
+DiskMetadataIndex's sealed generation and source checks cover their recorded
+projection; annotation-scope and joint/component fields remain excluded. This
+adds no renderer cache permission: metadata parent bodies still fail the existing
+reusableTreeBody admission policy and use fresh bundles even with retained geometry.

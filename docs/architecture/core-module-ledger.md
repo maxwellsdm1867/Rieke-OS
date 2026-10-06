@@ -519,3 +519,10 @@ operations retain their own contracts; initial live targets can discover support
 under matching fresh identity. Local navigation and tree-ancestor contracts define exact validation and
 failure behavior. Independent preimplementation and source reviews were performed;
 source/route tests and native package evidence retain separate attribution.
+
+Native qualification exposed the saved `cell type,metadata/cell/start_time`
+layout outside the initial recorded-field batch prefix list. Reviewed eligibility
+now includes catalog-known recorded metadata fields under the same sealed index
+and response generation proof, excluding annotation/joint scopes. Cache admission
+is unchanged; noncacheable metadata parents always use fresh bundles. This is a
+measured caller-coverage correction, not broader persistent cache authority.

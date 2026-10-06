@@ -21,7 +21,8 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  const covered=!anchor&&path.every((_,depth)=>retainedPages.some(page=>page.kind==='branches'
   &&canonical(page.path)===canonical(path.slice(0,depth))
   &&page.offset===(columnPositions[depth]?.offset??page.offset)));
- const batch=scope.readContext?.tree_column_pages===true||liveCapability&&(!!anchor||path.length>0)&&(!covered||!readOwner?.available);
+ const parentCacheable=reusableTreeBody(treePageRequest(scope,{path:[],offset:0,currentRevision:revisionOverride||retainedPages[0]?.revision}));
+ const batch=scope.readContext?.tree_column_pages===true||liveCapability&&(!!anchor||path.length>0)&&(!covered||!parentCacheable||!readOwner?.available);
  if(batch){body.include_ancestors=true;body.ancestor_offsets=Array.from(columnPositions.slice(0,8),position=>position?.offset==null?null:Number.isSafeInteger(position.offset)&&position.offset>=0?position.offset:0);}
  const page=await load(endpoint,{method:'POST',body,signal});
  if(!current())throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
@@ -80,7 +81,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  // The first fresh live target can discover support without a separate
  // discovery read. Fetch its remaining ancestors as one independently fenced
  // bundle, then join only if both responses carry the exact same identity.
- const discovered=!frozen&&page.tree_column_pages===true&&targets.length>1&&!covered;
+ const discovered=!frozen&&page.tree_column_pages===true&&targets.length>1&&(!covered||!parentCacheable);
  let parents;
  if(discovered){
   if(!validTarget||readOwner?.available&&!lease)throw Error('Tree column response changed or is incomplete; refresh the current tree');
