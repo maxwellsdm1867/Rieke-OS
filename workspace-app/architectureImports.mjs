@@ -1,7 +1,7 @@
 // The lock pins the parser and native binding. No regex fallback on failure.
 import {parseSync} from 'rolldown/utils';
 import {readFileSync} from 'node:fs';
-import {builtinModules} from 'node:module';
+import {builtinModules,isBuiltin} from 'node:module';
 import {pathToFileURL} from 'node:url';
 
 export function analyze(filename,source,{allowDomOverride=false}={}){
@@ -54,6 +54,11 @@ export const dependencies=(filename,source)=>analyze(filename,source).dependenci
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
  try{
   const files=JSON.parse(readFileSync(0,'utf8'));
-  process.stdout.write(JSON.stringify(files.map(({filename,source,allowDomOverride=false})=>({filename,...analyze(filename,source,{allowDomOverride}),builtins:builtinModules}))));
+  process.stdout.write(JSON.stringify(files.map(({filename,source,allowDomOverride=false})=>{
+   const result=analyze(filename,source,{allowDomOverride});
+   // Node 22 omits prefix-only modules such as node:test from builtinModules.
+   // Ask Node about each exact specifier; never allow every node: prefix.
+   return {filename,...result,builtins:[...new Set([...builtinModules,...result.dependencies.filter(isBuiltin)])]};
+  })));
  }catch(error){process.stderr.write(`Architecture parser failed: ${error.message}\n`);process.exitCode=1;}
 }

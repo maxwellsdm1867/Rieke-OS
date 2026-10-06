@@ -31,6 +31,16 @@ test('dependency parser ignores comments and strings that mention imports',()=>{
   assert.deepEqual(dependencies('view.js',`// import x from 'bad';\nconst text="require('bad')";`),[]);
 });
 
+test('CLI recognizes prefix-only Node builtins without admitting invented node modules',()=>{
+  const parser=fileURLToPath(new URL('../architectureImports.mjs',import.meta.url));
+  const result=spawnSync(process.execPath,[parser],{encoding:'utf8',input:JSON.stringify([{filename:'fixture.test.js',source:"import 'node:test'; import 'node:test/reporters'; import 'node:not-a-real-builtin';"}])});
+  assert.equal(result.status,0,result.stderr);
+  const [file]=JSON.parse(result.stdout);
+  assert.ok(file.builtins.includes('node:test'));
+  assert.ok(file.builtins.includes('node:test/reporters'));
+  assert.ok(!file.builtins.includes('node:not-a-real-builtin'));
+});
+
 test('public guard rejects normalized forbidden edges, required-edge removal and unavailable parser',()=>{
   const root=mkdtempSync(join(tmpdir(),'disco-js-architecture-'));
   const write=(name,value)=>{mkdirSync(join(root,name,'..'),{recursive:true});writeFileSync(join(root,name),typeof value==='string'?value:JSON.stringify(value));};
