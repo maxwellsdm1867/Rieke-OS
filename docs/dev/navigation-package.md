@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `4cb83918ff7890d474c2213e8f4a4a47ba476889`,
+app and ZIP to clean source commit `aa9845a89b2121e79692f4b0fca7e03bd5f0c947`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -267,3 +267,16 @@ checks exercise both left tree modes, separate highlight/selection colors, compa
 row geometry, downstream selection, saved tagging and export preview. The earlier
 six-check smoke receipt remains attributed to source 60f9567. Public prerelease
 assets and its tag are unchanged; this is a newer local testing package.
+
+
+## Stable transient tree status
+
+Updating downstream selection and Refreshing notices use a noninteractive overlay
+inside the tree, rather than inserting a layout row. Existing live status text,
+readiness gates, disabled controls, errors and cancellation remain unchanged.
+34 scoped frontend checks, independent review and the exact clean core gate passed.
+Native requests were deliberately held open: header, ancestry and column-strip
+geometry stayed identical before/during/after selection and refresh.
+Earlier complete selection/tag/export evidence remains attributed to source 4cb8391.
+This run checks status geometry only. Broader harness attempts were retained with
+their focus/branch-state and interception failures, not counted as passes.

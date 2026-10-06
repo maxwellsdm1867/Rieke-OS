@@ -5,16 +5,16 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
+  "source_commit": "aa9845a89b2121e79692f4b0fca7e03bd5f0c947",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-highlight-controls-arm64.zip",
-    "bytes": 621198283,
-    "sha256": "5786fc06e8b727c4e9527443f9d8bc0c80d6503552545b4af2dcf80aa5a57a9f"
+    "filename": "Disco-0.1.8-tree-status-arm64.zip",
+    "bytes": 621198294,
+    "sha256": "e21e9a2e33d81a314a2ff2fff7f0fc390f1fbdc008589129efd3d0f713c32dd0"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
@@ -25,7 +25,14 @@
       "failed": 0,
       "scope": "Full recursive frontend suite, highlight gesture and explicit bulk selection, stale owner and range fences",
       "independent_source_review": "passed",
-      "final_source_difference": "Three CSS lines align and clip the flat epoch label; final-source native geometry and workflow verified."
+      "final_source_difference": "Compact label alignment and non-flowing transient tree notices; final native geometry/workflow verified.",
+      "current_scoped_checks": {
+        "source_commit": "aa9845a89b2121e79692f4b0fca7e03bd5f0c947",
+        "passed": 34,
+        "failed": 0,
+        "scope": "Incoming branch selection, paged tree lifetimes and retained tree reads",
+        "independent_source_review": "passed"
+      }
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -47,7 +54,7 @@
       "implementation_unchanged_since": "60f9567ced676bf6c1db181166f2693304592768"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/highlight-controls-003/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/tree-status-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -65,14 +72,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "highlight-controls-frontend-final.log",
-      "highlight-controls-guard-final.log",
-      "highlight-controls-core-gate.json",
-      "highlight-controls-provenance.json",
-      "highlight-controls-native-audit-003.json",
-      "highlight-controls-imports-003.json",
-      "highlight-controls-installed.json",
-      "highlight-controls-installed-ui.json"
+      "tree-status-tests.log",
+      "tree-status-guard.log",
+      "tree-status-core-gate.json",
+      "tree-status-provenance.json",
+      "tree-status-native-audit.json",
+      "tree-status-imports.json",
+      "tree-status-installed.json",
+      "tree-status-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -99,29 +106,105 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
-      "verification": "See highlight-controls-installed-ui.json for post-install verification"
+      "source_commit": "aa9845a89b2121e79692f4b0fca7e03bd5f0c947",
+      "verification": "See tree-status-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
-      "receipt": "highlight-controls-native-2026-10-06T05-59-59-956Z/receipt.json",
-      "controller_sha256": "6ea24edd5399feee37f9f0396734863357e0da20fd502095667314be22060ef5",
+      "source_commit": "aa9845a89b2121e79692f4b0fca7e03bd5f0c947",
+      "receipt": "tree-status-native-2026-10-06T14-49-10-616Z/receipt.json",
+      "controller_sha256": "fcf9a8c72bde8f6f5b9b7807b21e25c695022b1c4a89824a19b5a98ed9e11e2c",
       "passed": true,
-      "highlight_actions": {
-        "flat_shift_command": true,
-        "highlight_does_not_select": true,
-        "select_highlighted": true,
-        "deselect_highlighted_preserves_other_selection": true,
-        "hierarchy_shift": true,
-        "browse_branch_controls_absent": true
+      "selection_status_geometry": {
+        "before": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        },
+        "during": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        },
+        "after": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        }
       },
-      "flat_row_height": 30,
-      "hierarchy_row_height": 30,
-      "count_only_responses_verified": 86,
-      "tagged_epochs": 63,
-      "selection_tag_export_preview": "Passed on owned clone; no merge/export publication",
-      "clean_shutdown": true,
-      "initial_final_source_attempt": "Disposable project activation stopped at free disk reserve; closed test app duplicates cleaned, retry passed. Failed receipt retained in highlight-controls-native-2026-10-06T05-56-37-071Z."
+      "refresh_status_geometry": {
+        "before": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        },
+        "during": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        },
+        "after": {
+          ".tp-total": {
+            "y": 148.390625,
+            "height": 56.4375
+          },
+          ".tp-path": {
+            "y": 204.828125,
+            "height": 42.390625
+          },
+          ".tp-columns": {
+            "y": 247.21875,
+            "height": 632.84375
+          }
+        }
+      },
+      "count_only_responses_verified": 15,
+      "scope": "Held selection and refresh geometry; no tagging or export test in this run",
+      "clean_shutdown": true
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -249,6 +332,27 @@
         "errors": []
       },
       "scope": "Owned disposable projects and packaged app clones; installed app untouched. Tests and evidence updates do not change packaged source."
+    },
+    "previous_native_workflow": {
+      "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
+      "receipt": "highlight-controls-native-2026-10-06T05-59-59-956Z/receipt.json",
+      "controller_sha256": "6ea24edd5399feee37f9f0396734863357e0da20fd502095667314be22060ef5",
+      "passed": true,
+      "highlight_actions": {
+        "flat_shift_command": true,
+        "highlight_does_not_select": true,
+        "select_highlighted": true,
+        "deselect_highlighted_preserves_other_selection": true,
+        "hierarchy_shift": true,
+        "browse_branch_controls_absent": true
+      },
+      "flat_row_height": 30,
+      "hierarchy_row_height": 30,
+      "count_only_responses_verified": 86,
+      "tagged_epochs": 63,
+      "selection_tag_export_preview": "Passed on owned clone; no merge/export publication",
+      "clean_shutdown": true,
+      "initial_final_source_attempt": "Disposable project activation stopped at free disk reserve; closed test app duplicates cleaned, retry passed. Failed receipt retained in highlight-controls-native-2026-10-06T05-56-37-071Z."
     }
   },
   "qualification_limits": [
