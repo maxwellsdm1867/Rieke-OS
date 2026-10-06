@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a`,
+app and ZIP to clean source commit `b11e3e9538457e29999b179ee9a8d5b2d405da41`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -130,3 +130,20 @@ verification and relocated imports passed. The installed native UI was checked
 for the requested card cleanup. Backend implementation is unchanged from
 `ee616dc`; its earlier full native workflow and loading measurements remain
 attributed to that source rather than relabeled as this UI-only package.
+
+
+## Arrange tree overview restoration
+
+The current package restores field value and missing-value counts through the
+frozen candidate catalog, with exact revision/filter/split identity. It avoids
+fetching the full recursive tree. Counts describe field values, not whole-level
+branches or selection membership. Scope changes hide old results immediately;
+late responses are rejected by the existing resource owner.
+
+Remove controls now have visible labels. Column headings have no Select/Tag
+actions; each branch retains its controls, and its Tag button matches its green
+or blue selection background. Saved tag coverage remains separate and neutral.
+
+All 864 frontend tests and independent source review passed. The current clean
+core gate, package resource checks, native audit and relocated imports passed.
+Earlier loading timings remain attributed to their original source commit.

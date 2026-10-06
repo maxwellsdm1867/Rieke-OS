@@ -5,25 +5,25 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
+  "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-arrange-tree-arm64.zip",
-    "bytes": 621196246,
-    "sha256": "cc9661948f33e7fbbf48d21486d16b4b4ed8fdea9afc33d1c031558eed7d611a"
+    "filename": "Disco-0.1.8-tree-overview-arm64.zip",
+    "bytes": 621196315,
+    "sha256": "419f25190d2243fcdae7fed9fb7bd6ffe1bc3b71a6c99f54b738a66cf2b1fdb6"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
-      "passed": 12,
+      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
+      "passed": 864,
       "failed": 0,
-      "scope": "Incoming branch selection workflow, TreeBuilder rendering and combined levels",
+      "scope": "Full recursive frontend suite, including frozen overview scope and late-response fencing",
       "independent_source_review": "passed"
     },
     "backend": {
@@ -41,7 +41,7 @@
       "implementation_unchanged_since": "ee616dc41d1b9f825ec982291959ad90852e346a"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/arrange-tree-controls-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/tree-overview-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -59,15 +59,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "arrange-tree-controls-tests.log",
-      "arrange-tree-controls-guard.log",
-      "arrange-tree-controls-core-gate.json",
-      "arrange-tree-controls-provenance.json",
-      "arrange-tree-controls-native-audit.json",
-      "arrange-tree-controls-imports.json",
-      "arrange-tree-controls-installed.json",
-      "arrange-tree-controls-installed-ui.json",
-      "workbench-loading-comparison.json"
+      "tree-overview-tests.log",
+      "tree-overview-guard.log",
+      "tree-overview-core-gate.json",
+      "tree-overview-provenance.json",
+      "tree-overview-native-audit.json",
+      "tree-overview-imports.json",
+      "tree-overview-installed.json",
+      "tree-overview-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -91,13 +90,23 @@
       },
       "local_comparison": "workbench-loading-comparison.json",
       "preparation_repeated_on_first_return": false,
-      "attribution": "Measured on ee616dc before the Arrange tree card-only cleanup; not relabeled as current-source timing."
+      "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "b0b7dacb16e75a12f4e63a4b03ffc6b271b8be7a",
-      "arrange_tree": "No Select or Tag actions on level cards; reorder/remove/layout controls retained",
-      "tree_columns": "Selection and tagging retained",
+      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
+      "arrange_tree": "Candidate-scoped field value/missing counts and labeled Remove controls",
+      "tree_columns": "Heading selection/tag actions removed; branch actions retained with matching selection color",
       "verification": "native installed application"
+    },
+    "current_native_workflow": {
+      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
+      "receipt": "tree-overview-native-2026-10-06T01-06-12-839Z/receipt.json",
+      "passed": true,
+      "overview": "Candidate field counts rendered",
+      "tag_colors": "Computed green/blue Tag background matches branch",
+      "column_headings": "No Select or Tag controls",
+      "selection_tag_export_preview": "passed on owned clone; no merge or export publication",
+      "clean_shutdown": true
     }
   },
   "qualification_limits": [

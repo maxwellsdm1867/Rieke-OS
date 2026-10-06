@@ -476,3 +476,11 @@ stand-in in an isolated child when invoked by combined test discovery. This
 prevents their process-wide substitutions from affecting neighboring recovery
 tests. The exact delegated import AST remains unchanged; its source hash and
 catalog explanation record the discovery wrapper.
+
+Arrange tree's frozen overview reads the candidate `tree-fields` catalog through
+`useResource`, carrying revision, filters and split recipe. It reports field value
+and missing counts rather than whole-level branch counts. The existing resource
+owner retains cancellation and render-time stale-scope fences; selection authority
+is unchanged. `treeBuilderOverviewLifecycle.test.js` is mapped under typed-query.
+Column heading actions are removed, and branch Tag fill follows the existing
+binary selection state. Independent pre-implementation and source reviews passed.
