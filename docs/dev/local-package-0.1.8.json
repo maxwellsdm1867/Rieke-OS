@@ -5,25 +5,25 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
+  "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-splitter-cards-arm64.zip",
-    "bytes": 621196036,
-    "sha256": "aefa80f24283280cf5d5582689389b41425e2370a27c9e95e3354f66faf28616"
+    "filename": "Disco-0.1.8-column-navigation-arm64.zip",
+    "bytes": 621197003,
+    "sha256": "f33ff0722bc69d7f19bae214143e3e9e0d3e66f56d56c366c8e72231d5c8fc68"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
-      "passed": 8,
+      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+      "passed": 877,
       "failed": 0,
-      "scope": "Frozen overview fencing, requested summary lifecycle and combined grouping rendering",
+      "scope": "Full recursive frontend suite including batched frozen column reads and lazy scoped catalog lifetime",
       "independent_source_review": "passed"
     },
     "backend": {
@@ -37,11 +37,15 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Connection-hint mismatch retains original standalone catalog admission; covered by the final scoped checks.",
-      "implementation_unchanged_since": "ee616dc41d1b9f825ec982291959ad90852e346a"
+      "final_source_difference": "Adds advertised bounded fresh ancestor batching under the existing guarded context and closing generation/scope checks.",
+      "current_source_scoped_checks": {
+        "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+        "passed": 83,
+        "scope": "Workbench, cumulative pending and tree pages, including batch parity/bounds/closing-scope tests"
+      }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/splitter-cards-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/column-navigation-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -59,14 +63,16 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "splitter-cards-tests.log",
-      "splitter-cards-guard.log",
-      "splitter-cards-core-gate.json",
-      "splitter-cards-provenance.json",
-      "splitter-cards-native-audit.json",
-      "splitter-cards-imports.json",
-      "splitter-cards-installed.json",
-      "splitter-cards-installed-ui.json"
+      "column-navigation-frontend.log",
+      "column-navigation-backend.log",
+      "column-navigation-guard-final.log",
+      "column-navigation-core-gate.json",
+      "column-navigation-provenance.json",
+      "column-navigation-native-audit.json",
+      "column-navigation-imports.json",
+      "column-navigation-installed.json",
+      "column-navigation-installed-ui.json",
+      "column-navigation-comparison.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -93,19 +99,112 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
-      "arrange_tree": "Splitter names only on cards; compact removal icons have a subtle border",
+      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+      "leaf_tags": "Tag background matches actual epoch selection color",
+      "epoch_numbers": "Recorded epoch labels preserved",
       "verification": "native installed application"
     },
     "current_native_workflow": {
-      "source_commit": "b11e3e9538457e29999b179ee9a8d5b2d405da41",
-      "receipt": "tree-overview-native-2026-10-06T01-06-12-839Z/receipt.json",
+      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+      "receipt": "column-color-native-2026-10-06T01-48-09-992Z/receipt.json",
       "passed": true,
-      "overview": "Candidate field counts rendered",
-      "tag_colors": "Computed green/blue Tag background matches branch",
-      "column_headings": "No Select or Tag controls",
-      "selection_tag_export_preview": "passed on owned clone; no merge or export publication",
+      "leaf_tag_colors": "Computed blue/green match the epoch row; recorded number label matches epoch switch",
+      "selection_tag_export_preview": "passed on owned clone; no merge/export publication",
       "clean_shutdown": true
+    },
+    "column_navigation": {
+      "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
+      "candidate_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+      "controller_sha256": "6449aa625379b692021db0df60a3810df68d47bfe9f60f439346f826b34f55d4",
+      "baseline_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/column-navigation-profile-2026-10-06T01-35-25-620Z/receipt.json",
+      "candidate_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/column-navigation-profile-2026-10-06T01-47-03-647Z/receipt.json",
+      "fixture_epochs": 2041,
+      "pending_epochs": 63,
+      "sessions_per_source": 1,
+      "clicks_per_source": 9,
+      "median_ms": {
+        "before": 204,
+        "after": 101
+      },
+      "depths": [
+        {
+          "opening_column": 2,
+          "before_ms": [
+            202,
+            204,
+            207
+          ],
+          "after_ms": [
+            101,
+            103,
+            101
+          ],
+          "before_requests": [
+            2,
+            2,
+            2
+          ],
+          "after_requests": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "opening_column": 3,
+          "before_ms": [
+            198,
+            197,
+            196
+          ],
+          "after_ms": [
+            99,
+            95,
+            99
+          ],
+          "before_requests": [
+            3,
+            3,
+            3
+          ],
+          "after_requests": [
+            1,
+            1,
+            1
+          ]
+        },
+        {
+          "opening_column": 4,
+          "before_ms": [
+            298,
+            304,
+            311
+          ],
+          "after_ms": [
+            125,
+            200,
+            117
+          ],
+          "before_requests": [
+            4,
+            4,
+            4
+          ],
+          "after_requests": [
+            1,
+            1,
+            1
+          ]
+        }
+      ],
+      "limits": [
+        "One session per source, three repeats per depth; uncontrolled OS caches; no calibrated performance budget",
+        "Reported 20-second user stall not reproduced; these are owned-fixture results, not live-project timing"
+      ],
+      "automatic_catalog_requests": {
+        "before": 1,
+        "after": 0
+      }
     }
   },
   "qualification_limits": [
@@ -113,6 +212,7 @@
     "macOS 14 runtime behavior unqualified",
     "Intel unsupported by this artifact",
     "Complete release promotion requirements remain unqualified",
-    "Small owned-fixture click comparison, one identical-controller baseline session and two candidate sessions; uncontrolled OS caches, no calibrated performance budget or live-user-project timing."
+    "Small owned-fixture click comparison, one identical-controller baseline session and two candidate sessions; uncontrolled OS caches, no calibrated performance budget or live-user-project timing.",
+    "Column navigation: one session per source, nine clicks each on owned 2041/63 fixture; 20-second user stall was not reproduced."
   ]
 }

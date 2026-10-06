@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `bc1894730c7348461308bb4b41bc9b39f37b3f14`,
+app and ZIP to clean source commit `995c514b6a2caaec0cc12e23a47f99c41ecac55e`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -174,3 +174,25 @@ The current package shows splitter names without value-count subtitles on the
 Arrange tree cards. The tree totals remain above the columns. Removal icons have
 a subtle border. Chooser metadata and exact scoped reads are unchanged. Eight
 focused checks and independent source review passed with package checks.
+
+
+## Frozen column navigation follow-up
+
+Level clicks start immediately; this path has no debounce. Advertised candidate
+contexts now request the target and up to eight ancestors in one bounded fresh
+response. Existing opening/closing authority checks remain, and the renderer
+rejects incomplete or mismatched batches. Candidate cache reuse remains disabled.
+The full metadata catalog is requested only when a split chooser is open.
+Leaf Tag backgrounds use actual selected UUIDs, matching their epoch rows.
+
+An identical-controller comparison on the owned 2041-epoch fixture with 63 pending
+epochs measured median click readiness of 204 ms before and 101 ms after. Opening
+the epoch column used four requests before and one after; its three samples were
+298/304/311 ms before and 125/200/117 ms after. One session per source, three rounds,
+uncontrolled OS caches and no calibrated budget limit this result. The reported
+20-second live-project stall was not reproduced or claimed resolved by this test.
+The package record links raw receipts and controller hashes.
+
+877 frontend tests, 83 scoped backend tests, independent review, the exact clean
+core gate and package checks passed. The current owned native workflow verifies
+selection overrides, leaf Tag colors, tagging, retained mode and export preview.
