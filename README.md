@@ -1,4 +1,4 @@
-> **Complete Mac desktop testing app:** [Download the current Mac testing app](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.5/Rieke-OS-0.1.5-arm64.dmg). Open the DMG, open the app, then click **Install and Open**. This unsigned testing release may require macOS **Privacy & Security → Open Anyway** approval. It bundles Python and native MySQL and requires no Docker or Terminal setup. In-app **App Updates** checks GitHub and lets you choose when to download and restart for updates. [Testing release details](docs/dev/GITHUB_TESTING_RELEASE.md).
+> **Disco 0.1.8 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.8/Disco-0.1.8-tree-counts-arm64.zip) · [Prerelease details](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8). Extract the ZIP, quit any running Disco, and open **Disco.app**. Use **Install and Open** if prompted. Python and native MySQL are bundled; no Docker or Terminal setup is needed. This build is unsigned and unnotarized, so macOS may require **Privacy & Security → Open Anyway**. It targets macOS 14+, but runtime checks were on macOS 27.0.1; macOS 14 runtime support is unqualified and Intel is unsupported. This is a manual testing download, not a stable release or an auto-update feed promotion. [Package identity and checks](docs/dev/navigation-package.md#installed-package-and-main-handoff-2026-10-05).
 
 # Disco
 
@@ -24,9 +24,10 @@ files retain the waveform samples. The app catalogs their metadata and reads
 response windows on demand, keeping each displayed trace and exported epoch
 linked to its source identity.
 
-**It runs on your computer in a browser, with a separate local database for each
-project.** The installer manages the required tools; new projects need no Docker,
-LLM account, or API key. MATLAB data export uses bundled Python and SciPy.
+**It runs locally as a Mac desktop app or from source in a browser, with a separate
+local database for each project.** The desktop build bundles its runtime; the source
+installer manages the required tools. New projects need no Docker, LLM account, or
+API key. MATLAB data export uses managed Python and SciPy.
 
 ## From recordings to an analysis dataset
 
@@ -56,27 +57,55 @@ responsibility.
 Read the [product and data-model overview](docs/RIEKE_OS_OVERVIEW.md) for how
 projects, searches, working datasets, annotations and exports fit together.
 
+## What is in the 0.1.8 testing build
+
+The combined build restores the last project on launch, adds progressive epoch-list
+scrolling and places recorded traces beside terminal tree epochs. Workbench review
+prepares independently of the main protocol summary and retains browsing mode on
+return. Arrange tree cards control layout; branch and epoch controls retain selection
+and tagging. Tree pages now request group and epoch counts, and frozen column
+navigation uses one bounded fresh batch. Full split-field metadata loads when a
+split chooser opens.
+
+The downloadable app was built from clean source
+[`60f9567`](https://github.com/maxwellsdm1867/Rieke-OS/commit/60f9567ced676bf6c1db181166f2693304592768).
+The subsequent [`7992957`](https://github.com/maxwellsdm1867/Rieke-OS/commit/7992957df574335a983b847ca1b5740c33ca486f)
+checkpoint records six desktop smoke checks and the counts-only tree workflow.
+These checks used owned fixtures; they do not establish full release qualification.
+See [package history and evidence limits](docs/dev/navigation-package.md) and the
+[exact package record](docs/dev/local-package-0.1.8.json).
+
 ## Working on the code
 
-Start with [the architecture and module guide](ARCHITECTURE.md#module-guide) and
-[repository instructions](AGENTS.md). The guide links each organized folder to
-its public interface, ownership rules, examples and tests. Follow
-[frontend navigation](workspace-app/src/AGENTS.md),
+The code is organized around **deep modules**: small interfaces that hide substantial
+behavior, with the public contract and focused tests beside the implementation.
+For example, tree-selection readers own ordered bounded reads, presentation sessions
+own route snapshots, and group-save sessions own exact retry identity and recovery.
+Scientific authority stays with the relevant command, catalog or source owner.
+Folder moves improve discoverability; they do not by themselves prove new depth or
+better performance.
+
+Start with [implemented module interfaces](ARCHITECTURE.md#deep-modules-in-the-current-source),
+the [physical module guide](ARCHITECTURE.md#module-guide), and
+[repository instructions](AGENTS.md). Follow [frontend navigation](workspace-app/src/AGENTS.md),
 [desktop navigation](desktop/AGENTS.md), [backend navigation](python/AGENTS.md),
-or [tooling navigation](tools/AGENTS.md)
-for the area you are changing. The [module ledger](docs/architecture/core-module-ledger.md)
-separates verified local increments, retained owners and remaining work; these
-source checks do not establish final assembled-app qualification. The
-[finite frontend path composition](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition)
-records current A/B/C owner folders while preserving the historical baseline. The
-[backend finite composition](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
-records 50 named-leaf moves, six explicit retained owners and the 98-file source profile.
+or [tooling navigation](tools/AGENTS.md) for the area you are changing. Local guides
+own the detailed contract, executable examples and scoped checks.
+
+The [module ledger](docs/architecture/core-module-ledger.md) and its
+[frontend](docs/architecture/core-module-ledger.md#frontend-finite-abc-current-path-composition)
+and [backend](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
+path records separate implemented organization, retained owners and proposals.
+Their earlier source and test receipts remain historical evidence; use the
+[package record](docs/dev/local-package-0.1.8.json) for the downloadable build.
+The broader [stable-ports design](docs/architecture/stable-ports.md) remains a
+proposal beyond the explicitly adopted slices.
 
 ## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
 for the current application and documentation, or choose a version from
-[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases/latest) and download
+[Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's
 **Code → Download ZIP** also downloads the current `main` branch.
 
@@ -95,7 +124,7 @@ cd disco
 
 ## Install and launch
 
-For the complete Mac app, use the DMG and **Install and Open** described above.
+For the complete Mac app, use the 0.1.8 ZIP and installation steps described above.
 The following commands apply only to a source checkout.
 
 1. Put the extracted application folder somewhere permanent, such as
@@ -125,7 +154,7 @@ For the full first-recording walkthrough, follow the
 [quick start](docs/RIEKE_OS_QUICK_START.md). For help from an AI coding assistant,
 copy the [LLM installation prompt](docs/LLM_SETUP.md).
 
-### System requirements
+### Source-install requirements
 
 The first installation requires internet access, several GB of free disk, and
 `curl` and `tar`. Allow additional disk space for recordings and project databases.
@@ -136,7 +165,7 @@ separately. Everything managed by the installer lives under `.rieke-runtime/`;
 the app installer does not require administrator privileges or a system database
 service. Apple's separate developer-tools installer may require authorization.
 
-**Platform status:** tested end to end on Apple Silicon macOS. Installer targets
+**Source-installer platform status:** tested end to end on Apple silicon macOS. Installer targets
 also exist for Intel macOS and x86_64/ARM64 Linux, but those platforms are
 experimental until independently tested. Windows is not currently supported.
 MATLAB is optional and needed only for MATLAB analysis. No LLM or API key is
@@ -199,8 +228,10 @@ repository shares application code, not your projects, recordings, annotations,
 or database credentials. Export the intended scientific selection separately.
 
 The app binds only to `127.0.0.1` and is intended for a single user's computer.
-It is not an authenticated internet service. Ctrl-C stops the project chooser;
-opened project servers and databases remain available until stopped or rebooted.
+It is not an authenticated internet service. In the source/browser workflow, Ctrl-C
+stops the project chooser; opened project servers and databases remain available
+until stopped or rebooted. The desktop app coordinates its owned processes through
+its Quit workflow.
 Do not copy a running MySQL data directory as a backup. Current app state is saved to `app-state.json` with daily SQLite state snapshots
 in `backups/app-state/`. These do not copy recordings or the live database. See
 [storage and recovery](docs/STORAGE_RECOVERY.md).

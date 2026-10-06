@@ -45,7 +45,11 @@ remain unqualified. A source test or static native audit does not establish them
 app and ZIP to clean source commit `60f9567ced676bf6c1db181166f2693304592768`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
-there. The binary is not stored in Git.
+there. The same ZIP is published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
+with `SHA256SUMS` and the package record attached. The release tag identifies the
+packaged source `60f9567`; `7992957` adds the later test/documentation handoff.
+No rebuild, stable release promotion or automatic-update descriptor is part of
+this publication. The binary is a release asset and is not stored in Git.
 
 GitHub main before this Workbench follow-up was
 `a61afb2748a7788696325c0a9940ec85c491b39a`, an ancestor of this source. Startup branch tip `a294c908` has two UI commits

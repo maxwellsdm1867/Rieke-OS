@@ -1,25 +1,31 @@
 # Disco architecture
 
-For folder-local public contracts and tests, start at
-[frontend module navigation](workspace-app/src/AGENTS.md).
+For public contracts and tests, use the [module guide](#module-guide) below and the
+[frontend](workspace-app/src/AGENTS.md), [backend](python/AGENTS.md) or
+[desktop](desktop/AGENTS.md) navigation for the owner you are changing.
 
 Disco is a local scientific application for inspecting, selecting, comparing and
 exporting electrophysiology recordings. Its architecture must let implementations
 change repeatedly for performance and user experience without changing scientific
 meaning or forcing unrelated callers to be rewritten.
 
-This entry point describes implemented boundaries at audited application commit
-`fa7ed3e913903dec260e6cb1427120139996ffc1` (2026-10-04). The separate
-[stable behavioral ports proposal](docs/architecture/stable-ports.md) defines
-candidate interfaces, ownership, conformance evidence and an incremental adoption
-plan. **The complete proposed ports remain design guidance.** Three bounded internal
-[0.1.8 slices](docs/architecture/0.1.8-first-port-slices.md) now implement tree
-selection reads, mutation recovery completion and export format materialization; that record identifies the
-actual interfaces, preserved behavior, exact correctness evidence and limits.
-The same record adopts existing P07 lifecycle obligations for scoped desktop
-contract enforcement, without adding a runtime facade. It also records the bounded
-presentation-session owner, which removes storage policy from App while preserving
-navigation, draft and merge-consent ownership.
+This entry point describes the combined 0.1.8 source at the
+[`7992957`](https://github.com/maxwellsdm1867/Rieke-OS/commit/7992957df574335a983b847ca1b5740c33ca486f)
+main checkpoint (2026-10-05), including the module organization and subsequent
+startup, navigation, trace and Workbench changes. The downloadable testing app was
+built from clean source `60f9567ced676bf6c1db181166f2693304592768`; the later
+checkpoint adds documentation and end-to-end checks. See the
+[package record](docs/dev/local-package-0.1.8.json) for exact artifact identity and
+[package history](docs/dev/navigation-package.md) for evidence and limitations.
+
+The separate [stable behavioral ports proposal](docs/architecture/stable-ports.md)
+defines candidate interfaces and an incremental adoption plan. **The complete
+proposed ports remain design guidance.** The adopted
+[0.1.8 slices](docs/architecture/0.1.8-first-port-slices.md) implement tree-selection
+reads, mutation-recovery completion and export-format materialization, with later
+group-save and presentation-session owners. Existing P07 desktop lifecycle
+obligations are enforced without adding a new runtime facade. That adoption record
+owns cross-module obligations; folder-local contracts describe the actual entries.
 
 The [adopted-slice check catalog](docs/architecture/adopted-port-checks.json)
 indexes owned dependencies and existing conformance tests. The
@@ -45,15 +51,47 @@ work, proposals, replacement options and explicitly unmeasured whole-app costs.
 - [Fixed benchmark protocol](docs/dev/benchmarks.md) and
   [registry](benchmarks/registry.json): evidence requirements and open gates.
 
+## Deep modules in the current source
+
+A **module** combines an interface with an implementation. Its **interface** includes
+identity, ordering, errors, freshness, lifetime and performance obligations as well
+as callable methods. **Depth** means substantial behavior behind a small interface:
+callers gain leverage and maintainers gain locality. Tests should exercise the same
+public seam as callers, with retained composition tests checking the surrounding
+workflow. Moving files alone does not add depth.
+
+| Implemented module and public seam | Behavior hidden from callers | Ownership kept outside |
+| --- | --- | --- |
+| [Tree selection](workspace-app/src/tree-selection/AGENTS.md): `createTreeSelectionReader` → `firstEpoch`, `rangeEpochIds` | Exact route selection, ordered traversal, bounded range paging and refusal of incomplete/stale ranges. | Views own gestures, cancellation and final selection publication. |
+| [Presentation sessions](workspace-app/src/presentation/AGENTS.md): `remember`, `read`, `checkpoint`, `restore`, `pruneDeleted` | Route snapshots, destination fallbacks, checkpoint replacement and deletion pruning. | App owns navigation validation, persistence and project lifetime; restored presentation grants no scientific consent. |
+| [Group-save sessions](workspace-app/src/group-save/AGENTS.md): `createGroupSaveSession`, recovery and receipt entries | Exact request retention, retry identity, uncertain-result recovery and deferred preview release. | Callers own preview validation and UI/undo publication; backend frozen membership remains authoritative. |
+| [Mutation recovery](python/disco/recovery/CONTRACT.md): `register_mutation_recovery` | HTTP completion policy, backup-status reporting and committed-write/failed-backup translation. | Callers own transactions and scheduler lifetime; backup failure cannot imply rollback. |
+| [Export materialization](python/workspace_export_artifacts.py): `materialize_export_format` | Shared JSON, SQLite and MATLAB format dispatch and artifact construction. | Callers own frozen membership, staging, validation and publication. |
+
+Other organized folders retain substantive named entries rather than introducing
+aggregate facades. In particular, metadata readers, query generations, trace
+geometry, resource caches, desktop startup and close coordination keep their distinct
+interfaces and lifetimes. Backend package initializers are inert except for the
+explicit public recovery entry. Import the entry named in its local guide.
+
+App, HTTP/service composition, source-verified recording access and several project
+process/CLI owners remain at their established paths. The
+[backend retained-owner decisions](python/AGENTS.md) explain why physical paths,
+source witnesses and scientific authority prevent treating every move as mechanical.
+Generic acquisition intake, a universal storage facade and the complete proposed
+port catalog are not implemented by this organization.
+
 ## Module guide
 
 Use this index to find the current physical owner before editing. Each linked
 folder guide is the canonical local contract: how to call its public entries,
 what it owns, dependencies, errors, lifetime rules, executable examples and tests.
 The adoption record adds cross-owner obligations; it does not replace those local
-contracts. Frontend A/B/C finite path moves are composed; their combined review
-and aggregate checks remain pending. Folder organization is partial: functional areas in the system table
-below describe responsibilities, not completed physical modules.
+contracts. The finite frontend A/B/C and backend moves are composed. Their ledger
+entries preserve the scope and pending checks of those historical increments;
+subsequent source and package checks retain their own commit attribution in the
+package record. Organization remains partial: the system table below describes
+responsibilities, not a claim that every area is one completed deep module.
 
 For named backend owners, retained composition and source-witness obligations, use
 [backend navigation](python/AGENTS.md).
@@ -146,7 +184,7 @@ also owns windows, startup, update and shutdown recovery. Browser/source operati
 has its own launcher composition. Exported SQLite files and recovery snapshots
 have different authority and lifecycle from disposable SQLite query sidecars.
 
-| Area | Current implementation | Authority / boundary |
+| Area | Current implementation | Authority / seam |
 | --- | --- | --- |
 | H5 ingestion | [recording_workspace](python/recording_workspace.py), [import API](python/workspace_api.py), [managed recordings](python/disco/projects/recording_files.py) | Verify raw source and parsed hierarchy before population; report catalog commit separately from finalization. |
 | Canonical catalog | RetinAnalysis acquisition schema, [workspace tables](python/recording_workspace.py), [curation](python/disco/decisions/curation.py), [annotations](python/disco/decisions/annotations.py), [explorer/bindings](python/disco/decisions/explorer.py) | MySQL stores project registrations and authored state; original H5 retains samples. Sealed imported metadata is checked against registered manifests. |
@@ -188,19 +226,54 @@ interchange formats, not acquisition import adapters.
   [incoming workbench](docs/dev/incoming-workbench-contract.md).
 
 These documents contain historical evidence as well as contracts. Confirm claims
-against the relevant implementation revision. At this audit, the frontend pins
-React 19.3.0 and TanStack Query 5.104.1. Current desktop startup defers parser/MySQL
+against the relevant implementation revision. At the combined-source checkpoint,
+the frontend pins React 19.3.0 and TanStack Query 5.104.1. Current desktop startup defers parser/MySQL
 initialization in the chooser and performs it for project children; full artifact
 verification is handled at packaging/install/update or explicit verification,
 separately from project/source readiness. Older experiment notes do not override
 current source behavior.
 
+## Current startup, browsing and Workbench composition
+
+- **Startup and shutdown:** the desktop main process claims the remembered project
+  after authenticated root readiness and uses the existing restore/authorization
+  path for the first application document. Chooser startup defers parser/MySQL
+  activation to project children. Startup preference does not establish readiness;
+  draft barriers, process ownership and bounded ordinary Quit retain their owners.
+- **Epochs and traces:** the shared Inspector/Workbench list appends bounded pages,
+  retains a keyboard Load more fallback and restores frontiers sequentially. Rows
+  retain exact page receipts. Traces appear beside terminal epochs; bounded workers
+  perform the existing source-verified reads and exit before database cleanup.
+  [Trace presentation](workspace-app/src/traces/AGENTS.md) keeps its geometry and
+  scoped request identity separate from shared cache lifetime.
+- **Tree browsing:** paged columns and hierarchy request group totals and epoch
+  counts, skipping full-bucket duration, distinct-cell and shared-tag-coverage scans.
+  Frozen columns use one advertised fresh batch for the target and bounded ancestors;
+  frozen candidate cache reuse remains disabled. Full field metadata is deferred
+  until a split chooser opens. These read optimizations preserve revision, membership
+  and closing-authority checks. See [tree presentation](workspace-app/src/tree-browser/AGENTS.md)
+  and [backend navigation](python/disco/navigation/CONTRACT.md).
+- **Workbench and layout:** incoming review prepares independently of the main
+  protocol summary and saved main-tree layout. A refresh reuses its verified catalog
+  connection and read-only schema attestation; mutations retain their transaction
+  and backup checks. Candidate replacement may preserve inert browsing mode/focus,
+  without copying selections or consent. Arrange tree cards own layout; branch and
+  epoch controls own selection/tag actions. Selected UUIDs remain action authority.
+  See [incoming review](workspace-app/src/incoming-workbench/AGENTS.md) and
+  [backend Workbench](python/disco/workbench/CONTRACT.md).
+
+The [navigation package history](docs/dev/navigation-package.md) records the exact
+source checks, small-fixture timing observations and packaged smoke/workflow runs.
+Earlier measurements are not relabeled as later-source results. The 0.1.8 testing
+artifact is unsigned, for Apple silicon, and exercised on macOS 27.0.1. Intel is
+unsupported; macOS 14 runtime support and full release qualification remain open.
+
 ## Direction for future changes
 
 Keep the local application and existing storage stack. Move implementation
-knowledge behind small use-case interfaces one boundary at a time. Views should
+knowledge behind small use-case interfaces one seam at a time. Views should
 not acquire knowledge of SQL layouts, cache witnesses or parser classes when an
-implementation changes. Conversely, a genuinely new scientific capability may
+implementation changes. A new scientific capability may
 need an explicit contract evolution; do not freeze inadequate interfaces forever.
 
 The [detailed proposal](docs/architecture/stable-ports.md) records the first

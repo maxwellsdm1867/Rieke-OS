@@ -4,7 +4,25 @@ The testing distribution is explicit in `desktop/distribution.json`. It uses the
 public `maxwellsdm1867/Rieke-OS` repository and remains separate from Developer ID
 signed production installation and updates.
 
-Users download the complete Apple Silicon DMG from a release asset link, open
+## Current 0.1.8 manual testing download
+
+[Disco 0.1.8 testing release](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8)
+contains the existing `Disco-0.1.8-tree-counts-arm64.zip`, its checksums and the
+[package record](local-package-0.1.8.json). Extract the ZIP, quit any running Disco
+instance, then open `Disco.app` and use **Install and Open** if prompted. The ZIP
+bundles Python and native MySQL. macOS may require **Privacy & Security → Open Anyway**.
+
+This is a manual download from clean source `60f9567ced676bf6c1db181166f2693304592768`.
+It has no `desktop-release.json` or automatic-update feed, so **App Updates** does
+not offer this archive. The existing 0.1.5 release assets remain unchanged.
+The runtime was checked on macOS 27.0.1 arm64; macOS 14 runtime behavior, Developer
+ID signing/notarization and complete production release qualification remain open.
+Intel is unsupported. See the [package handoff](navigation-package.md) for checks
+and the exact attribution of prior evidence.
+
+## Releases with an installer and update descriptor
+
+The 0.1.5 testing release provides the complete Apple Silicon DMG. Users open
 Disco, and click **Install and Open**. The app copies its complete private
 runtime to the current user's Applications folder. No Terminal, Docker, Python,
 Node, or external MySQL setup is required. An unsigned download may require
@@ -28,7 +46,7 @@ current-app helper waits for actual process exit, retains the prior bundle, and
 installs only to the same user-owned app path. Scientific projects stay in their
 selected folders.
 
-Each testing release includes `desktop-release.json`, the DMG, complete app ZIP,
+An updater-enabled testing release includes `desktop-release.json`, the DMG, complete app ZIP,
 checksums, and local qualification receipts. Its tag starts with
 `desktop-test-v`, it is labeled **unsigned testing**, and it is a prerelease so it
 does not replace the existing stable source release. Never overwrite published
