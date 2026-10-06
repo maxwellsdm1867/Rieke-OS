@@ -688,7 +688,7 @@ def sync_job_history(project_dir, Event, project_id):
                       skip_duplicates=True)
 
 
-def evaluate_protocol_file(file):
+def evaluate_protocol_file(file, *, catalog_connection=None):
     """Execute a saved protocol query against its project-scoped main catalog."""
     file = Path(file).resolve()
     definition = json.loads(file.read_text())
@@ -702,8 +702,16 @@ def evaluate_protocol_file(file):
     provider = config["connection"]["credential_provider"]
     if provider["kind"] not in {"docker-container-env", "native-project"}:
         raise ValueError("Unsupported credential provider")
-    dj = (connect(provider, project_dir=catalog_path.parent) if provider['kind'] == 'native-project'
-          else connect(provider['container']))
+    if catalog_connection is None:
+        dj = (connect(provider, project_dir=catalog_path.parent) if provider['kind'] == 'native-project'
+              else connect(provider['container']))
+    else:
+        # A refresh already admitted this exact catalog and connection. Reuse
+        # only inside that operation; every protocol still checks its own file
+        # and catalog, and runs the complete SQL membership query below.
+        expected_path, expected_config, dj = catalog_connection
+        if catalog_path != Path(expected_path).resolve() or config != expected_config:
+            raise ValueError('Protocol catalog differs from the active refresh connection')
     from retinanalysis.config import schema as catalog
     _, Source, _, _ = workspace_tables(dj)
     sources = (Source & {"project_uuid": definition["project_uuid"]}).to_dicts()

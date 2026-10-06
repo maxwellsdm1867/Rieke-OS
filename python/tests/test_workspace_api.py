@@ -206,6 +206,11 @@ class WorkspaceAPITests(unittest.TestCase):
         group_schema = patch('disco.decisions.annotation_groups.group_receipt_table', return_value=self.group_receipts)
         group_schema.start()
         self.addCleanup(group_schema.stop)
+        self.layout_rows = Table(('project_uuid', 'protocol_uuid'))
+        self.connection.tables.append(self.layout_rows)
+        layout_schema = patch('disco.navigation.tree_layouts.layout_table', return_value=self.layout_rows)
+        layout_schema.start()
+        self.addCleanup(layout_schema.stop)
         self.explorer_history = ExplorerHistory(self.service.dj, self.service.project['project_uuid'],
             event_table=self.events, revision_table=self.explorer_revisions, binding_table=self.protocol_bindings)
         self.data_store_states = Table(('project_uuid', 'source_sha256'))

@@ -124,6 +124,8 @@ class GroupRecoveryHookTests(unittest.TestCase):
             self.stages.append('generation')
             return Mock()
         with patch.object(module,'group_receipt_table',side_effect=declare), \
+                patch('disco.navigation.tree_layouts.layout_table',
+                    side_effect=lambda _:self.stages.append('layout-ddl') or self.fixture.layout_rows), \
                 patch('disco.decisions.annotations.SharedAnnotations',return_value=None), \
                 patch('workspace_state_generation.bootstrap',side_effect=bootstrap), \
                 patch('workspace_state_snapshot.save',self.save):
@@ -136,7 +138,12 @@ class GroupRecoveryHookTests(unittest.TestCase):
         self.save.reset_mock()
 
     def test_native_receipt_ddl_precedes_generation_and_initial_save_reused_on_registration(self):
-        self.assertEqual(self.stages,['ddl','generation','save'])
+        self.assertEqual(self.stages,['ddl','generation','layout-ddl','save'])
+        self.assertIs(self.app.extensions['tree_layouts'].Table, self.fixture.layout_rows)
+        self.assertFalse(self.fixture.layout_rows.rows)
+        with patch('disco.navigation.tree_layouts.layout_table', side_effect=AssertionError('No lazy DDL')):
+            response = self.client.get(self.fixture.base + '/tree-layout')
+        self.assertEqual(response.status_code, 200, response.get_json())
         self.assertIs(self.registered[-1][0],self.fixture.group_receipts)
         self.assertTrue(callable(self.registered[-1][1]))
 

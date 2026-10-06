@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import sys
+import types
 import unittest
 from unittest.mock import Mock, patch
 import uuid
@@ -92,7 +94,9 @@ class RefreshCacheTests(unittest.TestCase):
         self.sources.insert1(record)
         return record
 
-    def evaluate(self, path):
+    def evaluate(self, path, *, catalog_connection):
+        self.assertEqual(catalog_connection[:2], (self.folder/'catalog.json',
+            json.loads((self.folder/'catalog.json').read_text())))
         members, cells = [], []
         for source in self.sources.rows:
             document = json.loads(Path(source['manifest']['metadata_path']).read_text())
@@ -100,6 +104,35 @@ class RefreshCacheTests(unittest.TestCase):
                 members.append({'uuid': epoch['uuid'], 'metadata_hash': module._fingerprint(epoch)})
                 cells.append({'uuid': cell['uuid']})
         return {'epochs': members, 'cells': cells}
+
+    def test_protocol_evaluation_reuses_only_the_exact_refresh_catalog(self):
+        from recording_workspace import evaluate_protocol_file
+        path = self.folder/'protocols/example.protocol.json'
+        config = json.loads((self.folder/'catalog.json').read_text())
+        connection = object()
+        protocols = Table(('protocol_id',))
+        schema = types.SimpleNamespace(Protocol=protocols)
+        config_module = types.ModuleType('retinanalysis.config')
+        config_module.schema = schema
+        with patch.dict(sys.modules, {'retinanalysis.config': config_module}), \
+                patch('recording_workspace.connect', side_effect=AssertionError('Repeated runtime admission')), \
+                patch('recording_workspace.workspace_tables', return_value=(None,self.sources,None,None)):
+            # Even a previously admitted connection must execute the current
+            # query. A missing protocol returns the ordinary empty SQL result.
+            result = evaluate_protocol_file(path,
+                catalog_connection=(self.folder/'catalog.json', config, connection))
+            self.assertEqual(result, dict(protocol_uuid=self.protocol, epochs=[], cells=[]))
+            for catalog_path, expected in [(self.folder/'other.json', config),
+                    (self.folder/'catalog.json', {**config, 'connection': {}})]:
+                with self.assertRaisesRegex(ValueError, 'active refresh connection'):
+                    evaluate_protocol_file(path,
+                        catalog_connection=(catalog_path, expected, connection))
+            changed = copy.deepcopy(config)
+            changed['connection']['credential_provider']['container'] = 'changed'
+            (self.folder/'catalog.json').write_text(json.dumps(changed))
+            with self.assertRaisesRegex(ValueError, 'active refresh connection'):
+                evaluate_protocol_file(path,
+                    catalog_connection=(self.folder/'catalog.json', config, connection))
 
     def test_warm_cache_skips_h5_and_json_projection_but_validates_sql(self):
         self.assertEqual(self.service.last_refresh['rebuilt_sources'], 2)
@@ -172,7 +205,7 @@ class RefreshCacheTests(unittest.TestCase):
                 self.service.refresh()
 
     def test_changed_sql_membership_still_rejects_warm_cache(self):
-        self.evaluator.side_effect = lambda _: {'epochs': [], 'cells': []}
+        self.evaluator.side_effect = lambda _, **kwargs: {'epochs': [], 'cells': []}
         cache = self.service._source_metadata_cache
         previous_success = copy.deepcopy(self.service.last_successful_refresh)
         with self.assertRaisesRegex(ValueError, 'query disagrees'):
@@ -194,8 +227,8 @@ class RefreshCacheTests(unittest.TestCase):
 
     def test_input_changed_during_sql_check_rejects_snapshot(self):
         original = self.evaluate
-        def mutate(path):
-            result = original(path)
+        def mutate(path, **kwargs):
+            result = original(path, **kwargs)
             source = Path(self.records[0]['manifest']['source_path'])
             source.touch()
             return result

@@ -134,3 +134,12 @@ Badges use neutral styling. Green/blue branch switches describe the separate
 ephemeral incoming selection command, never shared-tag coverage.
 Executable cases: `test_workspace_workbench.WorkbenchTests` coverage tests and
 `workspace-app/src/treeTagCoverageWorkflow.test.js`.
+
+## Response-local native attestation
+
+Read-only GET and existing preview, tree-page and candidate-summary POST routes
+reuse the exact native `response_contract` only while holding their annotation
+locks. Schema authority is attested at both boundaries, with live scope counters
+inside. A failed closing check discards the response. Custom authorities retain
+their prior path. Preparation and mutation routes never enter this read lease;
+their independent transaction fences and backup policy are unchanged.

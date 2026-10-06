@@ -1,5 +1,6 @@
 """Additive authority tests: isolated transactional SQL doubles, no native data."""
 import copy
+import contextlib
 import json
 import unittest
 import uuid
@@ -62,6 +63,48 @@ class WorkbenchTests(unittest.TestCase):
 
     def accept(self, request, root=None):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
+
+    def test_read_contract_closes_before_publication_and_never_wraps_mutations(self):
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(self.case.connection, self.case.service.project['project_uuid'])
+        tracker.token = lambda protocol=None: dict(protocol_uuid=protocol, generation=1)
+        calls = []
+        @contextlib.contextmanager
+        def contract():
+            calls.append('open')
+            try:
+                yield
+            finally:
+                calls.append('close')
+        tracker.response_contract = contract
+        with patch.object(self.case.service, '_explore_state_generation', tracker, create=True):
+            context = self.get_context()
+            self.assertEqual(calls, ['open', 'close'])
+            calls.clear()
+            saved = self.save(context, [])
+            self.assertEqual(saved.status_code, 200, saved.get_json())
+            self.assertEqual(calls, [])
+            context = saved.get_json()
+            page = self.case.client.post(self.root + '/tree/page', json=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], splits='cell'), headers=self.case.headers)
+            self.assertEqual(page.status_code, 200, page.get_json())
+            self.assertEqual(calls, ['open', 'close'])
+
+    def test_failed_closing_read_attestation_discards_workbench_response(self):
+        from workspace_state_generation import StateGenerationAuthority
+        tracker = StateGenerationAuthority(self.case.connection, self.case.service.project['project_uuid'])
+        tracker.token = lambda protocol=None: dict(protocol_uuid=protocol, generation=1)
+        @contextlib.contextmanager
+        def changed_contract():
+            yield
+            raise ValueError('Native database contract changed while reading the response')
+        tracker.response_contract = changed_contract
+        with patch.object(self.case.service, '_explore_state_generation', tracker, create=True):
+            response = self.case.client.get(self.root + '/context')
+            self.assertEqual(response.status_code, 400, response.get_json())
+            self.assertNotIn('candidate_scope_revision', response.get_json())
+            self.assertIn('contract changed', response.get_json()['error'])
+        self.assertIn('candidate_scope_revision', self.get_context())
 
     def test_frozen_incoming_browse_does_not_run_recipe_or_include_main_and_context_fences_every_surface(self):
         # A frozen reader owns its scope cache; it must not mutate live browsing.

@@ -687,7 +687,18 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             protocols = origins | {definitions[field]['annotation_scope']['protocol_uuid'] for field in fields
                 if definitions[field]['annotation_scope']['kind'] == 'protocol_curation'}
             with annotation_locks(service, {'all': []}, extra_protocols=protocols):
-                yield actor()
+                # Reuse schema attestation only within one read response.
+                # Scope generations remain live, and the closing attestation
+                # must succeed before any response is published. Mutations
+                # retain their independent transaction authority checks.
+                from workspace_state_generation import StateGenerationAuthority
+                tracker = getattr(service, '_explore_state_generation', None)
+                readonly = request.method == 'GET' or request.endpoint in {
+                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary'}
+                contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
+                            else contextlib.nullcontext())
+                with contract:
+                    yield actor()
 
     def start_read(context, filters=None):
         from disco.metadata.explore_queries import generation, StaleQuery

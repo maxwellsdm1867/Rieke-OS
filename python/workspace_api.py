@@ -1908,6 +1908,10 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         from workspace_state_snapshot import save as save_app_state
         from disco.backup.backup_scheduler import BackupScheduler
         with db_lock:
+            # Declare layout storage before recovery installs its triggers and
+            # before any query authority reaches a renderer. Lazy DDL on the
+            # first tree read otherwise invalidates a freshly prepared view.
+            tree_layout_store()
             save_app_state(project_dir, service.dj.conn(), service=service)
             if service._loaded:
                 prepare_annotations(reuse=True)
