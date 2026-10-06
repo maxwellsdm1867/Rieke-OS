@@ -5,25 +5,25 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
+  "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-epoch-column-arm64.zip",
-    "bytes": 621197317,
-    "sha256": "105f33caf9fa740a61798db38cc91e4e067b1b4e9420ff12ac0da80a5a2e427d"
+    "filename": "Disco-0.1.8-tree-counts-arm64.zip",
+    "bytes": 621197008,
+    "sha256": "220e6f23b84276316d63d3d55ac999a3b709f38f61061802cacfc05c9324281b"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
-      "passed": 21,
+      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+      "passed": 878,
       "failed": 0,
-      "scope": "Incoming branch selection, tree tag coverage, incoming inclusion rendering and paged tree lifecycle",
+      "scope": "Full recursive frontend suite, count-only request modes and tag-preview scope",
       "independent_source_review": "passed"
     },
     "backend": {
@@ -37,16 +37,15 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Adds advertised bounded fresh ancestor batching under the existing guarded context and closing generation/scope checks.",
+      "final_source_difference": "Optional count-only tree pages skip full-bucket statistics and branch shared-tag coverage; legacy mode and scientific authority are preserved.",
       "current_source_scoped_checks": {
-        "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
-        "passed": 83,
-        "scope": "Workbench, cumulative pending and tree pages, including batch parity/bounds/closing-scope tests"
-      },
-      "implementation_unchanged_since": "995c514b6a2caaec0cc12e23a47f99c41ecac55e"
+        "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+        "passed": 92,
+        "scope": "Tree pages, Workbench, cumulative pending and read identity; count-mode parity/no-scan validation"
+      }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/epoch-column-design-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/tree-counts-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -64,14 +63,15 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "epoch-column-design-tests.log",
-      "epoch-column-design-guard.log",
-      "epoch-column-design-core-gate.json",
-      "epoch-column-design-provenance.json",
-      "epoch-column-design-native-audit.json",
-      "epoch-column-design-imports.json",
-      "epoch-column-design-installed.json",
-      "epoch-column-design-installed-ui.json"
+      "tree-counts-frontend-final.log",
+      "tree-counts-backend-all.log",
+      "tree-counts-guard.log",
+      "tree-counts-core-gate.json",
+      "tree-counts-provenance.json",
+      "tree-counts-native-audit.json",
+      "tree-counts-imports.json",
+      "tree-counts-installed.json",
+      "tree-counts-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -98,22 +98,17 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
-      "verification": "See epoch-column-design-installed-ui.json for post-install verification"
+      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+      "verification": "See tree-counts-installed-ui.json for post-install verification"
     },
     "current_native_workflow": {
-      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
-      "receipt": "epoch-column-design-native-2026-10-06T02-00-29-600Z/receipt.json",
+      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+      "receipt": "tree-counts-native-2026-10-06T02-13-42-780Z/receipt.json",
       "passed": true,
-      "epoch_row_layout": {
-        "height": 38,
-        "leafBorder": "0px",
-        "leafShadow": "none",
-        "tagBorder": "0px",
-        "switchLabel": "none"
-      },
+      "tree_counts_only": true,
+      "aggregate_badges_removed": true,
+      "tagged_epochs": 63,
       "selection_tag_export_preview": "Passed on owned clone; no merge/export publication",
-      "leaf_tag_colors": "Blue/green match actual epoch selection",
       "clean_shutdown": true
     },
     "column_navigation": {

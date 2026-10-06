@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `ef4b2e482df56c5491dba1c0cef972c1cd29409e`,
+app and ZIP to clean source commit `60f9567ced676bf6c1db181166f2693304592768`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -210,3 +210,19 @@ provenance, static native audit and relocated scientific imports passed. The own
 native workflow verifies 38-pixel rows, absent child borders/stripe, blue/green
 selection colors, branch and epoch overrides, tagging and export preview.
 Historical full-suite and timing results retain their original source attribution.
+
+
+## Counts-only tree browsing
+
+Paged column and hierarchy views request only per-split group totals and per-group
+epoch counts. Full-bucket duration, distinct-cell and tag-coverage scans are skipped.
+The UI removes these aggregates and distribution bars; cell groups show epoch counts.
+Direct annotations and selection, tagging and inclusion actions remain available.
+The representative label renderer retains its existing bounded work and semantics.
+Legacy page clients retain full summaries. Cache modes remain separate, and query-tag
+previews omit the new presentation flag from their scientific membership scope.
+
+878 frontend tests, 92 scoped backend tests, independent review, exact clean core
+gate and packaging checks passed. Owned native checks cover counts-only requests,
+absence of aggregate badges, exact saved tags, selection and export preview.
+No new latency comparison or full release qualification is claimed.
