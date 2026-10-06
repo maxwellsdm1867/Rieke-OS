@@ -190,9 +190,9 @@
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags,
 .incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:transparent;box-shadow:inset 2px 0 var(--ink-muted)}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.bulk-selected,
-.incoming-browser .hierarchy-tree .ht-leaf[aria-selected=true],
+.incoming-browser .hierarchy-tree .ht-leaf.incoming-epoch-on,
 .incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink);color:var(--ink)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected){background:var(--surface-subtle);outline:0}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:var(--surface-subtle);outline:0}
 .incoming-browser .column-tree .tp-branch.selected:not(.incoming-branch-on):not(.incoming-branch-off){background:var(--surface-subtle);box-shadow:none;border-color:var(--border)}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary>.incoming-tree-actions{margin-left:auto}
@@ -210,3 +210,14 @@
 .incoming-browser .column-tree .tp-level-heading>.incoming-tree-actions{width:auto;height:auto;display:flex;background:transparent;max-width:none;flex-wrap:nowrap;margin-left:0;grid-column:2}
 .incoming-browser .column-tree .tp-level-heading{display:grid;grid-template-columns:23px minmax(0,1fr);gap:5px 8px;padding:9px 12px}
 .incoming-browser .tree-design-content.with-recording{grid-template-rows:minmax(320px,1fr) minmax(260px,1fr)}
+
+/* Highlight outlines are independent of actual incoming selection color. */
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch{display:grid;grid-template-columns:minmax(0,1fr) 82px 26px 24px;gap:3px;min-height:30px;margin-left:8px;padding:2px 4px!important}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:not(.bulk-selected){background:var(--accent-soft)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:2px solid var(--accent);outline-offset:-2px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.incoming-selection-switch{width:82px;min-width:82px;min-height:26px;flex:none;padding:3px 5px;gap:5px;border:0;background:transparent;white-space:nowrap;font-size:10px}
+.incoming-browser .inspection-cell-tree .incoming-selection-switch>span{white-space:nowrap;overflow-wrap:normal;line-height:14px}
+.incoming-browser .inspection-cell-tree .incoming-switch-track{flex:0 0 23px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.tree-group-tag-button{width:26px;min-width:26px;min-height:26px;flex:none;padding:4px;border:0;background:transparent}
+.incoming-browser .inspection-cell-tree .cell-tree-epoch>.tree-group-tag-button>span{display:none}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.epoch-inclusion-toggle{width:24px;min-width:24px;min-height:26px;flex:none;padding:3px;border:0;background:transparent}
