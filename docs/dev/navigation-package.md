@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `9a82a1ef4bfa9c1edd1448d507a5d1ce68c2bb02`,
+app and ZIP to clean source commit `bcc171ba24a73883323cd96b3fa05ef036b167af`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -158,3 +158,11 @@ Current tags remain. Scoped summary computation retains its existing lifetime.
 Eight focused frontend checks and independent source review passed, along with
 the exact clean core gate and package checks. Earlier full frontend/native evidence
 remains attributed to its original source in the package record.
+
+
+## Compact tree-level removal
+
+The current package replaces the prominent Remove label with a muted minus-circle
+control. Its tooltip and accessible name identify the level; keyboard focus remains
+visible. Removal logic and grouping counts are unchanged. Eight focused frontend
+checks, independent review and package checks passed.
