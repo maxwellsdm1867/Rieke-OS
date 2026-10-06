@@ -221,3 +221,6 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.tree-group-tag-button{width:26px;min-width:26px;min-height:26px;flex:none;padding:4px;border:0;background:transparent}
 .incoming-browser .inspection-cell-tree .cell-tree-epoch>.tree-group-tag-button>span{display:none}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.epoch-inclusion-toggle{width:24px;min-width:24px;min-height:26px;flex:none;padding:3px;border:0;background:transparent}
+
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child{justify-content:flex-start;gap:4px;overflow:hidden}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch .epoch-short-protocol{min-width:0}
