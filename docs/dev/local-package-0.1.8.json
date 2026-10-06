@@ -2,35 +2,35 @@
   "schema_version": 1,
   "product": "Disco",
   "version": "0.1.8",
-  "recorded_date": "2026-10-05",
+  "recorded_date": "2026-10-06",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+  "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-import-dot-arm64.zip",
-    "bytes": 621198318,
-    "sha256": "5bd959ecbdccca098f7f6cbf560d90f6fbd12159e38a8619b3c8c6e0997ed054"
+    "filename": "Disco-0.1.8-selection-summary-arm64.zip",
+    "bytes": 621200267,
+    "sha256": "fe9e776e0600d3210093d1b9722eb69cc33d982d9b118223514fb4cb12591fbf"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "266760e7cf27d78d2fa3a7f8d094b5afee739f97",
-      "passed": 882,
+      "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
+      "passed": 886,
       "failed": 0,
-      "scope": "Full recursive frontend suite, highlight gesture and explicit bulk selection, stale owner and range fences",
+      "scope": "Full recursive frontend suite including exact selected summaries, pause/resume and A-B-A fences, and held-navigation branch appearance",
       "independent_source_review": "passed",
-      "final_source_difference": "Current view/status styling retained; import review badge now 14px red with a contrast border.",
+      "final_source_difference": "Integrated 52px live selection status, inline counts and reduced-motion-aware value emphasis",
       "current_scoped_checks": {
-        "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
-        "passed": 3,
+        "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+        "passed": 6,
         "failed": 0,
-        "scope": "Import review pending-state persistence and authoritative resolution"
+        "scope": "Summary lifetime/status and stable branch navigation"
       }
     },
     "backend": {
@@ -44,16 +44,20 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Optional count-only tree pages skip full-bucket statistics and branch shared-tag coverage; legacy mode and scientific authority are preserved.",
+      "final_source_difference": "Adds read-only selection-summary over at most 1000 explicit selected UUIDs, under frozen metadata and opening/closing read authority; no full-bucket scans.",
       "current_source_scoped_checks": {
+        "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
+        "passed": 61,
+        "scope": "Workbench, registered recovery policy and mutation outcomes; exact bounded summaries, invalid/unavailable metadata and closing scope checks"
+      },
+      "previous_source_scoped_checks": {
         "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
         "passed": 92,
         "scope": "Tree pages, Workbench, cumulative pending and read identity; count-mode parity/no-scan validation"
-      },
-      "implementation_unchanged_since": "60f9567ced676bf6c1db181166f2693304592768"
+      }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/import-dot-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/selection-summary-002/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -71,14 +75,16 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "import-dot-tests.log",
-      "import-dot-guard.log",
-      "import-dot-core-gate.json",
-      "import-dot-provenance.json",
-      "import-dot-native-audit.json",
-      "import-dot-imports.json",
-      "import-dot-installed.json",
-      "import-dot-installed-ui.json"
+      "selection-summary-frontend.log",
+      "selection-summary-backend.log",
+      "selection-summary-status-scoped.log",
+      "selection-summary-status-guard.log",
+      "selection-summary-status-core-gate.json",
+      "selection-summary-provenance.json",
+      "selection-summary-status-native-audit.json",
+      "selection-summary-status-imports.json",
+      "selection-summary-installed.json",
+      "selection-summary-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -105,33 +111,70 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
-      "verification": "See import-dot-installed-ui.json"
+      "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+      "verification": "See selection-summary-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
-      "receipt": "import-dot-native-2026-10-06T15-24-14-991Z/receipt.json",
-      "controller_sha256": "c4a7644c2bfa403a3a5529dad9c93df44525140148c4df587298cf852e1e981d",
+      "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+      "receipt": "selection-summary-native-2026-10-06T16-07-41-609Z/receipt.json",
+      "controller_sha256": "96944e5f42b9f98f0dfbdebfacf4a7b928495e5d2ccd28fcd68a714ab7674369",
       "passed": true,
-      "badge_themes": {
-        "light": {
-          "background": "rgb(239, 68, 68)",
-          "width": 14,
-          "height": 14,
-          "border": "2px",
-          "position": "absolute"
+      "scope": "Exact selected summary, selected parent retained during held expansion, disabled loading actions, empty/partial/pending selection and both themes",
+      "observed_metrics": {
+        "empty": [
+          "Current selection",
+          "0",
+          "0",
+          "0"
+        ],
+        "selected": [
+          "Current selection",
+          "63",
+          "2",
+          "0"
+        ],
+        "child_off": [
+          "Current selection",
+          "2",
+          "1",
+          "0"
+        ],
+        "pending": [
+          "Current selection",
+          "63",
+          "\u2014",
+          "\u2014"
+        ]
+      },
+      "fixed_geometry": {
+        ".selection-summary": {
+          "y": 148.3984375,
+          "height": 52
         },
-        "dark": {
-          "background": "rgb(239, 68, 68)",
-          "width": 14,
-          "height": 14,
-          "border": "2px",
-          "position": "absolute"
+        ".tp-path": {
+          "y": 200.3984375,
+          "height": 42.3984375
+        },
+        ".tp-columns": {
+          "y": 242.796875,
+          "height": 637.2578125
         }
       },
-      "scope": "Read-only pending import badge styling in light and dark themes",
+      "themes": {
+        "light": {
+          "height": 52,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "rgb(70, 82, 105)"
+        },
+        "dark": {
+          "height": 52,
+          "background": "rgba(0, 0, 0, 0)",
+          "color": "rgb(197, 206, 223)"
+        }
+      },
+      "counts_only_responses": 33,
       "clean_shutdown": true,
-      "fixture_setup": "Isolated copy-on-write app clone; theme picker exercised. Earlier setup attempts on wrong page, OS-theme emulation, hidden input and low disk were retained separately and not counted as passes."
+      "initial_harness_failure": "First attempt stopped on expected whitespace in Unclassified breakdown text; source unchanged; corrected assertion and reran."
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -229,11 +272,18 @@
       "attribution": "Measured on 995c514 before terminal epoch styling; not current-source timing."
     },
     "previous_full_frontend": {
-      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
-      "passed": 877,
+      "source_commit": "266760e7cf27d78d2fa3a7f8d094b5afee739f97",
+      "passed": 882,
       "failed": 0,
-      "scope": "Full recursive frontend suite including batched frozen column reads and lazy scoped catalog lifetime",
-      "independent_source_review": "passed"
+      "scope": "Full recursive frontend suite, highlight gesture and explicit bulk selection, stale owner and range fences",
+      "independent_source_review": "passed",
+      "final_source_difference": "Current view/status styling retained; import review badge now 14px red with a contrast border.",
+      "current_scoped_checks": {
+        "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+        "passed": 3,
+        "failed": 0,
+        "scope": "Import review pending-state persistence and authoritative resolution"
+      }
     },
     "end_to_end_followup": {
       "packaged_source_commit": "60f9567ced676bf6c1db181166f2693304592768",
@@ -389,6 +439,31 @@
       "count_only_responses_verified": 15,
       "scope": "Held selection and refresh geometry; no tagging or export test in this run",
       "clean_shutdown": true
+    },
+    "previous_import_badge_workflow": {
+      "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+      "receipt": "import-dot-native-2026-10-06T15-24-14-991Z/receipt.json",
+      "controller_sha256": "c4a7644c2bfa403a3a5529dad9c93df44525140148c4df587298cf852e1e981d",
+      "passed": true,
+      "badge_themes": {
+        "light": {
+          "background": "rgb(239, 68, 68)",
+          "width": 14,
+          "height": 14,
+          "border": "2px",
+          "position": "absolute"
+        },
+        "dark": {
+          "background": "rgb(239, 68, 68)",
+          "width": 14,
+          "height": 14,
+          "border": "2px",
+          "position": "absolute"
+        }
+      },
+      "scope": "Read-only pending import badge styling in light and dark themes",
+      "clean_shutdown": true,
+      "fixture_setup": "Isolated copy-on-write app clone; theme picker exercised. Earlier setup attempts on wrong page, OS-theme emulation, hidden input and low disk were retained separately and not counted as passes."
     }
   },
   "qualification_limits": [

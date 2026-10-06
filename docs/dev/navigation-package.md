@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `2b5635840123531a900bf490953d2f70ce7618c9`,
+app and ZIP to clean source commit `536cc373c85dba2e3b52f9e65545a6ed27d59938`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -298,3 +298,27 @@ Review import now carries a 14px bright red dot with a contrasting border instea
 of the small amber indicator. Pending-state authority and dismissal behavior are
 unchanged. Three existing notification checks and the exact clean core gate passed;
 owned native checks verify the red color, 14px size and border in light/dark themes.
+
+
+## Exact current selection and stable branch switches
+
+The Edit Tree header now shows a integrated full-width Current selection status row with
+selected epochs, unique cells and recorded cell types. Its type breakdown includes
+unclassified cells. It follows exact selected UUIDs even outside the visible branch;
+pending details occupy fixed slots. The 52px row shares the tree surface and borders,
+uses inline counts, and marks current details Live. Updating/paused/unavailable
+labels retain the same reserved space; count emphasis respects reduced motion. The bounded read is capped at 1,000 selected
+epochs and fails closed on changed frozen metadata or request lifetime.
+
+Selected branch switches retain their committed green/Deselect appearance while
+expansion loads. Actions remain disabled until current pages arrive. Scope/owner
+changes and errors still invalidate retained appearance.
+
+All 886 frontend checks and 61 scoped backend/recovery checks passed at `2600e40`;
+six focused frontend checks passed after the final status-row presentation update, alongside
+independent source review and the exact clean core gate. Owned native checks verify
+63 selected epochs / 2 cells, 2 epochs / 1 cell after a child is deselected, empty
+and pending states, unchanged header/ancestry/column geometry, held expansion, and
+light/dark rendering. The initial native harness whitespace assertion was corrected
+and rerun without product changes. Earlier broad workflow evidence retains its
+original source attribution; this is a local package, not release promotion.
