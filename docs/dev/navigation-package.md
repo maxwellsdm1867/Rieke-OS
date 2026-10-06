@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `abef4b349273136716b639ee7fefb138e1e22d06`,
+app and ZIP to clean source commit `bce0092b1d2e00a8490f88ff59832d4bc7d8f15f`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -332,3 +332,29 @@ Four existing tree checks and the exact clean core gate passed. Final native
 light/dark checks confirm matching 1px side borders, no inset shadow and retained
 selection during held expansion. Earlier summary/workflow evidence remains bound
 to its original source. Public prerelease assets remain unchanged.
+
+
+## Responsive incoming selection and column navigation
+
+A bounded branch-selection read now resolves exact UUIDs under one guarded server
+request. Ordered Select/Deselect commands remain clickable while waiting; only
+validated results update selected UUIDs. Read-only Edit Tree navigation can replace
+pending reads, retaining scope/owner/activation checks and scientific action gates.
+Focus-producing navigation retains its existing loading gate.
+
+Native comparison on the same owned 63-epoch fixture: ten alternating selection
+clicks improved from 395.5 ms median (363–438) to 109.5 ms (97–125), with seven
+descendant-page requests replaced by one selection request. This is a 72.3%
+reduction for this fixture, not a general performance guarantee. Nine next-column
+samples were essentially unchanged: 84 ms versus 86 ms median to visible column;
+controls-ready medians were 88 ms versus 92 ms. Navigation now accepts a replacement
+destination during a held read, and queued sibling selection completed exactly.
+Both runs used separate sessions with the same host, runtime and closed source clone.
+Measurement loops match; the candidate controller adds a held-navigation check
+after timings. Raw receipts, controllers and comparison JSON are retained in the kit.
+
+890 frontend checks, 62 backend/recovery checks, independent review and the exact
+clean core gate passed. Source/frontend/ASAR identity, whole-bundle static audit and
+relocated scientific imports passed. Native smoke exited cleanly with no page errors.
+Earlier visual and full-workflow evidence retains its original source attribution.
+This remains a local testing package; public prerelease assets are unchanged.

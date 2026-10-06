@@ -5,39 +5,26 @@
   "recorded_date": "2026-10-06",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+  "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-tree-no-blue-edge-arm64.zip",
-    "bytes": 621200249,
-    "sha256": "0d2280fa284ab3789d557f5f0714130a9844df2ab7cba3162e28f49903ca95e0"
+    "filename": "Disco-0.1.8-selection-speed-arm64.zip",
+    "bytes": 621201829,
+    "sha256": "6343fcb6c16f06492bb7cd9c25bd2ba2c5d05f52a1cd91d594235519bfbab2f0"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
-      "passed": 886,
+      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+      "passed": 890,
       "failed": 0,
-      "scope": "Full recursive frontend suite including exact selected summaries, pause/resume and A-B-A fences, and held-navigation branch appearance",
-      "independent_source_review": "passed",
-      "final_source_difference": "Integrated live selection status retained; removed the thick blue left border and inset shadow from tree branch cards.",
-      "current_scoped_checks": {
-        "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
-        "passed": 4,
-        "failed": 0,
-        "scope": "Tree scope invalidation and stable branch selection during navigation"
-      },
-      "previous_scoped_checks": {
-        "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
-        "passed": 6,
-        "failed": 0,
-        "scope": "Summary lifetime/status and stable branch navigation"
-      }
+      "scope": "Full recursive suite including queued selection, pending navigation, stale activation and existing scientific action fences",
+      "independent_source_review": "passed"
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -50,20 +37,21 @@
         "skipped": 1,
         "scope": "catalog connection reuse/fallback and desktop runtime packaging"
       },
-      "final_source_difference": "Adds read-only selection-summary over at most 1000 explicit selected UUIDs, under frozen metadata and opening/closing read authority; no full-bucket scans.",
+      "final_source_difference": "Adds bounded exact tree/selection POST under one opening/closing guard; existing traversal remains authority. No scientific writes.",
       "current_source_scoped_checks": {
+        "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+        "passed": 62,
+        "failed": 0,
+        "scope": "Workbench frozen read contracts, exact bounded branch selection, mutation recovery and registered endpoint policy"
+      },
+      "previous_source_scoped_checks": {
         "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
         "passed": 61,
         "scope": "Workbench, registered recovery policy and mutation outcomes; exact bounded summaries, invalid/unavailable metadata and closing scope checks"
-      },
-      "previous_source_scoped_checks": {
-        "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
-        "passed": 92,
-        "scope": "Tree pages, Workbench, cumulative pending and read identity; count-mode parity/no-scan validation"
       }
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/tree-no-blue-edge-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/selection-speed-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -81,14 +69,17 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "tree-no-blue-edge-tests.log",
-      "tree-no-blue-edge-guard.log",
-      "tree-no-blue-edge-core-gate.json",
-      "tree-no-blue-edge-provenance.json",
-      "tree-no-blue-edge-native-audit.json",
-      "tree-no-blue-edge-imports.json",
-      "tree-no-blue-edge-installed.json",
-      "tree-no-blue-edge-installed-ui.json"
+      "selection-speed-frontend-final.log",
+      "selection-speed-backend.log",
+      "selection-speed-guard-final.log",
+      "selection-speed-core-gate.json",
+      "selection-speed-core-comparison.md",
+      "selection-speed-provenance.json",
+      "selection-speed-native-audit.json",
+      "selection-speed-imports.json",
+      "selection-speed-native-comparison.json",
+      "selection-speed-installed.json",
+      "selection-speed-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -115,34 +106,89 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
-      "verification": "See tree-no-blue-edge-installed-ui.json"
+      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+      "verification": "See selection-speed-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
-      "receipt": "tree-no-blue-edge-native-2026-10-06T16-19-10-484Z/receipt.json",
-      "controller_sha256": "7cfb5d3a556dc54fd264a47f24772d3a9a23b9193eefa0d49ecb46ddd4e2cbcd",
+      "source_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+      "receipt": "selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
+      "controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
       "passed": true,
-      "branch_edges": {
-        "light": {
-          "left": "1px",
-          "right": "1px",
-          "leftColor": "rgb(173, 206, 184)",
-          "rightColor": "rgb(173, 206, 184)",
-          "shadow": "none",
-          "background": "rgb(232, 243, 236)"
+      "scope": "Ten selection timings, nine column navigation timings; held reads verify queued sibling selection and latest navigation while scientific actions remain blocked",
+      "clean_shutdown": true,
+      "comparison": {
+        "baseline_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-39-29-999Z/receipt.json",
+        "candidate_receipt": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05/selection-speed-native-2026-10-06T17-46-29-603Z/receipt.json",
+        "baseline_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+        "candidate_commit": "bce0092b1d2e00a8490f88ff59832d4bc7d8f15f",
+        "candidate_controller_sha256": "5529c2ac4d732a2efd105b7d97c18aca128d37f7765bc96071abd77a2e618921",
+        "conditions": "Same host, runtime, source project clone, protocol, 63-epoch branch, 10 alternating clicks and 9 three-level navigation samples; separate sequential app sessions. Native interaction observations, not universal performance or release qualification. Measurement loops match; candidate controller adds a held-navigation acceptance check after timing samples.",
+        "baseline": {
+          "selection": {
+            "median_ms": 395.5,
+            "min_ms": 363,
+            "max_ms": 438,
+            "samples": 10
+          },
+          "selection_read_counts": [
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7,
+            7
+          ],
+          "navigation_visible": {
+            "median_ms": 84,
+            "min_ms": 80,
+            "max_ms": 103,
+            "samples": 9
+          },
+          "navigation_ready": {
+            "median_ms": 88,
+            "min_ms": 85,
+            "max_ms": 120,
+            "samples": 9
+          }
         },
-        "dark": {
-          "left": "1px",
-          "right": "1px",
-          "leftColor": "rgb(68, 105, 81)",
-          "rightColor": "rgb(68, 105, 81)",
-          "shadow": "none",
-          "background": "rgb(23, 59, 45)"
-        }
-      },
-      "scope": "Selected expanded cards have matching 1px side borders and no inset shadow in light/dark themes; selection colors and held-navigation state retained",
-      "clean_shutdown": true
+        "candidate": {
+          "selection": {
+            "median_ms": 109.5,
+            "min_ms": 97,
+            "max_ms": 125,
+            "samples": 10
+          },
+          "selection_read_counts": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "navigation_visible": {
+            "median_ms": 86,
+            "min_ms": 79,
+            "max_ms": 108,
+            "samples": 9
+          },
+          "navigation_ready": {
+            "median_ms": 92,
+            "min_ms": 83,
+            "max_ms": 129,
+            "samples": 9
+          }
+        },
+        "selection_median_reduction_percent": 72.3
+      }
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -494,6 +540,52 @@
       "counts_only_responses": 33,
       "clean_shutdown": true,
       "initial_harness_failure": "First attempt stopped on expected whitespace in Unclassified breakdown text; source unchanged; corrected assertion and reran."
+    },
+    "previous_frontend": {
+      "source_commit": "2600e404a76ea773521b19e3fd3fd86cf267508f",
+      "passed": 886,
+      "failed": 0,
+      "scope": "Full recursive frontend suite including exact selected summaries, pause/resume and A-B-A fences, and held-navigation branch appearance",
+      "independent_source_review": "passed",
+      "final_source_difference": "Integrated live selection status retained; removed the thick blue left border and inset shadow from tree branch cards.",
+      "current_scoped_checks": {
+        "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+        "passed": 4,
+        "failed": 0,
+        "scope": "Tree scope invalidation and stable branch selection during navigation"
+      },
+      "previous_scoped_checks": {
+        "source_commit": "536cc373c85dba2e3b52f9e65545a6ed27d59938",
+        "passed": 6,
+        "failed": 0,
+        "scope": "Summary lifetime/status and stable branch navigation"
+      }
+    },
+    "previous_branch_edge_workflow": {
+      "source_commit": "abef4b349273136716b639ee7fefb138e1e22d06",
+      "receipt": "tree-no-blue-edge-native-2026-10-06T16-19-10-484Z/receipt.json",
+      "controller_sha256": "7cfb5d3a556dc54fd264a47f24772d3a9a23b9193eefa0d49ecb46ddd4e2cbcd",
+      "passed": true,
+      "branch_edges": {
+        "light": {
+          "left": "1px",
+          "right": "1px",
+          "leftColor": "rgb(173, 206, 184)",
+          "rightColor": "rgb(173, 206, 184)",
+          "shadow": "none",
+          "background": "rgb(232, 243, 236)"
+        },
+        "dark": {
+          "left": "1px",
+          "right": "1px",
+          "leftColor": "rgb(68, 105, 81)",
+          "rightColor": "rgb(68, 105, 81)",
+          "shadow": "none",
+          "background": "rgb(23, 59, 45)"
+        }
+      },
+      "scope": "Selected expanded cards have matching 1px side borders and no inset shadow in light/dark themes; selection colors and held-navigation state retained",
+      "clean_shutdown": true
     }
   },
   "qualification_limits": [
