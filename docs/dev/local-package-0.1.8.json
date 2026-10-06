@@ -5,26 +5,27 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+  "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-tree-counts-arm64.zip",
-    "bytes": 621197008,
-    "sha256": "220e6f23b84276316d63d3d55ac999a3b709f38f61061802cacfc05c9324281b"
+    "filename": "Disco-0.1.8-highlight-controls-arm64.zip",
+    "bytes": 621198283,
+    "sha256": "5786fc06e8b727c4e9527443f9d8bc0c80d6503552545b4af2dcf80aa5a57a9f"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
-      "passed": 878,
+      "source_commit": "266760e7cf27d78d2fa3a7f8d094b5afee739f97",
+      "passed": 882,
       "failed": 0,
-      "scope": "Full recursive frontend suite, count-only request modes and tag-preview scope",
-      "independent_source_review": "passed"
+      "scope": "Full recursive frontend suite, highlight gesture and explicit bulk selection, stale owner and range fences",
+      "independent_source_review": "passed",
+      "final_source_difference": "Three CSS lines align and clip the flat epoch label; final-source native geometry and workflow verified."
     },
     "backend": {
       "source_commit": "6bae2bf2fde8e8f5f8fceaefc89ec8181dc72e37",
@@ -42,10 +43,11 @@
         "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
         "passed": 92,
         "scope": "Tree pages, Workbench, cumulative pending and read identity; count-mode parity/no-scan validation"
-      }
+      },
+      "implementation_unchanged_since": "60f9567ced676bf6c1db181166f2693304592768"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/tree-counts-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/highlight-controls-003/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -63,15 +65,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "tree-counts-frontend-final.log",
-      "tree-counts-backend-all.log",
-      "tree-counts-guard.log",
-      "tree-counts-core-gate.json",
-      "tree-counts-provenance.json",
-      "tree-counts-native-audit.json",
-      "tree-counts-imports.json",
-      "tree-counts-installed.json",
-      "tree-counts-installed-ui.json"
+      "highlight-controls-frontend-final.log",
+      "highlight-controls-guard-final.log",
+      "highlight-controls-core-gate.json",
+      "highlight-controls-provenance.json",
+      "highlight-controls-native-audit-003.json",
+      "highlight-controls-imports-003.json",
+      "highlight-controls-installed.json",
+      "highlight-controls-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -98,18 +99,29 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
-      "verification": "See tree-counts-installed-ui.json for post-install verification"
+      "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
+      "verification": "See highlight-controls-installed-ui.json for post-install verification"
     },
     "current_native_workflow": {
-      "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
-      "receipt": "tree-counts-native-2026-10-06T02-13-42-780Z/receipt.json",
+      "source_commit": "4cb83918ff7890d474c2213e8f4a4a47ba476889",
+      "receipt": "highlight-controls-native-2026-10-06T05-59-59-956Z/receipt.json",
+      "controller_sha256": "6ea24edd5399feee37f9f0396734863357e0da20fd502095667314be22060ef5",
       "passed": true,
-      "tree_counts_only": true,
-      "aggregate_badges_removed": true,
+      "highlight_actions": {
+        "flat_shift_command": true,
+        "highlight_does_not_select": true,
+        "select_highlighted": true,
+        "deselect_highlighted_preserves_other_selection": true,
+        "hierarchy_shift": true,
+        "browse_branch_controls_absent": true
+      },
+      "flat_row_height": 30,
+      "hierarchy_row_height": 30,
+      "count_only_responses_verified": 86,
       "tagged_epochs": 63,
       "selection_tag_export_preview": "Passed on owned clone; no merge/export publication",
-      "clean_shutdown": true
+      "clean_shutdown": true,
+      "initial_final_source_attempt": "Disposable project activation stopped at free disk reserve; closed test app duplicates cleaned, retry passed. Failed receipt retained in highlight-controls-native-2026-10-06T05-56-37-071Z."
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -246,5 +258,15 @@
     "Complete release promotion requirements remain unqualified",
     "Small owned-fixture click comparison, one identical-controller baseline session and two candidate sessions; uncontrolled OS caches, no calibrated performance budget or live-user-project timing.",
     "Column navigation: one session per source, nine clicks each on owned 2041/63 fixture; 20-second user stall was not reproduced."
-  ]
+  ],
+  "published_prerelease": {
+    "tag": "desktop-test-v0.1.8",
+    "source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+    "archive": {
+      "filename": "Disco-0.1.8-tree-counts-arm64.zip",
+      "bytes": 621197008,
+      "sha256": "220e6f23b84276316d63d3d55ac999a3b709f38f61061802cacfc05c9324281b"
+    },
+    "unchanged_by_this_local_package": true
+  }
 }

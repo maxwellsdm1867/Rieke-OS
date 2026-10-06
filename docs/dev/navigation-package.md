@@ -42,10 +42,10 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `60f9567ced676bf6c1db181166f2693304592768`,
+app and ZIP to clean source commit `4cb83918ff7890d474c2213e8f4a4a47ba476889`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
-there. The same ZIP is published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
+there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
 with `SHA256SUMS` and the package record attached. The release tag identifies the
 packaged source `60f9567`; `7992957` adds the later test/documentation handoff.
 No rebuild, stable release promotion or automatic-update descriptor is part of
@@ -246,3 +246,24 @@ parent/child/epoch selection overrides, retained tree mode, export preview and
 clean shutdown. No export publication or user-project mutation occurred. Raw
 receipts and controller hashes are linked from the package record. This remains
 local testing evidence, not full release qualification.
+
+
+## Compact left tree and explicit highlighted selection
+
+The current local package renames the layout action to Edit Tree and keeps it
+visible at narrow pane widths. Left browsing branches retain navigation and epoch
+counts; group selection and tagging remain in Edit Tree. Compact epoch rows keep
+their controls within the row, with explicit Select/Deselect labels in Workbench.
+
+Shift-click highlights a range and Command-click adjusts that set. Highlighting
+is independent of selection. The always-visible Select Highlighted and Deselect
+Highlighted buttons apply the set explicitly, preserving selection outside it.
+Highlight ownership and pending range reads are cleared/fenced across scope and
+mode changes, including A-B-A returns. Nothing is persisted as a new annotation.
+
+882 frontend tests, independent review, architecture checks, exact clean core gate,
+packaging verification, relocated imports and owned native workflow passed. Native
+checks exercise both left tree modes, separate highlight/selection colors, compact
+row geometry, downstream selection, saved tagging and export preview. The earlier
+six-check smoke receipt remains attributed to source 60f9567. Public prerelease
+assets and its tag are unchanged; this is a newer local testing package.
