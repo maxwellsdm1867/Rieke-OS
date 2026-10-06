@@ -3353,7 +3353,7 @@
     "reviewed_loader_sites": [
       {
         "file": "python/recording_workspace.py",
-        "file_sha256": "92181e6cee8b4d3b50cd535a152d5dc3b584f2ec5734f090ee2e2a94f23a47e1",
+        "file_sha256": "a14524bbaf9fe2f87d6c0b9589325c31c99ab44dce2c7487c9fd842266a3f7b2",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -5139,7 +5139,7 @@
       },
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
-        "file_sha256": "80d02b94082b5d66afd15d300b26005b357f99ee6e98f0889861cc46f455ed0d",
+        "file_sha256": "9617cc4d6dbb32ae07816cf9c4c7ae5d5b3b8cc324637148dedad07233c83752",
         "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation.",
         "sites": [
           {
@@ -5209,7 +5209,7 @@
             ]
           },
           {
-            "selector": "Attribute:486",
+            "selector": "Attribute:494",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5242,7 +5242,7 @@
             ]
           },
           {
-            "selector": "Attribute:494",
+            "selector": "Attribute:502",
             "ast_sha256": "9b66d8b81a7b15352c762eb8b15859183009e5c548da4cd1150e527c832c7ef5",
             "category": "test-oracle-call",
             "origins": [
@@ -5275,7 +5275,7 @@
             ]
           },
           {
-            "selector": "Name:741",
+            "selector": "Name:750",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5297,7 +5297,7 @@
             ]
           },
           {
-            "selector": "Name:770",
+            "selector": "Name:779",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5319,7 +5319,7 @@
             ]
           },
           {
-            "selector": "Name:840",
+            "selector": "Name:849",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5341,7 +5341,7 @@
             ]
           },
           {
-            "selector": "Name:843",
+            "selector": "Name:852",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5363,7 +5363,7 @@
             ]
           },
           {
-            "selector": "Name:865",
+            "selector": "Name:874",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5385,7 +5385,7 @@
             ]
           },
           {
-            "selector": "Name:868",
+            "selector": "Name:877",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5407,7 +5407,7 @@
             ]
           },
           {
-            "selector": "Attribute:593",
+            "selector": "Attribute:601",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5440,7 +5440,7 @@
             ]
           },
           {
-            "selector": "Name:919",
+            "selector": "Name:928",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5462,7 +5462,7 @@
             ]
           },
           {
-            "selector": "Name:921",
+            "selector": "Name:930",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5484,7 +5484,7 @@
             ]
           },
           {
-            "selector": "Name:959",
+            "selector": "Name:968",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5682,7 +5682,7 @@
               {
                 "module": "recording_workspace",
                 "file": "python/recording_workspace.py",
-                "file_sha256": "92181e6cee8b4d3b50cd535a152d5dc3b584f2ec5734f090ee2e2a94f23a47e1",
+                "file_sha256": "a14524bbaf9fe2f87d6c0b9589325c31c99ab44dce2c7487c9fd842266a3f7b2",
                 "contract_id": null
               }
             ]

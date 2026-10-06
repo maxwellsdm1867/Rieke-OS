@@ -702,16 +702,16 @@ def evaluate_protocol_file(file, *, catalog_connection=None):
     provider = config["connection"]["credential_provider"]
     if provider["kind"] not in {"docker-container-env", "native-project"}:
         raise ValueError("Unsupported credential provider")
-    if catalog_connection is None:
+    dj = None
+    if catalog_connection is not None:
+        # A refresh can reuse its admitted connection only for the exact same
+        # catalog. Other saved catalog references retain ordinary admission.
+        expected_path, expected_config, admitted = catalog_connection
+        if catalog_path == Path(expected_path).resolve() and config == expected_config:
+            dj = admitted
+    if dj is None:
         dj = (connect(provider, project_dir=catalog_path.parent) if provider['kind'] == 'native-project'
               else connect(provider['container']))
-    else:
-        # A refresh already admitted this exact catalog and connection. Reuse
-        # only inside that operation; every protocol still checks its own file
-        # and catalog, and runs the complete SQL membership query below.
-        expected_path, expected_config, dj = catalog_connection
-        if catalog_path != Path(expected_path).resolve() or config != expected_config:
-            raise ValueError('Protocol catalog differs from the active refresh connection')
     from retinanalysis.config import schema as catalog
     _, Source, _, _ = workspace_tables(dj)
     sources = (Source & {"project_uuid": definition["project_uuid"]}).to_dicts()

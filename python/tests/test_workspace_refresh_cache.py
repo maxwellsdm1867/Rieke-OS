@@ -115,24 +115,28 @@ class RefreshCacheTests(unittest.TestCase):
         config_module = types.ModuleType('retinanalysis.config')
         config_module.schema = schema
         with patch.dict(sys.modules, {'retinanalysis.config': config_module}), \
-                patch('recording_workspace.connect', side_effect=AssertionError('Repeated runtime admission')), \
-                patch('recording_workspace.workspace_tables', return_value=(None,self.sources,None,None)):
+                patch('recording_workspace.connect', return_value=object()) as admit, \
+                patch('recording_workspace.workspace_tables', return_value=(None,self.sources,None,None)) as tables:
             # Even a previously admitted connection must execute the current
             # query. A missing protocol returns the ordinary empty SQL result.
             result = evaluate_protocol_file(path,
                 catalog_connection=(self.folder/'catalog.json', config, connection))
             self.assertEqual(result, dict(protocol_uuid=self.protocol, epochs=[], cells=[]))
+            admit.assert_not_called()
+            tables.assert_called_with(connection)
             for catalog_path, expected in [(self.folder/'other.json', config),
                     (self.folder/'catalog.json', {**config, 'connection': {}})]:
-                with self.assertRaisesRegex(ValueError, 'active refresh connection'):
-                    evaluate_protocol_file(path,
-                        catalog_connection=(catalog_path, expected, connection))
+                admit.reset_mock()
+                evaluate_protocol_file(path, catalog_connection=(catalog_path, expected, connection))
+                admit.assert_called_once_with('unused-fixture')
+                tables.assert_called_with(admit.return_value)
             changed = copy.deepcopy(config)
             changed['connection']['credential_provider']['container'] = 'changed'
             (self.folder/'catalog.json').write_text(json.dumps(changed))
-            with self.assertRaisesRegex(ValueError, 'active refresh connection'):
-                evaluate_protocol_file(path,
-                    catalog_connection=(self.folder/'catalog.json', config, connection))
+            admit.reset_mock()
+            evaluate_protocol_file(path, catalog_connection=(self.folder/'catalog.json', config, connection))
+            admit.assert_called_once_with('changed')
+            tables.assert_called_with(admit.return_value)
 
     def test_warm_cache_skips_h5_and_json_projection_but_validates_sql(self):
         self.assertEqual(self.service.last_refresh['rebuilt_sources'], 2)
