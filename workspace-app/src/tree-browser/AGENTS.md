@@ -89,3 +89,16 @@ loading, with switches disabled until fresh pages arrive. Scope/owner/revision
 changes and errors still invalidate that appearance. Loading must never visually
 turn a committed selected branch off. Held-read tests in
 `treeTagCoverageWorkflow.test.js` cover both column and hierarchy views.
+
+While a branch-selection read is pending, unrelated branch switches remain enabled
+and clicks enter the incoming owner's bounded ordered queue. This does not relax
+page-loading, owner, revision or scientific-write readiness. Pending branch labels
+show the requested direction; confirmed UUIDs and colors stay authoritative.
+
+Read-only column navigation (without an `onSelectBranch` focus callback) may
+replace a pending read within the exact committed scope,
+owner and presentation activation. Pending path/offset intent updates synchronously
+and only the matching request clears it; late responses cannot replace the latest
+destination. Optional `navigationDisabled` separates external read blocking from
+page-loading action blocking, falling back to `actionsDisabled` for older callers.
+Selection, tags and inclusion still require a fresh complete page.

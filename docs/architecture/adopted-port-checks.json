@@ -1591,9 +1591,10 @@
           "allow": [
             "react",
             "workspace-app/src/api.js",
-            "workspace-app/src/annotations/treeGroupTargets.js",
             "workspace-app/src/epochSelection.js",
-            "workspace-app/src/incoming-workbench/incomingSelection.js"
+            "workspace-app/src/incoming-workbench/incomingSelection.js",
+            "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
+            "workspace-app/src/workspaceRequest.js"
           ]
         },
         {
@@ -1669,6 +1670,13 @@
             "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
             "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
+          "allow": [
+            "workspace-app/src/annotations/treeGroupTargets.js"
           ]
         }
       ],
@@ -3304,6 +3312,12 @@
             "path": "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
             "exports": [
               "default"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
+            "exports": [
+              "resolveIncomingTreeSelection"
             ]
           }
         ]
@@ -5548,7 +5562,7 @@
       },
       {
         "file": "python/tests/test_workspace_registered_recovery_policy.py",
-        "file_sha256": "6cd8dbd5fa90212684b54059c8db007ae143a8a30193d0eca64918dceb5cf6eb",
+        "file_sha256": "af49005f724489faf1d4ecc4b387f694daf835ad3b8b5a363f368374a63d5f0e",
         "reason": "Inject create_app with harmless shared annotations so real registration branches are present when checking registered mutation recovery policy.",
         "sites": [
           {

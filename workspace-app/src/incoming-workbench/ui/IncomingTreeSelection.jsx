@@ -1,6 +1,7 @@
-import {useLayoutEffect,useRef,useState} from 'react';
+import {useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {api} from '../../api.js';
-import {resolveTreeGroup} from "../../annotations/treeGroupTargets.js";
+import {resolveIncomingTreeSelection} from "../incomingTreeSelection.js";
+import {useWorkspaceRequest} from "../../workspaceRequest.js";
 import {mergeEpochSelection,toggleEpochSelection} from '../../epochSelection.js';
 import {incomingTreeSelectionScope,incomingBranchOn,incomingBranchCommand} from '../incomingSelection.js';
 
@@ -10,15 +11,16 @@ export function IncomingEpochSelect({epoch,selected=[],onSelect,disabled=false})
   return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={checked?'Deselect this epoch':'Select this epoch'} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
 }
 export function useIncomingTreeSelection(props,page=null){
-  const [error,setError]=useState(''),[working,setWorking]=useState(false),[localIntent,setLocalIntent]=useState(null),controller=useRef(null),interrupted=useRef(false),current=useRef(props),committed=useRef(null);
-  current.current=props;
-  const scopeKey=incomingTreeSelectionScope(props),operationKey=JSON.stringify([scopeKey,props.actionsDisabled,props.active]);
+  const request=useWorkspaceRequest(api);
+  const [error,setError]=useState(''),[working,setWorking]=useState(false),[localIntent,setLocalIntent]=useState(null),[,renderQueue]=useState(0);
+  const current=useRef(props),owner=useRef(null),interrupted=useRef(false);current.current=props;
+  const scopeKey=incomingTreeSelectionScope(props),operationKey=JSON.stringify([scopeKey,props.actionsDisabled,props.active,props.selectionAuthority?.identity]);
+  const lifetime=useMemo(()=>({operationKey}),[operationKey,request]);
   const intent=props.treeSelectionIntent===undefined?localIntent:props.treeSelectionIntent;
-  const changeIntent=value=>props.onTreeSelectionIntentChange?props.onTreeSelectionIntentChange(value):setLocalIntent(value);
   const intentRef=useRef(intent);intentRef.current=intent;
+  const selection=()=>JSON.stringify(current.current.selectedEpochs||[]);
+  const changeIntent=value=>current.current.onTreeSelectionIntentChange?current.current.onTreeSelectionIntentChange(value):setLocalIntent(value);
   const rootCurrent=props.active!==false&&!props.actionsDisabled&&page&&page.candidate_scope_revision===props.readContext?.candidate_scope_revision;
-  // Global Select/Deselect all can run in the epoch list before a tree exists.
-  // Bind its command only when a fresh tree page for that same view is available.
   useLayoutEffect(()=>{
     if(intent&&intent.scope!==scopeKey){if(props.treeSelectionIntent===undefined)setLocalIntent(null);return;}
     if(rootCurrent&&intent?.scope===scopeKey){
@@ -26,39 +28,62 @@ export function useIncomingTreeSelection(props,page=null){
       else if(intent.revision!==page.revision)changeIntent(null);
     }
   },[rootCurrent,page?.revision,scopeKey,intent]);
-  useLayoutEffect(()=>{
-    committed.current=operationKey;
-    if(interrupted.current){
-      interrupted.current=false;setWorking(false);
-      if(!current.current.onTreeSelectionFeedback)setError('The view refreshed before this selection finished. Switch the branch again.');
-    }
-    return()=>{
-      committed.current=null;
-      const pending=controller.current;
-      if(pending){
-        interrupted.current=true;controller.current=null;pending.abort();
-        current.current.onTreeSelectionFeedback?.('The view refreshed before this selection finished. Switch the branch again.');
-      }
-    };
-  },[operationKey]);
-  function on(item,branchPage){return incomingBranchOn(intent,scopeKey,branchPage?.revision,item.path||[]);}
-  async function select(item,branchPage,event){
-    event?.preventDefault();event?.stopPropagation();
-    if(!props.readContext||props.actionsDisabled||props.active===false||controller.current||committed.current!==operationKey)return;
-    const request=new AbortController();controller.current=request;setWorking(true);setError('');current.current.onTreeSelectionFeedback?.('');
-    const before=JSON.stringify(props.selectedEpochs||[]),beforeIntent=intent,nextOn=!on(item,branchPage),path=item.path||[];
-    try{
-      if(item.count>1000)throw Error('Switch at most 1,000 epochs at a time. Filter this view or choose a smaller branch.');
-      const target=await resolveTreeGroup({scope:props,path,revision:branchPage.revision,count:item.count,request:api,signal:request.signal});
-      if(request.signal.aborted||committed.current!==operationKey)return;
-      if(JSON.stringify(current.current.selectedEpochs||[])!==before||intentRef.current!==beforeIntent)throw Error('Selection changed while loading. Switch this group again.');
-      const selected=current.current.selectedEpochs||[],remove=new Set(target.ids);
-      const next=nextOn?mergeEpochSelection(selected,target.ids):selected.filter(id=>!remove.has(id));
-      const nextIntent=incomingBranchCommand(intent,scopeKey,branchPage.revision,path,nextOn);
-      current.current.setSelectedEpochs?.(next);
-      changeIntent(nextIntent);
-    }catch(error){if(controller.current===request&&committed.current===operationKey)setError(error.name==='AbortError'?'Tree changed while selecting. Switch the group again.':error.message);}
-    finally{if(controller.current===request){controller.current=null;setWorking(false);}}
+  function cancel(q,message){
+    q.active?.controller.abort();for(const command of q.commands)command.done();
+    q.commands=[];q.active=null;q.awaiting=null;q.projected=intentRef.current;q.expectedIntent=intentRef.current;q.expectedSelection=selection();
+    if(owner.current===q&&q.live){setWorking(false);renderQueue(value=>value+1);if(message){setError(message);current.current.onTreeSelectionFeedback?.(message);}}
   }
-  return {select:props.readContext&&props.setSelectedEpochs?select:null,on,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback tree-transient-status" role="status">Updating downstream selection…</p>:null};
+  useLayoutEffect(()=>{
+    const q={lifetime,live:true,commands:[],active:null,awaiting:null,projected:intentRef.current,expectedIntent:intentRef.current,expectedSelection:selection()};owner.current=q;
+    if(interrupted.current){interrupted.current=false;setWorking(false);if(!current.current.onTreeSelectionFeedback)setError('The view refreshed before this selection finished. Switch the branch again.');}
+    return()=>{
+      q.live=false;
+      if(q.commands.length){interrupted.current=true;current.current.onTreeSelectionFeedback?.('The view refreshed before this selection finished. Switch the branch again.');}
+      q.active?.controller.abort();for(const command of q.commands)command.done();q.commands=[];
+      if(owner.current===q)owner.current=null;
+    };
+  },[lifetime]);
+  function pump(q){
+    if(owner.current!==q||!q.live||q.active||q.awaiting||!q.commands.length)return;
+    if(selection()!==q.expectedSelection||intentRef.current!==q.expectedIntent){cancel(q,'Selection changed while loading. Switch this group again.');return;}
+    const command=q.commands[0],controller=new AbortController();q.active={command,controller};setWorking(true);
+    resolveIncomingTreeSelection({scope:current.current,path:command.path,revision:command.revision,count:command.count,request,signal:controller.signal}).then(ids=>{
+      if(owner.current!==q||!q.live||controller.signal.aborted)return;
+      if(selection()!==q.expectedSelection||intentRef.current!==q.expectedIntent)throw Error('Selection changed while loading. Switch this group again.');
+      const remove=new Set(ids),selected=current.current.selectedEpochs||[];
+      const next=command.on?mergeEpochSelection(selected,ids):selected.filter(id=>!remove.has(id));
+      const nextIntent=incomingBranchCommand(q.expectedIntent,scopeKey,command.revision,command.path,command.on);
+      q.awaiting={beforeSelection:q.expectedSelection,beforeIntent:q.expectedIntent};q.expectedSelection=JSON.stringify(next);q.expectedIntent=nextIntent;
+      q.commands.shift();q.active=null;
+      current.current.setSelectedEpochs?.(next);changeIntent(nextIntent);
+      setWorking(q.commands.length>0);renderQueue(value=>value+1);command.done();
+    }).catch(error=>{if(owner.current===q&&q.live&&!controller.signal.aborted)cancel(q,error.message);});
+  }
+  // A following command starts only after BOTH controlled publications commit.
+  // Intermediate commits may contain either old or new values, never unrelated ones.
+  useLayoutEffect(()=>{
+    const q=owner.current;if(!q?.live)return;
+    if(q.awaiting){
+      if(selection()===q.expectedSelection&&intent===q.expectedIntent)q.awaiting=null;
+      else if(![q.expectedSelection,q.awaiting.beforeSelection].includes(selection())||![q.expectedIntent,q.awaiting.beforeIntent].includes(intent)){cancel(q,'Selection changed while loading. Switch this group again.');return;}
+      else return;
+    }
+    if(q.commands.length){if(selection()!==q.expectedSelection||intent!==q.expectedIntent){cancel(q,'Selection changed while loading. Switch this group again.');return;}}
+    else{q.expectedSelection=selection();q.expectedIntent=intent;q.projected=intent;}
+    pump(q);
+  });
+  function on(item,branchPage){return incomingBranchOn(intent,scopeKey,branchPage?.revision,item.path||[]);}
+  function pending(item,branchPage){return owner.current?.lifetime===lifetime?owner.current.commands.findLast(command=>command.revision===branchPage?.revision&&JSON.stringify(command.path)===JSON.stringify(item.path||[])):undefined;}
+  function select(item,branchPage,event){
+    event?.preventDefault();event?.stopPropagation();
+    const q=owner.current;
+    if(!props.readContext||props.actionsDisabled||props.active===false||!q?.live||q.lifetime!==lifetime)return Promise.resolve();
+    if(!Number.isSafeInteger(item.count)||item.count<1||item.count>1000){cancel(q,'Switch at most 1,000 epochs at a time. Filter this view or choose a smaller branch.');return Promise.resolve();}
+    if(q.commands.length>=32){cancel(q,'Too many pending selection changes. Wait for the current view and select again.');return Promise.resolve();}
+    const path=[...(item.path||[])],nextOn=!incomingBranchOn(q.projected,scopeKey,branchPage.revision,path);
+    q.projected=incomingBranchCommand(q.projected,scopeKey,branchPage.revision,path,nextOn);
+    let done;const result=new Promise(resolve=>{done=resolve;});q.commands.push({path,revision:branchPage.revision,count:item.count,on:nextOn,done});
+    setError('');current.current.onTreeSelectionFeedback?.('');setWorking(true);renderQueue(value=>value+1);pump(q);return result;
+  }
+  return {select:props.readContext&&props.setSelectedEpochs?select:null,on,pending,working,feedback:error?<p className="incoming-tree-feedback" role="alert">{error}</p>:working?<p className="incoming-tree-feedback tree-transient-status" role="status">Updating downstream selection…</p>:null};
 }

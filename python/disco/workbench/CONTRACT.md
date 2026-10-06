@@ -180,3 +180,13 @@ It returns echoed UUIDs, exact epoch/unique-cell counts, and unique recorded
 An empty selection returns zero counts. View filters do not prune explicit selected
 UUIDs. This bounded read does not compute aggregates over unselected branches or
 change scientific/draft state, consent or acceptance authority.
+
+## Bounded branch selection read
+
+Context advertises `tree_selection: true`. POST `tree/selection` accepts a current
+candidate scope and tree revision, exact opaque path, splits/filters and expected
+count 1–1,000. One guarded context resolves the existing counts-only 60-row DFS
+in server order, refusing actual oversized/mismatching groups before descendants.
+Unique complete UUIDs are returned with path/count/revision and one closing
+authority check. Client offsets, anchors and paging-mode overrides are rejected.
+It creates no draft, annotation, merge or export authority.

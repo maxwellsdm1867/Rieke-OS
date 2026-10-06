@@ -142,7 +142,7 @@ test('mounted current lease expiry clears loading and explicit retry obtains a f
    if(id==='../../annotations/ui/TreeGroupTags.jsx'||id==='../../incoming-workbench/ui/IncomingTreeSelection.jsx')return '\0lease-actions';
   }},load(id){if(id==='\0lease-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
    if(id==='\0lease-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
-   if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({on:()=>false}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
+   if(id==='\0lease-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({on:()=>false,pending:()=>null}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
  }]});let view;
  const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;
  globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
@@ -188,7 +188,7 @@ test('one retained tree keeps mounted rows while hidden, aborts reads, fences ac
    if(importer?.endsWith('/tree-browser/ui/ColumnTree.jsx')&&(id==='../../annotations/ui/TreeGroupTags.jsx'||id==='../../incoming-workbench/ui/IncomingTreeSelection.jsx'))return '\0retained-actions';
   },load(id){if(id==='\0retained-owner')return `export const useTreeBranchReads=()=>globalThis.${key}.owner;`;
    if(id==='\0retained-api')return `export const api=(...args)=>globalThis.${key}.api(...args),number=String,duration=String;`;
-   if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({on:()=>false}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
+   if(id==='\0retained-actions')return 'export const useTreeGroupTags=()=>({revision:0}),useIncomingTreeSelection=()=>({on:()=>false,pending:()=>null}),TreeGroupTagButton=()=>null,IncomingEpochSelect=()=>null;';}
  }]});const dom=new JSDOM('<div id="root"></div>',{url:'http://localhost'}),priorWindow=globalThis.window,priorDocument=globalThis.document;globalThis.window=dom.window;globalThis.document=dom.window.document;const container=document.getElementById('root');const view=createRoot(container);
  const oldRaf=globalThis.requestAnimationFrame,oldCancel=globalThis.cancelAnimationFrame;const frames=new Map();let frameId=0;globalThis.requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
  const flushFrames=async()=>domAct(async()=>{const pending=[...frames.values()];frames.clear();pending.forEach(fn=>fn());});

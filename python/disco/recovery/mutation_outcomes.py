@@ -33,7 +33,7 @@ def register_mutation_recovery(app, scheduler, *, desktop_mode):
             'annotation_batch_read', 'curation_batch_read', 'tag_import_preview',
             'preview_source_propagation', 'resolve_search_preset',
             'compare_protocol_revision'}
-        read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary'})
+        read_posts.update({'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection'})
         read_posts.update({'group_annotation_preview', 'group_annotation_preview_release'})
         readonly = request.method == 'POST' and request.endpoint in read_posts
         desktop_control = desktop_mode() and request.path.startswith('/api/desktop/')

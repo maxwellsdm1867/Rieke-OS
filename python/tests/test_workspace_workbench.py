@@ -64,6 +64,41 @@ class WorkbenchTests(unittest.TestCase):
     def accept(self, request, root=None):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
 
+    def test_tree_selection_matches_complete_pages_with_one_closing_check(self):
+        context = self.get_context()
+        self.assertIs(context['tree_selection'], True)
+        base = dict(candidate_scope_revision=context['candidate_scope_revision'], splits='date,cell,block')
+        root = self.case.client.post(self.root + '/tree/page', json={**base, 'limit': 60, 'counts_only': True}, headers=self.case.headers).get_json()
+        body = {**base, 'revision': root['revision'], 'path': [], 'expected_count': root['total_epochs']}
+        before = [copy.deepcopy(table.rows) for table in self.tables]
+        with patch.object(self.manager, 'context', wraps=self.manager.context) as reads:
+            response = self.case.client.post(self.root + '/tree/selection', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(reads.call_count, 2)
+        self.assertEqual(response.get_json()['epoch_uuids'], [self.added])
+        self.assertEqual(response.get_json()['count'], 1)
+        self.assertEqual(response.get_json()['revision'], root['revision'])
+        for patch_body in [{'expected_count': True}, {'expected_count': 0}, {'expected_count': 1001}, {'offset': 0}, {'limit': 1000}, {'anchor_uuid': self.added}, {'counts_only': False}, {'revision': None}]:
+            invalid = self.case.client.post(self.root + '/tree/selection', json={**body, **patch_body}, headers=self.case.headers)
+            self.assertEqual(invalid.status_code, 400, invalid.get_json())
+        for patch_body in [{'expected_count': 2}, {'revision': 'a' * 64}, {'candidate_scope_revision': 'old'}]:
+            stale = self.case.client.post(self.root + '/tree/selection', json={**body, **patch_body}, headers=self.case.headers)
+            self.assertEqual(stale.status_code, 409, stale.get_json())
+        from disco.navigation.tree_pages import TreePages
+        with patch.object(TreePages, 'page', return_value={**root, 'selection': {'count': 1001}}) as pages:
+            large = self.case.client.post(self.root + '/tree/selection', json=body, headers=self.case.headers)
+        self.assertEqual(large.status_code, 409)
+        self.assertEqual(pages.call_count, 1, 'Actual count must reject before descendant traversal')
+        original, calls = self.manager.context, []
+        def changed(*args, **kwargs):
+            value = original(*args, **kwargs); calls.append(value)
+            return {**value, 'candidate_scope_revision': 'changed'} if len(calls) == 2 else value
+        with patch.object(self.manager, 'context', side_effect=changed):
+            closed = self.case.client.post(self.root + '/tree/selection', json=body, headers=self.case.headers)
+        self.assertEqual(closed.status_code, 409)
+        self.assertNotIn('epoch_uuids', closed.get_json())
+        self.assertEqual([table.rows for table in self.tables], before)
+
     def test_selection_summary_is_exact_bounded_read_only_and_scope_fenced(self):
         context = self.get_context()
         self.assertIs(context['selection_summary'], True)

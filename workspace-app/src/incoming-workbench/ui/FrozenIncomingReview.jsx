@@ -104,6 +104,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   const protocol=visible?.context.protocol;
   const readContext=visible?{root,candidate_scope_revision:visible.context.candidate_scope_revision,
+    ...(visible.context.tree_selection===true?{tree_selection:true}:{}),
     ...(visible.context.tree_column_pages===true?{tree_column_pages:true}:{}),
     ...(visible.context.selection_summary===true?{selection_summary:true,expected_binding_version:visible.context.expected_binding_version}:{}),
     ...(typeof visible.context.candidate_recipe_sha256==='string'&&visible.context.candidate_recipe_sha256&&Number.isSafeInteger(visible.context.expected_binding_version)&&visible.context.expected_binding_version>=0

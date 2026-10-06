@@ -4191,7 +4191,8 @@
         "workspace-app/src/incoming-workbench/workbenchAuthority.js",
         "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
-        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
+        "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css",
+        "workspace-app/src/incoming-workbench/incomingTreeSelection.js"
       ],
       "verification": {
         "existing_tests": [
@@ -4201,7 +4202,8 @@
           "workspace-app/src/workbenchRouteRendering.test.js",
           "workspace-app/src/importMergeAppRoute.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
-          "workspace-app/src/incomingSelectionSummaryRendering.test.js"
+          "workspace-app/src/incomingSelectionSummaryRendering.test.js",
+          "workspace-app/src/incomingTreeSelectionQueue.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
@@ -4231,7 +4233,8 @@
       "integration_capabilities": [
         "Current real App onMerge issues/consumes consent; FrozenIncomingReview instructs selection/review before preview, not automatic scientific preview.",
         "Empty queue fixture distinguishes authorized handoff from restored-intent refusal without preview/accept/export/draft writes.",
-        "Current selection header reads only explicit selected UUIDs (max 1000), with exact unique cells/recorded types and pause/owner/candidate/binding lifetime fences. Navigation retains same-scope binary branch appearance while disabling actions during loading. Independent design/source review completed; native visual qualification remains separate."
+        "Current selection header reads only explicit selected UUIDs (max 1000), with exact unique cells/recorded types and pause/owner/candidate/binding lifetime fences. Navigation retains same-scope binary branch appearance while disabling actions during loading. Independent design/source review completed; native visual qualification remains separate.",
+        "Bounded branch-selection POST returns exact DFS UUIDs under one guarded closing scope. Explicit ordered renderer commands remain clickable while waiting; subsequent reads require both own selection/intent publications. Independent design/source review passed. Read-only Edit Tree navigation can supersede pending reads with exact activation and pending-path fences; focus-producing navigation keeps its prior gate. Benchmark evidence recorded separately."
       ],
       "change_rules": [
         "Maintain capability gating and frozen/global distinction.",

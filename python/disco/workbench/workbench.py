@@ -694,7 +694,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
                 readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary'}
+                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection'}
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -753,7 +753,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True,
+        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -921,6 +921,43 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                         'query_revision', 'expected_binding_version')})
                 result['ancestor_pages'] = parents
             return jsonify(result)
+
+    @app.post(candidate + '/tree/selection')
+    def workbench_tree_selection(protocol, revision):
+        value = body({'candidate_scope_revision', 'revision', 'path', 'expected_count'}, {'filters', 'splits'})
+        expected = value.pop('candidate_scope_revision')
+        count = value.pop('expected_count')
+        if type(count) is not int or not 1 <= count <= 1000 or not isinstance(value['revision'], str):
+            raise ValueError('Tree selection requires a current revision and 1–1,000 epochs')
+        filters = validate_filters(value.get('filters'))
+        with guarded(protocol, revision, filters) as owner:
+            context = checked(protocol, revision, owner, expected, filters)
+            pager = TreePages(manager.frozen_service(context))
+            query = dict(protocol_uuid=protocol, **value, limit=60, counts_only=True)
+            try:
+                first = pager.page(query)
+                if first['selection']['count'] != count or first['selection']['count'] > 1000:
+                    raise WorkbenchConflict('Tree selection count changed; refresh this branch')
+                ids = []
+                def visit(page):
+                    if page['revision'] != value['revision']:
+                        raise WorkbenchConflict('Tree selection revision changed')
+                    if page['kind'] == 'epochs':
+                        ids.extend(row['epoch_uuid'] for row in page['epochs'])
+                        if len(ids) > count:
+                            raise WorkbenchConflict('Tree selection exceeds its verified count')
+                    else:
+                        for branch in page['branches']:
+                            visit(pager.page({**query, 'path': branch['path'], 'offset': 0}))
+                    if page['has_more']:
+                        visit(pager.page({**query, 'path': page['path'], 'offset': page['offset'] + 60}))
+                visit(first)
+            except StaleTreePage as error:
+                raise WorkbenchConflict(str(error)) from error
+            if len(ids) != count or len(set(ids)) != count:
+                raise WorkbenchConflict('Tree selection is incomplete or contains duplicate epochs')
+            return jsonify(finish(context, dict(revision=first['revision'], path=first['path'],
+                count=count, epoch_uuids=ids)))
 
     @app.post(candidate + '/selection-summary')
     def workbench_selection_summary(protocol, revision):

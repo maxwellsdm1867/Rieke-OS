@@ -131,3 +131,14 @@ cells and recorded types; unclassified cells stay in the breakdown. Pending/erro
 receipts never borrow old counts. `incomingSelectionSummaryRendering.test.js`
 covers first-paint pause/resume and A-B-A retirement. This is read presentation,
 not a new selection or merge/export authority.
+
+Branch selection uses `incomingTreeSelection.js`: capable frozen contexts resolve
+exact ordered UUIDs in one guarded read; older contexts retain verified paging.
+`IncomingTreeSelection` accepts up to 32 queued explicit commands. Desired on/off
+comes from projected command intent; UUIDs and committed colors change only after
+verification. Following commands wait for both prior selection and intent commits.
+Failure, scope/owner change, external selection/intent changes and unmount retire
+dependent commands. Stale A-B-A handlers cannot enqueue. Other branch switches
+remain clickable; pending controls show Selecting/Deselecting and aria-busy.
+Authority-disabled and 1,000-epoch limits remain. Queue and stale-lifetime examples
+are in `incomingTreeSelectionQueue.test.js`.
