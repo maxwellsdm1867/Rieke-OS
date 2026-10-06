@@ -5,49 +5,65 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "5417c5fa26662dd73e4e21ef12a6eec2ce1133b7",
+  "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-clipboard-arm64.zip",
-    "bytes": 622054330,
-    "sha256": "981288d4b89eb5f82735e59a7a01f7a3914774203d47b34e223ab6849ddfcfb0"
+    "filename": "Disco-0.1.8-workbench-arm64.zip",
+    "bytes": 621195902,
+    "sha256": "17242570ec6603b23bdfb85100912ded1e604e17ddc614a09ba35c0ce40839f6"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "cde28e3f3a83f17f2a87f2771c1327c242b946cb",
-      "passed": 843,
-      "unchanged_in_packaged_source": true
-    },
-    "desktop": {
-      "passed": 89,
+      "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
+      "passed": 862,
       "failed": 0
     },
-    "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/clipboard-package-001/benchmark.json",
-    "packaged_smoke": {
-      "field_id_copy": "passed; OS clipboard matched epoch",
-      "clipboard_read": "denied as intended",
-      "waveform_navigation": "passed",
-      "clean_shutdown": true
+    "backend": {
+      "source_commit": "c85a4659243d878651a63057e43d8be4bea9c461",
+      "python_tests_passed": 1546,
+      "organized_module_tests_passed": 86,
+      "python_implementation_unchanged_in_packaged_source": true
     },
+    "architecture_guard": "passed",
+    "core_benchmark": "package-source/benchmarks/results/workbench-delivery-001/benchmark.json",
+    "packaged_smoke": {
+      "source_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
+      "unattended": true,
+      "downstream_selection": "63 exact epochs, including off-page epochs; parent and epoch overrides passed",
+      "selected_highlight": "native computed green/blue colors verified",
+      "tree_mode_after_tagging": "retained automatically",
+      "cell_type_disclosure": "hover, keyboard focus and Escape passed",
+      "export_preview": "63 selected/new, 63 main retained, 126 after acceptance; no export publication",
+      "clean_shutdown": true,
+      "refresh_interruption_retry": "mounted real-tree remount regression passed; final native run selected directly without interruption"
+    },
+    "native_static_audit": {
+      "binaries": 813,
+      "problems": 0
+    },
+    "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "clipboard-validation.json",
-      "clipboard-package-provenance.json",
-      "clipboard-native-compatibility.json",
-      "clipboard-native/receipt.json",
-      "clipboard-installed.json"
+      "workbench-delivery-frontend.log",
+      "workbench-delivery-guard.log",
+      "workbench-delivery-provenance.json",
+      "workbench-delivery-native-compatibility.json",
+      "workbench-delivery-relocated-imports.json",
+      "workbench-native-2026-10-06T00-01-03-915Z/receipt.json",
+      "workbench-native-2026-10-06T00-01-03-915Z/qualification.md",
+      "workbench-delivery-installed.json"
     ]
   },
   "qualification_limits": [
     "No Developer ID signature or notarization",
     "macOS 14 runtime behavior unqualified",
     "Intel unsupported by this artifact",
-    "Complete release promotion requirements remain unqualified"
+    "Complete release promotion requirements remain unqualified",
+    "Workbench entry timing is one diagnostic observation, with no comparable before/after baseline"
   ]
 }

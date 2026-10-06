@@ -42,13 +42,13 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `5417c5fa26662dd73e4e21ef12a6eec2ce1133b7`,
-including the scoped clipboard-write fix. Its SHA-256 identifies the exact ZIP;
+app and ZIP to clean source commit `7dda9006902628a68616a87bcc9fae29618a2575`,
+including the clipboard fix and the Workbench follow-up below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
 
-GitHub main at handoff preparation was `d47dcab534220fa940f917f66f90e71af4dd2f56`,
-an ancestor of this source. Startup branch tip `a294c908` has two UI commits
+GitHub main before this Workbench follow-up was
+`a61afb2748a7788696325c0a9940ec85c491b39a`, an ancestor of this source. Startup branch tip `a294c908` has two UI commits
 after the shared startup base; their changes are incorporated by `cde28e3`
 with the optional-metadata integration retained. This records content inclusion,
 not merge ancestry. The tracking commit changes documentation only and does not
@@ -74,3 +74,11 @@ The cell-count metric opens a compact recorded-type breakdown on hover, keyboard
 focus or click. Export preview content uses the available dialog width. Final
 source, package and native receipts must identify the later clean candidate;
 earlier package evidence does not qualify these changes.
+
+Final local validation: 862 frontend tests, the architecture guard, exact clean
+core benchmark, relocated scientific imports and 813-file native audit passed.
+The unattended packaged smoke verified real descendant selection across pages,
+green/blue rendering, automatic tree-mode retention after tagging, cell-type
+disclosure and export preview layout, followed by clean shutdown. It did not
+merge or export data. The final native run did not encounter selection interruption;
+the mounted real-tree remount regression covers its explicit feedback/retry path.
