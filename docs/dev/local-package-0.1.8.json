@@ -5,22 +5,22 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "bcc171ba24a73883323cd96b3fa05ef036b167af",
+  "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-tree-remove-icon-arm64.zip",
-    "bytes": 621196228,
-    "sha256": "be6d0eca63b368c52183d544731c1345a175051ec4617af47efcdfbfb6df2127"
+    "filename": "Disco-0.1.8-splitter-cards-arm64.zip",
+    "bytes": 621196036,
+    "sha256": "aefa80f24283280cf5d5582689389b41425e2370a27c9e95e3354f66faf28616"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "bcc171ba24a73883323cd96b3fa05ef036b167af",
+      "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
       "passed": 8,
       "failed": 0,
       "scope": "Frozen overview fencing, requested summary lifecycle and combined grouping rendering",
@@ -41,7 +41,7 @@
       "implementation_unchanged_since": "ee616dc41d1b9f825ec982291959ad90852e346a"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/tree-remove-icon-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/splitter-cards-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -59,14 +59,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "tree-remove-icon-tests.log",
-      "tree-remove-icon-guard.log",
-      "tree-remove-icon-core-gate.json",
-      "tree-remove-icon-provenance.json",
-      "tree-remove-icon-native-audit.json",
-      "tree-remove-icon-imports.json",
-      "tree-remove-icon-installed.json",
-      "tree-remove-icon-installed-ui.json"
+      "splitter-cards-tests.log",
+      "splitter-cards-guard.log",
+      "splitter-cards-core-gate.json",
+      "splitter-cards-provenance.json",
+      "splitter-cards-native-audit.json",
+      "splitter-cards-imports.json",
+      "splitter-cards-installed.json",
+      "splitter-cards-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -93,8 +93,8 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "bcc171ba24a73883323cd96b3fa05ef036b167af",
-      "arrange_tree": "Compact muted minus-circle control with field-specific tooltip and accessible label; grouping names retain more width",
+      "source_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
+      "arrange_tree": "Splitter names only on cards; compact removal icons have a subtle border",
       "verification": "native installed application"
     },
     "current_native_workflow": {

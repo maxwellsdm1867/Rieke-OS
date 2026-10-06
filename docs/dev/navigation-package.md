@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `bcc171ba24a73883323cd96b3fa05ef036b167af`,
+app and ZIP to clean source commit `bc1894730c7348461308bb4b41bc9b39f37b3f14`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -166,3 +166,11 @@ The current package replaces the prominent Remove label with a muted minus-circl
 control. Its tooltip and accessible name identify the level; keyboard focus remains
 visible. Removal logic and grouping counts are unchanged. Eight focused frontend
 checks, independent review and package checks passed.
+
+
+## Simplified splitter cards
+
+The current package shows splitter names without value-count subtitles on the
+Arrange tree cards. The tree totals remain above the columns. Removal icons have
+a subtle border. Chooser metadata and exact scoped reads are unchanged. Eight
+focused checks and independent source review passed with package checks.
