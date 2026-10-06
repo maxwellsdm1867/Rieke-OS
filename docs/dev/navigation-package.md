@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `aa9845a89b2121e79692f4b0fca7e03bd5f0c947`,
+app and ZIP to clean source commit `350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -280,3 +280,13 @@ geometry stayed identical before/during/after selection and refresh.
 Earlier complete selection/tag/export evidence remains attributed to source 4cb8391.
 This run checks status geometry only. Broader harness attempts were retained with
 their focus/branch-state and interception failures, not counted as passes.
+
+
+## Quiet status and explicit view count
+
+The count heading now says Current view · N epochs, retaining scoped totals rather
+than implying that all displayed epochs are selected for merge. Transient selection
+and refresh announcements are visually hidden; counts and layout stay steady.
+Screen-reader status, errors and readiness guards remain. 34 scoped tests and
+independent review passed. Owned native checks verify the header label, clipped
+status geometry and identical tree layout before/during/after both operations.
