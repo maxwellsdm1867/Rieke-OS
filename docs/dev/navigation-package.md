@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `995c514b6a2caaec0cc12e23a47f99c41ecac55e`,
+app and ZIP to clean source commit `ef4b2e482df56c5491dba1c0cef972c1cd29409e`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The binary is not stored in Git.
@@ -196,3 +196,17 @@ The package record links raw receipts and controller hashes.
 877 frontend tests, 83 scoped backend tests, independent review, the exact clean
 core gate and package checks passed. The current owned native workflow verifies
 selection overrides, leaf Tag colors, tagging, retained mode and export preview.
+
+
+## Terminal epoch column appearance
+
+The final epoch column uses one soft background per row, a leading selection
+switch and compact tag/inclusion icons. Removed nested button borders, the blue
+left stripe and repeated count text. Recorded epoch labels and separate actions,
+accessible names, tooltips and keyboard focus remain. Branch columns are unchanged.
+
+21 scoped frontend checks, independent review, exact clean core gate, bundle
+provenance, static native audit and relocated scientific imports passed. The owned
+native workflow verifies 38-pixel rows, absent child borders/stripe, blue/green
+selection colors, branch and epoch overrides, tagging and export preview.
+Historical full-suite and timing results retain their original source attribution.

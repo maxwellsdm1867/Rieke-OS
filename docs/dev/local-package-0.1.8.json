@@ -5,25 +5,25 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+  "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-column-navigation-arm64.zip",
-    "bytes": 621197003,
-    "sha256": "f33ff0722bc69d7f19bae214143e3e9e0d3e66f56d56c366c8e72231d5c8fc68"
+    "filename": "Disco-0.1.8-epoch-column-arm64.zip",
+    "bytes": 621197317,
+    "sha256": "105f33caf9fa740a61798db38cc91e4e067b1b4e9420ff12ac0da80a5a2e427d"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
   "evidence": {
     "frontend": {
-      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
-      "passed": 877,
+      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
+      "passed": 21,
       "failed": 0,
-      "scope": "Full recursive frontend suite including batched frozen column reads and lazy scoped catalog lifetime",
+      "scope": "Incoming branch selection, tree tag coverage, incoming inclusion rendering and paged tree lifecycle",
       "independent_source_review": "passed"
     },
     "backend": {
@@ -42,10 +42,11 @@
         "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
         "passed": 83,
         "scope": "Workbench, cumulative pending and tree pages, including batch parity/bounds/closing-scope tests"
-      }
+      },
+      "implementation_unchanged_since": "995c514b6a2caaec0cc12e23a47f99c41ecac55e"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/column-navigation-001/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/epoch-column-design-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -63,16 +64,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "column-navigation-frontend.log",
-      "column-navigation-backend.log",
-      "column-navigation-guard-final.log",
-      "column-navigation-core-gate.json",
-      "column-navigation-provenance.json",
-      "column-navigation-native-audit.json",
-      "column-navigation-imports.json",
-      "column-navigation-installed.json",
-      "column-navigation-installed-ui.json",
-      "column-navigation-comparison.json"
+      "epoch-column-design-tests.log",
+      "epoch-column-design-guard.log",
+      "epoch-column-design-core-gate.json",
+      "epoch-column-design-provenance.json",
+      "epoch-column-design-native-audit.json",
+      "epoch-column-design-imports.json",
+      "epoch-column-design-installed.json",
+      "epoch-column-design-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -99,17 +98,22 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
-      "leaf_tags": "Tag background matches actual epoch selection color",
-      "epoch_numbers": "Recorded epoch labels preserved",
-      "verification": "native installed application"
+      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
+      "verification": "See epoch-column-design-installed-ui.json for post-install verification"
     },
     "current_native_workflow": {
-      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
-      "receipt": "column-color-native-2026-10-06T01-48-09-992Z/receipt.json",
+      "source_commit": "ef4b2e482df56c5491dba1c0cef972c1cd29409e",
+      "receipt": "epoch-column-design-native-2026-10-06T02-00-29-600Z/receipt.json",
       "passed": true,
-      "leaf_tag_colors": "Computed blue/green match the epoch row; recorded number label matches epoch switch",
-      "selection_tag_export_preview": "passed on owned clone; no merge/export publication",
+      "epoch_row_layout": {
+        "height": 38,
+        "leafBorder": "0px",
+        "leafShadow": "none",
+        "tagBorder": "0px",
+        "switchLabel": "none"
+      },
+      "selection_tag_export_preview": "Passed on owned clone; no merge/export publication",
+      "leaf_tag_colors": "Blue/green match actual epoch selection",
       "clean_shutdown": true
     },
     "column_navigation": {
@@ -204,7 +208,15 @@
       "automatic_catalog_requests": {
         "before": 1,
         "after": 0
-      }
+      },
+      "attribution": "Measured on 995c514 before terminal epoch styling; not current-source timing."
+    },
+    "previous_full_frontend": {
+      "source_commit": "995c514b6a2caaec0cc12e23a47f99c41ecac55e",
+      "passed": 877,
+      "failed": 0,
+      "scope": "Full recursive frontend suite including batched frozen column reads and lazy scoped catalog lifetime",
+      "independent_source_review": "passed"
     }
   },
   "qualification_limits": [
