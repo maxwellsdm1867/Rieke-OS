@@ -42,7 +42,7 @@ remain unqualified. A source test or static native audit does not establish them
 ## Installed package and main handoff (2026-10-05)
 
 [The local package record](local-package-0.1.8.json) binds the installed 0.1.8
-app and ZIP to clean source commit `350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e`,
+app and ZIP to clean source commit `2b5635840123531a900bf490953d2f70ce7618c9`,
 including the clipboard fix, Workbench loading update and Arrange tree cleanup below. Its SHA-256 identifies the exact ZIP;
 the package and full raw receipts remain in the local kit directory recorded
 there. The earlier counts-only ZIP remains published as the [0.1.8 manual testing prerelease](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.8),
@@ -290,3 +290,11 @@ and refresh announcements are visually hidden; counts and layout stay steady.
 Screen-reader status, errors and readiness guards remain. 34 scoped tests and
 independent review passed. Owned native checks verify the header label, clipped
 status geometry and identical tree layout before/during/after both operations.
+
+
+## Visible pending import notification
+
+Review import now carries a 14px bright red dot with a contrasting border instead
+of the small amber indicator. Pending-state authority and dismissal behavior are
+unchanged. Three existing notification checks and the exact clean core gate passed;
+owned native checks verify the red color, 14px size and border in light/dark themes.

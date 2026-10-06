@@ -5,16 +5,16 @@
   "recorded_date": "2026-10-05",
   "status": "local unsigned testing package; not release promotion",
   "platform": "macOS arm64",
-  "source_commit": "350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e",
+  "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
   "startup_base_commit": "12099185bcb5a76ed303eca5188adee298e88b4e",
   "included_startup_ui_commits": [
     "ecbff41",
     "a294c908d5dac1071ee23ee821ce62988fac4412"
   ],
   "archive": {
-    "filename": "Disco-0.1.8-quiet-tree-status-arm64.zip",
-    "bytes": 621198306,
-    "sha256": "cc462d123a93634f5ba8710a011a4453ab0dc95ed2bb29e90fa84c1b4f09a247"
+    "filename": "Disco-0.1.8-import-dot-arm64.zip",
+    "bytes": 621198318,
+    "sha256": "5bd959ecbdccca098f7f6cbf560d90f6fbd12159e38a8619b3c8c6e0997ed054"
   },
   "local_kit_directory": "~/Documents/Codex/epoch-navigation-perf-2026-10-05",
   "installed_app": "~/Applications/Disco.app",
@@ -25,13 +25,12 @@
       "failed": 0,
       "scope": "Full recursive frontend suite, highlight gesture and explicit bulk selection, stale owner and range fences",
       "independent_source_review": "passed",
-      "final_source_difference": "Current view label and visually hidden transient notices; final native label/visibility/geometry verified.",
+      "final_source_difference": "Current view/status styling retained; import review badge now 14px red with a contrast border.",
       "current_scoped_checks": {
-        "source_commit": "350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e",
-        "passed": 34,
+        "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+        "passed": 3,
         "failed": 0,
-        "scope": "Incoming branch selection, paged tree lifetimes and retained tree reads",
-        "independent_source_review": "passed"
+        "scope": "Import review pending-state persistence and authoritative resolution"
       }
     },
     "backend": {
@@ -54,7 +53,7 @@
       "implementation_unchanged_since": "60f9567ced676bf6c1db181166f2693304592768"
     },
     "architecture_guard": "passed",
-    "core_benchmark": "package-source/benchmarks/results/quiet-tree-status-002/benchmark.json",
+    "core_benchmark": "package-source/benchmarks/results/import-dot-001/benchmark.json",
     "packaged_smoke": {
       "source_commit": "ee616dc41d1b9f825ec982291959ad90852e346a",
       "unattended": true,
@@ -72,14 +71,14 @@
     },
     "relocated_scientific_imports": "passed",
     "local_receipts": [
-      "quiet-tree-status-tests.log",
-      "quiet-tree-status-guard.log",
-      "quiet-tree-status-core-gate.json",
-      "quiet-tree-status-provenance.json",
-      "quiet-tree-status-native-audit.json",
-      "quiet-tree-status-imports.json",
-      "quiet-tree-status-installed.json",
-      "quiet-tree-status-installed-ui.json"
+      "import-dot-tests.log",
+      "import-dot-guard.log",
+      "import-dot-core-gate.json",
+      "import-dot-provenance.json",
+      "import-dot-native-audit.json",
+      "import-dot-imports.json",
+      "import-dot-installed.json",
+      "import-dot-installed-ui.json"
     ],
     "workbench_loading": {
       "baseline_commit": "7dda9006902628a68616a87bcc9fae29618a2575",
@@ -106,117 +105,33 @@
       "attribution": "Measured on ee616dc before Arrange tree overview changes; not current-source timing."
     },
     "installed_ui": {
-      "source_commit": "350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e",
-      "verification": "See quiet-tree-status-installed-ui.json"
+      "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+      "verification": "See import-dot-installed-ui.json"
     },
     "current_native_workflow": {
-      "source_commit": "350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e",
-      "receipt": "quiet-tree-status-native-2026-10-06T15-00-34-455Z/receipt.json",
-      "controller_sha256": "b44dc9b6671c3ebbf2c38e564c76fa52c0508d43c025d4724ca8cc61fdad1fe6",
+      "source_commit": "2b5635840123531a900bf490953d2f70ce7618c9",
+      "receipt": "import-dot-native-2026-10-06T15-24-14-991Z/receipt.json",
+      "controller_sha256": "c4a7644c2bfa403a3a5529dad9c93df44525140148c4df587298cf852e1e981d",
       "passed": true,
-      "selection_status_geometry": {
-        "before": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
+      "badge_themes": {
+        "light": {
+          "background": "rgb(239, 68, 68)",
+          "width": 14,
+          "height": 14,
+          "border": "2px",
+          "position": "absolute"
         },
-        "during": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
-        },
-        "after": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
+        "dark": {
+          "background": "rgb(239, 68, 68)",
+          "width": 14,
+          "height": 14,
+          "border": "2px",
+          "position": "absolute"
         }
       },
-      "refresh_status_geometry": {
-        "before": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
-        },
-        "during": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
-        },
-        "after": {
-          ".tp-total": {
-            "y": 148.3984375,
-            "height": 56.4453125
-          },
-          ".tp-path": {
-            "y": 204.84375,
-            "height": 42.3984375
-          },
-          ".tp-columns": {
-            "y": 247.2421875,
-            "height": 632.8125
-          }
-        }
-      },
-      "hidden_selection_status": {
-        "position": "absolute",
-        "width": "1px",
-        "height": "1px",
-        "clip": "inset(50%)"
-      },
-      "hidden_refresh_status": {
-        "position": "absolute",
-        "width": "1px",
-        "height": "1px",
-        "clip": "inset(50%)"
-      },
-      "count_only_responses_verified": 15,
-      "scope": "Held selection and refresh geometry; no tagging or export test in this run",
-      "clean_shutdown": true
+      "scope": "Read-only pending import badge styling in light and dark themes",
+      "clean_shutdown": true,
+      "fixture_setup": "Isolated copy-on-write app clone; theme picker exercised. Earlier setup attempts on wrong page, OS-theme emulation, hidden input and low disk were retained separately and not counted as passes."
     },
     "column_navigation": {
       "baseline_commit": "bc1894730c7348461308bb4b41bc9b39f37b3f14",
@@ -367,97 +282,109 @@
       "initial_final_source_attempt": "Disposable project activation stopped at free disk reserve; closed test app duplicates cleaned, retry passed. Failed receipt retained in highlight-controls-native-2026-10-06T05-56-37-071Z."
     },
     "previous_tree_status_workflow": {
-      "source_commit": "aa9845a89b2121e79692f4b0fca7e03bd5f0c947",
-      "receipt": "tree-status-native-2026-10-06T14-49-10-616Z/receipt.json",
-      "controller_sha256": "fcf9a8c72bde8f6f5b9b7807b21e25c695022b1c4a89824a19b5a98ed9e11e2c",
+      "source_commit": "350fc41bc14ae7e4ca89e8ca38b2e62412dcb68e",
+      "receipt": "quiet-tree-status-native-2026-10-06T15-00-34-455Z/receipt.json",
+      "controller_sha256": "b44dc9b6671c3ebbf2c38e564c76fa52c0508d43c025d4724ca8cc61fdad1fe6",
       "passed": true,
       "selection_status_geometry": {
         "before": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         },
         "during": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         },
         "after": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         }
       },
       "refresh_status_geometry": {
         "before": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         },
         "during": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         },
         "after": {
           ".tp-total": {
-            "y": 148.390625,
-            "height": 56.4375
+            "y": 148.3984375,
+            "height": 56.4453125
           },
           ".tp-path": {
-            "y": 204.828125,
-            "height": 42.390625
+            "y": 204.84375,
+            "height": 42.3984375
           },
           ".tp-columns": {
-            "y": 247.21875,
-            "height": 632.84375
+            "y": 247.2421875,
+            "height": 632.8125
           }
         }
+      },
+      "hidden_selection_status": {
+        "position": "absolute",
+        "width": "1px",
+        "height": "1px",
+        "clip": "inset(50%)"
+      },
+      "hidden_refresh_status": {
+        "position": "absolute",
+        "width": "1px",
+        "height": "1px",
+        "clip": "inset(50%)"
       },
       "count_only_responses_verified": 15,
       "scope": "Held selection and refresh geometry; no tagging or export test in this run",
