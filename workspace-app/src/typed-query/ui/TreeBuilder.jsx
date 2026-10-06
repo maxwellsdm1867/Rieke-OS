@@ -158,7 +158,6 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     if(event.key==='Enter') {event.preventDefault();if(open&&shown[active])add(shown[active]);else setOpen(true);}
     if(event.key==='Tab')setOpen(false);
   }
-  const isCurrent = !loading && sameOrder((preview?.levels || []).map(level=>level.field),order);
   const pending = loading || orderKey!==valueKey;
   const showPending=useDelayedLoading(pending&&!error);
   const heading = order.map(id=>fieldMap.get(id)?.label || id).join(' → ');
@@ -178,7 +177,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       <div className="tb-visually-hidden" role="status" aria-live="polite">{announcement}</div>
       <ol className={`tb-steps ${dragging?'tb-is-dragging':''}`} aria-label="Ordered tree splits" onKeyDown={event=>{if(event.key==='Escape'&&dragging){event.preventDefault();clearDrag();setAnnouncement('Reordering cancelled.');}}}>
         {order.map((id,index)=>{
-          const field=fieldMap.get(id),level=isCurrent?preview.levels[index]:null;
+          const field=fieldMap.get(id);
           // Saved recipes remain readable when their registry fields are unavailable.
           // These labels never make a missing definition eligible for grouping.
           const components=field?.components||jointComponents(id);
@@ -194,7 +193,6 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
               <GripVertical size={17}/></button><span className="tb-step-number">{index+1}</span><div className="tb-step-field">
             <strong title={field?.path || id}>{components.length?'Combined settings':field?.label || id}</strong>
             {!!components.length&&<div className="tb-joint-level">{components.map((key,index)=><span className={`joint-chip joint-color-${index%3}`} key={key}>{componentName(key)}</span>)}</div>}
-            <small>{level&&Number.isFinite(level.groups)?`${number(level.groups)} ${level.groups===1?'branch':'branches'}${field?.distinct_count!=null&&level.groups!==field.distinct_count?` · ${number(field.distinct_count)} values`:''}${level.missing_epochs?` · ${number(level.missing_epochs)} not recorded`:''}`:field?.distinct_count!=null?`${number(field.distinct_count)} ${field.distinct_count===1?'value':'values'}${field.missing_count?` · ${number(field.missing_count)} not recorded`:''}`:catalog.loading?'Reading field overview…':categoryLabel(field?.category) || 'Saved field'}{components.length?' · all values match':''}</small>
           </div><div className="tb-step-actions">
             {!!components.length&&<button aria-label={`Separate ${field?.label || components.map(componentName).join(' + ')} grouping`} title="Separate into individual levels" onClick={()=>{try{changeOrder(uncombineLevel(order,id));setLayoutError('');}catch(error){setLayoutError(error.message);}}}>Separate</button>}
             {showMoveControls&&<><button disabled={index===0} aria-label={`Move ${field?.label || id} earlier`} title="Move up one level" onClick={()=>move(index,-1)}><ArrowUp size={13}/></button>
