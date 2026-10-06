@@ -126,7 +126,7 @@ epoch switches retain actual selection and show Select/Deselect action labels.
 Current selection uses selected UUIDs, independently of visible tree paths.
 `incomingSelectionSummary.js` validates bounded exact receipts;
 `ui/IncomingSelectionSummary.jsx` owns the abortable candidate/binding/owner and
-pause-transition lifetime. The fixed-height header shows selected epochs, unique
+pause-transition lifetime. The 52px status row marks verified selection counts Live and shows selected epochs, unique
 cells and recorded types; unclassified cells stay in the breakdown. Pending/error
 receipts never borrow old counts. `incomingSelectionSummaryRendering.test.js`
 covers first-paint pause/resume and A-B-A retirement. This is read presentation,

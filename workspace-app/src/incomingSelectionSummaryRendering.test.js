@@ -19,11 +19,12 @@ test('mounted summary counts actual selection and masks old data on scope, pause
  try{
   const Summary=(await h.module('incoming-workbench/ui/IncomingSelectionSummary.jsx')).default;
   function Observed(p){useLayoutEffect(()=>{observations.push(metrics());});return createElement(Summary,p);}
-  await h.mount(Observed,props);await h.waitFor(()=>pending.length===1);
+  const status=()=>h.root.findByProps({className:'selection-summary-live'}).children.filter(value=>typeof value==='string').join('');
+  await h.mount(Observed,props);await h.waitFor(()=>pending.length===1);assert.equal(status(),'Updating');
   assert.deepEqual(pending[0].ids,['a','b']);assert.deepEqual(metrics(),['Current selection','2','—','—']);
   await h.act(()=>pending[0].resolve(receipt(['a','b'],[{cell_uuid:'c',cell_type:'ON'},{cell_uuid:'d',cell_type:null}])));
-  await h.waitFor(()=>metrics()[2]==='2');assert.deepEqual(metrics(),['Current selection','2','2','1']);
-  await h.render(Observed,{...props,paused:true});assert.equal(metrics()[2],'—');
+  await h.waitFor(()=>metrics()[2]==='2');assert.deepEqual(metrics(),['Current selection','2','2','1']);assert.equal(status(),'Live');
+  await h.render(Observed,{...props,paused:true});assert.equal(metrics()[2],'—');assert.equal(status(),'Paused');
   observations=[];await h.render(Observed,props);assert.equal(observations[0][2],'—','first resumed paint cannot expose the previous receipt');
   await h.waitFor(()=>pending.length===2);
   await h.render(Observed,{...props,selected:['x']});await h.waitFor(()=>pending.length===3);
