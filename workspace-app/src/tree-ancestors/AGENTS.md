@@ -133,8 +133,15 @@ bundle. Retained parent geometry is only a scheduling hint for the existing
 fresh-target/attested-cache path, never read authority. Bundle target and parent
 shape, requested offsets/revision/splits, anchor and equal complete identity are
 validated before publication. Validated parents may enter the existing bounded
-immutable cache through its normal read adapter without further HTTP. Initial
-live anchors without a known capability retain the ordinary path. Hierarchy anchor
+immutable cache through its normal read adapter without further HTTP. An initial live target that freshly advertises support can fetch more than one
+remaining ancestor as one bundle, preserving exact identity across both responses. Hierarchy anchor
 reveal uses this same orchestration, preserving siblings and cancellation; arbitrary
 multi-branch restoration remains independently bounded. See liveColumnReads.test.js
 and mounted live/frozen column/hierarchy cases in treeTagCoverageWorkflow.test.js.
+
+Hierarchy anchor reveal always uses this shared loader. Unsupported/older contexts
+retain bounded ordinary reads for the complete ancestor path, which can refetch
+parents previously present in hierarchy state; no extra cache authority is implied.
+The view publishes all pages atomically and retains sibling branches. Initial
+live target plus parent bundle uses exact locator offsets and pinned revision;
+identity change or cancellation discards the join before cache/state publication.

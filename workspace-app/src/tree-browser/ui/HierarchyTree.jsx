@@ -42,27 +42,15 @@ export default function HierarchyTree(props){
         for(const savedPage of restore.pages){result=await fetchPage(savedPage.path,savedPage.offset);if(request.signal.aborted||token!==serial.current)return;commit(old=>mergeHierarchyPage(old,result));}
         commit(old=>({...old,expanded:restore.expanded}));restoreTop.current=restore.scrollTop;restoreLeft.current=restore.scrollLeft;
       }else if(anchor){
-        const batch=scope.readContext?.tree_column_pages===true||root?.tree_column_pages===true;
-        if(batch){
-          const pages=await loadColumnTreePages({scope,anchor,revisionOverride:pinned,retainedPages:current.current.pages,
-            load:api,signal:request.signal,isCurrent:()=>token===serial.current});
-          result=pages.at(-1);
-          if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
-          pinned=result.revision;
-          if(request.signal.aborted||token!==serial.current)return;
-          commit(old=>pages.slice(0,-1).reduce((next,parent)=>mergeHierarchyPage(next,parent),old));
-        }else result=await fetchPage([],0,anchor);
-        const ancestry=result.ancestors||[];
-        // The locator supplies each ancestor's parent page, including groups
-        // past the first60. Fetch only this path and retain existing siblings.
-        for(let depth=0;depth<result.path.length;depth++){
-          const parentPath=result.path.slice(0,depth),parentKey=hierarchyKey(parentPath);
-          const desiredOffset=ancestry[depth]?.parent_offset??0;
-          const cached=current.current.pages.find(page=>hierarchyKey(page.path)===parentKey&&page.revision===pinned&&page.offset===desiredOffset);
-          if(!cached){const parent=await fetchPage(parentPath,desiredOffset);if(request.signal.aborted||token!==serial.current)return;commit(old=>mergeHierarchyPage(old,parent));}
-        }
+        const pages=await loadColumnTreePages({scope,anchor,revisionOverride:pinned,retainedPages:current.current.pages,
+          load:api,signal:request.signal,isCurrent:()=>token===serial.current});
+        result=pages.at(-1);
+        if(pinned&&result.revision!==pinned)throw new Error('Tree revision changed. Refresh the preview before continuing.');
+        pinned=result.revision;
         if(request.signal.aborted||token!==serial.current)return;
-        commit(old=>{let next=mergeHierarchyPage(old,result);for(let depth=1;depth<=result.path.length;depth++)next=expandHierarchy(next,result.path.slice(0,depth));return next;});
+        // One shared target/ancestor operation; retain siblings and publish the
+        // complete revealed path together after all identity checks succeed.
+        commit(old=>{let next=pages.reduce((value,page)=>mergeHierarchyPage(value,page),old);for(let depth=1;depth<=result.path.length;depth++)next=expandHierarchy(next,result.path.slice(0,depth));return next;});
       }else{
         result=await fetchPage(path,offset);
         if(request.signal.aborted||token!==serial.current)return;

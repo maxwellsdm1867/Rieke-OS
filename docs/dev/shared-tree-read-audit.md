@@ -336,3 +336,19 @@ backend invocation used three nonexistent suite names; the corrected run include
 all intended existing modules. Initial added mounted tests needed the harness's
 animation-frame stand-in; the corrected full suite passed. No failure is counted
 as passing evidence.
+
+
+### Initial-load follow-up
+
+The common loader now also consumes capability from the first fresh live target:
+when several cold ancestors remain, it loads the deepest ancestor and its parents
+in one bundle, then verifies exact original paths/offsets/revision/identity before
+joining the original target or seeding cache. A three-level first reveal becomes
+two reads; a known-capability reveal remains one. No discovery-only read or generic
+error retry is added. Every hierarchy anchor now uses that same loader and merges
+atomically while retaining siblings. Older/unsupported contexts fetch the complete
+bounded ancestor path, potentially re-reading previously retained parent pages;
+this explicit compatibility tradeoff replaces the former sequential partial loads.
+Arbitrary multipath restoration remains distinct. Follow-up source review and
+cold/offset/generation/cancellation/old-context tests are required separately from
+the earlier 910-test checkpoint.

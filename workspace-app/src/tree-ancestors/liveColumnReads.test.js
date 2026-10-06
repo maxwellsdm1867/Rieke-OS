@@ -52,3 +52,32 @@ test('validated live bundle seeds bounded immutable parents for the next fresh w
   assert.equal(calls,2,'one fresh target per operation, no parent HTTP');assert.equal(cache.stats().hits,1);assert.equal(Object.isFrozen(pages[0]),true);
  }finally{cache.retire();}
 });
+
+const deepScope={...scope,splits:'date,cell,block'},deepKeys=['b','c','d'].map(x=>x.repeat(64));
+const deepParents=deepKeys.map((_,depth)=>({...root,path:deepKeys.slice(0,depth),depth,split_order:['date','cell','block'],offset:depth*60,ancestors:deepKeys.slice(0,depth).map((_,i)=>({parent_offset:i*60}))}));
+const deepTarget={...target,path:deepKeys,depth:3,split_order:['date','cell','block'],anchor:{epoch_uuid:'epoch',path:deepKeys,index:0,offset:0},ancestors:deepKeys.map((_,i)=>({parent_offset:i*60}))};
+delete deepTarget.ancestor_pages;
+function deepResponse(body){return body.anchor_uuid?structuredClone(deepTarget):{...structuredClone(deepParents.at(-1)),ancestor_pages:structuredClone(deepParents.slice(0,-1))};}
+test('initial deep live anchor discovers batching and preserves recorded offsets in two reads',async()=>{
+ const calls=[];
+ const pages=await loadColumnTreePages({scope:deepScope,anchor:'epoch',load:async(endpoint,{body})=>{calls.push(body);return deepResponse(body);}});
+ assert.equal(calls.length,2);assert.equal(calls[0].include_ancestors,undefined);assert.equal(calls[1].include_ancestors,true);
+ assert.equal(calls[1].anchor_uuid,undefined);assert.deepEqual(calls[1].path,deepKeys.slice(0,2));assert.equal(calls[1].offset,120);assert.deepEqual(calls[1].ancestor_offsets,[0,60,120]);
+ assert.deepEqual(pages,[...deepParents,deepTarget]);
+});
+test('initial deep live anchor rejects authority change between target and parent bundle',async()=>{
+ await assert.rejects(loadColumnTreePages({scope:deepScope,anchor:'epoch',load:async(endpoint,{body})=>{
+  const value=deepResponse(body);if(body.include_ancestors)for(const page of [value,...value.ancestor_pages])page.read_identity={...identity,generation:{...identity.generation,annotation:'changed'}};return value;
+ }}),/changed/);
+});
+test('older deep target keeps bounded ordinary parent requests',async()=>{
+ const calls=[];
+ const pages=await loadColumnTreePages({scope:deepScope,anchor:'epoch',load:async(endpoint,{body})=>{
+  calls.push(body);const value=body.anchor_uuid?structuredClone(deepTarget):structuredClone(deepParents[body.path.length]);delete value.tree_column_pages;return value;
+ }});
+ assert.equal(calls.length,4);assert.equal(pages.length,4);assert.ok(calls.every(body=>!body.include_ancestors));
+});
+test('initial parent bundle cannot publish after cancellation',async()=>{
+ let release,current=true;const pending=loadColumnTreePages({scope:deepScope,anchor:'epoch',isCurrent:()=>current,load:async(endpoint,{body})=>body.anchor_uuid?deepResponse(body):new Promise(resolve=>release=()=>resolve(deepResponse(body)))});
+ while(!release)await new Promise(resolve=>setTimeout(resolve,0));current=false;release();await assert.rejects(pending,{name:'AbortError'});
+});

@@ -28,10 +28,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
  const {include_ancestors,ancestor_offsets,...ordinaryBody}=body;
  const lease=!scope.readContext&&endpoint==='/tree-pages'?readOwner?.attest(ordinaryBody,page):null;
  const targets=columnAncestorPages(page,{anchor:!!anchor,columnPositions});
- if(batch){
-  const parents=page.ancestor_pages;
-  const frozen=!!scope.readContext;
-  const identity=page.read_identity;
+ const frozen=!!scope.readContext;
   const validLivePage=value=>value&&Array.isArray(value.path)&&value.path.length<=8
    &&value.path.every(key=>typeof key==='string'&&/^[a-f0-9]{64}$/.test(key))
    &&value.depth===value.path.length&&value.limit===ordinaryBody.limit
@@ -49,6 +46,9 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
      &&page.anchor.offset===page.offset&&Number.isSafeInteger(page.anchor.index)&&page.anchor.index>=page.offset
      &&page.anchor.index<page.offset+page.limit
     :canonical(page.path)===canonical(ordinaryBody.path)&&page.offset===ordinaryBody.offset);
+ if(batch){
+  const parents=page.ancestor_pages;
+  const identity=page.read_identity;
   const invalidFence=frozen
    ?page.candidate_scope_revision!==scope.readContext.candidate_scope_revision||page.query_revision!==page.candidate_scope_revision
     ||!Number.isSafeInteger(page.expected_binding_version)||page.expected_binding_version<0
@@ -77,16 +77,40 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
   if(!current()||lease&&!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
   return [...parents,target];
  }
- const parents=await Promise.all(targets.map(target=>{
+ // The first fresh live target can discover support without a separate
+ // discovery read. Fetch its remaining ancestors as one independently fenced
+ // bundle, then join only if both responses carry the exact same identity.
+ const discovered=!frozen&&page.tree_column_pages===true&&targets.length>1&&!covered;
+ let parents;
+ if(discovered){
+  if(!validTarget||readOwner?.available&&!lease)throw Error('Tree column response changed or is incomplete; refresh the current tree');
+  const deepest=targets.at(-1);
+  parents=await loadColumnTreePages({scope,path:deepest.path,offset:deepest.offset,
+   revisionOverride:page.revision,columnPositions:targets.map(parent=>({offset:parent.offset})),
+   retainedPages:[page],load,signal,isCurrent:current});
+  if(parents.length!==targets.length||parents.some((parent,index)=>parent.kind!=='branches'
+    ||canonical(parent.path)!==canonical(targets[index].path)||parent.offset!==targets[index].offset
+    ||canonical(parent.read_identity)!==canonical(page.read_identity)))
+   throw Error('Tree column response changed or is incomplete; refresh the current tree');
+ }else{
+  parents=await Promise.all(targets.map(target=>{
   const request=treePageRequest(scope,{path:target.path,offset:target.offset,currentRevision:page.revision});
   return lease&&reusableTreeBody(request)?readOwner.read(lease,request,{load,signal}):load(endpoint,{method:'POST',body:request,signal});
  }));
+ }
  if(!current()||lease&&!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  for(const parent of parents){
   if(parent.revision!==page.revision)throw Error('Tree revision changed; refresh the current tree');
   // An operation with attestation cannot silently combine a fresh target with
   // an ancestor from another publication/annotation/binding/source generation.
   if(lease&&canonical(parent.read_identity)!==canonical(page.read_identity))throw Error('Tree read identity changed; refresh the current tree');
+ }
+ if(discovered&&lease){
+  await Promise.all(parents.map(parent=>{
+   const request=treePageRequest(scope,{path:parent.path,offset:parent.offset,currentRevision:page.revision});
+   return reusableTreeBody(request)?readOwner.read(lease,request,{load:async()=>parent,signal}):null;
+  }));
+  if(!current()||!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  }
  return [...parents,page];
 }
