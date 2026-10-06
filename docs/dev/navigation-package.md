@@ -226,3 +226,19 @@ previews omit the new presentation flag from their scientific membership scope.
 gate and packaging checks passed. Owned native checks cover counts-only requests,
 absence of aggregate badges, exact saved tags, selection and export preview.
 No new latency comparison or full release qualification is claimed.
+
+
+## End-to-end verification follow-up
+
+Fresh runs against packaged source `60f9567` passed six desktop smoke checks and
+the owned Workbench tree workflow. Smoke covers launch, update status, native
+project creation, automatic restoration, new backend session and two clean quits.
+The stale smoke expectation of a project picker on restart was corrected to the
+implemented automatic-restore behavior; project UUID/path and native readiness
+checks remain required. The initial failed test receipt is retained locally.
+
+The tree run verified 72 count-only responses, exact saving of tags on 63 epochs,
+parent/child/epoch selection overrides, retained tree mode, export preview and
+clean shutdown. No export publication or user-project mutation occurred. Raw
+receipts and controller hashes are linked from the package record. This remains
+local testing evidence, not full release qualification.

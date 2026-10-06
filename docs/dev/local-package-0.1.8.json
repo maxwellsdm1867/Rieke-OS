@@ -212,6 +212,31 @@
       "failed": 0,
       "scope": "Full recursive frontend suite including batched frozen column reads and lazy scoped catalog lifetime",
       "independent_source_review": "passed"
+    },
+    "end_to_end_followup": {
+      "packaged_source_commit": "60f9567ced676bf6c1db181166f2693304592768",
+      "smoke": {
+        "passed": true,
+        "checks_passed": 6,
+        "elapsed_ms": 34420,
+        "receipt": "tree-counts-e2e-smoke-final.json",
+        "controller_sha256": "936f89023257393b3237a86f11200bc01b33b279d580bf50ae7b7e9bbc749087",
+        "automatic_project_restore": true,
+        "owned_processes_after_quit": 0,
+        "initial_attempt": "Stale test expected project picker after restart; corrected to require automatic restoration and native readiness. Initial failed receipt retained locally."
+      },
+      "tree_workflow": {
+        "passed": true,
+        "receipt": "tree-counts-e2e-native-2026-10-06T02-23-16-405Z/receipt.json",
+        "controller_sha256": "1cd69a29061eee332d057b0ed1ba5527d8e2f329c8804d35c0092ebf02c04f43",
+        "count_only_responses_verified": 72,
+        "tagged_epochs": 63,
+        "branch_child_epoch_overrides": true,
+        "export_preview": true,
+        "clean_shutdown": true,
+        "errors": []
+      },
+      "scope": "Owned disposable projects and packaged app clones; installed app untouched. Tests and evidence updates do not change packaged source."
     }
   },
   "qualification_limits": [

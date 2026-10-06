@@ -44,10 +44,11 @@ async function authorProfile(){
   await dialog.waitFor({state:'hidden',timeout:10000});
  }
 }
-async function start(){
+async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
  page.setDefaultTimeout(20000);page.on('pageerror',error=>receipt.failures.push({name:'renderer-pageerror',message:error.message}));
- await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
+ if(restoredProjectName)await page.getByRole('button',{name:restoredProjectName+', current project',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
+ else await page.getByRole('heading',{name:'Your projects',exact:true}).waitFor({timeout:Math.min(60000,remaining())});
 }
 async function main(){
  fixture=await bounded(createFixture(),'Owned fixture preparation',90000);receipt.fixture_root=fixture.root;
@@ -102,10 +103,12 @@ async function main(){
  });
  await check('first orderly quit exits root and project services',quitAndVerify);
  await check('cold restart reopens the persisted project',async()=>{
-  await start();await page.getByRole('button',{name:new RegExp('^Open '+projectName+',')}).click();await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
+  await start(projectName);await page.getByRole('button',{name:'Project overview',exact:true}).waitFor({timeout:Math.min(60000,remaining())});await authorProfile();
   const project=await page.evaluate(()=>fetch('/api/projects').then(response=>response.json()));assert.equal(project.current_project_uuid,projectUuid);
-  const health=await bounded(ownedControl(fixture,'health'),'Reopened project readiness');assert.notEqual(health.session_id,firstSession);assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));
-  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true};
+  const health=await bounded((async()=>{
+   while(true){const current=await ownedControl(fixture,'health');if(current.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true))return current;remaining();await delay(100);}
+  })(),'Restored project readiness',60000);assert.notEqual(health.session_id,firstSession);assert.ok(health.services.some(service=>service.project_uuid===projectUuid&&service.project_path===projectPath&&service.bound===true));
+  return{same_project_uuid:true,new_owned_session:true,persisted_native_project_reopened:true,automatic_restore:true};
  });
  await check('final orderly quit preserves original manifest and ASAR bytes',async()=>{
   const shutdown=await quitAndVerify(),after=await bundleReceipts();assert.equal(after.manifest_sha256,initial.manifest_sha256);assert.equal(after.asar_sha256,initial.asar_sha256);assert.equal(receipt.failures.length,0,'Renderer errors occurred');
