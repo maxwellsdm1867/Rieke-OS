@@ -39,6 +39,11 @@ Before any application update, changing release tooling or claiming a performanc
   `.rieke-runtime/benchmark-python/bin/python tools/benchmark.py run --output benchmarks/results/<unique-run>`
   with the exact documented Python/Node profile and frontend dependencies.
   Local development remains possible; a dirty run is diagnostic only.
+- The agreed [end-to-end benchmark workflow](docs/dev/benchmarks.md#end-to-end-benchmark-workflow-and-module-attribution)
+  requires click-to-correct-result totals plus correlated stage/module attribution.
+  The current 34-case query suite is supporting evidence; it does not complete
+  that workflow. Implement and validate the workflow before resuming the planned
+  browsing optimizations; never label missing action measurements as passed.
 - After every application update and implementation iteration, run the existing
   fixed core correctness suite plus the actual-million everyday query track using
   [the canonical iteration workflow](docs/dev/benchmarks.md#required-everyday-query-check-after-every-app-update).

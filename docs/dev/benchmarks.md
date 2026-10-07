@@ -94,6 +94,45 @@ review rejected their qualified comparison. Preserve their raw evidence as
 **diagnostic only**; their prior gate result/comparison is superseded. Fresh
 permitted-read runs on the corrected commit are required for qualification.
 
+## End-to-end benchmark workflow and module attribution
+
+**Status: agreed specification; end-to-end runner and stage attribution are not yet implemented.** Measure each everyday action end to end on a one-million-epoch project and map contributing stages to owning modules. The existing 34-case query suite is supporting evidence and does not complete this requirement. Complete this benchmark before resuming the planned browsing optimizations.
+
+The headline boundary is user intent to the correct, current, usable rendered result, including the explicitly requested click-to-trace appearance measurement. Backend request-to-response is a nested measurement. Edit Tree means opening the editor, changing its splits/grouping, and selection/deselection. No passing end-to-end receipt may be inferred from a query-only receipt.
+
+| Action | Headline result | Contributing owners to time |
+| --- | --- | --- |
+| Open a protocol view; return to it | Correct current content and usable controls, cold and warm separately | workspace navigation, Inspector, resource/cache lifetime, protocol admission, page reads, React publication |
+| Open Edit Tree | Current root branches, counts and controls visible and usable | Inspector/tree presentation, saved layout, initial tree request, scope admission, grouping, response validation, rendering |
+| Change tree splits/grouping | Correct regrouped tree and counts visible after adding, removing or reordering a split | protocol-tree-layout, typed-query split definitions, membership reuse/invalidation, metadata projection, grouping, tree-ancestors validation, rendering |
+| Expand a tree cell; move to next page | Exact branch/epoch page visible under the current revision | tree-browser, tree-ancestors orchestration/validation, API transport, witnessed tree route, TreePages scope/grouping/projection, JSON encoding, publication |
+| Expand cell list; load another page | Exact bounded continuation visible | epoch-browser page read/coalescing, WorkspaceService epoch page, protocol membership, curation/export/annotation decoration, publication |
+| Reveal an epoch/ancestor path | Correct UUID visible at the correct offset with current ancestors | column/hierarchy orchestration, target/ancestor requests, scope proof, anchor lookup, grouping, ancestor admission, layout |
+| Inspect an epoch | Current requested metadata usable; trace readiness recorded separately | useEpochInspection, metadata/trace cache, epoch API, details, protocol/annotation/export work, cell-count scan, trace decode/draw when applicable |
+| Tree selection/deselection | Exact selected UUIDs and current selection summary reflected in the UI | gesture/highlighting, tree-selection or incoming selection queue, bounded membership resolution, freshness checks, selection state, count/type summary, rendering |
+| Search with a predicate | Exact current matching results and counts visible after submitting/changing the predicate | typed-query editor, predicate validation/compilation, scope admission, metadata/index query, requested counts, pagination, frontend admission, rendering |
+| Prepare Workbench | Frozen proposed cohort prepared and ready to inspect, with correct counts and current authority | preparation request, source/protocol discovery, membership comparison, recipe construction/storage, opening/closing checks, frozen context, initial review reads, rendering |
+| Open/return to incoming Workbench | Current frozen cohort ready for browsing; record reuse versus required preparation | queue, preparation reuse/invalidation, frozen context, opening authority, frozen service, tree/list reads, closing authority, renderer admission |
+| Click epoch to show its lazy-loaded trace | First correct visible trace, then complete requested visible trace window; two elapsed endpoints from the same click | focus/selection, lazy-load scheduling, cache/coalescing, request admission, source verification, bounded waveform read, decode/transfer, frontend validation, trace drawing/frame observation |
+
+Requested scenario variants:
+
+- Edit Tree covers hierarchy and columns, main and incoming views, initial open and warm return. Split changes cover add/remove/reorder and structural versus recorded-metadata fields; expected grouping/order/counts must remain exact.
+- Selection covers a single epoch, a branch/cell, Shift-range and Select/Deselect Highlighted, including deselection, the 1,000-selection limit and rapid queued clicks. Record immediate highlight feedback separately from resolved selection/summary readiness; highlighting alone is not selection completion.
+- Predicate search covers first/repeated submissions, changed predicate, zero/one/rare/broad matches and a continuation page. The end gate checks exact scope/membership, ordering and requested counts; a loading indicator or stale previous result does not finish the action.
+- Workbench preparation is its own action, distinct from opening an already-prepared review. Measure fresh preparation, reusable unchanged preparation and invalidation after changed inputs. A prepared cohort is pending review; preparation must not silently select or merge it.
+- Lazy trace tests cover uncached first inspection, cache-hit revisit, selecting another epoch while a read is pending, and scrolling the visible trace window. Record intentional scheduling delay, demand versus prefetch and cancelled/superseded reads. The previous epoch's trace cannot satisfy readiness. Record epoch/stream identity, units and requested sample/time window at both endpoints. Metadata benchmarks retain zero-H5 tripwires; trace cases use separately owned bounded waveform fixtures and record actual I/O. Canvas-drawn/DOM-frame observations remain distinct from proven compositor presentation.
+
+Each action receipt must preserve its total elapsed samples, exact correctness/readiness oracle, cold/warm state, request count, fixture/source identity, and a correlated trace of stage spans. Each span identifies action/request/parent, process/clock domain, module owner, start/end, call count, result/cache classification and error. Report inclusive and exclusive/self time distinctly. Preserve unattributed time explicitly instead of distributing it by guesswork.
+
+Provide two views of the **same observations**: (1) actions with total baseline/candidate latency and regressions; (2) action-by-stage/module contribution, plus a module-across-actions summary. A stage regression must remain visible even when the total improves.
+
+Backend work is nested inside HTTP request latency. Parallel requests overlap. Do not add parent and child durations or sum overlapping requests into action wall time. Use per-clock timelines and interval unions; cross-process correlation requires request IDs and an explicit clock-alignment method or bounded nesting. DOM/RAF readiness and canvas calls do not prove compositor paint. Cache hits must be measured as cache hits without forcing network work.
+
+Reuse the existing `benchmarks/navigation-probe.mjs` action/readiness observer and request ledger; it currently provides temporal observations rather than causal module attribution. For backend attribution, preserve exact production function identities: wrapping TreePages canonical reader methods changes batching eligibility. An isolated profiler pass can collect nested attribution without monkeypatching those methods, but its overhead must be measured and its timing kept separate from ordinary action samples.
+
+The million-row action fixture must exercise real request composition and frontend admission. The current synthetic tree/catalog and typed-index initializer omit route-level and native authority costs. Cover those boundaries explicitly or mark them unmeasured; no standalone query result can fill in missing action timing. Existing native/seal/recovery/renderer qualification gaps remain.
+
 ## Required everyday query check after every app update
 
 After **every application update and each implementation iteration**, run the
