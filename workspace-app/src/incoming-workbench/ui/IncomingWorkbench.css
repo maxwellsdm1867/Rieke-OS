@@ -192,7 +192,7 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.bulk-selected,
 .incoming-browser .hierarchy-tree .ht-leaf.incoming-epoch-on,
 .incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink);color:var(--ink)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:transparent;outline:0}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:transparent}
 .incoming-browser .column-tree .tp-branch.selected:not(.incoming-branch-on):not(.incoming-branch-off){background:var(--surface-subtle);box-shadow:none;border-color:var(--border)}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary>.incoming-tree-actions{margin-left:auto}
@@ -224,3 +224,8 @@
 
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child{justify-content:flex-start;gap:4px;overflow:hidden}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch .epoch-short-protocol{min-width:0}
+
+/* Use one row outline for highlighting/focus, without a second inset stripe. */
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:is(.active,.bulk-selected,.is-highlighted){box-shadow:none}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:has(>button:first-child:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible{outline:0}
