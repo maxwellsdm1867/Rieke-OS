@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "product": "Disco",
+  "version": "0.1.8",
+  "recorded_date": "2026-10-07",
+  "status": "local unsigned testing package; not release promotion",
+  "source_commit": "7ffd664d0e27ad5446120ba60be79ee2a66315ae",
+  "source_clean": true,
+  "installed_app": "/Users/maxwellsdm/Applications/Disco.app",
+  "changes": [
+    "All unselected Workbench Epochs-view rows use the default background, including highlighted ones",
+    "Highlighted number/time labels use font-weight650 and retain the toolbar count",
+    "Selected rows stay green; highlight borders and inset stripes remain absent"
+  ],
+  "evidence": {
+    "frontend": {
+      "passed": 916,
+      "failed": 0,
+      "source_commit": "38c1babda04fb11438db14976dc52ae5d4ae7e87",
+      "final_difference": "CSS presentation only; final packaged theme and keyboard checks verify final bytes"
+    },
+    "architecture_guard": "passed",
+    "core_gate": "benchmarks/results/default-unselected-epochs-001/benchmark.json",
+    "source_and_frontend_files_verified": 111,
+    "asar_desktop_entries": "match source",
+    "native_audit": "no_known_static_blockers",
+    "relocated_scientific_imports": "passed",
+    "native_workflow": "toolbar-default-epochs-native-2026-10-07T16-03-46-012Z/receipt.json",
+    "native_scope": "Exact count/toggle/outside-selection behavior; default background equality for normal and highlighted unselected rows in light/dark; green selection, bold highlighted labels, borderless keyboard focus, toolbar containment, clean quit. Owned disposable fixture only; no merge/export publication.",
+    "independent_source_review": "passed"
+  },
+  "local_kit_directory": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05",
+  "public_prerelease": "Unchanged; remains attributed to 60f9567",
+  "limits": [
+    "No new public release or update descriptor",
+    "No macOS 14 runtime qualification",
+    "No new broad native scientific workflow qualification"
+  ],
+  "installation_receipt": "toolbar-default-epochs-installed.json",
+  "github_main_at_build": "95465c634d9a9abdf24a04570306d86b4e2b91d6",
+  "publication": "Source commits are local; GitHub main and public prerelease assets were not changed",
+  "installed_manifest_sha256": "53d06e4f4a9cbd02801864cd44050e26cb41346a8baef990581b1b0bb663f552"
+}

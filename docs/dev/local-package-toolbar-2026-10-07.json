@@ -43,5 +43,6 @@
   "installed_manifest_sha256": "9032f7e8179c8005541e72766188b175717939b72ea9d20c83c96b8e636351d2",
   "installation_receipt": "toolbar-borderless-installed.json",
   "github_main_at_build": "95465c634d9a9abdf24a04570306d86b4e2b91d6",
-  "publication": "Source commits are local; GitHub main and public prerelease assets were not changed"
+  "publication": "Source commits are local; GitHub main and public prerelease assets were not changed",
+  "superseded_for_local_installation_by": "local-package-default-epochs-2026-10-07.json"
 }

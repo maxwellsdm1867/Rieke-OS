@@ -451,3 +451,18 @@ four fill states in light/dark, borderless keyboard focus, toolbar containment a
 clean quit. Earlier computed-style test failures mistook the width of an outline
 whose style was none for a visible border; corrected checks and raw failures remain
 in the kit. No merge/export publication or broader release qualification is claimed.
+
+
+## Default background for every unselected epoch (2026-10-07)
+
+The installed local source is now `7ffd664d0e27ad5446120ba60be79ee2a66315ae`;
+[the current record](local-package-default-epochs-2026-10-07.json) supersedes the
+preceding borderless package. Highlighted-but-unselected rows also keep the normal
+pane background, with stronger number/time labels and the counted toolbar action
+indicating highlight membership. Selected rows stay green; row borders and inset
+stripes remain absent. Final packaged light/dark checks verify equal backgrounds
+for ordinary and highlighted unselected rows, bold labels, exact selection toggles,
+keyboard-focus underline and clean quit. Core/architecture, source/frontend/ASAR,
+native audit and relocated import checks passed for this exact source. The earlier
+916-test frontend result retains its source attribution; this follow-up changes CSS
+only. GitHub main and public prerelease assets are unchanged.
