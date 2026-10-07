@@ -192,7 +192,7 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.bulk-selected,
 .incoming-browser .hierarchy-tree .ht-leaf.incoming-epoch-on,
 .incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink);color:var(--ink)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:var(--surface-subtle);outline:0}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:transparent;outline:0}
 .incoming-browser .column-tree .tp-branch.selected:not(.incoming-branch-on):not(.incoming-branch-off){background:var(--surface-subtle);box-shadow:none;border-color:var(--border)}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary>.incoming-tree-actions{margin-left:auto}
@@ -213,7 +213,7 @@
 
 /* Highlight outlines are independent of actual incoming selection color. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch{display:grid;grid-template-columns:minmax(0,1fr) 82px 26px 24px;gap:3px;min-height:30px;margin-left:8px;padding:2px 4px!important}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:not(.bulk-selected){background:var(--accent-soft)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:not(.bulk-selected){background:transparent}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:1px solid var(--accent);outline-offset:-1px}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.incoming-selection-switch{width:82px;min-width:82px;min-height:26px;flex:none;padding:3px 5px;gap:5px;border:0;background:transparent;white-space:nowrap;font-size:10px}
 .incoming-browser .inspection-cell-tree .incoming-selection-switch>span{white-space:nowrap;overflow-wrap:normal;line-height:14px}
