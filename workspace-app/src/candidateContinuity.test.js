@@ -127,7 +127,7 @@ test('clearing focused cell revalidates same-token UUID outside the first all-ce
  try{
   const Inspector=await h.component('Inspector'),initial={...props(),initialEpochUuid:'epoch-508',initialNavigation:{focusCell:'cell-1'},onReviewDecision:async body=>mutations.push(body)};
   await h.mount(Inspector,initial);await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-508'&&!h.viewer.treePane.listProps.disabled);
-  const chip=h.viewer.toolbarChildren.props.children;assert.equal(chip.props.className,'inspection-focus-chip');
+  const chip=h.viewer.toolbarChildren.props.children.find(child=>child?.props?.className==='inspection-focus-chip');assert.equal(chip.props.className,'inspection-focus-chip');
   await h.act(()=>chip.props.onClick());
   await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-508'&&h.viewer.navigation.position===508&&!h.viewer.treePane.listProps.disabled);
   assert.equal(h.fixture.requests.filter(record=>record.path.includes('anchor_uuid=epoch-508')).length,1);

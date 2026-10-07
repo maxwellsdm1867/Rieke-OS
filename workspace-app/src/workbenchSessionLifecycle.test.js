@@ -30,7 +30,7 @@ async function harness(){
  // visual children that require browser layout or canvas.
  const server=await createServer({root:fileURLToPath(new URL('..',import.meta.url)),configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',plugins:[{
   name:'session-view-presentation',enforce:'pre',resolveId(source,importer){
-   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['../../tree-ancestors/treeBranchReads.jsx','../../components/NavigationLoading.jsx','../../components/Common.jsx','../../incoming-workbench/ui/IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
+   if(importer?.endsWith('/Inspector.jsx')&&source.endsWith('.jsx')&&!['./EpochBrowserChrome.jsx','../../tree-ancestors/treeBranchReads.jsx','../../components/NavigationLoading.jsx','../../components/Common.jsx','../../incoming-workbench/ui/IncomingSelectionTools.jsx'].includes(source))return `\0session-${source}`;
    if(importer?.endsWith('/FrozenIncomingReview.jsx')&&source==='../../typed-query/ui/ProtocolViewFilter.jsx')return '\0session-null';
   },load(id){
    if(id==='\0session-./EpochViewer.jsx')return `import React from 'react';const f=globalThis[${JSON.stringify(key)}];export default function Viewer(props){f.viewer=props;f.renders++;return React.createElement('div',{'data-real-inspector':true},'Actual Inspector session',props.before);}`;
@@ -70,6 +70,13 @@ test('one draft control instance stays in the top action bar through normal and 
   const controls=h.container.querySelector('.incoming-draft-tools'),host=h.container.querySelector('.incoming-draft-host');
   assert.ok(controls);assert.equal(controls.parentElement,host);assert.ok(host.closest('.incoming-action-bar'));
   assert.equal(h.container.querySelector('.incoming-browser .incoming-draft-tools'),null);
+  const highlight=()=>controls.querySelector('.epoch-highlight-action');
+  assert.equal(highlight().textContent.trim(),'Select Highlighted (0)');assert.equal(highlight().disabled,true);
+  assert.equal(h.fixture.viewer.treePane.highlightTools,undefined);
+  await act(async()=>h.fixture.viewer.treePane.listProps.setHighlightedEpochs(['epoch-1','epoch-2']));await h.settle();
+  assert.equal(highlight().textContent.trim(),'Select Highlighted (2)');assert.equal(highlight().disabled,false);
+  await act(async()=>highlight().click());await h.settle();assert.equal(highlight().textContent.trim(),'Deselect Highlighted (2)');
+  await act(async()=>highlight().click());await h.settle();assert.equal(highlight().textContent.trim(),'Select Highlighted (2)');
   const button=()=>controls.querySelector('button.primary');assert.equal(button().textContent.trim(),'Merge (0 epochs)');assert.equal(button().disabled,true);
   await act(async()=>h.fixture.viewer.treePane.listProps.onSelectCell(cells[0],epochs[0]));await h.settle();
   assert.equal(button().textContent.trim(),'Merge (0 epochs)','cell inspection is not selection');

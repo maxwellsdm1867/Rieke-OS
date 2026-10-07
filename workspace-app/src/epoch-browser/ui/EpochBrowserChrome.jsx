@@ -17,12 +17,8 @@ export function EpochListHeading({treeMode=false,onTreeMode,onDesign,designDisab
   return <div className="tree-heading" aria-label="Epoch list controls">{onCollapse&&<button className="tree-collapse-action" aria-label="Collapse all" title="Collapse all" disabled={designDisabled} onClick={onCollapse}><ChevronsDownUp size={13}/><span>Collapse all</span></button>}<div className="segmented">{onTreeMode&&<><button className={!treeMode?'active':''} aria-pressed={!treeMode} onClick={()=>onTreeMode(false)}>Epochs</button><button className={treeMode?'active':''} aria-pressed={treeMode} onClick={()=>onTreeMode(true)}>Split tree</button></>}</div>{onDesign&&<button className="tree-edit-action" aria-label="Edit Tree" title="Edit Tree" disabled={designDisabled} onClick={onDesign}><GitBranch size={13}/><span>Edit Tree</span></button>}</div>;
 }
 
-export function EpochHighlightTools({count=0,disabled=false,onSelect,onDeselect,onClear}){
-  return <div className="epoch-highlight-tools" role="group" aria-label="Highlighted epoch actions">
-    <span>{number(count)} highlighted</span>
-    <button disabled={disabled||!count} onClick={onSelect}>Select Highlighted</button>
-    <button disabled={disabled||!count} onClick={onDeselect}>Deselect Highlighted</button>
-    {count>0&&<button onClick={onClear} aria-label="Clear epoch highlights" title="Clear highlights"><X size={12}/></button>}
-    <small>Shift-click a range · ⌘/Ctrl-click to add rows</small>
-  </div>;
+export function EpochHighlightTools({count=0,allSelected=false,disabled=false,onSelect,onDeselect}){
+  return <button className="epoch-highlight-action" disabled={disabled||!count} title="Shift-click a range · ⌘/Ctrl-click to add rows" onClick={allSelected?onDeselect:onSelect}>
+    {allSelected?'Deselect Highlighted':'Select Highlighted'} ({number(count)})
+  </button>;
 }

@@ -199,19 +199,27 @@ test('highlight toolbar explicitly selects or deselects only highlights and clea
  const h=await createInspectorHarness(),published=[];
  const incoming={...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'},draftSelection:{selected:['epoch-C'],disabled:false},onSelectionChange:ids=>published.push(ids)};
  try{
+  const action=()=>{const element=h.viewer.toolbarChildren.props.children[0];return element.type(element.props);};
   h.fixture.page=page;await h.render(incoming);
+  assert.equal(action().props.disabled,true);
   await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A','epoch-B']));
-  assert.deepEqual(published,[]);assert.equal(h.viewer.treePane.highlightTools.props.count,2);
-  await h.act(()=>h.viewer.treePane.highlightTools.props.onSelect());assert.deepEqual(published.pop(),['epoch-C','epoch-A','epoch-B']);
+  assert.equal(h.viewer.treePane.highlightTools,undefined);
+  assert.deepEqual(published,[]);assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,2);
+  await h.act(()=>action().props.onClick());assert.deepEqual(published.pop(),['epoch-C','epoch-A','epoch-B']);
+  await h.render({...incoming,draftSelection:{...incoming.draftSelection,selected:['epoch-A','epoch-B','epoch-C']}});
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.allSelected,true);
+  await h.act(()=>action().props.onClick());assert.deepEqual(published.pop(),['epoch-C']);
   await h.render({...incoming,draftSelection:{...incoming.draftSelection,selected:['epoch-A','epoch-C']}});
-  await h.act(()=>h.viewer.treePane.highlightTools.props.onDeselect());assert.deepEqual(published.pop(),['epoch-C']);
-  const old=h.viewer.treePane.highlightTools.props.onSelect;
-  await h.render({...incoming,revision:1});assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.allSelected,false);
+  await h.render({...incoming,readPaused:true});assert.equal(action().props.disabled,true);
+  await h.render(incoming);
+  const old=h.viewer.toolbarChildren.props.children[0].props.onSelect;
+  await h.render({...incoming,revision:1});assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,0);
   await h.act(()=>old());assert.deepEqual(published,[]);
-  await h.render(incoming);assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+  await h.render(incoming);assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,0);
   await h.act(()=>old());assert.deepEqual(published,[]);
   await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A']));
   await h.act(()=>h.viewer.treePane.onDesign());await h.act(()=>h.viewer.toolbar.onBrowse());
-  assert.equal(h.viewer.treePane.highlightTools.props.count,0);
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,0);
  }finally{await h.close();}
 });

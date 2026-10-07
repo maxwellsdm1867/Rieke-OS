@@ -214,7 +214,7 @@
 /* Highlight outlines are independent of actual incoming selection color. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch{display:grid;grid-template-columns:minmax(0,1fr) 82px 26px 24px;gap:3px;min-height:30px;margin-left:8px;padding:2px 4px!important}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:not(.bulk-selected){background:var(--accent-soft)}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:2px solid var(--accent);outline-offset:-2px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:1px solid var(--accent);outline-offset:-1px}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.incoming-selection-switch{width:82px;min-width:82px;min-height:26px;flex:none;padding:3px 5px;gap:5px;border:0;background:transparent;white-space:nowrap;font-size:10px}
 .incoming-browser .inspection-cell-tree .incoming-selection-switch>span{white-space:nowrap;overflow-wrap:normal;line-height:14px}
 .incoming-browser .inspection-cell-tree .incoming-switch-track{flex:0 0 23px}
