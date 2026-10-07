@@ -42,7 +42,8 @@ Before any application update, changing release tooling or claiming a performanc
 - The agreed [end-to-end benchmark workflow](docs/dev/benchmarks.md#end-to-end-benchmark-workflow-and-module-attribution)
   requires click-to-correct-result totals plus correlated stage/module attribution.
   The current 34-case query suite is supporting evidence; it does not complete
-  that workflow. Implement and validate the workflow before resuming the planned
+  that workflow. The implemented thirteen-variant runner requires million-scale
+  validation and reports broader unmeasured scenarios. Validate it before resuming the planned
   browsing optimizations; never label missing action measurements as passed.
 - After every application update and implementation iteration, run the existing
   fixed core correctness suite plus the actual-million everyday query track using

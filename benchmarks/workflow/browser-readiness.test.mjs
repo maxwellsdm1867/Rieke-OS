@@ -1,7 +1,7 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readiness} from './browser.mjs';
+import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation} from './browser.mjs';
 
 function element(text='', attributes={}) {
   return {textContent:text, disabled:false, ...attributes,
@@ -83,8 +83,8 @@ test('trace requires correct values and full requested window',t=>{
 test('correct trace observations record current identity at readiness',t=>{
   const {w,spec}=trace(t);
   assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
-  assert.equal(w.active.evidence.trace.epoch_uuid,'requested');
-  assert.equal(w.active.evidence.trace.values_count,2);
+  assert.equal(w.completed.current.evidence.trace.epoch_uuid,'requested');
+  assert.equal(w.completed.current.evidence.trace.values_count,2);
 });
 
 test('predicate backend result cannot finish before membership is rendered',t=>{
@@ -103,9 +103,9 @@ function prepared(t){
   const w=setup(t,{button:[element('Select all')],'.incoming-browser .inspection-cell-tree[data-inspection-membership-ready="true"]':[element()]});
   const identity={candidate_revision_uuid:'candidate',queue_revision:'queue',candidate_scope_revision:'scope'};
   w.incomingSession={prepared:{...identity,context:{counts:{incoming_epochs:1}}},drafts:{candidate:{selected:[]}}};
-  w.requests=[{action_id:'current',url:'/api/prepare',status:200,result:{...identity}},
+  w.requests=[{action_id:'current',url:'/api/prepare',status:200,result:{...identity,reused:false}},
     {action_id:'current',url:'/api/epochs',status:200,result:{query_revision:'scope',epochs:[{epoch_uuid:'a'}],total:1}}];
-  return {w,spec:{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:['a']}};
+  return {w,spec:{selector:'button',text:'Select all',enabled:true,requestPath:'/prepare',prepared:true,preparedUuids:['a'],expectedReused:false}};
 }
 
 test('prepare rejects an unrelated candidate even with ready-looking controls',t=>{
@@ -146,4 +146,80 @@ test('return to prepared review accepts exact current page and retained identity
   const {spec}=prepared(t);delete spec.prepared;delete spec.requestPath;
   spec.savedPrepared={candidate_revision_uuid:'candidate',queue_revision:'queue',candidate_scope_revision:'scope'};
   assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+});
+
+
+test('readiness atomically closes action capture and excludes later requests',t=>{
+  const w=setup(t,{button:[element('Ready')]});
+  const first={action_id:'current',start:0,method:'GET',url:'/api/current'};
+  w.requests.push(first);
+  const spec={selector:'button',text:'Ready'};
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+  assert.equal(w.active,null);
+  assert.equal(w.last_completed_action_id,'current');
+  const observed=JSON.parse(JSON.stringify(snapshotAction('current')));
+  assert.equal(observed.requests.length,1);assert.equal(observed.requests[0].end_ms,null);
+  assert.throws(()=>assertFinalizedRequests(observed),/correlation/);
+  w.requests.push({action_id:'current',start:w.completed.current.ready+1,url:'/api/late'});
+  Object.assign(first,{request_id:'one',status:200,end:w.completed.current.ready+10});
+  const finalized=snapshotAction('current');
+  assert.equal(finalized.requests.length,1);
+  assert.equal(finalized.total_ms,observed.total_ms);
+  assert.equal(finalized.frontend_spans[0].end_ms,finalized.total_ms);
+  assert.equal(finalized.frontend_spans[0].clipped_at_ready,true);
+  assertFinalizedRequests(finalized);
+  assert.equal(observed.requests[0].end_ms,null,'persisted observation remains a pending snapshot');
+});
+
+test('strict finalization refuses missing IDs, request failure and incomplete bodies',()=>{
+  const sample={action_id:'x',requests:[{action_id:'x',request_id:'r',status:200,end_ms:1}]};
+  assertFinalizedRequests(sample);
+  sample.requests[0].end_ms=null;
+  assert.throws(()=>assertFinalizedRequests(sample),/incomplete/);
+  sample.requests[0].end_ms=1;sample.requests[0].status=500;
+  assert.throws(()=>assertFinalizedRequests(sample),/Failed/);
+  sample.requests[0].status=200;sample.requests[0].request_id=null;
+  assert.throws(()=>assertFinalizedRequests(sample),/correlation/);
+});
+
+
+test('fresh preparation cannot admit a reused backend workload',t=>{
+  const {w,spec}=prepared(t);w.requests[0].result.reused=true;
+  assert.throws(()=>readiness(spec),/reuse classification/);
+});
+
+test('reuse preparation requires reuse and the same prepared candidate',t=>{
+  const {w,spec}=prepared(t);spec.expectedReused=true;spec.expectedCandidate='candidate';
+  assert.throws(()=>readiness(spec),/reuse classification/);
+  w.requests[0].result.reused=true;spec.expectedCandidate='other';
+  assert.throws(()=>readiness(spec),/changed candidate/);
+  spec.expectedCandidate='candidate';
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+});
+
+
+test('receipt replay must retain operation identity and use replay HTTP status',t=>{
+  const {w,spec}=prepared(t);spec.expectedOperation='original';spec.expectedPrepareStatus=200;
+  w.requests[0].result.operation_uuid='different';
+  assert.throws(()=>readiness(spec),/changed operation/);
+  w.requests[0].result.operation_uuid='original';w.requests[0].status=201;
+  assert.throws(()=>readiness(spec),/HTTP status/);
+  w.requests[0].status=200;assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+});
+
+
+test('owned preparation reset retries only explicit busy refusal and records setup',async t=>{
+  const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
+  const meta={fixture:'workflow-owned-v2',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  globalThis.fetch=async(url,options)=>{assert.equal(url,'http://127.0.0.1:1234/__benchmark__/reset-preparation');assert.equal(options.headers['X-Workspace-Request'],'1');calls++;return calls===1?{status:409,ok:false,text:async()=>'Other owned fixture requests are still active'}:{status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:900,incoming_count:100})};};
+  const result=await resetPreparation(meta,{timeoutMs:3000});assert.equal(result.attempts,2);assert.equal(result.included_in_headline,false);
+});
+
+test('owned preparation reset never retries changed authority or wrong counts',async t=>{
+  const previous=globalThis.fetch;t.after(()=>{globalThis.fetch=previous;});let calls=0;
+  const meta={fixture:'workflow-owned-v2',port:1234,epochs:1000,main_count:900,incoming_count:100};
+  globalThis.fetch=async()=>{calls++;return {status:409,ok:false,text:async()=>'Main/source/annotation authority changed; refusing reset'};};
+  await assert.rejects(resetPreparation(meta),/changed/);assert.equal(calls,1);
+  globalThis.fetch=async()=>({status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:899,incoming_count:100})});
+  await assert.rejects(resetPreparation(meta),/did not attest/);
 });

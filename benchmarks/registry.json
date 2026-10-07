@@ -238,7 +238,7 @@
       "epochs": 1000000,
       "samples": 3,
       "max_startup_seconds": 600,
-      "max_browser_seconds": 1800,
+      "max_browser_seconds": 7200,
       "max_rss_bytes": 6442450944,
       "comparison": {
         "relative": 0.25,
@@ -305,7 +305,8 @@
         {
           "id": "workbench.prepare",
           "variants": [
-            "current-queue"
+            "fresh",
+            "receipt-replay"
           ],
           "trace": false
         },
@@ -324,7 +325,10 @@
           "trace": true
         }
       ],
-      "scope": "Owned browser production components and real Flask route composition over actual million metadata epochs. Transactional SQL, metadata index admission/projection and source verification are explicit fixture doubles. Ordinary action latency and instrumented module evidence are separate. Broader scenario variants, native desktop/compositor and storage qualification remain explicitly unmeasured."
+      "scope": "Owned browser production components and real Flask route composition over actual million metadata epochs. Transactional SQL, metadata index admission/projection and source verification are explicit fixture doubles. Ordinary action latency and instrumented module evidence are separate. Broader scenario variants, native desktop/compositor and storage qualification remain explicitly unmeasured.",
+      "fixture_version": "workflow-owned-v2",
+      "default_protocol_epochs": 1000000,
+      "ci_protocol_epochs": 20000
     }
   }
 }

@@ -68,4 +68,41 @@ class WorkflowBackendTests(unittest.TestCase):
             self.assertEqual(logs[-1]['request_id'], trace.headers['X-Benchmark-Request-ID'])
             self.assertTrue(all(x['self_ms'] <= x['inclusive_ms'] + 1e-8 for x in logs[-1]['spans']))
 
+    def test_subset_membership_and_preparation_reset_are_exact(self):
+        with tempfile.TemporaryDirectory() as folder:
+            fixture, app, meta = build(ROOT, Path(folder), 1000, 300)
+            self.addCleanup(fixture.doCleanups)
+            service = fixture.case.service
+            client = app.test_client()
+            headers = {'X-Workspace-Request': '1', 'Origin': 'http://localhost:8766'}
+            root = '/api/protocols/' + meta['protocol'] + '/workbench'
+            self.assertEqual(len(service.rows), 1000)
+            self.assertEqual(meta['main_count'], 270)
+            self.assertEqual(meta['ambient_count'], 700)
+            self.assertEqual(len(service.protocols[meta['protocol']]['result']['cells']), 3)
+            self.assertEqual(len(service.query_result(meta['protocol'])['cells']), 3)
+            result = service.explore_preview({'field': 'protocol', 'operator': 'eq', 'value': 'example'}, include_tree=False, include_catalog_summary=False)
+            expected = {f'00000000-0000-0000-0000-{i:012x}' for i in [*range(270), *range(970, 1000)]}
+            self.assertEqual({member['uuid'] for member in result['membership']}, expected)
+            def prepare():
+                queue = client.get(root).get_json()
+                return client.post(root + '/prepare', json={'expected_queue_revision': queue['queue_revision'], 'operation_uuid': str(uuid.uuid4())}, headers=headers)
+            fresh = prepare()
+            self.assertEqual(fresh.status_code, 201, fresh.get_json())
+            self.assertFalse(fresh.get_json()['reused'])
+            reuse = prepare()
+            self.assertEqual(reuse.status_code, 200, reuse.get_json())
+            self.assertTrue(reuse.get_json()['reused'])
+            self.assertEqual(client.post('/__benchmark__/reset-preparation').status_code, 403)
+            reset = client.post('/__benchmark__/reset-preparation', headers=headers)
+            self.assertEqual(reset.status_code, 200, reset.get_json())
+            self.assertTrue(reset.get_json()['ready'])
+            second = prepare()
+            self.assertEqual(second.status_code, 201, second.get_json())
+            self.assertFalse(second.get_json()['reused'])
+            self.assertEqual(len(service.query_result(meta['protocol'])['epochs']), 270)
+            fixture.case.protocol_bindings.rows[0]['version'] += 1
+            refused = client.post('/__benchmark__/reset-preparation', headers=headers)
+            self.assertEqual(refused.status_code, 409)
+
 if __name__ == '__main__': unittest.main()

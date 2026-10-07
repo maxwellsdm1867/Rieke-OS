@@ -138,9 +138,9 @@ The million-row action fixture must exercise real request composition and fronte
 `tools/benchmark_workflow.py` runs an owned Flask fixture, actual product React
 components in an owned browser, and a correlated request/module ledger. It writes
 `receipt.json`, `workflow.html`, `workflow.md`, and raw browser/server evidence.
-The current core measures twelve variants: main open/return, Edit Tree open,
+The current core measures thirteen variants: main open/return, Edit Tree open,
 cell expansion, next epoch page, split removal, incoming select/deselect,
-cell-equality predicate search, Workbench preparation/return, and lazy trace
+cell-equality predicate search, fresh Workbench preparation, receipt replay, prepared return, and lazy trace
 inspection. Full App navigation, additional split operations, range/queued
 selection, other predicate distributions, preparation invalidation and trace
 supersession/scroll remain explicitly unmeasured; a core pass does not cover them.
@@ -173,9 +173,23 @@ checkout needs its own matching dependency resolution. Reusing installed modules
 is allowed only after the corresponding package locks match; do not compare
 baseline code silently linked against different frontend dependencies.
 
-The million fixture has 999,900 main epochs and 100 pending incoming epochs,
-10,000 cells, and two tiny owned waveform ramps. Project scale and pending-cohort
-scale are reported separately. Transactional SQL, metadata-index admission and
+By default all one million project epochs belong to the active protocol: 999,900
+main epochs and 100 pending incoming epochs across 10,000 cells. Use
+`--protocol-epochs 20000` for the CI profile: the project still materializes one
+million epochs, with 19,900 main, 100 incoming and 980,000 ambient epochs outside
+the active protocol. Pass the same value to both comparison runs. Project size,
+active-protocol size and pending-cohort size are recorded and checked separately;
+a subset-protocol pass does not qualify a million-member active cohort. Two tiny
+owned waveform ramps support trace validation.
+
+Each fresh preparation sample resets the owned fixture to its verified
+post-import snapshot outside the action clock, retaining warm metadata. Fresh
+preparation must return HTTP 201; remounting and preparing again measures HTTP 200
+receipt replay with the same operation and candidate. This is distinct from
+backend reuse under a new operation, which has a separate contract test. The
+prepared-return action retains the frontend session. Predicate editor setup waits
+for initial summaries before measuring search. Neither preparation nor replay may
+select or merge the proposed cohort. Transactional SQL, metadata-index admission and
 projection, and source verification are explicit doubles; request composition,
 predicate evaluation, frozen preparation, browsing, and UI controls run production
 code. This is not native database, production-index, installed-package or raw-parser

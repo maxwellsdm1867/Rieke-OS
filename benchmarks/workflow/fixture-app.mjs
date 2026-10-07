@@ -28,7 +28,7 @@ export function installObserver(config={}) {
     const url=new URL(typeof input==='string'?input:input.url,location.href);
     if(!url.pathname.startsWith('/api/'))return original(input,options);
     const action=state.active;
-    const row={action_id:action?.action_id||null,url:url.pathname+url.search,start:absolute(),method:options.method||'GET'};
+    const row={action_id:action?.action_id||null,...(!action&&state.last_completed_action_id?{after_action_id:state.last_completed_action_id}:{}),url:url.pathname+url.search,start:absolute(),method:options.method||'GET'};
     state.requests.push(row);
     const headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
     if(action){headers.set('X-Benchmark-Action',action.action_id);headers.set('X-Benchmark-Profile',action.phase==='profile'?'1':'0');}

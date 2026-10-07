@@ -296,6 +296,7 @@ def metrics(browser, requests, cfg):
             totals['browser:unattributed'] = attribution['unattributed_ms']
             totals['browser:cross_owner_overlap'] = attribution['cross_owner_overlap_ms']
             # Profiler self times across requests are work totals, not action wall fractions.
+            totals['server:unattributed'] = sum(max(0,r['total_ms']-sum(x['self_ms'] for x in r['spans'])) for r in server)
             for request in server:
                 for span in request['spans']:
                     key = 'server:'+owner(span['module'])
@@ -398,15 +399,18 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None):
     cfg = config()
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
     epochs,samples = (1000,1) if smoke else (cfg['epochs'],cfg['samples'])
+    protocol_epochs = epochs if protocol_epochs is None else protocol_epochs
+    if type(protocol_epochs) is not int or not 200 <= protocol_epochs <= epochs:
+        raise ValueError('Protocol epochs must be 200..project epochs')
     receipt = {'format':FORMAT,'status':'running','source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
-               'samples':samples,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
+               'samples':samples,'protocol_epochs':protocol_epochs,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
     server=browser=None
     started = time.monotonic()
@@ -414,7 +418,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None):
     server_ids,browser_ids = {},{}
     try:
         server,stream,deadline = execute_owned([sys.executable,'-B',str(ROOT/'benchmarks/workflow/server.py'),
-            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs)],
+            '--source-root',str(source_root),'--output',str(output/'server'),'--epochs',str(epochs),'--protocol-epochs',str(protocol_epochs)],
             output/'server.log',cfg['max_startup_seconds'],cfg['max_rss_bytes'],server_ids)
         streams.append(stream)
         meta_path = output/'server/server.json'
@@ -425,7 +429,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None):
             time.sleep(.25)
         receipt['fixture_setup_seconds'] = time.monotonic()-started
         metadata = json.loads(meta_path.read_text())
-        if metadata['epochs'] != epochs:
+        if metadata['epochs'] != epochs or metadata.get('protocol_epochs') != protocol_epochs:
             raise ValueError('Fixture scale mismatch')
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
@@ -478,7 +482,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None):
                 or not all(receipt['cleanup']['backend'].get(key) is True for key in ('server_closed','fixture_closed','instrumentation_restored'))):
             receipt['status'] = 'failed'
             receipt['cleanup_error'] = 'Owned cleanup incomplete or unverified'
-        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','fixture')
+        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
         provenance = {key:receipt[key] for key in provenance_keys if key in receipt}
         query_bench.write(output/'provenance.json',provenance)
         receipt['provenance_sha256'] = query_bench.sha((output/'provenance.json').read_bytes())
@@ -520,7 +524,7 @@ def load_receipt(path):
         if query_bench.sha(file.read_bytes()) != digest:
             raise ValueError('Workflow evidence changed')
     provenance = path.parent/'provenance.json'
-    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','fixture')
+    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
             or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
         raise ValueError('Provenance evidence changed')
@@ -531,7 +535,8 @@ def load_receipt(path):
     raw_fixture = json.loads((path.parent/'server/server.json').read_text())
     if raw_cleanup != receipt['cleanup']['backend']:
         raise ValueError('Raw cleanup disagrees with receipt')
-    if raw_fixture != receipt.get('fixture') or raw_fixture.get('epochs') != receipt.get('epochs'):
+    if (raw_fixture != receipt.get('fixture') or raw_fixture.get('epochs') != receipt.get('epochs')
+            or raw_fixture.get('protocol_epochs') != receipt.get('protocol_epochs')):
         raise ValueError('Raw fixture identity/scale disagrees with receipt')
     if receipt['environment'].get('cpu_model','').strip().lower() in {'unknown','unavailable','none','missing','n/a'}:
         raise ValueError('Unknown CPU hardware cannot qualify')
@@ -548,7 +553,7 @@ def load_receipt(path):
 
 def compare(baseline_path, candidate_path, output):
     baseline,candidate = load_receipt(baseline_path),load_receipt(candidate_path)
-    for key in ('config','harness_start','environment','browser_environment'):
+    for key in ('config','harness_start','environment','browser_environment','epochs','protocol_epochs'):
         if baseline[key] != candidate[key]:
             raise ValueError(f'Incomparable workflow {key}')
     if baseline['source_start']['status']:
@@ -571,6 +576,7 @@ def main():
     command.add_argument('--source-root',type=Path,default=ROOT)
     command.add_argument('--output',type=Path,required=True)
     command.add_argument('--smoke',action='store_true')
+    command.add_argument('--protocol-epochs',type=int)
     command.add_argument('--browser-executable',type=Path)
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
@@ -583,7 +589,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))

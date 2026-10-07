@@ -232,11 +232,11 @@ class WorkflowReceiptTests(unittest.TestCase):
                    cleanup={'browser_closed': True, 'vite_closed': True}, environment=browser_env)
         self.save(directory / 'browser/browser.json', raw)
         (directory / 'server/requests.jsonl').write_text('\n'.join(json.dumps(row) for row in backend)+'\n')
-        self.save(directory / 'server/server.json', {'epochs': 1_000_000})
+        self.save(directory / 'server/server.json', {'epochs': 1_000_000, 'protocol_epochs': 1_000_000})
         cleanup = dict(server_closed=True, fixture_closed=True, instrumentation_restored=True)
         self.save(directory / 'server/cleanup.json', cleanup)
         value = dict(format=bench.FORMAT, status='passed', smoke=False, config=self.cfg,
-                     epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
+                     epochs=1_000_000, protocol_epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
                      source_start=copy.deepcopy(self.source), source_end=copy.deepcopy(self.source),
                      environment=copy.deepcopy(self.env), browser_environment=browser_env,
                      cleanup={'browser_processes_closed': True, 'server_processes_closed': True,
@@ -250,7 +250,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         value['evidence_sha256'] = {str(p.relative_to(path.parent)): bench.query_bench.sha(p.read_bytes())
                                     for folder in ('browser', 'server')
                                     for p in (path.parent / folder).iterdir() if p.is_file()}
-        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','fixture')
+        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
         provenance = path.parent/'provenance.json'
         self.save(provenance, {key: value[key] for key in keys})
         value['provenance_sha256'] = bench.query_bench.sha(provenance.read_bytes())
@@ -263,6 +263,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.assertEqual(metric['total_ms'], 100)
         self.assertEqual(metric['profile_total_ms'], 1000)
         self.assertEqual(metric['modules']['server:disco.metadata'], 5)
+        self.assertEqual(metric['modules']['server:unattributed'], 15)
 
     def test_raw_tampering_without_resealing_refused(self):
         path, _ = self.receipt()
@@ -309,6 +310,17 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.seal(path, value)
         with self.assertRaises(ValueError):
             bench.load_receipt(path)
+
+    def test_compare_refuses_different_protocol_scope_with_same_project_scale(self):
+        baseline, _ = self.receipt('baseline')
+        candidate, value = self.receipt('candidate')
+        value['protocol_epochs'] = 20_000
+        value['fixture']['protocol_epochs'] = 20_000
+        self.save(candidate.parent/'server/server.json', value['fixture'])
+        self.seal(candidate, value)
+        bench.load_receipt(candidate)
+        with self.assertRaisesRegex(ValueError, 'protocol_epochs'):
+            bench.compare(baseline, candidate, self.root/'comparison.json')
 
     def test_backend_phase_and_h5_tripwire_refused(self):
         for index, changes in enumerate(({'phase': 'other'}, {'clock': 'browser'},

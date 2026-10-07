@@ -18,7 +18,7 @@ jobs:
   everyday-million:
     name: Actual million metadata query regression
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     defaults:
       run:
         shell: bash
@@ -141,14 +141,14 @@ jobs:
           fi
           if [ "$pinned_ready" -eq 1 ]; then
             run_check workflow-pinned-run "$python_bin" -B tools/benchmark_workflow.py run \
-              --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/workflow-pinned"
+              --source-root "$RUNNER_TEMP/everyday-pinned" --protocol-epochs 20000 --output "$result_dir/workflow-pinned"
           fi
           if [ "$previous_ready" -eq 1 ]; then
             run_check workflow-previous-run "$python_bin" -B tools/benchmark_workflow.py run \
-              --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/workflow-previous"
+              --source-root "$RUNNER_TEMP/everyday-previous" --protocol-epochs 20000 --output "$result_dir/workflow-previous"
           fi
           run_check workflow-candidate-run "$python_bin" -B tools/benchmark_workflow.py run \
-            --source-root "$GITHUB_WORKSPACE" --output "$result_dir/workflow-candidate"
+            --source-root "$GITHUB_WORKSPACE" --protocol-epochs 20000 --output "$result_dir/workflow-candidate"
           run_check workflow-pinned-compare "$python_bin" -B tools/benchmark_workflow.py compare \
             "$result_dir/workflow-pinned/receipt.json" "$result_dir/workflow-candidate/receipt.json" \
             --output "$result_dir/workflow-pinned-comparison.json"
