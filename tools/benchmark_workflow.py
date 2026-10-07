@@ -215,7 +215,11 @@ def compare_metrics(baseline, candidate, policy):
         after = candidate[case]
         if set(before['modules']) != set(after['modules']):
             raise ValueError('Different module attribution coverage')
+        if set(before.get('endpoints',{})) != set(after.get('endpoints',{})):
+            raise ValueError('Different action endpoint coverage')
         metrics = [('total_ms',before['total_ms'],after['total_ms'])]
+        metrics += [('endpoint:'+name,value,after['endpoints'][name])
+                    for name,value in before.get('endpoints',{}).items()]
         metrics += [('module:'+m,v,after['modules'][m]) for m,v in before['modules'].items()]
         for metric,old,new in metrics:
             number(old,'baseline metric');number(new,'candidate metric')
@@ -315,7 +319,9 @@ def metrics(browser, requests, cfg):
             'modules':{key:statistics.median(p.get(key,0) for p in profiles) for key in sorted(keys)},
             'request_counts':[len(s['requests']) for s in ordinary],
             'ordinary_samples_ms':[s['total_ms'] for s in ordinary],
-            'profile_samples_ms':[s['total_ms'] for s in profile_samples]}
+            'profile_samples_ms':[s['total_ms'] for s in profile_samples],
+            'endpoints':{name:statistics.median(s['trace'][name] for s in ordinary)
+                         for name in ('first_visible_ms','complete_ms')} if case.get('trace') else {}}
     return values
 
 
@@ -330,8 +336,15 @@ def report(receipt, output):
     for case,value in receipt.get('metrics',{}).items():
         lines.append(f"| {case} | {value['total_ms']:.2f} | {value['profile_total_ms']:.2f} | {value['request_counts']} |")
         table = ''.join(f'<tr><td>{esc(module)}</td><td>{ms:.3f}</td></tr>' for module,ms in sorted(value['modules'].items(),key=lambda x:-x[1]))
-        cards.append(f'<details><summary><strong>{esc(case)}</strong><span>{value["total_ms"]:.2f} ms ordinary · {value["profile_total_ms"]:.2f} ms instrumented</span></summary><table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>')
+        endpoint_labels = {'first_visible_ms':'First correct trace', 'complete_ms':'Complete trace window'}
+        endpoint_text = ' · '.join(f'{endpoint_labels.get(name,name)}: {ms:.2f} ms'
+                                   for name,ms in value.get('endpoints',{}).items())
+        endpoint_html = f'<p>Ordinary endpoint medians — {esc(endpoint_text)}</p>' if endpoint_text else ''
+        cards.append(f'<details><summary><strong>{esc(case)}</strong><span>{value["total_ms"]:.2f} ms ordinary · {value["profile_total_ms"]:.2f} ms instrumented</span></summary>{endpoint_html}<table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>')
     for case,value in receipt.get('metrics',{}).items():
+        if value.get('endpoints'):
+            lines += ['', '### '+case+' trace endpoints', '', '| Ordinary endpoint | Median (ms) |', '| --- | ---: |']
+            lines += [f'| {endpoint_labels.get(name,name)} | {ms:.2f} |' for name,ms in value['endpoints'].items()]
         lines += ['', '## '+case, '', '| Layer / module | Profile evidence (ms) |','| --- | ---: |']
         lines += [f'| {module} | {ms:.3f} |' for module,ms in sorted(value['modules'].items(),key=lambda x:-x[1])]
     limitations = receipt.get('limitations',[])

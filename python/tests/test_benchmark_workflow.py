@@ -182,6 +182,42 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertTrue(result['review_required'])
         self.assertNotEqual(result['status'], 'passed')
 
+    def test_trace_endpoint_regression_visible_when_total_improves(self):
+        baseline = {'trace': {'total_ms': 100, 'modules': {},
+                              'endpoints': {'first_visible_ms': 10, 'complete_ms': 100}}}
+        candidate = {'trace': {'total_ms': 80, 'modules': {},
+                               'endpoints': {'first_visible_ms': 30, 'complete_ms': 80}}}
+        result = bench.compare_metrics(baseline, candidate, {'relative': .25, 'absolute_ms': 5})
+        self.assertEqual(result['review_required'], ['trace/endpoint:first_visible_ms'])
+        self.assertEqual(result['status'], 'review_required')
+
+    def test_trace_endpoint_coverage_mismatch_refused(self):
+        baseline = {'trace': {'total_ms': 100, 'modules': {},
+                              'endpoints': {'first_visible_ms': 10, 'complete_ms': 100}}}
+        for endpoints in ({}, {'complete_ms': 100}):
+            candidate = {'trace': {'total_ms': 100, 'modules': {}, 'endpoints': endpoints}}
+            with self.subTest(endpoints=endpoints), self.assertRaisesRegex(ValueError, 'endpoint coverage'):
+                bench.compare_metrics(baseline, candidate, {'relative': .25, 'absolute_ms': 5})
+
+    def test_trace_endpoint_medians_exclude_profile_and_appear_in_both_reports(self):
+        action = self.action(True)
+        action['samples'][0]['trace']['first_visible_ms'] = 20
+        action['samples'][1]['trace']['first_visible_ms'] = 40
+        action['samples'][-1]['total_ms'] = 1000
+        action['samples'][-1]['trace'].update(first_visible_ms=500, complete_ms=1000)
+        result = bench.metrics({'actions': [action]}, {},
+                               {'cases': [{'id': 'inspect', 'trace': True}], 'samples': 2})
+        self.assertEqual(result['inspect/cold']['endpoints'],
+                         {'first_visible_ms': 30, 'complete_ms': 100})
+        with tempfile.TemporaryDirectory(prefix='workflow-report-test-') as directory:
+            output = Path(directory)
+            bench.report({'status': 'test-fixture', 'metrics': result}, output)
+            for name in ('workflow.md', 'workflow.html'):
+                text = (output/name).read_text()
+                self.assertIn('First correct trace', text)
+                self.assertIn('Complete trace window', text)
+                self.assertIn('30.00', text)
+
     def test_missing_action_or_module_cannot_compare(self):
         baseline = {'inspect': {'total_ms': 100, 'modules': {'decode': 10}}}
         for candidate in ({}, {'inspect': {'total_ms': 100, 'modules': {}}}):

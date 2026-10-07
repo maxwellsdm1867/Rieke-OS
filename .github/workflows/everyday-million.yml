@@ -49,6 +49,8 @@ jobs:
           test -f python/tests/test_benchmark_everyday.py
           test -f python/tests/test_benchmark_workflow.py
           test -f python/tests/test_benchmark_workflow_backend.py
+          test -f benchmarks/workflow/browser-readiness.test.mjs
+          node --test benchmarks/workflow/browser-readiness.test.mjs 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-readiness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/core-harness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/everyday-harness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-harness-tests.log"
