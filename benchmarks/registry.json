@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.4",
+  "suite_version": "1.0.5",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -10,32 +10,153 @@
     "budgets": "Uncalibrated: timings are observations, never a latency pass. Correctness is mandatory. No invented numerical target."
   },
   "cases": [
-    {"id":"db.typed.detail","kind":"latency","runner":"database","action":"E01-01","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"db.typed.page.scope","kind":"latency","runner":"database","action":"E01-07","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"db.typed.filter.matrix","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"db.typed.membership.exact","kind":"latency","runner":"database","action":"E01-05","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"db.typed.facets.two","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"db.typed.facets.all_eligible","kind":"latency","runner":"database","action":"E01-09","metrics":["cold_reader_ms","warm_reader_ms"]},
-    {"id":"ui.mounted.inspector.first","kind":"latency","runner":"frontend","action":"E01-01","metrics":["content_ms","authority_ms"]},
-    {"id":"ui.mounted.inspector.return","kind":"latency","runner":"frontend","action":"E01-03","metrics":["content_ms","authority_ms"]},
-    {"id":"correctness.navigation","kind":"correctness","runner":"frontend-tests","action":"E01-03"},
-    {"id":"correctness.frozen_export_tags_ingest","kind":"correctness","runner":"database-tests","action":"E01-08"}
+    {
+      "id": "db.typed.detail",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-01",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "db.typed.page.scope",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-07",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "db.typed.filter.matrix",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-09",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "db.typed.membership.exact",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-05",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "db.typed.facets.two",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-09",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "db.typed.facets.all_eligible",
+      "kind": "latency",
+      "runner": "database",
+      "action": "E01-09",
+      "metrics": [
+        "cold_reader_ms",
+        "warm_reader_ms"
+      ]
+    },
+    {
+      "id": "ui.mounted.inspector.first",
+      "kind": "latency",
+      "runner": "frontend",
+      "action": "E01-01",
+      "metrics": [
+        "content_ms",
+        "authority_ms"
+      ]
+    },
+    {
+      "id": "ui.mounted.inspector.return",
+      "kind": "latency",
+      "runner": "frontend",
+      "action": "E01-03",
+      "metrics": [
+        "content_ms",
+        "authority_ms"
+      ]
+    },
+    {
+      "id": "correctness.navigation",
+      "kind": "correctness",
+      "runner": "frontend-tests",
+      "action": "E01-03"
+    },
+    {
+      "id": "correctness.frozen_export_tags_ingest",
+      "kind": "correctness",
+      "runner": "database-tests",
+      "action": "E01-08"
+    }
   ],
   "release_requirements": [
-    {"id":"ui.native.navigation","status":"unsupported","reason":"Owned native fixture launch and independent rendered authority adapter are not yet integrated. Mounted timings do not prove scroll/layout restoration, trace drawing, native latency or zero H5 reads."},
-    {"id":"db.native.tag_latency","status":"unsupported","reason":"Transactional doubles prove correctness only; no owned native MySQL timing fixture in this core."},
-    {"id":"db.ingest.throughput","status":"unsupported","reason":"Small H5 parsing/import identity tests are correctness only, not end-to-end native ingestion throughput."}
+    {
+      "id": "ui.native.navigation",
+      "status": "unsupported",
+      "reason": "Owned native fixture launch and independent rendered authority adapter are not yet integrated. Mounted timings do not prove scroll/layout restoration, trace drawing, native latency or zero H5 reads."
+    },
+    {
+      "id": "db.native.tag_latency",
+      "status": "unsupported",
+      "reason": "Transactional doubles prove correctness only; no owned native MySQL timing fixture in this core."
+    },
+    {
+      "id": "db.ingest.throughput",
+      "status": "unsupported",
+      "reason": "Small H5 parsing/import identity tests are correctness only, not end-to-end native ingestion throughput."
+    }
   ],
   "gaps": [
-    {"id":"db.fields.complete","reason":"Current eligible-field oracle excludes some deep paths, long arrays/strings and ticks. Independent all-raw-field inventory required; all fields must remain accessible regardless acceleration tier."},
-    {"id":"db.fields.fallback","reason":"Tier promotion/demotion with exact membership/order/types/units and slow correct fallback not implemented."},
-    {"id":"db.fields.incomplete","reason":"Explicit unavailable/extraction-incomplete semantics for arbitrary raw fields not implemented; never infer empty success."},
-    {"id":"db.adaptive.workload","reason":"Design only: compare static, instrumented-fixed, adaptive, manually tuned; count telemetry/build/refresh/contention cost."},
-    {"id":"db.adaptive.shift-budget","reason":"Design only: workload shift, rare export, updates, deduplication, hysteresis, cooldown, manual pins."},
-    {"id":"db.adaptive.publish-fault","reason":"Design only: cancellation/crash/revision/partial-publication refusal."},
-    {"id":"db.import.general_json","reason":"Generalized metadata JSON importer not implemented."},
-    {"id":"db.export.metadata_vnext_attach_traces","reason":"Metadata-only export vNext and Attach Traces not implemented. Current SQLite export has source pointers, not portable raw data."},
-    {"id":"db.stress.scale","reason":"Core is 12 sealed metadata records and 500 mocked frontend rows, not representative large acquisition scale; separate stress plan applies."}
+    {
+      "id": "db.fields.complete",
+      "reason": "Current eligible-field oracle excludes some deep paths, long arrays/strings and ticks. Independent all-raw-field inventory required; all fields must remain accessible regardless acceleration tier."
+    },
+    {
+      "id": "db.fields.fallback",
+      "reason": "Tier promotion/demotion with exact membership/order/types/units and slow correct fallback not implemented."
+    },
+    {
+      "id": "db.fields.incomplete",
+      "reason": "Explicit unavailable/extraction-incomplete semantics for arbitrary raw fields not implemented; never infer empty success."
+    },
+    {
+      "id": "db.adaptive.workload",
+      "reason": "Design only: compare static, instrumented-fixed, adaptive, manually tuned; count telemetry/build/refresh/contention cost."
+    },
+    {
+      "id": "db.adaptive.shift-budget",
+      "reason": "Design only: workload shift, rare export, updates, deduplication, hysteresis, cooldown, manual pins."
+    },
+    {
+      "id": "db.adaptive.publish-fault",
+      "reason": "Design only: cancellation/crash/revision/partial-publication refusal."
+    },
+    {
+      "id": "db.import.general_json",
+      "reason": "Generalized metadata JSON importer not implemented."
+    },
+    {
+      "id": "db.export.metadata_vnext_attach_traces",
+      "reason": "Metadata-only export vNext and Attach Traces not implemented. Current SQLite export has source pointers, not portable raw data."
+    },
+    {
+      "id": "db.stress.scale",
+      "reason": "Core is 12 sealed metadata records and 500 mocked frontend rows, not representative large acquisition scale; separate stress plan applies."
+    }
   ],
   "stress_tracks": {
     "everyday-million": {
@@ -110,6 +231,100 @@
         ]
       },
       "scope": "Production service/tree and SQLite typed-query methods with explicit synthetic admission seams; actual million metadata records, no waveforms. Serial tree and typed workers; setup separate; one first-root and three repeated query samples. No native SQL, HTTP, renderer, build/seal, mutation/recovery or release qualification."
+    },
+    "workflow-million": {
+      "version": "1.0.0",
+      "runner": "tools/benchmark_workflow.py",
+      "epochs": 1000000,
+      "samples": 3,
+      "max_startup_seconds": 600,
+      "max_browser_seconds": 1800,
+      "max_rss_bytes": 6442450944,
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0
+      },
+      "cases": [
+        {
+          "id": "view.open",
+          "variants": [
+            "cold-component"
+          ],
+          "trace": false
+        },
+        {
+          "id": "view.return",
+          "variants": [
+            "warm-resource"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tree.open",
+          "variants": [
+            "main-columns"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tree.expand",
+          "variants": [
+            "main-first-cell"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tree.next_page",
+          "variants": [
+            "main-cell-epochs"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tree.split_change",
+          "variants": [
+            "remove-epoch-block"
+          ],
+          "trace": false
+        },
+        {
+          "id": "tree.selection",
+          "variants": [
+            "incoming-select-all",
+            "incoming-deselect-all"
+          ],
+          "trace": false
+        },
+        {
+          "id": "predicate.search",
+          "variants": [
+            "cell-equality"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.prepare",
+          "variants": [
+            "current-queue"
+          ],
+          "trace": false
+        },
+        {
+          "id": "workbench.open",
+          "variants": [
+            "prepared-return"
+          ],
+          "trace": false
+        },
+        {
+          "id": "trace.inspect",
+          "variants": [
+            "first-owned-waveform"
+          ],
+          "trace": true
+        }
+      ],
+      "scope": "Owned browser production components and real Flask route composition over actual million metadata epochs. Transactional SQL, metadata index admission/projection and source verification are explicit fixture doubles. Ordinary action latency and instrumented module evidence are separate. Broader scenario variants, native desktop/compositor and storage qualification remain explicitly unmeasured."
     }
   }
 }

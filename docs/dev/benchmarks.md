@@ -56,8 +56,8 @@ declaration. Earlier runners without it retain their original flat schema paths
 and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
-The core receipt schema is unchanged. Registry version 1.0.4 adds discovery for
-the separate everyday-million track; core cases and sampling are unchanged, but
+The core receipt schema is unchanged. Registry suite version 1.0.5 includes the separate everyday-million and
+workflow-million tracks; core cases and sampling are unchanged, but
 the registry edit intentionally changes the core suite fingerprint. Retain older
 receipts as historical evidence and establish a matched current-suite baseline.
 A test relocation changes path keys
@@ -96,7 +96,7 @@ permitted-read runs on the corrected commit are required for qualification.
 
 ## End-to-end benchmark workflow and module attribution
 
-**Status: agreed specification; end-to-end runner and stage attribution are not yet implemented.** Measure each everyday action end to end on a one-million-epoch project and map contributing stages to owning modules. The existing 34-case query suite is supporting evidence and does not complete this requirement. Complete this benchmark before resuming the planned browsing optimizations.
+**Status: core workflow runner implemented; million-scale validation pending. The broader scenario matrix below remains the target, with unmeasured variants reported explicitly.** Measure each everyday action end to end on a one-million-epoch project and map contributing stages to owning modules. The existing 34-case query suite is supporting evidence and does not complete this requirement. Complete this benchmark before resuming the planned browsing optimizations.
 
 The headline boundary is user intent to the correct, current, usable rendered result, including the explicitly requested click-to-trace appearance measurement. Backend request-to-response is a nested measurement. Edit Tree means opening the editor, changing its splits/grouping, and selection/deselection. No passing end-to-end receipt may be inferred from a query-only receipt.
 
@@ -132,6 +132,72 @@ Backend work is nested inside HTTP request latency. Parallel requests overlap. D
 Reuse the existing `benchmarks/navigation-probe.mjs` action/readiness observer and request ledger; it currently provides temporal observations rather than causal module attribution. For backend attribution, preserve exact production function identities: wrapping TreePages canonical reader methods changes batching eligibility. An isolated profiler pass can collect nested attribution without monkeypatching those methods, but its overhead must be measured and its timing kept separate from ordinary action samples.
 
 The million-row action fixture must exercise real request composition and frontend admission. The current synthetic tree/catalog and typed-index initializer omit route-level and native authority costs. Cover those boundaries explicitly or mark them unmeasured; no standalone query result can fill in missing action timing. Existing native/seal/recovery/renderer qualification gaps remain.
+
+### Run the end-to-end core workflow
+
+`tools/benchmark_workflow.py` runs an owned Flask fixture, actual product React
+components in an owned browser, and a correlated request/module ledger. It writes
+`receipt.json`, `workflow.html`, `workflow.md`, and raw browser/server evidence.
+The current core measures twelve variants: main open/return, Edit Tree open,
+cell expansion, next epoch page, split removal, incoming select/deselect,
+cell-equality predicate search, Workbench preparation/return, and lazy trace
+inspection. Full App navigation, additional split operations, range/queued
+selection, other predicate distributions, preparation invalidation and trace
+supersession/scroll remain explicitly unmeasured; a core pass does not cover them.
+
+Provision the pinned Python/Node runtime above and the committed frontend and
+desktop dependency locks. Playwright comes from the desktop development dependencies.
+On a new owned CI checkout use `npm ci --prefix desktop --ignore-scripts` and
+`node desktop/node_modules/playwright/cli.js install --with-deps chromium`.
+On a development machine, an explicitly supplied Chrome executable may be used;
+its actual version is recorded and must match the comparison run.
+
+```sh
+# Small composition diagnostic: never qualifies as a million-epoch measurement.
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py run \
+  --smoke --output benchmarks/results/workflow-smoke-unique
+# Actual million epochs; three ordinary action samples and a separate profile pass.
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py run \
+  --source-root . --output benchmarks/results/workflow-candidate-unique
+# Run the same current harness against a clean retained source checkout first.
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py run \
+  --source-root /absolute/path/to/baseline --output benchmarks/results/workflow-baseline-unique
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py compare \
+  benchmarks/results/workflow-baseline-unique/receipt.json \
+  benchmarks/results/workflow-candidate-unique/receipt.json \
+  --output benchmarks/results/workflow-comparison-unique.json
+```
+
+Use `--browser-executable /absolute/path/to/chrome` when needed. Each source
+checkout needs its own matching dependency resolution. Reusing installed modules
+is allowed only after the corresponding package locks match; do not compare
+baseline code silently linked against different frontend dependencies.
+
+The million fixture has 999,900 main epochs and 100 pending incoming epochs,
+10,000 cells, and two tiny owned waveform ramps. Project scale and pending-cohort
+scale are reported separately. Transactional SQL, metadata-index admission and
+projection, and source verification are explicit doubles; request composition,
+predicate evaluation, frozen preparation, browsing, and UI controls run production
+code. This is not native database, production-index, installed-package or raw-parser
+qualification. Metadata-request H5 access fails; only the owned trace route may
+open the owned waveform file, with access recorded per request.
+
+Ordinary browser action time is the headline. Backend cProfile function/module
+self-time, inclusive time and calls are collected in separate instrumented requests;
+React render durations are also separate evidence. Instrumented action totals show
+the observer's cost without estimating it away. Transport intervals contain backend
+work; overlapping requests and React durations are not added into an invented wall
+time decomposition. Browser unmeasured intervals and cross-owner overlaps remain
+visible. cProfile aggregates do not provide a backend critical-path timeline.
+
+The runner owns all worker processes, enforces time/RSS limits, records cleanup,
+and shares the query benchmark's serial lock. Failed readiness, missing actions,
+wrong UUIDs/counts/trace windows, tampered evidence, mismatched runtimes and unknown
+cleanup cannot qualify. Comparisons check each action total and each measured
+module independently using provisional review thresholds; a faster total cannot
+hide a slower stage. Different module coverage requires review rather than a
+fabricated zero. Dirty-source runs remain development diagnostics; repeat the
+final committed source before delivery.
 
 ## Required everyday query check after every app update
 

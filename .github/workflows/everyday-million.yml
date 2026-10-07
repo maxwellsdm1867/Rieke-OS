@@ -1,4 +1,4 @@
-name: Everyday million query regression
+name: Everyday million query and workflow regression
 
 on:
   push:
@@ -18,7 +18,7 @@ jobs:
   everyday-million:
     name: Actual million metadata query regression
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -33,6 +33,10 @@ jobs:
           cache-dependency-path: workspace-app/package-lock.json
       - name: Install committed frontend dependencies
         run: npm ci --prefix workspace-app
+      - name: Install committed browser benchmark dependencies
+        run: |
+          npm ci --prefix desktop --ignore-scripts
+          desktop/node_modules/.bin/playwright install --with-deps chromium
       - uses: astral-sh/setup-uv@v6
       - name: Install pinned benchmark runtime
         run: |
@@ -43,8 +47,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/everyday-results"
           test -f python/tests/test_benchmark.py
           test -f python/tests/test_benchmark_everyday.py
+          test -f python/tests/test_benchmark_workflow.py
+          test -f python/tests/test_benchmark_workflow_backend.py
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/core-harness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/everyday-harness-tests.log"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-harness-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-backend-tests.log"
       - name: Measure retained baselines and candidate serially
         env:
           PINNED_SHA: 34ce2e06dec0e2886d5a2310f21e02cf818cb646
@@ -101,6 +109,52 @@ jobs:
             --output "$result_dir/previous-comparison.json"
           run_check candidate-core "$python_bin" -B tools/benchmark.py run \
             --output "$result_dir/core"
+          # The browser workflow is a separate end-to-end track. Run it even
+          # after earlier measurement/core failures, retaining every raw receipt.
+          # Identical locks are required before sharing dependencies with baseline
+          # source worktrees; never install different dependencies and compare.
+          prepare_browser_baseline() {
+            source_dir="$1"
+            for package_dir in workspace-app desktop; do
+              if ! cmp -s "$GITHUB_WORKSPACE/$package_dir/package-lock.json" "$source_dir/$package_dir/package-lock.json"; then
+                printf 'Incomparable browser baseline: %s/%s/package-lock.json differs from candidate.\n' "$source_dir" "$package_dir" >&2
+                return 1
+              fi
+            done
+            for package_dir in workspace-app desktop; do
+              ln -s "$GITHUB_WORKSPACE/$package_dir/node_modules" "$source_dir/$package_dir/node_modules" || return 1
+              # A symlink is a file to Git; the usual node_modules/ ignore rule
+              # need not cover it. This shared local exclude is CI-only.
+              exclude_file="$(git -C "$source_dir" rev-parse --git-path info/exclude)"
+              printf '/%s/node_modules\n' "$package_dir" >> "$exclude_file"
+            done
+          }
+          # setup failures are evidence failures; candidate still runs.
+          pinned_ready=0
+          previous_ready=0
+          prepare_browser_baseline "$RUNNER_TEMP/everyday-pinned" > "$result_dir/workflow-pinned-setup.log" 2>&1 && pinned_ready=1 || failure=1
+          if [ "$PREVIOUS_SHA" = "$PINNED_SHA" ]; then
+            previous_workflow_receipt="$result_dir/workflow-pinned/receipt.json"
+          else
+            prepare_browser_baseline "$RUNNER_TEMP/everyday-previous" > "$result_dir/workflow-previous-setup.log" 2>&1 && previous_ready=1 || failure=1
+            previous_workflow_receipt="$result_dir/workflow-previous/receipt.json"
+          fi
+          if [ "$pinned_ready" -eq 1 ]; then
+            run_check workflow-pinned-run "$python_bin" -B tools/benchmark_workflow.py run \
+              --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/workflow-pinned"
+          fi
+          if [ "$previous_ready" -eq 1 ]; then
+            run_check workflow-previous-run "$python_bin" -B tools/benchmark_workflow.py run \
+              --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/workflow-previous"
+          fi
+          run_check workflow-candidate-run "$python_bin" -B tools/benchmark_workflow.py run \
+            --source-root "$GITHUB_WORKSPACE" --output "$result_dir/workflow-candidate"
+          run_check workflow-pinned-compare "$python_bin" -B tools/benchmark_workflow.py compare \
+            "$result_dir/workflow-pinned/receipt.json" "$result_dir/workflow-candidate/receipt.json" \
+            --output "$result_dir/workflow-pinned-comparison.json"
+          run_check workflow-previous-compare "$python_bin" -B tools/benchmark_workflow.py compare \
+            "$previous_workflow_receipt" "$result_dir/workflow-candidate/receipt.json" \
+            --output "$result_dir/workflow-previous-comparison.json"
           exit "$failure"
       - name: Preserve benchmark evidence including failures
         if: always()
