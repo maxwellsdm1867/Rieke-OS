@@ -211,10 +211,10 @@
 .incoming-browser .column-tree .tp-level-heading{display:grid;grid-template-columns:23px minmax(0,1fr);gap:5px 8px;padding:9px 12px}
 .incoming-browser .tree-design-content.with-recording{grid-template-rows:minmax(320px,1fr) minmax(260px,1fr)}
 
-/* Highlight outlines are independent of actual incoming selection color. */
+/* Highlight fills are independent of actual incoming selection. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch{display:grid;grid-template-columns:minmax(0,1fr) 82px 26px 24px;gap:3px;min-height:30px;margin-left:8px;padding:2px 4px!important}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:not(.bulk-selected){background:transparent}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:1px solid var(--accent);outline-offset:-1px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted{outline:0}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>.incoming-selection-switch{width:82px;min-width:82px;min-height:26px;flex:none;padding:3px 5px;gap:5px;border:0;background:transparent;white-space:nowrap;font-size:10px}
 .incoming-browser .inspection-cell-tree .incoming-selection-switch>span{white-space:nowrap;overflow-wrap:normal;line-height:14px}
 .incoming-browser .inspection-cell-tree .incoming-switch-track{flex:0 0 23px}
@@ -225,7 +225,9 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child{justify-content:flex-start;gap:4px;overflow:hidden}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch .epoch-short-protocol{min-width:0}
 
-/* Use one row outline for highlighting/focus, without a second inset stripe. */
+/* Highlight rows with fill only; preserve borderless keyboard focus on the label. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:is(.active,.bulk-selected,.is-highlighted){box-shadow:none}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:has(>button:first-child:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted:not(.bulk-selected){background:var(--accent-soft)}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted.bulk-selected{background:color-mix(in srgb,var(--success-soft) 84%,var(--success-ink))}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible{outline:0}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible :is(strong,time){text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
