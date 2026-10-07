@@ -10,6 +10,7 @@ import uuid
 from recording_workspace import now, workspace_tables
 from workspace_audit import build_audit_payload
 from disco.workbench.recipes import checksum, member_map
+from disco.operation_timing import elapsed
 
 ACTION = 'explorer_revision_created'
 
@@ -64,13 +65,14 @@ class ExplorerHistory:
         return rows[0] if rows else None
 
     def protocol_binding(self, protocol_uuid):
-        row = self.protocol_binding_header(protocol_uuid)
-        if row is None:
-            return None
-        identity = row['revision_uuid']
-        if identity not in self._recipe_cache:
-            self._recipe_cache[identity] = self.get(identity)['recipe']
-        return {**row, 'recipe': copy.deepcopy(self._recipe_cache[identity])}
+        with elapsed("disco.decisions.explorer", "protocol_binding"):
+            row = self.protocol_binding_header(protocol_uuid)
+            if row is None:
+                return None
+            identity = row['revision_uuid']
+            if identity not in self._recipe_cache:
+                self._recipe_cache[identity] = self.get(identity)['recipe']
+            return {**row, 'recipe': copy.deepcopy(self._recipe_cache[identity])}
 
     def bind(self, revision_uuid, protocol_uuid, expected_version, actor, diff, previous_count,
              *, expected_query_revision=None, current_query_revision=None, diff_summary=None,
@@ -213,17 +215,18 @@ class ExplorerHistory:
                 'limit': limit, 'offset': offset, 'has_more': len(rows) > limit}
 
     def get(self, revision_uuid):
-        revision_uuid = str(uuid.UUID(revision_uuid))
-        rows = (self.Revision & {'project_uuid': self.project_uuid, 'revision_uuid': revision_uuid}).to_dicts()
-        if not rows:
-            raise KeyError('Explorer revision not found in this project')
-        row = rows[0]
-        recipe = copy.deepcopy(row['recipe'])
-        expected = recipe.pop('content_sha256', None)
-        if (expected != checksum(recipe) or recipe.get('format') != 'recording-explorer-revision'
-                or recipe.get('version') != 1 or recipe.get('project_uuid') != self.project_uuid
-                or recipe.get('revision_uuid') != revision_uuid
-                or any(recipe.get(key) != value for key, value in row['summary'].items())):
-            raise ValueError('Stored explorer revision failed integrity verification')
-        recipe['content_sha256'] = expected
-        return {'revision_uuid': revision_uuid, 'recipe': recipe, 'summary': copy.deepcopy(row['summary'])}
+        with elapsed("disco.decisions.explorer", "get"):
+            revision_uuid = str(uuid.UUID(revision_uuid))
+            rows = (self.Revision & {'project_uuid': self.project_uuid, 'revision_uuid': revision_uuid}).to_dicts()
+            if not rows:
+                raise KeyError('Explorer revision not found in this project')
+            row = rows[0]
+            recipe = copy.deepcopy(row['recipe'])
+            expected = recipe.pop('content_sha256', None)
+            if (expected != checksum(recipe) or recipe.get('format') != 'recording-explorer-revision'
+                    or recipe.get('version') != 1 or recipe.get('project_uuid') != self.project_uuid
+                    or recipe.get('revision_uuid') != revision_uuid
+                    or any(recipe.get(key) != value for key, value in row['summary'].items())):
+                raise ValueError('Stored explorer revision failed integrity verification')
+            recipe['content_sha256'] = expected
+            return {'revision_uuid': revision_uuid, 'recipe': recipe, 'summary': copy.deepcopy(row['summary'])}

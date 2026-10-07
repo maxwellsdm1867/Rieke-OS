@@ -17,6 +17,7 @@ from disco.workbench.recipes import checksum
 from workspace_service import validate_filters, metadata_filter_predicate
 from disco.navigation.tag_predicates import TagPredicates, referenced_fields, annotation_locks
 from disco.navigation.tree import predicate_scope
+from disco.operation_timing import elapsed
 
 MAX_JOBS = 8
 MAX_RESULT_BYTES = 2 * 1024 * 1024
@@ -425,61 +426,62 @@ class SummaryJobs:
 
 def explore_page(service, predicate, *, scope=None, protocol_uuid=None, filters=None, limit=60, cursor=None):
     """Bounded native row DTOs; the public continuation binds query and generation."""
-    import base64
-    import hashlib
-    import hmac
-    if type(limit) is not int or not 1 <= limit <= 100:
-        raise ValueError('Page limit must be 1–100')
-    context = query_context(service, {'predicate': predicate, 'scope': {} if scope is None else scope,
-                                     'protocol_uuid': protocol_uuid, 'filters': filters})
-    before = generation(service, context)
-    query = checksum(context)
-    secret = getattr(service, '_explore_cursor_secret', None)
-    if secret is None:
-        secret = service._explore_cursor_secret = uuid.uuid4().bytes
-    rank, token, membership = None, None, None
-    if cursor is not None:
-        if not isinstance(cursor, str) or len(cursor) > 4096:
-            raise ValueError('Cursor must be a bounded opaque continuation')
-        try:
-            encoded, signature = cursor.split('.')
-            if not hmac.compare_digest(signature, hmac.new(secret, encoded.encode(), hashlib.sha256).hexdigest()):
-                raise ValueError('Cursor signature mismatch')
-            token = json.loads(base64.urlsafe_b64decode(encoded + '=' * (-len(encoded) % 4)))
-            if token['generation'] != before or token['query'] != query:
-                raise StaleQuery('Cursor belongs to a different metadata generation or query')
-            rank = token['rank']
-            if type(rank) is not int or rank < 1:
-                raise ValueError('Invalid cursor rank')
-        except StaleQuery:
-            raise
-        except (ValueError, KeyError, TypeError) as error:
-            raise ValueError('Malformed metadata cursor') from error
-    native = (typed_combination_over_budget(context) or not typed_policy(service) or context_annotation_fields(context) or
-              any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
-    with typed_reader(service) as reader:
-        if reader is not None and not native:
-            combined, typed = typed_scope(service, context)
-            result = reader.page(combined, typed, limit=limit, cursor=rank)
-        else:
-            rows = _native_rows(service, context)
-            _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
-            members = set(identities)
-            rows = sorted((row for row in rows if row['epoch_uuid'] in members),
-                          key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
-            membership = checksum(rows)
-            if token is not None and token.get('membership') != membership:
-                raise StaleQuery('Authoritative filtered membership changed during paging')
-            offset = rank or 0
-            result = {'rows': copy.deepcopy(rows[offset:offset+limit]),
-                      'cursor': offset+limit if offset+limit < len(rows) else None}
-    if before != generation(service, context):
-        raise StaleQuery('Metadata or annotation generation changed during the page')
-    if result['cursor'] is not None:
-        token = {'rank': result['cursor'], 'generation': before, 'query': query, 'membership': membership}
-        encoded = base64.urlsafe_b64encode(json.dumps(token, separators=(',', ':')).encode()).decode().rstrip('=')
-        result['cursor'] = encoded + '.' + hmac.new(secret, encoded.encode(), hashlib.sha256).hexdigest()
-    return {**result, 'generation': before, 'limit': limit}
+    with elapsed("disco.metadata.explore_queries", "explore_page"):
+        import base64
+        import hashlib
+        import hmac
+        if type(limit) is not int or not 1 <= limit <= 100:
+            raise ValueError('Page limit must be 1–100')
+        context = query_context(service, {'predicate': predicate, 'scope': {} if scope is None else scope,
+                                         'protocol_uuid': protocol_uuid, 'filters': filters})
+        before = generation(service, context)
+        query = checksum(context)
+        secret = getattr(service, '_explore_cursor_secret', None)
+        if secret is None:
+            secret = service._explore_cursor_secret = uuid.uuid4().bytes
+        rank, token, membership = None, None, None
+        if cursor is not None:
+            if not isinstance(cursor, str) or len(cursor) > 4096:
+                raise ValueError('Cursor must be a bounded opaque continuation')
+            try:
+                encoded, signature = cursor.split('.')
+                if not hmac.compare_digest(signature, hmac.new(secret, encoded.encode(), hashlib.sha256).hexdigest()):
+                    raise ValueError('Cursor signature mismatch')
+                token = json.loads(base64.urlsafe_b64decode(encoded + '=' * (-len(encoded) % 4)))
+                if token['generation'] != before or token['query'] != query:
+                    raise StaleQuery('Cursor belongs to a different metadata generation or query')
+                rank = token['rank']
+                if type(rank) is not int or rank < 1:
+                    raise ValueError('Invalid cursor rank')
+            except StaleQuery:
+                raise
+            except (ValueError, KeyError, TypeError) as error:
+                raise ValueError('Malformed metadata cursor') from error
+        native = (typed_combination_over_budget(context) or not typed_policy(service) or context_annotation_fields(context) or
+                  any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
+        with typed_reader(service) as reader:
+            if reader is not None and not native:
+                combined, typed = typed_scope(service, context)
+                result = reader.page(combined, typed, limit=limit, cursor=rank)
+            else:
+                rows = _native_rows(service, context)
+                _, identities, _ = service.match_predicate(predicate, (row['epoch_uuid'] for row in rows))
+                members = set(identities)
+                rows = sorted((row for row in rows if row['epoch_uuid'] in members),
+                              key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
+                membership = checksum(rows)
+                if token is not None and token.get('membership') != membership:
+                    raise StaleQuery('Authoritative filtered membership changed during paging')
+                offset = rank or 0
+                result = {'rows': copy.deepcopy(rows[offset:offset+limit]),
+                          'cursor': offset+limit if offset+limit < len(rows) else None}
+        if before != generation(service, context):
+            raise StaleQuery('Metadata or annotation generation changed during the page')
+        if result['cursor'] is not None:
+            token = {'rank': result['cursor'], 'generation': before, 'query': query, 'membership': membership}
+            encoded = base64.urlsafe_b64encode(json.dumps(token, separators=(',', ':')).encode()).decode().rstrip('=')
+            result['cursor'] = encoded + '.' + hmac.new(secret, encoded.encode(), hashlib.sha256).hexdigest()
+        return {**result, 'generation': before, 'limit': limit}
 
 
 def register_explore_query_routes(app, service, db_lock, registration_locks, read_request):

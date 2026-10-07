@@ -260,6 +260,15 @@ def load_requests(path):
             raise ValueError('Missing backend profile evidence')
         if row['phase'] == 'ordinary' and row['spans']:
             raise ValueError('Ordinary latency run was profiled')
+        if type(row.get('module_timing')) is not bool or not isinstance(row.get('module_timings'),list):
+            raise ValueError('Missing module timing mode/records')
+        if not row['module_timing'] and row['module_timings']:
+            raise ValueError('Unrequested module timing records')
+        for timing in row['module_timings']:
+            number(timing.get('elapsed_ms'),'module elapsed time')
+            if (not timing.get('module') or not timing.get('operation')
+                    or timing.get('outcome') not in ('ok','error')):
+                raise ValueError('Invalid module timing record')
         for span in row['spans']:
             inclusive = number(span.get('inclusive_ms'),'profile inclusive')
             own = number(span.get('self_ms'),'profile self')
@@ -285,6 +294,7 @@ def metrics(browser, requests, cfg):
         case = next(c for c in cfg['cases'] if c['id'] == action['id'])
         validate_action(action,case,cfg['samples'],profile=browser.get('profile'))
         profiles = []
+        module_calls = {}
         for sample in action['samples']:
             server = []
             for request in sample['requests']:
@@ -292,8 +302,14 @@ def metrics(browser, requests, cfg):
                 if (remote is None or remote['action_id'] != sample['action_id']
                         or remote['phase'] != sample['phase'] or remote['status'] != request['status']):
                     raise ValueError('Browser/server request correlation mismatch')
+                if remote.get('module_timing',False) != browser.get('module_timing',False):
+                    raise ValueError('Browser/server module timing mode mismatch')
                 server.append(remote)
             if sample['phase'] != 'profile':
+                for request in server:
+                    for timing in request.get('module_timings',[]):
+                        key = timing['module']+'.'+timing['operation']
+                        module_calls.setdefault(key,[]).append(timing['elapsed_ms'])
                 continue
             attribution = summarize_spans(sample['frontend_spans'],sample['total_ms'])
             sample['attribution_summary'] = attribution
@@ -321,6 +337,8 @@ def metrics(browser, requests, cfg):
             'request_counts':[len(s['requests']) for s in ordinary],
             'ordinary_samples_ms':[s['total_ms'] for s in ordinary],
             'profile_samples_ms':[s['total_ms'] for s in profile_samples],
+            'module_timings':{key:{'median_call_ms':statistics.median(times),'calls':len(times)}
+                              for key,times in sorted(module_calls.items())},
             'endpoints':{name:statistics.median(s['trace'][name] for s in ordinary)
                          for name in ('first_visible_ms','complete_ms')} if case.get('trace') else {}}
     return values
@@ -343,10 +361,18 @@ def report(receipt, output):
                                    for name,ms in value.get('endpoints',{}).items())
         endpoint_html = f'<p>Ordinary endpoint medians — {esc(endpoint_text)}</p>' if endpoint_text else ''
         diagnostic = ''
+        module_table = ''.join(f'<tr><td>{esc(name)}</td><td>{timing["calls"]}</td><td>{timing["median_call_ms"]:.3f}</td></tr>'
+                               for name,timing in value.get('module_timings',{}).items())
+        if module_table:
+            diagnostic += f'<p>Built-in timers: inclusive elapsed time per call; nested calls overlap. Exact request records are in server/requests.jsonl.</p><table><tr><th>Module operation</th><th>Calls</th><th>Median call (ms)</th></tr>{module_table}</table>'
         if value['profile_total_ms'] is not None:
-            diagnostic = f'<details><summary>Optional profile diagnostics</summary><p>{value["profile_total_ms"]:.2f} ms instrumented. Not part of the regression gate; module timings overlap and cannot be summed into ordinary elapsed time.</p><table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>'
+            diagnostic += f'<details><summary>Optional profile diagnostics</summary><p>{value["profile_total_ms"]:.2f} ms instrumented. Not part of the regression gate; module timings overlap and cannot be summed into ordinary elapsed time.</p><table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>'
         cards.append(f'<section><h2>{esc(case)}</h2><p><strong>{value["total_ms"]:.2f} ms elapsed</strong> · {esc(value["request_counts"])} requests</p>{endpoint_html}{diagnostic}</section>')
     for case,value in receipt.get('metrics',{}).items():
+        if value.get('module_timings'):
+            lines += ['', '## Built-in timers: '+case, '', 'Inclusive elapsed per call; nested calls overlap. Exact request records: server/requests.jsonl.', '', '| Module operation | Calls | Median call (ms) |', '| --- | ---: | ---: |']
+            lines += [f'| {name} | {timing["calls"]} | {timing["median_call_ms"]:.3f} |'
+                      for name,timing in value['module_timings'].items()]
         if value.get('endpoints'):
             lines += ['', '### '+case+' trace endpoints', '', '| Ordinary endpoint | Median (ms) |', '| --- | ---: |']
             lines += [f'| {endpoint_labels.get(name,name)} | {ms:.2f} |' for name,ms in value['endpoints'].items()]
@@ -418,7 +444,7 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False, module_timing=False):
     cfg = config()
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
@@ -429,7 +455,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     receipt = {'format':FORMAT,'status':'running','source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
-               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
+               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'module_timing':module_timing,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
     server=browser=None
     started = time.monotonic()
@@ -453,7 +479,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
                    '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
-                   '--profile',str(profile).lower()]
+                   '--profile',str(profile).lower(),'--module-timing',str(module_timing).lower()]
         if browser_executable:
             command += ['--browser-executable',str(browser_executable)]
         browser,stream,deadline = execute_owned(command,output/'browser.log',cfg['max_browser_seconds'],cfg['max_rss_bytes'],browser_ids)
@@ -471,6 +497,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
         browser_result = json.loads((output/'browser/browser.json').read_text())
         if browser_result.get('profile') is not profile:
             raise ValueError('Browser profiling mode differs from request')
+        if browser_result.get('module_timing') is not module_timing:
+            raise ValueError('Browser module timing mode differs from request')
         receipt['limitations'] = browser_result.get('limitations',[])+browser_result.get('unmeasured_variants',[])
         # Small fixture verifies composition only, never masquerades as million-scale evidence.
         if smoke:
@@ -481,6 +509,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
             validate_browser(browser_result,cfg,epochs,samples)
             check_cfg = cfg
         requests = load_requests(output/'server/requests.jsonl')
+        if module_timing and not any(row['module_timings'] for row in requests.values()):
+            raise ValueError('Requested module timers produced no records')
         receipt['metrics'] = metrics(browser_result,requests,check_cfg)
         receipt['browser_environment'] = browser_result.get('environment',{})
         receipt['source_end'] = query_bench.source(source_root)
@@ -504,7 +534,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 or not all(receipt['cleanup']['backend'].get(key) is True for key in ('server_closed','fixture_closed','instrumentation_restored'))):
             receipt['status'] = 'failed'
             receipt['cleanup_error'] = 'Owned cleanup incomplete or unverified'
-        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
+        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
         provenance = {key:receipt[key] for key in provenance_keys if key in receipt}
         query_bench.write(output/'provenance.json',provenance)
         receipt['provenance_sha256'] = query_bench.sha((output/'provenance.json').read_bytes())
@@ -546,7 +576,7 @@ def load_receipt(path):
         if query_bench.sha(file.read_bytes()) != digest:
             raise ValueError('Workflow evidence changed')
     provenance = path.parent/'provenance.json'
-    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
+    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
             or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
         raise ValueError('Provenance evidence changed')
@@ -565,6 +595,8 @@ def load_receipt(path):
     raw = json.loads((path.parent/'browser/browser.json').read_text())
     if type(receipt.get('profile')) is not bool or raw.get('profile') is not receipt['profile']:
         raise ValueError('Browser profiling mode differs from receipt')
+    if type(receipt.get('module_timing')) is not bool or raw.get('module_timing') is not receipt['module_timing']:
+        raise ValueError('Browser module timing mode differs from receipt')
     validate_browser(raw,receipt['config'],receipt['epochs'],receipt['samples'])
     computed = metrics(raw,load_requests(path.parent/'server/requests.jsonl'),receipt['config'])
     if computed != receipt.get('metrics'):
@@ -603,6 +635,7 @@ def main():
     command.add_argument('--protocol-epochs',type=int)
     command.add_argument('--browser-executable',type=Path)
     command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
+    command.add_argument('--module-timing',action='store_true',help='Collect built-in module elapsed timers during ordinary requests')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
     comparison.add_argument('candidate',type=Path)
@@ -614,7 +647,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile,module_timing=args.module_timing))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))

@@ -48,6 +48,7 @@
     "disco/navigation/tree.py",
     "disco/navigation/tree_layouts.py",
     "disco/navigation/tree_pages.py",
+    "disco/operation_timing.py",
     "disco/projects/__init__.py",
     "disco/projects/datastore_deletion.py",
     "disco/projects/datastores.py",

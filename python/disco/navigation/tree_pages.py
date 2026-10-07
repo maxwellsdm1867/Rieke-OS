@@ -18,6 +18,7 @@ from disco.navigation.tree import (field_value_order, joint_definition, joint_va
 from disco.navigation.predicates import validate as validate_predicate, matches
 from workspace_service import validate_filters, WorkspaceService
 from disco.decisions.explorer import ExplorerHistory
+from disco.operation_timing import elapsed
 
 
 TREE_SCOPE_BYTE_BUDGET = 64 * 1024 * 1024
@@ -430,7 +431,8 @@ class TreePages:
         return rows, catalog, values, definitions, order, revision
 
     def page(self, body):
-        return self._page(body, self._scope)
+        with elapsed("disco.navigation.tree_pages", "page"):
+            return self._page(body, self._scope)
 
     def _page(self, body, scope_reader):
         if not isinstance(body, dict) or set(body) - {'protocol_uuid','predicate','filters','splits','path','offset','limit','revision','anchor_uuid','counts_only'}:
@@ -571,66 +573,68 @@ class TreePages:
         The target projection includes every ancestor prefix. Custom readers keep
         independent page calls; no cross-request cache or permission is created.
         """
-        offsets = [] if ancestor_offsets is None else ancestor_offsets
-        if (not isinstance(offsets, list) or len(offsets) > 8
-                or any(value is not None and (type(value) is not int or not 0 <= value <= 10_000_000)
-                       for value in offsets)):
-            raise ValueError('Malformed tree column offsets')
-        snapshot = None
-        def resolve(request):
-            nonlocal snapshot
-            if snapshot is None:
-                snapshot = self._scope(request)
-            return snapshot
-        read = (lambda request: self._page(request, resolve)) if self._canonical_reader() else self.page
-        target = read(body)
-        parents = []
-        for depth in range(len(target['path'])):
-            recorded = target['ancestors'][depth]['parent_offset']
-            offset = (recorded if body.get('anchor_uuid') or depth >= len(offsets) or offsets[depth] is None
-                      else offsets[depth])
-            request = {key: value for key, value in body.items() if key != 'anchor_uuid'}
-            request.update(path=target['path'][:depth], offset=offset, revision=target['revision'])
-            parents.append(read(request))
-        return target, parents
+        with elapsed("disco.navigation.tree_pages", "column_pages"):
+            offsets = [] if ancestor_offsets is None else ancestor_offsets
+            if (not isinstance(offsets, list) or len(offsets) > 8
+                    or any(value is not None and (type(value) is not int or not 0 <= value <= 10_000_000)
+                           for value in offsets)):
+                raise ValueError('Malformed tree column offsets')
+            snapshot = None
+            def resolve(request):
+                nonlocal snapshot
+                if snapshot is None:
+                    snapshot = self._scope(request)
+                return snapshot
+            read = (lambda request: self._page(request, resolve)) if self._canonical_reader() else self.page
+            target = read(body)
+            parents = []
+            for depth in range(len(target['path'])):
+                recorded = target['ancestors'][depth]['parent_offset']
+                offset = (recorded if body.get('anchor_uuid') or depth >= len(offsets) or offsets[depth] is None
+                          else offsets[depth])
+                request = {key: value for key, value in body.items() if key != 'anchor_uuid'}
+                request.update(path=target['path'][:depth], offset=offset, revision=target['revision'])
+                parents.append(read(request))
+            return target, parents
 
     def selection(self, body, expected_count):
         """Exact bounded DFS membership without rendering descendant pages."""
-        if (not isinstance(body, dict) or set(body) - {'protocol_uuid', 'predicate', 'filters', 'splits', 'path', 'revision'}
-                or type(expected_count) is not int or not 1 <= expected_count <= 1000):
-            raise ValueError('Tree selection requires 1–1,000 epochs and a bounded scope')
-        path = body.get('path', [])
-        validate_tree_path(path)
-        expected = body.get('revision')
-        if not isinstance(expected, str) or not re.fullmatch('[0-9a-f]{64}', expected):
-            raise ValueError('Tree selection requires a current revision')
-        if not self._canonical_reader():
-            return self._selection_pages(body, expected_count)
-        rows, _, values, definitions, order, revision = self._build_scope(body, all_fields=True)
-        if revision != expected:
-            raise StaleTreePage('Tree selection revision changed')
-        structural_path = TreePath(order, definitions, path)
-        selected = rows
-        for depth, key in enumerate(path):
-            buckets = _group_buckets(selected, depth, order, structural_path, values, counts_only=True)
-            bucket = next((bucket for bucket in buckets
-                if structural_path.key(values[bucket['row']['epoch_uuid']], order[depth]) == key), None)
-            if bucket is None:
-                raise KeyError('Tree branch is outside this selection')
-            selected = bucket['rows']
-        if len(selected) != expected_count:
-            raise StaleTreePage('Tree selection count changed; refresh this branch')
-        ids = []
-        def visit(current, depth):
-            if depth == len(order):
-                ids.extend(row['epoch_uuid'] for row in sorted(current, key=_chronology))
-            else:
-                for bucket in _group_buckets(current, depth, order, structural_path, values, counts_only=True):
-                    visit(bucket['rows'], depth + 1)
-        visit(selected, len(path))
-        if len(ids) != expected_count or len(set(ids)) != expected_count:
-            raise StaleTreePage('Tree selection is incomplete or contains duplicate epochs')
-        return dict(revision=revision, path=path, count=expected_count, epoch_uuids=ids)
+        with elapsed("disco.navigation.tree_pages", "selection"):
+            if (not isinstance(body, dict) or set(body) - {'protocol_uuid', 'predicate', 'filters', 'splits', 'path', 'revision'}
+                    or type(expected_count) is not int or not 1 <= expected_count <= 1000):
+                raise ValueError('Tree selection requires 1–1,000 epochs and a bounded scope')
+            path = body.get('path', [])
+            validate_tree_path(path)
+            expected = body.get('revision')
+            if not isinstance(expected, str) or not re.fullmatch('[0-9a-f]{64}', expected):
+                raise ValueError('Tree selection requires a current revision')
+            if not self._canonical_reader():
+                return self._selection_pages(body, expected_count)
+            rows, _, values, definitions, order, revision = self._build_scope(body, all_fields=True)
+            if revision != expected:
+                raise StaleTreePage('Tree selection revision changed')
+            structural_path = TreePath(order, definitions, path)
+            selected = rows
+            for depth, key in enumerate(path):
+                buckets = _group_buckets(selected, depth, order, structural_path, values, counts_only=True)
+                bucket = next((bucket for bucket in buckets
+                    if structural_path.key(values[bucket['row']['epoch_uuid']], order[depth]) == key), None)
+                if bucket is None:
+                    raise KeyError('Tree branch is outside this selection')
+                selected = bucket['rows']
+            if len(selected) != expected_count:
+                raise StaleTreePage('Tree selection count changed; refresh this branch')
+            ids = []
+            def visit(current, depth):
+                if depth == len(order):
+                    ids.extend(row['epoch_uuid'] for row in sorted(current, key=_chronology))
+                else:
+                    for bucket in _group_buckets(current, depth, order, structural_path, values, counts_only=True):
+                        visit(bucket['rows'], depth + 1)
+            visit(selected, len(path))
+            if len(ids) != expected_count or len(set(ids)) != expected_count:
+                raise StaleTreePage('Tree selection is incomplete or contains duplicate epochs')
+            return dict(revision=revision, path=path, count=expected_count, epoch_uuids=ids)
 
     def _selection_pages(self, body, expected_count):
         # Compatibility oracle for custom pager policies and test adapters.

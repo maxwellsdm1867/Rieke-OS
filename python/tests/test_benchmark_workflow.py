@@ -129,7 +129,7 @@ class WorkflowContractTests(unittest.TestCase):
                 bench.validate_action(action, {'id': 'inspect', 'trace': True}, 2)
 
     def browser_result(self):
-        return dict(format='disco-workflow-browser-v1', status='passed', epochs=1_000_000, profile=True,
+        return dict(format='disco-workflow-browser-v1', status='passed', epochs=1_000_000, profile=True, module_timing=False,
                     actions=[self.action()], failures=[], gaps=[],
                     cleanup={'browser_closed': True, 'vite_closed': True, 'server_closed': True})
 
@@ -301,10 +301,11 @@ class WorkflowReceiptTests(unittest.TestCase):
                 sample['total_ms'] = 1000
             backend.append({**request, 'total_ms': 20, 'clock': 'server', 'phase': sample['phase'],
                             'path': '/api/epochs', 'h5_accesses': [], 'h5_access_count': 0,
+                            'module_timing': False, 'module_timings': [],
                             'spans': ([dict(module='disco.metadata.reader', inclusive_ms=10,
                                            self_ms=5, calls=1)] if sample['phase'] == 'profile' else [])})
         browser_env = {'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}}
-        raw = dict(format=bench.BROWSER_FORMAT, status='passed', epochs=1_000_000, profile=True,
+        raw = dict(format=bench.BROWSER_FORMAT, status='passed', epochs=1_000_000, profile=True, module_timing=False,
                    actions=[action], gaps=[], failures=[],
                    cleanup={'browser_closed': True, 'vite_closed': True}, environment=browser_env)
         self.save(directory / 'browser/browser.json', raw)
@@ -312,7 +313,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.save(directory / 'server/server.json', {'epochs': 1_000_000, 'protocol_epochs': 1_000_000})
         cleanup = dict(server_closed=True, fixture_closed=True, instrumentation_restored=True)
         self.save(directory / 'server/cleanup.json', cleanup)
-        value = dict(format=bench.FORMAT, status='passed', smoke=False, profile=True, config=self.cfg,
+        value = dict(format=bench.FORMAT, status='passed', smoke=False, profile=True, module_timing=False, config=self.cfg,
                      epochs=1_000_000, protocol_epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
                      source_start=copy.deepcopy(self.source), source_end=copy.deepcopy(self.source),
                      environment=copy.deepcopy(self.env), browser_environment=browser_env,
@@ -327,7 +328,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         value['evidence_sha256'] = {str(p.relative_to(path.parent)): bench.query_bench.sha(p.read_bytes())
                                     for folder in ('browser', 'server')
                                     for p in (path.parent / folder).iterdir() if p.is_file()}
-        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
+        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','module_timing','fixture')
         provenance = path.parent/'provenance.json'
         self.save(provenance, {key: value[key] for key in keys})
         value['provenance_sha256'] = bench.query_bench.sha(provenance.read_bytes())
@@ -405,6 +406,58 @@ class WorkflowReceiptTests(unittest.TestCase):
         bench.load_receipt(candidate)
         with self.assertRaisesRegex(ValueError, 'protocol_epochs'):
             bench.compare(baseline, candidate, self.root/'comparison.json')
+
+    def module_fixture(self, name='modules'):
+        path, value = self.receipt(name)
+        rawpath = path.parent/'browser/browser.json'
+        raw = json.loads(rawpath.read_text()); raw['module_timing'] = True
+        requestpath = path.parent/'server/requests.jsonl'
+        rows = [json.loads(line) for line in requestpath.read_text().splitlines()]
+        for row, elapsed in zip(rows, (2, 6, 999)):
+            row['module_timing'] = True
+            row['module_timings'] = [{'module': 'metadata', 'operation': 'page',
+                                      'elapsed_ms': elapsed, 'outcome': 'ok'}]
+        self.save(rawpath, raw)
+        requestpath.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
+        value['module_timing'] = True
+        value['metrics'] = bench.metrics(raw, bench.load_requests(requestpath), self.cfg)
+        self.seal(path, value)
+        return path, value
+
+    def test_builtin_module_calls_exclude_profile_and_do_not_change_gate(self):
+        path, value = self.module_fixture()
+        measured = bench.load_receipt(path)['metrics']['inspect/cold']
+        self.assertEqual(measured['module_timings'], {'metadata.page': {'median_call_ms': 4, 'calls': 2}})
+        baseline = {'inspect': measured}
+        candidate = copy.deepcopy(baseline)
+        candidate['inspect']['module_timings']['metadata.page']['median_call_ms'] = 999
+        self.assertEqual(bench.compare_metrics(baseline, candidate, self.cfg['comparison'])['status'], 'passed')
+        bench.report(value, path.parent)
+        for name in ('workflow.md', 'workflow.html'):
+            self.assertIn('metadata.page', (path.parent/name).read_text())
+            self.assertIn('4.000', (path.parent/name).read_text())
+
+    def test_builtin_module_mode_mismatch_refused(self):
+        path, value = self.module_fixture()
+        rawpath = path.parent/'browser/browser.json'
+        raw = json.loads(rawpath.read_text()); raw['module_timing'] = False
+        self.save(rawpath, raw); self.seal(path, value)
+        with self.assertRaises(ValueError):
+            bench.load_receipt(path)
+        with self.assertRaises(ValueError):
+            bench.metrics(raw, bench.load_requests(path.parent/'server/requests.jsonl'), self.cfg)
+
+    def test_builtin_module_invalid_elapsed_or_outcome_refused(self):
+        for index, change in enumerate(({'elapsed_ms': True}, {'elapsed_ms': -1},
+                                        {'elapsed_ms': float('nan')}, {'elapsed_ms': float('inf')},
+                                        {'outcome': 'unknown'})):
+            path, _ = self.module_fixture(str(index))
+            requestpath = path.parent/'server/requests.jsonl'
+            rows = [json.loads(line) for line in requestpath.read_text().splitlines()]
+            rows[0]['module_timings'][0].update(change)
+            requestpath.write_text('\n'.join(json.dumps(row) for row in rows)+'\n')
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                bench.load_requests(requestpath)
 
     def test_backend_phase_and_h5_tripwire_refused(self):
         for index, changes in enumerate(({'phase': 'other'}, {'clock': 'browser'},

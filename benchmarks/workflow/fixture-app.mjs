@@ -22,7 +22,7 @@ function App(){const[mode,setMode]=useState('idle');return <AnnotationProfilePro
 /** Runs before product code. Ordinary and profile runs share the same lightweight
  * transport observer; React CPU collection and server profiler opt in separately. */
 export function installObserver(config={}) {
-  const state = window.__workflow = {active:null,profile:config.phase==='profile',requests:[],renders:[],draws:[]};
+  const state = window.__workflow = {active:null,profile:config.phase==='profile',module_timing:config.module_timing===true,requests:[],renders:[],draws:[]};
   const original=window.fetch.bind(window);
   window.fetch=async (input,options={})=>{
     const url=new URL(typeof input==='string'?input:input.url,location.href);
@@ -31,6 +31,7 @@ export function installObserver(config={}) {
     const row={action_id:action?.action_id||null,...(!action&&state.last_completed_action_id?{after_action_id:state.last_completed_action_id}:{}),url:url.pathname+url.search,start:absolute(),method:options.method||'GET'};
     state.requests.push(row);
     const headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
+    if(state.module_timing)headers.set('X-Disco-Timing','1');
     if(action){headers.set('X-Benchmark-Action',action.action_id);headers.set('X-Benchmark-Profile',action.phase==='profile'?'1':'0');}
     try {const response=await original(input,{...options,headers});row.headers=absolute();row.status=response.status;row.request_id=response.headers.get('X-Benchmark-Request-Id');
       // Observe the actual consumer, avoiding a cloned body/read in timed path.

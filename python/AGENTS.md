@@ -48,3 +48,28 @@ current source organization from historical evidence. Leaf source bytes and
 checkpoint basename labels change conservatively; old receipts are never resealed
 or relabeled. Source conformance does not qualify an assembled app, native imports,
 SQL durability, parser behavior or historical benchmark results.
+
+
+## Optional operation elapsed timing
+
+[disco/operation_timing.py](disco/operation_timing.py) supplies simple module-local
+`elapsed(module, operation)` tic/toc and context-local `capture_timings()`.
+Operations place `with elapsed(__name__, "operation"):` around their existing
+body; callers can collect already-instrumented operations directly:
+
+```python
+from disco.operation_timing import capture_timings
+
+with capture_timings() as timings:
+    page = pager.page(request)
+```
+
+Without capture, no clock is read or timing list created. Capture records two
+`perf_counter_ns` reads per call and `{module, operation, elapsed_ms, outcome}`;
+nested elapsed times overlap. Nineteen operations across seven modules are covered,
+not every module. Preserve function identity, signatures, results, exceptions and
+existing control flow: no decorators, replacement implementations or HTTP adapters.
+Use benchmark `--module-timing` for ordinary-sample diagnostics; see the
+[benchmark guide](../docs/dev/benchmarks.md). The runtime helper is explicitly in
+the application profile. Review source-byte/catalog witness updates separately;
+a timing change does not authorize authority changes.

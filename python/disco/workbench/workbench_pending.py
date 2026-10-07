@@ -10,6 +10,7 @@ from recording_workspace import now
 from disco.workbench.recipes import checksum
 from disco.navigation.tag_predicates import TagPredicates, referenced_fields
 from disco.workbench.workbench import WorkbenchConflict
+from disco.operation_timing import elapsed
 
 
 def snapshot_authority(manager, protocol, actor, *, query_revision_guard=None):
@@ -78,102 +79,103 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
 
     @app.post('/api/protocols/<protocol>/workbench/prepare')
     def workbench_prepare(protocol):
-        value = body({'expected_queue_revision'}, {'operation_uuid'})
-        if not isinstance(value['expected_queue_revision'], str):
-            raise ValueError('Expected an authoritative queue revision')
-        protocol = str(uuid.UUID(protocol))
-        with db_lock:
-            owner = actor()
-            request_hash = checksum(dict(kind='workbench_prepare', protocol_uuid=protocol, actor=owner, **value))
-            operation = str(uuid.UUID(value['operation_uuid'])) if 'operation_uuid' in value else str(uuid.uuid5(uuid.UUID(manager.project), request_hash))
-            existing = manager.receipt(operation, owner, request_hash)
-            if existing:
-                return jsonify(existing)
-        with guarded(protocol) as owner:
-            existing = manager.receipt(operation, owner, request_hash)
-            if existing:
-                return jsonify(existing)
-            manager.service.refresh()
-            queue = manager.queue(protocol, owner, 1)
-            if value['expected_queue_revision'] != queue['queue_revision']:
-                raise WorkbenchConflict('Incoming queue changed; reload it before cumulative preparation')
-            snapshot = snapshot_authority(manager, protocol, owner)
-            originals = manager.original_records(protocol)
-            if not originals:
-                raise ValueError('No immutable incoming proposal history is available')
-            suggestion_uuid = str(uuid.uuid5(uuid.UUID(manager.project), 'workbench-pending:' + snapshot['sha256']))
-            table = manager.suggestions.Table
-            records = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
-            old_header, old_decisions, carried_from = draft_carry(manager, protocol, owner, snapshot['pending'])
-            transaction_authority = manager.transaction_authority(protocol)
-            with manager.service.dj.conn().transaction:
+        with elapsed("disco.workbench.workbench_pending", "workbench_prepare"):
+            value = body({'expected_queue_revision'}, {'operation_uuid'})
+            if not isinstance(value['expected_queue_revision'], str):
+                raise ValueError('Expected an authoritative queue revision')
+            protocol = str(uuid.UUID(protocol))
+            with db_lock:
+                owner = actor()
+                request_hash = checksum(dict(kind='workbench_prepare', protocol_uuid=protocol, actor=owner, **value))
+                operation = str(uuid.UUID(value['operation_uuid'])) if 'operation_uuid' in value else str(uuid.uuid5(uuid.UUID(manager.project), request_hash))
                 existing = manager.receipt(operation, owner, request_hash)
                 if existing:
                     return jsonify(existing)
-                if records:
-                    summary = records[0]['summary']
-                    record = manager.history.get(summary['candidate_revision_uuid'])
-                    recipe = record['recipe']
-                    if recipe.get('pending_union_provenance', {}).get('snapshot_sha256') != snapshot['sha256']:
-                        raise WorkbenchConflict('Prepared snapshot identity collision')
-                else:
-                    union = {**snapshot['main_members'], **snapshot['pending']}
-                    main = snapshot['main']
-                    provenance = dict(snapshot_sha256=snapshot['sha256'], **snapshot['authority'])
-                    preview = dict(predicate=copy.deepcopy(main['predicate']), splits=main['splits'],
-                        membership=[dict(uuid=key, metadata_hash=union[key]) for key in sorted(union)], matched_count=len(union),
-                        total_source=len(manager.service.rows), metadata_fingerprint_version=2,
-                        source_scope=snapshot['scope'], source_revisions=sorted({manager.service.rows[key]['source_sha256']
-                            for key in union if key in manager.service.rows}), tree=dict(split_order=main['tree_view']['fields']),
-                        pending_union_provenance=provenance,
-                        **({'annotation_scope': snapshot['annotation']} if snapshot['annotation'] else {}))
-                    record = manager.history.create(preview, manager.service.sources, manager.service.project_dir / 'catalog.json', owner,
-                        name='Accumulated incoming', parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
-                    recipe = record['recipe']
-                    timestamp = now()
-                    summary = dict(kind='workbench_pending_union', suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
-                        protocol_name=manager.service.protocols[protocol]['definition']['name'], created_at=timestamp,
-                        candidate_revision_uuid=record['revision_uuid'], baseline_revision_uuid=main['revision_uuid'],
-                        baseline_binding_version=snapshot['authority']['binding_version'],
-                        source_filename='Accumulated incoming', source_sha256='', source_scope_revision=snapshot['scope']['revision'],
-                        diff_counts=dict(added=len(snapshot['pending']), removed=0, changed=0),
-                        incoming_cell_uuids={key: manager.service.rows[key]['cell_uuid'] for key in snapshot['pending'] if key in manager.service.rows},
-                        previous_count=len(snapshot['main_members']), next_count=len(union))
-                    table.insert1(dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
-                        created_at=dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None), summary=summary))
-                revision = summary['candidate_revision_uuid']
-                key = manager.key(protocol, revision, owner)
-                initialized = False
-                carried_count = 0
-                if not (manager.tables[0] & key).to_dicts():
-                    # New UUIDs never inherit an earlier 'all' consent. This
-                    # initialization runs once, including after a lost reply.
-                    initialized = True
-                    manager.tables[0].insert1(dict(**key, version=max(1, old_header.get('version', 1)),
-                        selection_mode='selected', deferred=bool(old_header.get('deferred'))))
-                    for identity, saved in old_decisions.items():
-                        if snapshot['pending'].get(identity) == saved['metadata_hash']:
-                            manager.tables[1].insert1(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
-                                **{field: bool(saved[field]) for field in ('selected', 'reviewed', 'excluded')}))
-                            carried_count += 1
-                if snapshot_authority(manager, protocol, owner,
-                        query_revision_guard=transaction_authority[0])['sha256'] != snapshot['sha256']:
-                    raise WorkbenchConflict('Cumulative source, annotation or main authority changed during preparation')
-                context = public_context(manager.context(protocol, revision, owner,
-                    query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority)
-                result = dict(contract_version=1, kind='workbench_pending_union', candidate_revision_uuid=revision,
-                    root='/protocols/' + protocol + '/workbench/candidates/' + revision,
-                    candidate_scope_revision=context['candidate_scope_revision'], context=context,
-                    queue_revision=value['expected_queue_revision'], prepare_operation_uuid=operation,
-                    operation_uuid=operation, protocol_uuid=protocol, actor=owner,
-                    snapshot_sha256=snapshot['sha256'], origin_count=len(snapshot['authority']['origins']), reused=bool(records),
-                    draft_initialization=dict(initialized=initialized, carried_from=carried_from if initialized else [],
-                        carried_decision_count=carried_count),
-                    counts=context['counts'], storage=dict(revision_count_delta=0 if records else 1,
-                        recipe_json_bytes=len(json.dumps(recipe, sort_keys=True, separators=(',', ':')).encode())))
-                manager.tables[2].insert1(dict(project_uuid=manager.project, operation_uuid=operation,
-                    protocol_uuid=protocol, candidate_revision_uuid=revision, actor=owner, request_sha256=request_hash, receipt=result))
-                manager._event(owner, 'workbench_queue_prepared', result, operation)
-            return jsonify(result), 200 if records else 201
+            with guarded(protocol) as owner:
+                existing = manager.receipt(operation, owner, request_hash)
+                if existing:
+                    return jsonify(existing)
+                manager.service.refresh()
+                queue = manager.queue(protocol, owner, 1)
+                if value['expected_queue_revision'] != queue['queue_revision']:
+                    raise WorkbenchConflict('Incoming queue changed; reload it before cumulative preparation')
+                snapshot = snapshot_authority(manager, protocol, owner)
+                originals = manager.original_records(protocol)
+                if not originals:
+                    raise ValueError('No immutable incoming proposal history is available')
+                suggestion_uuid = str(uuid.uuid5(uuid.UUID(manager.project), 'workbench-pending:' + snapshot['sha256']))
+                table = manager.suggestions.Table
+                records = (table & dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid)).to_dicts()
+                old_header, old_decisions, carried_from = draft_carry(manager, protocol, owner, snapshot['pending'])
+                transaction_authority = manager.transaction_authority(protocol)
+                with manager.service.dj.conn().transaction:
+                    existing = manager.receipt(operation, owner, request_hash)
+                    if existing:
+                        return jsonify(existing)
+                    if records:
+                        summary = records[0]['summary']
+                        record = manager.history.get(summary['candidate_revision_uuid'])
+                        recipe = record['recipe']
+                        if recipe.get('pending_union_provenance', {}).get('snapshot_sha256') != snapshot['sha256']:
+                            raise WorkbenchConflict('Prepared snapshot identity collision')
+                    else:
+                        union = {**snapshot['main_members'], **snapshot['pending']}
+                        main = snapshot['main']
+                        provenance = dict(snapshot_sha256=snapshot['sha256'], **snapshot['authority'])
+                        preview = dict(predicate=copy.deepcopy(main['predicate']), splits=main['splits'],
+                            membership=[dict(uuid=key, metadata_hash=union[key]) for key in sorted(union)], matched_count=len(union),
+                            total_source=len(manager.service.rows), metadata_fingerprint_version=2,
+                            source_scope=snapshot['scope'], source_revisions=sorted({manager.service.rows[key]['source_sha256']
+                                for key in union if key in manager.service.rows}), tree=dict(split_order=main['tree_view']['fields']),
+                            pending_union_provenance=provenance,
+                            **({'annotation_scope': snapshot['annotation']} if snapshot['annotation'] else {}))
+                        record = manager.history.create(preview, manager.service.sources, manager.service.project_dir / 'catalog.json', owner,
+                            name='Accumulated incoming', parent_revision_uuid=main['revision_uuid'], _in_transaction=True)
+                        recipe = record['recipe']
+                        timestamp = now()
+                        summary = dict(kind='workbench_pending_union', suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
+                            protocol_name=manager.service.protocols[protocol]['definition']['name'], created_at=timestamp,
+                            candidate_revision_uuid=record['revision_uuid'], baseline_revision_uuid=main['revision_uuid'],
+                            baseline_binding_version=snapshot['authority']['binding_version'],
+                            source_filename='Accumulated incoming', source_sha256='', source_scope_revision=snapshot['scope']['revision'],
+                            diff_counts=dict(added=len(snapshot['pending']), removed=0, changed=0),
+                            incoming_cell_uuids={key: manager.service.rows[key]['cell_uuid'] for key in snapshot['pending'] if key in manager.service.rows},
+                            previous_count=len(snapshot['main_members']), next_count=len(union))
+                        table.insert1(dict(project_uuid=manager.project, suggestion_uuid=suggestion_uuid, protocol_uuid=protocol,
+                            created_at=dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None), summary=summary))
+                    revision = summary['candidate_revision_uuid']
+                    key = manager.key(protocol, revision, owner)
+                    initialized = False
+                    carried_count = 0
+                    if not (manager.tables[0] & key).to_dicts():
+                        # New UUIDs never inherit an earlier 'all' consent. This
+                        # initialization runs once, including after a lost reply.
+                        initialized = True
+                        manager.tables[0].insert1(dict(**key, version=max(1, old_header.get('version', 1)),
+                            selection_mode='selected', deferred=bool(old_header.get('deferred'))))
+                        for identity, saved in old_decisions.items():
+                            if snapshot['pending'].get(identity) == saved['metadata_hash']:
+                                manager.tables[1].insert1(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
+                                    **{field: bool(saved[field]) for field in ('selected', 'reviewed', 'excluded')}))
+                                carried_count += 1
+                    if snapshot_authority(manager, protocol, owner,
+                            query_revision_guard=transaction_authority[0])['sha256'] != snapshot['sha256']:
+                        raise WorkbenchConflict('Cumulative source, annotation or main authority changed during preparation')
+                    context = public_context(manager.context(protocol, revision, owner,
+                        query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority)
+                    result = dict(contract_version=1, kind='workbench_pending_union', candidate_revision_uuid=revision,
+                        root='/protocols/' + protocol + '/workbench/candidates/' + revision,
+                        candidate_scope_revision=context['candidate_scope_revision'], context=context,
+                        queue_revision=value['expected_queue_revision'], prepare_operation_uuid=operation,
+                        operation_uuid=operation, protocol_uuid=protocol, actor=owner,
+                        snapshot_sha256=snapshot['sha256'], origin_count=len(snapshot['authority']['origins']), reused=bool(records),
+                        draft_initialization=dict(initialized=initialized, carried_from=carried_from if initialized else [],
+                            carried_decision_count=carried_count),
+                        counts=context['counts'], storage=dict(revision_count_delta=0 if records else 1,
+                            recipe_json_bytes=len(json.dumps(recipe, sort_keys=True, separators=(',', ':')).encode())))
+                    manager.tables[2].insert1(dict(project_uuid=manager.project, operation_uuid=operation,
+                        protocol_uuid=protocol, candidate_revision_uuid=revision, actor=owner, request_sha256=request_hash, receipt=result))
+                    manager._event(owner, 'workbench_queue_prepared', result, operation)
+                return jsonify(result), 200 if records else 201
 
     manager.cumulative_pending_browse = True

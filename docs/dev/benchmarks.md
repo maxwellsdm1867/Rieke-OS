@@ -186,6 +186,15 @@ its actual version is recorded and must match the comparison run.
 Add `--profile` to `run` for a separate diagnostic pass when investigating a
 result; ordinary runs and comparisons do not require it.
 
+For simple built-in operation timings, add `--module-timing` instead. This enables
+module-local tic/toc during ordinary samples, without an extra phase or cProfile.
+The existing benchmark request logger collects records via `X-Disco-Timing: 1`;
+raw per-request records stay in `requests.jsonl`, and reports show inclusive
+per-call medians and call counts. Nested calls overlap and are not additive.
+Nineteen operations in seven modules currently cover metadata exploration, tree,
+history, service, Workbench preparation/review and trace workers; this is not
+all-module coverage. Timings are optional diagnostics, not performance gates.
+
 Use `--browser-executable /absolute/path/to/chrome` when needed. Each source
 checkout needs its own matching dependency resolution. Reusing installed modules
 is allowed only after the corresponding package locks match; do not compare

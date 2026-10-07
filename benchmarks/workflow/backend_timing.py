@@ -73,11 +73,31 @@ def install(app, output, source_root):
         g.benchmark_request_id = uuid.uuid4().hex
         g.benchmark_profile = None
         g.benchmark_h5_accesses = []
+        g.benchmark_module_context = None
+        g.benchmark_module_records = []
+        g.benchmark_module_requested = request.headers.get('X-Disco-Timing') == '1'
+        if g.benchmark_module_requested:
+            expected = Path(source) / 'disco/operation_timing.py'
+            if not expected.is_file():
+                raise RuntimeError('Requested module timing is unavailable in measured source: ' + str(expected))
+            import disco.operation_timing as timing
+            if Path(timing.__file__).resolve() != expected.resolve():
+                raise RuntimeError('Module timing helper does not belong to measured source')
+            context = timing.capture_timings()
+            g.benchmark_module_records = context.__enter__()
+            g.benchmark_module_context = context
         if request.headers.get('X-Benchmark-Profile') == '1':
             g.benchmark_profile = cProfile.Profile()
             g.benchmark_profile.enable()
 
+    def close_module_capture(error=None):
+        context = getattr(g, 'benchmark_module_context', None)
+        if context is not None:
+            g.benchmark_module_context = None
+            context.__exit__(type(error) if error else None, error, error.__traceback__ if error else None)
+
     def finish(response):
+        close_module_capture()
         profile = getattr(g, 'benchmark_profile', None)
         if profile:
             profile.disable()
@@ -99,6 +119,8 @@ def install(app, output, source_root):
                'method': request.method, 'path': request.path, 'status': response.status_code,
                'total_ms': total, 'profiled': bool(profile), 'phase': 'profile' if profile else 'ordinary', 'spans': phases,
                'clock': 'server', 'inclusive_times_overlap': True,
+               'module_timing': g.benchmark_module_requested,
+               'module_timings': g.benchmark_module_records,
                'h5_accesses': g.benchmark_h5_accesses,
                'h5_access_count': len(g.benchmark_h5_accesses),
                'h5_guard_scope': 'Python open/io.open and h5py.File initialization during HTTP requests',
@@ -114,6 +136,7 @@ def install(app, output, source_root):
     app.after_request_funcs.setdefault(None, []).insert(0, finish)
 
     def stop_profile_after_failure(error):
+        close_module_capture(error)
         profile = getattr(g, 'benchmark_profile', None)
         if profile:
             profile.disable()

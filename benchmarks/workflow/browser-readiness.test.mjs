@@ -1,7 +1,8 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan} from './browser.mjs';
+import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan,moduleTimingEnabled} from './browser.mjs';
+import {installObserver} from './fixture-app.mjs';
 
 function element(text='', attributes={}) {
   return {textContent:text, disabled:false, ...attributes,
@@ -244,4 +245,40 @@ test('direct browser phase plan never enables profiling from an omitted or false
   assert.deepEqual(phasePlan({samples:3,profile:true,profile_samples:2}),[{phase:'ordinary',samples:3},{phase:'profile',samples:2}]);
   assert.throws(()=>phasePlan({samples:3,profile:true,profile_samples:0}),/positive/);
   assert.throws(()=>phasePlan({samples:3,profile:'enabled'}),/true or false/);
+});
+
+
+test('lightweight module timing is independently opt-in and adds no profiling phase',()=>{
+  const required=['--source-root','source','--server-json','server.json','--output','output'];
+  assert.equal(options(required).module_timing,false);
+  assert.equal(options([...required,'--module-timing','false']).module_timing,false);
+  const enabled=options([...required,'--module-timing','true']);
+  assert.equal(enabled.module_timing,true);assert.equal(enabled.profile,false);
+  assert.deepEqual(phasePlan(enabled),[{phase:'ordinary',samples:3}]);
+  assert.equal(moduleTimingEnabled(),false);assert.equal(moduleTimingEnabled(true),true);
+  assert.throws(()=>options([...required,'--module-timing','yes']),/true or false/);
+});
+
+test('observer sends lightweight timing header only when enabled and keeps action correlation',async t=>{
+  const previous={window:globalThis.window,location:globalThis.location,CanvasRenderingContext2D:globalThis.CanvasRenderingContext2D};
+  t.after(()=>{for(const [key,value] of Object.entries(previous)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}});
+  for(const enabled of [false,true]){
+    const calls=[];
+    globalThis.CanvasRenderingContext2D=class {stroke(){}};
+    globalThis.location={href:'http://127.0.0.1:1234/__workflow__'};
+    globalThis.window={fetch:async(input,options={})=>{calls.push({input,headers:new Headers(options.headers)});return new Response('{}',{headers:{'X-Benchmark-Request-Id':'request'}});}};
+    installObserver({phase:'ordinary',module_timing:enabled});
+    assert.equal(window.__workflow.profile,false);
+    window.__workflow.active={action_id:'ordinary-action',phase:'ordinary'};
+    await (await window.fetch('/api/epochs')).json();
+    assert.equal(calls[0].headers.get('X-Disco-Timing'),enabled?'1':null);
+    assert.equal(calls[0].headers.get('X-Benchmark-Action'),'ordinary-action');
+    assert.equal(calls[0].headers.get('X-Benchmark-Profile'),'0');
+    window.__workflow.active=null;
+    await (await window.fetch('/api/setup')).json();
+    assert.equal(calls[1].headers.get('X-Disco-Timing'),enabled?'1':null);
+    assert.equal(calls[1].headers.get('X-Benchmark-Action'),null);
+    await window.fetch('/assets/example.js');
+    assert.equal(calls[2].headers.get('X-Disco-Timing'),null);
+  }
 });

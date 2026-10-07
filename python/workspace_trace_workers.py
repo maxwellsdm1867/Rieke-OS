@@ -10,6 +10,7 @@ import multiprocessing
 import threading
 import time
 import uuid
+from disco.operation_timing import elapsed
 
 MAX_PLAN_BYTES = 64 * 1024
 MAX_RESPONSE_BYTES = 4 * 1024 * 1024
@@ -153,81 +154,82 @@ class TraceWorkers:
             pass
 
     def execute(self, plan, encoding, *, background=False, cancel=None, wait_timeout=2):
-        identity = str(uuid.uuid4())
-        message = json.dumps({'kind': 'read', 'job_id': identity, 'plan': plan, 'encoding': encoding},
-                             allow_nan=False, separators=(',', ':')).encode('utf-8')
-        if len(message) > MAX_PLAN_BYTES:
-            raise ValueError('Trace plan exceeds the bounded worker payload')
-        deadline = time.monotonic() + max(0, wait_timeout)
-        with self.condition:
-            if not self._check_ready_locked():
-                raise TraceWorkerUnavailable('Trace workers are not ready')
-            self.serial += 1
-            ticket = (bool(background), self.serial)
-            can_enter = any(not worker['busy'] for worker in self.workers) and (not self.waiting or ticket < min(self.waiting))
-            waiting_limit = max(0, self.queue_limit - 1) if background else self.queue_limit
-            if not can_enter and len(self.waiting) >= waiting_limit:
-                raise TraceWorkerBusy('Trace workers are busy; retry the selected window')
-            self.waiting.append(ticket)
+        with elapsed("workspace_trace_workers", "execute"):
+            identity = str(uuid.uuid4())
+            message = json.dumps({'kind': 'read', 'job_id': identity, 'plan': plan, 'encoding': encoding},
+                                 allow_nan=False, separators=(',', ':')).encode('utf-8')
+            if len(message) > MAX_PLAN_BYTES:
+                raise ValueError('Trace plan exceeds the bounded worker payload')
+            deadline = time.monotonic() + max(0, wait_timeout)
+            with self.condition:
+                if not self._check_ready_locked():
+                    raise TraceWorkerUnavailable('Trace workers are not ready')
+                self.serial += 1
+                ticket = (bool(background), self.serial)
+                can_enter = any(not worker['busy'] for worker in self.workers) and (not self.waiting or ticket < min(self.waiting))
+                waiting_limit = max(0, self.queue_limit - 1) if background else self.queue_limit
+                if not can_enter and len(self.waiting) >= waiting_limit:
+                    raise TraceWorkerBusy('Trace workers are busy; retry the selected window')
+                self.waiting.append(ticket)
+                try:
+                    while True:
+                        if self.closing or self.broken:
+                            raise TraceWorkerUnavailable('Trace worker admission is closed')
+                        if cancel is not None and cancel.is_set():
+                            raise TraceReadCancelled('Trace read was cancelled')
+                        idle = next((item for item in self.workers if not item['busy']), None)
+                        if idle is not None and ticket == min(self.waiting):
+                            worker = idle
+                            worker['busy'] = True
+                            break
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise TraceWorkerBusy('Trace workers are busy; retry the selected window')
+                        self.condition.wait(min(remaining, .05))
+                finally:
+                    self.waiting.remove(ticket)
+                    self.condition.notify_all()
             try:
-                while True:
-                    if self.closing or self.broken:
-                        raise TraceWorkerUnavailable('Trace worker admission is closed')
-                    if cancel is not None and cancel.is_set():
-                        raise TraceReadCancelled('Trace read was cancelled')
-                    idle = next((item for item in self.workers if not item['busy']), None)
-                    if idle is not None and ticket == min(self.waiting):
-                        worker = idle
-                        worker['busy'] = True
-                        break
-                    remaining = deadline - time.monotonic()
-                    if remaining <= 0:
-                        raise TraceWorkerBusy('Trace workers are busy; retry the selected window')
-                    self.condition.wait(min(remaining, .05))
+                connection = worker['connection']
+                connection.send_bytes(message)
+                while not connection.poll(.05):
+                    if not worker['process'].is_alive():
+                        raise TraceWorkerUnavailable('Trace worker exited before acknowledging its read')
+                result = _receive(connection)
+                if (not isinstance(result, dict) or result.get('kind') != 'result' or
+                        result.get('job_id') != identity or type(result.get('ok')) is not bool or
+                        result['ok'] is False and (not isinstance(result.get('error'), str) or
+                                                   not isinstance(result.get('message'), str))):
+                    raise TraceWorkerUnavailable('Trace worker response identity changed')
+                if result.get('ok') is True:
+                    body = connection.recv_bytes(maxlength=MAX_RESPONSE_BYTES)
+                else:
+                    error_type = {'ValueError': ValueError, 'KeyError': KeyError,
+                                  'FileNotFoundError': FileNotFoundError}.get(result.get('error'), RuntimeError)
+                    raise _RemoteReadError(error_type, result.get('message', 'Trace worker read failed'))
+                if self.closing or cancel is not None and cancel.is_set():
+                    raise TraceReadCancelled('Trace read was cancelled')
+                return body
+            except _RemoteReadError as error:
+                raise error.kind(error.message) from None
+            except TraceReadCancelled:
+                raise
+            except TraceWorkerUnavailable:
+                with self.condition:
+                    self.broken = True
+                worker['connection'].close()
+                raise
+            except (EOFError, BrokenPipeError, OSError, ValueError) as error:
+                with self.condition:
+                    self.broken = True
+                worker['connection'].close()
+                raise TraceWorkerUnavailable('Trace worker transport failed') from error
             finally:
-                self.waiting.remove(ticket)
-                self.condition.notify_all()
-        try:
-            connection = worker['connection']
-            connection.send_bytes(message)
-            while not connection.poll(.05):
-                if not worker['process'].is_alive():
-                    raise TraceWorkerUnavailable('Trace worker exited before acknowledging its read')
-            result = _receive(connection)
-            if (not isinstance(result, dict) or result.get('kind') != 'result' or
-                    result.get('job_id') != identity or type(result.get('ok')) is not bool or
-                    result['ok'] is False and (not isinstance(result.get('error'), str) or
-                                               not isinstance(result.get('message'), str))):
-                raise TraceWorkerUnavailable('Trace worker response identity changed')
-            if result.get('ok') is True:
-                body = connection.recv_bytes(maxlength=MAX_RESPONSE_BYTES)
-            else:
-                error_type = {'ValueError': ValueError, 'KeyError': KeyError,
-                              'FileNotFoundError': FileNotFoundError}.get(result.get('error'), RuntimeError)
-                raise _RemoteReadError(error_type, result.get('message', 'Trace worker read failed'))
-            if self.closing or cancel is not None and cancel.is_set():
-                raise TraceReadCancelled('Trace read was cancelled')
-            return body
-        except _RemoteReadError as error:
-            raise error.kind(error.message) from None
-        except TraceReadCancelled:
-            raise
-        except TraceWorkerUnavailable:
-            with self.condition:
-                self.broken = True
-            worker['connection'].close()
-            raise
-        except (EOFError, BrokenPipeError, OSError, ValueError) as error:
-            with self.condition:
-                self.broken = True
-            worker['connection'].close()
-            raise TraceWorkerUnavailable('Trace worker transport failed') from error
-        finally:
-            with self.condition:
-                worker['busy'] = False
-                if self.closing:
-                    self._stop_idle_locked(worker)
-                self.condition.notify_all()
+                with self.condition:
+                    worker['busy'] = False
+                    if self.closing:
+                        self._stop_idle_locked(worker)
+                    self.condition.notify_all()
 
     def close(self, *, timeout=5):
         deadline = time.monotonic() + max(0, timeout)

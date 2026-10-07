@@ -67,6 +67,38 @@ class WorkflowBackendTests(unittest.TestCase):
                     h5py.File(Path(folder) / 'unowned.h5', 'r')
             self.assertEqual(logs[-1]['request_id'], trace.headers['X-Benchmark-Request-ID'])
             self.assertTrue(all(x['self_ms'] <= x['inclusive_ms'] + 1e-8 for x in logs[-1]['spans']))
+            self.assertFalse(logs[-1]['module_timing'])
+            timed_trace = client.get('/api/epochs/' + meta['first_epoch'] + '/trace', query_string={'stream_uuid': meta['trace_stream']}, headers={**headers, 'X-Disco-Timing': '1'})
+            self.assertEqual(timed_trace.status_code, 200, timed_trace.get_json())
+            self.assertEqual(timed_trace.get_json(), trace.get_json())
+            client.get('/api/search-presets')
+            later = [json.loads(line) for line in (Path(folder) / 'requests.jsonl').read_text().splitlines()]
+            self.assertTrue(later[-2]['module_timing'])
+            self.assertTrue(any(item['operation'] == 'trace' for item in later[-2]['module_timings']))
+            self.assertFalse(later[-1]['module_timing'])
+            self.assertEqual(later[-1]['module_timings'], [])
+
+    def test_module_capture_closes_after_propagated_exception(self):
+        from flask import Flask
+        from unittest.mock import patch
+        import disco.operation_timing as operation_timing
+        from disco.operation_timing import elapsed
+        app = Flask(__name__)
+        app.config['TESTING'] = True
+        @app.get('/explode')
+        def explode():
+            with elapsed('fixture', 'explode'):
+                raise ValueError('owned failure')
+        with tempfile.TemporaryDirectory() as folder:
+            restore = install(app, folder, ROOT)
+            try:
+                with self.assertRaisesRegex(ValueError, 'owned failure'):
+                    app.test_client().get('/explode', headers={'X-Disco-Timing': '1'})
+                with patch.object(operation_timing, 'perf_counter_ns', side_effect=AssertionError('capture leaked')):
+                    with elapsed('fixture', 'after_failure'):
+                        pass
+            finally:
+                restore()
 
     def test_subset_membership_and_preparation_reset_are_exact(self):
         with tempfile.TemporaryDirectory() as folder:

@@ -55,6 +55,7 @@ jobs:
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/everyday-harness-tests.log"
           "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-harness-tests.log"
           PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_workflow_backend.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/workflow-backend-tests.log"
+          PYTHONPATH=python "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_operation_timing.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/module-timing-tests.log"
       - name: Measure retained baselines and candidate serially
         env:
           PINNED_SHA: 34ce2e06dec0e2886d5a2310f21e02cf818cb646
