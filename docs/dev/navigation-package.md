@@ -428,3 +428,26 @@ check then exposed missing batching eligibility; that coverage gap was fixed und
 independent review before this final package. The installed app restored the
 saved Workbench view; its temporary 441-epoch selection was restored through the
 visible root switch. Public prerelease assets remain unchanged. This is local testing evidence, not release promotion.
+
+
+## Borderless Workbench highlights (2026-10-07)
+
+The local installed 0.1.8 package now uses clean source `225ff10429e60062a767a5fa413db9f948a722ac`.
+[The current package record](local-package-toolbar-2026-10-07.json) retains its exact
+validation and installation evidence. Source commits remain local; GitHub main and
+public prerelease assets are unchanged.
+
+One counted Select Highlighted / Deselect Highlighted action sits beside Deselect
+all in the top Workbench bar. Unhighlighted unselected Epochs-view rows retain the
+default background. Highlights use fill only, without borders, outlines or inset
+stripes; selected rows stay green and highlighted selected rows use stronger green.
+Keyboard row focus underlines the number/time without another border.
+
+916 frontend checks passed before the final CSS-only refinements. Final source
+passed architecture and clean core gates, source/frontend/ASAR verification, native
+library audit and relocated scientific imports. The packaged owned-project check
+verified exact selection outside the highlighted set, count/toggle behavior, all
+four fill states in light/dark, borderless keyboard focus, toolbar containment and
+clean quit. Earlier computed-style test failures mistook the width of an outline
+whose style was none for a visible border; corrected checks and raw failures remain
+in the kit. No merge/export publication or broader release qualification is claimed.

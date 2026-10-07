@@ -650,5 +650,6 @@
       "sha256": "220e6f23b84276316d63d3d55ac999a3b709f38f61061802cacfc05c9324281b"
     },
     "unchanged_by_this_local_package": true
-  }
+  },
+  "superseded_for_local_installation_by": "local-package-toolbar-2026-10-07.json"
 }

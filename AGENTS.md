@@ -62,3 +62,13 @@ This instruction adds benchmark discovery; other task-specific instructions and
 scientific authority/qualification requirements continue to apply.
 
 For external metadata mapping, read [the reviewed draft contract](contracts/metadata-bundle/v1-draft/README.md) and its AGENT_PROMPT.md. The offline validator is a handoff check; production import is unsupported. Preserve the packaged provenance and public identity rules.
+
+
+## Current local Workbench package (2026-10-07)
+
+Installed `~/Applications/Disco.app` is local 0.1.8 source
+`225ff10429e60062a767a5fa413db9f948a722ac` with counted toolbar highlighting and
+borderless highlight fills. See `docs/dev/local-package-toolbar-2026-10-07.json`.
+These source commits are local ahead of last-verified GitHub main `95465c6`; verify
+live main and local Git status before further app changes. Public release assets
+are unchanged. Keep earlier package evidence attributed to its original source.

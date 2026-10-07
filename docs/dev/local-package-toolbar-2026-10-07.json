@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "product": "Disco",
+  "version": "0.1.8",
+  "recorded_date": "2026-10-07",
+  "status": "local unsigned testing package; not release promotion",
+  "source_commit": "225ff10429e60062a767a5fa413db9f948a722ac",
+  "source_clean": true,
+  "installed_app": "/Users/maxwellsdm/Applications/Disco.app",
+  "changes": [
+    "Single counted Select Highlighted / Deselect Highlighted action beside Deselect all in Workbench top bar",
+    "Mixed highlights offer Select; fully selected highlights offer Deselect; external selections preserved",
+    "Unhighlighted unselected Epochs-view rows use the default pane background",
+    "Highlighted epochs use soft fill only, with no outline, border or inset stripe",
+    "Selected epochs stay green; highlighted selected epochs use stronger green",
+    "Keyboard row focus uses a number/time underline without adding borders"
+  ],
+  "evidence": {
+    "frontend": {
+      "passed": 916,
+      "failed": 0,
+      "source_commit": "38c1babda04fb11438db14976dc52ae5d4ae7e87",
+      "final_difference": "CSS presentation only; final packaged theme and keyboard checks verify final bytes"
+    },
+    "architecture_guard": "passed",
+    "core_gate": "benchmarks/results/highlight-toolbar-borderless-001/benchmark.json",
+    "source_and_frontend_files_verified": 111,
+    "asar_desktop_entries": "match source",
+    "native_audit": "no_known_static_blockers",
+    "relocated_scientific_imports": "passed",
+    "native_workflow": "toolbar-borderless-native-2026-10-07T15-57-37-565Z/receipt.json",
+    "native_scope": "Owned closed project clone; exact count/toggle/outside-selection behavior; all four selection/highlight fills in light/dark; no visible row outline, border or inset stripe; keyboard label underline; toolbar containment and clean quit. No merge/export publication.",
+    "independent_source_review": "passed",
+    "test_harness_correction": "Initial computed-style assertions treated an outline width with outline-style:none as a visible border. Corrected to check rendered style; failed receipts retained."
+  },
+  "local_kit_directory": "/Users/maxwellsdm/Documents/Codex/epoch-navigation-perf-2026-10-05",
+  "public_prerelease": "Unchanged; remains attributed to 60f9567",
+  "limits": [
+    "No new public release or update descriptor",
+    "No macOS 14 runtime qualification",
+    "No new broad native scientific workflow qualification"
+  ],
+  "installed_manifest_sha256": "9032f7e8179c8005541e72766188b175717939b72ea9d20c83c96b8e636351d2",
+  "installation_receipt": "toolbar-borderless-installed.json",
+  "github_main_at_build": "95465c634d9a9abdf24a04570306d86b4e2b91d6",
+  "publication": "Source commits are local; GitHub main and public prerelease assets were not changed"
+}
