@@ -56,7 +56,11 @@ declaration. Earlier runners without it retain their original flat schema paths
 and receipt keys; current runners use the metadata package paths. Neither lookup
 imports historical code or rewrites an existing receipt.
 
-The receipt schema and registry are unchanged. A test relocation changes path keys
+The core receipt schema is unchanged. Registry version 1.0.4 adds discovery for
+the separate everyday-million track; core cases and sampling are unchanged, but
+the registry edit intentionally changes the core suite fingerprint. Retain older
+receipts as historical evidence and establish a matched current-suite baseline.
+A test relocation changes path keys
 and therefore suite identity. Reconstructing an old receipt's original digest does
 not make it current or comparable to a different suite; comparison still requires
 full suite equality and the gate still checks the current working suite. Preserve
@@ -89,6 +93,149 @@ shared application runtime was not modified. The subsequent abff764 runs took
 review rejected their qualified comparison. Preserve their raw evidence as
 **diagnostic only**; their prior gate result/comparison is superseded. Fresh
 permitted-read runs on the corrected commit are required for qualification.
+
+## Required everyday query check after every app update
+
+After **every application update and each implementation iteration**, run the
+existing fixed core correctness suite above and the separate `everyday-million`
+query track below. This is a development regression requirement, including updates
+whose intended effect is not performance. Product optimization does not justify
+skipping either check. Missing, failed, partial or incomparable evidence is not a
+green iteration. The [everyday-million workflow](../../.github/workflows/everyday-million.yml)
+enforces this query track on every pull request and push to `main`/`master`, with
+no path filter. It also runs the fixed core and complements the existing workspace correctness
+workflow; stress receipts remain separate from release-gate inputs.
+
+The one registry remains [benchmarks/registry.json](../../benchmarks/registry.json),
+under `stress_tracks.everyday-million`. The core remains small; do not substitute
+the million-row track for its correctness or release checks. Use the pinned
+Python environment above, without `-O`, and unset `RIEKE_TEST_DOM_MODULE`. Coordinate
+machine load and run core and stress sequentially. The stress runner serializes
+its own invocations across checkouts; its lock does not coordinate unrelated jobs.
+
+Retain **two immutable source references**: the reviewed pinned regression baseline
+and the immediately previous iteration. Never advance the pinned baseline merely
+because a candidate is slower. Record both exact SHAs with retained results. Use
+clean detached checkouts for these references; do not point at a moving development
+checkout. A dirty candidate can provide diagnostic evidence, but rerun the final
+committed candidate to associate the check with the delivered source. Do not edit
+source or harness during a run.
+
+From the candidate checkout, after provisioning the pinned environment, set the
+two variables to the reviewed full commit SHAs. The following creates owned
+baseline checkouts and unique result directories; all four stress runs use the
+**same current harness and interpreter**, importing application code from the
+specified source checkout:
+
+```sh
+(
+set -e
+# Supply real full SHAs before running this block.
+: "${EVERYDAY_BASELINE_SHA:?Set the pinned regression baseline commit}"
+: "${EVERYDAY_PREVIOUS_SHA:?Set the immediately previous iteration commit}"
+unset RIEKE_TEST_DOM_MODULE
+EVERYDAY_RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+EVERYDAY_BASELINE_DIR="../disco-everyday-baseline-${EVERYDAY_RUN_ID}"
+EVERYDAY_PREVIOUS_DIR="../disco-everyday-previous-${EVERYDAY_RUN_ID}"
+git worktree add --detach "$EVERYDAY_BASELINE_DIR" "$EVERYDAY_BASELINE_SHA"
+git worktree add --detach "$EVERYDAY_PREVIOUS_DIR" "$EVERYDAY_PREVIOUS_SHA"
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark.py run \
+  --output "benchmarks/results/${EVERYDAY_RUN_ID}-core"
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_everyday.py iteration \
+  --baseline-source "$EVERYDAY_BASELINE_DIR" --source-root . \
+  --output "benchmarks/results/${EVERYDAY_RUN_ID}-pinned"
+.rieke-runtime/benchmark-python/bin/python -B tools/benchmark_everyday.py iteration \
+  --baseline-source "$EVERYDAY_PREVIOUS_DIR" --source-root . \
+  --output "benchmarks/results/${EVERYDAY_RUN_ID}-previous"
+)
+```
+
+Run each command only after the preceding command succeeds; retain and investigate
+any nonzero result before continuing. On the first iteration the two baseline
+references may be identical, so one matched iteration is sufficient. Each
+`iteration` runs baseline then candidate, with tree then typed workers in each,
+and writes `baseline/receipt.json`, `candidate/receipt.json`, raw lane JSON/logs
+and `comparison.json`. Preserve the complete directories, including failures;
+results under `benchmarks/results` are ignored by Git. Retain them as build/CI
+artifacts or in an owned evidence directory, with the source references. Do not
+commit a receipt into the commit it purports to measure. Existing baseline
+checkouts may be reused if their clean state and exact SHAs are verified.
+
+`run --source-root PATH --output NEW_DIRECTORY` measures one source for diagnosis.
+`compare BASELINE_RECEIPT CANDIDATE_RECEIPT --output NEW_JSON` rechecks retained
+worker evidence and requires the current harness/configuration and matching
+recorded environment. Prefer `iteration` for new claims so both sources are
+measured serially in the current environment. A harness, fixture, registry or
+runtime change requires fresh matched measurements of both retained source
+references and the candidate; never rewrite historical receipts to make them fit.
+
+The comparison exits 2 for a provisional review trigger: query/setup medians over
+the larger of baseline +25% or +5 ms, or peak worker RSS over the larger of +20%
+or +64 MiB. Investigate and repeat a matched pair under controlled load; preserve
+the flagged run. Do not average it away or silently replace the pinned baseline.
+Exit 1 covers invalid, failed or incomparable evidence. Exit 0 means these fixed
+cases passed their exact-result/refusal checks without crossing these triggers;
+it is not proof that every everyday interaction avoids regressions.
+
+### CI enforcement and retained baselines
+
+The everyday-million workflow runs harness validation tests, then the original
+pinned source `34ce2e06dec0e2886d5a2310f21e02cf818cb646`, previous source and candidate
+serially using one current harness and pinned CPython environment on one Ubuntu
+runner, then runs candidate fixed-core correctness with Node 22.12.0 and the
+committed frontend lock. Candidate stress measurement is shared by both comparisons. For pull requests,
+previous means the PR base SHA and candidate is GitHub's checked-out merge commit;
+for pushes, previous means `event.before`. A first push whose before SHA is all
+zeros explicitly falls back to the pinned source. Manual dispatch accepts an
+optional full `baseline_sha` for the previous comparison, defaulting to the
+candidate's first parent; it never silently changes the pinned regression SHA.
+
+Both comparisons and the subsequent fixed core run execute even if an earlier
+stress measurement/comparison fails or flags a regression. Any failed measurement,
+invalid comparison or provisional regression trigger fails the job. Raw receipts,
+logs, comparison JSON and selected source references upload with `always()` and
+30-day retention, including failed runs. Preserve important baselines beyond the
+artifact expiry in owned evidence storage. The job has a 30-minute timeout; a
+timeout is incomplete evidence, never a pass. Workflow presence does not configure
+GitHub branch protection: require this job in repository rules if merge blocking
+is desired. CI Linux results do not compare to local macOS results or qualify the
+installed native app. Runner image/runtime changes require fresh matched runs.
+
+### What actual one million means here
+
+Each worker constructs **1,000,000 actual deterministic metadata records**, with
+10,000 cells and 50,000 blocks. This is not extrapolation from a smaller fixture.
+The tree lane invokes production WorkspaceService/TreePages methods for first and
+repeated roots, next/deep pages, cell opening/scrolling, anchor and ancestor columns,
+return navigation, split changes and bounded selection. Its admission/catalog is
+synthetic and the service rows are constructed in memory. The typed lane populates
+real million-row SQLite relations in memory and inherits production typed-query
+methods for pages, explicit membership/source scopes, cell/block scopes, filters,
+details, counts, groups and preview. Its disk ownership/seal admission is replaced.
+These seams exclude production project loading, catalog discovery and index builds.
+
+Coverage is deliberately narrow: one source/date/protocol/cell type, exactly 100
+epochs per cell and 20 per block. The tree primarily splits by cell, with a
+`date,cell,block` split-change case; recorded-metadata splits, a few very long
+cells, missing typed values and joint distributions are absent. `typed.membership`
+measures a page query supplied with a million-member scope, not the output of
+`membership()`. Exact detail checks establish fixture consistency, not parser
+qualification. Typed methods bypass HTTP and Workbench scope composition;
+renderer queues, mutations, production builds/seals, recovery and native H5 are
+outside this lane.
+
+Expected UUIDs, rows, groups, counts, cursors and refusal behavior are checked
+outside query timing. First tree root has one sample; subsequent operations have
+three. Setup time and peak worker RSS are reported separately. Workers run serially
+with 600-second and 4-GiB RSS limits; missing cases, wrong scale, failed oracles,
+H5 access attempts and changed source/harness fail. Source hashes include tracked
+and untracked application files. Environment matching is limited to the fields
+recorded by this runner and does not establish identical machine load or thermals.
+
+This is metadata-only **synthetic query stress evidence**. No waveform is read.
+It does not qualify native SQL/disk behavior, HTTP, renderer paint, UI interaction,
+startup, index build/sealing, mutation/recovery, import/export, packaged apps or
+release promotion. The existing core and native release blockers remain intact.
 
 ## What the first slice measures
 
@@ -149,7 +296,8 @@ fields are not all raw fields: depth/length/type discovery limits remain. Index
 tiers may change speed, never whether scientific fields are accessible. No engine
 replacement or adaptive implementation is part of this benchmark slice.
 
-[Stress track](../../benchmarks/stress.md) stays separate. Project/workspace
+[Stress track](../../benchmarks/stress.md) stays separate from the fixed core;
+its everyday-million lane is required after app updates as described above. Project/workspace
 organization is a deferred follow-up; this work does not reorganize user projects.
 
 Schema-changing work must bump the relevant FORMAT/SCHEMA_VERSION and fixture/suite semantics as appropriate. Implementation source hashes are provenance, not automatically schema incompatibility; ordinary query optimizations remain comparable when formats, fixtures, harness and environment match.

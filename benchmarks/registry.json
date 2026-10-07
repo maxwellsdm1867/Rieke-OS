@@ -1,7 +1,7 @@
 {
   "format": "rieke-benchmark-registry",
   "version": 1,
-  "suite_version": "1.0.3",
+  "suite_version": "1.0.4",
   "fixture_version": "native-truth-v1+mounted-workflow-500-v1",
   "samples": 4,
   "method": {
@@ -36,5 +36,80 @@
     {"id":"db.import.general_json","reason":"Generalized metadata JSON importer not implemented."},
     {"id":"db.export.metadata_vnext_attach_traces","reason":"Metadata-only export vNext and Attach Traces not implemented. Current SQLite export has source pointers, not portable raw data."},
     {"id":"db.stress.scale","reason":"Core is 12 sealed metadata records and 500 mocked frontend rows, not representative large acquisition scale; separate stress plan applies."}
-  ]
+  ],
+  "stress_tracks": {
+    "everyday-million": {
+      "version": "1.0.0",
+      "runner": "tools/benchmark_everyday.py",
+      "fixture_version": "synthetic-million-metadata-v1",
+      "epochs": 1000000,
+      "samples": 3,
+      "max_worker_seconds": 600,
+      "max_rss_bytes": 4294967296,
+      "comparison": {
+        "relative": 0.25,
+        "absolute_ms": 5.0,
+        "memory_relative": 0.2,
+        "memory_absolute_bytes": 67108864,
+        "meaning": "Provisional per-case review trigger, not a universal latency target. Exit 2 requires investigation and a matched repeat; never average a regression away."
+      },
+      "cases": {
+        "tree": [
+          "tree.first_root",
+          "tree.repeated_root",
+          "tree.next_cells",
+          "tree.deep_cells",
+          "tree.open_cell",
+          "tree.scroll_cell",
+          "tree.anchor",
+          "tree.anchor_columns",
+          "tree.return_root",
+          "tree.change_splits",
+          "tree.return_splits",
+          "tree.select_cell"
+        ],
+        "typed": [
+          "typed.first",
+          "typed.deep",
+          "typed.source",
+          "typed.membership",
+          "typed.protocol_first",
+          "typed.protocol_deep",
+          "typed.cell",
+          "typed.cell_scroll",
+          "typed.block",
+          "typed.contains_first",
+          "typed.contains_deep",
+          "typed.category",
+          "typed.empty",
+          "typed.one",
+          "typed.detail",
+          "typed.count_all",
+          "typed.count_source",
+          "typed.count_cell",
+          "typed.cells_first",
+          "typed.cells_next",
+          "typed.cells_deep",
+          "typed.filter_preview"
+        ]
+      },
+      "guards": {
+        "tree": [
+          "selection_cap",
+          "selection_count",
+          "missing_revision",
+          "outside_anchor",
+          "changed_fingerprint",
+          "stale_selection"
+        ],
+        "typed": [
+          "missing_detail",
+          "invalid_limit",
+          "outside_source_empty",
+          "closed_reader"
+        ]
+      },
+      "scope": "Production service/tree and SQLite typed-query methods with explicit synthetic admission seams; actual million metadata records, no waveforms. Serial tree and typed workers; setup separate; one first-root and three repeated query samples. No native SQL, HTTP, renderer, build/seal, mutation/recovery or release qualification."
+    }
+  }
 }

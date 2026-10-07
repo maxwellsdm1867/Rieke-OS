@@ -1,0 +1,112 @@
+name: Everyday million query regression
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      baseline_sha:
+        description: 'Optional full SHA for the previous-iteration comparison; pinned regression baseline stays fixed'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  everyday-million:
+    name: Actual million metadata query regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: workspace-app/package-lock.json
+      - name: Install committed frontend dependencies
+        run: npm ci --prefix workspace-app
+      - uses: astral-sh/setup-uv@v6
+      - name: Install pinned benchmark runtime
+        run: |
+          uv venv --python 3.11.13 "$RUNNER_TEMP/everyday-python"
+          uv pip install --python "$RUNNER_TEMP/everyday-python/bin/python" -r benchmarks/requirements-py311.txt
+      - name: Validate benchmark harnesses
+        run: |
+          mkdir -p "$RUNNER_TEMP/everyday-results"
+          test -f python/tests/test_benchmark.py
+          test -f python/tests/test_benchmark_everyday.py
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/core-harness-tests.log"
+          "$RUNNER_TEMP/everyday-python/bin/python" -B -m unittest discover -s python/tests -p test_benchmark_everyday.py -v 2>&1 | tee "$RUNNER_TEMP/everyday-results/everyday-harness-tests.log"
+      - name: Measure retained baselines and candidate serially
+        env:
+          PINNED_SHA: 34ce2e06dec0e2886d5a2310f21e02cf818cb646
+          PREVIOUS_SHA: ${{ inputs.baseline_sha || github.event.pull_request.base.sha || github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          unset RIEKE_TEST_DOM_MODULE
+          result_dir="$RUNNER_TEMP/everyday-results"
+          python_bin="$RUNNER_TEMP/everyday-python/bin/python"
+          mkdir -p "$result_dir"
+          if [ -z "$PREVIOUS_SHA" ] && [ "$EVENT_NAME" = workflow_dispatch ]; then
+            PREVIOUS_SHA="$(git rev-parse HEAD^)"
+          elif [ "$PREVIOUS_SHA" = 0000000000000000000000000000000000000000 ]; then
+            # First push has no preceding branch tip; retain the fixed baseline.
+            PREVIOUS_SHA="$PINNED_SHA"
+            printf '%s\n' 'First-push previous baseline falls back to pinned baseline.' >> "$result_dir/source-refs.txt"
+          fi
+          for source_sha in "$PINNED_SHA" "$PREVIOUS_SHA"; do
+            if [[ ! "$source_sha" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              printf '%s\n' 'Invalid baseline: a full commit SHA is required.' >&2
+              exit 1
+            fi
+            if ! git cat-file -e "${source_sha}^{commit}"; then
+              git fetch --no-tags origin "$source_sha"
+            fi
+            git cat-file -e "${source_sha}^{commit}"
+          done
+          printf 'pinned=%s\nprevious=%s\ncandidate=%s\nevent=%s\n' \
+            "$PINNED_SHA" "$PREVIOUS_SHA" "$(git rev-parse HEAD)" "$EVENT_NAME" >> "$result_dir/source-refs.txt"
+          git worktree add --detach "$RUNNER_TEMP/everyday-pinned" "$PINNED_SHA"
+          git worktree add --detach "$RUNNER_TEMP/everyday-previous" "$PREVIOUS_SHA"
+          # Capture failures without skipping the other source or comparison.
+          # All commands use this checkout's harness and one pinned interpreter.
+          failure=0
+          run_check() {
+            label="$1"
+            shift
+            rc=0
+            "$@" > "$result_dir/${label}.log" 2>&1 || rc=$?
+            printf '%s exit=%s\n' "$label" "$rc" | tee -a "$result_dir/exit-status.txt"
+            if [ "$rc" -ne 0 ]; then failure=1; fi
+          }
+          run_check pinned-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$RUNNER_TEMP/everyday-pinned" --output "$result_dir/pinned"
+          run_check previous-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$RUNNER_TEMP/everyday-previous" --output "$result_dir/previous"
+          run_check candidate-run "$python_bin" -B tools/benchmark_everyday.py run \
+            --source-root "$GITHUB_WORKSPACE" --output "$result_dir/candidate"
+          run_check pinned-compare "$python_bin" -B tools/benchmark_everyday.py compare \
+            "$result_dir/pinned/receipt.json" "$result_dir/candidate/receipt.json" \
+            --output "$result_dir/pinned-comparison.json"
+          run_check previous-compare "$python_bin" -B tools/benchmark_everyday.py compare \
+            "$result_dir/previous/receipt.json" "$result_dir/candidate/receipt.json" \
+            --output "$result_dir/previous-comparison.json"
+          run_check candidate-core "$python_bin" -B tools/benchmark.py run \
+            --output "$result_dir/core"
+          exit "$failure"
+      - name: Preserve benchmark evidence including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: everyday-million-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/everyday-results/
+          if-no-files-found: error
+          retention-days: 30

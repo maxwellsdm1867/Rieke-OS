@@ -31,7 +31,7 @@ review and an update to the existing adoption record, not just a green guard.
 
 # Repository benchmark entry point
 
-Before changing release tooling or claiming a performance improvement, read
+Before any application update, changing release tooling or claiming a performance improvement, read
 [docs/dev/benchmarks.md](docs/dev/benchmarks.md) and the fixed
 [benchmarks/registry.json](benchmarks/registry.json).
 
@@ -39,6 +39,13 @@ Before changing release tooling or claiming a performance improvement, read
   `.rieke-runtime/benchmark-python/bin/python tools/benchmark.py run --output benchmarks/results/<unique-run>`
   with the exact documented Python/Node profile and frontend dependencies.
   Local development remains possible; a dirty run is diagnostic only.
+- After every application update and implementation iteration, run the existing
+  fixed core correctness suite plus the actual-million everyday query track using
+  [the canonical iteration workflow](docs/dev/benchmarks.md#required-everyday-query-check-after-every-app-update).
+  Run matched baseline/candidate sources serially with the same current harness;
+  preserve the pinned regression baseline and previous iteration. Missing, failed
+  or incomparable evidence is not green. Synthetic admission and in-memory typed
+  queries do not qualify native/UI/recovery behavior or replace release gates.
 - Preserve raw JSON, logs and Markdown. Compare with `tools/benchmark.py compare`;
   a different suite/fixture/schema/runtime/OS/hardware is not a valid baseline.
 - Release promotion requires exact clean candidate evidence. Do not bypass the
@@ -49,7 +56,8 @@ Before changing release tooling or claiming a performance improvement, read
   qualification or change the measured commit.
 - Use only owned disposable fixtures. Never point benchmarks at user projects,
   installed apps, live API ports or scientific databases. Coordinate load when
-  another benchmark is running; stress runs are separate and opt-in.
+  another benchmark is running; stress runs stay separate from core. The everyday
+  query track is required after updates; other stress runs remain opt-in.
 - Before desktop packaging, read [the macOS compatibility matrix](docs/dev/macos-compatibility.md).
   Preserve the hash-pinned desktop wheel policy and run native imports after
   relocation. Audit the entire assembled bundle; a wheel tag or core benchmark

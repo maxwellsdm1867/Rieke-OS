@@ -21,6 +21,7 @@ an unavailable prerequisite, partial run, skipped case or timeout into success.
 | [architecture_guard.py](architecture_guard.py) | `check`, `plan`, `test`; consumes the [adopted catalog](../docs/architecture/adopted-port-checks.json). `check` validates references/import rules; `plan` selects mapped contracts using explicit ancestor `--base`/`--head` or diagnostic `--all`; `test` actually runs mapped suites. JSON status, source hashes and nonzero failures are part of the interface. |
 | [architecture_module_policy.py](architecture_module_policy.py) | `validate(root, catalog)`, `inputs(root, catalog)`, `check(root, catalog, node)` support the guard's frontend ownership rules. This is a syntactic review aid, not a security sandbox or scientific authority proof. |
 | [benchmark.py](benchmark.py) | `run --output`, `gate RECEIPT --commit --app-version [--release]`, `compare BASELINE CANDIDATE --output`. Owns the fixed suite, receipt validation and comparable-source/environment gate; failed workers write incomplete evidence. |
+| [benchmark_everyday.py](benchmark_everyday.py) | `iteration --baseline-source --source-root --output`, `run --source-root --output`, `compare BASELINE CANDIDATE --output`; actual million-record synthetic query stress, serial matched sources and explicit admission seams. Required with core after every app update; follow the canonical guide. |
 | [benchmark_native.py](benchmark_native.py) | `--evidence-root` with attachment arguments or `--verify`; binds immutable native research evidence and preserves the measured commit. An attachment does not grant release qualification. |
 
 The guard uses Python, local Git history, the existing Node import parser and
@@ -59,6 +60,11 @@ Frontend parser/private-import cases live in
 Read the canonical [benchmark guide](../docs/dev/benchmarks.md) and
 [registry](../benchmarks/registry.json) for the pinned Python/Node/dependency profile,
 fixture identity, serial worker limits, commands and unsupported release cases.
+After every app update/implementation iteration, run the fixed core correctness
+suite and the guide's matched everyday-million iteration against both the pinned
+regression baseline and previous iteration. Preserve clean immutable baselines,
+raw results and failures; missing/failed/incomparable evidence is not green.
+The stress lane does not establish native/UI/recovery or release qualification.
 Do not create another registry or infer per-tool performance from relocation.
 [BenchmarkTests](../python/tests/test_benchmark.py) checks missing/failed samples,
 stale/dirty/tampered sources, incompatible environments and incomplete worker
