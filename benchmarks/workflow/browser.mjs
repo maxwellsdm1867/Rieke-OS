@@ -5,7 +5,24 @@ import {pathToFileURL} from 'node:url';
 import {fixtureSource,installObserver} from './fixture-app.mjs';
 import {attachLedger} from '../navigation-probe.mjs';
 
-export function options(argv){const value={samples:3};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');return value;}
+export function options(argv){const value={samples:3,profile:false};for(let i=0;i<argv.length;i+=2){if(!argv[i].startsWith('--')||argv[i+1]===undefined)throw Error('Expected --key value');value[argv[i].slice(2).replaceAll('-','_')]=argv[i+1];}for(const key of ['source_root','server_json','output'])if(!value[key])throw Error(`Missing --${key.replaceAll('_','-')}`);value.samples=Number(value.samples);if(!Number.isInteger(value.samples)||value.samples<1)throw Error('samples must be positive');value.profile=profileEnabled(value.profile);return value;}
+
+
+/** Profiling is an explicit diagnostic pass, never implicit benchmark work. */
+export function profileEnabled(value=false){
+  if(value===true||value==='true')return true;
+  if(value===false||value==='false')return false;
+  throw Error('profile must be true or false');
+}
+export function phasePlan(config){
+  const phases=[{phase:'ordinary',samples:config.samples}];
+  if(profileEnabled(config.profile)){
+    const samples=Number(config.profile_samples??1);
+    if(!Number.isInteger(samples)||samples<1)throw Error('profile samples must be positive');
+    phases.push({phase:'profile',samples});
+  }
+  return phases;
+}
 
 // Fixed core inventory; variants not executed are retained as explicit gaps.
 export const inventory=[['view.open','cold-component'],['view.return','warm-resource'],['tree.open','main-columns'],['tree.expand','main-first-cell'],['tree.next_page','main-cell-epochs'],['tree.split_change','remove-epoch-block'],['tree.selection','incoming-select-all'],['tree.selection','incoming-deselect-all'],['predicate.search','cell-equality'],['workbench.prepare','fresh'],['workbench.prepare','receipt-replay'],['workbench.open','prepared-return'],['trace.inspect','first-owned-waveform']];
@@ -78,10 +95,11 @@ export async function resetPreparation(meta,{timeoutMs=900000}={}){
 }
 
 export async function run(config){
+  const phases=phasePlan(config);
   const root=path.resolve(config.source_root), workspace=path.join(root,'workspace-app'), output=path.resolve(config.output);
   await fs.mkdir(output,{recursive:true});const meta=JSON.parse(await fs.readFile(config.server_json,'utf8'));
   if(!Number.isInteger(meta.port)||meta.port<1||meta.port>65535)throw Error('Invalid owned backend port');
-  const receipt={setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,actions:inventory.map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:limits.slice(0,3),unmeasured_variants:[limits[3]],cleanup:{},observation:'click handler capture to correct DOM/two RAF; no compositor claim'};
+  const receipt={profile:profileEnabled(config.profile),setup_receipts:[],format:'disco-workflow-browser-v1',status:'incomplete',epochs:meta.epochs,actions:inventory.map(([id,variant])=>({id,variant,samples:[]})),failures:[],gaps:[],limitations:limits.slice(0,3),unmeasured_variants:[limits[3]],cleanup:{},observation:'click handler capture to correct DOM/two RAF; no compositor claim'};
   let server,browser,context;
   const require=createRequire(path.join(workspace,'package.json'));
   let chromium;try{({chromium}=require('playwright'));}catch{({chromium}=createRequire(path.join(root,'desktop/package.json'))('playwright'));}
@@ -93,7 +111,7 @@ export async function run(config){
     await server.listen();receipt.frontend_port=server.httpServer.address().port;
     browser=await chromium.launch({headless:true,...((config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE)?{executablePath:config.browser_executable||process.env.WORKFLOW_BROWSER_EXECUTABLE}:{}),args:['--no-first-run','--no-default-browser-check']});
     receipt.environment={node:process.version,browser:browser.version(),viewport:{width:1500,height:1100},device_scale_factor:1,headless:true,runtime:'vite-react-development'};
-    for(const phase of ['ordinary','profile'])for(let sample=0;sample<(phase==='profile'?Number(config.profile_samples||1):config.samples);sample++){
+    for(const {phase,samples:phaseSamples} of phases)for(let sample=0;sample<phaseSamples;sample++){
       context=await browser.newContext({viewport:{width:1500,height:1100}});const page=await context.newPage();await page.addInitScript(installObserver,{phase});const ledger=attachLedger(page,'workflow');
       page.on('pageerror',e=>receipt.failures.push({phase,sample,error:e.message}));
       await page.goto(`http://127.0.0.1:${receipt.frontend_port}/__workflow__`);await page.getByRole('button',{name:'Benchmark Main',exact:true}).waitFor();

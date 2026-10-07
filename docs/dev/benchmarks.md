@@ -96,11 +96,22 @@ permitted-read runs on the corrected commit are required for qualification.
 
 ## End-to-end benchmark workflow and module attribution
 
-**Status: core workflow runner implemented; million-scale validation pending. The broader scenario matrix below remains the target, with unmeasured variants reported explicitly.** Measure each everyday action end to end on a one-million-epoch project and map contributing stages to owning modules. The existing 34-case query suite is supporting evidence and does not complete this requirement. Complete this benchmark before resuming the planned browsing optimizations.
+The required workflow compares the same fixed fixture and thirteen real user-action
+variants across implementations, using ordinary elapsed time and exact correctness
+checks. Three ordinary samples produce each action median; action totals and the
+trace-readiness endpoints determine performance review. `--profile` is an optional
+diagnostic for investigating a result. Module timing never gates the ordinary
+comparison or blocks optimization. The existing 34-case query suite remains
+supporting evidence, not a substitute for action timing.
+
+Historical local runs at source `7ddab479c8d8196118551c78d992dba2deb92726` validated the thirteen cases with a one-million
+project and 20,000-epoch active protocol. Their module-profile flags varied; those
+flags are historical diagnostic findings, not failed ordinary action totals. They
+do not qualify later source revisions or the default million-member active protocol.
 
 The headline boundary is user intent to the correct, current, usable rendered result, including the explicitly requested click-to-trace appearance measurement. Backend request-to-response is a nested measurement. Edit Tree means opening the editor, changing its splits/grouping, and selection/deselection. No passing end-to-end receipt may be inferred from a query-only receipt.
 
-| Action | Headline result | Contributing owners to time |
+| Action | Headline result | Owners available for optional diagnosis |
 | --- | --- | --- |
 | Open a protocol view; return to it | Correct current content and usable controls, cold and warm separately | workspace navigation, Inspector, resource/cache lifetime, protocol admission, page reads, React publication |
 | Open Edit Tree | Current root branches, counts and controls visible and usable | Inspector/tree presentation, saved layout, initial tree request, scope admission, grouping, response validation, rendering |
@@ -115,28 +126,32 @@ The headline boundary is user intent to the correct, current, usable rendered re
 | Open/return to incoming Workbench | Current frozen cohort ready for browsing; record reuse versus required preparation | queue, preparation reuse/invalidation, frozen context, opening authority, frozen service, tree/list reads, closing authority, renderer admission |
 | Click epoch to show its lazy-loaded trace | First correct visible trace, then complete requested visible trace window; two elapsed endpoints from the same click | focus/selection, lazy-load scheduling, cache/coalescing, request admission, source verification, bounded waveform read, decode/transfer, frontend validation, trace drawing/frame observation |
 
-Requested scenario variants:
+The table maps action families and possible diagnostic owners; it does not add
+cases to the fixed thirteen-variant suite below. Additional presentations, split
+operations, selection gestures, predicate distributions, preparation invalidation
+and trace cache/supersession/scroll cases remain unmeasured. These gaps do not block
+comparison or optimization of measured actions. Trace readiness must identify the
+correct epoch/stream and requested window; a previous epoch's trace cannot qualify.
 
-- Edit Tree covers hierarchy and columns, main and incoming views, initial open and warm return. Split changes cover add/remove/reorder and structural versus recorded-metadata fields; expected grouping/order/counts must remain exact.
-- Selection covers a single epoch, a branch/cell, Shift-range and Select/Deselect Highlighted, including deselection, the 1,000-selection limit and rapid queued clicks. Record immediate highlight feedback separately from resolved selection/summary readiness; highlighting alone is not selection completion.
-- Predicate search covers first/repeated submissions, changed predicate, zero/one/rare/broad matches and a continuation page. The end gate checks exact scope/membership, ordering and requested counts; a loading indicator or stale previous result does not finish the action.
-- Workbench preparation is its own action, distinct from opening an already-prepared review. Measure fresh preparation, reusable unchanged preparation and invalidation after changed inputs. A prepared cohort is pending review; preparation must not silently select or merge it.
-- Lazy trace tests cover uncached first inspection, cache-hit revisit, selecting another epoch while a read is pending, and scrolling the visible trace window. Record intentional scheduling delay, demand versus prefetch and cancelled/superseded reads. The previous epoch's trace cannot satisfy readiness. Record epoch/stream identity, units and requested sample/time window at both endpoints. Metadata benchmarks retain zero-H5 tripwires; trace cases use separately owned bounded waveform fixtures and record actual I/O. Canvas-drawn/DOM-frame observations remain distinct from proven compositor presentation.
+Each action receipt preserves ordinary elapsed samples, exact correctness/readiness
+checks, cold/warm state, request count, fixture/source identity and raw evidence.
+Compare only matching fixtures, protocol sizes, runtimes and harnesses with each
+source identified. A loading indicator or stale result cannot finish an action.
 
-Each action receipt must preserve its total elapsed samples, exact correctness/readiness oracle, cold/warm state, request count, fixture/source identity, and a correlated trace of stage spans. Each span identifies action/request/parent, process/clock domain, module owner, start/end, call count, result/cache classification and error. Report inclusive and exclusive/self time distinctly. Preserve unattributed time explicitly instead of distributing it by guesswork.
-
-Provide two views of the **same observations**: (1) actions with total baseline/candidate latency and regressions; (2) action-by-stage/module contribution, plus a module-across-actions summary. A stage regression must remain visible even when the total improves.
-
-Backend work is nested inside HTTP request latency. Parallel requests overlap. Do not add parent and child durations or sum overlapping requests into action wall time. Use per-clock timelines and interval unions; cross-process correlation requires request IDs and an explicit clock-alignment method or bounded nesting. DOM/RAF readiness and canvas calls do not prove compositor paint. Cache hits must be measured as cache hits without forcing network work.
-
-Reuse the existing `benchmarks/navigation-probe.mjs` action/readiness observer and request ledger; it currently provides temporal observations rather than causal module attribution. For backend attribution, preserve exact production function identities: wrapping TreePages canonical reader methods changes batching eligibility. An isolated profiler pass can collect nested attribution without monkeypatching those methods, but its overhead must be measured and its timing kept separate from ordinary action samples.
-
-The million-row action fixture must exercise real request composition and frontend admission. The current synthetic tree/catalog and typed-index initializer omit route-level and native authority costs. Cover those boundaries explicitly or mark them unmeasured; no standalone query result can fill in missing action timing. Existing native/seal/recovery/renderer qualification gaps remain.
+Use `--profile` only when stage/module evidence would help explain a result. Its
+separate instrumented pass can report backend cProfile and React costs; these are
+diagnostics, not required comparison fields or additional performance gates. Keep
+profile overhead separate from ordinary action samples. Backend work is nested
+inside transport latency and parallel work overlaps, so do not sum those durations
+into action wall time. DOM/RAF readiness and canvas calls do not prove compositor
+paint. Unmeasured native/seal/recovery boundaries remain explicit; profiling cannot
+supply missing qualification.
 
 ### Run the end-to-end core workflow
 
 `tools/benchmark_workflow.py` runs an owned Flask fixture, actual product React
-components in an owned browser, and a correlated request/module ledger. It writes
+components in an owned browser, and a request ledger. Optional `--profile` adds
+module diagnostics. It writes
 `receipt.json`, `workflow.html`, `workflow.md`, and raw browser/server evidence.
 The current core measures thirteen variants: main open/return, Edit Tree open,
 cell expansion, next epoch page, split removal, incoming select/deselect,
@@ -156,7 +171,7 @@ its actual version is recorded and must match the comparison run.
 # Small composition diagnostic: never qualifies as a million-epoch measurement.
 .rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py run \
   --smoke --output benchmarks/results/workflow-smoke-unique
-# Actual million epochs; three ordinary action samples and a separate profile pass.
+# Actual million epochs; three ordinary action samples, without profiling.
 .rieke-runtime/benchmark-python/bin/python -B tools/benchmark_workflow.py run \
   --source-root . --output benchmarks/results/workflow-candidate-unique
 # Run the same current harness against a clean retained source checkout first.
@@ -167,6 +182,9 @@ its actual version is recorded and must match the comparison run.
   benchmarks/results/workflow-candidate-unique/receipt.json \
   --output benchmarks/results/workflow-comparison-unique.json
 ```
+
+Add `--profile` to `run` for a separate diagnostic pass when investigating a
+result; ordinary runs and comparisons do not require it.
 
 Use `--browser-executable /absolute/path/to/chrome` when needed. Each source
 checkout needs its own matching dependency resolution. Reusing installed modules
@@ -196,22 +214,18 @@ code. This is not native database, production-index, installed-package or raw-pa
 qualification. Metadata-request H5 access fails; only the owned trace route may
 open the owned waveform file, with access recorded per request.
 
-Ordinary browser action time is the headline. Backend cProfile function/module
-self-time, inclusive time and calls are collected in separate instrumented requests;
-React render durations are also separate evidence. Instrumented action totals show
-the observer's cost without estimating it away. Transport intervals contain backend
-work; overlapping requests and React durations are not added into an invented wall
-time decomposition. Browser unmeasured intervals and cross-owner overlaps remain
-visible. cProfile aggregates do not provide a backend critical-path timeline.
+Ordinary browser action time is the headline. Optional backend cProfile
+function/module self-time, inclusive time, calls and React render durations remain
+separate diagnostic evidence. Their variation or coverage changes do not fail the
+ordinary comparison, and no profile calibration is required before optimization.
 
 The runner owns all worker processes, enforces time/RSS limits, records cleanup,
 and shares the query benchmark's serial lock. Failed readiness, missing actions,
 wrong UUIDs/counts/trace windows, tampered evidence, mismatched runtimes and unknown
-cleanup cannot qualify. Comparisons check each action total and each measured
-module independently using provisional review thresholds; a faster total cannot
-hide a slower stage. Different module coverage requires review rather than a
-fabricated zero. Dirty-source runs remain development diagnostics; repeat the
-final committed source before delivery.
+cleanup cannot qualify. Comparisons check ordinary action medians and trace
+endpoints using provisional review thresholds; retain improvements as well as
+regressions. Dirty-source runs remain development diagnostics; repeat the final
+committed source before delivery.
 
 ## Required everyday query check after every app update
 

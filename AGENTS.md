@@ -40,11 +40,12 @@ Before any application update, changing release tooling or claiming a performanc
   with the exact documented Python/Node profile and frontend dependencies.
   Local development remains possible; a dirty run is diagnostic only.
 - The agreed [end-to-end benchmark workflow](docs/dev/benchmarks.md#end-to-end-benchmark-workflow-and-module-attribution)
-  requires click-to-correct-result totals plus correlated stage/module attribution.
-  The current 34-case query suite is supporting evidence; it does not complete
-  that workflow. The implemented thirteen-variant runner requires million-scale
-  validation and reports broader unmeasured scenarios. Validate it before resuming the planned
-  browsing optimizations; never label missing action measurements as passed.
+  compares the same fixed fixture and thirteen real user actions using ordinary
+  click-to-correct-result medians, trace endpoints and exact correctness checks.
+  `--profile` is optional diagnostic work; module timings never gate comparison
+  or block optimization. CI uses a million-row project with 20,000 active-protocol
+  epochs; manual default is one million active epochs. Keep broader unmeasured
+  and native limits explicit. Query-only evidence cannot replace action timing.
 - After every application update and implementation iteration, run the existing
   fixed core correctness suite plus the actual-million everyday query track using
   [the canonical iteration workflow](docs/dev/benchmarks.md#required-everyday-query-check-after-every-app-update).

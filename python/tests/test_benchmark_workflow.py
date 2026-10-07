@@ -92,8 +92,7 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(result['total_ms'], 100)
 
     def test_wrong_sample_counts_phases_and_correctness_refused(self):
-        changes = [lambda a: a['samples'].pop(),
-                   lambda a: a['samples'].pop(0),
+        changes = [lambda a: a['samples'].pop(0),
                    lambda a: a['samples'][0].update(phase='unknown'),
                    lambda a: a['samples'][0]['correctness'].update(passed=False),
                    lambda a: a['samples'][0].update(action_id='inspect-1')]
@@ -130,7 +129,7 @@ class WorkflowContractTests(unittest.TestCase):
                 bench.validate_action(action, {'id': 'inspect', 'trace': True}, 2)
 
     def browser_result(self):
-        return dict(format='disco-workflow-browser-v1', status='passed', epochs=1_000_000,
+        return dict(format='disco-workflow-browser-v1', status='passed', epochs=1_000_000, profile=True,
                     actions=[self.action()], failures=[], gaps=[],
                     cleanup={'browser_closed': True, 'vite_closed': True, 'server_closed': True})
 
@@ -175,12 +174,12 @@ class WorkflowContractTests(unittest.TestCase):
             with self.subTest(requests=requests), self.assertRaises(ValueError):
                 bench.validate_action(action, {'id': 'inspect'}, 2)
 
-    def test_stage_regression_visible_when_action_improves(self):
+    def test_optional_module_regression_does_not_fail_ordinary_gate(self):
         baseline = {'inspect': {'total_ms': 100, 'modules': {'decode': 10}}}
         candidate = {'inspect': {'total_ms': 80, 'modules': {'decode': 30}}}
         result = bench.compare_metrics(baseline, candidate, {'relative': 0.25, 'absolute_ms': 5})
-        self.assertTrue(result['review_required'])
-        self.assertNotEqual(result['status'], 'passed')
+        self.assertEqual(result['review_required'], [])
+        self.assertEqual(result['status'], 'passed')
 
     def test_trace_endpoint_regression_visible_when_total_improves(self):
         baseline = {'trace': {'total_ms': 100, 'modules': {},
@@ -218,11 +217,53 @@ class WorkflowContractTests(unittest.TestCase):
                 self.assertIn('Complete trace window', text)
                 self.assertIn('30.00', text)
 
-    def test_missing_action_or_module_cannot_compare(self):
+    def test_missing_action_refused_but_module_coverage_optional(self):
         baseline = {'inspect': {'total_ms': 100, 'modules': {'decode': 10}}}
-        for candidate in ({}, {'inspect': {'total_ms': 100, 'modules': {}}}):
-            with self.subTest(candidate=candidate), self.assertRaises(ValueError):
-                bench.compare_metrics(baseline, candidate, {'relative': 0.25, 'absolute_ms': 5})
+        with self.assertRaises(ValueError):
+            bench.compare_metrics(baseline, {}, {'relative': .25, 'absolute_ms': 5})
+        candidate = {'inspect': {'total_ms': 100, 'modules': {}}}
+        self.assertEqual(bench.compare_metrics(baseline, candidate,
+                         {'relative': .25, 'absolute_ms': 5})['status'], 'passed')
+        candidate['inspect']['total_ms'] = 150
+        self.assertEqual(bench.compare_metrics(baseline, candidate,
+                         {'relative': .25, 'absolute_ms': 5})['review_required'], ['inspect/total_ms'])
+
+    def test_profile_is_optional_but_explicit_mode_is_enforced(self):
+        ordinary = self.action()
+        ordinary['samples'].pop()
+        bench.validate_action(ordinary, {'id': 'inspect'}, 2)
+        bench.validate_action(ordinary, {'id': 'inspect'}, 2, profile=False)
+        with self.assertRaises(ValueError):
+            bench.validate_action(ordinary, {'id': 'inspect'}, 2, profile=True)
+        with self.assertRaises(ValueError):
+            bench.validate_action(self.action(), {'id': 'inspect'}, 2, profile=False)
+        duplicate = self.action()
+        extra = copy.deepcopy(duplicate['samples'][-1]); extra['action_id'] += '-extra'
+        duplicate['samples'].append(extra)
+        with self.assertRaises(ValueError):
+            bench.validate_action(duplicate, {'id': 'inspect'}, 2)
+
+    def test_no_profile_browser_metrics_and_reports(self):
+        raw = self.browser_result()
+        raw['profile'] = False
+        raw['actions'][0]['samples'].pop()
+        cfg = {'cases': [{'id': 'inspect'}], 'samples': 2}
+        bench.validate_browser(raw, cfg, 1_000_000, 2)
+        result = bench.metrics(raw, {}, cfg)
+        self.assertEqual(result['inspect/cold']['total_ms'], 100)
+        self.assertIsNone(result['inspect/cold']['profile_total_ms'])
+        self.assertEqual(result['inspect/cold']['modules'], {})
+        with tempfile.TemporaryDirectory(prefix='workflow-no-profile-test-') as directory:
+            output = Path(directory)
+            bench.report({'status': 'test-fixture', 'profile': False, 'metrics': result}, output)
+            self.assertIn('100.00', (output/'workflow.md').read_text())
+            self.assertIn('100.00', (output/'workflow.html').read_text())
+        raw['profile'] = True
+        with self.assertRaises(ValueError):
+            bench.validate_browser(raw, cfg, 1_000_000, 2)
+        del raw['profile']
+        with self.assertRaises(ValueError):
+            bench.validate_browser(raw, cfg, 1_000_000, 2)
 
 
 class WorkflowReceiptTests(unittest.TestCase):
@@ -263,7 +304,7 @@ class WorkflowReceiptTests(unittest.TestCase):
                             'spans': ([dict(module='disco.metadata.reader', inclusive_ms=10,
                                            self_ms=5, calls=1)] if sample['phase'] == 'profile' else [])})
         browser_env = {'browser': 'fixture', 'node': 'fixture', 'viewport': {'width': 1, 'height': 1}}
-        raw = dict(format=bench.BROWSER_FORMAT, status='passed', epochs=1_000_000,
+        raw = dict(format=bench.BROWSER_FORMAT, status='passed', epochs=1_000_000, profile=True,
                    actions=[action], gaps=[], failures=[],
                    cleanup={'browser_closed': True, 'vite_closed': True}, environment=browser_env)
         self.save(directory / 'browser/browser.json', raw)
@@ -271,7 +312,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.save(directory / 'server/server.json', {'epochs': 1_000_000, 'protocol_epochs': 1_000_000})
         cleanup = dict(server_closed=True, fixture_closed=True, instrumentation_restored=True)
         self.save(directory / 'server/cleanup.json', cleanup)
-        value = dict(format=bench.FORMAT, status='passed', smoke=False, config=self.cfg,
+        value = dict(format=bench.FORMAT, status='passed', smoke=False, profile=True, config=self.cfg,
                      epochs=1_000_000, protocol_epochs=1_000_000, samples=2, fixture={'epochs': 1_000_000, 'protocol_epochs': 1_000_000}, harness_start=self.manifest, harness_end=self.manifest,
                      source_start=copy.deepcopy(self.source), source_end=copy.deepcopy(self.source),
                      environment=copy.deepcopy(self.env), browser_environment=browser_env,
@@ -286,7 +327,7 @@ class WorkflowReceiptTests(unittest.TestCase):
         value['evidence_sha256'] = {str(p.relative_to(path.parent)): bench.query_bench.sha(p.read_bytes())
                                     for folder in ('browser', 'server')
                                     for p in (path.parent / folder).iterdir() if p.is_file()}
-        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
+        keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
         provenance = path.parent/'provenance.json'
         self.save(provenance, {key: value[key] for key in keys})
         value['provenance_sha256'] = bench.query_bench.sha(provenance.read_bytes())
@@ -300,6 +341,13 @@ class WorkflowReceiptTests(unittest.TestCase):
         self.assertEqual(metric['profile_total_ms'], 1000)
         self.assertEqual(metric['modules']['server:disco.metadata'], 5)
         self.assertEqual(metric['modules']['server:unattributed'], 15)
+
+    def test_raw_profile_mode_must_match_receipt(self):
+        path, value = self.receipt()
+        value['profile'] = False
+        self.seal(path, value)
+        with self.assertRaises(ValueError):
+            bench.load_receipt(path)
 
     def test_raw_tampering_without_resealing_refused(self):
         path, _ = self.receipt()

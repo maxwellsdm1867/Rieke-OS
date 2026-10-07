@@ -1,7 +1,7 @@
 /** Readiness fault tests. Fake DOM only; no browser/server/large fixtures. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation} from './browser.mjs';
+import {readiness,snapshotAction,assertFinalizedRequests,resetPreparation,options,phasePlan} from './browser.mjs';
 
 function element(text='', attributes={}) {
   return {textContent:text, disabled:false, ...attributes,
@@ -222,4 +222,26 @@ test('owned preparation reset never retries changed authority or wrong counts',a
   await assert.rejects(resetPreparation(meta),/changed/);assert.equal(calls,1);
   globalThis.fetch=async()=>({status:200,ok:true,text:async()=>JSON.stringify({reset:true,ready:true,epochs:1000,main_count:899,incoming_count:100})});
   await assert.rejects(resetPreparation(meta),/did not attest/);
+});
+
+
+test('browser CLI defaults to ordinary-only and supports explicit profile boolean',()=>{
+  const required=['--source-root','source','--server-json','server.json','--output','output'];
+  const defaults=options(required);
+  assert.equal(defaults.profile,false);
+  assert.deepEqual(phasePlan(defaults),[{phase:'ordinary',samples:3}]);
+  const disabled=options([...required,'--profile','false','--samples','2']);
+  assert.deepEqual(phasePlan(disabled),[{phase:'ordinary',samples:2}]);
+  const enabled=options([...required,'--profile','true','--samples','2']);
+  assert.equal(enabled.profile,true);
+  assert.deepEqual(phasePlan(enabled),[{phase:'ordinary',samples:2},{phase:'profile',samples:1}]);
+  assert.throws(()=>options([...required,'--profile','yes']),/true or false/);
+});
+
+test('direct browser phase plan never enables profiling from an omitted or false setting',()=>{
+  assert.deepEqual(phasePlan({samples:3}),[{phase:'ordinary',samples:3}]);
+  assert.deepEqual(phasePlan({samples:3,profile:false,profile_samples:5}),[{phase:'ordinary',samples:3}]);
+  assert.deepEqual(phasePlan({samples:3,profile:true,profile_samples:2}),[{phase:'ordinary',samples:3},{phase:'profile',samples:2}]);
+  assert.throws(()=>phasePlan({samples:3,profile:true,profile_samples:0}),/positive/);
+  assert.throws(()=>phasePlan({samples:3,profile:'enabled'}),/true or false/);
 });

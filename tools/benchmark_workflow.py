@@ -137,15 +137,17 @@ def validate_trace(trace, total_ms):
         raise ValueError('Trace endpoints outside action or in wrong order')
 
 
-def validate_action(action, cfgcase, samples):
+def validate_action(action, cfgcase, samples, profile=None):
     if action.get('id') != cfgcase['id'] or not isinstance(action.get('variant'),str) or not action['variant']:
         raise ValueError('Missing action identity/variant')
     values = action.get('samples')
     if not isinstance(values,list):
         raise ValueError('Missing action samples')
     ordinary = [s for s in values if s.get('phase') == 'ordinary']
-    profile = [s for s in values if s.get('phase') == 'profile']
-    if len(ordinary) != samples or not profile or len(ordinary)+len(profile) != len(values):
+    profiled = [s for s in values if s.get('phase') == 'profile']
+    if (len(ordinary) != samples or len(profiled) > 1
+            or len(ordinary)+len(profiled) != len(values)
+            or profile is not None and len(profiled) != int(profile)):
         raise ValueError('Missing ordinary/profile samples or invalid phase')
     identities = set()
     request_identities = set()
@@ -170,7 +172,7 @@ def validate_action(action, cfgcase, samples):
         if cfgcase.get('trace'):
             validate_trace(sample.get('trace'),total)
     return {'total_ms':statistics.median(s['total_ms'] for s in ordinary),
-            'ordinary_samples':len(ordinary),'profile_samples':len(profile)}
+            'ordinary_samples':len(ordinary),'profile_samples':len(profiled)}
 
 
 def validate_browser(result, cfg, epochs=1_000_000, samples=3):
@@ -180,6 +182,8 @@ def validate_browser(result, cfg, epochs=1_000_000, samples=3):
         raise ValueError('End-to-end qualification requires an actual million-epoch project')
     if result.get('failures') != [] or result.get('gaps') != []:
         raise ValueError('Unmeasured/failed required action coverage')
+    if type(result.get('profile')) is not bool:
+        raise ValueError('Missing profiling mode')
     cleanup = result.get('cleanup',{})
     if cleanup.get('browser_closed') is not True or cleanup.get('vite_closed') is not True:
         raise ValueError('Browser cleanup is incomplete or unknown')
@@ -198,7 +202,7 @@ def validate_browser(result, cfg, epochs=1_000_000, samples=3):
             raise ValueError('Unknown action variant')
         variants.add(key)
         found.add(identity)
-        validate_action(action,required[identity],samples)
+        validate_action(action,required[identity],samples,profile=result['profile'])
     if found != set(required):
         raise ValueError('Missing required action')
     for identity,case in required.items():
@@ -213,14 +217,11 @@ def compare_metrics(baseline, candidate, policy):
     rows, findings = [], []
     for case,before in baseline.items():
         after = candidate[case]
-        if set(before['modules']) != set(after['modules']):
-            raise ValueError('Different module attribution coverage')
         if set(before.get('endpoints',{})) != set(after.get('endpoints',{})):
             raise ValueError('Different action endpoint coverage')
         metrics = [('total_ms',before['total_ms'],after['total_ms'])]
         metrics += [('endpoint:'+name,value,after['endpoints'][name])
                     for name,value in before.get('endpoints',{}).items()]
-        metrics += [('module:'+m,v,after['modules'][m]) for m,v in before['modules'].items()]
         for metric,old,new in metrics:
             number(old,'baseline metric');number(new,'candidate metric')
             threshold = max(old*(1+policy['relative']),old+policy['absolute_ms'])
@@ -282,7 +283,7 @@ def metrics(browser, requests, cfg):
     values = {}
     for action in browser['actions']:
         case = next(c for c in cfg['cases'] if c['id'] == action['id'])
-        validate_action(action,case,cfg['samples'])
+        validate_action(action,case,cfg['samples'],profile=browser.get('profile'))
         profiles = []
         for sample in action['samples']:
             server = []
@@ -315,7 +316,7 @@ def metrics(browser, requests, cfg):
         profile_samples = [s for s in action['samples'] if s['phase'] == 'profile']
         values[action['id']+'/'+action['variant']] = {
             'total_ms':statistics.median(s['total_ms'] for s in ordinary),
-            'profile_total_ms':statistics.median(s['total_ms'] for s in profile_samples),
+            'profile_total_ms':statistics.median(s['total_ms'] for s in profile_samples) if profile_samples else None,
             'modules':{key:statistics.median(p.get(key,0) for p in profiles) for key in sorted(keys)},
             'request_counts':[len(s['requests']) for s in ordinary],
             'ordinary_samples_ms':[s['total_ms'] for s in ordinary],
@@ -329,31 +330,36 @@ def report(receipt, output):
     import html
     esc = lambda value: html.escape(str(value))
     lines = ['# End-to-end benchmark workflow', '', 'Status: **'+receipt['status']+'**.', '',
-             'Browser action wall time is measured without backend profiling. Module rows below come from separate instrumented samples. Server work is nested inside request latency; React render durations and overlapping spans are not additive wall-time components.', '',
-             '| Action / variant | Ordinary median (ms) | Profile median (ms) | Requests |',
-             '| --- | ---: | ---: | --- |']
+             'Compare ordinary elapsed action times and exact results on the same fixture. Optional profiles are diagnostic only and do not affect the regression gate.', '',
+             f"Project epochs: {receipt.get('epochs', 'unknown')}; active-protocol epochs: {receipt.get('protocol_epochs', 'unknown')}.", '',
+             '| Action / variant | Elapsed median (ms) | Requests |',
+             '| --- | ---: | --- |']
     cards = []
     for case,value in receipt.get('metrics',{}).items():
-        lines.append(f"| {case} | {value['total_ms']:.2f} | {value['profile_total_ms']:.2f} | {value['request_counts']} |")
+        lines.append(f"| {case} | {value['total_ms']:.2f} | {value['request_counts']} |")
         table = ''.join(f'<tr><td>{esc(module)}</td><td>{ms:.3f}</td></tr>' for module,ms in sorted(value['modules'].items(),key=lambda x:-x[1]))
         endpoint_labels = {'first_visible_ms':'First correct trace', 'complete_ms':'Complete trace window'}
         endpoint_text = ' · '.join(f'{endpoint_labels.get(name,name)}: {ms:.2f} ms'
                                    for name,ms in value.get('endpoints',{}).items())
         endpoint_html = f'<p>Ordinary endpoint medians — {esc(endpoint_text)}</p>' if endpoint_text else ''
-        cards.append(f'<details><summary><strong>{esc(case)}</strong><span>{value["total_ms"]:.2f} ms ordinary · {value["profile_total_ms"]:.2f} ms instrumented</span></summary>{endpoint_html}<table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>')
+        diagnostic = ''
+        if value['profile_total_ms'] is not None:
+            diagnostic = f'<details><summary>Optional profile diagnostics</summary><p>{value["profile_total_ms"]:.2f} ms instrumented. Not part of the regression gate; module timings overlap and cannot be summed into ordinary elapsed time.</p><table><thead><tr><th>Module / measurement layer</th><th>Profile evidence (ms)</th></tr></thead><tbody>{table}</tbody></table></details>'
+        cards.append(f'<section><h2>{esc(case)}</h2><p><strong>{value["total_ms"]:.2f} ms elapsed</strong> · {esc(value["request_counts"])} requests</p>{endpoint_html}{diagnostic}</section>')
     for case,value in receipt.get('metrics',{}).items():
         if value.get('endpoints'):
             lines += ['', '### '+case+' trace endpoints', '', '| Ordinary endpoint | Median (ms) |', '| --- | ---: |']
             lines += [f'| {endpoint_labels.get(name,name)} | {ms:.2f} |' for name,ms in value['endpoints'].items()]
-        lines += ['', '## '+case, '', '| Layer / module | Profile evidence (ms) |','| --- | ---: |']
-        lines += [f'| {module} | {ms:.3f} |' for module,ms in sorted(value['modules'].items(),key=lambda x:-x[1])]
+        if value['profile_total_ms'] is not None:
+            lines += ['', '## Optional profile diagnostics: '+case, '', f"Instrumented total: {value['profile_total_ms']:.2f} ms. Not a regression gate.", '', '| Layer / module | Profile evidence (ms) |','| --- | ---: |']
+            lines += [f'| {module} | {ms:.3f} |' for module,ms in sorted(value['modules'].items(),key=lambda x:-x[1])]
     limitations = receipt.get('limitations',[])
     lines += ['', '## Scope and remaining coverage', ''] + ['- '+x for x in limitations]
     (output/'workflow.md').write_text('\n'.join(lines)+'\n')
     limits = ''.join('<li>'+esc(x)+'</li>' for x in limitations)
     title = 'End-to-end benchmark workflow'
     (output/'workflow.html').write_text(f'''<!doctype html><html><head><meta charset="utf-8"><title>{title}</title><style>
-body{{font:16px/1.55 system-ui;margin:40px auto;padding:0 24px;max-width:1080px;color:#183039;background:#f5f8f8}}h1{{font-size:30px}}.lead{{max-width:900px}}details{{background:white;border:1px solid #ccd9da;border-radius:8px;margin:12px 0;padding:14px}}summary{{cursor:pointer}}summary span{{display:block;margin-left:20px;color:#405b60}}table{{width:100%;border-collapse:collapse;margin-top:12px}}td,th{{text-align:left;border-bottom:1px solid #e1e8e8;padding:8px}}td:last-child,th:last-child{{text-align:right;font-variant-numeric:tabular-nums}}.badge{{font-weight:700}}li{{margin:6px 0}}</style></head><body><h1>{title}</h1><p class="badge">{esc(receipt['status'])}</p><p class="lead">Ordinary click-to-correct-result latency is the headline. Expand an action to inspect its module evidence from a separate instrumented run. Backend timings sit inside transport; React render durations and overlapping spans cannot be added to the headline.</p>{''.join(cards)}<h2>Scope and remaining coverage</h2><ul>{limits}</ul></body></html>''')
+body{{font:16px/1.55 system-ui;margin:40px auto;padding:0 24px;max-width:1080px;color:#183039;background:#f5f8f8}}h1{{font-size:30px}}.lead{{max-width:900px}}details{{background:white;border:1px solid #ccd9da;border-radius:8px;margin:12px 0;padding:14px}}summary{{cursor:pointer}}summary span{{display:block;margin-left:20px;color:#405b60}}table{{width:100%;border-collapse:collapse;margin-top:12px}}td,th{{text-align:left;border-bottom:1px solid #e1e8e8;padding:8px}}td:last-child,th:last-child{{text-align:right;font-variant-numeric:tabular-nums}}.badge{{font-weight:700}}li{{margin:6px 0}}</style></head><body><h1>{title}</h1><p class="badge">{esc(receipt['status'])}</p><p class="lead">Compare ordinary elapsed action times and exact results on the same fixture. Project epochs: {esc(receipt.get('epochs','unknown'))}; active-protocol epochs: {esc(receipt.get('protocol_epochs','unknown'))}. Optional profiles are diagnostic only and do not affect the regression gate.</p>{''.join(cards)}<h2>Scope and remaining coverage</h2><ul>{limits}</ul></body></html>''')
 
 
 def execute_owned(command, log, deadline, rss_limit, identities):
@@ -412,7 +418,7 @@ def stop_owned(child, identities):
     return not remaining
 
 
-def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None):
+def run(source_root, output, *, smoke=False, browser_executable=None, protocol_epochs=None, profile=False):
     cfg = config()
     source_root,output = source_root.resolve(),output.resolve()
     output.mkdir(parents=True,exist_ok=False)
@@ -423,7 +429,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
     receipt = {'format':FORMAT,'status':'running','source_root':str(source_root),
                'source_start':query_bench.source(source_root),'harness_start':harness(),
                'environment':query_bench.environment(),'config':cfg,'epochs':epochs,
-               'samples':samples,'protocol_epochs':protocol_epochs,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
+               'samples':samples,'protocol_epochs':protocol_epochs,'profile':profile,'smoke':smoke,'cleanup':{},'metrics':{},'limitations':[]}
     query_bench.write(output/'receipt.json',receipt)
     server=browser=None
     started = time.monotonic()
@@ -446,7 +452,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
             raise ValueError('Fixture scale mismatch')
         receipt['fixture'] = metadata
         command = ['node',str(ROOT/'benchmarks/workflow/browser.mjs'),'--source-root',str(source_root),
-                   '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples)]
+                   '--server-json',str(meta_path),'--output',str(output/'browser'),'--samples',str(samples),
+                   '--profile',str(profile).lower()]
         if browser_executable:
             command += ['--browser-executable',str(browser_executable)]
         browser,stream,deadline = execute_owned(command,output/'browser.log',cfg['max_browser_seconds'],cfg['max_rss_bytes'],browser_ids)
@@ -462,6 +469,8 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 break
             time.sleep(.25)
         browser_result = json.loads((output/'browser/browser.json').read_text())
+        if browser_result.get('profile') is not profile:
+            raise ValueError('Browser profiling mode differs from request')
         receipt['limitations'] = browser_result.get('limitations',[])+browser_result.get('unmeasured_variants',[])
         # Small fixture verifies composition only, never masquerades as million-scale evidence.
         if smoke:
@@ -495,7 +504,7 @@ def run(source_root, output, *, smoke=False, browser_executable=None, protocol_e
                 or not all(receipt['cleanup']['backend'].get(key) is True for key in ('server_closed','fixture_closed','instrumentation_restored'))):
             receipt['status'] = 'failed'
             receipt['cleanup_error'] = 'Owned cleanup incomplete or unverified'
-        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
+        provenance_keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
         provenance = {key:receipt[key] for key in provenance_keys if key in receipt}
         query_bench.write(output/'provenance.json',provenance)
         receipt['provenance_sha256'] = query_bench.sha((output/'provenance.json').read_bytes())
@@ -537,7 +546,7 @@ def load_receipt(path):
         if query_bench.sha(file.read_bytes()) != digest:
             raise ValueError('Workflow evidence changed')
     provenance = path.parent/'provenance.json'
-    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','fixture')
+    keys = ('source_start','source_end','harness_start','harness_end','environment','browser_environment','config','epochs','samples','protocol_epochs','profile','fixture')
     if (query_bench.sha(provenance.read_bytes()) != receipt.get('provenance_sha256')
             or json.loads(provenance.read_text()) != {key:receipt[key] for key in keys}):
         raise ValueError('Provenance evidence changed')
@@ -554,6 +563,8 @@ def load_receipt(path):
     if receipt['environment'].get('cpu_model','').strip().lower() in {'unknown','unavailable','none','missing','n/a'}:
         raise ValueError('Unknown CPU hardware cannot qualify')
     raw = json.loads((path.parent/'browser/browser.json').read_text())
+    if type(receipt.get('profile')) is not bool or raw.get('profile') is not receipt['profile']:
+        raise ValueError('Browser profiling mode differs from receipt')
     validate_browser(raw,receipt['config'],receipt['epochs'],receipt['samples'])
     computed = metrics(raw,load_requests(path.parent/'server/requests.jsonl'),receipt['config'])
     if computed != receipt.get('metrics'):
@@ -576,7 +587,7 @@ def compare(baseline_path, candidate_path, output):
                   baseline_commit=baseline['source_start']['commit'],candidate_commit=candidate['source_start']['commit'],
                   baseline_receipt_sha256=query_bench.sha(baseline_path.read_bytes()),
                   candidate_receipt_sha256=query_bench.sha(candidate_path.read_bytes()),
-                  attribution='Ordinary browser total; instrumented per-module evidence compared separately. No additive cross-clock claim.')
+                  attribution='Gate: ordinary browser action totals and trace endpoints. Optional module profiles are diagnostic only.')
     with output.open('x') as stream:
         json.dump(result,stream,indent=2)
         stream.write('\n')
@@ -591,6 +602,7 @@ def main():
     command.add_argument('--smoke',action='store_true')
     command.add_argument('--protocol-epochs',type=int)
     command.add_argument('--browser-executable',type=Path)
+    command.add_argument('--profile',action='store_true',help='Collect optional module diagnostics after ordinary samples; excluded from regression gate')
     comparison = commands.add_parser('compare')
     comparison.add_argument('baseline',type=Path)
     comparison.add_argument('candidate',type=Path)
@@ -602,7 +614,7 @@ def main():
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:
                 fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs))
+                print(run(args.source_root,args.output,smoke=args.smoke,browser_executable=args.browser_executable,protocol_epochs=args.protocol_epochs,profile=args.profile))
         elif args.command == 'compare':
             result = compare(args.baseline,args.candidate,args.output)
             print(json.dumps({'status':result['status'],'review_required':result['review_required']}))
