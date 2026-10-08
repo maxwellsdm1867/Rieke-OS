@@ -4457,7 +4457,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "38fb6fea831d83a54190abaae6e59abdc079ebad83417f5dc196f7646221a1b2",
+        "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
         "sites": [
           {
@@ -4531,7 +4531,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "34fdded4ac11ca6f3b1fa9ca29793513f5b61f3119e3ad5c8f254cde551246c5",
                 "contract_id": null
               }
             ]
@@ -4667,7 +4667,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "38fb6fea831d83a54190abaae6e59abdc079ebad83417f5dc196f7646221a1b2",
+                "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
                 "contract_id": "backend-navigation"
               }
             ]
@@ -4705,7 +4705,7 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "9f74118a5c57b40fcb33fcbb11b532ccd1fd7f51b853de34d6b88a8ddb936e00",
+        "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
         "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction.",
         "sites": [
           {
@@ -4725,7 +4725,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4814,7 +4814,7 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "9127c1b08146e41cca46b04ef8e7ffd68f0ba572427046ef1932adab73ee866d",
+        "file_sha256": "9ae93ce7dfa961cefce1559e659dcb0fbee8c71601c0fc5d215b57d64b5eeef8",
         "reason": "Inject owned in-memory workspace table fixtures during curation construction.",
         "sites": [
           {
@@ -4834,7 +4834,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4966,7 +4966,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "34fdded4ac11ca6f3b1fa9ca29793513f5b61f3119e3ad5c8f254cde551246c5",
                 "contract_id": null
               }
             ]
@@ -4999,7 +4999,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "34fdded4ac11ca6f3b1fa9ca29793513f5b61f3119e3ad5c8f254cde551246c5",
                 "contract_id": null
               }
             ]
@@ -5588,7 +5588,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "9f74118a5c57b40fcb33fcbb11b532ccd1fd7f51b853de34d6b88a8ddb936e00",
+                "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
                 "contract_id": null
               }
             ]
@@ -5683,7 +5683,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5705,7 +5705,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5803,7 +5803,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
