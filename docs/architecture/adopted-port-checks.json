@@ -4679,7 +4679,7 @@
       },
       {
         "file": "python/tests/test_workspace_annotations.py",
-        "file_sha256": "1b05b9d8d95d7fb94d06b1fa29e045fff6bf8323057256eb63c9442557a8de74",
+        "file_sha256": "0f7fd2412e56ba9205120ec077bbf7f49e2452ce9f7249d9e2a98be79c3316a6",
         "reason": "Freeze monotonic time to verify scoped autocomplete cache contents and reads.",
         "sites": [
           {
@@ -4699,7 +4699,7 @@
               {
                 "module": "disco.decisions.annotations",
                 "file": "python/disco/decisions/annotations.py",
-                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "file_sha256": "547c9414ed1c74ffef5140d1bb6a04c30e391adede9f7e464b1cd1e70ef62c90",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5834,7 +5834,7 @@
               {
                 "module": "disco.decisions.annotations",
                 "file": "python/disco/decisions/annotations.py",
-                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "file_sha256": "547c9414ed1c74ffef5140d1bb6a04c30e391adede9f7e464b1cd1e70ef62c90",
                 "contract_id": "backend-decisions"
               }
             ]

@@ -64,3 +64,20 @@ The existing curation and API integration suites cover bounded lookups, page-onl
 projection, exact counts, cross-protocol additions, removal, corrupt recipe refusal
 and public snapshot mutation isolation using transactional doubles. They do not
 qualify native SQL durability or packaged performance.
+
+## Optional epoch annotation display count
+
+`GET /api/epochs/<uuid>/annotations` retains its existing full response by
+default. A single `include_cell_epoch_count=false` omits only the display count
+and avoids enumerating registered project epochs; `true` retains the current
+exact project-wide cell count under the same lock. Other query parameters,
+repeated options and values other than `true`/`false` are refused. The registered
+epoch lookup, inherited/direct tags and author revisions are unchanged. The
+count neither defines cell membership nor authorizes annotation writes.
+
+The native annotation editor omits this count while it is hidden and requests
+it for Whole cell display when absent. Supplied request owners retain their
+existing URL contract. Mounted tests cover pending/stale reads and exact cell
+UUID/revision writes; backend tests cover no-enumeration reads and full counts
+after registration, deletion and cell-link changes. These fixtures do not
+qualify native SQL durability.
