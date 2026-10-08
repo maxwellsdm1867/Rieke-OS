@@ -38,18 +38,21 @@ class _FrozenProtocolBinding:
         return copy.deepcopy(self._binding) if protocol == self.protocol else self.fallback(protocol)
 
 
+_FROZEN_BINDING_READ = _FrozenProtocolBinding.__call__
+
+
 def _readonly_binding_reader(service, protocol):
     """Only known readers may run before the original-result snapshot."""
-    if getattr(service.binding, '__func__', None) is not WorkspaceService.binding:
+    if getattr(service.binding, '__func__', None) is not _CANONICAL_BINDING_READ:
         return False
     provider = getattr(service, 'binding_provider', None)
     if type(provider) is _FrozenProtocolBinding:
-        return provider.protocol == protocol
-    from disco.decisions.explorer import ExplorerHistory
+        return provider.protocol == protocol and type(provider).__call__ is _FROZEN_BINDING_READ
+    from disco.decisions.explorer import ExplorerHistory, _QUERY_RESULT_BINDING_METHODS
     owner = getattr(provider, '__self__', None)
     return (type(owner) is ExplorerHistory
-        and getattr(provider, '__func__', None) is ExplorerHistory.protocol_binding
-        and all(getattr(getattr(owner, name, None), '__func__', None) is getattr(ExplorerHistory, name)
+        and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
+        and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
                 for name in ('protocol_binding_header', 'get')))
 
 
@@ -1365,3 +1368,7 @@ class WorkspaceService:
             raise KeyError('Event not found in this project')
         row = rows[0]
         return {**row, 'occurred_at': row['occurred_at'].replace(tzinfo=dt.timezone.utc).isoformat()}
+
+
+# Capture source identities once; class-level overrides retain custom-read ordering.
+_CANONICAL_BINDING_READ = WorkspaceService.binding

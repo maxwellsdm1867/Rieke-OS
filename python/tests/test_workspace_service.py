@@ -87,6 +87,35 @@ class BoundQueryResultTests(unittest.TestCase):
         self.service.binding = binding
         self.assertEqual(self.service.query_result(self.protocol)['extra'], {'nested': ['retained']})
 
+    def test_class_level_reader_overrides_preserve_snapshot_before_callback(self):
+        from unittest.mock import patch
+        from disco.decisions.explorer import ExplorerHistory
+        for method in ('protocol_binding', 'protocol_binding_header', 'get'):
+            with self.subTest(method=method):
+                self.source['extra']['nested'] = ['retained']
+                history = self.native_provider()
+                original = getattr(ExplorerHistory, method)
+                def changed(owner, identity):
+                    self.source['extra']['nested'].append('class callback')
+                    if method == 'get':
+                        return {'recipe': copy.deepcopy(self.recipe)}
+                    return original(owner, identity)
+                with patch.object(ExplorerHistory, method, changed):
+                    self.service.binding_provider = history.protocol_binding
+                    if method == 'get':
+                        history._recipe_cache.clear()
+                    result = self.service.query_result(self.protocol)
+                self.assertEqual(result['extra'], {'nested': ['retained']})
+                self.assertEqual(self.source['extra']['nested'], ['retained', 'class callback'])
+        self.source['extra']['nested'] = ['retained']
+        self.native_provider()
+        original_binding = WorkspaceService.binding
+        def changed_binding(service, protocol):
+            self.source['extra']['nested'].append('service callback')
+            return original_binding(service, protocol)
+        with patch.object(WorkspaceService, 'binding', changed_binding):
+            self.assertEqual(self.service.query_result(self.protocol)['extra'], {'nested': ['retained']})
+
     def test_missing_binding_preserves_unbound_output_and_interrupted_pin_error(self):
         history = self.native_provider()
         history.Binding.rows.clear()
