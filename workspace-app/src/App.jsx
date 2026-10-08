@@ -92,8 +92,8 @@ export function Protocol({id,projectId,revision,structureRevision=revision,annot
   const [tab,setTab]=useState(initialWorkbench?'workbench':saved.tab==='export'?'overview':saved.tab || 'overview'),[scope,setScope]=useState(saved.scope || null),[filters,setFilters]=useState(saved.filters || {}),[exporting,setExporting]=useState(false),[policy,setPolicy]=useState(saved.policy || 'include_unreviewed'),[exportName,setExportName]=useState(saved.exportName || ''),[format,setFormat]=useState(()=>normalizeExportFormat(saved.format) || initialExportFormat(initialRecipe)),[result,setResult]=useState(null),[error,setError]=useState(''),[diff,setDiff]=useState(null),[refreshing,setRefreshing]=useState(false);
   const [exportFilters,setExportFilters]=useState(saved.exportFilters||{});
   const filteredQuery=new URLSearchParams(filters).toString(),exportQuery=new URLSearchParams(exportFilters).toString();
-  const inspecting=tab==='inspect';
-  const summaryRevision=useSummaryRevision(revision,!inspecting,structureRevision);
+  // Only Overview renders this summary; Inspect and Workbench own fresher reads.
+  const summaryRevision=useSummaryRevision(revision,tab==='overview',structureRevision);
   // Inspection pages own filtered membership and fresh edit authority. Changing
   // a view filter must not wait for an aggregate overview or remount Inspector.
   const unfilteredMain=useStableSummary(`/protocols/${id}`,summaryRevision);
