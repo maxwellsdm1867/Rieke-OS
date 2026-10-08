@@ -820,12 +820,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 curation=native.selected(identities);revision=native.context['query_revision']
                 binding_version=native.context['binding_version']
             page = copy.deepcopy(page)
-            export_memberships = store.export_memberships()
+            export_counts = store.export_link_counts(identities)
             shared=shared_annotations.for_epochs([service.rows[row['epoch_uuid']] for row in page['epochs']]) if shared_annotations else {}
             for row in page["epochs"]:
                 if shared:row['annotations']=shared[row['epoch_uuid']]
                 row["curation"] = status(curation[row["epoch_uuid"]])
-                row["export_count"] = len(export_memberships.get(row["epoch_uuid"], []))
+                row["export_count"] = export_counts[row["epoch_uuid"]]
             page["query_revision"] = revision
             page['expected_binding_version']=binding_version
             if revision.startswith('protocol-state-v3:'):page['query_revision_contract']='protocol-state-v3'

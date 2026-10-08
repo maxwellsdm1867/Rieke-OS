@@ -45,3 +45,20 @@ relocation review and gain no new freshness or transaction semantics.
 the public receive interface using inert annotations and an owned temporary
 folder. They cover replay/refusal only, not first delivery, SQL commit, native
 lookup, author-file failure, source freshness or cross-process durability.
+
+## Page-local export counts
+
+`CurationStore.export_link_counts(epoch_ids)` returns a fresh UUID-to-integer map
+for the caller's requested page UUIDs, including zero for unexported epochs.
+It uses the same project-scoped export-index signature polling, recipe validation
+and rebuild behavior as `export_memberships()` and `epoch_exports()`. It does not
+copy or expose the stored links. Existing full-membership and per-epoch public
+snapshots remain deeply detached. The epoch-page HTTP owner supplies already
+admitted UUIDs and retains its opening/closing authority checks; counts confer no
+membership or action authority. Header polling and cold index reconstruction still
+scale with the project's export revisions/memberships.
+
+The existing curation and API integration suites cover bounded lookups, page-only
+projection, exact counts, cross-protocol additions, removal, corrupt recipe refusal
+and public snapshot mutation isolation using transactional doubles. They do not
+qualify native SQL durability or packaged performance.

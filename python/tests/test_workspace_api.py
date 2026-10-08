@@ -538,7 +538,15 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(cell_counts, {self.service.cell_ids[0]: 1, self.service.cell_ids[1]: 0})
         protocol = self.client.get(self.base).get_json()
         self.assertEqual(protocol['counts']['exported'], 1)
-        page = self.client.get(self.base + '/epochs').get_json()
+        with patch.object(self.store, 'export_memberships', side_effect=AssertionError('Full snapshot read')), \
+             patch.object(self.store, 'export_link_counts', wraps=self.store.export_link_counts) as counts:
+            response = self.client.get(self.base + '/epochs', query_string={'limit': 1})
+            self.assertEqual(response.status_code, 200, response.get_json())
+            bounded = response.get_json()['epochs']
+            self.assertEqual(len(bounded), 1)
+            counts.assert_called_once_with([row['epoch_uuid'] for row in bounded])
+            self.assertEqual(bounded[0]['export_count'], int(bounded[0]['epoch_uuid'] == self.service.ids[0]))
+            page = self.client.get(self.base + '/epochs').get_json()
         self.assertEqual({row['epoch_uuid']: row['export_count'] for row in page['epochs']},
                          {self.service.ids[0]: 1, self.service.ids[1]: 0})
         self.service._fingerprints[self.service.ids[0]] = 'c' * 64

@@ -452,6 +452,15 @@ class CurationStore:
         """Project-scoped membership across all protocol export revisions."""
         return copy.deepcopy(self._export_index())
 
+    def export_link_counts(self, epoch_ids):
+        """Return counts for requested UUIDs using the current project export index.
+
+        Signature polling and cold index rebuilds remain project-wide; only
+        this projection is bounded to the requested page, with no link copies.
+        """
+        index = self._export_index()
+        return {key: len(index.get(key, ())) for key in epoch_ids}
+
     def epoch_exports(self, epoch_uuid):
         identity = _uuid(epoch_uuid)
         return copy.deepcopy(self._export_index().get(identity, []))
