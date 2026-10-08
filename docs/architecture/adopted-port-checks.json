@@ -1512,7 +1512,8 @@
             "workspace-app/src/components/NeuronIcon.jsx",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
-            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx"
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+            "workspace-app/src/annotations/annotationProfile.js"
           ]
         },
         {
@@ -1533,7 +1534,8 @@
             "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
             "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
             "workspace-app/src/exports/workbenchExport.js",
-            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/annotations/annotationProfile.js"
           ]
         },
         {
