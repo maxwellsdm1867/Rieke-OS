@@ -23,16 +23,19 @@ def _copy_recipe(recipe):
     back into membership. Custom member shapes retain their original behavior.
     """
     epochs = recipe.get('epochs') if type(recipe) is dict else None
-    if type(epochs) is not list or any(type(row) is not dict or len(row) != 2
-            or any(type(key) is not str for key in row)
-            or type(row.get('uuid')) is not str or type(row.get('metadata_hash')) is not str
-            for row in epochs):
+    if type(epochs) is not list:
         return copy.deepcopy(recipe)
     members, memo = [], {}
     for row in epochs:
+        if type(row) is not dict:
+            return copy.deepcopy(recipe)
         identity = id(row)
         if identity not in memo:
-            memo[identity] = row.copy()
+            member = row.copy()
+            if (len(member) != 2 or any(type(key) is not str for key in member)
+                    or type(member.get('uuid')) is not str or type(member.get('metadata_hash')) is not str):
+                return copy.deepcopy(recipe)
+            memo[identity] = member
         members.append(memo[identity])
     memo[id(epochs)] = members
     return copy.deepcopy(recipe, memo)
