@@ -49,6 +49,75 @@ class CompactExplorerTests(unittest.TestCase):
         self.assertEqual(len(self.fixture.explorer_revisions.rows),1)
         self.assertEqual(len(self.fixture.events.rows),1)
 
+    def test_recipe_reads_detach_members_and_preserve_nested_aliases(self):
+        saved = self.save()
+        stored = self.fixture.explorer_revisions.rows[0]['recipe']
+        stored['member_aliases'] = [stored['epochs'], stored['epochs'][0], stored['epochs'][0]]
+        stored['nested'] = {'values': [{'label': 'saved'}]}
+        stored['content_sha256'] = checksum({key: value for key, value in stored.items() if key != 'content_sha256'})
+        history = self.fixture.explorer_history
+        first = history.get(saved['revision_uuid'])['recipe']
+        self.assertIs(first['member_aliases'][0], first['epochs'])
+        self.assertIs(first['member_aliases'][1], first['epochs'][0])
+        self.assertIs(first['member_aliases'][2], first['epochs'][0])
+        self.assertIsNot(first['epochs'], stored['epochs'])
+        self.assertIsNot(first['epochs'][0], stored['epochs'][0])
+        first['epochs'][0]['metadata_hash'] = 'f' * 64
+        first['nested']['values'][0]['label'] = 'caller edit'
+        first['epochs'].clear()
+        self.assertEqual(history.get(saved['revision_uuid'])['recipe'], stored)
+
+    def test_recipe_custom_members_keep_deeply_detached_values(self):
+        saved = self.save()
+        stored = self.fixture.explorer_revisions.rows[0]['recipe']
+        stored['epochs'][0]['custom'] = {'values': [True, 1, 1.0, None, ['saved']]}
+        stored['content_sha256'] = checksum({key: value for key, value in stored.items() if key != 'content_sha256'})
+        loaded = self.fixture.explorer_history.get(saved['revision_uuid'])['recipe']
+        self.assertEqual(loaded, stored)
+        loaded['epochs'][0]['custom']['values'][-1].append('caller edit')
+        self.assertEqual(stored['epochs'][0]['custom']['values'][-1], ['saved'])
+
+    def test_recipe_custom_member_containers_keep_copy_behavior(self):
+        class Member(dict):
+            pass
+
+        saved = self.save()
+        stored = self.fixture.explorer_revisions.rows[0]['recipe']
+        stored['epochs'][0] = Member(stored['epochs'][0])
+        loaded = self.fixture.explorer_history.get(saved['revision_uuid'])['recipe']
+        self.assertIs(type(loaded['epochs'][0]), Member)
+        self.assertEqual(loaded, stored)
+        loaded['epochs'][0]['metadata_hash'] = 'f' * 64
+        self.assertNotEqual(loaded['epochs'][0], stored['epochs'][0])
+
+    def test_successful_recipe_read_does_not_hide_later_corruption_or_deletion(self):
+        saved = self.save()
+        history = self.fixture.explorer_history
+        expected = history.get(saved['revision_uuid'])
+        stored = self.fixture.explorer_revisions.rows[0]
+        stored['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'integrity verification'):
+            history.get(saved['revision_uuid'])
+        stored['recipe'] = copy.deepcopy(expected['recipe'])
+        stored['summary']['name'] = 'unsealed summary edit'
+        with self.assertRaisesRegex(ValueError, 'integrity verification'):
+            history.get(saved['revision_uuid'])
+        self.fixture.explorer_revisions.rows.clear()
+        with self.assertRaises(KeyError):
+            history.get(saved['revision_uuid'])
+
+    def test_binding_recipe_outputs_remain_independently_detached(self):
+        saved = self.save()
+        history = self.fixture.explorer_history
+        protocol = next(iter(self.service.protocols))
+        history.bind(saved['revision_uuid'], protocol, 0, 'copy-test', {}, 0)
+        original = history.protocol_binding(protocol)
+        changed = history.protocol_binding(protocol)
+        changed['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        changed['recipe']['predicate']['all'].append({'caller': ['edit']})
+        changed['recipe']['epochs'].clear()
+        self.assertEqual(history.protocol_binding(protocol), original)
+
     def test_summary_preview_diff_and_focus_are_computed_against_frozen_members(self):
         first,second=self.service.ids
         baseline=self.save({'field':'parameters/example','operator':'eq','value':0})
