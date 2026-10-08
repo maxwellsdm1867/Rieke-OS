@@ -167,3 +167,11 @@ dependent commands. Stale A-B-A handlers cannot enqueue. Other branch switches
 remain clickable; pending controls show Selecting/Deselecting and aria-busy.
 Authority-disabled and 1,000-epoch limits remain. Queue and stale-lifetime examples
 are in `incomingTreeSelectionQueue.test.js`.
+
+
+Capable contexts advertise `list_selection`. Whole-view/cell selection then uses
+one bounded `list-selection` read, verifying exact requested cell order/counts,
+per-cell UUID lists, flattened equality, uniqueness and candidate/query/binding
+fences. The same abort and current-owner checks surround the request. Older
+contexts retain verified 60-row paging. This changes read admission only; ephemeral
+selection, saved draft review, merge consent and export authority remain separate.

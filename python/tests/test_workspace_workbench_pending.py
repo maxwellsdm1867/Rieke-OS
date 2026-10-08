@@ -181,6 +181,34 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.get_json())
         return response.get_json()
 
+    def test_cumulative_list_selection_shares_admission_and_preserves_cell_order(self):
+        from disco.operation_timing import capture_timings
+        self.more_import()
+        prepared, _ = self.prepare()
+        root = '/api' + prepared['root']
+        context = self.get_context(root)
+        cells = [dict(cell_uuid=cell['cell_uuid'], epochs=cell['epochs']) for cell in reversed(context['protocol']['cells'])]
+        expected = []
+        for cell in cells:
+            page = self.case.client.get(root + '/epochs', query_string=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], cell_uuid=cell['cell_uuid'], limit=60)).get_json()
+            expected.extend(row['epoch_uuid'] for row in page['epochs'])
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], cells=cells)
+        with capture_timings() as timings:
+            response = self.case.client.post(root + '/list-selection', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['epoch_uuids'], expected)
+        self.assertEqual([cell['cell_uuid'] for cell in response.get_json()['cells']], [cell['cell_uuid'] for cell in cells])
+        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 2)
+        canonical_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in timings)
+        original = self.manager.history.get
+        with patch.object(self.manager.history, 'get', side_effect=original), capture_timings() as custom_timings:
+            custom = self.case.client.post(root + '/list-selection', json=body, headers=self.case.headers)
+        self.assertEqual(custom.status_code, 200, custom.get_json())
+        self.assertEqual(custom.get_json(), response.get_json())
+        custom_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in custom_timings)
+        self.assertLess(canonical_reads, custom_reads)
+
     def test_three_imports_overlap_duplicate_partial_accept_reopen_and_fourth_discovery(self):
         second, _ = self.more_import()
         third, baselines = self.more_import(same_cell=True)

@@ -210,3 +210,26 @@ ancestor prefixes only within one guarded response. Target validation and the
 closing generation/scope check remain mandatory. Overridden page/scope readers
 retain independent page reads. No metadata projection or permission is shared
 across requests by this optimization.
+
+
+## Response-local recipe derivation and list selection
+
+Each context derivation owns a private recipe resolver. Only the existing pinned
+canonical ExplorerHistory readers can share a fully verified detached recipe and
+its membership map within that derivation. Dependency discovery is outside this
+scope; closing context creates a new resolver and freshly verifies all recipes,
+including current main rather than treating the binding's UUID cache as storage
+authority. Custom readers retain direct calls. Nested reads and exceptions restore
+the previous context; no recipe or derived map is reused across context boundaries.
+This reduces repeated work but remains linear in frozen membership.
+
+Context advertises `list_selection: true`. POST `list-selection` receives the
+current candidate scope, filters, and an ordered list of unique cells with exact
+nonnegative epoch counts totaling at most 1,000. One guarded read uses the existing
+bounded page reader (including custom overrides) to enumerate each requested cell
+in its usual chronology, refuses partial/wrong-cell/duplicate/mismatched pages,
+and returns the exact per-cell and flattened UUID order after an independent
+closing check. Empty selection returns empty IDs; an incorrect zero cell count
+still refuses. No draft, annotation, merge or export state changes. Renderer
+selection verifies counts, per-cell order, flattened identity equality, candidate
+scope, binding and cancellation before publishing; older contexts retain paging.
