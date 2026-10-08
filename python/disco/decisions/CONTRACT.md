@@ -55,7 +55,9 @@ and rebuild behavior as `export_memberships()` and `epoch_exports()`. It does no
 copy or expose the stored links. Existing full-membership and per-epoch public
 snapshots remain deeply detached. The epoch-page HTTP owner supplies already
 admitted UUIDs and retains its opening/closing authority checks; counts confer no
-membership or action authority. Header polling and cold index reconstruction still
+membership or action authority. Injected stores overriding `export_memberships()`
+retain their snapshot-based policy; adapters without the count accessor also use
+the existing snapshot path. Header polling and cold index reconstruction still
 scale with the project's export revisions/memberships.
 
 The existing curation and API integration suites cover bounded lookups, page-only

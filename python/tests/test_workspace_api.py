@@ -538,8 +538,7 @@ class WorkspaceAPITests(unittest.TestCase):
         self.assertEqual(cell_counts, {self.service.cell_ids[0]: 1, self.service.cell_ids[1]: 0})
         protocol = self.client.get(self.base).get_json()
         self.assertEqual(protocol['counts']['exported'], 1)
-        with patch.object(self.store, 'export_memberships', side_effect=AssertionError('Full snapshot read')), \
-             patch.object(self.store, 'export_link_counts', wraps=self.store.export_link_counts) as counts:
+        with patch.object(self.store, 'export_link_counts', wraps=self.store.export_link_counts) as counts:
             response = self.client.get(self.base + '/epochs', query_string={'limit': 1})
             self.assertEqual(response.status_code, 200, response.get_json())
             bounded = response.get_json()['epochs']
@@ -553,6 +552,49 @@ class WorkspaceAPITests(unittest.TestCase):
         changed = self.client.get('/api/epochs/' + self.service.ids[0]).get_json()
         self.assertFalse(changed['exports'][0]['metadata_matches'])
         self.assertEqual(self.store.get_dataset_revision(identity)['recipe'], saved['recipe'])
+
+    def test_epoch_page_preserves_custom_export_membership_policy(self):
+        first, second = self.service.ids
+        # Both class and instance policies can narrow the native index. Neither
+        # is permission to bypass that policy with an inherited count reader.
+        class NarrowStore(workspace_curation.CurationStore):
+            def export_memberships(self):
+                return {first: [{'dataset_uuid': 'visible'}]}
+        previous = self.store.__class__
+        try:
+            self.store.__class__ = NarrowStore
+            with patch.object(self.store, 'export_link_counts', side_effect=AssertionError('Policy bypass')):
+                response = self.client.get(self.base + '/epochs')
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertEqual({row['epoch_uuid']: row['export_count'] for row in response.get_json()['epochs']},
+                             {first: 1, second: 0})
+        finally:
+            self.store.__class__ = previous
+        with patch.object(self.store, 'export_memberships', return_value={}) as memberships, \
+             patch.object(self.store, 'export_link_counts', side_effect=AssertionError('Policy bypass')):
+            response = self.client.get(self.base + '/epochs')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        memberships.assert_called_once_with()
+        self.assertTrue(all(row['export_count'] == 0 for row in response.get_json()['epochs']))
+
+    def test_epoch_page_accepts_legacy_store_without_count_accessor(self):
+        native = self.store
+        first, second = self.service.ids
+        class LegacyStore:
+            def __getattr__(self, name):
+                if name == 'export_link_counts':
+                    raise AttributeError(name)
+                return getattr(native, name)
+            def export_memberships(self):
+                return {second: [{'dataset_uuid': 'visible'}]}
+        app = create_app(self.temp.name, self.temp.name, service=self.service, store=LegacyStore(),
+            explorer_history=self.explorer_history, data_stores=self.data_stores,
+            protocol_suggestions=self.protocol_suggestions)
+        app.config['TESTING'] = True
+        response = app.test_client().get(self.base + '/epochs')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual({row['epoch_uuid']: row['export_count'] for row in response.get_json()['epochs']},
+                         {first: 0, second: 1})
 
     def test_optional_review_policy_intersects_approval_with_inclusion(self):
         first, second = self.service.ids

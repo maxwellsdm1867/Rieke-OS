@@ -820,7 +820,16 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 curation=native.selected(identities);revision=native.context['query_revision']
                 binding_version=native.context['binding_version']
             page = copy.deepcopy(page)
-            export_counts = store.export_link_counts(identities)
+            memberships = store.export_memberships
+            count_reader = getattr(store, 'export_link_counts', None)
+            if (getattr(memberships, '__func__', None) is CurationStore.export_memberships
+                    and callable(count_reader)):
+                export_counts = count_reader(identities)
+            else:
+                # Injected stores may narrow visible export links. Preserve their
+                # existing snapshot policy instead of reading the native index.
+                export_memberships = memberships()
+                export_counts = {key: len(export_memberships.get(key, ())) for key in identities}
             shared=shared_annotations.for_epochs([service.rows[row['epoch_uuid']] for row in page['epochs']]) if shared_annotations else {}
             for row in page["epochs"]:
                 if shared:row['annotations']=shared[row['epoch_uuid']]
