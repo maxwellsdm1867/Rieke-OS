@@ -567,3 +567,19 @@ The [Workbench contract](../../python/disco/workbench/CONTRACT.md),
 ownership and refusal rules. This adoption update records source/contract review;
 it adds no runtime, performance, native or package qualification. Existing test
 paths document executable checks, not a new claim that they ran in this update.
+
+## Stage 6 protocol summary allocation
+
+Commit `4fc3f6f` reuses one fresh membership and decorated scope within a
+canonical full protocol summary. Admission requires ordinary filters, plain core
+mappings, captured transitive reader methods, no curation provider and readonly
+binding readers for every protocol. Other protocol memberships remain fresh;
+counts and total-counts DTOs remain independent. The
+[retained metadata contract](../../python/disco/metadata/KEEP.md) owns the details.
+
+Custom readers, mutable providers/mappings, curation providers and complex filters
+retain legacy read order, errors and output. API full-state authority, independent
+epoch-page checks, transactions and receipts are unchanged. No cross-request cache
+or garbage-collector policy is introduced. The JSON implementation review records
+the source review and focused tests; it does not grant benchmark, native or package
+qualification or replace historical observations.

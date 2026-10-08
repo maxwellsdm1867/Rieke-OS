@@ -7597,6 +7597,22 @@
           "renderer_initial_read": "incomingBootstrap validates exact actor/project/protocol/candidate/root, generation/query/binding, request and complete cell/page identity. Frozen review owns an opaque offer; Inspector forwards it only to its first rows resource. api.useResource claims in an effect, supports the same StrictMode consumer with detached DTOs, bypasses custom ports/caches and permanently retires on pause/reload/path/revision/owner/offer change. Render-time masking prevents A-B-A stale actionability. Sessions and prepared receipts omit bootstrap."
         },
         "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+      },
+      {
+        "id": "stage6-protocol-summary-allocation",
+        "implementation_commits": [
+          "4fc3f6fa5419593ae45a5be59e72156a2231f9dc"
+        ],
+        "scope": "One full protocol summary assembly; historical observations and qualification remain unchanged.",
+        "contracts": [
+          "python/disco/metadata/KEEP.md"
+        ],
+        "changes": {
+          "canonical_summary": "Ordinary filters with plain core mappings, captured transitive reader methods, no curation provider and readonly binding readers for all protocols reuse one fresh query and one decorated scope within the summary call. Current protocol cell membership uses that same result; other protocol memberships still read fresh. Count dictionaries remain independent.",
+          "fallback": "Custom methods/providers/mappings, foreign mutable frozen binding fallbacks, curation providers and metadata/tag filters retain legacy read order, errors and public response shape. The public cell-summary signature and bin-before-provider order remain unchanged.",
+          "authority": "No API full-state oracle, independent epoch-page/closing check, transaction, receipt, cross-request cache or process garbage-collector policy is changed."
+        },
+        "qualification": "Independent source review and 79 focused source tests passed. Ordinary performance, native behavior and packaged-app qualification are not asserted by this adoption record."
       }
     ]
   },
