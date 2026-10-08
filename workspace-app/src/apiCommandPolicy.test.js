@@ -69,6 +69,32 @@ test('omitted method GET is not tracked by the write barrier',async t=>{
   assert.deepEqual(await operation,{read:true});
 });
 
+test('response metadata is opt-in, follows successful JSON and never enters fetch options or the body',async t=>{
+  const h=harness(t),decoded=deferred(),seen=[];
+  const operation=api('/protocols/p/workbench/prepare',{method:'POST',body:{expected_queue_revision:'queue'},onResponse:value=>seen.push(value)});
+  assert.equal(Object.hasOwn(h.calls[0][1],'onResponse'),false);
+  const headers=new Headers({'X-Disco-Workbench-Context':'fresh-v1'});
+  h.network.resolve({ok:true,status:201,headers,json:()=>decoded.promise});
+  await Promise.resolve();assert.deepEqual(seen,[]);
+  const receipt={operation_uuid:'immutable-operation',context:{candidate_scope_revision:'scope'}};
+  decoded.resolve(receipt);
+  assert.equal(await operation,receipt);
+  assert.equal(seen.length,1);assert.equal(seen[0].status,201);
+  assert.equal(seen[0].headers.get('X-Disco-Workbench-Context'),'fresh-v1');
+  assert.deepEqual(Object.keys(receipt),['operation_uuid','context']);
+});
+
+test('failed responses and undecodable successful bodies do not publish response metadata',async t=>{
+  const h=harness(t),seen=[];
+  const failed=api('/protocols/p/workbench/prepare',{method:'POST',onResponse:value=>seen.push(value)});
+  const rejection=assert.rejects(failed,/Refused/);
+  h.network.resolve(response({error:'Refused'},409));await rejection;
+  assert.deepEqual(seen,[]);
+  globalThis.fetch=async()=>({ok:true,status:200,headers:new Headers({'X-Disco-Workbench-Context':'fresh-v1'}),json:async()=>{throw Error('Malformed JSON');}});
+  assert.deepEqual(await api('/protocols/p/workbench/prepare',{method:'POST',onResponse:value=>seen.push(value)}),{});
+  assert.deepEqual(seen,[]);
+});
+
 test('annotation stays pending through JSON decoding and undo receipt completion, not backup completion',async t=>{
   const h=harness(t),decoded=deferred(),entered=deferred();
   mutationUndo.project('policy-project');

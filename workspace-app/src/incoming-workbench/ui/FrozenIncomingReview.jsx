@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../../api.js';
 import {Activity,CircleDot,Download,GitMerge,History,RefreshCw,X} from 'lucide-react';
@@ -13,8 +13,9 @@ import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import IncomingMergePreview from './IncomingMergePreview.jsx';
 import {nextWorkbenchWorkflow} from "../../exports/workbenchExport.js";
 import {acceptWorkbench,acceptanceFailureKind,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
+import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled,preparedContextToken,takePreparedContext}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [draftSelectionTarget,setDraftSelectionTarget]=useState(null),[selectionIntent,setSelectionIntent]=useState(null);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
@@ -22,8 +23,14 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const [highlighted,setHighlighted]=useState(session?.selected||[]);
   const [filters,setFilters]=useState(session?.filters||{}),[preview,setPreview]=useState(session?.preview||null),[receipt,setReceipt]=useState(session?.receipt||null);
   const [exportState,setExportState]=useState(session?.exportState||(exportIntent?{format:exportIntent.format,name:exportIntent.name}:{})),[exportDialog,setExportDialog]=useState(null);
-  const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedRevision=useRef(revision),displayed=useRef(null);
-  const contextFresh=context!==null&&loadedRevision.current===revision;
+  const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedOwner=useRef(null),displayed=useRef(null);
+  const profile=useAnnotationProfile();
+  const loadOwner=useMemo(()=>({root,projectId,protocolId,revision,nonce,profileUuid:profile.profileUuid,
+    profileReady:!!profile.profileUuid&&!profile.loading&&!profile.error,token:preparedContextToken}),
+    [root,projectId,protocolId,revision,nonce,profile.profileUuid,profile.loading,profile.error,preparedContextToken]);
+  const activeOwner=useRef(loadOwner),claimedContext=useRef(null);
+  activeOwner.current=loadOwner;
+  const contextFresh=context!==null&&loadedOwner.current===loadOwner;
   // A multi-batch draft save advances authority between batches. Keep the
   // browser on its inert committed view until the complete save settles.
   if(contextFresh&&!busy&&!externalBusy)displayed.current={context,revision};
@@ -36,9 +43,19 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,acceptPending,exportState,publish]);
   useEffect(()=>{
     const controller=new AbortController();setContext(null);setError('');
-    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){loadedRevision.current=revision;setContext(requireWorkbenchContext(value));}}).catch(error=>{if(!controller.signal.aborted)setError(error.message);});
+    // Effect replay may reuse this component's claim. A real remount gets a
+    // new ref and cannot claim the parent's consumed response a second time.
+    let initial=claimedContext.current?.owner===loadOwner?claimedContext.current.context:null;
+    if(!initial&&nonce===0&&!externalBusy){
+      initial=takePreparedContext?.({...loadOwner,candidate:item.candidate_revision_uuid});
+      if(initial)claimedContext.current={owner:loadOwner,context:initial};
+    }
+    if(initial){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(initial));}
+    else api(`${root}/context`,{signal:controller.signal}).then(value=>{
+      if(!controller.signal.aborted&&activeOwner.current===loadOwner){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(value));}
+    }).catch(error=>{if(!controller.signal.aborted&&activeOwner.current===loadOwner)setError(error.message);});
     return()=>controller.abort();
-  },[root,nonce,revision]);
+  },[loadOwner,takePreparedContext]);
   useEffect(()=>{
     if(!acceptOperation||session?.unconfirmed||session?.exportState?.prepared)return;
     const controller=new AbortController();
@@ -50,12 +67,17 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     return()=>controller.abort();
   },[protocolId,acceptOperation,item.candidate_revision_uuid]);
   async function save(decisions,{deferred,selectionMode}={}){
-    if(externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
-      await saveWorkbenchDecisions({root,context:current.current,decisions,deferred,selectionMode},api,value=>{current.current=value;setContext(value);});
+      await saveWorkbenchDecisions({root,context:current.current,decisions,deferred,selectionMode},api,value=>{
+        if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
+      });
+      // The server may have committed the old owner's draft. Its reply cannot
+      // replace a newer owner's read or navigate that owner out of review.
+      if(activeOwner.current!==loadOwner)return false;
       publish({});return true;
-    }catch(error){setError(`Some decisions may already be saved. Refresh the draft before continuing. ${error.message}`);setContext(null);return false;}
+    }catch(error){if(activeOwner.current===loadOwner){setError(`Some decisions may already be saved. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
     finally{inFlight.current=false;setBusy(false);}
   }
   function select(next){selected.current=next;setHighlighted(next);publish({selected:next});}
@@ -65,7 +87,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   function beginSelected(ids,kind='merge'){
-    if(externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
     setError('');
     try{
       const intent={...selectedReview(current.current,ids),kind,scope:current.current.candidate_scope_revision,version:current.current.draft.draft_version};
@@ -75,11 +97,14 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }catch(error){setError(error.message);}
   }
   async function prepareSelection(intent,review){
-    if(externalBusy||inFlight.current||exportLocked||!current.current)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!current.current)return;
     if(current.current.candidate_scope_revision!==intent.scope||current.current.draft.draft_version!==intent.version){setSelectionIntent(null);setError('The draft changed. Inspect the current selection and choose Merge or Export again.');return;}
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
-      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},api,value=>{current.current=value;setContext(value);});
+      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},api,value=>{
+        if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
+      });
+      if(activeOwner.current!==loadOwner)return;
       if(intent.kind==='merge'){
         if(exportState.exported)setExportState(nextWorkbenchWorkflow(exportState));
         setPreview(value);operation.current=crypto.randomUUID();publish({preview:value,operation:operation.current});
@@ -87,17 +112,17 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
         const next={...nextWorkbenchWorkflow(exportState),mode:'selected',preview:value,phase:'previewed'};
         setExportState(next);publish({exportState:next});setExportDialog(intent.kind==='merge-export');
       }
-    }catch(error){setError(`Draft changes may already be saved. Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}
+    }catch(error){if(activeOwner.current===loadOwner){setError(`Draft changes may already be saved. Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}}
     finally{setSelectionIntent(null);inFlight.current=false;setBusy(false);}
   }
   async function accept(){
-    if(externalBusy||!contextFresh&&!unconfirmed||inFlight.current||exportState.pending||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
+    if(activeOwner.current!==loadOwner||externalBusy||!contextFresh&&!unconfirmed||inFlight.current||exportState.pending||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
     setAcceptPending(true);publish({acceptPending:true});
     try{const result=await acceptWorkbench(root,preview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,operation:operation.current});setPreview(null);onChange?.();}
     catch(error){
       if(acceptanceFailureKind(error)==='rejected'){
-        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});setContext(null);
-        setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);
+        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});
+        if(activeOwner.current===loadOwner){setContext(null);setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);}
       }else{setUnconfirmed(true);publish({unconfirmed:true,acceptPending:false,preview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
     }
     finally{inFlight.current=false;setBusy(false);setAcceptPending(false);}

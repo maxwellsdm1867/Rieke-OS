@@ -109,6 +109,44 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertIn(response.status_code, (200, 201), response.get_json())
         return response.get_json(), body
 
+    def test_fresh_context_header_is_response_only_and_receipt_replay_stays_exact(self):
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        first = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(first.status_code, 201, first.get_json())
+        self.assertEqual(first.headers.get('X-Disco-Workbench-Context'), 'fresh-v1')
+        prepared = first.get_json()
+        stored = self.manager.receipt(prepared['operation_uuid'], prepared['actor'])
+        self.assertEqual(stored, prepared)
+        with patch.object(self.case.service, 'refresh', side_effect=AssertionError('Replay must not recompute context')):
+            replay = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        self.assertIsNone(replay.headers.get('X-Disco-Workbench-Context'))
+        self.assertEqual(replay.get_data(), first.get_data())
+        # A new operation may reuse the stored candidate while computing a
+        # current context. Candidate reuse is not durable receipt replay.
+        current = self.case.client.post(self.case.base + '/workbench/prepare', json={
+            **body, 'operation_uuid': str(uuid.uuid4())}, headers=self.case.headers)
+        self.assertEqual(current.status_code, 200, current.get_json())
+        self.assertTrue(current.get_json()['reused'])
+        self.assertEqual(current.headers.get('X-Disco-Workbench-Context'), 'fresh-v1')
+
+    def test_prepare_commit_failure_never_advertises_a_fresh_context(self):
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        connection = self.case.connection
+        transaction = type(connection).transaction.fget
+        @contextlib.contextmanager
+        def failing_commit():
+            with transaction(connection):
+                yield
+                raise RuntimeError('Commit failed after context construction')
+        self.case.app.config['TESTING'] = False
+        before = copy.deepcopy([table.rows for table in connection.tables])
+        with patch.object(type(connection), 'transaction', property(lambda _: failing_commit())):
+            response = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 500, response.get_json())
+        self.assertIsNone(response.headers.get('X-Disco-Workbench-Context'))
+        self.assertEqual([table.rows for table in connection.tables], before)
+
     def more_import(self, same_cell=False):
         self.fixture.source_sha = uuid.uuid4().hex * 2
         identity = self.fixture.add_recording(same_cell=same_cell)

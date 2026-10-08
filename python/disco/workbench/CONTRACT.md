@@ -43,6 +43,17 @@ partly commit; refresh after a later failure. Durable operation UUID replay and
 uncertain request recovery keep their existing exact body/root/receipt semantics.
 No client-intent cohort key or remembered view acquires backend authority.
 
+A successful preparation response that computed and closed its context during
+that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL
+transaction exits successfully. This covers both a new cumulative recipe and
+a new operation reusing an existing candidate. Durable receipt replay, including
+all early replay returns, does not include the header. The stored receipt and
+returned JSON body remain exact and unchanged by this signal. A renderer may
+use that one response's context for its initial display under matching local
+owner/lifetime checks; the header grants no new page, mutation or replay authority.
+The pending suite checks fresh 200/201 responses, byte-identical replay bodies,
+absent replay headers and failed-commit refusal using transactional doubles.
+
 ## Recipes and separate publication
 
 Recipes preserve canonical UUID/fingerprint membership, typed metadata, source

@@ -176,6 +176,11 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                     manager.tables[2].insert1(dict(project_uuid=manager.project, operation_uuid=operation,
                         protocol_uuid=protocol, candidate_revision_uuid=revision, actor=owner, request_sha256=request_hash, receipt=result))
                     manager._event(owner, 'workbench_queue_prepared', result, operation)
-                return jsonify(result), 200 if records else 201
+                # This response computed and closed its context in this request.
+                # The durable receipt body stays exact; replay returns above
+                # must never acquire this response-local freshness signal.
+                response = jsonify(result)
+                response.headers['X-Disco-Workbench-Context'] = 'fresh-v1'
+                return response, 200 if records else 201
 
     manager.cumulative_pending_browse = True

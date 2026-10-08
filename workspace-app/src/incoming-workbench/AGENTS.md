@@ -51,6 +51,29 @@ not transferred to a different candidate; same-candidate restoration is unchange
 The mounted `workbenchSessionLifecycle.test.js` covers pending preparation,
 fresh context, absence of carried consent/edit state and project/protocol fences.
 
+Fresh preparation responses may supply the first frozen context without another
+GET only when their response header is `X-Disco-Workbench-Context: fresh-v1`.
+The retained `api.js` request adapter supports an optional `onResponse` callback
+with `{status, headers}` after successful JSON decoding; the callback is excluded
+from fetch options and does not alter the returned body. Error or undecodable
+responses never publish this metadata.
+
+Cumulative review holds the context offer separately from all saved session,
+prepared, scope and receipt data. It requires the current project, protocol,
+queue and revision plus a resolved profile matching the response actor. A frozen
+child claims an offer once; StrictMode effect replay may keep that child's claim,
+but a true child remount, restored session, receipt replay, recovery or refresh
+uses GET. Profile/loading/error and other owner transitions mask old context
+before effects and reject late A-B-A responses. An ordinary fresh GET retains the
+existing server-context fallback when optional profile UI is unavailable.
+Late draft/preview completions cannot overwrite a replacement owner's context,
+clear it through an old error, or publish a preview under the new owner. Already
+submitted writes and acceptance receipts/recovery identities retain their existing
+commit and uncertain-outcome semantics; no rollback or automatic retry is implied.
+Bounded pages and scientific commands retain their independent current-scope
+checks. `incomingWorkbenchStrictMode.test.js` covers this response/lifetime
+handoff; it does not grant native storage or measured performance qualification.
+
 ## Factoring decision
 
 Pure selection/count/review policy is in-process; queue and scientific commands use
