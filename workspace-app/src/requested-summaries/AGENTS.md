@@ -32,6 +32,13 @@ Cancellation is not server rollback. The hook hides old-scope statistics during
 render, before effect cleanup, and explicit retry starts a new run. Summary
 submit/cancel POSTs continue participating in renderer close tracking.
 
+TreeBuilder requests summaries only while Add a split or Combine fields is open.
+Closed axis cards use registry labels and the existing preview count, so mounting,
+removing/reordering axes or changing scope with both choosers closed starts no
+summary job. Closing both retires the request; reopening requests the current
+eligible axes, predicate and saved fields under the existing scope/generation
+fences. Frozen candidates retain their separate scoped-catalog read policy.
+
 ## Public examples and checks
 
 [requestedSummaries.test.js](requestedSummaries.test.js) executes the factory
