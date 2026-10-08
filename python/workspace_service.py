@@ -875,6 +875,32 @@ class WorkspaceService:
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
 
+    def protocol_browse(self, protocol_uuid):
+        """Small unfiltered entry; page receipts still own scientific actions.
+
+        Custom readers keep the full public protocol path. This projection only
+        skips display aggregates for the captured canonical membership readers;
+        it does not cache membership, details or an authority token.
+        """
+        if (any(getattr(getattr(self, name, None), '__func__', getattr(self, name, None)) is not method
+                for name, method in _PROTOCOL_BROWSE_READS.items())
+                or not _readonly_binding_reader(self, protocol_uuid)):
+            return None
+        result = self.query_result(protocol_uuid)
+        definition = self.protocols[_uuid(protocol_uuid)]['definition']
+        rows = [self.rows[member['uuid']] for member in result['epochs']]
+        scope = self.source_scope()
+        excluded = set(scope['excluded_source_revisions'])
+        affected = [row for row in rows if row['source_sha256'] in excluded]
+        return {'definition': copy.deepcopy(definition), 'starter_query': copy.deepcopy(definition['query']),
+                'effective_query': copy.deepcopy(result.get('effective_query', definition['query'])),
+                'binding': copy.deepcopy(result.get('dataset_binding')),
+                'selection_options': {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')})},
+                'groups': sorted({row['group_label'] for row in rows}, key=str),
+                'source_eligibility': {'excluded_epoch_count': len(affected),
+                    'excluded_sources': sorted({row['source_sha256'] for row in affected}),
+                    'propagation_required': bool(affected), 'source_scope_revision': scope['revision']}}
+
     def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
         with elapsed("workspace_service", "epoch_page"):
             if isinstance(offset, bool) or isinstance(limit, bool) or not isinstance(offset, int) or not isinstance(limit, int) or offset < 0 or not 1 <= limit <= 250:
@@ -1368,3 +1394,6 @@ class WorkspaceService:
 
 # Capture source identities once; class-level overrides retain custom-read ordering.
 _CANONICAL_BINDING_READ = WorkspaceService.binding
+_PROTOCOL_BROWSE_READS = {name: getattr(WorkspaceService, name) for name in
+    ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
+     'validate_metadata_filters', '_epoch_page_identities', 'source_scope', 'binding')}

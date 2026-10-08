@@ -114,3 +114,13 @@ cell presentation alone never grants authority. Focused-cell navigation retains
 its separate all-cell read. This removes repeated full-cell payloads, not backend
 scope-admission work. See inspectorNavigationLifecycle.test.js and
 workflowResponsiveness.test.js for exact read counts and stale-action checks.
+
+Main Protocol opens Inspect with the opt-in `projection=browse` descriptor rather
+than the full overview summary. Definition, binding, query, source eligibility and
+filter choices do not grant page or mutation authority. Project/actor/request-owner
+changes retire retained descriptors; structural refresh keeps same-owner Inspector
+presentation inert until the descriptor and bounded pages are fresh. Read failures
+retain the existing error/retry presentation. Annotation-profile unavailability
+does not prevent read-only entry. Overview and export demand their full summaries
+only while visible; legacy protocol requests retain their full response. See
+`../protocolBrowseEntry.test.js` and `../workflowResponsiveness.test.js`.

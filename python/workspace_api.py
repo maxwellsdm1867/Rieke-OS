@@ -749,6 +749,30 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
 
     @app.get("/api/protocols/<protocol_uuid>")
     def protocol(protocol_uuid):
+        projection=request.args.get('projection')
+        if projection is not None:
+            if projection!='browse' or len(request.args.getlist('projection'))!=1 or set(request.args)!={'projection'}:
+                raise ValueError('Browse projection requires one projection=browse option and no filters')
+            # The descriptor never replaces a fresh bounded page or its action
+            # receipt. Native reads retain opening/closing authority checks;
+            # custom and legacy adapters keep their exact full-state oracle.
+            with db_lock, selected_state.native_read(protocol_uuid,provider=page_curation_provider) as native:
+                before=(native.context['query_revision'],native.context['binding_version']) if native is not None else selected_state.read_selected(protocol_uuid,[])[1:]
+                browse=getattr(service,'protocol_browse',None)
+                payload=browse(protocol_uuid) if callable(browse) else None
+                if payload is None:
+                    payload=enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid,{})),protocol_uuid,{})
+                binding=payload.get('binding')
+                if (binding or {}).get('version',0)!=before[1]:
+                    raise StaleWorkspace('Protocol binding changed while opening this view. Refresh and retry.')
+                allowed=('definition','starter_query','effective_query','binding','selection_options','groups','source_eligibility')
+                payload={key:payload[key] for key in allowed if key in payload}
+                payload['binding']=compact_binding(binding)
+                payload.update(query_revision=before[0],expected_query_revision=before[0],expected_binding_version=before[1])
+                if before[0].startswith('protocol-state-v3:'):payload['query_revision_contract']='protocol-state-v3'
+                if native is None and selected_state.read_selected(protocol_uuid,[])[1:]!=before:
+                    raise StaleWorkspace('Protocol changed while opening this view. Refresh and retry.')
+                return jsonify(payload)
         with db_lock:
             query_filters=filters()
             from disco.metadata.explore_queries import generation

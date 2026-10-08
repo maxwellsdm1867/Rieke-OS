@@ -22,6 +22,18 @@ Its [central tests](../../tests/test_workspace_protocol_state.py) remain source
 coverage pointers, not executed native acceptance. Response handles become inactive
 on exit; failed responses close affected derived indexes.
 
+The retained protocol HTTP owner offers `GET /api/protocols/:id?projection=browse`
+for an unfiltered browsing descriptor. Default protocol responses remain complete
+summaries. Canonical `WorkspaceService.protocol_browse` omits counts, rich cell
+summaries, export links and annotation aggregates while retaining definition,
+binding, effective query, filter choices and source eligibility. Captured reader
+and transitive filter/decorate policies qualify this path; custom readers use the
+full public protocol response before projection. Native response scopes attest at
+close; legacy before/after revision checks refuse mixed descriptors. Fresh bounded
+page receipts still own scientific actions. The owned HTTP examples are in
+`python/tests/test_workspace_protocol_browse.py`; they do not qualify native SQL
+or installed-app latency.
+
 Trace reading stays in [WorkspaceService](../../workspace_service.py) and
 [recording_workspace](../../recording_workspace.py), with the existing standalone
 [export reader](../../query_workspace_export.py) retaining its own verified locator.

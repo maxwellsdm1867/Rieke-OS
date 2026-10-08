@@ -146,7 +146,8 @@ test('mounted structural refresh invalidates project/import/metadata summaries e
     const metadata=h.root.find(node=>typeof node.type==='function'&&node.type.name==='MetadataRefresh');
     await h.act(()=>metadata.props.onChange());
     const paths=new Set(h.fixture.requests.slice(before).map(record=>record.path));
-    for(const path of ['/projects','/overview','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A'])assert.ok(paths.has(path),path);
+    for(const path of ['/projects','/overview','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A?projection=browse'])assert.ok(paths.has(path),path);
+    assert.equal(paths.has('/protocols/protocol-A'),false,'structural refresh demands the compact entry, not a hidden overview');
   }finally{await h.close();}
 });
 
