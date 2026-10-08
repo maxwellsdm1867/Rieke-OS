@@ -52,6 +52,38 @@ def _readonly_binding_reader(service, protocol):
     return is_canonical_binding_reader(provider)
 
 
+def _protocol_summary_can_share(service, filters):
+    """Reuse only pure canonical reads within this one summary response."""
+    return (getattr(service, 'curation_provider', False) is None
+        and all(type(getattr(service, name, None)) is dict for name in ('rows', 'cells', 'protocols'))
+        and (filters is None or (type(filters) is dict and not set(filters) - {
+            'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label'}))
+        and all(getattr(getattr(service, name, None), '__func__', getattr(service, name, None)) is method
+                for name, method in _PROTOCOL_SUMMARY_READS.items())
+        and (getattr(service, 'binding_provider', None) is None
+             or all(_readonly_binding_reader(service, key) for key in service.protocols)))
+
+
+def _summarize_cells(service, rows, *, current_protocol=None, current_query=None):
+    # Bin before invoking membership readers, preserving the public reader order.
+    bins = {}
+    for row in rows:
+        bins.setdefault(row['cell_uuid'], []).append(row)
+    result = []
+    memberships = {key: {member['uuid'] for member in (
+        current_query if current_query is not None and key == current_protocol else service.query_result(key))['epochs']}
+        for key in service.protocols}
+    for identity, items in bins.items():
+        epoch_ids = {row['epoch_uuid'] for row in items}
+        result.append({**service.cells[identity], 'epochs': len(items),
+            'duration_seconds': sum(r['duration_seconds'] for r in items),
+            'reviewed': sum(bool(r['curation']['reviewed']) for r in items),
+            'included': sum(bool(r['curation']['included']) for r in items),
+            'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids],
+            'group_labels': sorted({r['group_label'] for r in items}, key=str)})
+    return sorted(result, key=lambda c: (c['cell_type'] or '', c['date'], c['label']))
+
+
 class _SourceDetails(Mapping):
     """Dispatch lazy details through the already validated owning source.
 
@@ -824,20 +856,7 @@ class WorkspaceService:
                 'duration_seconds': sum(r['duration_seconds'] for r in rows)}
 
     def _cell_summary(self, rows):
-        bins = {}
-        for row in rows:
-            bins.setdefault(row['cell_uuid'], []).append(row)
-        result = []
-        memberships = {key: {member['uuid'] for member in self.query_result(key)['epochs']} for key in self.protocols}
-        for identity, items in bins.items():
-            epoch_ids = {row['epoch_uuid'] for row in items}
-            result.append({**self.cells[identity], 'epochs': len(items),
-                'duration_seconds': sum(r['duration_seconds'] for r in items),
-                'reviewed': sum(bool(r['curation']['reviewed']) for r in items),
-                'included': sum(bool(r['curation']['included']) for r in items),
-                'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids],
-                'group_labels': sorted({r['group_label'] for r in items}, key=str)})
-        return sorted(result, key=lambda c: (c['cell_type'] or '', c['date'], c['label']))
+        return _summarize_cells(self, rows)
 
     def overview(self):
         self._ready()
@@ -862,16 +881,26 @@ class WorkspaceService:
                 'events': self.events(25)}
 
     def protocol(self, protocol_uuid, filters=None):
-        rows = self.filtered_rows(protocol_uuid, filters)
-        all_rows = self.filtered_rows(protocol_uuid)
-        query = self.query_result(protocol_uuid)
+        shared = _protocol_summary_can_share(self, filters)
+        if shared:
+            filters = validate_filters(filters)
+            query = self.query_result(protocol_uuid)
+            all_rows = self._filter_rows([
+                self._decorate(self.rows[member['uuid']], {}) for member in query['epochs']
+            ], {}, protocol_uuid)
+            rows = self._filter_rows(all_rows, filters, protocol_uuid) if filters else all_rows
+        else:
+            rows = self.filtered_rows(protocol_uuid, filters)
+            all_rows = self.filtered_rows(protocol_uuid)
+            query = self.query_result(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
         return {'definition': definition, 'starter_query': definition['query'],
                 'effective_query': query.get('effective_query', definition['query']),
                 'binding': query.get('dataset_binding'),
                 'counts': self._counts(rows), 'total_counts': self._counts(all_rows),
                 'selection_options': {'cell_types': sorted({r['cell_type'] for r in all_rows if r.get('cell_type')})},
-                'cells': self._cell_summary(rows),
+                'cells': (_summarize_cells(self, rows, current_protocol=_uuid(protocol_uuid), current_query=query)
+                          if shared else self._cell_summary(rows)),
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
 
@@ -1397,3 +1426,6 @@ _CANONICAL_BINDING_READ = WorkspaceService.binding
 _PROTOCOL_BROWSE_READS = {name: getattr(WorkspaceService, name) for name in
     ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
      'validate_metadata_filters', '_epoch_page_identities', 'source_scope', 'binding')}
+_PROTOCOL_SUMMARY_READS = {name: getattr(WorkspaceService, name) for name in
+    ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
+     '_counts', '_cell_summary', '_ready', 'validate_metadata_filters', 'binding')}
