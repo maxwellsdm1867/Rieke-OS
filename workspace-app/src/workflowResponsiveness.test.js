@@ -202,12 +202,12 @@ test('standalone annotations accept a fresh epoch snapshot after explicit refres
     const Tags=await h.component('AnnotationTags');
     await h.mount(Tags,{epoch,revision:0,onChange:()=>{}});
     await sharedSave(h,'standalone');
-    assert.ok(h.fixture.requests.some(record=>record.path==='/epochs/epoch-0/annotations'));
+    assert.ok(h.fixture.requests.some(record=>record.path==='/epochs/epoch-0/annotations?include_cell_epoch_count=false'));
     const fresh={...epoch,annotations:{...epoch.annotations,revisions:{epoch:{author:1},cell:{author:0}},epoch_tags:[{tag:'standalone',profile_uuid:'author',author_name:'Scientist'}]}};
     await h.render(Tags,{epoch:fresh,revision:1,onChange:()=>{}});
     const before=h.fixture.requests.length;
     await h.render(Tags,{epoch:fresh,revision:2,onChange:()=>{}});
-    assert.equal(h.fixture.requests.slice(before).filter(record=>record.path.endsWith('/annotations')).length,0);
+    assert.equal(h.fixture.requests.slice(before).filter(record=>record.path.split('?')[0].endsWith('/annotations')).length,0);
     assert.equal(sharedInput(h).props.disabled,false);
   }finally{await h.close();}
 });
