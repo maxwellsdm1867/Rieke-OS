@@ -105,3 +105,12 @@ Candidate/query/revision/split or presentation changes mask old highlights befor
 paint; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
+
+Inspector requests all-cell summaries on the first page of an exact view. Later
+anchor/offset pages reuse that list only while the project, actor/read owner,
+query and binding receipts match. A mismatched receipt disables cell actions
+and requests cells again. Scope/owner changes require fresh receipts; retained
+cell presentation alone never grants authority. Focused-cell navigation retains
+its separate all-cell read. This removes repeated full-cell payloads, not backend
+scope-admission work. See inspectorNavigationLifecycle.test.js and
+workflowResponsiveness.test.js for exact read counts and stale-action checks.

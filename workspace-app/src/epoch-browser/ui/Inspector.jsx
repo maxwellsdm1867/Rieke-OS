@@ -43,6 +43,7 @@ export {Trace};
 
 function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
+  const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
   const [selectedView,setSelectedView]=useState(null);
   const filters=selectedView?.filters||baseFilters;
@@ -113,18 +114,31 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   }
 
   useLayoutEffect(()=>{setTreeSelectionIntent(old=>old&&old.scope!==treeIntentScope?null:old);},[treeIntentScope]);
-  const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=${pageSize}${focusCell?'':'&include_cells=true'}`;
-  const loadedRows=useResource(rowsPath,pageRevision,0,{paused:readPaused});
+  const cellScopeKey=JSON.stringify([projectId,treeReadOwner?.identity,readRoot,id,protocolSearch]),confirmedCells=useRef(null);
+  const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
+  // The all-cell list is identical for every offset/anchor page of one exact
+  // scope and revision. Request it with the first page only; later page turns
+  // reuse the confirmed list (same navigationReadKey) without a full-cell payload.
+  const [cellRefresh,setCellRefresh]=useState(0);
+  const includeCells=useMemo(()=>!focusCell&&confirmedCells.current?.key!==navigationReadKey,[focusCell,navigationReadKey,offset,pendingNavigation?.anchorUuid,cellRefresh]);
+  const rowsPath=`${readRoot}/epochs?${search}&${pendingNavigation?.anchorUuid?`anchor_uuid=${encodeURIComponent(pendingNavigation.anchorUuid)}`:`offset=${offset}`}&limit=${pageSize}${includeCells?'&include_cells=true':''}`;
+  // A new owner or descriptor must obtain its own receipt, including at the
+  // same URL. Keep the annotation idle delay except for explicit navigation.
+  const pageReadRevision=JSON.stringify([pageRevision,projectId,treeReadOwner?.identity,protocol.query_revision,protocol.expected_binding_version]);
+  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation});
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
   // cell counts. A focused navigation page needs a separate all-cell receipt.
-  const cellRows=useResource(focusCell?`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true`:null,pageRevision,0,{paused:readPaused});
+  const cellRows=useResource(focusCell?`${readRoot}/epochs?${protocolSearch}&offset=0&limit=1&include_cells=true`:null,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation});
   const cellPage=focusCell?cellRows:rows;
   const queryRevision=rows.data?.query_revision,bindingVersion=rows.data?.expected_binding_version;
   const pageReady=!readPaused&&!annotationState.dirty&&!rows.loading&&!rows.error&&typeof queryRevision==='string'&&!!queryRevision&&Number.isSafeInteger(bindingVersion)&&bindingVersion>=0;
-  const cellsReady=pageReady&&!cellPage.loading&&!cellPage.error&&cellPage.data?.query_revision===queryRevision&&cellPage.data?.expected_binding_version===bindingVersion;
-  const cellScopeKey=JSON.stringify([readRoot,id,protocolSearch]),confirmedCells=useRef(null);
-  const navigationReadKey=JSON.stringify([cellScopeKey,focusCell,pageRevision,revision,structureRevision,protocol.query_revision,protocol.expected_binding_version]);
+  const pageCellsReady=pageReady&&!cellPage.loading&&!cellPage.error&&cellPage.data?.query_revision===queryRevision&&cellPage.data?.expected_binding_version===bindingVersion;
+  // A page without cells may reuse only a list confirmed at this exact key AND
+  // the same server query revision/binding; otherwise re-request the list.
+  const reusedCellsStale=!focusCell&&pageCellsReady&&!Array.isArray(rows.data?.cells)&&(confirmedCells.current?.key!==navigationReadKey||confirmedCells.current.queryRevision!==queryRevision||confirmedCells.current.bindingVersion!==bindingVersion);
+  const cellsReady=pageCellsReady&&!reusedCellsStale;
+  useLayoutEffect(()=>{if(reusedCellsStale){confirmedCells.current=null;setCellRefresh(value=>value+1);}},[reusedCellsStale]);
   const committedNavigationReadKey=useRef(null);
   useLayoutEffect(()=>{committedNavigationReadKey.current=navigationReadKey;},[navigationReadKey]);
   const freshCells=cellsReady&&Array.isArray(cellPage.data?.cells)?cellPage.data.cells:null;
@@ -145,7 +159,6 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const [treeReceipt,setTreeReceipt]=useState(null);
   const treePage=treeReceipt?.data;
   const [treeStatus,setTreeStatus]=useState({loading:true,error:null});
-  const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   // A focus locator and its resulting offset page share the last confirmed
   // selection authority. They do not make tag/inclusion receipts writable.
   const selectionReceipt=cellsReady?{key:navigationReadKey,queryRevision,bindingVersion}:confirmedCells.current;

@@ -245,3 +245,19 @@ test('late successful tag Tab cannot navigate a newly filtered Inspector after i
     assert.equal(h.viewer.epoch,null);assert.equal(h.fixture.mounts,1);
   }finally{await h.close();}
 });
+
+test('cell reuse retires on actor changes and requires a fresh all-cell receipt',async()=>{
+ const h=await createWorkflowHarness();let release;
+ try{
+  await h.mount();await ready(h);
+  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-61'));
+  await h.waitFor(()=>!h.viewer.navigation.loading&&!h.viewer.treePane.listProps.disabled);
+  const start=h.fixture.requests.length;
+  h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocols/protocol-A/epochs'&&url.searchParams.get('include_cells')==='true'?new Promise(resolve=>{release=()=>resolve(fallback());}):fallback();
+  h.fixture.profile={...h.fixture.profile,profileUuid:'other-author'};
+  await h.render(h.App,{});await h.waitFor(()=>!!release);
+  assert.equal(h.viewer.treePane.listProps.disabled,true);
+  await h.act(()=>release());await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.fixture.requests.slice(start).filter(record=>record.path.includes('include_cells=true')).length,1);
+ }finally{release?.();await h.close();}
+});

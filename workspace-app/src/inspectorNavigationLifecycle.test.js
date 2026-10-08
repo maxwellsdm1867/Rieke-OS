@@ -9,14 +9,14 @@ function resource(path,data,loading=false,error=null){return {path,data,loading,
 
 test('ready page A/B/C/A focus uses native UUID and cell ownership without anchor/page churn',async()=>{
  const h=await createInspectorHarness();try{
-  h.fixture.page=page;await h.render(props);h.fixture.resources.length=0;
+  h.fixture.page=page;await h.render(props);const readRevision=h.fixture.resources.find(x=>x.path?.includes('/epochs?')).revision;h.fixture.resources.length=0;
   for(const index of [0,1,2,0]){
    h.fixture.epoch=epochs[index];await h.act(()=>h.viewer.treePane.listProps.onFocus(epochs[index].epoch_uuid,epochs[index]));
    assert.equal(h.viewer.epoch.epoch_uuid,epochs[index].epoch_uuid);
    assert.equal(h.viewer.navigation.loading,false);assert.equal(h.viewer.treePane.listProps.disabled,false);
   }
   assert.ok(h.fixture.resources.filter(x=>x.path?.includes('/epochs?')).every(x=>!x.path.includes('anchor_uuid=')));
-  assert.ok(h.fixture.resources.filter(x=>x.path?.includes('/epochs?')).every(x=>x.revision===0));
+  assert.ok(h.fixture.resources.filter(x=>x.path?.includes('/epochs?')).every(x=>x.revision===readRevision));
  }finally{await h.close();}
 });
 
@@ -221,5 +221,38 @@ test('highlight toolbar explicitly selects or deselects only highlights and clea
   await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A']));
   await h.act(()=>h.viewer.treePane.onDesign());await h.act(()=>h.viewer.toolbar.onBrowse());
   assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,0);
+ }finally{await h.close();}
+});
+
+test('cross-page anchors reuse cell summaries only with the current query and binding receipt',async()=>{
+ const h=await createWorkflowHarness({total:500});
+ try{
+  const Inspector=await h.component('Inspector');
+  await h.mount(Inspector,{...props,protocol:{...props.protocol,query_revision:'query-0'},initialEpochUuid:'epoch-0'});
+  await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  const cells=h.viewer.treePane.listProps.cells;
+  const pageCalls=()=>h.fixture.requests.filter(item=>item.path.includes('/epochs?')&&!item.path.includes('cell_uuid='));
+  assert.equal(pageCalls().filter(item=>item.path.includes('include_cells=true')).length,1);
+  for(const number of [61,121]){
+   await h.act(()=>h.viewer.treePane.listProps.onFocus(`epoch-${number}`));
+   await h.waitFor(()=>!h.viewer.navigation.loading&&!h.viewer.treePane.listProps.disabled&&h.viewer.epoch?.epoch_uuid===`epoch-${number}`);
+   assert.equal(h.viewer.treePane.listProps.cells,cells);
+  }
+  assert.equal(pageCalls().filter(item=>item.path.includes('include_cells=true')).length,1,'two anchor/offset turns do not return all cells again');
+  for(const change of ['query','binding']){
+   const number=change==='query'?181:241;let resolveCells;
+   h.fixture.respond=(url,options,result)=>{
+    const value=result();if(url.pathname!=='/api/protocols/protocol-A/epochs')return value;
+    value.query_revision='query-new';if(change==='binding')value.expected_binding_version=3;
+    if(url.searchParams.get('include_cells')==='true')return new Promise(resolve=>{resolveCells=()=>resolve(value);});
+    return value;
+   };
+   await h.act(()=>h.viewer.treePane.listProps.onFocus(`epoch-${number}`));
+   await h.waitFor(()=>!!resolveCells);
+   assert.equal(h.viewer.treePane.listProps.disabled,true,`${change} mismatch fences cell actions`);
+   await h.act(()=>resolveCells());
+   await h.waitFor(()=>!h.viewer.treePane.listProps.disabled&&!h.viewer.navigation.loading);
+   assert.equal(h.viewer.treePane.listProps.source.queryRevision,'query-new');
+  }
  }finally{await h.close();}
 });
