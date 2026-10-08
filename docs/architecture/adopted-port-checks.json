@@ -3822,7 +3822,8 @@
               "ACTION",
               "ExplorerHistory",
               "explorer_table",
-              "protocol_binding_table"
+              "protocol_binding_table",
+              "is_canonical_binding_reader"
             ]
           },
           {
@@ -4480,7 +4481,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4553,7 +4554,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -4575,7 +4576,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -4597,7 +4598,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -4863,7 +4864,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5218,7 +5219,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5240,7 +5241,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5262,7 +5263,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5295,7 +5296,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5328,7 +5329,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5350,7 +5351,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5372,7 +5373,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5394,7 +5395,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5416,7 +5417,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5438,7 +5439,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5460,7 +5461,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5493,7 +5494,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5515,7 +5516,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5537,7 +5538,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5559,7 +5560,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "f6ab970eadfb479d657781a6e8d22f95252a9fbfd9bcbaa903781e45684d8599",
                 "contract_id": null
               }
             ]
@@ -5856,7 +5857,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]

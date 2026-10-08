@@ -48,12 +48,8 @@ def _readonly_binding_reader(service, protocol):
     provider = getattr(service, 'binding_provider', None)
     if type(provider) is _FrozenProtocolBinding:
         return provider.protocol == protocol and type(provider).__call__ is _FROZEN_BINDING_READ
-    from disco.decisions.explorer import ExplorerHistory, _QUERY_RESULT_BINDING_METHODS
-    owner = getattr(provider, '__self__', None)
-    return (type(owner) is ExplorerHistory
-        and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
-        and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
-                for name in ('protocol_binding_header', 'get')))
+    from disco.decisions.explorer import is_canonical_binding_reader
+    return is_canonical_binding_reader(provider)
 
 
 class _SourceDetails(Mapping):

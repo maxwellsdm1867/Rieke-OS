@@ -260,5 +260,21 @@ class ExplorerHistory:
 
 # Retain original identities for canonical binding admission, including when a
 # custom adapter later replaces methods on the class rather than an instance.
-_QUERY_RESULT_BINDING_METHODS = {name: getattr(ExplorerHistory, name)
-    for name in ('protocol_binding', 'protocol_binding_header', 'get')}
+_QUERY_RESULT_BINDING_METHODS = {
+    'protocol_binding': ExplorerHistory.protocol_binding,
+    'protocol_binding_header': ExplorerHistory.protocol_binding_header,
+    'get': ExplorerHistory.get,
+}
+
+
+def is_canonical_binding_reader(provider):
+    """Whether this callable retains the unmodified read-only binding path.
+
+    This identifies implementation behavior, not a current binding or recipe
+    receipt. Callers must still invoke the reader and validate their live scope.
+    """
+    owner = getattr(provider, '__self__', None)
+    return (type(owner) is ExplorerHistory
+        and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
+        and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
+                for name in ('protocol_binding', 'protocol_binding_header', 'get')))

@@ -36,9 +36,9 @@ class BoundQueryResultTests(unittest.TestCase):
             def __init__(self, rows): self.rows = rows
             def __and__(self, restriction): return self
             def to_dicts(self): return copy.deepcopy(self.rows)
-        history = ExplorerHistory.__new__(ExplorerHistory)
-        history.project_uuid = str(uuid.uuid4())
-        history.Binding = Headers([{key: value for key, value in self.binding.items() if key != 'recipe'}])
+        history = ExplorerHistory(None, str(uuid.uuid4()), event_table=Headers([]),
+            revision_table=Headers([]),
+            binding_table=Headers([{key: value for key, value in self.binding.items() if key != 'recipe'}]))
         history._recipe_cache = {self.recipe['revision_uuid']: copy.deepcopy(self.recipe)}
         self.service.binding_provider = history.protocol_binding
         return history
@@ -90,17 +90,23 @@ class BoundQueryResultTests(unittest.TestCase):
     def test_class_level_reader_overrides_preserve_snapshot_before_callback(self):
         from unittest.mock import patch
         from disco.decisions.explorer import ExplorerHistory
-        for method in ('protocol_binding', 'protocol_binding_header', 'get'):
+        readers = (
+            ('get', ExplorerHistory.get, lambda changed: patch.object(ExplorerHistory, 'get', changed)),
+            ('protocol_binding_header', ExplorerHistory.protocol_binding_header,
+             lambda changed: patch.object(ExplorerHistory, 'protocol_binding_header', changed)),
+            ('protocol_binding', ExplorerHistory.protocol_binding,
+             lambda changed: patch.object(ExplorerHistory, 'protocol_binding', changed)),
+        )
+        for method, original, replace_reader in readers:
             with self.subTest(method=method):
                 self.source['extra']['nested'] = ['retained']
                 history = self.native_provider()
-                original = getattr(ExplorerHistory, method)
                 def changed(owner, identity):
                     self.source['extra']['nested'].append('class callback')
                     if method == 'get':
                         return {'recipe': copy.deepcopy(self.recipe)}
                     return original(owner, identity)
-                with patch.object(ExplorerHistory, method, changed):
+                with replace_reader(changed):
                     self.service.binding_provider = history.protocol_binding
                     if method == 'get':
                         history._recipe_cache.clear()
