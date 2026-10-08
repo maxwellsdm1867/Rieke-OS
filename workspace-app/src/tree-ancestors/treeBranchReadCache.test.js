@@ -266,3 +266,42 @@ test('count-only and full summaries never share retained JSON',async()=>{
  assert.equal(calls,2);
  for(const value of [null,1,0,'true'])await assert.rejects(cache.read(attest(cache),{...body,counts_only:value},{load}),/outside/);
 });
+
+test('fresh branch targets seed later ancestors, while every target remains a fresh request',async()=>{
+ const cache=createTreeBranchReadCache();cache.activate(scope);const calls=[];
+ const load=async(url,{body:request})=>{calls.push(request);return request.path.length===2?leaf:ancestor(request);};
+ const args={scope:{protocolId:protocol,splits:'date,cell'},readOwner:ownerFor(cache),load};
+ const root=await loadColumnTreePages(args);
+ assert.equal(calls.length,1);assert.equal(cache.stats().entries,1);
+ const child=await loadColumnTreePages({...args,path:[hex(7)],retainedPages:root});
+ assert.equal(calls.length,2,'expansion reuses the displayed parent without a second HTTP read');
+ assert.equal(cache.stats().entries,2);
+ await loadColumnTreePages({...args,path:leaf.path,retainedPages:child});
+ assert.equal(calls.length,3,'terminal target remains fresh with both parent pages reused');
+ await loadColumnTreePages({...args,path:leaf.path,retainedPages:child});
+ assert.equal(calls.length,4);assert.equal(cache.stats().entries,2,'terminal target is never retained');
+});
+
+test('seeded target is discarded on new source or binding witness and on scope round trip',async()=>{
+ const cache=createTreeBranchReadCache();cache.activate(scope);let calls=0,currentIdentity=identity;
+ const load=async(url,{body:request})=>{calls++;return ancestor(request,currentIdentity);};
+ const args={scope:{protocolId:protocol,splits:'date,cell'},readOwner:ownerFor(cache),load};
+ const root=await loadColumnTreePages(args);
+ for(const key of ['source','binding','annotation']){
+  currentIdentity={...currentIdentity,generation:{...currentIdentity.generation,[key]:`${key}-new`}};
+  const start=calls;await loadColumnTreePages({...args,path:[hex(7)],retainedPages:root});
+  assert.equal(calls-start,2,`${key} change must refetch the ancestor`);
+ }
+ cache.activate({...scope,actorId:'other'});cache.activate(scope);
+ const start=calls;await loadColumnTreePages({...args,path:[hex(7)],retainedPages:root});
+ assert.equal(calls-start,2,'A-B-A cannot resurrect cached parent authority');
+});
+
+test('a witnessed nonbatch response outside the requested target is not seeded',async()=>{
+ const cache=createTreeBranchReadCache();cache.activate(scope);
+ for(const wrong of [{offset:60},{path:[hex(7)],depth:1,branches:[]}]){
+  const result=loadColumnTreePages({scope:{protocolId:protocol,splits:'date,cell'},readOwner:ownerFor(cache),load:async()=>({...page,...wrong})});
+  if(wrong.path)await assert.rejects(result,/identity changed/);else await result;
+  assert.equal(cache.stats().entries,0);
+ }
+});

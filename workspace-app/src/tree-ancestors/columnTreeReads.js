@@ -47,6 +47,14 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
      &&page.anchor.offset===page.offset&&Number.isSafeInteger(page.anchor.index)&&page.anchor.index>=page.offset
      &&page.anchor.index<page.offset+page.limit
     :canonical(page.path)===canonical(ordinaryBody.path)&&page.offset===ordinaryBody.offset);
+ // Admit the fresh, already validated branch target into the same bounded
+ // immutable cache so the next column open does not re-read its displayed parent.
+ // No HTTP: a later read still requires a fresh witness lease for reuse.
+ const seedTarget=async(value=page)=>{
+  if(!lease||!validTarget||value.kind!=='branches'||!validLivePage(value))return;
+  const request=treePageRequest(scope,{path:value.path,offset:value.offset,currentRevision:value.revision});
+  if(reusableTreeBody(request))await readOwner.read(lease,request,{load:async()=>value,signal});
+ };
  if(batch){
   const parents=page.ancestor_pages;
   const identity=page.read_identity;
@@ -75,6 +83,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
     return reusableTreeBody(request)?readOwner.read(lease,request,{load:async()=>parent,signal}):null;
    }));
   }
+  await seedTarget(target);
   if(!current()||lease&&!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
   return [...parents,target];
  }
@@ -113,5 +122,7 @@ export async function loadColumnTreePages({scope,path=[],offset=0,anchor=null,re
   }));
   if(!current()||!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  }
+ await seedTarget();
+ if(!current()||lease&&!readOwner.current(lease))throw Object.assign(Error('Tree navigation superseded'),{name:'AbortError'});
  return [...parents,page];
 }
