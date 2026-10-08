@@ -233,3 +233,29 @@ closing check. Empty selection returns empty IDs; an incorrect zero cell count
 still refuses. No draft, annotation, merge or export state changes. Renderer
 selection verifies counts, per-cell order, flattened identity equality, candidate
 scope, binding and cancellation before publishing; older contexts retain paging.
+
+## Optional context and first-page response
+
+Queue capability `initial_page: true` supports the strictly boolean URL option
+`include_initial_page=true` on GET candidate `context` and POST protocol `prepare`.
+The prepare body, request hash, operation UUID and durable receipt are unchanged.
+Default responses retain their existing shape. Opt-in responses keep their normal
+top-level fields and add a response-only `bootstrap` containing current context,
+actor/project/protocol/candidate/root identity, requested filters, and the ordinary
+60-row initial epoch page with exact cell counts. The existing protocol/page readers
+are used, including custom overrides; both outputs share one opening generation
+and independent closing check. No global or cross-request projection is reused.
+
+Fresh preparation builds that page beside the context before the existing closing
+transaction checks, then publishes only after successful commit. All replay paths
+construct a new guarded bootstrap, including a receipt found after transaction
+entry using the captured locked authority. They retain the original receipt's
+body and never gain `fresh-v1`. The bootstrap is attached to a new response object;
+neither stored receipt nor its nested context is mutated. Thus historic receipt
+scope and fresh bootstrap scope may differ deliberately. Existing exact receipt
+recovery remains available without the option. Failed closing checks or commits
+publish neither context/page bundle nor freshness signal.
+
+The pending tests cover fresh/ordinary/replay equivalence, changed-draft replay,
+transaction-race replay, native token refusal and failed commit. Workbench tests
+compare bundled context/page with independent fresh reads and reject closing changes.

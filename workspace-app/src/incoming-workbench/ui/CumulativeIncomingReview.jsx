@@ -6,6 +6,7 @@ import {requireWorkbenchContext,workbenchCandidateRoot,workbenchRoot} from '../w
 import FrozenIncomingReview from './FrozenIncomingReview.jsx';
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
+import {requireIncomingBootstrap} from '../incomingBootstrap.js';
 
 export function requirePreparedWorkbench(protocol,value,queueRevision){
   if(value?.contract_version!==1||value.kind!=='workbench_pending_union'||typeof value.prepare_operation_uuid!=='string'||typeof value.candidate_revision_uuid!=='string'||value.root!==workbenchCandidateRoot(protocol,value.candidate_revision_uuid))throw new Error('The cumulative Workbench did not return an authoritative frozen destination.');
@@ -65,17 +66,19 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
     const key=`${protocolId}:${token}:${nonce}`;
     if(attempted.current?.key!==key||attempted.current.requestOwner!==requestOwner){
       let responseFresh=false;
-      attempted.current={key,owner,requestOwner,promise:api(`${workbenchRoot(protocolId)}/prepare`,{method:'POST',body:{expected_queue_revision:token},
+      attempted.current={key,owner,requestOwner,promise:api(`${workbenchRoot(protocolId)}/prepare${queue.data.capabilities?.initial_page===true?'?include_initial_page=true':''}`,{method:'POST',body:{expected_queue_revision:token},
         onResponse:response=>{responseFresh=response.headers?.get?.('X-Disco-Workbench-Context')==='fresh-v1';}
-      }).then(value=>({value,responseFresh}))};
+      }).then(response=>{const {bootstrap,...value}=response;return {value,bootstrap,responseFresh};})};
     }
     const attempt=attempted.current;
     // Preparation may commit before a response arrives. Effect cleanup only
     // detaches this display subscriber; StrictMode replay rejoins the same
     // request, and a real remount retries the exact server-idempotent body.
     let active=true;setBusy(true);setError('');
-    attempt.promise.then(({value,responseFresh})=>{
+    attempt.promise.then(({value,bootstrap,responseFresh})=>{
       if(active&&attempted.current===attempt&&latest.current.owner===owner){const saved=requirePreparedWorkbench(protocolId,value,token);
+        const currentBootstrap=queue.data.capabilities?.initial_page===true?requireIncomingBootstrap(bootstrap,{root:saved.root,protocolId,projectId:reviewProps.projectId,candidateRevision:saved.candidate_revision_uuid}):null;
+        const offeredContext=currentBootstrap?{...currentBootstrap.context,bootstrap:currentBootstrap}:saved.context;
         const previous=snapshot.current?.prepared,priorProtocol=previous?.context?.protocol?.definition?.protocol_uuid||previous?.context?.protocol?.protocol_uuid;
         const previousViewer=viewerPresentation(drafts.current[previous?.candidate_revision_uuid]?.viewer);
         const destination=drafts.current[saved.candidate_revision_uuid];
@@ -83,9 +86,9 @@ export default function CumulativeIncomingReview({queue,protocolId,session={},on
           drafts.current={...drafts.current,[saved.candidate_revision_uuid]:{...destination,viewer:previousViewer}};
         }
         presentationOwner.current={protocolId,projectId:reviewProps.projectId};
-        freshContext.current=responseFresh&&attempt.owner===owner&&latest.current.ready&&owner.profileReady&&value.actor===owner.profileUuid
+        freshContext.current=(!!currentBootstrap||responseFresh)&&attempt.owner===owner&&latest.current.ready&&owner.profileReady&&(currentBootstrap?.actor||value.actor)===owner.profileUuid
           &&owner.projectId&&saved.context.protocol?.definition?.project_uuid===owner.projectId
-          ?{owner,token:{},claimed:false,candidate:saved.candidate_revision_uuid,context:saved.context}:null;
+          ?{owner,token:{},claimed:false,candidate:saved.candidate_revision_uuid,context:offeredContext}:null;
         scopes.current={...scopes.current,[saved.candidate_revision_uuid]:saved};setBusy(false);setPrepared(saved);}
     }).catch(error=>{if(active&&attempted.current===attempt&&latest.current.owner===owner){setBusy(false);setError(error.message);}});
     return()=>{active=false;};

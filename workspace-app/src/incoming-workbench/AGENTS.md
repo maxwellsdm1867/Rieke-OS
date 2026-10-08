@@ -175,3 +175,27 @@ per-cell UUID lists, flattened equality, uniqueness and candidate/query/binding
 fences. The same abort and current-owner checks surround the request. Older
 contexts retain verified 60-row paging. This changes read admission only; ephemeral
 selection, saved draft review, merge consent and export authority remain separate.
+
+## Initial context/page offer
+
+`incomingBootstrap.js` validates opt-in context/prepare bootstrap identity,
+actor/project/protocol/candidate/root, generation, query/binding, complete bounded
+page identities and exact cell totals. Cumulative review removes the response-only
+bootstrap before saving prepared receipts, scopes or sessions. Fresh replay uses
+only `bootstrap.context` for display/read authority; the unchanged historic receipt
+context does not supply current action fields. A resolved profile mismatch refuses
+a bootstrap GET before it can become an actionable context.
+
+Frozen review owns at most one offer object per bootstrap in its mounted component.
+Retained or paused contexts do not offer pages. `Inspector.initialPageRead` forwards
+that opaque offer to `api.useResource` for its initial page only. The hook claims
+inside its effect; one unchanged mounted consumer may repeat its claim under
+StrictMode, receiving detached data, but another mount cannot claim the response.
+Exact root/filter/position/limit/include-cells matching is mandatory. Custom request
+ports and caches bypass the offer. Pause, reload, path/revision/owner changes and
+replacing/removing an offer permanently retire it; A-B-A never restores the old
+claim. Offer identity and retirement participate in render-visible resource state,
+so old offered data cannot become actionable before passive effects. A later fresh
+HTTP bootstrap can supply a new offer. No global page cache or scientific consent
+is created. The resource/StrictMode/session tests exercise these boundaries with
+held requests and the actual Inspector hook composition.

@@ -12,7 +12,7 @@ const prepared=token=>({contract_version:1,kind:'workbench_pending_union',prepar
 const queue=token=>({data:{queue_revision:token,pending_epoch_count:2,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false});
 const deferred=()=>{let resolve;const promise=new Promise(value=>{resolve=value;});return {promise,resolve};};
 const response=(value,status=200,headers)=>({ok:status>=200&&status<300,status,headers:headers?new Headers(headers):undefined,json:async()=>value});
-const probes={name:'strict-frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0strict-${source}`;},load(id){if(id==='\0strict-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector({readContext,readPaused,draftSelection,onReviewDecision}){return React.createElement('div',{'data-inspector-scope':readContext.candidate_scope_revision,'data-paused':String(!!readPaused)},React.createElement('button',{'data-draft-action':true,disabled:draftSelection.disabled,onClick:()=>onReviewDecision({epoch_uuids:['epoch-one'],changes:{reviewed:true}})},'Draft action'),React.createElement('button',{'data-preview-action':true,disabled:draftSelection.disabled,onClick:()=>draftSelection.onMerge(['epoch-one'])},'Preview action'));}`;if(id==='\0strict-../../typed-query/ui/ProtocolViewFilter.jsx')return 'export default function Filter(){return null;}';}};
+const probes={name:'strict-frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0strict-${source}`;},load(id){if(id==='\0strict-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector({readContext,readPaused,draftSelection,onReviewDecision,initialPageRead}){return React.createElement('div',{'data-inspector-scope':readContext.candidate_scope_revision,'data-paused':String(!!readPaused),'data-page-offer':String(!!initialPageRead)},React.createElement('button',{'data-draft-action':true,disabled:draftSelection.disabled,onClick:()=>onReviewDecision({epoch_uuids:['epoch-one'],changes:{reviewed:true}})},'Draft action'),React.createElement('button',{'data-preview-action':true,disabled:draftSelection.disabled,onClick:()=>draftSelection.onMerge(['epoch-one'])},'Preview action'));}`;if(id==='\0strict-../../typed-query/ui/ProtocolViewFilter.jsx')return 'export default function Filter(){return null;}';}};
 async function harness(fetch,{withProfile=false}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'});
  const lifetimeKey=`__incomingLifetime${Math.random().toString(36).slice(2)}`,lifetime={visible:true};globalThis[lifetimeKey]=lifetime;
@@ -280,5 +280,74 @@ test('StrictMode preserves an uncertain acceptance body before preparing newer a
   await act(async()=>retry.dispatchEvent(new window.MouseEvent('click',{bubbles:true})));
   assert.equal(acceptBodies.length,1);assert.equal(acceptBodies[0].operation_uuid,'same-operation');for(const [key,value] of Object.entries(preview))if(key.startsWith('expected_')||key==='mode'||key==='preview_sha256')assert.equal(acceptBodies[0][key],value);
   assert.equal(prepares,1);assert.equal(view.saved.prepared.queue_revision,'new');
+ }finally{await view.close();}
+});
+
+
+function bootstrapPrepared(project='profile-project',scope='fresh-scope'){
+ const value=livePrepared('one','actor-one',project);
+ const fresh={...value.context,candidate_scope_revision:scope,expected_binding_version:1,generation:{metadata:'fixture'},
+   protocol:{...value.context.protocol,query_revision:scope,expected_binding_version:1}};
+ return {...value,bootstrap:{contract_version:1,kind:'workbench_initial_page',root:value.root,project_uuid:project,protocol_uuid:protocol,
+   candidate_revision_uuid:value.candidate_revision_uuid,actor:'actor-one',context:fresh,
+   request:{filters:{},offset:0,limit:60,include_cells:true},page:{candidate_scope_revision:scope,query_revision:scope,expected_binding_version:1,
+     generation:fresh.generation,total:0,offset:0,limit:60,epochs:[],cells:[]}}};
+}
+const bootstrapQueue=()=>{const value=queue('one');return {...value,data:{...value.data,capabilities:{...value.data.capabilities,initial_page:true}}};};
+test('fresh replay bootstrap owns display while durable receipt and saved session stay unchanged',async()=>{
+ const value=bootstrapPrepared(),calls=[];
+ const view=await harness(async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');calls.push(endpoint);
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  if(endpoint===base+'/prepare?include_initial_page=true')return response(value);
+  assert.fail(`Unexpected bootstrap fallback ${endpoint}`);
+ },{withProfile:true});
+ try{
+  await view.render({hidden:true,queue:bootstrapQueue()});await view.render({queue:bootstrapQueue()});
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.inspectorScope,'fresh-scope');
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.pageOffer,'true');
+  const {bootstrap,...receipt}=value;assert.deepEqual(view.saved.prepared,receipt);
+  assert.doesNotMatch(JSON.stringify(view.saved),/bootstrap|fresh-scope|workbench_initial_page/);
+  assert.equal(calls.filter(path=>path.endsWith('/context')).length,0);
+ }finally{await view.close();}
+});
+test('retained bootstrap stays inert across a held project A-B-A transition',async()=>{
+ const reads=[];let currentProject='profile-project';
+ const view=await harness(async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  if(endpoint===base+'/prepare?include_initial_page=true')return response(bootstrapPrepared(currentProject));
+  assert.equal(endpoint,base+'/candidates/union-one/context?include_initial_page=true');
+  const pending=deferred(),project=currentProject;reads.push({pending,project});await pending.promise;
+  const value=bootstrapPrepared(project,`current-${project}`);return response({...value.bootstrap.context,bootstrap:value.bootstrap});
+ },{withProfile:true});
+ try{
+  await view.render({hidden:true,queue:bootstrapQueue()});await view.render({queue:bootstrapQueue()});
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.pageOffer,'true');
+  currentProject='other-project';await view.render({projectId:currentProject,queue:bootstrapQueue()});
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.pageOffer,'false');
+  assert.equal(view.container.querySelector('[data-draft-action]').disabled,true);
+  currentProject='profile-project';await view.render({projectId:currentProject,queue:bootstrapQueue()});
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.pageOffer,'false');
+  await act(async()=>reads.at(-1).pending.resolve());
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.inspectorScope,'current-profile-project');
+  await act(async()=>{for(const read of reads)read.pending.resolve();});
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.inspectorScope,'current-profile-project');
+ }finally{await act(async()=>{for(const read of reads)read.pending.resolve();});await view.close();}
+});
+
+test('fresh GET bootstrap for another resolved actor never enables the frozen view',async()=>{
+ const view=await harness(async(path)=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/annotation-profiles')return response(authorProfiles('actor-one'));
+  const value=bootstrapPrepared();value.actor='actor-two';value.bootstrap.actor='actor-two';
+  if(endpoint===base+'/prepare?include_initial_page=true')return response(value);
+  assert.equal(endpoint,base+'/candidates/union-one/context?include_initial_page=true');
+  return response({...value.bootstrap.context,bootstrap:value.bootstrap});
+ },{withProfile:true});
+ try{
+  await view.render({hidden:true,queue:bootstrapQueue()});await view.render({queue:bootstrapQueue()});
+  assert.match(view.container.textContent,/different actor/);
+  assert.equal(view.container.querySelector('[data-inspector-scope]'),null);
  }finally{await view.close();}
 });

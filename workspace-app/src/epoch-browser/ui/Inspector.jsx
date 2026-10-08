@@ -41,7 +41,7 @@ import Trace from '../../traces/ui/TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
@@ -125,7 +125,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   // A new owner or descriptor must obtain its own receipt, including at the
   // same URL. Keep the annotation idle delay except for explicit navigation.
   const pageReadRevision=JSON.stringify([pageRevision,projectId,treeReadOwner?.identity,protocol.query_revision,protocol.expected_binding_version]);
-  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation});
+  const loadedRows=useResource(rowsPath,pageReadRevision,0,{paused:readPaused||annotationState.dirty&&!pendingNavigation,initialRead:initialPageRead});
   const rows=resourceForPath(loadedRows,rowsPath);
   // The compact page receipt owns current curation authority and exact filtered
   // cell counts. A focused navigation page needs a separate all-cell receipt.

@@ -14,6 +14,7 @@ import IncomingMergePreview from './IncomingMergePreview.jsx';
 import {nextWorkbenchWorkflow} from "../../exports/workbenchExport.js";
 import {acceptWorkbench,acceptanceFailureKind,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
 import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
+import {incomingPageOffer,requireIncomingBootstrap} from '../incomingBootstrap.js';
 
 export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled,preparedContextToken,takePreparedContext}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
@@ -51,7 +52,11 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       if(initial)claimedContext.current={owner:loadOwner,context:initial};
     }
     if(initial){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(initial));}
-    else api(`${root}/context`,{signal:controller.signal}).then(value=>{
+    else api(`${root}/context${capabilities.initial_page===true?'?include_initial_page=true':''}`,{signal:controller.signal}).then(value=>{
+      if(capabilities.initial_page===true){
+        const bootstrap=requireIncomingBootstrap(value.bootstrap,{root,protocolId,projectId,candidateRevision:item.candidate_revision_uuid});
+        if(loadOwner.profileReady&&bootstrap.actor!==loadOwner.profileUuid)throw new Error('The incoming bootstrap belongs to a different actor. Refresh the profile and proposal.');
+      }
       if(!controller.signal.aborted&&activeOwner.current===loadOwner){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(value));}
     }).catch(error=>{if(!controller.signal.aborted&&activeOwner.current===loadOwner)setError(error.message);});
     return()=>controller.abort();
@@ -127,6 +132,18 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }
     finally{inFlight.current=false;setBusy(false);setAcceptPending(false);}
   }
+  const pageOffers=useRef(new WeakMap());
+  const pageOffer=useMemo(()=>{
+    const bootstrap=visible?.context.bootstrap;
+    if(!bootstrap||!contextFresh||visible.context!==context||profile.loading||profile.error||bootstrap.actor!==profile.profileUuid||
+      bootstrap.root!==root||bootstrap.project_uuid!==projectId||bootstrap.protocol_uuid!==protocolId)return null;
+    if(pageOffers.current.has(bootstrap))return pageOffers.current.get(bootstrap);
+    const offer=incomingPageOffer(bootstrap,{root,protocolId,projectId,candidateRevision:item.candidate_revision_uuid,
+      profileUuid:profile.profileUuid,profileReady:true});
+    if(offer)pageOffers.current.set(bootstrap,offer);
+    return offer;
+  },[visible?.context.bootstrap,contextFresh,context,root,protocolId,projectId,item.candidate_revision_uuid,profile.profileUuid,profile.loading,profile.error]);
+  const initialPageRead=contextFresh&&!busy&&!externalBusy?pageOffer:null;
   const protocol=visible?.context.protocol;
   const readContext=visible?{root,candidate_scope_revision:visible.context.candidate_scope_revision,
     ...(visible.context.tree_selection===true?{tree_selection:true}:{}),
@@ -199,6 +216,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog selectedOnly externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }

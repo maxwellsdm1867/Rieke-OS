@@ -124,3 +124,10 @@ retain the existing error/retry presentation. Annotation-profile unavailability
 does not prevent read-only entry. Overview and export demand their full summaries
 only while visible; legacy protocol requests retain their full response. See
 `../protocolBrowseEntry.test.js` and `../workflowResponsiveness.test.js`.
+
+Workbench may provide an opaque `initialPageRead` for the exact first bounded
+page. Inspector passes it only to its normal rows resource; focused-cell, anchor,
+trace and later-page reads retain their own requests. The incoming owner validates
+and owns the offer; `api.useResource` claims it in an effect and retires it on
+pause/reload/owner/path/revision changes with first-render stale-data masking.
+See [incoming bootstrap contract](../incoming-workbench/AGENTS.md#initial-contextpage-offer).

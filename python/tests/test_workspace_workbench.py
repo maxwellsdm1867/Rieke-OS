@@ -96,6 +96,27 @@ class WorkbenchTests(unittest.TestCase):
         filtered = self.list_selection(context, filters={'cell_type': 'does-not-match'})
         self.assertEqual(filtered.status_code, 409)
 
+    def test_list_selection_exact_thousand_keeps_chronological_page_order(self):
+        from disco.workbench.recipes import checksum
+        source = self.case.service.rows[self.added]
+        recipe_row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+        recipe = recipe_row['recipe']
+        for index in range(999):
+            identity = str(uuid.UUID(int=index + 10000))
+            self.case.service.rows[identity] = dict(source, epoch_uuid=identity)
+            self.case.service._fingerprints[identity] = self.case.service._fingerprints[self.added]
+            recipe['epochs'].append(dict(uuid=identity, metadata_hash=self.case.service._fingerprints[identity]))
+        for key in ('epoch_count', 'matched_count'):
+            recipe[key] = recipe_row['summary'][key] = len(recipe['epochs'])
+        recipe.pop('content_sha256'); recipe['content_sha256'] = checksum(recipe)
+        context = self.get_context()
+        response = self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1000)])
+        self.assertEqual(response.status_code, 200, response.get_json())
+        expected = sorted([self.added, *[str(uuid.UUID(int=index + 10000)) for index in range(999)]])
+        self.assertEqual(response.get_json()['epoch_uuids'], expected)
+        self.assertEqual(response.get_json()['count'], 1000)
+        self.assertEqual(self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1001)]).status_code, 400)
+
     def test_list_selection_custom_pages_and_closing_changes_fail_closed(self):
         context = self.get_context()
         original = self.manager.frozen_service
@@ -128,6 +149,42 @@ class WorkbenchTests(unittest.TestCase):
                 self.case.service.source_scope = original_scope
                 for table, rows in zip(self.case.connection.tables, before_tables): table.rows[:] = rows
                 self.assertEqual(self.list_selection(context).status_code, 200, 'Failed read must not poison the next read')
+
+    def test_optional_context_bootstrap_matches_fresh_context_and_page(self):
+        plain = self.get_context()
+        with patch.object(self.manager, 'context', wraps=self.manager.context) as contexts:
+            response = self.case.client.get(self.root + '/context?include_initial_page=true')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(contexts.call_count, 2)
+        value = response.get_json()
+        bootstrap = value.pop('bootstrap')
+        self.assertEqual(value, plain)
+        self.assertEqual(bootstrap['context'], plain)
+        page = self.case.client.get(self.root + '/epochs', query_string=dict(
+            candidate_scope_revision=plain['candidate_scope_revision'], offset=0, limit=60, include_cells='true')).get_json()
+        self.assertEqual(bootstrap['page'], page)
+        self.assertEqual(bootstrap['actor'], 'actor-one')
+        for query in ('include_initial_page=bad', 'include_initial_page=true&include_initial_page=false'):
+            self.assertEqual(self.case.client.get(self.root + '/context?' + query).status_code, 400)
+        self.assertNotIn('bootstrap', self.get_context())
+
+    def test_bootstrap_closing_check_discards_context_and_page(self):
+        original = self.manager.frozen_service
+        def changing(context):
+            scoped = original(context)
+            page = scoped.epoch_page
+            def read(*args, **kwargs):
+                result = page(*args, **kwargs)
+                self.tables[0].insert1(dict(**self.manager.key(self.protocol, self.revision, 'actor-one'),
+                    version=1, selection_mode='selected', deferred=True))
+                return result
+            scoped.epoch_page = read
+            return scoped
+        with patch.object(self.manager, 'frozen_service', side_effect=changing):
+            response = self.case.client.get(self.root + '/context?include_initial_page=true')
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('bootstrap', response.get_json())
+        self.assertNotIn('protocol', response.get_json())
 
     def test_context_rechecks_warmed_main_recipe_storage(self):
         context = self.manager.context(self.protocol, self.revision, 'actor-one')
