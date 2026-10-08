@@ -55,3 +55,12 @@ mounted workflow tests remain cross-owner detectors after import integration.
 Qualification of actual native export, bytes, transaction durability, backend retry,
 packaged downloads and performance remains deferred. No native/export claims follow
 from moving this UI source or passing controlled public-interface examples.
+
+Explicit export submissions start a file download after publication. Restoring or
+viewing a saved receipt never starts a download. Download cancellation/failure
+does not undo publication or acceptance; the receipt link retries the same file.
+`downloadExport.js` owns the renderer download gesture; `ExportSaveLocation.jsx`
+explains browser/native save locations. Electron's existing owned-session download
+handler opens the native chooser at `app.getPath('downloads')` plus the sanitized
+filename. The chooser shows the full destination and supports browsing; project
+export storage and scientific receipt authority are unchanged.

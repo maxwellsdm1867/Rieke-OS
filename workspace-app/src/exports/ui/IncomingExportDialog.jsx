@@ -1,3 +1,4 @@
+import {downloadExport} from '../downloadExport.js';
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from "../../api.js";
 import {acceptIncoming,acceptedBinding,exportIncoming} from "../../incoming-workbench/incomingReview.js";
@@ -30,7 +31,7 @@ export default function IncomingExportDialog({item,accept=false,state={},onState
       }
       onState({receipt,phase:'exporting'});
       const exported=await exportIncoming(candidate,{format,name},api);
-      onState({receipt,exported,phase:'exported'});onChanged?.();
+      onState({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
     }catch(error){onState({receipt,comparison:state.comparison,phase:error.acceptanceUnconfirmed?'unconfirmed':receipt?'export-failed':'failed',error:error.message});}
     finally{inFlight.current=false;setBusy(false);}
   }
