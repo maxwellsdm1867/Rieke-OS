@@ -293,6 +293,55 @@ class TreePageTests(unittest.TestCase):
                 self.assertEqual(self.pager.page(body),wanted)
             self.assertEqual(self.collect({'splits':combined,'limit':2}),expected_members)
 
+    def test_indexed_protocol_metadata_borrows_rows_with_exact_page_and_selection_parity(self):
+        import cProfile
+        from pathlib import Path
+        from disco.metadata.disk_index import DiskMetadataIndex
+        # Reuse typed parameter cases as recorded metadata: null, missing,
+        # Boolean, number, string, list, and joint component presence differ.
+        for detail in self.service.details.values():
+            detail['metadata'] = {'block': {'properties': copy.deepcopy(detail['parameters'])}}
+        index = DiskMetadataIndex.build(Path(self.temp.name)/'raw-membership.sqlite',
+            list(self.service.rows.values()), self.service.details, self.service.sources,
+            'raw-membership', self.service.project['project_uuid'])
+        self.addCleanup(index.close)
+        self.service.disk_index = index
+        fields = ('metadata/block/properties/value', 'metadata/block/properties/other')
+        def snapshot(body):
+            root = self.pager.page(body)
+            pages = []
+            def walk(page):
+                pages.append(page)
+                for branch in page['branches']:
+                    walk(self.pager.page({**body, 'path': branch['path'], 'revision': root['revision']}))
+                if page['has_more']:
+                    walk(self.pager.page({**body, 'path': page['path'],
+                        'offset': page['offset'] + page['limit'], 'revision': root['revision']}))
+            walk(root)
+            return pages, self.pager.selection({**{key: value for key, value in body.items() if key != 'limit'},
+                'revision': root['revision']}, 10), [
+                self.pager.page({**body, 'anchor_uuid': identity}) for identity in self.service.rows]
+        for splits in (fields[0], ','.join(fields), joint_id(fields), 'cell,'+fields[0]):
+            body = {'protocol_uuid': self.service.protocol_id, 'splits': splits, 'limit': 2}
+            # Force the existing decorated reader as a full-response oracle.
+            with patch('disco.navigation.tree_pages._structural_contract', return_value=False):
+                expected = snapshot(body)
+            self.service._tree_page_scope_cache = None
+            profile = cProfile.Profile()
+            with patch.object(index, 'values', wraps=index.values) as values:
+                with profile:
+                    actual = snapshot(body)
+            with self.subTest(splits=splits):
+                self.assertEqual(actual, expected)
+                calls = {getattr(entry.code, 'co_name', ''): entry.callcount for entry in profile.getstats()}
+                self.assertEqual(calls.get('_decorate', 0), 0)
+                self.assertEqual(calls.get('query_result', 0), 0)
+                self.assertTrue(values.called)
+                self.assertTrue(all(set(call.kwargs['fields']) <= set(fields) | {'cell'}
+                                    for call in values.call_args_list))
+                scope = self.pager._build_scope(body)
+                self.assertTrue(all(row is self.service.rows[row['epoch_uuid']] for row in scope[0]))
+
     def test_many_branches_render_only_requested_representatives(self):
         from benchmark_workspace_metadata import synthetic_service
         service,_ = synthetic_service(2000)
