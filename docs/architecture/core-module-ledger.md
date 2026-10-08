@@ -526,3 +526,44 @@ now includes catalog-known recorded metadata fields under the same sealed index
 and response generation proof, excluding annotation/joint scopes. Cache admission
 is unchanged; noncacheable metadata parents always use fresh bundles. This is a
 measured caller-coverage correction, not broader persistent cache authority.
+
+
+## Stage 5 browsing read composition
+
+The current implementation review covers `babe86c` (recipe sharing and guarded
+list IDs), `f2400fa` (protocol browse projection) and `4171672` (context/first-page
+bootstrap). Its JSON record is `contract_review.implementation_reviews` →
+`stage5-browsing-read-composition`; historical `source_observed_at`, baseline counts,
+metrics and qualification remain attributed to their original snapshots.
+
+Verified detached recipe/map sharing is local to one context derivation and pinned
+canonical history readers. Dependency discovery and independent closing validation
+remain fresh, including current-main recipe verification; custom readers preserve
+direct calls. Capable list selection uses one guarded ID response, preserving exact
+cell/UUID order, counts, uniqueness, scope/query/binding fences and the 1,000 limit.
+Older contexts retain verified 60-row paging. This is read admission, not consent.
+
+`projection=browse` supplies the protocol descriptor without hidden overview
+aggregates. Overview/export still demand full summaries; legacy responses remain
+full. Descriptor retention never replaces fresh page or scientific-action authority.
+The optional Workbench bootstrap combines context and the first bounded page under
+one opening and independent closing check. Commit precedes fresh-prepare publication;
+replays generate a fresh response-only bundle while durable receipts and exact
+operation/request identity stay unchanged.
+
+The accepted path increment adds
+[`incomingBootstrap.js`](../../workspace-app/src/incoming-workbench/incomingBootstrap.js)
+under incoming-read presentation. It validates scope, actor, generation, query/binding
+and complete page/cell identity. Frozen review owns the offer; Inspector forwards it
+only to its first rows resource, and `api.useResource` claims it inside an effect.
+One unchanged StrictMode consumer may reclaim detached data; another mount cannot.
+Pause, reload, path/revision/owner or offer changes permanently retire it with
+render-time stale masking. Custom ports/caches bypass offers, and sessions/receipts
+exclude bootstrap. No persistent cache or scientific consent is introduced.
+
+The [Workbench contract](../../python/disco/workbench/CONTRACT.md),
+[epoch-browser guide](../../workspace-app/src/epoch-browser/AGENTS.md) and
+[incoming guide](../../workspace-app/src/incoming-workbench/AGENTS.md) retain detailed
+ownership and refusal rules. This adoption update records source/contract review;
+it adds no runtime, performance, native or package qualification. Existing test
+paths document executable checks, not a new claim that they ran in this update.
