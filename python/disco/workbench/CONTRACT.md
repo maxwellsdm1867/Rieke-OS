@@ -199,3 +199,8 @@ ancestor prefixes only within one guarded response. Target validation and the
 closing generation/scope check remain mandatory. Overridden page/scope readers
 retain independent page reads. No metadata projection or permission is shared
 across requests by this optimization.
+
+
+## Linked internal export extension
+
+The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.

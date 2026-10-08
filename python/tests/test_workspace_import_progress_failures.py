@@ -311,7 +311,11 @@ class ProgressLogDurability(unittest.TestCase):
     def test_cli_final_receipt_disk_failure_never_overwrites_known_commit(self):
         import recording_workspace
         progress_path = self.folder / 'cli-progress.json'
-        manifest = {'status': 'imported', 'counts': {'epochs': 1}}
+        source = self.folder / 'fixture.h5'
+        source.write_bytes(b'owned CLI retention fixture')
+        import hashlib
+        manifest = {'status': 'validated', 'counts': {'epochs': 1},
+                    'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(), 'source_path': str(source)}
         failed = False
 
         def save(path, value):
@@ -323,6 +327,7 @@ class ProgressLogDurability(unittest.TestCase):
 
         def import_catalog(*args):
             args[-1]('catalog_committed', commit_state='committed', catalog_committed=True)
+            manifest['status'] = 'imported'
             return manifest
 
         arguments = ['recording_workspace.py', str(self.folder / 'fixture.h5'),

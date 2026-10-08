@@ -20,6 +20,16 @@ test('saved legacy search destination renders a selected standalone MAT data cho
  assert.match(html,/MATLAB data \(\.mat\)/);assert.match(html.match(/<input[^>]*value="matlab-mat"[^>]*>/)?.[0]||'',/checked=""/);assert.doesNotMatch(html,/EpicTree|launcher|selection mask|MATLAB bundle/);
 });
 
+test('linked reference exports are selectable and explain the managed-source dependency',async()=>{
+ const candidate=await render('/src/exports/ui/CandidateExportPanel.jsx',{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'linked-sqlite'});
+ assert.match(candidate,/Linked SQLite/);assert.match(candidate,/Python loader/);assert.match(candidate,/needs managed source folders/);
+ assert.match(candidate.match(/<input[^>]*value="linked-sqlite"[^>]*>/)?.[0]||'',/checked=""/);
+ const {ExportDestination}=await server.ssrLoadModule('/src/exports/ui/ProtocolExports.jsx');
+ const html=renderToString(createElement(ExportDestination,{value:'linked-sqlite',onChange(){}}));
+ assert.match(html.match(/<input[^>]*value="linked-sqlite"[^>]*>/)?.[0]||'',/checked=""/);
+ assert.match(html,/MATLAB data/);assert.match(html,/Wheeler SQL/);
+});
+
 
 test('explicit export from a legacy saved search posts only the canonical MAT data format',async()=>{
  const prior=globalThis.fetch,calls=[],downloads=[];let root;

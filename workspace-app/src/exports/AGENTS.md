@@ -64,3 +64,8 @@ explains browser/native save locations. Electron's existing owned-session downlo
 handler opens the native chooser at `app.getPath('downloads')` plus the sanitized
 filename. The chooser shows the full destination and supports browsing; project
 export storage and scientific receipt authority are unchanged.
+
+
+## Linked internal export extension
+
+The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.

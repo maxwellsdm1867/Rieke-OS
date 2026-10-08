@@ -55,7 +55,7 @@ function DeleteStoreDialog({source,busy,error,onCancel,onConfirm}){
   return <dialog ref={dialog} className="ds-delete-dialog" aria-labelledby="ds-delete-title" onCancel={event=>{event.preventDefault();if(!busy)onCancel();}}>
     <h2 id="ds-delete-title">Delete data store?</h2><strong>{source.filename}</strong><p className="ds-mono">SHA-256: {source.source_sha256}</p>
     <p>This will delete this project's imported H5 copy and remove its data from the database. The change will automatically propagate to downstream pinned protocols. Your existing exports will remain unchanged. Continue?</p>
-    <Status {...info} retry={info.reload}>{info.data&&<><p className="ds-mono">{info.data.source_path}</p><p>{info.data.managed_file?'Only this project’s managed imported H5 is removed. Any external original is retained.':'This legacy store references an external recording. Its project reference and active data are removed; the external H5 is retained.'}</p></>}</Status>
+    <Status {...info} retry={info.reload}>{info.data&&<><p className="ds-mono">{info.data.source_path}</p><p>{info.data.shared_recording_retained?'This project’s registration and active data are removed. The shared H5 stays in its owning project for the other projects that reference it.':info.data.managed_file?'Only this project’s managed imported H5 is removed. Any external original is retained.':'This legacy store references an external recording. Its project reference and active data are removed; the external H5 is retained.'}</p></>}</Status>
     {error&&<p role="alert" className="ds-operation-error">{error}</p>}<div className="ds-heading-actions"><button type="button" disabled={busy} onClick={onCancel}>Cancel</button><button type="button" className="primary" disabled={busy||!info.data||info.loading} onClick={()=>onConfirm(info.data)}>{busy?'Deleting and updating protocols…':'Confirm'}</button></div>
   </dialog>;
 }
@@ -86,6 +86,7 @@ function StoreDetail({source,revision,onBack,onStage,onPropagate,busy,pending,fo
   return <div className="ds-detail"><div className="ds-detail-title"><button onClick={onBack}><ArrowLeft size={15}/> All data stores</button><StoreState source={source}/><QueryParticipation source={source} onStage={onStage} disabled={busy}/><StoreActions source={source} onStage={onStage} onPropagate={onPropagate} disabled={busy}/></div>
     {pending?.source.source_sha256===source.source_sha256&&form}
     <div className="ds-detail-identity"><HardDrive size={25}/><div><h2>{source.filename}</h2><p>{source.source_path || 'Source path not recorded'}</p></div>{onFiles&&<button onClick={onFiles}><FolderOpen size={14}/> Project files</button>}</div>
+    {source.recording_owner&&<p>{source.shared_recording?`Shared H5 · stored in ${source.recording_owner.path}. This project uses the same file without making another copy.`:'H5 stored in this project’s managed recording folder.'}</p>}
     <SourceContents source={source}/>
     <div className="ds-detail-grid"><div>
       <section className="ds-source-facts"><h2><ShieldCheck size={16}/> Source identity & registration</h2><dl>

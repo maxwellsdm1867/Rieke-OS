@@ -170,8 +170,8 @@ def _cell_date(metadata):
     raise ValueError('Unrecognized cell start timestamp')
 
 
-def build_sqlite_export(package, output_path):
-    """Publish one complete SQLite snapshot atomically, never replace a file."""
+def validate_sqlite_package(package):
+    """Validate frozen membership, source pointers, metadata and decisions."""
     if not isinstance(package, dict) or package.get('format') != 'recording-reference-package' or package.get('version') != 1:
         raise ValueError('SQLite export requires a frozen reference package')
     recipe = verify(package['recipe'])
@@ -198,7 +198,7 @@ def build_sqlite_export(package, output_path):
         if identity in sources or not isinstance(source.get('source_path'), str) or not source['source_path']:
             raise ValueError('Duplicate source identity or missing source path')
         sources[identity] = source['source_path']
-    details = {}
+    details, ancestors = {}, {}
     used_sources = set()
     for record in records:
         identity = record['epoch_uuid']
@@ -215,6 +215,11 @@ def build_sqlite_export(package, output_path):
             recorded = record['metadata'].get(level, {}).get('uuid')
             if recorded is not None and recorded != value:
                 raise ValueError('Source hierarchy identity differs from the frozen epoch')
+            if level != 'epoch':
+                payload = _json(record['metadata'].get(level, {}))
+                previous = ancestors.setdefault((level, value), payload)
+                if previous != payload:
+                    raise ValueError('Conflicting frozen ancestor metadata')
         curation = record['curation']
         if curation.get('included') is not True or not isinstance(curation.get('tags'), list):
             raise ValueError('Exported epochs must have an included frozen curation state')
@@ -227,6 +232,20 @@ def build_sqlite_export(package, output_path):
         details[identity] = {key: record[key] for key in ('parameters', 'properties', 'attributes', 'metadata')}
         used_sources.add(source_sha)
     shared_annotations = frozen_annotation_entries(records)
+    return dict(recipe=recipe, members=members, records=records, export_uuid=export_uuid,
+                project_uuid=project_uuid, protocol_uuid=protocol_uuid, version=version,
+                sources=sources, used_sources=used_sources, details=details,
+                shared_annotations=shared_annotations)
+
+
+def build_sqlite_export(package, output_path):
+    """Publish one complete SQLite snapshot atomically, never replace a file."""
+    validated = validate_sqlite_package(package)
+    recipe, members, records = (validated[key] for key in ('recipe', 'members', 'records'))
+    snapshot = recipe['query_snapshot']
+    export_uuid, project_uuid, protocol_uuid = (validated[key] for key in ('export_uuid', 'project_uuid', 'protocol_uuid'))
+    version, sources, used_sources, details, shared_annotations = (
+        validated[key] for key in ('version', 'sources', 'used_sources', 'details', 'shared_annotations'))
     path = Path(output_path)
     if path.exists():
         raise ValueError('SQLite artifact already exists; refusing overwrite')

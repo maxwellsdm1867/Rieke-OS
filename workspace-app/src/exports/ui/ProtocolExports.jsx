@@ -7,6 +7,7 @@ import {Empty, Status} from "../../components/Common.jsx";
 import './ProtocolExports.css';
 
 const destinations = [
+  {format:'linked-sqlite',title:'Linked SQLite · internal use',detail:'Small reference database + Python loader; needs managed source folders',icon:Database},
   {format:'matlab-mat',title:'MATLAB data (.mat)',detail:'Recorded metadata, selection and H5 references',icon:FileCode},
   {format:'wheeler-sqlite',title:'Wheeler SQL database',detail:'SQLite · queryable epoch metadata + H5 links',icon:Database},
 ];
