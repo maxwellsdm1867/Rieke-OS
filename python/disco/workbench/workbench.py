@@ -496,7 +496,8 @@ class ProtocolWorkbench:
             recipe = copy.copy(context['candidate'])
             recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()]
             binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
-            scoped.binding_provider = lambda protocol: binding if protocol == context['protocol_uuid'] else self.service.binding(protocol)
+            from workspace_service import _FrozenProtocolBinding
+            scoped.binding_provider = _FrozenProtocolBinding(context['protocol_uuid'], binding, self.service.binding)
             scoped.binding_header_provider = None
             scoped._tree_catalog_cache = {}
             scoped._epoch_page_cache = None

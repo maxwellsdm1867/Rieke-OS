@@ -10,7 +10,112 @@ import uuid
 import h5py
 import numpy as np
 
-from workspace_service import WorkspaceService, bounded_window, number_block_epochs, validate_filters
+from workspace_service import WorkspaceService, _FrozenProtocolBinding, bounded_window, number_block_epochs, validate_filters
+
+
+class BoundQueryResultTests(unittest.TestCase):
+    def setUp(self):
+        self.protocol, self.epoch, self.cell = [str(uuid.uuid4()) for _ in range(3)]
+        self.service = WorkspaceService.__new__(WorkspaceService)
+        self.service._loaded = True
+        self.source = dict(epochs=[dict(uuid='original-member', metadata_hash='old')],
+            cells=[dict(uuid='original-cell')], extra={'nested': ['retained']})
+        self.service.protocols = {self.protocol: dict(result=self.source, definition={})}
+        self.service.rows = {self.epoch: dict(cell_uuid=self.cell, metadata_hash='current')}
+        self.service.cells = {self.cell: dict(label='Cell', cell_type='type')}
+        self.service._fingerprints = {self.epoch: 'current'}
+        self.recipe = dict(revision_uuid=str(uuid.uuid4()), name='Frozen',
+            epochs=[dict(uuid=self.epoch, metadata_hash='frozen')],
+            source_revisions=['source'], predicate={'all': []},
+            splits='cell', tree_view={'fields': ['cell']})
+        self.binding = dict(version=2, revision_uuid=self.recipe['revision_uuid'], recipe=self.recipe)
+
+    def native_provider(self):
+        from disco.decisions.explorer import ExplorerHistory
+        class Headers:
+            def __init__(self, rows): self.rows = rows
+            def __and__(self, restriction): return self
+            def to_dicts(self): return copy.deepcopy(self.rows)
+        history = ExplorerHistory.__new__(ExplorerHistory)
+        history.project_uuid = str(uuid.uuid4())
+        history.Binding = Headers([{key: value for key, value in self.binding.items() if key != 'recipe'}])
+        history._recipe_cache = {self.recipe['revision_uuid']: copy.deepcopy(self.recipe)}
+        self.service.binding_provider = history.protocol_binding
+        return history
+
+    def test_bound_result_replaces_original_members_and_detaches_all_output(self):
+        self.native_provider()
+        result = self.service.query_result(self.protocol)
+        self.assertEqual(result['epochs'], [dict(uuid=self.epoch, metadata_hash='current')])
+        self.assertEqual(result['dataset_binding']['changed_epoch_uuids'], [self.epoch])
+        result['extra']['nested'].append('changed')
+        result['effective_query']['predicate']['all'].append({'bad': True})
+        result['source_revisions'].append('changed')
+        result['cells'][0]['label'] = 'changed'
+        fresh = self.service.query_result(self.protocol)
+        self.assertEqual(fresh['extra'], {'nested': ['retained']})
+        self.assertEqual(fresh['effective_query']['predicate'], {'all': []})
+        self.assertEqual(fresh['source_revisions'], ['source'])
+        self.assertEqual(fresh['cells'][0]['label'], 'Cell')
+
+    def test_native_binding_is_read_fresh_and_missing_member_still_refused(self):
+        history = self.native_provider()
+        self.assertEqual(self.service.query_result(self.protocol)['dataset_binding']['version'], 2)
+        history.Binding.rows[0]['version'] = 3
+        self.assertEqual(self.service.query_result(self.protocol)['dataset_binding']['version'], 3)
+        del self.service.rows[self.epoch]
+        with self.assertRaisesRegex(ValueError, 'unavailable epochs'):
+            self.service.query_result(self.protocol)
+
+    def test_custom_provider_retains_snapshot_order_and_single_call(self):
+        calls = []
+        def provider(protocol):
+            calls.append(protocol)
+            self.source['extra']['nested'].append('provider mutation')
+            return copy.deepcopy(self.binding)
+        self.service.binding_provider = provider
+        result = self.service.query_result(self.protocol)
+        self.assertEqual(calls, [self.protocol])
+        self.assertEqual(result['extra'], {'nested': ['retained']})
+        self.assertEqual(self.source['extra']['nested'], ['retained', 'provider mutation'])
+
+    def test_custom_binding_override_keeps_original_snapshot(self):
+        self.native_provider()
+        def binding(protocol):
+            self.source['extra']['nested'].append('override mutation')
+            return copy.deepcopy(self.binding)
+        self.service.binding = binding
+        self.assertEqual(self.service.query_result(self.protocol)['extra'], {'nested': ['retained']})
+
+    def test_missing_binding_preserves_unbound_output_and_interrupted_pin_error(self):
+        history = self.native_provider()
+        history.Binding.rows.clear()
+        result = self.service.query_result(self.protocol)
+        self.assertEqual(result, self.source)
+        result['epochs'][0]['uuid'] = 'changed'
+        self.assertEqual(self.source['epochs'][0]['uuid'], 'original-member')
+        self.service.protocols[self.protocol]['definition']['initial_revision_uuid'] = self.recipe['revision_uuid']
+        with self.assertRaisesRegex(ValueError, 'interrupted'):
+            self.service.query_result(self.protocol)
+
+    def test_frozen_binding_owns_input_and_returned_values_and_keeps_foreign_fallback(self):
+        calls = []
+        provider = _FrozenProtocolBinding(self.protocol, self.binding, lambda protocol: calls.append(protocol))
+        self.service.binding_provider = provider
+        self.binding['recipe']['predicate']['all'].append({'later': True})
+        result = self.service.query_result(self.protocol)
+        self.assertEqual(result['effective_query']['predicate'], {'all': []})
+        result['effective_query']['predicate']['all'].append({'output': True})
+        self.assertEqual(self.service.query_result(self.protocol)['effective_query']['predicate'], {'all': []})
+        foreign = str(uuid.uuid4())
+        self.assertIsNone(provider(foreign))
+        self.assertEqual(calls, [foreign])
+
+    def test_custom_provider_failure_is_not_hidden(self):
+        def provider(protocol): raise RuntimeError('reader failure')
+        self.service.binding_provider = provider
+        with self.assertRaisesRegex(RuntimeError, 'reader failure'):
+            self.service.query_result(self.protocol)
 
 
 class EventRelation:

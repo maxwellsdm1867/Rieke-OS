@@ -27,6 +27,32 @@ TREE_CACHE_MAX_SCOPES = 8
 EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
 
 
+class _FrozenProtocolBinding:
+    """Owned frozen read input; unrelated protocols retain the caller's policy."""
+    def __init__(self, protocol, binding, fallback):
+        self.protocol = protocol
+        self._binding = copy.deepcopy(binding)
+        self.fallback = fallback
+
+    def __call__(self, protocol):
+        return copy.deepcopy(self._binding) if protocol == self.protocol else self.fallback(protocol)
+
+
+def _readonly_binding_reader(service, protocol):
+    """Only known readers may run before the original-result snapshot."""
+    if getattr(service.binding, '__func__', None) is not WorkspaceService.binding:
+        return False
+    provider = getattr(service, 'binding_provider', None)
+    if type(provider) is _FrozenProtocolBinding:
+        return provider.protocol == protocol
+    from disco.decisions.explorer import ExplorerHistory
+    owner = getattr(provider, '__self__', None)
+    return (type(owner) is ExplorerHistory
+        and getattr(provider, '__func__', None) is ExplorerHistory.protocol_binding
+        and all(getattr(getattr(owner, name, None), '__func__', None) is getattr(ExplorerHistory, name)
+                for name in ('protocol_binding_header', 'get')))
+
+
 class _SourceDetails(Mapping):
     """Dispatch lazy details through the already validated owning source.
 
@@ -684,8 +710,19 @@ class WorkspaceService:
         with elapsed("workspace_service", "query_result"):
             self._ready()
             protocol_uuid = _uuid(protocol_uuid)
-            original = copy.deepcopy(self.protocols[protocol_uuid]['result'])
-            binding = self.binding(protocol_uuid)
+            source = self.protocols[protocol_uuid]['result']
+            if _readonly_binding_reader(self, protocol_uuid):
+                binding = self.binding(protocol_uuid)
+                # Bound membership replaces these fields in full. Copy only
+                # retained original fields, even when the frozen scope is tiny.
+                replaced = {'epochs', 'cells', 'source_revisions', 'effective_query',
+                            'effective_view', 'dataset_binding'} if binding is not None else set()
+                original = copy.deepcopy({key: value for key, value in source.items() if key not in replaced})
+            else:
+                # Custom providers may mutate source inputs or raise. Preserve
+                # their existing snapshot-before-provider behavior exactly.
+                original = copy.deepcopy(source)
+                binding = self.binding(protocol_uuid)
             if binding is None:
                 if self.protocols[protocol_uuid]['definition'].get('initial_revision_uuid'):
                     raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
