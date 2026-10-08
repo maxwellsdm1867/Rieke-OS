@@ -2770,7 +2770,9 @@
       ],
       "tests": {
         "python": [
-          "python/disco/workbench/tests/test_workspace_diff.py"
+          "python/disco/workbench/tests/test_workspace_diff.py",
+          "python/tests/test_workspace_workbench.py",
+          "python/tests/test_workspace_workbench_pending.py"
         ],
         "javascript": []
       }
