@@ -481,3 +481,18 @@ over `executableName` and `productName`: the current configuration produces
 `Disco.app`, with executable, internal name and displayed product name Disco. The launcher does not search
 installed applications or fall back to a differently named bundle. This path check is not packaged-content qualification;
 `verifyPackagedSource` and an explicitly coordinated package smoke remain required.
+
+### Combined Workbench first-page evidence
+
+The workflow readiness oracle accepts either the existing standalone epochs
+response or the combined prepare/context response's `bootstrap.page`. Combined
+pages must match the current action, prepared candidate and scope, project,
+protocol, binding, generation and initial-page shape. Both forms retain the exact
+ordered UUID/count oracle, rendered membership readiness and two RAF observations.
+Captured requests remain actual transport requests; the harness creates no
+synthetic epochs GET. The fixture and action inventory are unchanged.
+
+This oracle change alters the harness hash. Rerun retained baseline, previous
+version and candidate with the same updated harness before comparison; old
+receipts remain attributed to their original harness. Lightweight refusal checks
+remain in `node --test benchmarks/workflow/browser-readiness.test.mjs`.
