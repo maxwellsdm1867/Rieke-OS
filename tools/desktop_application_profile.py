@@ -141,7 +141,7 @@ def validate_release_source(root, trackedpaths):
 
 # Existing external parser/probe boundaries. Changing either file requires review
 # and an explicit rebind. This is static local closure, not external loader proof.
-EXTERNAL_LOADER_SOURCES = {'recording_workspace.py': '65889ef571aeabac432932634cae593e82023e7e77f9c8668a59da5354de4b98', 'workspace_bootstrap.py': 'cdf014e61d3754eac6ce700a3054c849b77af3f5dec55ca4a23be1f66f7d499a'}
+EXTERNAL_LOADER_SOURCES = {'recording_workspace.py': '98e2209d61eadffffa64b9bf7052b139d67bfaebd5daf873194db32e9400733a', 'workspace_bootstrap.py': 'cdf014e61d3754eac6ce700a3054c849b77af3f5dec55ca4a23be1f66f7d499a'}
 
 
 def validate_source_closure(root, profile):

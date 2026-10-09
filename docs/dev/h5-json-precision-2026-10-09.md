@@ -178,3 +178,12 @@ prototype and is not evidence for the final policy. Original file bytes and the
 installed application have not been changed. Final committed results belong to
 `policy-final-native-result.json` and separately retained benchmark receipts,
 when those runs complete; this document does not predeclare their outcomes.
+
+## Combined 0.1.10 packaging review
+
+The application profile source closure pins the entire importer file in addition
+to its two external loader sites. Packaging required rebinding that file hash
+after the numerical admission changes. The `load_parser` function AST was
+compared with GitHub-main base `5aaf0be` and is unchanged; both recognized loader
+operations and the fail-closed source check remain intact. This review updates
+the source binding without changing parser loading or parser identity.
