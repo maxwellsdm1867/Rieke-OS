@@ -62,6 +62,8 @@ budget defaults to 300 seconds; these are separate contracts.
 bind proof. `authorizeProjectURL()` requires current root health, a bound child
 record and root-mediated matching child proof before origin admission. Registry
 paths stay under userData (`desktop-service.json`, `backend/desktop-services.json`).
+Explicit-folder desktop opens read the selected manifests directly; managed-root
+opens retain full inventory. Neither route bypasses child authorization.
 PID, creation time, session, executable, UUID and canonical path serve different
 proof obligations. A ready HTTP port alone proves none of them.
 

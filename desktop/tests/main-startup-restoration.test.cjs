@@ -23,7 +23,7 @@ function fixture(options = {}) {
   let now = 0, quits = 0;
   const app = new EventEmitter();
   Object.assign(app, {enableSandbox() {}, setName() {}, setPath() {},
-    getPath: () => '/unused/disco-characterization', getVersion: () => '0.1.8',
+    getPath: () => options.userData || '/unused/disco-characterization', getVersion: () => options.appVersion || '0.1.8',
     isPackaged: false, requestSingleInstanceLock: () => true,
     whenReady: () => new Promise(() => {}), quit() { quits++; }});
   class Window extends EventEmitter {
@@ -55,7 +55,7 @@ function fixture(options = {}) {
       return allowed;
     },
   };
-  const startupSession = new StartupSession('/unused/disco-characterization', '0.1.8:view-v1');
+  const startupSession = new StartupSession(options.userData || '/unused/disco-characterization', 'view-v1');
   startupSession.value = {format: 'disco-startup-session', version: 1, compatibility: startupSession.compatibility,
     mode: 'resume', projectId, projectPath: '/owned/saved-project', view: 'cell-qc'};
   const actualRequire = require('node:module').createRequire(path.join(__dirname, '../main.cjs'));
@@ -74,14 +74,14 @@ function fixture(options = {}) {
     }, seed: {supervisor, startupSession}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../main.cjs'), 'utf8') + `
     supervisor=seed.supervisor; startupSession=seed.startupSession;
-    registerIPC(); globalThis.window=createWindow();
+    registerIPC(); globalThis.window=createWindow(); globalThis.sendUpdaterStatus=publishUpdateStatus;
     globalThis.startNativeRestore=()=>{supervisor.child={pid:100};supervisor.exited=false;coordinator={getStatus:()=>({state:"Current"})};return startScientificUI();};
   `, context);
   const window = context.window;
   window.webContents.mainFrame.url = launcher;
   return {supervisor, startupSession, record, calls, navigation, messages, window,
     get quits() { return quits; },
-    startNativeRestore:()=>context.startNativeRestore(),
+    startNativeRestore:()=>context.startNativeRestore(), publishUpdate:value=>context.sendUpdaterStatus(value),
     invoke(channel, payload) {
       return handlers.get('desktop:' + channel)({sender: window.webContents, senderFrame: window.webContents.mainFrame}, payload);
     }};
@@ -225,4 +225,59 @@ test('native startup failure without a retained child opens the chooser with vis
   assert.deepEqual(h.navigation,[launcher]);
   await assert.rejects(h.invoke('startup-session'),/Saved project unavailable/);
   assert.equal(await h.invoke('startup-session'),null);
+});
+
+
+test('late updater status cannot replace startup or recovery but still publishes while running',async()=>{
+  const h=fixture();
+  h.publishUpdate({state:'Current',message:'Current'});
+  assert.equal(h.messages.length,0);
+  await h.startNativeRestore();
+  h.publishUpdate({state:'Current',message:'Current'});
+  assert.equal(h.messages.at(-1).value.message,'Current');
+  h.supervisor.expectedHealth=()=>({pid:999});
+  await h.invoke('retry-startup');
+  assert.equal((await h.invoke('status')).state,'Recovery');
+  const count=h.messages.length;
+  h.publishUpdate({state:'Current',message:'Current'});
+  assert.equal(h.messages.length,count);
+  assert.equal(h.messages.at(-1).value.state,'Recovery');
+});
+
+test('registered draft handlers reuse compatible saved views across app updates with exact path isolation',async t=>{
+  const fsp=require('node:fs/promises'),os=require('node:os');
+  const {DraftStore}=require('../drafts/draft-store.cjs');
+  const {viewNamespace}=require('../startup/startup-session.cjs');
+  const userData=await fsp.mkdtemp(path.join(os.tmpdir(),'disco-views-'));
+  t.after(()=>fsp.rm(userData,{recursive:true,force:true}));
+  const scope=(projectPath,version)=>path.join(userData,'scoped-views',viewNamespace(projectId,projectPath,version));
+  const draft={format:'rieke-renderer-draft',version:1,projectId,value:{route:{page:'files',key:'saved-files'}}};
+  const old=new DraftStore(scope('/owned/saved-project','0.1.8:view-v1'));
+  await old.save({projectId,value:draft});
+  const h=fixture({userData,appVersion:'0.1.9'});
+  h.supervisor.origins.add(project);h.window.webContents.mainFrame.url=project;
+  const [first,second]=await Promise.all([h.invoke('load-draft',projectId),h.invoke('load-draft',projectId)]);
+  assert.deepEqual(plain(first),draft);assert.deepEqual(plain(second),draft);
+  const next={...draft,value:{route:{page:'stores',key:'latest'}}};
+  await h.invoke('save-draft',{projectId,value:next});
+  assert.deepEqual(await old.load(projectId),next);
+  const reopened=fixture({userData,appVersion:'0.1.10'});
+  reopened.supervisor.origins.add(project);reopened.window.webContents.mainFrame.url=project;
+  assert.deepEqual(plain(await reopened.invoke('load-draft',projectId)),next);
+  const copy=fixture({userData,record:{project_path:'/owned/copy'}});
+  copy.supervisor.origins.add(project);copy.window.webContents.mainFrame.url=project;
+  assert.equal(await copy.invoke('load-draft',projectId),null);
+});
+
+test('unreadable current saved view cannot silently fall back to a legacy view',async t=>{
+  const fsp=require('node:fs/promises'),os=require('node:os');
+  const {viewNamespace}=require('../startup/startup-session.cjs');
+  const userData=await fsp.mkdtemp(path.join(os.tmpdir(),'disco-views-corrupt-'));
+  t.after(()=>fsp.rm(userData,{recursive:true,force:true}));
+  const directory=path.join(userData,'scoped-views',viewNamespace(projectId,'/owned/saved-project','view-v1'),'drafts');
+  await fsp.mkdir(directory,{recursive:true});await fsp.writeFile(path.join(directory,projectId+'.json'),'{broken');
+  const h=fixture({userData});h.supervisor.origins.add(project);h.window.webContents.mainFrame.url=project;
+  assert.equal((await h.invoke('load-draft',projectId)).format,'rieke-draft-recovery');
+  await assert.rejects(h.invoke('save-draft',{projectId,value:{format:'rieke-renderer-draft',version:1,projectId,value:{}}}),/explicit recovery/);
+  assert.equal(await fsp.readFile(path.join(directory,projectId+'.json'),'utf8'),'{broken');
 });

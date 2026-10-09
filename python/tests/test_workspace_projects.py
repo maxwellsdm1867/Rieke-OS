@@ -33,6 +33,25 @@ class ProjectDiscoveryTests(unittest.TestCase):
             'connection': {'password': 'must never leave registry'}, 'database': 'fixture'}))
         return path
 
+    def test_desktop_exact_folder_open_does_not_scan_other_projects(self):
+        from workspace_desktop import desktop_open_project
+        from unittest.mock import Mock
+        identity = json.loads((self.current / 'project.json').read_text())['project_uuid']
+        services = Mock()
+        services.open.return_value = {'url': 'http://127.0.0.1:12345/'}
+        with patch('workspace_projects.list_projects', side_effect=AssertionError('unrelated project scan')), \
+                patch('workspace_projects.list_managed_projects', side_effect=AssertionError('managed scan')), \
+                patch('workspace_desktop._SERVICES', services):
+            self.assertEqual(desktop_open_project(self.current, identity, '/owned/parser'), services.open.return_value)
+            services.open.assert_called_once_with(str(self.current.resolve()), identity, '/owned/parser', 300)
+            with self.assertRaisesRegex(ValueError, 'available registered project'):
+                desktop_open_project(self.current, str(uuid.uuid4()), '/owned/parser')
+            services.open.assert_called_once()
+            (self.current / 'catalog.json').write_text('{}')
+            with self.assertRaisesRegex(ValueError, 'available registered project'):
+                desktop_open_project(self.current, identity, '/owned/parser')
+            services.open.assert_called_once()
+
     def test_stable_order_display_name_preferred_and_no_connection_contents_returned(self):
         other = self.make_project('other', 'Internal name', display_name='Spike Response Model')
         before = (self.current / 'project.json').stat().st_mtime_ns

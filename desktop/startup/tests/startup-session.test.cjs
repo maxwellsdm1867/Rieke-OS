@@ -6,3 +6,18 @@ test('corrupt/partial preference is preserved and does not restore',async()=>{co
 test('same UUID copied to another path and incompatible view versions have different namespaces',()=>{assert.notEqual(viewNamespace(uuid,'/a','v1'),viewNamespace(uuid,'/b','v1'));assert.notEqual(viewNamespace(uuid,'/a','v1'),viewNamespace(uuid,'/a','v2'));});
 
 test('transient quit cancellation does not change the next-launch preference',async()=>{const dir=await fs.mkdtemp(path.join(os.tmpdir(),'disco-session-'));try{const s=new StartupSession(dir,'v');await s.remember(uuid,'/owned/a','cell-qc');s.cancelled=true;await s.remember(uuid,'/owned/a','cell-qc');const next=new StartupSession(dir,'v');await next.load();assert.equal(next.claim().projectId,uuid);await next.choose();await next.remember(uuid,'/owned/a','cell-qc');assert.equal(next.value.mode,'chooser');}finally{await fs.rm(dir,{recursive:true});}});
+
+
+test('schema-compatible upgrade preserves resume or chooser without rewriting the saved bytes',async t=>{
+ const dir=await fs.mkdtemp(path.join(os.tmpdir(),'disco-session-upgrade-'));t.after(()=>fs.rm(dir,{recursive:true}));
+ for(const version of ['0.1.8:view-v1','0.1.9:view-v1'])for(const mode of ['resume','chooser']){
+  const old=new StartupSession(dir,version);await old.remember(uuid,'/owned/a','protocol');if(mode==='chooser')await old.choose();
+  const before=await fs.readFile(old.file,'utf8');
+  const next=new StartupSession(dir,'view-v1');await next.load();
+  assert.equal(next.value.mode,mode);assert.equal(next.value.compatibility,'view-v1');
+  assert.equal(next.claim()?.view??null,mode==='resume'?'protocol':null);
+  assert.equal(await fs.readFile(old.file,'utf8'),before);
+ }
+ const future=new StartupSession(dir,'view-v2');await future.remember(uuid,'/owned/a','protocol');
+ const current=new StartupSession(dir,'view-v1');await current.load();assert.equal(current.claim(),null);
+});

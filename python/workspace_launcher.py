@@ -99,7 +99,8 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         if not project['available']:
             raise ValueError('Project manifests are invalid: ' + project['unavailable_reason'])
         if current:
-            current_record = next(row for row in list_projects(current)['projects'] if row['current'])
+            from workspace_projects import _project_record
+            current_record = _project_record(current, current=True)
             if directory == current:
                 return jsonify(remember_project_result(directory, {'url': request.host_url, 'project_uuid': project['uuid']}, set_last=True))
             if project['uuid'] == current_record['uuid']:
@@ -133,7 +134,7 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
         if sum(project['uuid'] == project_uuid for project in inventory['projects']) > 1:
             raise ValueError('Several folders share this project identity. Select the exact project folder to open.')
         if current:
-            record = next((p for p in list_projects(current)['projects'] if p['current']), None)
+            record = next((p for p in inventory['projects'] if p['current']), None)
             if record and record['uuid'] == project_uuid:
                 return jsonify(remember_project_result(current, {'url': request.host_url, 'project_uuid': project_uuid}, set_last=True))
         project = next((project for project in inventory['projects']

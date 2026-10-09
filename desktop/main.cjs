@@ -12,16 +12,29 @@ const {validateSender, approvedReleaseURL, isOwnedURL, allowClipboardWrite} = re
 const {enclosingApp, installCompleteBundle} = require('./bootstrap.cjs');
 const {DraftBarrier} = require('./close/draft-barrier.cjs');
 const {DraftStore} = require('./drafts/draft-store.cjs');
-const {StartupSession,viewNamespace}=require('./startup/startup-session.cjs');
+const {StartupSession,viewNamespace,VIEW_COMPATIBILITY,compatibleViews}=require('./startup/startup-session.cjs');
 let startupSession,startupOpening,startupError;const scopedDraftStores=new Map();
-function scopedDraftStore(window,projectId){
+async function scopedDraftStore(window,projectId){
   const origin=new URL(window.webContents.getURL()).origin;
   if(projectId==='launcher'&&origin===supervisor.origin)return {store:draftStore};
   const record=supervisor.registry?.services?.find(record=>record.bound&&record.project_uuid===projectId&&`http://127.0.0.1:${record.port}`===origin);
   if(!record)throw Error('Saved view does not belong to this project window');
-  const key=viewNamespace(projectId,record.project_path,app.getVersion()+':view-v1');
-  if(!scopedDraftStores.has(key))scopedDraftStores.set(key,new DraftStore(path.join(app.getPath('userData'),'scoped-views',key)));
-  return {store:scopedDraftStores.get(key),record};
+  const key=viewNamespace(projectId,record.project_path,VIEW_COMPATIBILITY);
+  if(!scopedDraftStores.has(key))scopedDraftStores.set(key,(async()=>{
+    const views=path.join(app.getPath('userData'),'scoped-views');
+    let selected=path.join(views,key);
+    for(const compatibility of compatibleViews(VIEW_COMPATIBILITY)){
+      const directory=path.join(views,viewNamespace(projectId,record.project_path,compatibility));
+      try{
+        await require('node:fs/promises').lstat(path.join(directory,'drafts',`${projectId}.json`));
+        selected=directory;break;
+      }catch(error){if(error.code!=='ENOENT'){selected=directory;break;}}
+    }
+    // Reuse the exact legacy scope, retaining unreadable-state recovery and
+    // original bytes. Never fall through an existing but corrupt saved view.
+    return new DraftStore(selected);
+  })());
+  return {store:await scopedDraftStores.get(key),record};
 }
 const {iconPath,applyAppIcon,savedAppIcon}=require('./app-icon.cjs');
 let appIcon='disco';
@@ -100,6 +113,7 @@ function broadcast(value) {
   for (const window of windows) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
 }
 function status() { return previewStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus); }
+function publishUpdateStatus(value){if(lifecycleStatus.state==='Running')broadcast(value);}
 function recovery(message, detail = '') {
   lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Disco recovery', message, detail}; broadcast(lifecycleStatus);
   if (scientificWindows.size) viewUnavailable = true;
@@ -267,11 +281,11 @@ async function startScientificUI() {
       const createUpdateCoordinator = distribution.channel === 'unsigned-testing'
         ? require('./updates/testing-updater.cjs').createTestingUpdateCoordinator
         : require('./updates/updater.cjs').createUpdateCoordinator;
-      coordinator = createUpdateCoordinator({app, publishStatus: broadcast, prepareQuit,
+      coordinator = createUpdateCoordinator({app, publishStatus: publishUpdateStatus, prepareQuit,
         authorizeQuit: () => { quitAuthorized = true; }, revokeQuit: () => { quitAuthorized = false; },
         onInstallationFailure: () => { scientificWindows.clear(); recovery('Native update installation failed. Restart the installed backend or restore the verified previous app.'); },
         manifest: supervisor.manifest, distribution});
-      coordinator.start().catch(() => broadcast({state:'Deferred',channel:distribution.channel,message:'Update check unavailable. The installed app remains usable.'}));
+      coordinator.start().catch(() => publishUpdateStatus({state:'Deferred',channel:distribution.channel,message:'Update check unavailable. The installed app remains usable.'}));
     }
     // Resolve the remembered project before the first application document.
     // The existing authenticated open/authorization/cleanup path retains ownership.
@@ -353,15 +367,15 @@ function registerIPC() {
     return draftBarrier.acknowledge(payload, window);
   });
   handle('desktop:save-draft', async (payload,window) => {
-    const {store,record}=scopedDraftStore(window,payload?.projectId);
+    const {store,record}=await scopedDraftStore(window,payload?.projectId);
     const result=await store.save(payload);
     if(record)await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);
     return result;
   });
   handle('desktop:load-draft', async (projectId,window) => {
-    return scopedDraftStore(window,projectId).store.load(projectId);
+    return (await scopedDraftStore(window,projectId)).store.load(projectId);
   });
-  handle('desktop:reset-draft', (projectId,window) => scopedDraftStore(window,projectId).store.reset(projectId));
+  handle('desktop:reset-draft', async (projectId,window) => (await scopedDraftStore(window,projectId)).store.reset(projectId));
   noPayload('desktop:choose-project-folder', async window => {
     const result = await dialog.showOpenDialog(window, {properties: ['openDirectory', 'createDirectory'], title: 'Choose project folder'});
     return result.canceled ? null : result.filePaths[0];
@@ -394,7 +408,7 @@ else {
     if(!bootstrap)backendStartup=supervisor.start().then(origin=>({origin}),error=>({error}));
     appIcon=await savedAppIcon();applyAppIcon(app,windows,appIcon);
     draftStore = new DraftStore(app.getPath('userData'));
-    startupSession=new StartupSession(app.getPath('userData'),app.getVersion()+':view-v1');
+    startupSession=new StartupSession(app.getPath('userData'),VIEW_COMPATIBILITY);
     await startupSession.load();
     if(startupSession.value?.mode==='resume')lifecycleStatus={state:'Starting',title:'Restoring your workspace',message:'Reopening your saved '+startupSession.value.view+' view. Checking the project before loading scientific data.'};
     configureSession(); registerIPC(); createWindow();
