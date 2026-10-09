@@ -294,15 +294,15 @@ test('lost preparation response requires explicit retry with identical body and 
 });
 
 test('StrictMode preserves an uncertain acceptance body before preparing newer authority',async()=>{
- const old=prepared('old'),acceptBodies=[];let prepares=0;
+ const old=prepared('old'),acceptBodies=[],receiptReads=[];let prepares=0;
  const preview={expected_candidate_scope_revision:old.candidate_scope_revision,expected_draft_version:1,mode:'selected',preview_sha256:'sealed-preview',expected_binding_version:1,expected_query_revision:'main-old',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:1,next_epoch_count:2,accepted_cell_count:1};
- const view=await harness(async(path,options={})=>{const endpoint=String(path).replace(/^\/api/,'');if(endpoint===old.root+'/accept'){acceptBodies.push(JSON.parse(options.body));return response({operation_uuid:'same-operation',candidate_revision_uuid:old.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2}});}if(endpoint===base+'/prepare'){prepares++;return response(prepared('new'));}return contextResponse(endpoint);});
+ const view=await harness(async(path,options={})=>{const endpoint=String(path).replace(/^\/api/,'');if(endpoint===base+'/receipts/same-operation'){receiptReads.push(endpoint);return response({operation_uuid:'same-operation',candidate_revision_uuid:old.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2}});}if(endpoint===old.root+'/accept'){acceptBodies.push(JSON.parse(options.body));return response({operation_uuid:'same-operation',candidate_revision_uuid:old.candidate_revision_uuid,event_uuid:'accepted',binding:{revision_uuid:'main-new',version:2}});}if(endpoint===base+'/prepare'){prepares++;return response(prepared('new'));}return contextResponse(endpoint);});
  try{
   await view.render({queue:queue('new'),session:{prepared:old,drafts:{[old.candidate_revision_uuid]:{unconfirmed:true,operation:'same-operation',preview}}}});
   assert.equal(prepares,0);assert.deepEqual(view.saved.drafts[old.candidate_revision_uuid].preview,preview);
   const retry=[...view.container.querySelectorAll('button')].find(button=>button.textContent==='Recover acceptance receipt');assert.ok(retry);
   await act(async()=>retry.dispatchEvent(new window.MouseEvent('click',{bubbles:true})));
-  assert.equal(acceptBodies.length,1);assert.equal(acceptBodies[0].operation_uuid,'same-operation');for(const [key,value] of Object.entries(preview))if(key.startsWith('expected_')||key==='mode'||key==='preview_sha256')assert.equal(acceptBodies[0][key],value);
+  assert.equal(acceptBodies.length,0);assert.equal(receiptReads.length,1);
   assert.equal(prepares,1);assert.equal(view.saved.prepared.queue_revision,'new');
  }finally{await view.close();}
 });

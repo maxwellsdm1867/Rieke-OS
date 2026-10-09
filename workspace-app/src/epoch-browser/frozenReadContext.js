@@ -5,6 +5,7 @@ export function frozenReadQuery(context,query=''){
  if(context){
   if(typeof context.root!=='string'||!/^\/protocols\/[^/]+\/workbench\/candidates\/[^/?]+$/.test(context.root)||typeof context.candidate_scope_revision!=='string'||!context.candidate_scope_revision)throw Error('Frozen candidate context is unavailable. Refresh the candidate.');
   params.set('candidate_scope_revision',context.candidate_scope_revision);
+  if(context.selection_token)params.set('selection_token',context.selection_token);
  }
  return params.toString();
 }

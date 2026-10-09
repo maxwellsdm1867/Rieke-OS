@@ -113,6 +113,8 @@ test('legacy additive cell selection keeps its Select action unless binary state
   assert.equal(h.root.findAllByProps({className:'incoming-explicit-select'}).length,0);
   assert.equal(h.root.findByProps({role:'switch'}).props['aria-checked'],false);
   assert.equal(h.root.findByProps({role:'switch'}).findAllByType('span').at(-1).children.join(''),'Select');
+  await h.render(TreeGroupTagButton,{...props,selectionOn:false,count:1691});assert.equal(h.root.findByProps({role:'switch'}).props.disabled,true);
+  await h.render(TreeGroupTagButton,{...props,selectionOn:false,count:1691,selectionLimit:Infinity});assert.equal(h.root.findByProps({role:'switch'}).props.disabled,false);assert.doesNotMatch(h.root.findByProps({role:'switch'}).props.title,/1,000/);
   await h.render(TreeGroupTagButton,{...props,selectionOn:true});
   assert.equal(h.root.findByProps({role:'switch'}).findAllByType('span').at(-1).children.join(''),'Deselect');
  }finally{await h.close();}

@@ -1,3 +1,4 @@
+import {createWorkbenchSelection} from '../workbenchAuthority.js';
 import {useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,Shapes,RefreshCw} from 'lucide-react';
 import {api,number} from '../../api.js';
@@ -21,9 +22,10 @@ export default function IncomingSelectionSummary({projectId,protocolId,readConte
     if(paused||!enabled||!ids?.length)return;
     const controller=new AbortController();
     setState({identity,loading:true});
-    Promise.resolve().then(()=>{
+    Promise.resolve().then(async()=>{
       frozenReadQuery(readContext);
-      return request(`${readContext.root}/selection-summary`,{method:'POST',signal:controller.signal,body:{candidate_scope_revision:readContext.candidate_scope_revision,epoch_uuids:ids}});
+      const manifest=ids.length>1000&&readContext.selection_manifests===true?await createWorkbenchSelection({root:readContext.root,context:{...readContext,draft:{draft_version:0}},ids,signal:controller.signal},request):null;
+      return request(`${readContext.root}/selection-summary`,{method:'POST',signal:controller.signal,body:{candidate_scope_revision:readContext.candidate_scope_revision,...(manifest?{selection_token:manifest.selection_token}:{epoch_uuids:ids})}});
     }).then(value=>{
       if(controller.signal.aborted||current.current!==identity)return;
       setState({identity,data:validateSelectionSummary(value,ids,readContext)});

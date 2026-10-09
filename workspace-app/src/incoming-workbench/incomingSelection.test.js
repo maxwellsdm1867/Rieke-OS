@@ -50,3 +50,19 @@ test('capable selection refuses partial, reordered, duplicated, stale and cancel
  await assert.rejects(loadIncomingSelection({source:capable,cells,isCurrent:()=>current,request:async()=>{current=false;return selection();}}),{name:'AbortError'});
  await assert.rejects(loadIncomingSelection({source:capable,cells:[{cell_uuid:'a',epochs:1001}],request:async()=>assert.fail('must refuse before request')}),/1,000/);
 });
+
+test('Select all includes a large cell and over 250 cells with exact global order and bounded requests',async()=>{
+ const chosen=Array.from({length:503},(_,i)=>({cell_uuid:`cell-${i}`,epochs:i===0?1691:1})),expected=chosen.flatMap(cell=>Array.from({length:cell.epochs},(_,i)=>`${cell.cell_uuid}-${i}`)),requests=[];
+ const ids=await loadIncomingSelection({source:{...capable,readContext:{...capable.readContext,selection_manifests:true}},cells:chosen,request:async(path,{body})=>{
+  requests.push(body);assert.ok(body.cells.length<=250);
+  const returned=body.cells.map(cell=>({...cell,epoch_uuids:Array.from({length:cell.epochs},(_,i)=>`${cell.cell_uuid}-${i}`)}));
+  return {candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:2,cells:returned,epoch_uuids:returned.flatMap(cell=>cell.epoch_uuids),count:returned.reduce((sum,cell)=>sum+cell.epochs,0)};
+ }});
+ assert.deepEqual(ids,expected);assert.equal(requests.length,3);
+});
+
+test('Select all inside View selected sends its token separately from scientific filters',async()=>{
+ const selectedSource={...capable,query:'tag=chosen&candidate_scope_revision=scope&selection_token=sealed',readContext:{...capable.readContext,selection_manifests:true,selection_token:'sealed'}};
+ const ids=await loadIncomingSelection({source:selectedSource,cells,request:async(path,{body})=>{assert.equal(body.selection_token,'sealed');assert.deepEqual(body.filters,{tag:'chosen'});return selection();}});
+ assert.deepEqual(ids,selection().epoch_uuids);
+});

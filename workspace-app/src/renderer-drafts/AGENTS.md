@@ -116,3 +116,9 @@ See the [benchmark registry](../../../benchmarks/registry.json) and
 [benchmark guide](../../../docs/dev/benchmarks.md). Queue/bridge/recovery latency,
 retained memory/timers, startup/build/disk/backup/shutdown and native quit remain
 unmeasured. Source/frontend checks establish no native durability or performance.
+
+`restoreRecovery` is an optional load callback, distinct from presentation
+`restore`. After validating the saved project's envelope and current load lifetime,
+it hydrates pending operation identity even if navigation superseded the old view.
+It never submits a mutation. A malformed recovery identity leaves draft recovery
+unresolved and prevents autosave from overwriting that snapshot.

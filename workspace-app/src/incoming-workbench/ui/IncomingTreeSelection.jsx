@@ -8,7 +8,7 @@ import {incomingTreeSelectionScope,incomingBranchOn,incomingBranchCommand} from 
 export function IncomingEpochSelect({epoch,selected=[],onSelect,onToggle,disabled=false}){
   if(!onSelect)return null;
   const checked=selected.includes(epoch.epoch_uuid);
-  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={`${checked?'Deselect':'Select'} this epoch${onToggle?'; Shift-click to select or deselect a range':''}`} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();if(onToggle)onToggle(event);else onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
+  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={`${checked?'Deselect':'Select'} this epoch${onToggle?'; Shift-click to select or deselect a range':''}`} disabled={disabled} onClick={event=>{event.stopPropagation();if(onToggle)onToggle(event);else onSelect(toggleEpochSelection(selected,epoch.epoch_uuid,Infinity));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
 }
 export function useIncomingTreeSelection(props,page=null){
   const request=useWorkspaceRequest(api);
@@ -51,7 +51,7 @@ export function useIncomingTreeSelection(props,page=null){
       if(owner.current!==q||!q.live||controller.signal.aborted)return;
       if(selection()!==q.expectedSelection||intentRef.current!==q.expectedIntent)throw Error('Selection changed while loading. Switch this group again.');
       const remove=new Set(ids),selected=current.current.selectedEpochs||[];
-      const next=command.on?mergeEpochSelection(selected,ids):selected.filter(id=>!remove.has(id));
+      const next=command.on?mergeEpochSelection(selected,ids,props.readContext?.selection_manifests?Infinity:1000):selected.filter(id=>!remove.has(id));
       const nextIntent=incomingBranchCommand(q.expectedIntent,scopeKey,command.revision,command.path,command.on);
       q.awaiting={beforeSelection:q.expectedSelection,beforeIntent:q.expectedIntent};q.expectedSelection=JSON.stringify(next);q.expectedIntent=nextIntent;
       q.commands.shift();q.active=null;
@@ -78,7 +78,7 @@ export function useIncomingTreeSelection(props,page=null){
     event?.preventDefault();event?.stopPropagation();
     const q=owner.current;
     if(!props.readContext||props.actionsDisabled||props.active===false||!q?.live||q.lifetime!==lifetime)return Promise.resolve();
-    if(!Number.isSafeInteger(item.count)||item.count<1||item.count>1000){cancel(q,'Switch at most 1,000 epochs at a time. Filter this view or choose a smaller branch.');return Promise.resolve();}
+    if(!Number.isSafeInteger(item.count)||item.count<1||!props.readContext?.selection_manifests&&item.count>1000){cancel(q,'The complete branch count is unavailable. Refresh this view.');return Promise.resolve();}
     if(q.commands.length>=32){cancel(q,'Too many pending selection changes. Wait for the current view and select again.');return Promise.resolve();}
     const path=[...(item.path||[])],nextOn=!incomingBranchOn(q.projected,scopeKey,branchPage.revision,path);
     q.projected=incomingBranchCommand(q.projected,scopeKey,branchPage.revision,path,nextOn);

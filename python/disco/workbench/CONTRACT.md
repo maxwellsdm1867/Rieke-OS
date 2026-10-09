@@ -31,7 +31,12 @@ epochs or distinct cells, never interchangeable totals.
 `ProtocolWorkbench` owns versioned prepare/context/draft/preview/accept choreography.
 Draft batches are bounded to 250 boolean decisions. Selected preview uses saved
 selected+reviewed, nonexcluded eligible pending members; all mode uses eligible
-pending minus explicit exclusion. Additive acceptance preserves all previous main
+pending minus explicit exclusion. Explicit `source` preview/accept mode resolves only
+the held recording’s exact frozen pending UUIDs on the server, without changing the
+draft selection mode or requiring a bounded client selection. It retains complete
+exclusions even when public draft detail is truncated. The source SHA is sealed in
+the preview, acceptance request hash, receipt and additive audit provenance.
+Additive acceptance preserves all previous main
 members and their curation. Opening, highlighting, deferring, hashing or exporting
 never grants scientific approval. Actor identity and expected authority fences stay
 explicit at each mutation.
@@ -262,3 +267,23 @@ compare bundled context/page with independent fresh reads and reject closing cha
 ## Linked internal export extension
 
 The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.
+
+
+## Exact selection manifests
+
+Current contexts advertise `selection_manifests`. The read-only manifest endpoint
+accepts up to 1,000 canonical UUIDs per 64KiB request with an upload UUID, offset,
+exact total and current candidate scope. It rejects missing/duplicate/changed
+batches, verifies pending membership and seals only the complete ordered set.
+Manifests are process-local, actor/project/protocol/candidate/scope bound, expire
+after 15 minutes without use and use a 32-entry eviction budget. Expiration or
+eviction refuses rather than widening a selection. No draft or consent is created.
+
+A selection token is a separate read option, never a typed metadata predicate.
+Frozen list/tree/summary reads resolve it against current authority and constrain
+the frozen recipe membership. Standard filters and closing attestation remain.
+The selected-review command checks scope, version, availability, exclusions and
+explicit review consent, then atomically replaces selected draft membership using
+complete server decisions. Main publication still uses the existing preview,
+operation UUID and durable acceptance receipt. Main tagging/undo bounds remain;
+Workbench tree selection admits only the exact current pending cardinality.

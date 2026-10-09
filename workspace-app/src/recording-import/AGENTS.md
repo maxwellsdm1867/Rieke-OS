@@ -71,11 +71,12 @@ only in the coordinated test lane. Native/packaged behavior, actual ingestion,
 backend durability and performance remain separately qualified; these examples
 use owned synthetic values and do not authorize deferred/native fixtures.
 
-`ui/InspectImportButton.jsx` binds the imported-data card's normal click to
-inspection of the displayed frozen candidate. Holding for one second (pointer,
-Space or Enter) issues a single ephemeral source-specific merge request. Early
-release keeps inspection; leave/cancel/blur/Escape, changed identity or disabled
-state, and unmount retire the timer. The trailing click never also inspects after
-a completed hold. This gesture is on the post-import recording card; choosing H5
-files and the existing upload queue remain separate.
+`ui/InspectImportButton.jsx` renders separate inspection and merge controls.
+Inspect in Workbench is the primary ordinary button for the displayed frozen
+candidate. Only the separate Hold to merge button accepts a one-second pointer,
+Space or Enter hold and issues a single ephemeral source-specific merge request.
+Early release performs no action; leave/cancel/blur/Escape, changed identity or
+disabled state, and unmount retire the timer. The trailing click has no action.
+The hold hint stays beneath its merge button. These controls are on the post-import
+recording card; choosing H5 files and the existing upload queue remain separate.
 `inspectImportButton.test.js` checks the threshold and cancellation lifetime.

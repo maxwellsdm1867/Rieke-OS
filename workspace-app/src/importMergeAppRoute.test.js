@@ -16,3 +16,24 @@ for(const entry of ['Main match card','import page'])test(`actual App ${entry} w
   assert.ok(h.fixture.requests.every(r=>!r.path.includes('apply-to-protocol')&&!r.path.endsWith('/accept')));
  }finally{await h.close();}
 });
+
+test('held import source merges without entering Workbench and opens Overview only after receipt',async()=>{
+ const h=await createWorkflowHarness();h.fixture.route={page:'import',key:'direct-source'};
+ let release,started;const accepted=new Promise(resolve=>{started=resolve});
+ h.fixture.respond=async(url,options,fallback)=>{
+  const path=url.pathname;
+  if(path.endsWith('/workbench/candidates/original/context'))return {candidate_revision_uuid:'original',actor:'author',source_additive_accept:true,candidate_scope_revision:'scope',draft:{draft_version:0,decisions_truncated:true},protocol:{definition:{protocol_uuid:'protocol-A'}}};
+  if(path.endsWith('/workbench/candidates/original/preview'))return {mode:'source',source_sha256:'source',candidate_scope_revision:'scope',expected_draft_version:0,preview_sha256:'preview',expected_binding_version:1,expected_query_revision:'query',selected_epoch_count:1691,accepted_epoch_count:1691,already_present_epoch_count:0,retained_epoch_count:540,next_epoch_count:2231,accepted_cell_count:3};
+  if(path.endsWith('/workbench/candidates/original/accept')){const body=JSON.parse(options.body);started();await new Promise(resolve=>{release=resolve});return {...body,candidate_scope_revision:'scope',protocol_uuid:'protocol-A',candidate_revision_uuid:'original',actor:'author',binding:{version:2,revision_uuid:'main'},event_uuid:'event'};}
+  return fallback();
+ };
+ try{
+  await h.mount();await h.waitFor(()=>h.root.findAllByType('import-suggestions').length>0);
+  let pending;await h.act(()=>{pending=h.root.findByType('import-suggestions').props.onMerge('protocol-A',{kind:'merge_source',candidate_revision_uuid:'original',source_sha256:'source'});});
+  await accepted;assert.equal(h.fixture.route.page,'import');assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
+  await h.act(async()=>{release();await pending;});await h.settle(15);
+  assert.equal(h.root.findAllByType('import-suggestions').length,0);assert.equal(h.root.findAllByProps({'aria-label':'Overview'})[0].props['aria-selected'],true);
+  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
+  assert.ok(h.fixture.requests.every(r=>!r.path.endsWith('/draft')),'direct merge does not mutate a review draft');
+ }finally{release?.();await h.close();}
+});

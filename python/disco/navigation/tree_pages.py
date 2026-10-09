@@ -602,11 +602,11 @@ class TreePages:
                 parents.append(read(request))
             return target, parents
 
-    def selection(self, body, expected_count):
+    def selection(self, body, expected_count, *, max_count=1000):
         """Exact bounded DFS membership without rendering descendant pages."""
         with elapsed("disco.navigation.tree_pages", "selection"):
             if (not isinstance(body, dict) or set(body) - {'protocol_uuid', 'predicate', 'filters', 'splits', 'path', 'revision'}
-                    or type(expected_count) is not int or not 1 <= expected_count <= 1000):
+                    or type(expected_count) is not int or not 1 <= expected_count <= max_count):
                 raise ValueError('Tree selection requires 1–1,000 epochs and a bounded scope')
             path = body.get('path', [])
             validate_tree_path(path)

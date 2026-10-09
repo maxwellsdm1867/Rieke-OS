@@ -78,10 +78,10 @@ export default function PagedTree(props){
         if(JSON.stringify(selection(callbacks.current).ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
         const current=selection(callbacks.current);
         const remove=explicit&&selection(props).ids.includes(uuid)?new Set(ids):null;
-        current.set?.(remove?current.ids.filter(id=>!remove.has(id)):mergeEpochSelection(current.ids,ids));
+        current.set?.(remove?current.ids.filter(id=>!remove.has(id)):mergeEpochSelection(current.ids,ids,props.readContext?.selection_manifests?Infinity:1000));
       }else{
         anchor.current=target;
-        if(explicit||event.metaKey||event.ctrlKey)selection(props).set(toggleEpochSelection(selection(props).ids,uuid));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
+        if(explicit||event.metaKey||event.ctrlKey)selection(props).set(toggleEpochSelection(selection(props).ids,uuid,props.readContext?.selection_manifests?Infinity:1000));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }

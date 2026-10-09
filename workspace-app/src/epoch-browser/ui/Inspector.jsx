@@ -1,3 +1,4 @@
+import {createWorkbenchSelection} from '../../incoming-workbench/workbenchAuthority.js';
 import {EpochHighlightTools} from './EpochBrowserChrome.jsx';
 import {mergeEpochSelection} from '../../epochSelection.js';
 import {incomingTreeSelectionScope} from '../../incoming-workbench/incomingSelection.js';
@@ -41,11 +42,17 @@ import Trace from '../../traces/ui/TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext:incomingReadContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
-  const [selectedView,setSelectedView]=useState(null);
+  const [savedSelectedView,setSelectedView]=useState(null),[viewLoading,setViewLoading]=useState(null);
+  const viewKey=JSON.stringify([projectId,id,incomingReadContext,baseFilters,draftSelection?.selected,readPaused]);
+  const viewOwner=useMemo(()=>({key:viewKey}),[viewKey]),activeViewOwner=useRef(null),viewRequest=useRef(null);
+  useLayoutEffect(()=>{activeViewOwner.current=viewOwner;return()=>{activeViewOwner.current=null;viewRequest.current?.abort();};},[viewOwner]);
+  const selectedView=savedSelectedView?.owner===viewOwner?savedSelectedView:null;
+  const viewWorking=viewLoading===viewOwner;
+  const readContext=selectedView?.token?{...incomingReadContext,selection_token:selectedView.token}:incomingReadContext;
   const filters=selectedView?.filters||baseFilters;
   const selectionScope=JSON.stringify([readContext?.cohort_key||readContext?.root,id,baseFilters,cellScope]);
   const requestedCellFocus=filters?.cell_uuid&&filters.cell_uuid!==cellScope?null:(cellScope || null);
@@ -93,7 +100,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const readRoot=readContext?.root||`/protocols/${id}`;
   const presentationScope=frozenPresentationScope(readContext,id,protocolSearch);
   const preserveCandidateView=typeof readContext?.cohort_key==='string'&&!!readContext.cohort_key;
-  function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);if(selectedView)setSelectedView(next.length?{filters:selectedViewFilters(baseFilters,next)}:null);}
+  function selectTargets(value){const next=typeof value==='function'?value(targets):value;if(!incomingReadContext?.selection_manifests&&next.length>1000){setError('Select at most 1000 epochs.');return;}setTargets(next);onSelectionChange?.([...next]);if(selectedView)setSelectedView(null);}
   const annotationState=useAnnotationReceipts({revision,structureRevision,change:annotationChange,origin:annotationOrigin,scope:JSON.stringify([readRoot,id,protocolSearch,focusCell]),filters});
   const pageRevision=annotationState.authorityRevision;
   const treeIntentScope=incomingTreeSelectionScope({projectId,protocolId:id,readContext,filters,splits,revision:pageRevision});
@@ -109,7 +116,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   }
   function applyHighlighted(selected){
     if(!readContext||!cellsReady||busy||draftSelection?.disabled||readPaused||committedHighlightScope.current!==highlightOwner||!highlightedEpochs.length)return;
-    try{const ids=new Set(highlightedEpochs);selectOverviewTargets(selected?mergeEpochSelection(targets,highlightedEpochs):targets.filter(uuid=>!ids.has(uuid)));}
+    try{const ids=new Set(highlightedEpochs);selectOverviewTargets(selected?mergeEpochSelection(targets,highlightedEpochs,readContext?.selection_manifests?Infinity:1000):targets.filter(uuid=>!ids.has(uuid)));}
     catch(error){setError(error.message);}
   }
 
@@ -234,7 +241,18 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   useEffect(()=>{if(previousScope.current.key===scopeIdentity)return;const requested=previousScope.current.id!==id||previousScope.current.initialEpochUuid!==initialEpochUuid;previousScope.current={key:scopeIdentity,id,initialEpochUuid};setCellTagRequest(null);navigationIntent.current=null;anchorSteps.current=0;setFocusCell(requestedCellFocus);setOffset(0);setFocused(requested?initialEpochUuid:null);if(!readContext)selectTargets([]);setPendingNavigation(null);setDesignNavigation(null);},[scopeIdentity,id,requestedCellFocus,protocolSearch,initialEpochUuid]);
   const previousSelectionScope=useRef(selectionScope);
   useEffect(()=>{if(previousSelectionScope.current===selectionScope)return;previousSelectionScope.current=selectionScope;if(readContext){selectTargets([]);setSelectedView(null);}},[selectionScope]);
-  function toggleSelectedView(){if(selectedView){setSelectedView(null);return;}try{setSelectedView({filters:selectedViewFilters(baseFilters,targets)});}catch(error){setError(error.message);}}
+  async function toggleSelectedView(){
+    if(selectedView){setSelectedView(null);return;}
+    if(viewWorking||readPaused||draftSelection?.disabled)return;
+    const owner=viewOwner,controller=new AbortController();viewRequest.current=controller;setViewLoading(owner);
+    try{
+      if(incomingReadContext?.selection_manifests){
+        const manifest=await createWorkbenchSelection({root:incomingReadContext.root,context:{...incomingReadContext,draft:{draft_version:0}},ids:targets,signal:controller.signal},api);
+        if(activeViewOwner.current===owner&&!controller.signal.aborted)setSelectedView({owner,token:manifest.selection_token});
+      }else if(activeViewOwner.current===owner)setSelectedView({owner,filters:selectedViewFilters(baseFilters,targets)});
+    }catch(error){if(activeViewOwner.current===owner&&!controller.signal.aborted)setError(error.message);}
+    finally{if(activeViewOwner.current===owner)setViewLoading(null);}
+  }
   useEffect(()=>{onSessionChange?.({focused,focusCell,offset,treeOpen,treeMode,designMode,designPath,designNavigation,listNavigation,annotationDrafts,curationTagDraft:tag});},[focused,focusCell,offset,treeOpen,treeMode,designMode,designPath,designNavigation,listNavigation,annotationDrafts,tag,onSessionChange]);
 
   function clearCellFocus(){setListNavigationRequest(value=>value+1);navigationIntent.current=null;anchorSteps.current=0;setFocusCell(null);setOffset(0);if(!readContext)selectTargets([]);setPendingNavigation(null);}
@@ -389,6 +407,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const highlightTools=(locked=false)=>readContext&&<EpochHighlightTools count={highlightedEpochs.length} allSelected={highlightedEpochs.length>0&&highlightedEpochs.every(uuid=>highlightedSelected.has(uuid))} disabled={locked||busy||readPaused||!!draftSelection?.disabled||!cellsReady} onSelect={()=>applyHighlighted(true)} onDeselect={()=>applyHighlighted(false)}/>;
   return <EpochViewer hideFilterControl viewFilters={filters} onViewFilters={onFilterChange} filterRevision={revision} filterDisabled={busy} className={designMode?'tree-design':'epoch-inspector-mode'} ariaLabel={designMode?'Tree overview workspace':'Epoch inspection workspace. Tab next epoch, Shift+Tab previous epoch; Up/Down or W/S also navigate.'} onKeyDown={epochKeys}
     toolbar={{portalTarget:toolbarTarget,treeControlsInPane:true,designMode:designMode,onBrowse:()=>{setDesignMode(false);setTreeMode(false);setTreeOpen(true);},onDesign:openTreeDesign,onTags:openTagsForSelection,metadataOpen:metadataOpen,onToggleMetadata:()=>toggleMetadata(!metadataOpen),actions:[
+        !!onReviewDetails&&{label:'Review details',run:onReviewDetails},
         {label:treeOpen?(designMode?'Hide tree editor':'Hide epoch list'):(designMode?'Show tree editor':'Show epoch list'),icon:GitBranch,run:()=>setTreeOpen(value=>!value)},
         !readContext&&!designMode&&{label:'Import mask file…',icon:FileJson,run:()=>(!readContext&&setMasksOpen(true)),disabled:busy},
         !readContext&&!designMode&&onImport&&{label:'Add data store',icon:Upload,run:onImport,disabled:busy},
@@ -397,7 +416,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
       {focusCell&&<button className="inspection-focus-chip" disabled={designBlocked||busy} onClick={clearCellFocus} title="Clear cell focus and navigate all matching cells">{datedCellLabel(viewCells?.find(cell=>cell.cell_uuid===focusCell)||focusedEpoch||{},true)} <X size={12}/></button>}
     </>} before={<>
     {readContext&&treeSelectionFeedback&&<p className="incoming-tree-feedback" role="alert">{treeSelectionFeedback}</p>}
-    {readContext&&draftSelection&&draftSelectionTarget&&createPortal(<IncomingSelectionTools {...draftSelection} source={{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision}} cells={viewCells} freshCells={freshCells} filtered={Object.keys(filters||{}).length>0} targets={targets} cell={cellTagRequest} epoch={focusedEpoch} focusUuid={focused} onSelect={selectOverviewTargets} viewSelected={!!selectedView} onViewSelected={toggleSelectedView} disabled={draftSelection.disabled||busy||!cellsReady}>{highlightTools}</IncomingSelectionTools>,draftSelectionTarget)}
+    {readContext&&draftSelection&&draftSelectionTarget&&createPortal(<IncomingSelectionTools {...draftSelection} source={{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision}} cells={viewCells} freshCells={freshCells} filtered={Object.keys(filters||{}).length>0} targets={targets} cell={cellTagRequest} epoch={focusedEpoch} focusUuid={focused} onSelect={selectOverviewTargets} viewSelected={!!selectedView} onViewSelected={toggleSelectedView} disabled={draftSelection.disabled||busy||viewWorking||!cellsReady}>{highlightTools}</IncomingSelectionTools>,draftSelectionTarget)}
     <SourceEligibilityNotice eligibility={protocol.source_eligibility} onStores={onStores}/>
     {!designMode&&<>
 

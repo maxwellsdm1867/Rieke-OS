@@ -10,12 +10,12 @@ import {createDesktopDraftSession} from './desktopDraftSession.js';
  * No bridge or no project leaves the hook inactive. Cleanup does not cancel saves
  * already submitted to the native bridge, and restored views do not grant consent.
  */
-export function useDesktopDraft({projectId,snapshot,restore,busy,navigationIdentity}){
-  const current=useRef({snapshot,restore,busy,navigationIdentity});current.current={snapshot,restore,busy,navigationIdentity};
+export function useDesktopDraft({projectId,snapshot,restore,restoreRecovery,busy,navigationIdentity}){
+  const current=useRef({snapshot,restore,restoreRecovery,busy,navigationIdentity});current.current={snapshot,restore,restoreRecovery,busy,navigationIdentity};
   const session=useRef(null),[state,setState]=useState({phase:'inactive'});
   useEffect(()=>{
     const bridge=desktopBridge();if(!bridge||!projectId)return;
-    const draft=createDesktopDraftSession({bridge,projectId,snapshot:()=>current.current.snapshot(),navigationIdentity:()=>current.current.navigationIdentity?.(),restore:value=>current.current.restore(value),isBusy:()=>current.current.busy,onState:setState});
+    const draft=createDesktopDraftSession({bridge,projectId,snapshot:()=>current.current.snapshot(),navigationIdentity:()=>current.current.navigationIdentity?.(),restore:value=>current.current.restore(value),restoreRecovery:value=>current.current.restoreRecovery?.(value),isBusy:()=>current.current.busy,onState:setState});
     session.current=draft;
     const stop=registerDraftSaver(()=>draft.flush());
     const timer=setInterval(()=>{if(!current.current.busy)draft.flush().catch(()=>{});},3000);
