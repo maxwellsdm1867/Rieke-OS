@@ -53,3 +53,20 @@ or app/HTTP behavior. Existing central native/preparation suites remain deferred
 The retained [protocol-state owner](../../workspace_protocol_state.py) spans
 WorkspaceService, CurationStore, SharedAnnotations, ExplorerHistory and native
 reader authority and therefore remains at its existing path.
+
+Explorer recipe reads retain detached output graphs. Exact plain membership
+lists containing only string `uuid` and `metadata_hash` values use shallow member
+copies seeded into the ordinary deep-copy memo; nested extras and aliases retain
+deep-copy behavior. Custom member shapes use the existing full deep copy. `get`
+still fetches and verifies the stored recipe and summary on every call, including
+after an earlier successful read. Binding cache lifetime and storage admission
+are unchanged. The compact explorer suite covers output isolation, aliases,
+custom nested members, later corruption and deletion with SQL doubles; it does
+not qualify native deserialization, durability or workflow performance.
+
+`is_canonical_binding_reader(provider)` identifies only the original
+`ExplorerHistory` binding implementation and its captured reader methods.
+Instance/class overrides and subclasses return false. The boolean permits
+query-result construction to read a known read-only binding before copying
+retained original fields; it confers no membership, recipe or freshness authority.
+Every actual binding read and existing scope validation still runs.

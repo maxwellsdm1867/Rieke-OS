@@ -602,9 +602,15 @@ def register_annotation_routes(app,service,store,db_lock):
             return jsonify(result)
     @app.get('/api/epochs/<epoch_uuid>/annotations')
     def annotation_epoch(epoch_uuid):
-        if request.args:raise ValueError('Epoch annotations are independent of protocol filters')
+        if (request.args.keys()-{'include_cell_epoch_count'}
+                or len(request.args.getlist('include_cell_epoch_count'))>1):
+            raise ValueError('Epoch annotations are independent of protocol filters')
+        include_count=request.args.get('include_cell_epoch_count','true')
+        if include_count not in ('true','false'):
+            raise ValueError('include_cell_epoch_count must be true or false')
         with db_lock:
             key=store._scope('epoch',[epoch_uuid])[0];row=service.rows[key]
             result=store.for_epochs([row])[key]
-            result['cell_epoch_count']=sum(item['cell_uuid']==row['cell_uuid'] for item in service.rows.values())
+            if include_count=='true':
+                result['cell_epoch_count']=sum(item['cell_uuid']==row['cell_uuid'] for item in service.rows.values())
             return jsonify(result)

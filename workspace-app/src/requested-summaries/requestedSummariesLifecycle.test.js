@@ -73,18 +73,68 @@ test('mounted protocol/view preferences retain missing pinned fields and isolate
   await h.render(h.Probe,{kind:'preferences',project:'P1',protocol:'A',view:'tree'});assert.deepEqual(h.probe.preferences.value.fields,['parameters/field150','history1']);
  }finally{await h.close();}
 });
-test('mounted tree remains editable while pending, keeps saved missing axes and full discovery without all-field summary fan-out',async()=>{
+test('mounted tree defers summaries until chooser open and remains editable with bounded field discovery',async()=>{
  const h=await harness(),changes=[];
  try{
   const axes=['date','parameters/field150','history1'],summaryContext={predicate:{all:[]},protocol_uuid:'A',filters:{cell_uuid:'cell-A',tag:'scoped-tag'}};const props={projectId:'P1',protocolId:'A',summaryContext,value:axes,onChange:value=>changes.push(value),preview:{count:7},loading:false};
   await h.render(h.TreeBuilder,props);await h.settle();
-  const submit=h.requests.find(item=>item.path==='/explore/summaries');assert.deepEqual(submit.body.summary_fields,['date','parameters/field150']);assert.equal(submit.body.protocol_uuid,'A');assert.deepEqual(submit.body.filters,summaryContext.filters);assert.deepEqual(submit.body.predicate,summaryContext.predicate);assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
+  assert.equal(h.requests.some(item=>item.path==='/explore/summaries'),false,'axis cards use registry labels without background summary work');
+  assert.equal(h.requests.some(item=>item.path.includes('/tree-fields')),false);
   assert.doesNotMatch(h.text(),/Metadata summaries|Advanced layout suggestions|Preferred summaries/);assert.match(h.text(),/history1/);assert.equal(changes.length,0);assert.deepEqual(axes,['date','parameters/field150','history1']);
   assert.equal(h.button('Add a split').props.disabled,false);
   assert.equal(h.button('Summarize all metadata fields'),undefined);
   const before=h.requests.length;await h.act(()=>h.button('Add a split').props.onClick());
+  const submit=h.requests.find(item=>item.path==='/explore/summaries');assert.deepEqual(submit.body.summary_fields,['date','parameters/field150']);assert.equal(submit.body.protocol_uuid,'A');assert.deepEqual(submit.body.filters,summaryContext.filters);assert.deepEqual(submit.body.predicate,summaryContext.predicate);
   assert.equal(h.requests.slice(before).some(item=>item.path.includes('/tree-fields')),false);
   assert.ok(h.requests.filter(item=>item.path==='/explore/summaries').every(item=>item.body.summary_fields.length===2));
+ }finally{await h.close();}
+});
+
+test('tree chooser summaries retain exact scope, reject late results and retire when both choosers close',async()=>{
+ const h=await harness(),pending=[],changes=[];
+ try{
+  h.memory.set(summaryPreferenceKey('P1','A','tree'),JSON.stringify({version:1,fields:['parameters/field149']}));
+  h.respond=path=>{
+   if(path==='/explore/field-registry')return registry;
+   if(path.endsWith('/cancel'))return {status:'cancelled',generation};
+   if(path==='/explore/summaries'){const work=deferred();pending.push(work);return work.promise;}
+   throw Error(`Unexpected summary request ${path}`);
+  };
+  const props={projectId:'P1',protocolId:'A',value:['date'],onChange:value=>changes.push(value),preview:{count:7},loading:false};
+  const scope=cell=>({...props,summaryContext:{predicate:{all:[]},protocol_uuid:'A',filters:{cell_uuid:cell}}});
+  const submits=()=>h.requests.filter(item=>item.path==='/explore/summaries');
+  const ready=(id,count)=>({status:'ready',request_id:id,generation,result:{matched_count:7,summaries:{'parameters/field149':{
+   values:Array.from({length:count},(_,value)=>({value,type:'number',count:1})),missing_count:0,present_count:7,values_truncated:false}}}});
+  const closeSplit=()=>h.root.findByProps({'aria-label':'Close split chooser'}).props.onClick();
+  const toggleCombined=open=>h.root.findByProps({className:'tb-joint-editor'}).props.onToggle({currentTarget:{open}});
+  await h.render(h.TreeBuilder,scope('cell-A'));assert.equal(submits().length,0);
+  await h.act(()=>h.button('Add a split').props.onClick());
+  assert.deepEqual(submits()[0].body.summary_fields,['date','parameters/field149']);
+  assert.deepEqual(submits()[0].body.generation,generation);
+  await h.act(()=>h.root.findByProps({'aria-label':'Find a split field'}).props.onChange({target:{value:'Field 149'}}));
+  await h.act(()=>pending[0].resolve(ready('A',2)));assert.match(h.text(),/2 values/);
+  await h.render(h.TreeBuilder,scope('cell-B'));assert.equal(submits().length,2);
+  assert.equal(submits()[0].options.signal.aborted,true);assert.doesNotMatch(h.text(),/2 values/);
+  assert.deepEqual(submits()[1].body.filters,{cell_uuid:'cell-B'});
+  await h.render(h.TreeBuilder,scope('cell-C'));assert.equal(submits().length,3);
+  assert.equal(submits()[1].options.signal.aborted,true);
+  await h.act(()=>pending[2].resolve(ready('C',3)));assert.match(h.text(),/3 values/);
+  await h.act(()=>pending[1].resolve(ready('late-B',9)));assert.match(h.text(),/3 values/);assert.doesNotMatch(h.text(),/9 values/);
+  await h.act(closeSplit);
+  await h.act(()=>h.button('Add a split').props.onClick());assert.equal(submits().length,4);
+  await h.act(()=>toggleCombined(true));await h.act(closeSplit);
+  assert.equal(submits()[3].options.signal.aborted,false,'an open combined chooser retains the active request');
+  await h.act(()=>toggleCombined(false));assert.equal(submits()[3].options.signal.aborted,true);
+  await h.act(()=>pending[3].resolve({status:'pending',request_id:'closed-chooser',generation}));await h.settle();
+  assert.ok(h.requests.some(item=>item.path==='/explore/summaries/closed-chooser/cancel'));
+  await h.render(h.TreeBuilder,scope('cell-D'));
+  await h.act(()=>h.root.findByProps({'aria-label':'Remove Recording date grouping'}).props.onClick());
+  assert.deepEqual(changes,[[]]);assert.equal(submits().length,4,'closed scope and axis changes do not restart summaries');
+  await h.act(()=>toggleCombined(true));assert.equal(submits().length,5);
+  assert.deepEqual(submits()[4].body.summary_fields,['parameters/field149']);assert.deepEqual(submits()[4].body.filters,{cell_uuid:'cell-D'});
+  await h.act(()=>toggleCombined(false));assert.equal(submits()[4].options.signal.aborted,true);
+  await h.act(()=>pending[4].resolve({status:'pending',request_id:'closed-combined',generation}));await h.settle();
+  assert.ok(h.requests.some(item=>item.path==='/explore/summaries/closed-combined/cancel'));
  }finally{await h.close();}
 });
 

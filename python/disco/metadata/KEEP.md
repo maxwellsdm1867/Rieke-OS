@@ -22,6 +22,35 @@ Its [central tests](../../tests/test_workspace_protocol_state.py) remain source
 coverage pointers, not executed native acceptance. Response handles become inactive
 on exit; failed responses close affected derived indexes.
 
+The retained protocol HTTP owner offers `GET /api/protocols/:id?projection=browse`
+for an unfiltered browsing descriptor. Default protocol responses remain complete
+summaries. Canonical `WorkspaceService.protocol_browse` omits counts, rich cell
+summaries, export links and annotation aggregates while retaining definition,
+binding, effective query, filter choices and source eligibility. Captured reader
+and transitive filter/decorate policies qualify this path; custom readers use the
+full public protocol response before projection. Native response scopes attest at
+close; legacy before/after revision checks refuse mixed descriptors. Fresh bounded
+page receipts still own scientific actions. The owned HTTP examples are in
+`python/tests/test_workspace_protocol_browse.py`; they do not qualify native SQL
+or installed-app latency.
+
+Full `WorkspaceService.protocol` summaries may reuse one response-local query and
+one decorated membership when row/cell/protocol maps are plain dictionaries, all
+transitive readers retain captured canonical identities, there is no curation
+provider, and filters are empty or ordinary
+identity/type/group equality filters. Binding readers must be absent or known
+read-only for every protocol; a frozen target with an arbitrary foreign fallback
+does not qualify. The current protocol's cell membership reuses that query while
+other protocols are still read fresh. Counts and total counts remain independent
+DTOs. Custom readers/providers and annotation/metadata filters retain the previous
+read order and exceptions; `_cell_summary(rows)` keeps its public signature and
+bins rows before reading memberships. No state is retained across responses, and
+HTTP state/revision checks and native summary authority are unchanged. The focused
+`python/tests/test_workspace_protocol_summary.py` examples compare complete
+responses and verify query counts without replacing canonical reader methods.
+This reduces repeated allocation; it neither changes process garbage collection
+nor establishes latency or packaged-app qualification.
+
 Trace reading stays in [WorkspaceService](../../workspace_service.py) and
 [recording_workspace](../../recording_workspace.py), with the existing standalone
 [export reader](../../query_workspace_export.py) retaining its own verified locator.

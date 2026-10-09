@@ -132,7 +132,7 @@ reads. Cold/missing parents and anchor reveals share a bounded response-local
 bundle. Retained parent geometry is only a scheduling hint for the existing
 fresh-target/attested-cache path, never read authority. Bundle target and parent
 shape, requested offsets/revision/splits, anchor and equal complete identity are
-validated before publication. Validated parents may enter the existing bounded
+validated before publication. Validated nonterminal targets and parents may enter the existing bounded
 immutable cache through its normal read adapter without further HTTP. An initial live target that freshly advertises support can fetch more than one
 remaining ancestor as one bundle, preserving exact identity across both responses. Hierarchy anchor
 reveal uses this same orchestration, preserving siblings and cancellation; arbitrary

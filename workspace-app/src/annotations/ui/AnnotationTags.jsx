@@ -29,7 +29,8 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
   function setValue(next){if(composer)composer.onChange(draftKey,next);else setLocalValue(next);}
   useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
   const refreshPending=!!refreshAfter&&refreshAfter.identity===identity&&refreshAfter.annotations===epoch?.annotations;
-  const remoteNeeded=!bulkCells&&(readSeparately||!epoch?.annotations||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
+  const needsCellCount=!requestScope&&scope==='cell'&&!Number.isFinite(epoch?.annotations?.cell_epoch_count);
+  const remoteNeeded=!bulkCells&&(readSeparately||!epoch?.annotations||needsCellCount||((!refreshWithEpoch||refreshAfter?.force)&&refreshPending));
   const awaitingEpoch=refreshWithEpoch&&!refreshAfter?.force&&refreshPending;
   const scopeIdentity=JSON.stringify([identity,epoch?.cell_uuid,scope,profileUuid,revision,selectedEpochs,selectedCells,groupMutation?.selectionUuid]);
   const committedScope=useRef(null),generation=useRef(0),mounted=useRef(false),mutation=useRef(null);
@@ -39,7 +40,10 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
     mounted.current=true;committedScope.current=scopeIdentity;generation.current++;
     return()=>{mounted.current=false;committedScope.current=null;generation.current++;mutation.current?.abort();};
   },[scopeIdentity]);
-  const annotations=useResource(identity&&remoteNeeded?`/epochs/${identity}/annotations`:null,revision);
+  // The whole-cell count is a displayed summary, not annotation authority.
+  // Supplied read owners keep their existing URL contract.
+  const countQuery=!requestScope&&scope!=='cell'?'?include_cell_epoch_count=false':'';
+  const annotations=useResource(identity&&remoteNeeded?`/epochs/${identity}/annotations${countQuery}`:null,revision);
   const annotationData=remoteNeeded?(annotations.data||epoch?.annotations):epoch?.annotations;
   const suggestions=useResource(open?`/annotation-tags?q=${encodeURIComponent(query)}&limit=12`:null,revision,120);
   const groups=annotationGroups(annotationData),items=suggestions.data?.tags||[];

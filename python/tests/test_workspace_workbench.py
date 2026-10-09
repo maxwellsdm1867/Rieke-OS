@@ -64,6 +64,163 @@ class WorkbenchTests(unittest.TestCase):
     def accept(self, request, root=None):
         return self.case.client.post((root or self.root) + '/accept', json=request, headers=self.case.headers)
 
+    def list_selection(self, context, cells=None, **extra):
+        cell = self.case.service.rows[self.added]['cell_uuid']
+        return self.case.client.post(self.root + '/list-selection', headers=self.case.headers, json=dict(
+            candidate_scope_revision=context['candidate_scope_revision'],
+            cells=cells if cells is not None else [dict(cell_uuid=cell, epochs=1)], **extra))
+
+    def test_list_selection_matches_paged_order_and_closes_once_without_writes(self):
+        context = self.get_context()
+        self.assertIs(context['list_selection'], True)
+        cell = self.case.service.rows[self.added]['cell_uuid']
+        before = [copy.deepcopy(table.rows) for table in self.tables]
+        with patch.object(self.manager, 'context', wraps=self.manager.context) as reads:
+            response = self.list_selection(context)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(reads.call_count, 2)
+        result = response.get_json()
+        self.assertEqual(result['epoch_uuids'], [self.added])
+        self.assertEqual(result['cells'], [dict(cell_uuid=cell, epochs=1, epoch_uuids=[self.added])])
+        self.assertEqual(result['count'], 1)
+        self.assertEqual(result['candidate_scope_revision'], context['candidate_scope_revision'])
+        self.assertEqual([table.rows for table in self.tables], before)
+        self.assertEqual(self.list_selection(context, []).get_json()['epoch_uuids'], [])
+        for cells in [[dict(cell_uuid=cell, epochs=True)], [dict(cell_uuid=cell, epochs=1001)],
+                      [dict(cell_uuid=cell, epochs=1)] * 2, [dict(cell_uuid='bad', epochs=1)], [dict(cell_uuid=None, epochs=1)],
+                      [dict(cell_uuid=123, epochs=1)], [dict(cell_uuid=[], epochs=1)]]:
+            self.assertEqual(self.list_selection(context, cells).status_code, 400)
+        for cells in [[dict(cell_uuid=cell, epochs=0)], [dict(cell_uuid=cell, epochs=2)],
+                      [dict(cell_uuid=str(uuid.uuid4()), epochs=1)]]:
+            self.assertEqual(self.list_selection(context, cells).status_code, 409)
+        filtered = self.list_selection(context, filters={'cell_type': 'does-not-match'})
+        self.assertEqual(filtered.status_code, 409)
+
+    def test_list_selection_exact_thousand_keeps_chronological_page_order(self):
+        from disco.workbench.recipes import checksum
+        source = self.case.service.rows[self.added]
+        recipe_row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+        recipe = recipe_row['recipe']
+        for index in range(999):
+            identity = str(uuid.UUID(int=index + 10000))
+            self.case.service.rows[identity] = dict(source, epoch_uuid=identity)
+            self.case.service._fingerprints[identity] = self.case.service._fingerprints[self.added]
+            recipe['epochs'].append(dict(uuid=identity, metadata_hash=self.case.service._fingerprints[identity]))
+        for key in ('epoch_count', 'matched_count'):
+            recipe[key] = recipe_row['summary'][key] = len(recipe['epochs'])
+        recipe.pop('content_sha256'); recipe['content_sha256'] = checksum(recipe)
+        context = self.get_context()
+        response = self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1000)])
+        self.assertEqual(response.status_code, 200, response.get_json())
+        expected = sorted([self.added, *[str(uuid.UUID(int=index + 10000)) for index in range(999)]])
+        self.assertEqual(response.get_json()['epoch_uuids'], expected)
+        self.assertEqual(response.get_json()['count'], 1000)
+        self.assertEqual(self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1001)]).status_code, 400)
+
+    def test_list_selection_custom_pages_and_closing_changes_fail_closed(self):
+        context = self.get_context()
+        original = self.manager.frozen_service
+        for change in ('partial', 'wrong-cell', 'draft', 'source', 'recipe'):
+            with self.subTest(change=change):
+                before_tables = [copy.deepcopy(table.rows) for table in self.case.connection.tables]
+                original_scope = self.case.service.source_scope
+                def altered(ctx):
+                    scoped = original(ctx)
+                    page = scoped.epoch_page
+                    def read(*args, **kwargs):
+                        result = page(*args, **kwargs)
+                        if change == 'partial': result['epochs'] = []
+                        elif change == 'wrong-cell': result['epochs'][0]['cell_uuid'] = str(uuid.uuid4())
+                        elif change == 'draft':
+                            self.tables[0].insert1(dict(**self.manager.key(self.protocol, self.revision, 'actor-one'),
+                                version=99, selection_mode='selected', deferred=False))
+                        elif change == 'source':
+                            self.case.service.source_scope = lambda: {**original_scope(), 'revision': 'changed'}
+                        elif change == 'recipe':
+                            row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+                            row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+                        return result
+                    scoped.epoch_page = read
+                    return scoped
+                with patch.object(self.manager, 'frozen_service', side_effect=altered):
+                    response = self.list_selection(context)
+                self.assertIn(response.status_code, (400, 409), response.get_json())
+                self.assertNotIn('epoch_uuids', response.get_json())
+                self.case.service.source_scope = original_scope
+                for table, rows in zip(self.case.connection.tables, before_tables): table.rows[:] = rows
+                self.assertEqual(self.list_selection(context).status_code, 200, 'Failed read must not poison the next read')
+
+    def test_optional_context_bootstrap_matches_fresh_context_and_page(self):
+        plain = self.get_context()
+        with patch.object(self.manager, 'context', wraps=self.manager.context) as contexts:
+            response = self.case.client.get(self.root + '/context?include_initial_page=true')
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(contexts.call_count, 2)
+        value = response.get_json()
+        bootstrap = value.pop('bootstrap')
+        self.assertEqual(value, plain)
+        self.assertEqual(bootstrap['context'], plain)
+        page = self.case.client.get(self.root + '/epochs', query_string=dict(
+            candidate_scope_revision=plain['candidate_scope_revision'], offset=0, limit=60, include_cells='true')).get_json()
+        self.assertEqual(bootstrap['page'], page)
+        self.assertEqual(bootstrap['actor'], 'actor-one')
+        for query in ('include_initial_page=bad', 'include_initial_page=true&include_initial_page=false'):
+            self.assertEqual(self.case.client.get(self.root + '/context?' + query).status_code, 400)
+        self.assertNotIn('bootstrap', self.get_context())
+
+    def test_bootstrap_closing_check_discards_context_and_page(self):
+        original = self.manager.frozen_service
+        def changing(context):
+            scoped = original(context)
+            page = scoped.epoch_page
+            def read(*args, **kwargs):
+                result = page(*args, **kwargs)
+                self.tables[0].insert1(dict(**self.manager.key(self.protocol, self.revision, 'actor-one'),
+                    version=1, selection_mode='selected', deferred=True))
+                return result
+            scoped.epoch_page = read
+            return scoped
+        with patch.object(self.manager, 'frozen_service', side_effect=changing):
+            response = self.case.client.get(self.root + '/context?include_initial_page=true')
+        self.assertEqual(response.status_code, 409)
+        self.assertNotIn('bootstrap', response.get_json())
+        self.assertNotIn('protocol', response.get_json())
+
+    def test_context_rechecks_warmed_main_recipe_storage(self):
+        context = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.manager.history.protocol_binding(self.protocol)
+        row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == context['main_revision_uuid'])
+        original = copy.deepcopy(row['recipe'])
+        row['recipe']['epochs'][0]['metadata_hash'] = 'f' * 64
+        with self.assertRaisesRegex(ValueError, 'integrity'):
+            self.manager.context(self.protocol, self.revision, 'actor-one')
+        row['recipe'] = original
+        self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'], context['candidate_scope_revision'])
+
+    def test_custom_recipe_reader_retains_calls_and_nested_context_isolation(self):
+        expected = self.manager.context(self.protocol, self.revision, 'actor-one')
+        reader = self.manager.history.get
+        calls = []
+        def custom(revision):
+            calls.append(revision)
+            return reader(revision)
+        with patch.object(self.manager.history, 'get', side_effect=custom):
+            actual = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
+        self.assertEqual(len(calls), 2, 'Custom recipe readers retain the original per-proposal read calls')
+        state = self.manager.state
+        nested = []
+        def reentrant(protocol):
+            with patch.object(self.manager, 'state', side_effect=state):
+                nested.append(self.manager.context(protocol, self.revision, 'actor-two'))
+            return state(protocol)
+        with patch.object(self.manager, 'state', side_effect=reentrant):
+            actual = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertEqual(actual['candidate_scope_revision'], expected['candidate_scope_revision'])
+        self.assertEqual(nested[0]['actor'], 'actor-two')
+        actual['candidate']['epochs'].clear()
+        self.assertEqual(self.manager.context(self.protocol, self.revision, 'actor-one')['candidate_scope_revision'], expected['candidate_scope_revision'])
+
     def test_tree_selection_matches_complete_pages_with_one_closing_check(self):
         context = self.get_context()
         self.assertIs(context['tree_selection'], True)

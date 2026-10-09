@@ -324,6 +324,56 @@ class CurationTests(unittest.TestCase):
             self.store.epoch_exports('not-an-epoch-id')
         self.assertEqual(len(self.datasets.read_log), before)
 
+    def test_export_counts_touch_only_requested_members_without_copying_links(self):
+        first, second = self.ids
+        class Links:
+            def __len__(self):
+                return 3
+            def __deepcopy__(self, memo):
+                raise AssertionError("Export links must not be copied for counts")
+        class LookupOnly(dict):
+            def __iter__(self):
+                raise AssertionError("Do not enumerate full membership")
+            def items(self):
+                raise AssertionError("Do not enumerate full membership")
+            def get(self, key, default=None):
+                self.lookups.append(key)
+                return super().get(key, default)
+        index = LookupOnly({first: Links(), 'unrequested': Links()})
+        index.lookups = []
+        with patch.object(self.store, '_export_index', return_value=index) as read:
+            counts = self.store.export_link_counts(iter([first, second]))
+        self.assertEqual(counts, {first: 3, second: 0})
+        self.assertEqual(index.lookups, [first, second])
+        read.assert_called_once_with()
+        counts[first] = 99
+        self.assertEqual(len(index[first]), 3)
+
+    def test_export_counts_refresh_and_public_snapshots_remain_detached(self):
+        first, second = self.ids
+        self.assertEqual(self.store.export_link_counts(self.ids), {first: 0, second: 0})
+        self.record(self.recipe(included=[first]))
+        self.assertEqual(self.store.export_link_counts(self.ids), {first: 1, second: 0})
+        full_reads = sum(row['projected'] is None for row in self.datasets.read_log)
+        snapshot = self.store.export_memberships()
+        snapshot[first][0]['name'] = 'mutated'
+        snapshot[first].clear()
+        snapshot[second] = [{'name': 'invented'}]
+        links = self.store.epoch_exports(first)
+        links[0]['name'] = 'mutated'
+        self.assertEqual(self.store.export_link_counts(self.ids), {first: 1, second: 0})
+        self.assertEqual(self.store.epoch_exports(first)[0]['name'], 'Frozen sample')
+        self.assertEqual(sum(row['projected'] is None for row in self.datasets.read_log), full_reads)
+        self.protocol = str(uuid.uuid4())
+        self.record(self.recipe())
+        self.assertEqual(self.store.export_link_counts(self.ids), {first: 2, second: 1})
+        self.datasets.rows.pop(0)
+        self.assertEqual(self.store.export_link_counts(self.ids), {first: 1, second: 1})
+        self.datasets.rows[0]['recipe']['epochs'][0]['metadata_hash'] = 'd' * 64
+        self.datasets.rows[0]['artifact_sha256'] = 'd' * 64
+        with self.assertRaisesRegex(ValueError, 'checksum'):
+            self.store.export_link_counts(self.ids)
+
     def test_export_reverse_index_detects_changed_revision_signature(self):
         self.record(self.recipe(included=self.ids[:1]))
         self.store.export_memberships()

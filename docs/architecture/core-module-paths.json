@@ -12053,6 +12053,37 @@
         "python/tests/test_workspace_diff.py": "python/disco/workbench/tests/test_workspace_diff.py"
       },
       "test_move_qualification": "Six original source-candidate test relocations plus two byte-identical root colocations; no new runtime evidence implied."
+    },
+    {
+      "id": "stage5-browsing-read-composition",
+      "implementation_commits": [
+        "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+        "f2400fa632dbe520015485f6fbd40141e9942565",
+        "4171672813805b8fb871699baf1e41f73797f447"
+      ],
+      "owner_ids": [
+        "frozen-workbench-review",
+        "sealed-recipes",
+        "incoming-read-presentation",
+        "renderer-resources",
+        "epoch-browser-readiness"
+      ],
+      "new_runtime_paths": [
+        "workspace-app/src/incoming-workbench/incomingBootstrap.js"
+      ],
+      "new_test_paths": [
+        "python/tests/test_workspace_protocol_browse.py",
+        "workspace-app/src/protocolBrowseEntry.test.js",
+        "workspace-app/src/incoming-workbench/incomingBootstrap.test.js",
+        "workspace-app/src/incomingBootstrapResource.test.js"
+      ],
+      "guidance_paths": [
+        "python/disco/workbench/CONTRACT.md",
+        "workspace-app/src/epoch-browser/AGENTS.md",
+        "workspace-app/src/incoming-workbench/AGENTS.md"
+      ],
+      "adoption": "New incoming-workbench bootstrap validator and single-consumer first-page offer; existing module boundaries retain recipe verification, bounded guarded list selection, protocol browse projection and resource-hook publication. No baseline path reclassification or count changes.",
+      "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
     }
   ],
   "current_path_policy": "path preserves the 4c9e128 baseline assignment; current_path overrides it after reviewed moves. Accepted increments list new tests/guidance. Baseline counts are not current completion claims."

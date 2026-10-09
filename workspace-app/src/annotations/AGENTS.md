@@ -28,6 +28,12 @@ candidate context rather than using global data. Group save/recovery remains the
 separate [group-save owner](../group-save/AGENTS.md); supported-size group commands
 and their durable operation identity are not ordinary many-request tag saves.
 
+With the default request owner, epoch/selected-epoch annotation reads omit the
+hidden whole-cell count. Whole cell scope requests the existing full read when
+its inline count is absent. Supplied request owners keep their existing URLs.
+Resource identity/revision and pending-read gates still protect editor writes;
+the display count is not mutation authority.
+
 Tab navigation waits for save and rechecks current editor scope before advancing.
 Late responses after unmount/scope change cannot publish. External monitor scans
 cannot overlap; errors retain known revision and back off. Receipt-file failure may

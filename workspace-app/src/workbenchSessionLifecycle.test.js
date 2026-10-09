@@ -11,13 +11,18 @@ const epochs=[1,2].map(index=>({epoch_uuid:`epoch-${index}`,cell_uuid:'cell-one'
 const context=()=>({candidate_revision_uuid:candidateId,candidate_scope_revision:'scope-one',candidate_recipe_sha256:'recipe-one',expected_binding_version:1,protocol:{definition:{protocol_uuid:protocolId},query_revision:'scope-one',expected_binding_version:1,cells},draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1}});
 const prepared={contract_version:1,kind:'workbench_pending_union',prepare_operation_uuid:'prepare-one',candidate_revision_uuid:candidateId,root:candidateRoot,candidate_scope_revision:'scope-one',queue_revision:'queue-one',context:context()};
 const queue={data:{queue_revision:'queue-one',pending_epoch_count:2,pending_cell_count:1,total_candidate_count:1,capabilities:{frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}},loading:false};
-async function harness(){
+async function harness({withBootstrap=false}={}){
  const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'http://localhost/'}),calls=[],errors=[];
  const key=`__workbenchSession${Math.random().toString(36).slice(2)}`,fixture={renders:0,viewer:null,prepared,contexts:new Map([[candidateId,context()]])};globalThis[key]=fixture;
+ const liveContext={...context(),generation:{metadata:'fixture'},protocol:{...context().protocol,definition:{protocol_uuid:protocolId,project_uuid:'project-one'}}};
+ if(withBootstrap){fixture.contexts.set(candidateId,liveContext);fixture.prepared={...prepared,actor:'actor-one',context:liveContext};}
+ const bootstrap=current=>({contract_version:1,kind:'workbench_initial_page',root:candidateRoot,project_uuid:'project-one',protocol_uuid:protocolId,candidate_revision_uuid:candidateId,actor:'actor-one',context:current,
+   request:{filters:{},offset:0,limit:60,include_cells:true},page:{epochs,cells,total:2,offset:0,limit:60,generation:current.generation,candidate_scope_revision:current.candidate_scope_revision,query_revision:current.candidate_scope_revision,expected_binding_version:1}});
  const globals={window:dom.window,document:dom.window.document,navigator:dom.window.navigator,localStorage:dom.window.localStorage,IS_REACT_ACT_ENVIRONMENT:true,fetch:async(input,options={})=>{
   const url=new URL(input,'http://localhost'),path=url.pathname.replace(/^\/api/,'');calls.push({path,method:options.method||'GET'});let value;
-  if(path.endsWith('/workbench/prepare'))value=fixture.prepare?await fixture.prepare():fixture.prepared;
-  else if(path.endsWith('/context'))value=fixture.contexts.get(path.split('/').at(-2));
+  if(path==='/annotation-profiles')value={selected_profile_uuid:'actor-one',profiles:[{profile_uuid:'actor-one',display_name:'Actor'}]};
+  else if(path.endsWith('/workbench/prepare')){value=fixture.prepare?await fixture.prepare():fixture.prepared;if(url.searchParams.get('include_initial_page')==='true')value={...value,bootstrap:bootstrap(fixture.contexts.get(candidateId))};}
+  else if(path.endsWith('/context')){value=fixture.contexts.get(path.split('/').at(-2));if(url.searchParams.get('include_initial_page')==='true')value={...value,bootstrap:bootstrap(value)};}
   else if(path.endsWith('/epochs')){const current=fixture.contexts.get(path.split('/').at(-2));value={epochs,cells,total:2,offset:0,limit:60,query_revision:current.candidate_scope_revision,expected_binding_version:1};}
   else if(path.includes('/epochs/'))value=epochs.find(epoch=>epoch.epoch_uuid===path.split('/').at(-1));
   else if(path==='/metadata/fields')value={fields:[]};
@@ -39,11 +44,12 @@ async function harness(){
   }
  }]});
  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/CumulativeIncomingReview.jsx');
+ const {AnnotationProfileProvider}=await server.ssrLoadModule('/src/annotations/annotationProfile.js');
  const container=document.getElementById('root');let mounted=createRoot(container),saved={},publications=0;
  class Boundary extends React.Component{state={error:null};static getDerivedStateFromError(error){return {error};}render(){return this.state.error?React.createElement('p',{'data-loop-error':true},this.state.error.message):this.props.children;}}
  // Bound the broken implementation so regression runs fail rather than hang.
- function Shell(props){return React.createElement(Review,{protocolId,projectId:'project-one',queue,revision:0,session:saved,onSession:value=>{publications++;if(publications>80)throw Error('Session publication loop exceeded 80 updates');saved=value;},...props});}
- const render=props=>act(async()=>mounted.render(React.createElement(React.StrictMode,null,React.createElement(Boundary,null,React.createElement(Shell,props)))));
+ function Shell(props){if(props?.hidden)return null;return React.createElement(Review,{protocolId,projectId:'project-one',queue:withBootstrap?{...queue,data:{...queue.data,capabilities:{...queue.data.capabilities,initial_page:true}}}:queue,revision:0,session:saved,onSession:value=>{publications++;if(publications>80)throw Error('Session publication loop exceeded 80 updates');saved=value;},...props});}
+ const render=props=>act(async()=>{const child=React.createElement(Boundary,null,React.createElement(Shell,props));mounted.render(React.createElement(React.StrictMode,null,withBootstrap?React.createElement(AnnotationProfileProvider,{projectId:'project-one'},child):child));});
  return {container,calls,errors,fixture,get saved(){return saved;},get publications(){return publications;},render,async settle(){await act(async()=>{await new Promise(resolve=>setTimeout(resolve,120));});},async remount(){await act(async()=>mounted.unmount());mounted=createRoot(container);await render();},async close(){await act(async()=>mounted.unmount());await server.close();console.error=originalError;dom.window.close();delete globalThis[key];for(const [key,value] of old)value?Object.defineProperty(globalThis,key,value):delete globalThis[key];}};
 }
 
@@ -146,6 +152,24 @@ for(const different of ['existing viewer','project','protocol'])test(`presentati
   assert.equal(h.fixture.viewer.designMode,false);
   if(different==='existing viewer')assert.equal(h.saved.drafts.replacement.viewer.treeOpen,false);
   assert.deepEqual(h.saved.drafts.replacement.selected,[]);
+  assert.deepEqual(h.errors,[]);
+ }finally{await h.close();}
+});
+
+
+test('actual Inspector consumes fresh bootstrap once without duplicate page admission or saved freshness',async()=>{
+ const h=await harness({withBootstrap:true});try{
+  await h.render({hidden:true});await h.render();await h.settle();
+  assert.equal(h.container.querySelector('[data-loop-error]')?.textContent||null,null);
+  assert.ok(h.container.querySelector('[data-real-inspector]'));
+  assert.equal(h.calls.filter(call=>call.path.endsWith('/epochs')).length,0,'the initial page comes from the closed bootstrap');
+  assert.equal(h.calls.filter(call=>call.path.endsWith('/context')).length,0,'replay bootstrap is a new read independent from its receipt');
+  assert.doesNotMatch(JSON.stringify(h.saved),/bootstrap|workbench_initial_page/);
+  await h.render({revision:1});await h.settle();
+  assert.ok(h.calls.some(call=>call.path.endsWith('/context')),'refresh obtains a new context/bootstrap');
+  assert.equal(h.calls.filter(call=>call.path.endsWith('/epochs')).length,0);
+  await act(async()=>h.fixture.viewer.treePane.listProps.onFocus('epoch-2',epochs[1]));await h.settle();
+  assert.ok(h.saved.drafts[candidateId].viewer.focused);
   assert.deepEqual(h.errors,[]);
  }finally{await h.close();}
 });

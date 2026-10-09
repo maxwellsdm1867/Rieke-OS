@@ -21,6 +21,26 @@ export async function loadIncomingSelection({source,cells,cellUuid=null,request,
   const count=chosen.reduce((total,cell)=>total+cell.epochs,0);
   if(count>MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs at a time. Filter this incoming view or choose a smaller cell.');
   const check=()=>{if(signal?.aborted||!isCurrent())throw new DOMException('Incoming selection changed. Select again.','AbortError');};
+  if(source.readContext.list_selection===true){
+    check();
+    const filters=new URLSearchParams(source.query);filters.delete('candidate_scope_revision');
+    const result=await request(`${source.readContext.root}/list-selection`,{method:'POST',signal,body:{
+      candidate_scope_revision:source.readContext.candidate_scope_revision,
+      cells:chosen.map(({cell_uuid,epochs})=>({cell_uuid,epochs})),filters:Object.fromEntries(filters)}});
+    check();epochPageRevision(source,result);
+    if(result?.candidate_scope_revision!==source.readContext.candidate_scope_revision||
+      result.expected_binding_version!==source.readContext.expected_binding_version||result.count!==count||
+      !Array.isArray(result.cells)||result.cells.length!==chosen.length||!Array.isArray(result.epoch_uuids))throw new Error('The incoming selection changed. Refresh and select again.');
+    const ids=[];
+    for(let index=0;index<chosen.length;index++){
+      const expected=chosen[index],cell=result.cells[index];
+      if(cell?.cell_uuid!==expected.cell_uuid||cell.epochs!==expected.epochs||!Array.isArray(cell.epoch_uuids)||cell.epoch_uuids.length!==expected.epochs||
+        cell.epoch_uuids.some(id=>typeof id!=='string'||!id))throw new Error('The complete incoming cell selection could not be verified.');
+      ids.push(...cell.epoch_uuids);
+    }
+    if(ids.length!==count||new Set(ids).size!==count||result.epoch_uuids.length!==count||ids.some((id,index)=>id!==result.epoch_uuids[index]))throw new Error('The incoming selection contains duplicate or missing identities.');
+    return ids;
+  }
   const ids=[];
   for(const cell of chosen){
     for(let offset=0;offset<cell.epochs;offset+=60){

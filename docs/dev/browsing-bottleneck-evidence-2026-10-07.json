@@ -1,0 +1,383 @@
+{
+  "source_commit": "812fe6db0cf20705a7c39065788fde9ca8c34243",
+  "application_identical_at": "77db8b024901af572143295111c127ccde625cdd",
+  "source_receipt": "benchmarks/results/stage4-workflow-candidate/browser/browser.json",
+  "receipt_sha256": "6f4aac2c90ca84e8bdfec83632d3c1fb7ecb1dee4841d01dc7cc7a43ef58048b",
+  "method": "Choose ordinary sample with median total for each action; compute clipped union of request intervals on the browser clock, not sum. Awaited intervals include server, lock, network and response consumption; outside intervals are not a pure React CPU measurement. No new benchmark run.",
+  "fixture": {
+    "project_epochs": 1000000,
+    "active_protocol_epochs": 20000,
+    "incoming_epochs": 100,
+    "ordinary_samples": 3
+  },
+  "actions": [
+    {
+      "action": "view.open/cold-component",
+      "sample_id": "ordinary-0-view.open-cold-component",
+      "total_ms": 1308.800000011921,
+      "request_interval_union_ms": 1254.5999999642372,
+      "outside_request_intervals_ms": 54.200000047683716,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7",
+          "start_ms": 2.100000023841858,
+          "end_ms": 954.3000000119209,
+          "request_id": "63205b5bf7334862934d538a09da224a"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/epochs?&offset=0&limit=60&include_cells=true",
+          "start_ms": 969.9000000357628,
+          "end_ms": 1272.300000011921,
+          "request_id": "75d2d4cdad91478490f9dc6b8f83c61d"
+        },
+        {
+          "method": "GET",
+          "url": "/api/metadata/fields",
+          "start_ms": 970.1000000238419,
+          "end_ms": 1272.199999988079,
+          "request_id": "abf7e3a1460747c89763173cf1c3b81e"
+        }
+      ]
+    },
+    {
+      "action": "view.return/warm-resource",
+      "sample_id": "ordinary-0-view.return-warm-resource",
+      "total_ms": 1069.1000000238419,
+      "request_interval_union_ms": 1029.7999999523163,
+      "outside_request_intervals_ms": 39.300000071525574,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7",
+          "start_ms": 0.6000000238418579,
+          "end_ms": 701,
+          "request_id": "afdfa6ca8e8a40f1801acd235ca29405"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/epochs?&offset=0&limit=60&include_cells=true",
+          "start_ms": 706.9000000357628,
+          "end_ms": 1036.300000011921,
+          "request_id": "fb9d9bfa73cc4dc4b0226d0159e6815e"
+        },
+        {
+          "method": "GET",
+          "url": "/api/metadata/fields",
+          "start_ms": 707,
+          "end_ms": 1033.300000011921,
+          "request_id": "3e1f32602d90424c923f6bbaac7d15f7"
+        }
+      ]
+    },
+    {
+      "action": "tree.open/main-columns",
+      "sample_id": "ordinary-1-tree.open-main-columns",
+      "total_ms": 152.30000001192093,
+      "request_interval_union_ms": 112.29999995231628,
+      "outside_request_intervals_ms": 40.000000059604645,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/explore/field-registry",
+          "start_ms": 11.900000035762787,
+          "end_ms": 31.69999998807907,
+          "request_id": "a4a78c552c264de8bf479961f1f3780d"
+        },
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 13.5,
+          "end_ms": 124.19999998807907,
+          "request_id": "12ff55559c184dda93760013e52d21a9"
+        }
+      ]
+    },
+    {
+      "action": "tree.expand/main-first-cell",
+      "sample_id": "ordinary-1-tree.expand-main-first-cell",
+      "total_ms": 400.2000000476837,
+      "request_interval_union_ms": 285.60000002384186,
+      "outside_request_intervals_ms": 114.60000002384186,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 0.40000003576278687,
+          "end_ms": 93.70000004768372,
+          "request_id": "3cc850b2d9a649e3b50be6cddc6c504c"
+        },
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 93.90000003576279,
+          "end_ms": 286.2000000476837,
+          "request_id": "e624c927f0414ef8ae9859a8caf7417a"
+        },
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 94.20000004768372,
+          "end_ms": 286.2000000476837,
+          "request_id": "d1374470683b422c9b8f304a3614d382"
+        }
+      ]
+    },
+    {
+      "action": "tree.next_page/main-cell-epochs",
+      "sample_id": "ordinary-1-tree.next_page-main-cell-epochs",
+      "total_ms": 309.19999998807907,
+      "request_interval_union_ms": 281.69999998807907,
+      "outside_request_intervals_ms": 27.5,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 0.40000003576278687,
+          "end_ms": 94.60000002384186,
+          "request_id": "ecf1a5f44ae649b6b23e818d1965e95f"
+        },
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 94.69999998807907,
+          "end_ms": 282.19999998807907,
+          "request_id": "f7a69d8689a74563ab189f03d59ace0a"
+        },
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 95,
+          "end_ms": 282.19999998807907,
+          "request_id": "e33774dcc61c4a30809028d009c66298"
+        }
+      ]
+    },
+    {
+      "action": "tree.split_change/remove-epoch-block",
+      "sample_id": "ordinary-1-tree.split_change-remove-epoch-block",
+      "total_ms": 137.80000001192093,
+      "request_interval_union_ms": 102.0,
+      "outside_request_intervals_ms": 35.80000001192093,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/api/tree-pages",
+          "start_ms": 6.300000011920929,
+          "end_ms": 108.30000001192093,
+          "request_id": "01e7364b35fd4fe686f92d176c26ad74"
+        }
+      ]
+    },
+    {
+      "action": "tree.selection/incoming-select-all",
+      "sample_id": "ordinary-2-tree.selection-incoming-select-all",
+      "total_ms": 2220,
+      "request_interval_union_ms": 2197.900000035763,
+      "outside_request_intervals_ms": 22.099999964237213,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b4f3d88a-dc6a-423e-b98b-df440ad53322/epochs?candidate_scope_revision=a4e128e2db062398a350da8701d44d289bc163edf43e2031440d6de08e5d3029&cell_uuid=00000000-0000-0000-0000-0000001eab8f&limit=60&offset=0",
+          "start_ms": 0.3999999761581421,
+          "end_ms": 1097.3999999761581,
+          "request_id": "ccafa3bf884b47e0b351b94cda13c1c8"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b4f3d88a-dc6a-423e-b98b-df440ad53322/epochs?candidate_scope_revision=a4e128e2db062398a350da8701d44d289bc163edf43e2031440d6de08e5d3029&cell_uuid=00000000-0000-0000-0000-0000001eab8f&limit=60&offset=60",
+          "start_ms": 1097.5999999642372,
+          "end_ms": 2198.5,
+          "request_id": "e255715ba3ad489bbec7d30b1e6317d6"
+        }
+      ]
+    },
+    {
+      "action": "tree.selection/incoming-deselect-all",
+      "sample_id": "ordinary-2-tree.selection-incoming-deselect-all",
+      "total_ms": 6.899999976158142,
+      "request_interval_union_ms": 0,
+      "outside_request_intervals_ms": 6.899999976158142,
+      "requests": []
+    },
+    {
+      "action": "predicate.search/cell-equality",
+      "sample_id": "ordinary-1-predicate.search-cell-equality",
+      "total_ms": 2942.699999988079,
+      "request_interval_union_ms": 2920.100000023842,
+      "outside_request_intervals_ms": 22.599999964237213,
+      "requests": [
+        {
+          "method": "POST",
+          "url": "/api/explore/run",
+          "start_ms": 0.30000001192092896,
+          "end_ms": 2815.800000011921,
+          "request_id": "09a4a91cf16448cda8d96b1cfd0a9a69"
+        },
+        {
+          "method": "PUT",
+          "url": "/api/project-preferences",
+          "start_ms": 2816.399999976158,
+          "end_ms": 2833.699999988079,
+          "request_id": "bfed52f418e147d0835ea55b2331400f"
+        },
+        {
+          "method": "POST",
+          "url": "/api/explore/epochs",
+          "start_ms": 2822.099999964237,
+          "end_ms": 2921,
+          "request_id": "39054881d8e74849bbc7a2073baf29c5"
+        },
+        {
+          "method": "GET",
+          "url": "/api/search-presets?limit=50&offset=0",
+          "start_ms": 2836.800000011921,
+          "end_ms": 2920.899999976158,
+          "request_id": "a62119fc8a6b4fb8a0f9b5cc1b9f4009"
+        }
+      ]
+    },
+    {
+      "action": "workbench.prepare/fresh",
+      "sample_id": "ordinary-0-workbench.prepare-fresh",
+      "total_ms": 5079,
+      "request_interval_union_ms": 5039.200000047684,
+      "outside_request_intervals_ms": 39.799999952316284,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench?limit=20",
+          "start_ms": 0.8999999761581421,
+          "end_ms": 398.5,
+          "request_id": "232a18942e5e4798ae29bf275e388697"
+        },
+        {
+          "method": "POST",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/prepare",
+          "start_ms": 400.69999998807907,
+          "end_ms": 3631.199999988079,
+          "request_id": "cf1104159cd34b56ac38c552a985ad3a"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b20901db-c8bb-41de-999f-746cce60f1cc/epochs?candidate_scope_revision=9fc0ed1dad53de47287b88cb3ed642b4c3c9e898e4cda4e473438ee39938c216&offset=0&limit=60&include_cells=true",
+          "start_ms": 3649.199999988079,
+          "end_ms": 5060.300000011921,
+          "request_id": "6872df53bfca481c80e4abcbe5e22461"
+        },
+        {
+          "method": "GET",
+          "url": "/api/metadata/fields",
+          "start_ms": 3649.399999976158,
+          "end_ms": 3690.100000023842,
+          "request_id": "d96f91763f664823ac56c5d6c67c3b74"
+        }
+      ]
+    },
+    {
+      "action": "workbench.prepare/receipt-replay",
+      "sample_id": "ordinary-2-workbench.prepare-receipt-replay",
+      "total_ms": 3163.7999999523163,
+      "request_interval_union_ms": 3125.900000035763,
+      "outside_request_intervals_ms": 37.8999999165535,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench?limit=20",
+          "start_ms": 0.5,
+          "end_ms": 431.89999997615814,
+          "request_id": "b474cd3514254773b4d0bc1bc602f78c"
+        },
+        {
+          "method": "POST",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/prepare",
+          "start_ms": 433.0999999642372,
+          "end_ms": 436.19999998807907,
+          "request_id": "f2d4096f07fa42f993958105b248923b"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b4f3d88a-dc6a-423e-b98b-df440ad53322/context",
+          "start_ms": 437.7999999523163,
+          "end_ms": 2001.0999999642372,
+          "request_id": "35b3a3347bc246718bebdc6167f552c0"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b4f3d88a-dc6a-423e-b98b-df440ad53322/epochs?candidate_scope_revision=a4e128e2db062398a350da8701d44d289bc163edf43e2031440d6de08e5d3029&offset=0&limit=60&include_cells=true",
+          "start_ms": 2012.5999999642372,
+          "end_ms": 3140.699999988079,
+          "request_id": "45f721572da54c969801f63cfdfe1736"
+        },
+        {
+          "method": "GET",
+          "url": "/api/metadata/fields",
+          "start_ms": 2012.7999999523163,
+          "end_ms": 3140.5,
+          "request_id": "0603ddf15ac8456e8fa385cc04847caa"
+        }
+      ]
+    },
+    {
+      "action": "workbench.open/prepared-return",
+      "sample_id": "ordinary-0-workbench.open-prepared-return",
+      "total_ms": 3126.2000000476837,
+      "request_interval_union_ms": 3094.099999964237,
+      "outside_request_intervals_ms": 32.1000000834465,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench?limit=20",
+          "start_ms": 0.40000003576278687,
+          "end_ms": 428.60000002384186,
+          "request_id": "1739e3940ef74df588f617286cd429ad"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b20901db-c8bb-41de-999f-746cce60f1cc/context",
+          "start_ms": 430.7000000476837,
+          "end_ms": 1667.300000011921,
+          "request_id": "a3d0e9171d4d4a8d8bca38eebc8d3ec8"
+        },
+        {
+          "method": "GET",
+          "url": "/api/protocols/3198d25e-54bc-45ea-929c-217f947923f7/workbench/candidates/b20901db-c8bb-41de-999f-746cce60f1cc/epochs?candidate_scope_revision=9fc0ed1dad53de47287b88cb3ed642b4c3c9e898e4cda4e473438ee39938c216&offset=0&limit=60&include_cells=true",
+          "start_ms": 1679.6000000238419,
+          "end_ms": 3108.900000035763,
+          "request_id": "7982aee6f01549e2937f4defb9126ba6"
+        },
+        {
+          "method": "GET",
+          "url": "/api/metadata/fields",
+          "start_ms": 1679.7000000476837,
+          "end_ms": 1719.5,
+          "request_id": "283595dc60c147d49c5742dfb125d1f0"
+        }
+      ]
+    },
+    {
+      "action": "trace.inspect/first-owned-waveform",
+      "sample_id": "ordinary-1-trace.inspect-first-owned-waveform",
+      "total_ms": 94.39999997615814,
+      "request_interval_union_ms": 12.699999988079071,
+      "outside_request_intervals_ms": 81.69999998807907,
+      "requests": [
+        {
+          "method": "GET",
+          "url": "/api/epochs/00000000-0000-0000-0000-000000000000/trace?stream_uuid=00000000-0000-0000-0000-0000004c4b40&start=0&count=10000",
+          "start_ms": 48.19999998807907,
+          "end_ms": 60.89999997615814,
+          "request_id": "eeb77ad29e6e402b88a9a50c3a70aa26"
+        },
+        {
+          "method": "GET",
+          "url": "/api/epochs/00000000-0000-0000-0000-000000000000/annotations?include_cell_epoch_count=false",
+          "start_ms": 48.59999996423721,
+          "end_ms": 59.30000001192093,
+          "request_id": "7feffd1118bd4c2c9845d5daf6b2c47c"
+        }
+      ]
+    }
+  ]
+}

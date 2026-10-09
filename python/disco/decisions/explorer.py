@@ -15,6 +15,32 @@ from disco.operation_timing import elapsed
 ACTION = 'explorer_revision_created'
 
 
+def _copy_recipe(recipe):
+    """Detach canonical member records without recursively copying strings.
+
+    Seed deepcopy's memo only for the exact immutable-value member schema.
+    The rest of the recipe still follows ordinary deepcopy, including aliases
+    back into membership. Custom member shapes retain their original behavior.
+    """
+    epochs = recipe.get('epochs') if type(recipe) is dict else None
+    if type(epochs) is not list:
+        return copy.deepcopy(recipe)
+    members, memo = [], {}
+    for row in epochs:
+        if type(row) is not dict:
+            return copy.deepcopy(recipe)
+        identity = id(row)
+        if identity not in memo:
+            member = row.copy()
+            if (len(member) != 2 or any(type(key) is not str for key in member)
+                    or type(member.get('uuid')) is not str or type(member.get('metadata_hash')) is not str):
+                return copy.deepcopy(recipe)
+            memo[identity] = member
+        members.append(memo[identity])
+    memo[id(epochs)] = members
+    return copy.deepcopy(recipe, memo)
+
+
 def explorer_table(dj):
     schema = dj.Schema('recording_workspace')
 
@@ -72,7 +98,7 @@ class ExplorerHistory:
             identity = row['revision_uuid']
             if identity not in self._recipe_cache:
                 self._recipe_cache[identity] = self.get(identity)['recipe']
-            return {**row, 'recipe': copy.deepcopy(self._recipe_cache[identity])}
+            return {**row, 'recipe': _copy_recipe(self._recipe_cache[identity])}
 
     def bind(self, revision_uuid, protocol_uuid, expected_version, actor, diff, previous_count,
              *, expected_query_revision=None, current_query_revision=None, diff_summary=None,
@@ -221,7 +247,7 @@ class ExplorerHistory:
             if not rows:
                 raise KeyError('Explorer revision not found in this project')
             row = rows[0]
-            recipe = copy.deepcopy(row['recipe'])
+            recipe = _copy_recipe(row['recipe'])
             expected = recipe.pop('content_sha256', None)
             if (expected != checksum(recipe) or recipe.get('format') != 'recording-explorer-revision'
                     or recipe.get('version') != 1 or recipe.get('project_uuid') != self.project_uuid
@@ -230,3 +256,25 @@ class ExplorerHistory:
                 raise ValueError('Stored explorer revision failed integrity verification')
             recipe['content_sha256'] = expected
             return {'revision_uuid': revision_uuid, 'recipe': recipe, 'summary': copy.deepcopy(row['summary'])}
+
+
+# Retain original identities for canonical binding admission, including when a
+# custom adapter later replaces methods on the class rather than an instance.
+_QUERY_RESULT_BINDING_METHODS = {
+    'protocol_binding': ExplorerHistory.protocol_binding,
+    'protocol_binding_header': ExplorerHistory.protocol_binding_header,
+    'get': ExplorerHistory.get,
+}
+
+
+def is_canonical_binding_reader(provider):
+    """Whether this callable retains the unmodified read-only binding path.
+
+    This identifies implementation behavior, not a current binding or recipe
+    receipt. Callers must still invoke the reader and validate their live scope.
+    """
+    owner = getattr(provider, '__self__', None)
+    return (type(owner) is ExplorerHistory
+        and getattr(provider, '__func__', None) is _QUERY_RESULT_BINDING_METHODS['protocol_binding']
+        and all(getattr(getattr(owner, name, None), '__func__', None) is _QUERY_RESULT_BINDING_METHODS[name]
+                for name in ('protocol_binding', 'protocol_binding_header', 'get')))

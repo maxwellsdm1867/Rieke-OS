@@ -430,5 +430,48 @@ class SharedAnnotationTests(unittest.TestCase):
         self.edit('cell',self.cell,remove=['snapshot cell'],revision=1)
         response=self.client.get(exported.get_json()['download_url']);self.assertEqual(response.data,raw);response.close()
 
+    def test_epoch_annotation_count_can_be_omitted_without_scanning_or_changing_tags(self):
+        self.edit('cell',self.cell,['inherited'])
+        self.edit('epoch',self.first,['direct'])
+        path='/api/epochs/'+self.first+'/annotations'
+        full=self.client.get(path).get_json()
+        self.assertEqual(full['cell_epoch_count'],1)
+        class TargetLookup(dict):
+            def values(self):raise AssertionError('An annotation-only read must not enumerate project epochs')
+        before=copy.deepcopy((self.records.rows,self.case.events.rows))
+        with patch.object(self.service,'rows',TargetLookup(self.service.rows)):
+            response=self.client.get(path+'?include_cell_epoch_count=false')
+        self.assertEqual(response.status_code,200,response.get_json())
+        self.assertEqual(response.get_json(),{key:value for key,value in full.items() if key!='cell_epoch_count'})
+        self.assertEqual((self.records.rows,self.case.events.rows),before)
+
+    def test_epoch_annotation_default_count_tracks_registered_cell_membership(self):
+        path='/api/epochs/'+self.first+'/annotations'
+        def count(query=''):
+            response=self.client.get(path+query)
+            self.assertEqual(response.status_code,200,response.get_json())
+            return response.get_json()['cell_epoch_count']
+        self.assertEqual(count(),1)
+        added=str(uuid.uuid4())
+        self.service.rows[added]={**self.service.rows[self.first],'epoch_uuid':added,'protocol_name':'other.Protocol'}
+        self.assertEqual(count(),2)
+        self.assertEqual(count('?include_cell_epoch_count=true'),2)
+        self.service.rows[self.second]['cell_uuid']=self.cell
+        self.assertEqual(count(),3)
+        del self.service.rows[added]
+        self.assertEqual(count(),2)
+        self.service.rows[self.second]['cell_uuid']=self.other_cell
+        self.assertEqual(count(),1)
+
+    def test_epoch_annotation_count_option_does_not_admit_filters_or_unknown_targets(self):
+        path='/api/epochs/'+self.first+'/annotations'
+        for query in ('?include_cell_epoch_count=', '?include_cell_epoch_count=0',
+                '?include_cell_epoch_count=False', '?include_cell_epoch_count=false&include_cell_epoch_count=true',
+                '?include_cell_epoch_count=false&cell_uuid='+self.cell):
+            with self.subTest(query=query):self.assertEqual(self.client.get(path+query).status_code,400)
+        unknown=self.client.get('/api/epochs/'+str(uuid.uuid4())+'/annotations?include_cell_epoch_count=false')
+        self.assertEqual(unknown.status_code,400)
+
+
 
 if __name__=='__main__':unittest.main()
