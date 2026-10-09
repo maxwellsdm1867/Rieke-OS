@@ -1,5 +1,15 @@
 # Disco changelog
 
+## 0.1.10 - 2026-10-09
+
+Combined unsigned Apple silicon testing build.
+
+- Allow complete Workbench selections above 1,000 epochs using bounded transfer, exact membership and durable merge recovery.
+- Merge a held imported recording directly into Main with source-specific acceptance authority; keep review details in More and toolbar controls reachable.
+- Admit verified MySQL JSON representations of acquisition floats while retaining exact source metadata, searches, grouping and identities.
+- Preserve exact numeric values in saved filters, sealed recipes, snapshots and prepared transfers, with transactional readback verification.
+
+
 ## 0.1.5 - 2026-09-30
 
 Unsigned Apple Silicon testing release of **Disco**, with updates and source

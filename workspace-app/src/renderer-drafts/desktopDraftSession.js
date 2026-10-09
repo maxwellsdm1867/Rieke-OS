@@ -12,7 +12,7 @@
  * Returned operations: flush, fresh, retry, preserveForQuit, close.
  * See AGENTS.md and the executable public example in desktopDraftSession.test.js.
  */
-export function createDesktopDraftSession({bridge,projectId,snapshot,restore,isBusy,navigationIdentity=()=>null,onState=()=>{}}){
+export function createDesktopDraftSession({bridge,projectId,snapshot,restore,restoreRecovery=()=>{},isBusy,navigationIdentity=()=>null,onState=()=>{}}){
   let loadGeneration=0;
   let alive=true,phase='loading',allowPreservedClose=false,resetAllowed=false,loading,saveChain=Promise.resolve();
   function publish(next,message=''){
@@ -28,6 +28,8 @@ export function createDesktopDraftSession({bridge,projectId,snapshot,restore,isB
       }
       if(saved){
         if(saved.format!=='rieke-renderer-draft'||saved.version!==1||saved.projectId!==projectId||!saved.value||typeof saved.value!=='object')throw new Error('Saved view identity is invalid.');
+        // Recovery identity is independent of an optional presentation restore.
+        restoreRecovery(saved.value);
         // A saved view is a navigation suggestion, never a later user intent.
         if(navigationIdentity()===startedNavigation)restore(saved.value);
       }

@@ -26,7 +26,7 @@ function checkAborted(signal){
  * Both operations retain tree-change/transport errors. firstEpoch rejects with
  * AbortError on cancellation; rangeEpochIds throws synchronously before a
  * transport is needed, or rejects its Promise after an asynchronous read.
- * Ranges also reject incomplete rows and sizes above 1,000. No partial result
+ * Ranges reject incomplete rows; Main/legacy ranges also reject sizes above 1,000. No partial result
  * publishes. Scope/path/offset are caller-provided, not newly validated here.
  *
  * @example
@@ -47,7 +47,7 @@ export function createTreeSelectionReader({requestPage=requestTreePage}={}){
   }
   return {rangeEpochIds(scope,{page,firstIndex,lastIndex,signal}){
     checkAborted(signal);
-    if(lastIndex-firstIndex+1>1000)throw new Error('Select at most 1,000 epochs.');
+    if(!scope.readContext?.selection_manifests&&lastIndex-firstIndex+1>1000)throw new Error('Select at most 1,000 epochs.');
     const ids=[];
     function append(part,offset){
       checkAborted(signal);

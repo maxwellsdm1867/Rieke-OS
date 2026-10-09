@@ -1540,7 +1540,8 @@
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/annotations/annotationProfile.js",
             "workspace-app/src/incoming-workbench/incomingBootstrap.js",
-            "workspace-app/src/incoming-workbench/importedSelection.js"
+            "workspace-app/src/incoming-workbench/importedSelection.js",
+            "workspace-app/src/desktopLifecycle.js"
           ]
         },
         {
@@ -1676,7 +1677,8 @@
             "workspace-app/src/incoming-workbench/incomingCellTypes.js",
             "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
-            "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css"
+            "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css",
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
           ]
         },
         {
@@ -1699,6 +1701,22 @@
           "allow": [
             "workspace-app/src/incoming-workbench/incomingSelection.js",
             "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/sourceMerge.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/useSourceMerge.js",
+          "allow": [
+            "react",
+            "workspace-app/src/incoming-workbench/sourceMerge.js",
+            "workspace-app/src/desktopLifecycle.js"
           ]
         }
       ],
@@ -1728,7 +1746,9 @@
           "workspace-app/src/testDiscovery.test.js",
           "workspace-app/src/treeTagCoverageWorkflow.test.js",
           "workspace-app/src/incoming-workbench/incomingBootstrap.test.js",
-          "workspace-app/src/incomingBootstrapResource.test.js"
+          "workspace-app/src/incomingBootstrapResource.test.js",
+          "workspace-app/src/incoming-workbench/sourceMerge.test.js",
+          "workspace-app/src/incoming-workbench/useSourceMerge.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -2748,10 +2768,12 @@
             "__future__",
             "base64",
             "contextlib",
+            "contextvars",
             "copy",
             "datetime",
             "disco.decisions.author_preferences",
             "disco.decisions.curation",
+            "disco.decisions.explorer",
             "disco.metadata.explore_queries",
             "disco.navigation.tag_predicates",
             "disco.navigation.tree_pages",
@@ -2763,13 +2785,12 @@
             "flask",
             "json",
             "os",
+            "time",
             "uuid",
             "workspace_audit",
             "workspace_protocol_identity",
             "workspace_service",
-            "workspace_state_generation",
-            "contextvars",
-            "disco.decisions.explorer"
+            "workspace_state_generation"
           ]
         },
         {
@@ -3351,9 +3372,10 @@
           {
             "path": "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js",
             "exports": [
+              "compactWorkbenchSelections",
               "exactSelectedIds",
-              "selectedReview",
               "prepareSelectedIncoming",
+              "selectedReview",
               "selectedViewFilters"
             ]
           },
@@ -3428,16 +3450,17 @@
           {
             "path": "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "exports": [
-              "workbenchRoot",
-              "workbenchCandidateRoot",
-              "requireWorkbenchQueue",
-              "requireWorkbenchContext",
-              "saveWorkbenchDecisions",
-              "previewWorkbench",
-              "workbenchPreviewCounts",
               "acceptWorkbench",
+              "acceptanceFailureKind",
+              "createWorkbenchSelection",
+              "previewWorkbench",
+              "requireWorkbenchContext",
+              "requireWorkbenchQueue",
+              "saveWorkbenchDecisions",
               "selectionDecisions",
-              "acceptanceFailureKind"
+              "workbenchCandidateRoot",
+              "workbenchPreviewCounts",
+              "workbenchRoot"
             ]
           },
           {
@@ -3470,6 +3493,18 @@
             "path": "workspace-app/src/incoming-workbench/importedSelection.js",
             "exports": [
               "loadImportedSelection"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/sourceMerge.js",
+            "exports": [
+              "createSourceMerge"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/useSourceMerge.js",
+            "exports": [
+              "default"
             ]
           }
         ]
@@ -4618,7 +4653,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
+        "file_sha256": "320c65af90e7422362e107a81ecd6791a371a9c7ef7461ecec89a7759040bfcf",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
@@ -4828,7 +4863,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
+                "file_sha256": "320c65af90e7422362e107a81ecd6791a371a9c7ef7461ecec89a7759040bfcf",
                 "contract_id": "backend-navigation"
               }
             ]

@@ -1,6 +1,6 @@
 {
   "format": "rieke-application-release",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "channel": "stable",
   "repository": "maxwellsdm1867/Rieke-OS",
   "workspace_formats": [

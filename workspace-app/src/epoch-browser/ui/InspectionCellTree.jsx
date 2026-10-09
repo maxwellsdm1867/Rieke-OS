@@ -168,7 +168,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
       const ids=await loadIncomingSelection({source:props.source,cells:ordered,cellUuid:cell.cell_uuid,request:api,signal:controller.signal,isCurrent});
       if(!isCurrent())return;
       if(JSON.stringify(callbacks.current.targets)!==before)throw Error('Selection changed while loading. Select this cell again.');
-      callbacks.current.setTargets(mergeEpochSelection(callbacks.current.targets,ids));
+      callbacks.current.setTargets(mergeEpochSelection(callbacks.current.targets,ids,props.source.readContext?.selection_manifests?Infinity:1000));
     }catch(error){if(isCurrent())setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}
   }
@@ -189,7 +189,7 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
       if(shift&&anchor.current&&anchor.current.explicit===explicit){
         controller=new AbortController();request.current=controller;setSelecting(true);
         const before=JSON.stringify(selection().ids);
-        const ids=await epochSelectionRange({pageSize,cells:ordered,anchor:anchor.current,target,
+        const ids=await epochSelectionRange({limit:props.source.readContext?.selection_manifests?Infinity:1000,pageSize,cells:ordered,anchor:anchor.current,target,
           pageRevision:part=>epochPageRevision(props.source,part),loadPage:async(cellUuid,offset)=>{
           if(!isCurrent())throw new DOMException('Selection changed','AbortError');
           if(cellUuid===target.cellUuid&&offset===page.offset)return page;
@@ -198,10 +198,10 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
         if(!isCurrent())return;
         if(JSON.stringify(selection().ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
         const remove=explicit&&selection().ids.includes(target.uuid)?new Set(ids):null;
-        selection().set(remove?selection().ids.filter(id=>!remove.has(id)):mergeEpochSelection(selection().ids,ids));
+        selection().set(remove?selection().ids.filter(id=>!remove.has(id)):mergeEpochSelection(selection().ids,ids,props.source.readContext?.selection_manifests?Infinity:1000));
       }else{
         anchor.current=target;
-        if(explicit||multiple||shift)selection().set(toggleEpochSelection(selection().ids,target.uuid));
+        if(explicit||multiple||shift)selection().set(toggleEpochSelection(selection().ids,target.uuid,props.source.readContext?.selection_manifests?Infinity:1000));
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}

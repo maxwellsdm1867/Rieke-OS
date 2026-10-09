@@ -64,3 +64,23 @@ test('preview count display uses flat authority fields and rejects unavailable c
  assert.deepEqual(workbenchPreviewCounts(preview).map(row=>row.count),[7,6,1,40,46,2]);
  assert.throws(()=>workbenchPreviewCounts({...preview,accepted_epoch_count:undefined}),/authoritative/);
 });
+
+test('sealed Workbench selection transfers 20001 exact IDs in bounded chunks without review consent',async()=>{
+ const {createWorkbenchSelection}=await import('./workbenchAuthority.js'),{createHash}=await import('node:crypto');
+ const ids=Array.from({length:20001},(_,i)=>`00000000-0000-0000-0000-${String(i).padStart(12,'0')}`),seen=[],bodies=[];
+ const scope={...context,expected_binding_version:4};
+ const result=await createWorkbenchSelection({root:'/c',context:scope,ids},async(path,{body})=>{
+  assert.equal(path,'/c/selection-manifest');assert.equal(body.offset,seen.length);assert.ok(JSON.stringify(body).length<65536);bodies.push(body);seen.push(...body.epoch_uuids);
+  return {selection_token:body.upload_uuid,count:seen.length,total:ids.length,complete:seen.length===ids.length,selection_sha256:createHash('sha256').update(JSON.stringify(seen)).digest('hex'),candidate_scope_revision:scope.candidate_scope_revision,query_revision:scope.candidate_scope_revision,expected_binding_version:4};
+ });
+ assert.equal(bodies.length,21);assert.deepEqual(seen,ids);assert.equal(result.complete,true);assert.equal(bodies.some(body=>Object.hasOwn(body,'review')),false);
+});
+
+test('manifest creation refuses late cancellation and corrupt final membership receipts',async()=>{
+ const {createWorkbenchSelection}=await import('./workbenchAuthority.js');
+ for(const cancel of [false,true]){
+  const controller=new AbortController(),scope={...context,expected_binding_version:4};let calls=0;
+  await assert.rejects(createWorkbenchSelection({root:'/c',context:scope,ids:['epoch'],signal:controller.signal},async(path,{body})=>{calls++;if(cancel)controller.abort();return {selection_token:body.upload_uuid,count:1,total:1,complete:true,selection_sha256:'wrong',candidate_scope_revision:scope.candidate_scope_revision,query_revision:scope.candidate_scope_revision,expected_binding_version:4};}),cancel?{name:'AbortError'}:/could not be verified/);
+  assert.equal(calls,1);
+ }
+});

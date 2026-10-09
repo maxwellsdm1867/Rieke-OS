@@ -99,7 +99,7 @@ Incoming left browsing uses optional ephemeral highlighted UUIDs separate from
 selected UUIDs. Plain/Command/Shift gestures affect highlights through existing
 bounded range readers and freshness fences. The top selection toolbar has one
 counted highlight action: Select Highlighted unions this set; when every highlighted
-UUID is selected, Deselect Highlighted subtracts it, with the existing 1,000 limit.
+UUID is selected, Deselect Highlighted subtracts it, with no fixed epoch-count ceiling in capable Workbench views; Main tagging bounds remain.
 The action is disabled for an empty set or while selection authority is unavailable.
 Candidate/query/revision/split or presentation changes mask old highlights before
 paint; highlights are not persisted and never imply merge/export consent.

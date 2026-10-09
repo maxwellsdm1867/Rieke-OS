@@ -1,5 +1,4 @@
 import {epochPageRequest,epochPageRevision} from '../epoch-browser/epochBrowserSource.js';
-import {MAX_SELECTED_EPOCHS} from '../epochSelection.js';
 
 // Use the same scoped cells as loadIncomingSelection; never use Main cell totals.
 export function incomingSelectionCount({targets=[],cells=[],cell=null,epoch=null}){
@@ -19,27 +18,36 @@ export async function loadIncomingSelection({source,cells,cellUuid=null,request,
   if(cellUuid&&chosen.length!==1)throw new Error('This cell is no longer in the incoming view.');
   if(chosen.some(cell=>typeof cell.cell_uuid!=='string'||!Number.isSafeInteger(cell.epochs)||cell.epochs<0)||new Set(chosen.map(cell=>cell.cell_uuid)).size!==chosen.length)throw new Error('Complete incoming cell counts are unavailable. Refresh this view.');
   const count=chosen.reduce((total,cell)=>total+cell.epochs,0);
-  if(count>MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs at a time. Filter this incoming view or choose a smaller cell.');
+  if(!Number.isSafeInteger(count))throw new Error('Complete incoming counts are unavailable.');
+  if(count>1000&&source.readContext.selection_manifests!==true)throw new Error('Update the Workbench service to select more than 1,000 epochs.');
   const check=()=>{if(signal?.aborted||!isCurrent())throw new DOMException('Incoming selection changed. Select again.','AbortError');};
   if(source.readContext.list_selection===true){
     check();
-    const filters=new URLSearchParams(source.query);filters.delete('candidate_scope_revision');
+    const filters=new URLSearchParams(source.query);filters.delete('candidate_scope_revision');filters.delete('selection_token');
+    const allIds=[];
+    for(let start=0;start<chosen.length;start+=250){
+    const batch=chosen.slice(start,start+250),batchCount=batch.reduce((sum,cell)=>sum+cell.epochs,0);
     const result=await request(`${source.readContext.root}/list-selection`,{method:'POST',signal,body:{
       candidate_scope_revision:source.readContext.candidate_scope_revision,
-      cells:chosen.map(({cell_uuid,epochs})=>({cell_uuid,epochs})),filters:Object.fromEntries(filters)}});
+      ...(source.readContext.selection_token?{selection_token:source.readContext.selection_token}:{}),
+      cells:batch.map(({cell_uuid,epochs})=>({cell_uuid,epochs})),filters:Object.fromEntries(filters)}});
     check();epochPageRevision(source,result);
     if(result?.candidate_scope_revision!==source.readContext.candidate_scope_revision||
-      result.expected_binding_version!==source.readContext.expected_binding_version||result.count!==count||
-      !Array.isArray(result.cells)||result.cells.length!==chosen.length||!Array.isArray(result.epoch_uuids))throw new Error('The incoming selection changed. Refresh and select again.');
+      result.expected_binding_version!==source.readContext.expected_binding_version||result.count!==batchCount||
+      !Array.isArray(result.cells)||result.cells.length!==batch.length||!Array.isArray(result.epoch_uuids))throw new Error('The incoming selection changed. Refresh and select again.');
     const ids=[];
-    for(let index=0;index<chosen.length;index++){
-      const expected=chosen[index],cell=result.cells[index];
+    for(let index=0;index<batch.length;index++){
+      const expected=batch[index],cell=result.cells[index];
       if(cell?.cell_uuid!==expected.cell_uuid||cell.epochs!==expected.epochs||!Array.isArray(cell.epoch_uuids)||cell.epoch_uuids.length!==expected.epochs||
         cell.epoch_uuids.some(id=>typeof id!=='string'||!id))throw new Error('The complete incoming cell selection could not be verified.');
-      ids.push(...cell.epoch_uuids);
+      for(const id of cell.epoch_uuids)ids.push(id);
     }
-    if(ids.length!==count||new Set(ids).size!==count||result.epoch_uuids.length!==count||ids.some((id,index)=>id!==result.epoch_uuids[index]))throw new Error('The incoming selection contains duplicate or missing identities.');
-    return ids;
+    if(ids.length!==batchCount||new Set(ids).size!==batchCount||result.epoch_uuids.length!==batchCount||ids.some((id,index)=>id!==result.epoch_uuids[index]))throw new Error('The incoming selection contains duplicate or missing identities.');
+    for(const id of ids)allIds.push(id);
+    check();
+    }
+    if(allIds.length!==count||new Set(allIds).size!==count)throw new Error('The incoming selection contains duplicate or missing identities.');
+    return allIds;
   }
   const ids=[];
   for(const cell of chosen){

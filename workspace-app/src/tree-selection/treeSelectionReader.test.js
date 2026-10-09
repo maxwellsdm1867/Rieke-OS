@@ -161,3 +161,10 @@ test('first epoch pins expected, supplied or discovered revision and rejects a c
     await assert.rejects(reader.firstEpoch(scope,{path:['cell'],revision:'supplied'}),{message:'Tree changed. Select the cell again.'});
   }
 });
+
+test('capable Workbench ranges retain every identity beyond the Main selection bound',async()=>{
+ const reader=createTreeSelectionReader({requestPage:async(_scope,{offset})=>page(offset,Array.from({length:60},(_,i)=>({epoch_uuid:`id-${offset+i}`})))});
+ const supplied=page(0,Array.from({length:60},(_,i)=>({epoch_uuid:`id-${i}`})));
+ const ids=await reader.rangeEpochIds({readContext:{selection_manifests:true}},{page:supplied,firstIndex:0,lastIndex:20000});
+ assert.equal(ids.length,20001);assert.equal(new Set(ids).size,20001);assert.equal(ids.at(-1),'id-20000');
+});

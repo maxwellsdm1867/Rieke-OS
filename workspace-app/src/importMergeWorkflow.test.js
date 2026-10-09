@@ -26,6 +26,7 @@ async function harness({pending=3,failQueue=false,failPrepare=0,failPreview=fals
   if(endpoint===candidate+'/context')return response(context());
   if(endpoint===candidate+'/draft'){assert.equal(body.expected_version,generation);assert.equal(body.expected_candidate_scope_revision,context().candidate_scope_revision);for(const next of body.decisions){const index=decisions.findIndex(value=>value.epoch_uuid===next.epoch_uuid),value={selected:false,reviewed:false,excluded:false,...decisions[index],...next};if(index<0)decisions.push(value);else decisions[index]=value;}assert.equal(decisions.find(v=>v.epoch_uuid==='excluded').excluded,true);mode=body.selection_mode||mode;generation++;return response(context());}
   if(endpoint===candidate+'/preview'){previews++;if(failPreview)return response({error:'Queue changed: preview again'},409);return response({preview_sha256:'exact-additions',expected_binding_version:7,expected_query_revision:'main-seven',selected_epoch_count:chosen.length,accepted_epoch_count:Math.max(0,pending-1),already_present_epoch_count:0,retained_epoch_count:36,next_epoch_count:36+Math.max(0,pending-1),accepted_cell_count:pending>1?2:0});}
+  if(endpoint.startsWith(base+'/receipts/'))return receipts.has(endpoint.split('/').at(-1))?response(receipts.get(endpoint.split('/').at(-1))):response({error:'No receipt'},404);
   if(endpoint===candidate+'/accept'){
    receiptBodies.push(options.body);if(!receipts.has(body.operation_uuid)){accepts++;receipts.set(body.operation_uuid,{operation_uuid:body.operation_uuid,candidate_revision_uuid:'union',event_uuid:'acceptance-event',binding:{version:8,revision_uuid:'main-eight'}});}
    if(failAccept&&receiptBodies.length===1)return response({error:'Reply lost after commit'},503);return response(receipts.get(body.operation_uuid));
@@ -122,7 +123,7 @@ test('lost acceptance response retains the exact operation; repeated click recov
  const h=await harness({failAccept:true});try{
   await h.click('Merge matched data');await h.selectAndMerge();assert.equal(h.accepts,1);assert.match(h.container.textContent,/may have committed/);
   assert.equal(h.button('Cancel merge preview'),undefined);await h.rerender();assert.equal(h.previews,1);assert.equal(h.receiptBodies.length,1);
-  await h.click('Recover acceptance receipt');assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,2);assert.equal(h.receiptBodies[0],h.receiptBodies[1]);
+  await h.click('Recover acceptance receipt');assert.equal(h.accepts,1);assert.equal(h.receiptBodies.length,1);assert.equal(h.calls.filter(call=>call.method==='GET'&&call.endpoint.startsWith(base+'/receipts/')).length,1);
  }finally{await h.close();}
 });
 for(const wrong of ['project','protocol','unissued'])test(`restored ${wrong} intent cannot authorize a preview`,async()=>{
