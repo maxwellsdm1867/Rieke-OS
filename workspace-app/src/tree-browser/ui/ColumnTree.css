@@ -56,3 +56,7 @@
 
 /* Highlights are a batch-action set, independent of green selection fill. */
 .column-tree .tp-terminal .tp-epoch-row.is-highlighted>.tp-epoch strong{font-weight:700}
+
+/* The open path is separate from green scientific selection; no geometry shift. */
+.column-tree.is-edit-tree .tp-branch.is-active-path{border-color:var(--accent);outline:1px solid var(--accent);outline-offset:-2px}
+.column-tree .tp-pending-column{padding:20px 14px;color:var(--ink-muted);font-size:12px}

@@ -120,3 +120,50 @@ for(const name of ['ColumnTree','HierarchyTree'])for(const frozen of [false,true
   assert.equal(calls.length,2);assert.equal(calls[1].include_ancestors,true);assert.equal(calls[1].anchor_uuid,'target');
  }finally{await h.close();if(priorFrame===undefined)delete globalThis.requestAnimationFrame;else globalThis.requestAnimationFrame=priorFrame;if(priorCancel===undefined)delete globalThis.cancelAnimationFrame;else globalThis.cancelAnimationFrame=priorCancel;}
 });
+
+test('Edit Tree immediately follows sibling intent at every depth without exposing old descendants',async()=>{
+ const h=await createWorkflowHarness(),held=[];let hold=false;
+ const fence={revision:'c'.repeat(64),candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:0,generation:{id:'same'}};
+ function page(path){
+  const depth=path.length,terminal=depth===3;
+  const branches=terminal?[]:[0,1].map(n=>({key:`${depth}-${n}`,path:[...path,`${depth}-${n}`],label:`Level ${depth+1} group ${n+1}`,value:`${depth}-${n}`,count:2**(2-depth)}));
+  return {...fence,kind:terminal?'epochs':'branches',path,depth,offset:0,limit:60,total:terminal?1:2,total_epochs:2**(3-depth),selection:{count:2**(3-depth)},split_order:['date','cell','block'],levels:['date','cell','block'].map(field=>({field,label:field})),branches,epochs:terminal?[{epoch_uuid:path.join('/'),cell_uuid:'cell',epoch_number:1}]:[],has_more:false,ancestors:path.map((key,index)=>({...page(path.slice(0,index)).branches.find(row=>row.key===key),parent_offset:0}))};
+ }
+ function response(body){return {...page(body.path),ancestor_pages:body.path.map((_,index)=>page(body.path.slice(0,index)))};}
+ h.fixture.respond=(url,options,fallback)=>{
+  if(!url.pathname.endsWith('/tree/page'))return fallback();const body=JSON.parse(options.body);
+  return hold?new Promise(resolve=>held.push({body,resolve:()=>resolve(response(body)),fail:()=>resolve({failure:409,error:'Changed tree'})})):response(body);
+ };
+ const props={protocolId:'p',readContext:{root:'/protocols/p/workbench/candidates/c',candidate_scope_revision:'scope',tree_column_pages:true},splits:'date,cell,block',design:true,selectedEpochs:[],setSelectedEpochs:()=>assert.fail('Navigation must not change selection')};
+ const buttons=()=>h.root.findAll(node=>node.type==='button'&&node.props.className?.split(' ').includes('tp-branch'));
+ const branch=key=>buttons().find(node=>node.props.title.endsWith(`Source value: ${JSON.stringify(key)}`));
+ const open=async key=>{await h.act(()=>branch(key).props.onClick());await h.waitFor(()=>branch(key)?.props['aria-expanded']&&!h.root.findByProps({'aria-label':'Tree column overview'}).props['aria-busy']);};
+ try{
+  const Tree=await h.component('ColumnTree');await h.mount(Tree,props);await h.waitFor(()=>branch('0-0')&&!branch('0-0').props.disabled);
+  await open('0-0');await open('1-0');await open('2-0');
+  const staleChild=branch('2-1').props.onClick;
+  assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']==='0-0/1-0/2-0').length,1);
+  hold=true;await h.act(()=>branch('1-1').props.onClick());await h.waitFor(()=>held.length===1);
+  assert.equal(branch('1-1').props['aria-current'],'step');assert.ok(branch('1-1').props.className.includes('is-active-path'));
+  assert.equal(branch('1-0').props['aria-expanded'],false);assert.equal(branch('2-0'),undefined);
+  assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']).length,0,'previous leaf vanishes at click, before response');
+  assert.ok(h.root.findAll(node=>node.props.className==='tp-column tp-pending-column').length);
+  assert.ok(h.root.findAll(node=>node.props.role==='switch').every(node=>node.props.disabled));
+  await h.act(()=>staleChild());assert.equal(held.length,1,'hidden downstream handler cannot replace latest intent');
+  await h.act(()=>branch('1-0').props.onClick());await h.waitFor(()=>held.length===2);
+  await h.act(()=>held[1].resolve());await h.settle(15);await h.act(()=>held[0].resolve());await h.settle(15);
+  assert.equal(branch('1-0').props['aria-current'],'step');assert.equal(branch('1-1').props['aria-expanded'],false);
+  await h.act(()=>staleChild());assert.equal(held.length,2,'old receipt handler stays inert after replacement');
+  hold=false;await open('2-0');hold=true;
+  await h.act(()=>branch('2-1').props.onClick());await h.waitFor(()=>held.length===3);
+  assert.equal(branch('2-1').props['aria-current'],'step');assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']).length,0);
+  await h.act(()=>held[2].resolve());await h.settle(15);assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']==='0-0/1-0/2-1').length,1);
+  await h.act(()=>branch('0-1').props.onClick());await h.waitFor(()=>held.length===4);
+  assert.equal(branch('0-1').props['aria-current'],'step');assert.equal(branch('1-0'),undefined);assert.equal(h.root.findAll(node=>node.props['data-epoch-uuid']).length,0);
+  await h.act(()=>held[3].fail());await h.settle(15);
+  assert.equal(branch('0-1').props['aria-current'],'step','failed destination stays identified');assert.equal(branch('1-0'),undefined,'failure must not restore unrelated descendants');
+  const retry=h.root.findAllByType('button').find(node=>node.children.includes('Reload tree overview'));
+  await h.act(()=>retry.props.onClick());await h.waitFor(()=>held.length===5);assert.deepEqual(held[4].body.path,['0-1']);
+  await h.act(()=>held[4].resolve());await h.settle(15);assert.ok(branch('1-0'));assert.equal(branch('0-1').props['aria-current'],'step');
+ }finally{await h.close();}
+});

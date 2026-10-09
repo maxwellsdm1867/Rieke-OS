@@ -104,3 +104,15 @@ and only the matching request clears it; late responses cannot replace the lates
 destination. Optional `navigationDisabled` separates external read blocking from
 page-loading action blocking, falling back to `actionsDisabled` for older callers.
 Selection, tags and inclusion still require a fresh complete page.
+
+Edit Tree projects the latest clicked branch path immediately, before its read
+completes. Keep verified ancestor columns that match that path; hide unrelated
+old descendants and traces while showing a loading column for the requested group.
+The open path has a full accent border and `aria-current="step"`, independently
+of green scientific selection. Border styling must not change card geometry.
+A failed read retains the requested path and retry destination rather than reviving
+unrelated descendants. Only current visible receipt objects may navigate; captured
+handlers from hidden or replaced columns remain inert. This changes read-only
+presentation, not selection, tags, inclusion, or backend authority.
+`treeTagCoverageWorkflow.test.js` covers sibling replacement at three depths,
+held/out-of-order responses, stale callbacks and failure/retry.
