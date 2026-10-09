@@ -236,10 +236,10 @@ export default function App(){
   }
   function reuseSavedExport(recipe){const target=exportReuseRoute(recipe);navigation.go(target.page,target.details);}
   function reviewCandidate(revisionId,protocolId){navigation.go('protocol',{protocol:protocolId,workbench:{candidate_revision_uuid:revisionId}});}
-  function openWorkbench(protocolId){navigation.go('protocol',{protocol:protocolId,workbench:{}});}
-  function mergeIncoming(protocolId){
+  function openWorkbench(protocolId,options={}){navigation.go('protocol',{protocol:protocolId,workbench:{...(options.candidate_revision_uuid?{candidate_revision_uuid:options.candidate_revision_uuid}:{})}});}
+  function mergeIncoming(protocolId,options){
     if(!projectId||!data?.protocols?.some(item=>item.protocol_uuid===protocolId))return false;
-    const intent=mergeIntents.current.issue(projectId,protocolId);
+    const intent=mergeIntents.current.issue(projectId,protocolId,options);
     if(!intent)return false;
     navigation.go('protocol',{protocol:protocolId,workbench:{merge_intent:intent}});return true;
   }

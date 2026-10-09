@@ -160,3 +160,27 @@ test('a retired incoming highlight range cannot publish into the next scope',asy
   await h.render({...props,revision:'new'});await h.act(async()=>{pending.resolve(pageAt(0));await work;});assert.deepEqual(highlights,[]);
  }finally{await h.close();}
 });
+
+test('explicit epoch switches select and deselect ranges without changing highlights or focus',async()=>{
+ const h=await createPagedTreeHarness();let selected=[],focus=0;
+ const props={...scopeA,readContext:{root:'/candidate',candidate_scope_revision:'scope'},highlightedEpochs:['epoch-A-9'],setHighlightedEpochs:()=>assert.fail('Switches must not highlight'),onSelectEpoch:()=>focus++,setSelectedEpochs:ids=>{selected=ids;}};
+ const click=async(index,event={})=>{await h.render({...props,selectedEpochs:selected});await h.act(()=>h.tree.onSelectEpochToggle(`epoch-A-${index}`,pageAt(0).epochs[index],event,pageAt(0),index));};
+ try{
+  await click(0);await click(3,{shiftKey:true});assert.deepEqual(selected,['epoch-A-0','epoch-A-1','epoch-A-2','epoch-A-3']);
+  await click(2,{shiftKey:true});assert.deepEqual(selected,['epoch-A-3']);
+  await click(5);await click(7);assert.deepEqual(selected,['epoch-A-3','epoch-A-5','epoch-A-7']);assert.equal(focus,0);
+ }finally{await h.close();}
+});
+
+test('explicit range switches refuse late results after scope changes',async()=>{
+ const h=await createPagedTreeHarness(),pending=deferred();let selected=[];
+ const props={...scopeA,readContext:{root:'/candidate',candidate_scope_revision:'scope'},setSelectedEpochs:ids=>{selected=ids;}};
+ try{
+  h.network.api=()=>pending.promise;await h.render(props);
+  await h.act(()=>h.tree.onSelectEpochToggle('epoch-A-0',pageAt(0).epochs[0],{},pageAt(0),0));
+  await h.render({...props,selectedEpochs:selected});let work;
+  await h.act(()=>{work=h.tree.onSelectEpochToggle('epoch-A-60',pageAt(60).epochs[0],{shiftKey:true},pageAt(60),0);});
+  await h.render({...props,selectedEpochs:selected,revision:'new'});
+  await h.act(async()=>{pending.resolve(pageAt(0));await work;});assert.deepEqual(selected,['epoch-A-0']);
+ }finally{await h.close();}
+});

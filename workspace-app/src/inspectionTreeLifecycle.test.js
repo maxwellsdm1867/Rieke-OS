@@ -209,3 +209,26 @@ test('left epoch list uses a separate bounded highlight store for plain, command
   await h.render({...props,highlightedEpochs:highlighted});await h.selectEpoch(1,{metaKey:true});assert.deepEqual(highlighted,['cell-A-0','cell-A-2']);assert.equal(selectedCalls,0);
  }finally{await h.close();}
 });
+
+test('incoming list selection switches apply a bounded range without replacing highlights',async()=>{
+ const h=await createInspectionHarness();let targets=[];
+ const props={...base,source:{...sourceA,readContext:{root:'/candidate',candidate_scope_revision:'query-A'}},highlightedEpochs:['cell-A-9'],setHighlightedEpochs:()=>assert.fail('Switch must not highlight'),setTargets:ids=>{targets=ids;}};
+ const click=async(index,event={})=>{await h.render({...props,targets});const button=h.buttons.find(button=>button['aria-label']===`Select epoch cell-A-${index}`);assert.ok(button);await h.act(async()=>{button.onClick({...event,stopPropagation(){}});});};
+ try{
+  await h.render(props);await h.toggle(0,true);await h.toggle(1,true);
+  await click(0);await click(3,{shiftKey:true});assert.deepEqual(targets,['cell-A-0','cell-A-1','cell-A-2','cell-A-3']);
+  await click(2,{shiftKey:true});assert.deepEqual(targets,['cell-A-3']);
+ }finally{await h.close();}
+});
+
+
+test('explicit list ranges include intervening pages and cells in display order',async()=>{
+ const h=await createInspectionHarness();let targets=[];
+ const props={...base,source:{...sourceA,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'}},setTargets:ids=>{targets=ids;}};
+ h.network.api=path=>{const query=new URL(path,'http://fixture').searchParams;return Promise.resolve(pageAt(query.get('cell_uuid'),Number(query.get('offset'))));};
+ const click=async(cell,index,event={})=>{await h.render({...props,targets});const page=pageAt(cell,Math.floor(index/60)*60),epoch=page.epochs[index-page.offset];await h.act(async()=>h.branch.onSelect(event,{cellUuid:cell,index,uuid:epoch.epoch_uuid},epoch,page,true));};
+ try{
+  await click('cell-A',63);await click('cell-B',1,{shiftKey:true});
+  assert.deepEqual(h.errors,[]);assert.deepEqual(targets,['cell-A-63','cell-A-64','cell-B-0','cell-B-1']);
+ }finally{await h.close();}
+});

@@ -142,21 +142,26 @@ test('retained plain-click callback cannot navigate when only navigation permiss
 });
 
 test('annotation authority refresh with equal membership disables old navigation until fresh receipt arrives',async()=>{
- const h=await createWorkflowHarness({total:40});
+ const h=await createWorkflowHarness({total:40}),held=[];
+ let holdFresh=false;
  try{
   await h.mount();await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);await openCell(h);
   await h.waitFor(()=>h.root.findAllByType('input').some(node=>node.props['aria-label']?.startsWith('Tag ')&&!node.props.disabled));
   const old=h.viewer.treePane.listProps.onFocus;
   const input=h.root.findAllByType('input').find(node=>node.props['aria-label']?.startsWith('Tag ')&&!node.props['aria-label'].startsWith('Tag to add'));
+  h.fixture.respond=(url,options,result)=>holdFresh&&url.pathname.endsWith('/epochs')?new Promise(resolve=>held.push(()=>resolve(result()))):result();
+  holdFresh=true;
   await h.act(()=>input.props.onChange({target:{value:'new tag'}}));
   await h.act(()=>input.parent.props.onSubmit({preventDefault(){}}));
   assert.equal(h.fixture.generation,1);assert.equal(h.viewer.treePane.listProps.navigationDisabled,true);
   const before=h.fixture.requests.length;await h.act(()=>old('epoch-9',{epoch_uuid:'epoch-9',cell_uuid:'cell-0'}));
   assert.equal(h.fixture.requests.slice(before).some(item=>item.path.includes('anchor_uuid=epoch-9')),false);
+  await h.waitFor(()=>held.length>0);holdFresh=false;
+  await h.act(()=>{for(const release of held.splice(0))release();});
   await h.waitFor(()=>!h.viewer.treePane.listProps.navigationDisabled);
   assert.equal(h.viewer.treePane.listProps.source.queryRevision,'query-1');
   await h.act(()=>row(h,10).props.onClick({}));await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-9');
- }finally{await h.close();}
+ }finally{holdFresh=false;for(const release of held)release();await h.close();}
 });
 
 test('reselecting the active Inspect tab returns from design without remounting or rereading rows',async()=>{
@@ -222,4 +227,30 @@ test('highlight toolbar explicitly selects or deselects only highlights and clea
   await h.act(()=>h.viewer.treePane.onDesign());await h.act(()=>h.viewer.toolbar.onBrowse());
   assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,0);
  }finally{await h.close();}
+});
+
+for(const modifier of ['metaKey','ctrlKey'])test(`Edit Tree ${modifier} highlights multiple rows for one shared select/deselect action`,async()=>{
+ const {createPagedTreeHarness}=await import('./test-support/pagedTreeHarness.js');
+ const h=await createInspectorHarness(),tree=await createPagedTreeHarness(),published=[];
+ const incoming={...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'},draftSelection:{selected:['epoch-C'],disabled:false},onSelectionChange:ids=>published.push(ids)};
+ const treePage={...page,kind:'epochs',path:[],revision:'tree-current'};
+ const action=()=>{const element=h.viewer.toolbarChildren.props.children[0];return element.type(element.props);};
+ try{
+  h.fixture.page=page;await h.render(incoming);await h.act(()=>h.viewer.treePane.onDesign());
+  await h.act(()=>{h.viewer.columnTree.onMetadata(treePage);h.viewer.columnTree.onStatus({loading:false,error:null});});
+  assert.equal(typeof h.viewer.columnTree.setHighlightedEpochs,'function');
+  for(const index of [0,1]){
+   await tree.render(h.viewer.columnTree);
+   await tree.act(()=>tree.tree.onSelectEpoch(epochs[index].epoch_uuid,epochs[index],{[modifier]:true},treePage,index));
+  }
+  assert.deepEqual(published,[],'Command/Ctrl row clicks must not change selected membership');
+  assert.deepEqual(h.viewer.columnTree.highlightedEpochs,['epoch-A','epoch-B']);
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,2);
+  await h.act(()=>action().props.onClick());assert.deepEqual(published.pop(),['epoch-C','epoch-A','epoch-B']);
+  await h.render({...incoming,draftSelection:{...incoming.draftSelection,selected:['epoch-C','epoch-A','epoch-B']}});
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.allSelected,true);
+  await h.act(()=>action().props.onClick());assert.deepEqual(published.pop(),['epoch-C']);
+  await h.render(incoming);
+  assert.equal(h.viewer.toolbarChildren.props.children[0].props.allSelected,false);
+ }finally{await tree.close();await h.close();}
 });

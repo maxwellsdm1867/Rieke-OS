@@ -53,3 +53,6 @@
 
 .column-tree .tp-total{height:48px;min-height:48px;padding:10px 18px;align-items:center;flex-wrap:nowrap;box-sizing:border-box;background:var(--surface);border-bottom:1px solid var(--border-subtle)}
 .column-tree .tp-total>strong{font-size:14px;font-weight:600;color:var(--ink)}
+
+/* Highlights are a batch-action set, independent of green selection fill. */
+.column-tree .tp-terminal .tp-epoch-row.is-highlighted>.tp-epoch strong{font-weight:700}

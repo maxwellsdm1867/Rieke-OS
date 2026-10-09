@@ -1533,7 +1533,8 @@
             "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
             "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
             "workspace-app/src/exports/workbenchExport.js",
-            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/incoming-workbench/importedSelection.js"
           ]
         },
         {
@@ -1677,6 +1678,14 @@
           "file": "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
           "allow": [
             "workspace-app/src/annotations/treeGroupTargets.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/importedSelection.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/incomingSelection.js",
+            "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js"
           ]
         }
       ],
@@ -3324,6 +3333,12 @@
             "path": "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
             "exports": [
               "resolveIncomingTreeSelection"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/importedSelection.js",
+            "exports": [
+              "loadImportedSelection"
             ]
           }
         ]
