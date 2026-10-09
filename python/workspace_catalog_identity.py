@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import json
 import datetime as dt
+import math
+import struct
 from decimal import Decimal, InvalidOperation
 
 
@@ -20,6 +22,88 @@ class CatalogIdentityConflict(ValueError):
 
 def _exact(value):
     return json.dumps(value,sort_keys=True,ensure_ascii=False,allow_nan=False,separators=(',',':'))
+
+
+def _within_mysql_json_rounding(actual, source):
+    """Only finite binary64 leaves may differ, by at most three adjacent values.
+
+    Three adjacent values is a conservative application cap, not a promised
+    MySQL error bound or a general numerical equality rule. The complete document
+    must separately
+    match this server's JSON conversion of the original source. Types, shape,
+    sequence order, integers and signed zero remain exact. Never use for query
+    equality, grouping, metadata fingerprints or general scientific comparison.
+    """
+    if type(actual) is not type(source):
+        return False
+    if type(source) is float:
+        if not math.isfinite(source) or not math.isfinite(actual):
+            return False
+        if (source == 0.0) != (actual == 0.0):
+            return False
+        if math.copysign(1.0, actual) != math.copysign(1.0, source):
+            return False
+        left = struct.unpack('>Q', struct.pack('>d', actual))[0]
+        right = struct.unpack('>Q', struct.pack('>d', source))[0]
+        return abs(left - right) <= 3
+    if isinstance(source, dict):
+        return actual.keys() == source.keys() and all(
+            _within_mysql_json_rounding(actual[key], value) for key, value in source.items())
+    if isinstance(source, list):
+        return len(actual) == len(source) and all(
+            _within_mysql_json_rounding(left, right) for left, right in zip(actual, source))
+    return actual == source
+
+
+def _verify_mysql_json_rounding(connection, pending):
+    """Read-only, bounded witnesses for documents already inside the ULP bound.
+
+    The original source is always the anchor, including a same-source recheck.
+    Never compare against the previous stored value or accept accumulated drift.
+    Limit each query to 32 documents and approximately 1 MiB of JSON; a larger
+    single document is queried alone rather than imposing a new metadata limit.
+    """
+    batch, size = [], 0
+
+    def verify(items):
+        result = connection.query('SELECT ' + ','.join('CAST(%s AS JSON)' for _ in items),
+                                  tuple(item[0] for item in items)).fetchone()
+        if result is None or len(result) != len(items):
+            raise ValueError('Incomplete MySQL JSON encoding witness')
+        for (_, actual, kind, field, identity), encoded in zip(items, result):
+            if _exact(json.loads(encoded)) != _exact(actual):
+                raise CatalogIdentityConflict('catalog_metadata',
+                    f'Catalog {kind} {field} differs from the parsed source MySQL JSON encoding',
+                    identity=identity)
+
+    for source, actual, kind, field, identity in pending:
+        encoded = json.dumps(source, allow_nan=False)
+        if batch and (len(batch) == 32 or size + len(encoded) > 1024 * 1024):
+            verify(batch)
+            batch, size = [], 0
+        batch.append((encoded, actual, kind, field, identity))
+        size += len(encoded)
+    if batch:
+        verify(batch)
+
+
+def verify_mysql_json_documents(connection, documents):
+    """Admit catalog JSON against caller-verified original acquisition metadata.
+
+    Each tuple is (source, actual, kind, field, acquisition_uuid). This read-only
+    policy is shared by import validation and the source-verified workspace read
+    admission. It does not establish the source's seal or alter any fingerprint.
+    """
+    pending = []
+    for source, actual, kind, field, identity in documents:
+        if _exact(source) == _exact(actual):
+            continue
+        if not _within_mysql_json_rounding(actual, source):
+            raise CatalogIdentityConflict('catalog_metadata',
+                f'Catalog {kind} {field} differs from the parsed source', identity=identity)
+        pending.append((source, actual, kind, field, identity))
+    if pending:
+        _verify_mysql_json_rounding(connection, pending)
 
 
 def _same_rate(left,right):
@@ -62,12 +146,15 @@ def _same_datetime(actual,expected):
     return recorded in allowed
 
 
-def validate_catalog_identity(experiment, catalog, experiment_id, progress=None):
+def validate_catalog_identity(experiment, catalog, experiment_id, progress=None, *, mysql_json_rounding=False):
     """Check exact membership, multiplicity, parent links and recorded metadata.
 
     Must run inside the import transaction for both new and same-source imports.
     Supports repeated display labels and metadata, but never duplicate UUID rows
     or a UUID linked to a different parent. No database writes are performed.
+    Metadata is exact by default. The import-only mysql_json_rounding policy
+    admits solely bounded, independently witnessed MySQL JSON representations;
+    source metadata and other callers retain their exact comparison semantics.
     """
     expected={name:{} for name in ('Experiment','Animal','Preparation','Cell','EpochGroup','EpochBlock','Epoch','Response','Stimulus')}
     parents={'Animal':'Experiment','Preparation':'Animal','Cell':'Preparation','EpochGroup':'Cell',
@@ -96,7 +183,7 @@ def validate_catalog_identity(experiment, catalog, experiment_id, progress=None)
                                 for device,stream in epoch.get(key,{}).items():
                                     add(kind,stream,epoch['uuid'],device)
 
-    indexed={};fetches=0
+    indexed={};fetches=0;json_witnesses=[]
     for kind,members in expected.items():
         relation=getattr(catalog,kind)
         if kind in ('Response','Stimulus'):
@@ -128,7 +215,10 @@ def validate_catalog_identity(experiment, catalog, experiment_id, progress=None)
             fields=() if kind=='Stimulus' else ('label',) if kind=='Response' else ('label','properties','attributes','parameters')
             for field in fields:
                 if _exact(row.get(field))!=_exact(item.get(field)):
-                    raise CatalogIdentityConflict('catalog_metadata',f'Catalog {kind} {field} differs from the parsed source',identity=identity)
+                    if mysql_json_rounding and field in ('properties','attributes','parameters'):
+                        json_witnesses.append((item.get(field),row.get(field),kind,field,identity))
+                    else:
+                        raise CatalogIdentityConflict('catalog_metadata',f'Catalog {kind} {field} differs from the parsed source',identity=identity)
             for column,key in SCALAR_COLUMNS.get(kind,{}).items():
                 if not _same_scalar(row.get(column),item.get(key)):
                     raise CatalogIdentityConflict('catalog_metadata',f'Catalog {kind} {column} differs from the parsed source',identity=identity)
@@ -148,6 +238,8 @@ def validate_catalog_identity(experiment, catalog, experiment_id, progress=None)
                             raise CatalogIdentityConflict('catalog_stream',f'Catalog response {column} differs from source',identity=identity)
         if progress:
             progress('verifying_catalog',completed=fetches,total=len(expected),unit='tables')
+    if json_witnesses:
+        verify_mysql_json_documents(catalog.schema.connection,json_witnesses)
     # Both blocks and groups store scientific protocol classifications. Fetch
     # only their distinct referenced protocol keys once, including the sentinel
     # used for empty/mixed groups; never issue one protocol query per group.

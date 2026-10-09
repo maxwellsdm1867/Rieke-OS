@@ -436,7 +436,7 @@ def _restore(project_dir, connection, snapshot):
         if Path(name).name != name or not name.endswith('.json'):
             raise ValueError('Invalid protocol filename')
     # Validate all identifiers against live SQL before interpolating any columns.
-    json_columns={}; columns={}
+    json_columns={}; columns={}; primary_keys={}
     existing = {row[0] for row in connection.query(
         "SELECT table_name FROM information_schema.tables WHERE table_schema='recording_workspace'").fetchall()}
     for table, rows in state['tables'].items():
@@ -446,6 +446,7 @@ def _restore(project_dir, connection, snapshot):
         heading=connection.query(f'SHOW COLUMNS FROM recording_workspace.`{table}`').fetchall()
         columns[table]=[row[0] for row in heading]
         json_columns[table]={row[0] for row in heading if row[1]=='json'}
+        primary_keys[table]=[row[0] for row in heading if row[3]=='PRI']
         if any(set(row)!=set(columns[table]) for row in rows):
             raise ValueError('Snapshot columns differ from the app schema')
     save(root,connection)
@@ -480,11 +481,22 @@ def _restore(project_dir, connection, snapshot):
                 # Keep immutable export recipes and their historical dependencies.
                 names=columns[table]
                 quoted=','.join('`'+name+'`' for name in names)
-                placeholders=','.join(['%s']*len(names))
                 for row in rows:
-                    values=tuple(serialized(row[name]) if name in json_columns[table] else row[name] for name in names)
+                    from workspace_json_transport import mysql_json_expression, verify_json_fields
+                    expressions, values = [], []
+                    for name in names:
+                        if name in json_columns[table]:
+                            expression, arguments = mysql_json_expression(row[name])
+                            expressions.append(expression)
+                            values.extend(arguments)
+                        else:
+                            expressions.append('%s')
+                            values.append(row[name])
+                    placeholders=','.join(expressions)
                     connection.query(f'INSERT INTO recording_workspace.`{table}` ({quoted}) VALUES ({placeholders}) '
-                        'ON DUPLICATE KEY UPDATE '+','.join('`'+name+'`=VALUES(`'+name+'`)' for name in names), args=values)
+                        'ON DUPLICATE KEY UPDATE '+','.join('`'+name+'`=VALUES(`'+name+'`)' for name in names), args=tuple(values))
+                    verify_json_fields(connection.query, 'recording_workspace', table, row,
+                                       sorted(json_columns[table]), primary_keys[table])
             for path,data in files.items():
                 if data is None:path.unlink(missing_ok=True)
                 else:atomic_write(path,data)

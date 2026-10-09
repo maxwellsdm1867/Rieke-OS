@@ -70,3 +70,14 @@ Instance/class overrides and subclasses return false. The boolean permits
 query-result construction to read a known read-only binding before copying
 retained original fields; it confers no membership, recipe or freshness authority.
 Every actual binding read and existing scope validation still runs.
+
+Explorer revision publication uses `workspace_authored_json.write_row` for its
+sealed recipe and summary fields. Canonical app-owned DataJoint schemas use
+single-statement typed JSON expressions and exact readback inside the original
+transaction, before audit/publication. Custom writers retain their methods and
+must pass the same exact JSON readback. No stored hash is recomputed or weakened;
+subsequent `get` verification and binding authority remain unchanged. This prevents
+first-write database JSON rounding from breaking an otherwise valid recipe seal.
+Public endpoint and rollback examples are in
+`python/tests/test_workspace_authored_json.py`; pinned native evidence is recorded
+in `docs/dev/h5-conversion-audit-2026-10-09.md`.

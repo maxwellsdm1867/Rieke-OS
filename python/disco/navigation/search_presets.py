@@ -5,6 +5,7 @@ import json
 import hashlib
 import uuid
 from disco.decisions.curation import RevisionConflict
+from workspace_authored_json import write_row
 
 
 def preset_tables(dj):
@@ -151,10 +152,7 @@ class SearchPresets:
         with self.store._transaction('query:' + key):
             previous = (self.Runs & scope).to_dicts()
             row = dict(**scope, result=result)
-            if previous:
-                self.Runs.update1(row)
-            else:
-                self.Runs.insert1(row)
+            write_row(self.Runs, row, schema='search_query_last_run', update=bool(previous))
             self.store._event(actor, 'search_query_run', dict(query_sha256=key, **result, membership_changed=False))
         return result
 
@@ -201,15 +199,12 @@ class SearchPresets:
             row = dict(project_uuid=self.store.project_uuid, preset_uuid=identity, **values,
                        version=previous['version'] + 1 if previous else 1,
                        updated_at=dt.datetime.now(dt.timezone.utc).replace(tzinfo=None), actor=actor)
-            if previous:
-                self.Table.update1(row)
-            else:
-                self.Table.insert1(row)
+            write_row(self.Table, row, schema='search_preset', update=bool(previous))
             snapshot = {**copy.deepcopy(row), 'updated_at': row['updated_at'].isoformat() + 'Z',
                         'format': 'rieke-search-preset', 'version': 1, 'preset_version': row['version'],
                         'catalog_ref': 'catalog.json', 'membership_mode': 'live-query'}
-            self.Version.insert1(dict(project_uuid=self.store.project_uuid, preset_uuid=identity,
-                                      version=row['version'], recipe=snapshot))
+            write_row(self.Version, dict(project_uuid=self.store.project_uuid, preset_uuid=identity,
+                                      version=row['version'], recipe=snapshot), schema='search_preset_version')
             self.store._event(actor, 'search_preset_updated' if previous else 'search_preset_created', {
                 'preset_uuid': identity, 'name': row['name'], 'version': row['version'],
                 'previous_version': previous['version'] if previous else None,

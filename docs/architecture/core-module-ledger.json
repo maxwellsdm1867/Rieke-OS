@@ -1538,7 +1538,7 @@
         "existing DataJoint tables and project database lifecycle operations",
         "existing typed query core; no universal storage facade",
         "Existing DataJoint relations",
-        "validate_catalog_identity(experiment, catalog, experiment_id, progress=None)",
+        "validate_catalog_identity(experiment, catalog, experiment_id, progress=None, *, mysql_json_rounding=False)",
         "CatalogCollisionLookup.prepare/first_collision/close"
       ],
       "depends_on": [
@@ -1551,12 +1551,14 @@
         "python/recording_workspace.py:574",
         "python/recording_workspace.py:598",
         "python/recording_workspace.py:754",
-        "python/workspace_catalog_identity.py:65",
+        "python/workspace_catalog_identity.py:148",
         "python/workspace_catalog_collision.py:26",
         "python/workspace_project_database.py:21",
         "python/workspace_native_mysql.py",
         "python/workspace_service.py:608",
-        "python/workspace_catalog_collision.py:25"
+        "python/workspace_catalog_collision.py:25",
+        "python/workspace_authored_json.py",
+        "python/workspace_json_transport.py"
       ],
       "actual_coupling": [
         "source deduplication and transaction scope still live inside importer orchestration",
@@ -1575,7 +1577,10 @@
         "test_workspace_catalog_collision.py",
         "test_workspace_catalog_batching.py",
         "test_workspace_registered_recovery_policy.py",
-        "existing typed generation/query lifecycle suites"
+        "existing typed generation/query lifecycle suites",
+        "test_workspace_catalog_json.py",
+        "test_workspace_authored_json.py",
+        "test_workspace_json_transport.py"
       ],
       "benchmark_case_ids": [
         "db.typed.detail",
@@ -1606,15 +1611,15 @@
       "contract": {
         "inputs": "Expected complete experiment hierarchy, concrete DataJoint catalog, experiment ID and optional progress callback; collision checks take entity kind and bounded identity batches.",
         "outputs": "Verified per-table counts, first collision or no collision; CatalogIdentityConflict on mismatch. Population persists acquisition and source/audit rows.",
-        "identity_types_order_units_provenance": "The validator checks exact UUID membership, multiplicity, parent relationships, recorded metadata and stream/device links across Experiment, Animal, Preparation, Cell, EpochGroup, EpochBlock, Epoch, Response and Stimulus. Repeated display labels are allowed; repeated acquisition UUID rows or wrong parents are not. Source SHA, project UUID and experiment UUID remain separate identities. Collision lookup preserves the actual MySQL column charset/collation rather than imposing Python-only equality.",
+        "identity_types_order_units_provenance": "The validator checks exact UUID membership, multiplicity, parent relationships, recorded metadata and stream/device links across Experiment, Animal, Preparation, Cell, EpochGroup, EpochBlock, Epoch, Response and Stimulus. Repeated display labels are allowed; repeated acquisition UUID rows or wrong parents are not. Source SHA, project UUID and experiment UUID remain separate identities. Collision lookup preserves the actual MySQL column charset/collation rather than imposing Python-only equality. Metadata remains exact by default. Import opts into finite float representation differences of at most three representable binary64 steps only when the entire stored JSON document exactly matches this server conversion of the original source; types, structure, integer values, signed zero and zero versus nonzero remain exact. Read-only witnesses are batched. Source-verified workspace read admission also requires the witness before publishing the original source metadata hash when a catalog hash differs; exact hashes never load lazy source details. Ordinary evaluator calls retain catalog-derived hashes. Source values, grouping and query equality are not rewritten. See docs/dev/h5-json-precision-2026-10-09.md.",
         "errors_partial_success": "Same bytes registered to another project require explicit linking. Different bytes for an existing acquisition UUID, ambiguous experiment filename and population mismatch fail. SQL setup/query/cleanup failures must never authorize skipping collision checks. A cleanup failure after transaction exit is reported as known committed. Precommit exceptions carry unknown commit state at the workflow boundary rather than an unsupported rollback certainty.",
         "freshness_invalidation": "Identity verification runs within the transaction on both new and same-source imports. Acquisition commit does not publish a typed generation, complete backup or finish protocol files. Those owners retain separate success states.",
         "transactions_idempotency": "One locked DataJoint connection owns scratch relations and population. DDL scratch setup occurs before acquisition transaction entry; collision probes require that exact connection and advisory lock, and disable reconnect. close occurs after transaction exit; fallback cleanup may close the connection. The transaction includes Source registration and import audit event. Postcommit ProtocolWorkspace upserts and file/audit finalization are outside that acquisition transaction. No generic cancel operation is exposed.",
         "cancellation_lifetime": "Scratch tables belong to the exact locked connection; create before and close after acquisition transaction. Reconnect is disabled. No generic cancellation API.",
-        "caller_dependencies": "recording_workspace.import_catalog is the transaction caller. Annotation, curation and other authored-state owners use their own concrete table contracts. Typed SQLite indexes are derived reads, not authoritative catalog storage.",
+        "caller_dependencies": "recording_workspace.import_catalog is the transaction caller. Annotation, curation and other authored-state owners use their own concrete table contracts. Typed SQLite indexes are derived reads, not authoritative catalog storage. Five enumerated authored JSON schemas use workspace_authored_json.write_row inside existing caller transactions, with exact post-write readback. Shared workspace_json_transport owns bounded typed DOUBLE expressions; this is not a general DataJoint replacement.",
         "integration_capabilities": [
           "Existing DataJoint relations",
-          "validate_catalog_identity(experiment, catalog, experiment_id, progress=None)",
+          "validate_catalog_identity(experiment, catalog, experiment_id, progress=None, *, mysql_json_rounding=False)",
           "CatalogCollisionLookup.prepare/first_collision/close"
         ],
         "change_rules": "An adapter must preserve native transaction and collation semantics and prove exact relationships, not merely matching row totals. Unit tests with relations or transaction doubles cannot qualify MySQL behavior. Do not introduce a universal database facade."
@@ -1625,7 +1630,10 @@
           "python/tests/test_workspace_catalog_identity.py",
           "python/tests/test_workspace_catalog_collision.py",
           "python/tests/test_workspace_catalog_batching.py",
-          "python/tests/test_workspace_import_identities.py"
+          "python/tests/test_workspace_import_identities.py",
+          "python/tests/test_workspace_catalog_json.py",
+          "python/tests/test_workspace_authored_json.py",
+          "python/tests/test_workspace_json_transport.py"
         ]
       },
       "not_newly_run_fault_ideas": [
@@ -7242,7 +7250,8 @@
         "transactions_idempotency": [
           "Transfer is a staged filesystem/database workflow, not one cross-resource ACID transaction. Preparation reserves final destination exclusively before renaming fully verified staging; restore uses an exclusively created new folder plus pending marker, then removes marker only after completion.",
           "rebase_project_paths validates before writing .project-path-rebase.pending, begins SQL transaction, replaces current local manifests and SQL locators, commits, then removes journal. Failure rolls SQL back but local files may already have changed; retained journal makes retry idempotent at the same destination. Historical events are not replayed.",
-          "In-app move acquires server/session/native locks in opener order and requires exact clean native ownership before exclusive platform rename. No operation overwrites an existing destination. Jobs have no caller idempotency key; caller must inspect after uncertain outcome."
+          "In-app move acquires server/session/native locks in opener order and requires exact clean native ownership before exclusive platform rename. No operation overwrites an existing destination. Jobs have no caller idempotency key; caller must inspect after uncertain outcome.",
+          "Exact JSON correction appendices share the donor read lock with the logical dump, are included in its sealed bytes, refuse unsupported update side effects, and remain subject to the unchanged complete restore inventory. Initial numeric transport qualification is same-runtime MySQL 8.4.2, not arbitrary cross-version restoration."
         ],
         "cancellation_lifetime": [
           "Transfer worker is non-daemon and contributes active-writer state; normal shutdown waits rather than killing a writer. Desktop database operations register durably and must close the same native instance before acknowledging completion; failed cleanup blocks conflicting operations/replacement.",
@@ -7271,7 +7280,8 @@
         "python/workspace_app_routes.py#transfer",
         "python/workspace_startup_registry.py#remember_project_result",
         "workspace-app/src/projectTransfer.js",
-        "python/workspace_desktop.py#desktop_database_operation"
+        "python/workspace_desktop.py#desktop_database_operation",
+        "python/workspace_json_transport.py"
       ],
       "existing_test_detectors": [
         {
