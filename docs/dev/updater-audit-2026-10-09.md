@@ -4,7 +4,7 @@
 
 The unsigned-testing updater has a reproducible multi-minute validation cost and
 inadequate failure reporting. A retained real 0.1.9 app successfully installed the
-published 0.1.10 bytes in an isolated native helper replay, taking 250.819 seconds;
+earlier-published 0.1.10 bytes (source `0aeced7`) in an isolated native helper replay, taking 250.819 seconds;
 100.520 seconds elapsed before the original process exited. Native copying itself
 took 9.484 seconds. This successful replay does not identify the cause of the
 user's earlier failed attempt.
@@ -38,6 +38,30 @@ necessary to avoid silently treating those changed bytes as a verified rollback.
   exposed, oversized or malformed records. No receipt grants installation authority.
 
 ## Evidence and reproducibility
+
+The matched helper replay completed in **152.938 seconds** with the repair versus
+**250.819 seconds** originally (39.0% shorter in this single local observation).
+Parent readiness/exit took 62.887 versus 100.520 seconds. This measures the helper
+boundary only: coordinator checks, service drain, download and extraction are not
+included. Both destination and retained prior digests were independently checked.
+The target payload was identical for these two runs; OS cache state was uncontrolled.
+
+A fresh GitHub check found that public 0.1.10 assets were replaced at 20:32 UTC on
+October 9 without changing the version. The current source is `31182a4`; ZIP SHA256
+is `4a04b4a60d61df30a0553d6a2cc96f45fc824c5a8bdb4e3f0ae7e2b9e3948bdc`, and
+its descriptor SHA256 is `1d86f4e0685d4d4772241c96f6dff219bcc0c679a6dae1f9bc630224825e5fd4`.
+The earlier ZIP used by the matched timing replay is
+`f45024ba91a2a9b69a821d1c8b7cdd7fb5c0cff8e67692c4eb969cbd32d4347b`.
+The original packaged 0.1.9 helper also installed those current-publication bytes
+successfully in 319.951 seconds, with 121.291 seconds before parent exit and 9.274
+seconds of copying. That independent functional replay is separate from the matched
+earlier-payload timing comparison.
+
+Replacing assets under the same version can invalidate a prepared cache and force
+a fresh download; the existing checksum checks correctly reject stale bytes. The
+original reported failure predates this replacement, so it is not assigned this
+cause. Future changed bytes should receive a new version rather than replacing
+an already offered release.
 
 The work starts from GitHub main `035e295ba01e648005dde24fc4cdbbc4dab412e4`.
 Native measurements, scripts, exact source hashes, per-command logs and results
