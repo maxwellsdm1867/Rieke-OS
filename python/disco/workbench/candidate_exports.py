@@ -16,7 +16,7 @@ from disco.workbench.recipes import checksum, member_map, prepare_export, save_s
 from disco.projects.storage import managed_directory
 from workspace_export_artifacts import materialize_export_format
 
-FORMATS = {'reference-json','wheeler-sqlite','matlab-mat'}
+FORMATS = {'reference-json','wheeler-sqlite','matlab-mat','linked-sqlite'}
 
 
 class StaleCandidateExport(ValueError):
@@ -124,7 +124,12 @@ def _export_candidate_locked(service, store, history, revision_uuid, *, format,
             'sources':[{'source_sha256':source['source_sha256'],'source_path':source['source_path']}
                 for source in service.sources if source['source_sha256'] in candidate['source_revisions']],
             'export_scope':scope,'waveforms':'references-only; original H5 files must remain accessible'}
-        write_json(artifact,package)
+        if format == 'linked-sqlite':
+            from workspace_linked_sqlite import prepare_linked_package
+            package = prepare_linked_package(package, service.manifests, service.project_dir,
+                                             grouping_sources=service.sources)
+        else:
+            write_json(artifact,package)
         def matlab_writer(recipe, output_dir, *, epoch_records):
             from workspace_matlab import build_matlab_export
             return build_matlab_export(service,recipe,output_dir,epoch_records=epoch_records)

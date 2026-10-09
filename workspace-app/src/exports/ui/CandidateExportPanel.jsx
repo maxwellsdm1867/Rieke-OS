@@ -1,3 +1,5 @@
+import ExportSaveLocation from './ExportSaveLocation.jsx';
+import {downloadExport} from '../downloadExport.js';
 import {useUnmountGuard} from "../../useUnmountGuard.js";
 import {useEffect,useRef,useState} from 'react';
 import {Database,Download,FileCode,LoaderCircle} from 'lucide-react';
@@ -27,7 +29,7 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
     const submittedRevision=revision;
     try {
       const result=await api(`/explore/revisions/${revision}/exports`,{method:'POST',body:{format,expected_recipe_sha256:expected,...(name.trim()?{name:name.trim()}:{})}});
-      if(currentRevision.current===submittedRevision)setCompleted(result);
+      if(currentRevision.current===submittedRevision){setCompleted(result);downloadExport(result);}
       onExported?.(result);
     } catch(failure) {
       if(currentRevision.current===submittedRevision)setError(failure.message);
@@ -39,10 +41,12 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
     <form onSubmit={exportResult}>
       <label className="candidate-export-name">Name <span>(optional)</span><input value={name} onChange={event=>changeName(event.target.value)} maxLength={120} placeholder={recipe?.name?`${recipe.name} · automatic date`:'Automatic name and date'} disabled={busy||disabled}/></label>
       <fieldset disabled={busy||disabled}><legend>Handoff format</legend>
+        <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="linked-sqlite" checked={format==='linked-sqlite'} onChange={()=>changeFormat('linked-sqlite')}/><Database size={15}/><span>Linked SQLite · internal use<small>Small reference database + Python loader; needs managed source folders</small></span></label>
         <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="wheeler-sqlite" checked={format==='wheeler-sqlite'} onChange={()=>changeFormat('wheeler-sqlite')}/><Database size={15}/><span>SQLite database<small>Query in Wheeler or another SQL tool</small></span></label>
         <label><input type="radio" name={`candidate-format-${revision||'draft'}`} value="matlab-mat" checked={format==='matlab-mat'} onChange={()=>changeFormat('matlab-mat')}/><FileCode size={15}/><span>MATLAB data (.mat)<small>Recorded metadata, selection and H5 references</small></span></label>
         {format==='reference-json'&&<label><input type="radio" checked readOnly/><FileCode size={15}/><span>Reference JSON<small>Preserved from this saved export</small></span></label>}
       </fieldset>
+      <ExportSaveLocation/>
       <div className="candidate-export-actions"><button className="primary" type="submit" disabled={busy||disabled||!revision||!expected||!count}>{busy?<LoaderCircle size={15} className="candidate-export-spinner"/>:<Download size={15}/>} {busy?'Preparing export…':'Export result'}</button><small>Original H5 files remain linked. No protocol or pin is created.</small></div>
     </form>
     {!revision&&<p className="candidate-export-note">Save the current result before exporting.</p>}

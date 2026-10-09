@@ -20,16 +20,28 @@ test('saved legacy search destination renders a selected standalone MAT data cho
  assert.match(html,/MATLAB data \(\.mat\)/);assert.match(html.match(/<input[^>]*value="matlab-mat"[^>]*>/)?.[0]||'',/checked=""/);assert.doesNotMatch(html,/EpicTree|launcher|selection mask|MATLAB bundle/);
 });
 
+test('linked reference exports are selectable and explain the managed-source dependency',async()=>{
+ const candidate=await render('/src/exports/ui/CandidateExportPanel.jsx',{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'linked-sqlite'});
+ assert.match(candidate,/Linked SQLite/);assert.match(candidate,/Python loader/);assert.match(candidate,/needs managed source folders/);
+ assert.match(candidate.match(/<input[^>]*value="linked-sqlite"[^>]*>/)?.[0]||'',/checked=""/);
+ const {ExportDestination}=await server.ssrLoadModule('/src/exports/ui/ProtocolExports.jsx');
+ const html=renderToString(createElement(ExportDestination,{value:'linked-sqlite',onChange(){}}));
+ assert.match(html.match(/<input[^>]*value="linked-sqlite"[^>]*>/)?.[0]||'',/checked=""/);
+ assert.match(html,/MATLAB data/);assert.match(html,/Wheeler SQL/);
+});
+
 
 test('explicit export from a legacy saved search posts only the canonical MAT data format',async()=>{
- const prior=globalThis.fetch,calls=[];let root;
+ const prior=globalThis.fetch,calls=[],downloads=[];let root;
+ const priorDocument=globalThis.document;globalThis.document={body:{appendChild(){}},createElement:()=>({click(){downloads.push(this.href);},remove(){}})};
  globalThis.fetch=async(path,options)=>{calls.push({path,body:JSON.parse(options.body)});return {ok:true,json:async()=>({format:'matlab-mat',name:'Saved selection',epoch_count:3,dataset_uuid:'dataset',event_uuid:'event',download_url:'/api/exports/dataset/download'})};};
  try{const {default:Candidate}=await server.ssrLoadModule("/src/exports/ui/CandidateExportPanel.jsx");
   await act(async()=>{root=TestRenderer.create(createElement(Candidate,{candidate:{revision_uuid:'candidate',recipe:{epoch_count:3,full_recipe_sha256:'sealed'}},defaultFormat:'epictree-mat'}));});
-  assert.equal(calls.length,0);
+  assert.equal(calls.length,0);assert.deepEqual(downloads,[]);
   await act(async()=>root.root.findByType('form').props.onSubmit({preventDefault(){}}));
   assert.deepEqual(calls,[{path:'/api/explore/revisions/candidate/exports',body:{format:'matlab-mat',expected_recipe_sha256:'sealed'}}]);
+  assert.deepEqual(downloads,['/api/exports/dataset/download']);
   assert.equal(root.root.findByType('a').props.href,'/api/exports/dataset/download');
   assert.match(root.root.findByType('a').children.filter(x=>typeof x==='string').join(''),/MAT data/);
- }finally{await act(async()=>root?.unmount());if(prior===undefined)delete globalThis.fetch;else globalThis.fetch=prior;}
+ }finally{if(priorDocument===undefined)delete globalThis.document;else globalThis.document=priorDocument;await act(async()=>root?.unmount());if(prior===undefined)delete globalThis.fetch;else globalThis.fetch=prior;}
 });

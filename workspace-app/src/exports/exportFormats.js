@@ -1,4 +1,5 @@
 export const EXPORT_FORMATS=Object.assign(Object.create(null),{
+  'linked-sqlite':{label:'Linked SQLite · internal use',downloadLabel:'SQLite + loader (.zip)',description:'A small SQLite selection with frozen groups and tags, linked to existing managed metadata and H5 files. Includes a Python loader and examples. Source project folders must remain accessible.'},
   'wheeler-sqlite':{label:'Wheeler SQLite database',downloadLabel:'SQLite database',description:'A queryable SQLite database containing the frozen query, epoch metadata, inclusion decisions and H5 references. Query it with Wheeler or another SQLite client; raw recordings remain in the original H5 files.'},
   'matlab-mat':{label:'MATLAB data (.mat)',downloadLabel:'MAT data',description:'A standalone MAT data file containing the frozen selection, recorded metadata and H5 references. Raw recordings remain in the original H5 files.'},
   'reference-json':{label:'Reference JSON',downloadLabel:'JSON',description:'The reference package saves the query, filters, inclusion decisions and exact epoch identities. Raw recordings stay in the original H5 files.'},

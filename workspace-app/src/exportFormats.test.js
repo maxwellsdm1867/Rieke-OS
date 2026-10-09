@@ -4,13 +4,15 @@ import {exportDownloadLabel,exportFormatLabel,initialExportFormat,validExportRec
 
 test('new exports default to SQLite while saved destinations and legacy JSON survive reuse',()=>{
  assert.equal(initialExportFormat(null),'wheeler-sqlite');
- for(const format of ['wheeler-sqlite','matlab-mat','reference-json'])assert.equal(initialExportFormat({format}),format);
+ for(const format of ['wheeler-sqlite','matlab-mat','reference-json','linked-sqlite'])assert.equal(initialExportFormat({format}),format);
  assert.equal(initialExportFormat({source_export_uuid:'legacy'}),'reference-json');
  assert.equal(initialExportFormat({format:'unsupported-future-format'}),'unsupported-future-format');
 });
 test('history/download labels distinguish SQLite databases, MAT data, legacy bundles and JSON',()=>{
  assert.equal(exportFormatLabel('wheeler-sqlite'),'Wheeler SQLite database');
  assert.equal(exportDownloadLabel('wheeler-sqlite'),'SQLite database');
+ assert.equal(exportDownloadLabel('linked-sqlite'),'SQLite + loader (.zip)');
+ assert.match(exportFormatLabel('linked-sqlite'),/internal use/);
  assert.equal(exportFormatLabel('epictree-mat'),'Legacy MATLAB bundle');
  assert.equal(exportDownloadLabel('reference-json'),'JSON');
  assert.equal(exportFormatLabel(undefined),'Reference JSON');

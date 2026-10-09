@@ -259,3 +259,6 @@ publish neither context/page bundle nor freshness signal.
 The pending tests cover fresh/ordinary/replay equivalence, changed-draft replay,
 transaction-race replay, native token refusal and failed commit. Workbench tests
 compare bundled context/page with independent fresh reads and reject closing changes.
+## Linked internal export extension
+
+The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.
