@@ -21,8 +21,12 @@ class LinkedExportAPITests(unittest.TestCase):
     def test_failed_nested_fixture_restores_thread_class(self):
         original = threading.Thread
         fixture = LinkedExportAPITests()
+        original_setup = suggestion_tests.ImportSuggestionTests.setUp
+        def fail_after_import_setup(case):
+            original_setup(case)
+            raise RuntimeError('Injected fixture failure')
         try:
-            with patch(__name__ + '.linked_fixture', side_effect=RuntimeError('Injected fixture failure')):
+            with patch.object(suggestion_tests.ImportSuggestionTests, 'setUp', fail_after_import_setup):
                 with self.assertRaisesRegex(RuntimeError, 'Injected fixture failure'):
                     fixture.setup_incoming()
         finally:
