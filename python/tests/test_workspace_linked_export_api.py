@@ -6,6 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import shutil
+import tempfile
 import threading
 import zipfile
 
@@ -18,6 +19,34 @@ from test_workspace_linked_sqlite import linked_fixture
 
 
 class LinkedExportAPITests(unittest.TestCase):
+    def prepare_case(self, fixture):
+        # Managed recording registries live beside projects, so the project's
+        # parent must also belong to this fixture (never the shared system /tmp).
+        temporary = tempfile.TemporaryDirectory
+        workspace = temporary()
+        self.addCleanup(workspace.cleanup)
+        self.addCleanup(fixture.doCleanups)
+        def child_directory(*args, **kwargs):
+            if kwargs.get('dir') is None:
+                kwargs['dir'] = workspace.name
+            return temporary(*args, **kwargs)
+        with patch.object(api_tests.tempfile, 'TemporaryDirectory', side_effect=child_directory):
+            fixture.setUp()
+
+    def test_incoming_fixture_does_not_use_ambient_temp_registry(self):
+        with tempfile.TemporaryDirectory() as ambient:
+            unrelated = Path(ambient) / '.disco-recordings.json'
+            unrelated.write_text('unrelated registry bytes')
+            fixture = LinkedExportAPITests()
+            try:
+                with patch.object(tempfile, 'tempdir', ambient):
+                    fixture.setup_incoming()
+                self.assertNotEqual(Path(fixture.case.temp.name).parent, Path(ambient))
+            finally:
+                fixture.doCleanups()
+            self.assertEqual(unrelated.read_text(), 'unrelated registry bytes')
+            self.assertFalse((Path(ambient) / '.disco-recordings.lock').exists())
+
     def test_failed_nested_fixture_restores_thread_class(self):
         original = threading.Thread
         fixture = LinkedExportAPITests()
@@ -36,13 +65,11 @@ class LinkedExportAPITests(unittest.TestCase):
     def setup_case(self, candidate=False):
         if candidate:
             self.candidate = candidate_tests.CandidateExportTests()
-            self.candidate.setUp()
-            self.addCleanup(self.candidate.doCleanups)
+            self.prepare_case(self.candidate)
             case = self.candidate.case
         else:
             case = api_tests.WorkspaceAPITests()
-            case.setUp()
-            self.addCleanup(case.doCleanups)
+            self.prepare_case(case)
         self.case = case
         service, self.package = linked_fixture(case.temp.name, case.service)
         sha = service.sources[0]['source_sha256']
@@ -130,9 +157,8 @@ class LinkedExportAPITests(unittest.TestCase):
                 return donor.ids[0]
             fixture.add_recording = add_recording
         workflow = incoming_tests.IncomingExportTests()
-        self.addCleanup(workflow.doCleanups)
         with patch.object(suggestion_tests.ImportSuggestionTests, 'setUp', prepare):
-            workflow.setUp()
+            self.prepare_case(workflow)
         self.case = workflow.case
         return workflow, added_ids
 
