@@ -3,10 +3,10 @@ const fs = require('./physical-fs.cjs').promises;
 const path = require('node:path');
 const os = require('node:os');
 const {execFile} = require('node:child_process');
-const {promisify} = require('node:util');
+const {promisify, isDeepStrictEqual} = require('node:util');
 const {randomUUID, createHash} = require('node:crypto');
 const runFile = promisify(execFile);
-const {verifyResources, compareVersions, stableVersion, compatibleMacMinimum} = require('./updater-validation.cjs');
+const {verifyResources, compareVersions, stableVersion, compatibleMacMinimum, safeResource} = require('./updater-validation.cjs');
 const APP_ID = 'org.riekeos.desktop';
 function enclosingApp(executable) {
   const marker = `${path.sep}Contents${path.sep}MacOS${path.sep}`;
@@ -66,7 +66,19 @@ function quarantinePreserved(source, copied) {
     ((destination.timestamp === original.timestamp && destination.agent === original.agent) ||
      (destination.timestamp === '00000000' && destination.agent === '')));
 }
-async function bundleDigest(bundle) {
+async function bundleDigest(bundle, {runtimeManifest, runtimeManifestSha256} = {}) {
+  const validateRuntime = runtimeManifest !== undefined || runtimeManifestSha256 !== undefined;
+  const runtimePrefix = 'Contents/Resources/runtime/';
+  if (validateRuntime) {
+    if (!runtimeManifest || typeof runtimeManifest.resources !== 'object' || !runtimeManifest.resources ||
+        Array.isArray(runtimeManifest.resources) || !/^[a-f0-9]{64}$/.test(runtimeManifestSha256 || ''))
+      throw new Error('Runtime manifest and its raw checksum are required together');
+    // Bind the caller's parsed policy to the raw manifest; the traversal below
+    // must capture that same hash. Resource bytes are read only by the traversal.
+    const raw = await fs.readFile(path.join(bundle, runtimePrefix, 'runtime-manifest.json'));
+    if (createHash('sha256').update(raw).digest('hex') !== runtimeManifestSha256 ||
+        !isDeepStrictEqual(JSON.parse(raw), runtimeManifest)) throw new Error('Runtime manifest checksum or contents differ');
+  }
   const info = await fs.lstat(bundle);
   if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('A regular complete application bundle is required');
   const root = await fs.realpath(bundle), records = [];
@@ -80,6 +92,9 @@ async function bundleDigest(bundle) {
       if (stat.isSymbolicLink()) {
         const target = await fs.readlink(file), physical = await fs.realpath(file);
         if (path.isAbsolute(target) || (!physical.startsWith(root + path.sep) && physical !== root)) throw new Error('Application symlink escapes its bundle');
+        if (validateRuntime && relative.startsWith(runtimePrefix) &&
+            !physical.startsWith(path.join(root, 'Contents/Resources/runtime') + path.sep))
+          throw new Error('Runtime resource escapes its bundle');
         records.push({...record, type: 'symlink', target});
       } else if (stat.isDirectory()) {
         records.push({...record, type: 'directory'}); await visit(file);
@@ -93,6 +108,35 @@ async function bundleDigest(bundle) {
     }
   }
   await visit(root);
+  if (validateRuntime) {
+    const byPath = new Map(records.map(record => [record.path, record]));
+    for (const directory of ['Contents', 'Contents/Resources', 'Contents/Resources/runtime'])
+      if (byPath.get(directory)?.type !== 'directory') throw new Error('Runtime control directories must be regular directories');
+    const manifestRecord = byPath.get(runtimePrefix + 'runtime-manifest.json');
+    if (manifestRecord?.type !== 'file' || manifestRecord.sha256 !== runtimeManifestSha256)
+      throw new Error('Runtime manifest checksum or contents differ');
+    const resources = runtimeManifest.resources;
+    const runtimeRecords = records.filter(record => record.path.startsWith(runtimePrefix) && record.type !== 'directory' &&
+      !['runtime-manifest.json', 'runtime-audit.json'].includes(record.path.slice(runtimePrefix.length)));
+    if (JSON.stringify(runtimeRecords.map(record => record.path.slice(runtimePrefix.length)).sort()) !== JSON.stringify(Object.keys(resources).sort()))
+      throw new Error('Runtime resource inventory is incomplete or contains unexpected files');
+    for (const record of runtimeRecords) {
+      const relative = record.path.slice(runtimePrefix.length), expected = resources[relative];
+      // Preserve safeResource's policy even though these paths came from disk.
+      safeResource(path.join(root, 'Contents/Resources/runtime'), relative);
+      if (!expected || typeof expected !== 'object') throw new Error('Runtime resource metadata is invalid');
+      if (expected.symlink !== undefined) {
+        if (record.type !== 'symlink' || record.target !== expected.symlink || path.isAbsolute(expected.symlink))
+          throw new Error('Runtime symlink differs from its manifest');
+      } else {
+        if (record.type !== 'file' || !/^[a-f0-9]{64}$/.test(expected.sha256 || '') || record.size !== expected.size)
+          throw new Error('Runtime resource metadata is invalid');
+        if (typeof expected.executable === 'boolean' && expected.executable !== Boolean(record.mode & 0o111))
+          throw new Error('Runtime executable permissions differ');
+        if (record.sha256 !== expected.sha256) throw new Error('Runtime resource checksum failed');
+      }
+    }
+  }
   return createHash('sha256').update(JSON.stringify(records)).digest('hex');
 }
 function testingDistribution(distribution) {
@@ -114,6 +158,10 @@ async function bundleIdentity(bundle, distribution, run, {verifyTestingSeal = tr
 }
 async function verifyTestingBundle(bundle, run = runFile) {
   await bundleIdentity(bundle, {channel: 'unsigned-testing'}, run);
+  return verifyTestingClosure(bundle, run);
+}
+// Internal continuation used only after the caller has verified bundleIdentity.
+async function verifyTestingClosure(bundle, run) {
   const manifest = await readBundleManifest(bundle);
   const required = ['python/bin/python3.11', 'mysql/bin/mysqld', 'mysql/bin/mysql', 'mysql/bin/mysqldump', 'application/python/workspace_desktop.py'];
   if (!compatibleManifest(manifest, manifest) || !/^[a-f0-9]{40}$/.test(manifest.source_commit || '') || !/^[a-f0-9]{40}$/.test(manifest.parser_commit || '') ||
@@ -142,20 +190,26 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
   await fs.mkdir(parent, {recursive: true, mode: 0o700});
   const info = await fs.lstat(parent);
   if (info.isSymbolicLink() || info.uid !== process.getuid()) throw new Error('Installation folder must be owned by the current user');
-  const sourceDigest = unsignedTesting ? await bundleDigest(source) : null;
+  let sourceManifest, sourceRuntime;
+  if (unsignedTesting) {
+    const raw = await fs.readFile(path.join(source, 'Contents/Resources/runtime/runtime-manifest.json'));
+    sourceManifest = JSON.parse(raw);
+    sourceRuntime = {runtimeManifest: sourceManifest, runtimeManifestSha256: createHash('sha256').update(raw).digest('hex')};
+  }
+  const sourceDigest = unsignedTesting ? await bundleDigest(source, sourceRuntime) : null;
   const quarantine = unsignedTesting ? await quarantineAttribute(source, run) : null;
   if (expectedBundleSha256 !== undefined && sourceDigest !== expectedBundleSha256) throw new Error('Downloaded application bundle checksum differs');
   const sourceIdentity = await bundleIdentity(source, distribution, run);
   await require('./install-name.cjs').assertBundleDestination(source, destination, run);
-  const sourceManifest = await readBundleManifest(source);
-  if (unsignedTesting) await verifyTestingBundle(source, run);
+  if (!unsignedTesting) sourceManifest = await readBundleManifest(source);
+  if (unsignedTesting) await verifyTestingClosure(source, run);
   stableVersion(sourceManifest.application_version);
   if (!compatibleManifest(sourceManifest, sourceManifest) || !sourceManifest.source_commit || !sourceManifest.resources ||
       !Array.isArray(sourceManifest.workspace_formats) || !Number.isInteger(sourceManifest.database_compatibility))
     throw new Error('Downloaded app runtime manifest is invalid');
   const sourcePlist = await run('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleShortVersionString', path.join(source, 'Contents', 'Info.plist')]);
   if (sourcePlist.stdout.trim() !== sourceManifest.application_version) throw new Error('App and runtime versions differ');
-  await verifyResources(path.join(source, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
+  if (!unsignedTesting) await verifyResources(path.join(source, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
   const lock = path.join(parent, '.rieke-os-install.lock');
   await fs.mkdir(lock, {mode: 0o700});
   const staging = path.join(parent, `.Rieke OS.install-${randomUUID()}.app`);
@@ -177,8 +231,9 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
     await run('/usr/bin/ditto', ['--rsrc', '--extattr', '--acl', source, staging]);
     const copiedIdentity = await bundleIdentity(staging, distribution, run);
     if (copiedIdentity.team !== sourceIdentity.team) throw new Error('Copied app signature differs from downloaded app');
-    await verifyResources(path.join(staging, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
-    if (unsignedTesting && await bundleDigest(staging) !== sourceDigest) throw new Error('Copied application bundle checksum differs');
+    if (unsignedTesting) {
+      if (await bundleDigest(staging, sourceRuntime) !== sourceDigest) throw new Error('Copied application bundle checksum differs');
+    } else await verifyResources(path.join(staging, 'Contents', 'Resources', 'runtime'), sourceManifest.resources);
     if (unsignedTesting && !quarantinePreserved(quarantine, await quarantineAttribute(staging, run))) throw new Error('Copied application quarantine attribute differs');
     if (!unsignedTesting) await run('/usr/sbin/spctl', ['--assess', '--type', 'execute', staging]);
     if (existing) {
@@ -187,9 +242,18 @@ async function installCompleteBundle({source, destination = path.join(os.homedir
       await fs.rm(previous, {recursive: true, force: true});
       await fs.rename(destination, previous); movedPrevious = true;
     }
-    try { await fs.rename(staging, destination); }
-    catch (error) { if (movedPrevious) await fs.rename(previous, destination); throw error; }
-    await bundleIdentity(destination, distribution, run);
+    let activated = false;
+    try {
+      await fs.rename(staging, destination); activated = true;
+      await bundleIdentity(destination, distribution, run);
+    } catch (error) {
+      // Activation is not complete until identity verification succeeds. Move the
+      // rejected copy out of the canonical path before restoring the old app.
+      // If restoration itself fails, leave the old bundle at `previous`.
+      if (activated) await fs.rename(destination, staging);
+      if (movedPrevious) await fs.rename(previous, destination);
+      throw error;
+    }
     return {destination, previous: movedPrevious ? previous : null};
   } finally {
     await fs.rm(staging, {recursive: true, force: true});

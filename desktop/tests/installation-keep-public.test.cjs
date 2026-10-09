@@ -100,3 +100,22 @@ test('testing readiness does not bypass changed creation identity while waiting 
  assert.equal(packet.current_pid,12345);assert.equal(packet.pid,process.pid);
  assert.equal(JSON.parse(await fs.readFile(path.join(f.installed,'Contents/Resources/runtime/runtime-manifest.json'))).application_version,'1.0.0');
 });
+
+test('helper exit surfaces its private bounded failure receipt without granting quit authority',async t=>{
+ const f=await fixture(t),x=await f.testing();
+ await assert.rejects(x.helper.launchTestingInstall({receiptPath:x.receiptPath,currentExecutable:f.executable,currentPid:12345,run:f.run,spawnHelper:()=>{
+  const child=f.child();
+  setImmediate(async()=>{
+   await fs.writeFile(x.receiptPath+'.result.json',JSON.stringify({state:'Deferred',phase:'validate-prepared',error:'Prepared update archive or bundle checksum differs'}),{mode:0o600});
+   child.emit('exit',1);
+  });return child;
+ }}),/validate-prepared.*checksum differs/);
+});
+
+test('helper retry cannot report a stale failure as the new attempt',async t=>{
+ const f=await fixture(t),x=await f.testing();
+ await fs.writeFile(x.receiptPath+'.result.json',JSON.stringify({state:'Deferred',phase:'old-attempt',error:'stale error'}),{mode:0o600});
+ await assert.rejects(x.helper.launchTestingInstall({receiptPath:x.receiptPath,currentExecutable:f.executable,currentPid:12345,run:f.run,spawnHelper:()=>{
+  const child=f.child();setImmediate(()=>child.emit('exit',1));return child;
+ }}),error=>/exited before readiness/.test(error.message)&&!error.message.includes('stale error'));
+});

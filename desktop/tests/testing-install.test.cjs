@@ -321,3 +321,56 @@ test('Disco same-name update and explicit rollback retain the normal startup des
   assert.equal(await fs.readFile(path.join(destination,'Contents/MacOS/Disco'),'utf8'),'native executable fixture');
  }finally{await fs.rm(original.root,{recursive:true,force:true});await fs.rm(fresh.root,{recursive:true,force:true});}
 });
+
+test('rollback receipt publication failure restores exact prior app before requesting launch',async(t)=>{
+ const {applyTestingInstall}=require('../testing-install.cjs'),{bundleDigest,readBundleManifest}=require('../bootstrap.cjs');
+ const f=await updateFixture();let identities=0,opens=0,failed=false;
+ const originalDigest=await bundleDigest(f.destination),receiptTarget=path.join(await fs.realpath(f.cache),'previous.json');
+ const physical=require('../physical-fs.cjs').promises,rename=physical.rename;
+ t.mock.method(physical,'rename',async(from,to)=>{
+  if(to===receiptTarget&&!failed){failed=true;throw Object.assign(new Error('Injected rollback receipt disk failure'),{code:'ENOSPC'});}
+  return rename.call(physical,from,to);
+ });
+ try{
+  const run=async(command,args,options)=>{
+   if(command.endsWith('/python/bin/python3.11'))return {stdout:'RIEKE_PROCESS_IDENTITY='+JSON.stringify(++identities===1?{pid:12345,alive:true,created_at:17,executable:f.currentExecutable}:{pid:12345,alive:false})+'\n'};
+   if(command==='/usr/bin/open'){opens++;assert.equal((await readBundleManifest(f.destination)).application_version,'0.1.0');return {stdout:''};}
+   return f.run(command,args,options);
+  };
+  const outcome=await applyTestingInstall({receiptPath:f.receiptPath,currentExecutable:f.currentExecutable,run,publishReady:()=>{}});
+  assert.equal(outcome.state,'Restored');assert.equal(opens,1);assert.equal(await bundleDigest(f.destination),originalDigest);
+  assert.equal(outcome.failure.phase,'save-rollback-receipt');assert.equal(outcome.failure.code,'ENOSPC');
+  assert.match(outcome.failure.error,/Injected rollback receipt disk failure/);
+  assert.ok(outcome.phases.some(p=>p.phase==='replace-bundle'&&p.elapsed_ms>=0));
+  assert.deepEqual(JSON.parse(await fs.readFile(f.receiptPath+'.result.json','utf8')),outcome);
+ }finally{t.mock.restoreAll();await fs.rm(f.root,{recursive:true,force:true});}
+});
+
+test('helper rejects corrupt runtime even when supplied whole-bundle receipt matches corrupt bytes',async()=>{
+ const f=await updateFixture(),{bundleDigest}=require('../bootstrap.cjs');
+ try{
+  const file=path.join(f.receipt.bundle_path,'Contents/Resources/runtime/mysql/bin/mysql');
+  const bytes=await fs.readFile(file);bytes[0]^=1;await fs.writeFile(file,bytes);
+  f.receipt.bundle_sha256=await bundleDigest(f.receipt.bundle_path);
+  await fs.writeFile(f.receiptPath,JSON.stringify(f.receipt),{mode:0o600});
+  await assert.rejects(require('../testing-install.cjs').applyTestingInstall({receiptPath:f.receiptPath,currentExecutable:f.currentExecutable,run:f.run,publishReady:()=>assert.fail('No readiness for corrupt runtime')}),/Runtime resource checksum/);
+  assert.equal((await require('../bootstrap.cjs').readBundleManifest(f.destination)).application_version,'0.1.0');
+ }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});
+
+test('failed reopening after rollback reports the restored app location and original launch failure',async()=>{
+ const f=await updateFixture();let identities=0,opens=0;
+ try{
+  const run=async(command,args,options)=>{
+   if(command.endsWith('/python/bin/python3.11'))return {stdout:'RIEKE_PROCESS_IDENTITY='+JSON.stringify(++identities===1?{pid:12345,alive:true,created_at:17,executable:f.currentExecutable}:{pid:12345,alive:false})+'\n'};
+   if(command==='/usr/bin/open')throw new Error(++opens===1?'Candidate launch refused':'Restored app launch refused');
+   return f.run(command,args,options);
+  };
+  await assert.rejects(require('../testing-install.cjs').applyTestingInstall({receiptPath:f.receiptPath,currentExecutable:f.currentExecutable,run,publishReady:()=>{}}),error=>{
+   assert.equal(error.updatePhase,'restore-previous');assert.equal(error.activationFailure.phase,'request-launch');
+   assert.equal(error.activationFailure.error,'Candidate launch refused');assert.equal(error.previousPath,require('node:fs').realpathSync(f.destination));
+   assert.ok(error.failedCandidatePath);return /Restored app launch refused/.test(error.message);
+  });
+  assert.equal((await require('../bootstrap.cjs').readBundleManifest(f.destination)).application_version,'0.1.0');
+ }finally{await fs.rm(f.root,{recursive:true,force:true});}
+});

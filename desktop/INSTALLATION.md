@@ -81,3 +81,33 @@ physical ASAR, normal replacement/rollback/reopen and scientific app acceptance
 remain separately reviewed gates. Read [macOS policy](../docs/dev/macos-compatibility.md),
 [benchmarks](../docs/dev/benchmarks.md) and [registry](../benchmarks/registry.json).
 No performance, power-loss, native compatibility or release qualification follows.
+
+## Updater failure recovery audit (2026-10-09)
+
+Complete-bundle replacement now restores the retained app when verification of
+its replacement fails after activation, including the final signature check. A
+failed first installation removes the rejected canonical destination. Failure to
+publish the testing rollback receipt is covered by the same restoration path as
+launch refusal. These are exception-recovery guarantees, not power-loss recovery.
+
+Testing helper results record bounded failure message/code/stderr and phase,
+along with completed phase durations. Helper startup failures surface the private
+result's reason to the caller. Successful `Installed` still means that macOS
+accepted the launch request (`launch_requested: true`); it does not prove the new
+process reached application readiness. Automatic early-crash rollback and durable
+crash-recoverable transaction journals remain open work.
+
+Archive SHA256 and SHA512 are computed in one file traversal. An adjacent duplicate
+unsigned source signature check is removed; validation after drain/parent exit
+and of the copied staging bundle remains required. Timing observations and native
+qualification limits belong in the separate updater audit evidence.
+
+`bundleDigest(bundle, {runtimeManifest, runtimeManifestSha256})` optionally checks
+runtime resources against the same canonical records that produce the unchanged
+whole-bundle checksum. Both the parsed manifest and the captured manifest hash
+must match the supplied raw-byte hash. Exact resource inventory, content, size,
+permissions and runtime-contained link targets are still checked. Unsigned
+candidate/source/staging checks use this shared scan; signed resource verification
+is unchanged. After actual parent exit the helper retains the current-app digest
+from its resource-validated scan, avoiding an adjacent second whole-app read.
+The initial application audit and macOS signature checks remain separate checks.

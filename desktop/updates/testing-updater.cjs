@@ -7,12 +7,29 @@ const runFile=promisify(require('node:child_process').execFile);
 const {compareVersions}=require('../updater-validation.cjs');
 const {REPOSITORY,REPOSITORIES,approvedURL,validateDescriptor,verifyArchive,ensurePrivateCache,validateTestingCandidate,revalidateTestingCandidate,hashFile}=require('./testing-update-validation.cjs');
 const API=`https://api.github.com/repos/${REPOSITORY}/releases?per_page=100&page=1`;
-async function atomicHint(cache,value){
-  const temporary=path.join(cache,`prepared-${crypto.randomUUID()}.tmp`),file=path.join(cache,'prepared.json');
+async function atomicHint(cache,value,name='prepared.json'){
+  const temporary=path.join(cache,`prepared-${crypto.randomUUID()}.tmp`),file=path.join(cache,name);
   const handle=await fs.open(temporary,'wx',0o600);
   try{await handle.writeFile(JSON.stringify(value)+'\n');await handle.sync();}finally{await handle.close();}
   try{await fs.rename(temporary,file);const parent=await fs.open(cache,'r');try{await parent.sync();}finally{await parent.close();}}
   finally{await fs.rm(temporary,{force:true});}
+}
+async function privateJSON(file){
+  const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW);
+  try{
+    const stat=await handle.stat();
+    if(!stat.isFile()||stat.uid!==process.getuid()||(stat.mode&0o077)||stat.size>65536)throw new Error('Invalid private update record.');
+    const bytes=Buffer.alloc(65537);let size=0;
+    while(size<bytes.length){const read=await handle.read(bytes,size,bytes.length-size,null);if(!read.bytesRead)break;size+=read.bytesRead;}
+    if(size>65536)throw new Error('Update record exceeds bounds.');
+    return JSON.parse(bytes.subarray(0,size).toString('utf8'));
+  }finally{await handle.close();}
+}
+function safePhase(value){return typeof value==='string'&&/^[a-z][a-z0-9-]{0,63}$/.test(value)?value:'unknown';}
+function installOutcome(state,phase){
+  phase=safePhase(phase);
+  const message=state==='Restored'?`The update failed during ${phase}; the previous app was restored.`:`The update could not complete during ${phase}. Retry the update or inspect the private update diagnostics.`;
+  return {state,phase,message};
 }
 async function hintPath(cache,relative,kind,filename){
   const parts=typeof relative==='string'?relative.split('/'):[];
@@ -68,10 +85,13 @@ async function releaseList(transport){return jsonAt(transport,API,'api');}
 function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus=()=>{},prepareQuit,authorizeQuit=()=>{},revokeQuit=()=>{},onInstallationFailure=()=>{},installedBundle,transport=httpsTransport,verifyCandidate=validateTestingCandidate,revalidateCandidate=revalidateTestingCandidate,installHelper,processIdentity,hostVersion,timers=globalThis,random=Math.random,enabled}){
   installedBundle||=path.resolve(app.getPath('exe'),'../../..');
   let status={state:'Current',installed:manifest.application_version,available:null,channel:'unsigned-testing',manual_updates:true,can_download:false,can_restart:false,developer_id_verified:false,message:'Using the installed testing version.'};
-  let active=false,stopped=false,timer=null,checking=null,downloading=null,installing=null,pending=null,offered=null;
+  let active=false,stopped=false,timer=null,checking=null,downloading=null,installing=null,pending=null,offered=null,lastInstall=null;
   let receiptWrites=Promise.resolve();
   function set(state,fields={}){
-    status={...status,...fields,state,can_download:state==='Available'&&Boolean(offered),can_restart:state==='Ready'&&Boolean(pending)};publishStatus({...status});
+    status={...status,...fields,state,can_download:state==='Available'&&Boolean(offered),can_restart:state==='Ready'&&Boolean(pending)};
+    if(lastInstall){status.last_install={...lastInstall};if(['Current','Available','Ready','Deferred'].includes(state))status.check_error=lastInstall.message;}
+    else delete status.last_install;
+    publishStatus({...status});
     const snapshot={format:'rieke-desktop-testing-update-status',version:1,installed:status.installed,available:status.available,state,checked_at:status.checked_at||null};
     receiptWrites=receiptWrites.catch(()=>{}).then(async()=>{
       const cache=await ensurePrivateCache(app.getPath('userData'));
@@ -82,6 +102,20 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
     return {...status};
   }
   function deferred(message){return set(pending?'Ready':offered?'Available':'Deferred',{message,check_error:message});}
+  async function readLastInstall(cache){
+    try{
+      const pointer=await privateJSON(path.join(cache,'last-install.json'));
+      if(pointer.format!=='rieke-testing-last-install'||pointer.version!==1||!/^install-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.json$/.test(pointer.receipt||''))return;
+      const receipt=await privateJSON(path.join(cache,pointer.receipt));
+      if(receipt.format!=='rieke-unsigned-testing-update'||receipt.version!==1||receipt.validated!==true||receipt.channel!=='unsigned-testing'||receipt.identifier!=='org.riekeos.desktop'||receipt.operation!=='update'||receipt.install_path!==installedBundle||![receipt.current_version,receipt.target_version].includes(manifest.application_version))return;
+      if(compareVersions(receipt.target_version,receipt.current_version)<=0)return;
+      let result;
+      try{result=await privateJSON(path.join(cache,pointer.receipt+'.result.json'));}
+      catch(error){if(error.code==='ENOENT'&&pointer.failure_phase)lastInstall=installOutcome('Deferred',pointer.failure_phase);return;}
+      if(result.state==='Deferred')lastInstall=installOutcome('Deferred',result.phase);
+      else if(result.state==='Restored'&&result.destination===installedBundle&&result.version===manifest.application_version&&result.failure&&typeof result.failure==='object')lastInstall=installOutcome('Restored',result.failure.phase);
+    }catch{/* Untrusted/missing hints never affect admission or install authority. */}
+  }
   async function forgetHint(){try{const cache=await ensurePrivateCache(app.getPath('userData'));await fs.rm(path.join(cache,'prepared.json'),{force:true});}catch{}}
   async function persistPrepared(cache,candidate,descriptor){
     const hint={format:'rieke-desktop-testing-prepared-hint',version:1,installed_version:manifest.application_version,
@@ -166,6 +200,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
     try{
       hostVersion||=(await runFile('/usr/bin/sw_vers',['-productVersion'])).stdout.trim();
       const cache=await ensurePrivateCache(app.getPath('userData'));
+      await readLastInstall(cache);
       // Disk status is a display hint, never authority to install or restore.
       try{const hint=JSON.parse(await fs.readFile(path.join(cache,'status.json'),'utf8'));if(hint.format==='rieke-desktop-testing-update-status'&&hint.installed===manifest.application_version)status.available=hint.available;}catch{}
     }catch{return set('Deferred',{message:'The testing update cache is unavailable.'});}
@@ -225,24 +260,32 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
     if(downloading)await downloading;
     if(!active||stopped||!pending||status.state!=='Ready')return{ready:false,reason:'No verified testing update is prepared.'};
     installing=(async()=>{
-      let drained=false;
+      let drained=false,operationCache=null,operationReceipt=null,phase='validate-prepared';
       try{
         await verifyPrepared();set('Draining',{message:'Saving drafts and closing scientific services before updating.'});
-        const result=await prepareQuit();
+        phase='drain-services';const result=await prepareQuit();
         if(result?.ready!==true){set('Ready',{message:'Testing update remains pending until drafts, writers and services close.'});return{ready:false,reason:result?.reason||status.message};}
-        drained=true;await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');
+        drained=true;phase='validate-after-drain';await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');
         const helper=(!processIdentity||!installHelper)?require('../testing-install.cjs'):{};
-        const identity=await (processIdentity||helper.processCreationIdentity)(process.pid,app.getPath('exe'));
+        phase='identify-current-process';const identity=await (processIdentity||helper.processCreationIdentity)(process.pid,app.getPath('exe'));
         const cache=await ensurePrivateCache(app.getPath('userData'));
         const receiptPath=path.join(cache,`install-${crypto.randomUUID()}.json`);
+        operationCache=cache;operationReceipt=path.basename(receiptPath);
         const receipt={format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',operation:'update',install_path:installedBundle,current_executable:typeof identity==='object'?identity.executable:app.getPath('exe'),current_pid:process.pid,current_created_at:typeof identity==='object'?identity.created_at:identity,current_version:manifest.application_version,current_manifest_sha256:await hashFile(path.join(installedBundle,'Contents/Resources/runtime/runtime-manifest.json')),target_version:pending.version,runtime_manifest_sha256:pending.runtime_manifest_sha256,archive_path:pending.downloadedFile,archive_sha256:pending.archive_sha256,bundle_path:pending.bundle_path,bundle_sha256:pending.bundle_sha256,validated:true};
         // Version is separately named because receipt.version identifies schema.
         await fs.writeFile(receiptPath,JSON.stringify(receipt)+'\n',{mode:0o600,flag:'wx'});
-        set('Installing',{message:'Handing the verified unsigned testing app to the owned installer.'});
+        phase='persist-install-pointer';
+        await atomicHint(cache,{format:'rieke-testing-last-install',version:1,receipt:operationReceipt},'last-install.json');
+        lastInstall=null;
+        set('Installing',{check_error:null,message:'Handing the verified unsigned testing app to the owned installer.'});
+        phase='helper-readiness';
         const handoff=await (installHelper||helper.launchTestingInstall)({receiptPath,currentExecutable:receipt.current_executable,currentPid:process.pid});
         if(handoff?.ready===false)throw new Error('Testing installer did not acknowledge readiness.');
         authorizeQuit();app.quit?.();return{ready:true,installing:true};
-      }catch{
+      }catch(error){
+        lastInstall=installOutcome('Deferred',error.updatePhase||phase);
+        if(operationCache&&operationReceipt)await atomicHint(operationCache,{format:'rieke-testing-last-install',version:1,receipt:operationReceipt,failure_phase:lastInstall.phase,
+          failure:{error:String(error.message||'').slice(0,2048),error_type:String(error.name||'Error').slice(0,64),code:String(error.code||'').slice(0,64),stderr:String(error.stderr||'').slice(0,2048)}},'last-install.json').catch(()=>{});
         revokeQuit();pending=null;await forgetHint();deferred(drained?'Testing update changed or installation failed. Restart the installed app from recovery.':'The prepared testing update changed or is unavailable. Retry the download; the installed app remains usable.');
         if(drained)onInstallationFailure();return{ready:false,reason:status.message};
       }

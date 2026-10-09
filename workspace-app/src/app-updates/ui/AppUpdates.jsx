@@ -23,7 +23,7 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
     {!testing&&(desktop||status?.can_stage)&&<p>{desktop?'New versions download quietly. Choose Restart to update after verification; ordinary Quit closes the current app.':'After you close Disco and its project services, the next launch applies the prepared update.'}</p>}
     <p role="status">{status?.state==='Installing'?'Restarting to update…':status?.state==='Draining'?'Waiting for current work to finish…':status?.state==='Validating'?'Verifying the update…':busy?(operation==='restart'?'Preparing to restart…':operation==='download'||status?.state==='Downloading'?'Downloading the update…':'Checking for updates…'):notice?.message||status?.message||'Check for a published Disco release.'}</p>
 
-    {status?.check_error&&!error&&<p role="status">{status.check_error} The previously found update is still shown.</p>}
+    {status?.check_error&&!error&&<p role="status">{status.check_error}</p>}
     {error&&<p role="alert" className="error">{error}</p>}
     {notice&&!desktop&&!status?.can_stage&&<p>Automatic installation is not available for this installation. Review the release instructions before updating.</p>}
     {desktop&&['Downloading','Validating'].includes(status?.state)&&<p role="status">Preparing the update. The current app remains active.</p>}
