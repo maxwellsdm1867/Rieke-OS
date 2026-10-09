@@ -233,3 +233,12 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible :is(strong,time){text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted>button:first-child :is(strong,time){font-weight:650}
+
+/* Keep review tools on one stable row; compact overflow scrolls horizontally. */
+.incoming-review>.incoming-action-bar{flex-wrap:nowrap;align-items:center}
+.incoming-review>.incoming-action-bar>.incoming-bar-metrics{flex-wrap:nowrap;flex-shrink:0;gap:10px}
+.incoming-review>.incoming-action-bar>.incoming-bar-actions{flex-wrap:nowrap;width:auto;flex:1;justify-content:flex-end;overflow-x:auto;padding-bottom:2px}
+.incoming-review>.incoming-action-bar .incoming-draft-host{flex-shrink:0}
+.incoming-review>.incoming-action-bar .incoming-bar-actions>button,.incoming-review>.incoming-action-bar .incoming-review-details{flex-shrink:0;white-space:nowrap}
+.source-merge-status{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface-subtle);border-bottom:1px solid var(--border);font-size:12px;flex-shrink:0}
+.source-merge-status>button{margin-left:auto}

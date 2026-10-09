@@ -31,7 +31,12 @@ epochs or distinct cells, never interchangeable totals.
 `ProtocolWorkbench` owns versioned prepare/context/draft/preview/accept choreography.
 Draft batches are bounded to 250 boolean decisions. Selected preview uses saved
 selected+reviewed, nonexcluded eligible pending members; all mode uses eligible
-pending minus explicit exclusion. Additive acceptance preserves all previous main
+pending minus explicit exclusion. Explicit `source` preview/accept mode resolves only
+the held recording’s exact frozen pending UUIDs on the server, without changing the
+draft selection mode or requiring a bounded client selection. It retains complete
+exclusions even when public draft detail is truncated. The source SHA is sealed in
+the preview, acceptance request hash, receipt and additive audit provenance.
+Additive acceptance preserves all previous main
 members and their curation. Opening, highlighting, deferring, hashing or exporting
 never grants scientific approval. Actor identity and expected authority fences stay
 explicit at each mutation.

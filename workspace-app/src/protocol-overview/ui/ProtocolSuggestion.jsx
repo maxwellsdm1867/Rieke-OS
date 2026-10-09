@@ -9,22 +9,25 @@ import {useProjectPreference} from "../../project-preferences/useProjectPreferen
 import {importReviewStatusLabel} from "../../recording-import/useImportReviewStatus.js";
 
 export default function ProtocolSuggestion({suggestion,onMerge,onProtocol,importView=false,disabled=false}){
-  const launching=useRef(false),[error,setError]=useState('');
+  const launching=useRef(false),[merging,setMerging]=useState(false),[error,setError]=useState('');
   if(!suggestion)return null;
   const applied=suggestion.status==='applied',stale=suggestion.status==='stale';
   const hasAdditions=Number.isSafeInteger(suggestion.diff_counts?.added)&&suggestion.diff_counts.added>0;
-  function merge(options){
+  async function merge(options){
     if(launching.current||disabled||applied||stale||!hasAdditions||!onMerge)return;
-    launching.current=true;setError('');
-    if(onMerge(suggestion.protocol_uuid,options)!==true){launching.current=false;setError('The destination is unavailable. Refresh the project before merging.');}
+    launching.current=true;setMerging(true);setError('');
+    try{if(await onMerge(suggestion.protocol_uuid,options)!==true)throw Error('The destination is unavailable. Refresh the project before merging.');}
+    catch(error){setError(error.message);}
+    finally{launching.current=false;setMerging(false);}
   }
   return <section className={`protocol-new-data ${importView?'import-ready-protocol':''} ${applied?'is-added':''}`} aria-label={importView?humanize(suggestion.protocol_name):'New data matching saved protocol query'}>
     <div className="protocol-new-data-heading"><Sparkles size={19}/><div><h2>{importView?humanize(suggestion.protocol_name):applied?'Applied dataset update':stale?'Saved proposal needs a refresh':'New data matches your saved query'}</h2><p>{suggestion.source_filename||'Imported recording'} · {time(suggestion.created_at)}</p></div></div>
     <div className="protocol-match-summary"><ProtocolDiff comparison={suggestion}/><div className="protocol-match-actions">
       {!importView&&!applied&&<button className="primary" disabled={disabled||stale||!hasAdditions||!onMerge} onClick={merge} title="Preview eligible additions across the incoming queue, preserving main recordings and your draft exclusions"><GitMerge size={15}/> Merge matched data</button>}
-      {importView?<InspectImportButton key={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} identity={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} disabled={disabled||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={!applied&&!stale&&hasAdditions&&onMerge&&suggestion.source_sha256?()=>merge({kind:'merge_source',candidate_revision_uuid:suggestion.candidate_revision_uuid,source_sha256:suggestion.source_sha256}):undefined}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
+      {importView?<InspectImportButton key={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} identity={`${suggestion.candidate_revision_uuid}:${suggestion.source_sha256}`} disabled={disabled||merging||!onProtocol} onInspect={()=>onProtocol?.(suggestion.protocol_uuid,{candidate_revision_uuid:suggestion.candidate_revision_uuid})} onMerge={!applied&&!stale&&hasAdditions&&onMerge&&suggestion.source_sha256?()=>merge({kind:'merge_source',candidate_revision_uuid:suggestion.candidate_revision_uuid,source_sha256:suggestion.source_sha256}):undefined}/>:<button disabled={disabled||!onProtocol} onClick={()=>onProtocol?.(suggestion.protocol_uuid)}>Inspect in Workbench <ArrowRight size={14}/></button>}
       {!importView&&!applied&&<small>{stale?'Refresh the saved proposal in Workbench.':'Merge opens a fresh preview of eligible additions for confirmation.'}</small>}
     </div></div>
+    {merging&&<p role="status">Merging eligible additions into Main…</p>}
     {error&&<p className="error" role="alert">{error}</p>}
   </section>;
 }
@@ -46,7 +49,7 @@ export function ImportSuggestions({suggestions=[],approvedHistory=[],protocols=[
   const pendingReview=Number.isSafeInteger(reviewStatus?.pendingProtocols)&&reviewStatus.pendingProtocols>0;
   const reviewLabel=importReviewStatusLabel(reviewStatus);
   if(!suggestions.length&&!latest&&!pendingReview)return null;
-  const render=item=><ProtocolSuggestion key={`${projectId}:${item.protocol_uuid}:${item.candidate_revision_uuid}`} suggestion={item} onProtocol={onProtocol?(id,options)=>{setOpen(false);onProtocol(id,options);}:undefined} onMerge={onMerge?(id,options)=>{const opened=onMerge(id,options);if(opened===true)setOpen(false);return opened;}:undefined} importView disabled={reviewLoading}/>;
+  const render=item=><ProtocolSuggestion key={`${projectId}:${item.protocol_uuid}:${item.candidate_revision_uuid}`} suggestion={item} onProtocol={onProtocol?(id,options)=>{setOpen(false);onProtocol(id,options);}:undefined} onMerge={onMerge?async(id,options)=>{const completed=await onMerge(id,options);if(completed===true)setOpen(false);return completed;}:undefined} importView disabled={reviewLoading}/>;
   const summary=<section className="import-readiness" aria-label="Import readiness summary"><header className="import-readiness-heading"><div><div className="eyebrow">IMPORT REVIEW</div><h2><FileCheck2 size={23}/> {model.pinnedReady>0?'Review your pinned protocol updates.':'Protocol matching summary.'}</h2></div><div className="import-heading-actions"><span className="import-ready-total">{model.pinnedReady} pinned updates pending{model.stale>0?` · ${model.stale} need refresh`:''}</span></div></header>{source&&<div className="import-source-summary"><Database size={21}/><div><strong>{source.filename}</strong><small>Latest completed import · {time(latest.finished_at)}</small></div><span><strong>{number(source.counts?.cells)}</strong> cells in imported source</span><span><strong>{number(source.counts?.epochs)}</strong> epochs in imported source</span><span className="import-checked"><Check size={14}/> Imported</span></div>}{catalogDelta&&<div className="import-catalog-delta" aria-label="Added to overall data store"><h3><Database size={16}/> Added to the overall data store</h3><div>{[['sources_added','recordings'],['cells_added','cells'],['epochs_added','epochs'],['protocol_types_added','protocol types']].filter(([key])=>Number.isInteger(catalogDelta[key])).map(([key,label])=><span key={key}><strong>+{number(catalogDelta[key])}</strong> {label}</span>)}</div><p>New catalog records from this import. Merge matched recordings into a protocol below.</p></div>}{latest?.recording_storage?.verified&&latest?.recording_storage?.original_removal_safe&&<p className="import-managed-copy"><Check size={15}/> Saved a verified copy in this project. You can remove the original H5 from Downloads; keep the project copy.</p>}{latest?.warnings?.length>0&&<p className="error">Some post-import checks need attention. See import diagnostics below.</p>}
   {reviewLoading&&<p className="import-managed-copy" role="status"><LoaderCircle size={15} className="spin"/> Refreshing catalog totals and protocol matches…</p> }{model.pinned.some(row=>row.suggestion)&&<div className="import-priority-group"><h3><Pin size={14}/> Pinned protocols · {model.pinnedReady} pending</h3>{model.pinned.filter(row=>row.suggestion).map(row=>render(row.suggestion))}</div>}
   {model.other.length>0&&<div className="import-priority-group"><h3>Other pending updates · {model.other.length}</h3>{model.other.map(render)}</div>}

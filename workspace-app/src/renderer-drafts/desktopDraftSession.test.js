@@ -78,3 +78,14 @@ test('public example saves the unchanged nested renderer envelope through an inj
     assert.deepEqual(writes,[{projectId:'example-project',value:{format:'rieke-renderer-draft',version:1,projectId:'example-project',value:view}}]);
   }finally{session.close();}
 });
+
+test('pending scientific recovery hydrates even when navigation supersedes the saved presentation',async()=>{
+ let release,intent=0,restores=0,recovery=null,stored;
+ const operation={protocolId:'p',body:{operation_uuid:'same-operation'}};
+ const session=createDesktopDraftSession({projectId:'project',navigationIdentity:()=>intent,
+  bridge:{loadDraft:()=>new Promise(resolve=>{release=resolve}),saveDraft:async value=>{stored=value.value.value}},
+  snapshot:()=>({route:'new',sourceMerge:recovery}),restore:()=>restores++,restoreRecovery:value=>{recovery=value.sourceMerge},isBusy:()=>false});
+ await new Promise(resolve=>setImmediate(resolve));intent++;
+ release({format:'rieke-renderer-draft',version:1,projectId:'project',value:{route:'old',sourceMerge:operation}});
+ await session.flush();assert.equal(restores,0);assert.deepEqual(recovery,operation);assert.deepEqual(stored.sourceMerge,operation);session.close();
+});

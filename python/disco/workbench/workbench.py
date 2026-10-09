@@ -360,7 +360,18 @@ class ProtocolWorkbench:
         return dict(selected=(context['selection_mode'] == 'all' or (valid and bool(saved.get('selected')))) and not excluded,
                     reviewed=bool(saved.get('reviewed')) if valid else False, excluded=excluded)
 
-    def selection(self, context, mode):
+    def selection(self, context, mode, source_sha256=None):
+        if mode == 'source':
+            if not isinstance(source_sha256, str) or not source_sha256:
+                raise ValueError('Source merge requires an exact recording identity')
+            scoped = {key for key in context['pending']
+                      if self.service.rows.get(key, {}).get('source_sha256') == source_sha256}
+            if not scoped:
+                raise WorkbenchConflict('This recording has no pending additions in the frozen candidate')
+            return {key for key in scoped if key not in context['ineligible'] | context['unavailable']
+                    and not self.decision(context, key)['excluded']}
+        if source_sha256 is not None:
+            raise ValueError('Recording identity is only valid for source merge mode')
         if mode not in ('all', 'selected') or mode != context['selection_mode']:
             raise ValueError('Preview mode must agree with the saved draft selection_mode')
         if mode == 'all':
@@ -417,7 +428,7 @@ class ProtocolWorkbench:
         self.check_scope(context, body['expected_candidate_scope_revision'])
         if type(body['expected_draft_version']) is not int or body['expected_draft_version'] != context['draft_version']:
             raise WorkbenchConflict('Review draft changed')
-        selected = self.selection(context, body['mode'])
+        selected = self.selection(context, body['mode'], body.get('source_sha256'))
         self.publishable(context, selected)
         if not selected:
             if context['ineligible']:
@@ -434,6 +445,8 @@ class ProtocolWorkbench:
             already_present_epoch_count=len(selected) - len(accepted),
             retained_epoch_count=len(context['previous']), next_epoch_count=len(context['previous']) + len(accepted),
             accepted_cell_count=len({self.service.rows[key]['cell_uuid'] for key in accepted}))
+        if body['mode'] == 'source':
+            preview['source_sha256'] = body['source_sha256']
         preview['preview_sha256'] = checksum(preview)
         return preview, selected, accepted
 
@@ -466,6 +479,8 @@ class ProtocolWorkbench:
             candidate_revision_uuid=revision, candidate_recipe_sha256=context['candidate_recipe_sha256'],
             preview_sha256=preview['preview_sha256'], selected_sha256=preview['selected_sha256'],
             actor=actor, draft_version=context['draft_version'], operation_uuid=body['operation_uuid'])
+        if body['mode'] == 'source':
+            publication['source_sha256'] = body['source_sha256']
         frozen = dict(predicate=copy.deepcopy(main['predicate']), splits=main['splits'],
             membership=[dict(uuid=key, metadata_hash=value) for key, value in sorted(union.items())],
             matched_count=len(union), total_source=len(self.service.rows), metadata_fingerprint_version=2,
@@ -806,7 +821,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        payload = dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True, list_selection=True,
+        payload = dict(contract_version=1, actor=context['actor'], source_additive_accept=True, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True, list_selection=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -884,14 +899,14 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/preview')
     def workbench_preview(protocol, revision):
-        value = body({'expected_candidate_scope_revision', 'expected_draft_version', 'mode'})
+        value = body({'expected_candidate_scope_revision', 'expected_draft_version', 'mode'}, {'source_sha256'})
         with guarded(protocol, revision) as owner:
             return jsonify(manager.preview(manager.context(protocol, revision, owner), value)[0])
 
     @app.post(candidate + '/accept')
     def workbench_accept(protocol, revision):
         value = body({'expected_candidate_scope_revision', 'expected_draft_version', 'mode', 'preview_sha256',
-                      'expected_binding_version', 'expected_query_revision', 'operation_uuid'})
+                      'expected_binding_version', 'expected_query_revision', 'operation_uuid'}, {'source_sha256'})
         with db_lock:
             manager.tables
             owner = actor()

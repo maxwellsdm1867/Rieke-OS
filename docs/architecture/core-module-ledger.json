@@ -4206,7 +4206,7 @@
       "freshness_and_invalidation": "Protocol/revision/nonce generation and AbortSignal prevent stale queue publication. Current draft/read tokens gate review controls; saved content may display while inert.",
       "execution_contract": {
         "transactions": "Queue/selection reads are not scientific transactions. workbenchAuthority owns versioned multi-batch draft/preview/accept request choreography; backend owns atomic commits.",
-        "idempotency": "Selection reads only here; acceptance exact-operation replay belongs to command ledger.",
+        "idempotency": "Held source accept persists the exact operation before POST; recovery only reads receipts. A new explicit hold may retry the same body/UUID.",
         "cancellation": "Local generation/isCurrent gates complement abort. Closing review does not prove rollback.",
         "lifetime": "Mounted queue/review, retained presentation draft; consent ledger is ephemeral and single-use."
       },
@@ -4226,7 +4226,9 @@
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css",
         "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
-        "workspace-app/src/incoming-workbench/importedSelection.js"
+        "workspace-app/src/incoming-workbench/importedSelection.js",
+        "workspace-app/src/incoming-workbench/sourceMerge.js",
+        "workspace-app/src/incoming-workbench/useSourceMerge.js"
       ],
       "verification": {
         "existing_tests": [
@@ -4237,7 +4239,9 @@
           "workspace-app/src/importMergeAppRoute.test.js",
           "workspace-app/src/presentationSessionsApp.test.js",
           "workspace-app/src/incomingSelectionSummaryRendering.test.js",
-          "workspace-app/src/incomingTreeSelectionQueue.test.js"
+          "workspace-app/src/incomingTreeSelectionQueue.test.js",
+          "workspace-app/src/incoming-workbench/sourceMerge.test.js",
+          "workspace-app/src/incoming-workbench/useSourceMerge.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [

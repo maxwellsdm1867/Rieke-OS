@@ -235,3 +235,22 @@ so old offered data cannot become actionable before passive effects. A later fre
 HTTP bootstrap can supply a new offer. No global page cache or scientific consent
 is created. The resource/StrictMode/session tests exercise these boundaries with
 held requests and the actual Inspector hook composition.
+
+## Direct held recording merge
+
+`sourceMerge.js` owns context → source-scoped preview → accept for one held
+recording. `useSourceMerge.js` binds its operation to App lifetime. Inspect still
+opens Workbench; direct hold never selects a client cohort or navigates there.
+Server source selection preserves main membership, full exclusions and publication
+fences, including candidates over the interactive 1,000-epoch selection limit.
+
+Persist the exact acceptance body, operation UUID and actor through the existing
+desktop draft saver before submission. Recovery hydration runs independently of
+presentation restoration; restored operations never auto-submit. Explicit recovery
+only looks up the saved receipt and requires the original selected or default author. A separate one-second Hold to retry merge grants fresh consent to submit the same original body/UUID; an absent receipt never implies rollback. Monotonic owner
+tokens retire pre-submission work across A→B→A navigation and unmount. Verified
+same-project completion refreshes data even after navigation; only a still-current
+owner opens Overview. Lost/invalid replies retain recovery identity.
+
+Run `sourceMerge.test.js`, `useSourceMerge.test.js`, `importMergeAppRoute.test.js`,
+renderer-draft tests and the backend Workbench authority suite for these contracts.

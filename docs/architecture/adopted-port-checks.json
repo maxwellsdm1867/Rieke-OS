@@ -1700,6 +1700,22 @@
             "workspace-app/src/incoming-workbench/incomingSelection.js",
             "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/sourceMerge.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/useSourceMerge.js",
+          "allow": [
+            "react",
+            "workspace-app/src/incoming-workbench/sourceMerge.js",
+            "workspace-app/src/desktopLifecycle.js"
+          ]
         }
       ],
       "tests": {
@@ -1728,7 +1744,9 @@
           "workspace-app/src/testDiscovery.test.js",
           "workspace-app/src/treeTagCoverageWorkflow.test.js",
           "workspace-app/src/incoming-workbench/incomingBootstrap.test.js",
-          "workspace-app/src/incomingBootstrapResource.test.js"
+          "workspace-app/src/incomingBootstrapResource.test.js",
+          "workspace-app/src/incoming-workbench/sourceMerge.test.js",
+          "workspace-app/src/incoming-workbench/useSourceMerge.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3451,6 +3469,18 @@
             "path": "workspace-app/src/incoming-workbench/importedSelection.js",
             "exports": [
               "loadImportedSelection"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/sourceMerge.js",
+            "exports": [
+              "createSourceMerge"
+            ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/useSourceMerge.js",
+            "exports": [
+              "default"
             ]
           }
         ]

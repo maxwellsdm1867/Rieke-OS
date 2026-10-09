@@ -72,6 +72,59 @@ class WorkbenchTests(unittest.TestCase):
             candidate_scope_revision=context['candidate_scope_revision'],
             cells=cells if cells is not None else [dict(cell_uuid=cell, epochs=1)], **extra))
 
+    def source_request(self):
+        context = self.get_context()
+        body = dict(mode='source', source_sha256=self.case.service.rows[self.added]['source_sha256'],
+                    expected_candidate_scope_revision=context['candidate_scope_revision'],
+                    expected_draft_version=context['draft']['draft_version'])
+        response = self.case.client.post(self.root + '/preview', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        preview = response.get_json()
+        self.assertEqual(preview['source_sha256'], body['source_sha256'])
+        body.update({key: preview[key] for key in ('preview_sha256', 'expected_binding_version', 'expected_query_revision')},
+                    operation_uuid=str(uuid.uuid4()))
+        return body
+
+    def test_source_merge_uses_existing_draft_without_editing_and_replays_exact_receipt(self):
+        before = copy.deepcopy([table.rows for table in self.tables[:2]])
+        body = self.source_request()
+        accepted = self.accept(body)
+        self.assertEqual(accepted.status_code, 200, accepted.get_json())
+        self.assertEqual(accepted.get_json()['accepted_epoch_uuids'], [self.added])
+        self.assertEqual([table.rows for table in self.tables[:2]], before)
+        recipe = self.case.explorer_history.protocol_binding(self.protocol)['recipe']
+        self.assertEqual(recipe['additive_publication']['source_sha256'], body['source_sha256'])
+        self.assertEqual({row['uuid'] for row in recipe['epochs']}, set(self.fixture.before_ids) | {self.added})
+        self.assertEqual(self.accept(body).get_json(), accepted.get_json())
+        self.assertEqual(self.accept({**body, 'source_sha256': 'other-source'}).status_code, 409)
+
+    def test_source_merge_refuses_changed_draft_and_wrong_source(self):
+        body = self.source_request()
+        self.assertEqual(self.accept({**body, 'source_sha256': 'other-source'}).status_code, 409)
+        context = self.get_context()
+        self.assertEqual(self.save(context, [dict(epoch_uuid=self.added, excluded=True)]).status_code, 200)
+        self.assertEqual(self.accept(body).status_code, 409)
+        fresh = self.get_context()
+        response = self.case.client.post(self.root + '/preview', json={**{key: body[key] for key in ('mode', 'source_sha256')},
+            'expected_candidate_scope_revision': fresh['candidate_scope_revision'],
+            'expected_draft_version': fresh['draft']['draft_version']}, headers=self.case.headers)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Choose reviewed incoming additions', str(response.get_json()))
+
+    def test_source_selection_exceeds_ui_limit_and_retains_full_exclusions_and_other_sources(self):
+        ids = [str(uuid.uuid4()) for _ in range(1691)]
+        other = str(uuid.uuid4())
+        rows = {key: dict(source_sha256='held-source') for key in ids}
+        rows[other] = dict(source_sha256='other-source')
+        decisions = {key: dict(metadata_hash='hash', excluded=True, reviewed=False, selected=False) for key in ids[:300]}
+        context = dict(pending=set(ids) | {other}, incoming={key: 'hash' for key in rows}, decisions=decisions,
+                       selection_mode='selected', ineligible={ids[300]}, unavailable={ids[301]})
+        with patch.object(self.case.service, 'rows', rows):
+            selected = self.manager.selection(context, 'source', 'held-source')
+        self.assertEqual(selected, set(ids[302:]))
+        self.assertNotIn(other, selected)
+        self.assertEqual(context['selection_mode'], 'selected')
+
     def test_list_selection_matches_paged_order_and_closes_once_without_writes(self):
         context = self.get_context()
         self.assertIs(context['list_selection'], True)
