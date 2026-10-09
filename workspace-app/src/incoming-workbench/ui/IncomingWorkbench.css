@@ -225,9 +225,9 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child{justify-content:flex-start;gap:4px;overflow:hidden}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch .epoch-short-protocol{min-width:0}
 
-/* Unselected rows keep the default background, including highlighted rows. */
+/* Highlighted rows use the same accent fill as Split tree; selection stays green. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:is(.active,.bulk-selected,.is-highlighted){box-shadow:none}
-.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted:not(.bulk-selected){background:transparent}
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted:not(.bulk-selected){background:var(--accent-soft)}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted.bulk-selected{background:color-mix(in srgb,var(--success-soft) 84%,var(--success-ink))}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible{outline:0}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible :is(strong,time){text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
