@@ -111,3 +111,27 @@ candidate/source/staging checks use this shared scan; signed resource verificati
 is unchanged. After actual parent exit the helper retains the current-app digest
 from its resource-validated scan, avoiding an adjacent second whole-app read.
 The initial application audit and macOS signature checks remain separate checks.
+
+The parent now admits receipt/path/process identity without repeating the child's
+full scan. The child still verifies the prepared bytes before READY. After the
+exact parent exits, resolved paths and the entire receipt must remain unchanged;
+bootstrap owns the fresh candidate/current resource and digest checks. Its
+`expectedCurrentManifestSha256` binds the old installation and
+`retainPreviousDigest` returns the verified rollback digest.
+
+For unsigned updates only, `preparedCache` permits a validated direct
+`candidate-XXXXXX/<app>` in the private cache to become staging. On the same
+filesystem it is renamed into place, avoiding copying identical bytes and a
+copied-byte scan. Cache/directory identities are checked again before replacement;
+final signature and quarantine checks remain. Cross-filesystem updates retain the
+copy-and-verify path. Rejected activated bundles return to their staging location;
+activation failures retain the failed app beside the installation so recovery
+renames stay on the installation filesystem. Explicit restore keeps its copy path.
+
+Progress is display-only. Bounded child packets update the open app without
+granting READY authority. After validated preparation, a private capability-bound
+record drives a separate macOS progress window through sanitized stdin frames.
+The observer has no install, quit or rollback capability. Missing/closed progress
+UI does not change installation decisions. Download percentage measures bytes;
+verification/install phases are indeterminate, with no claimed ETA. Terminal
+`Installed` still represents a launch request, not application readiness.

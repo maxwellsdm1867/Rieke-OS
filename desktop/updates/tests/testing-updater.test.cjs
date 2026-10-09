@@ -70,6 +70,23 @@ test('startup metadata notice never downloads; explicit download prepares and or
   const result=await Promise.all([f.coordinator.installPrepared(),f.coordinator.installPrepared()]);
   assert.ok(result.every(r=>r.installing));assert.equal(f.helperCalls(),1);assert.equal(f.drains(),1);
 });
+test('installer progress is display-only and reports validation before quit',async t=>{
+  const statuses=[];let releaseHelper,enteredHelper;
+  const entered=new Promise(resolve=>{enteredHelper=resolve;});
+  const f=await fixture(t,{publishStatus:status=>statuses.push(status),installHelper:async({onProgress})=>{
+    onProgress({phase:'validate-prepared',progress:75});
+    onProgress({phase:'untrusted-phase',progress:100});
+    enteredHelper();await new Promise(resolve=>{releaseHelper=resolve;});return {ready:true};
+  }});
+  let quits=0;f.app.quit=()=>{quits++;};
+  await f.coordinator.start();await f.coordinator.download();const installing=f.coordinator.installPrepared();await entered;
+  assert.equal(quits,0);assert.equal(f.coordinator.getStatus().phase,'validate-prepared');
+  assert.equal(f.coordinator.getStatus().phase_progress,null);
+  assert.equal(f.coordinator.getStatus().can_restart,false);
+  assert.ok(statuses.some(status=>status.state==='Validating'&&status.message.includes('before closing')));
+  assert.ok(statuses.some(status=>status.state==='Validating'&&status.message.includes('after scientific')));
+  releaseHelper();assert.equal((await installing).ready,true);assert.equal(quits,1);
+});
 async function lastInstallFixture(f,result){
   const cache=path.join(f.root,'updates/unsigned-testing');await fs.mkdir(cache,{recursive:true,mode:0o700});
   const receipt='install-00000000-0000-4000-8000-000000000001.json';

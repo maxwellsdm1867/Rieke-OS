@@ -8,10 +8,15 @@ const os = require('node:os');
 const {createHash} = require('node:crypto');
 const {installCompleteBundle, bundleDigest, readBundleManifest} = require('../bootstrap.cjs');
 
-async function fixture(t, {existing = true, channel = 'unsigned-testing', fault = null} = {}) {
+async function fixture(t, {existing = true, channel = 'unsigned-testing', fault = null, prepared = false} = {}) {
   const root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'disco-bootstrap-install-')));
   t.after(() => fs.rm(root, {recursive: true, force: true}));
-  const source = path.join(root, 'download', 'Disco.app');
+  const cache = path.join(root, 'profile/updates/unsigned-testing');
+  const source = prepared ? path.join(cache, 'candidate-ABC123/Disco.app') : path.join(root, 'download', 'Disco.app');
+  if (prepared) {
+    await fs.mkdir(path.dirname(source), {recursive: true, mode: 0o700});
+    await fs.chmod(cache, 0o700); await fs.chmod(path.dirname(source), 0o700);
+  }
   const destination = path.join(root, 'Applications', 'Disco.app');
   const calls = [];
   async function makeBundle(bundle, version) {
@@ -72,8 +77,10 @@ async function fixture(t, {existing = true, channel = 'unsigned-testing', fault 
     }
     assert.fail(`Unexpected command rejected: ${command}`);
   };
-  return {root, source, destination, calls, originalDigest,
-    install: () => installCompleteBundle({source, destination, run, distribution: {channel}})};
+  const expectedBundleSha256 = await bundleDigest(source);
+  return {root, source, destination, calls, originalDigest, cache, run,
+    install: (options = {}) => installCompleteBundle({source, destination, run, distribution: {channel},
+      ...(prepared ? {preparedCache: cache, expectedBundleSha256} : {}), ...options})};
 }
 
 for (const channel of ['signed', 'unsigned-testing']) {
@@ -106,4 +113,134 @@ for (const fault of ['source', 'staging']) test(`${fault} seal failure preserves
   await assert.rejects(f.install(), new RegExp(`injected ${fault} signature failure`));
   assert.equal(await bundleDigest(f.destination), f.originalDigest);
   assert.deepEqual(await fs.readdir(path.dirname(f.destination)), ['Disco.app']);
+});
+
+
+async function currentHash(f) {
+  return createHash('sha256').update(await fs.readFile(path.join(f.destination, 'Contents/Resources/runtime/runtime-manifest.json'))).digest('hex');
+}
+
+test('prepared same-volume source is consumed without copy and old digest is retained', async t => {
+  const f = await fixture(t, {prepared: true});
+  const result = await f.install({expectedCurrentManifestSha256: await currentHash(f), retainPreviousDigest: true});
+  assert.equal(result.previousDigest, f.originalDigest);
+  assert.equal(await bundleDigest(result.previous), f.originalDigest);
+  await assert.rejects(fs.lstat(f.source), {code: 'ENOENT'});
+  assert.equal((await readBundleManifest(f.destination)).application_version, '0.1.10');
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
+  assert.equal(f.calls.filter(([command, args]) => command === '/usr/bin/codesign' && args[0] === '--verify').length, 2);
+  assert.ok(f.calls.some(([command, args]) => command === '/usr/bin/xattr' && args.at(-1) === f.destination));
+});
+
+for (const failure of ['activation', 'rename', 'quarantine']) test(`prepared ${failure} failure preserves both original app and candidate`, async t => {
+  const f = await fixture(t, {prepared: true, fault: failure === 'activation' ? 'activation' : null});
+  const sourceDigest = await bundleDigest(f.source), originalRename = fs.rename;
+  if (failure === 'rename') fs.rename = async function(from, to) {
+    if (from === f.source && to === f.destination) throw Object.assign(new Error('injected activation rename failure'), {code: 'EIO'});
+    return originalRename.call(this, from, to);
+  };
+  const run = async (command, args) => {
+    if (failure === 'quarantine' && command === '/usr/bin/xattr' && args.at(-1) === f.destination) return {stdout: 'abcd', stderr: ''};
+    return f.run(command, args);
+  };
+  try {await assert.rejects(f.install({run}), /injected activation|quarantine attribute differs/);}
+  finally {fs.rename = originalRename;}
+  assert.equal(await bundleDigest(f.source), sourceDigest);
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+  assert.deepEqual(await fs.readdir(path.dirname(f.destination)), ['Disco.app']);
+});
+
+test('prepared cache requires ownership, private directories, exact layout, and expected digest', async t => {
+  const f = await fixture(t, {prepared: true});
+  await assert.rejects(f.install({expectedBundleSha256: undefined}), /expected bundle checksum/);
+  await assert.rejects(f.install({preparedCache: path.dirname(f.cache)}), /directly inside/);
+  for (const directory of [f.cache, path.dirname(f.source)]) {
+    await fs.chmod(directory, 0o755);
+    await assert.rejects(f.install(), /private owned/);
+    await fs.chmod(directory, 0o700);
+  }
+  const originalLstat = fs.lstat;
+  fs.lstat = async function(file, ...args) {
+    const stat = await originalLstat.call(this, file, ...args);
+    return file === f.cache ? Object.assign(Object.create(stat), {uid: process.getuid() + 1}) : stat;
+  };
+  try {await assert.rejects(f.install(), /private owned/);}
+  finally {fs.lstat = originalLstat;}
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+});
+
+for (const target of ['cache', 'candidate', 'bundle']) test(`prepared ${target} symlink is refused without changes`, async t => {
+  const f = await fixture(t, {prepared: true});
+  const directory = target === 'cache' ? f.cache : target === 'candidate' ? path.dirname(f.source) : f.source;
+  const retained = directory + '-real';
+  await fs.rename(directory, retained); await fs.symlink(retained, directory);
+  await assert.rejects(f.install(), /without links/);
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+  assert.equal((await readBundleManifest(f.source)).application_version, '0.1.10');
+});
+
+test('different-device prepared source uses copied-staging proof and remains cached', async t => {
+  const f = await fixture(t, {prepared: true}), originalLstat = fs.lstat;
+  // Device identity is injected; this proves fallback selection, not a native cross-volume rename.
+  fs.lstat = async function(file, ...args) {
+    const stat = await originalLstat.call(this, file, ...args);
+    return file === f.source ? Object.assign(Object.create(stat), {dev: stat.dev + 1}) : stat;
+  };
+  let result;
+  try {result = await f.install({retainPreviousDigest: true, expectedCurrentManifestSha256: await currentHash(f)});}
+  finally {fs.lstat = originalLstat;}
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 1);
+  assert.equal((await readBundleManifest(f.source)).application_version, '0.1.10');
+  assert.equal(result.previousDigest, f.originalDigest);
+  assert.equal(await bundleDigest(result.previous), f.originalDigest);
+});
+
+test('expected current manifest mismatch or absent installation rejects before replacement', async t => {
+  const f = await fixture(t, {prepared: true});
+  const expectedCurrentManifestSha256 = await currentHash(f);
+  await fs.appendFile(path.join(f.destination, 'Contents/Resources/runtime/runtime-manifest.json'), ' ');
+  await assert.rejects(f.install({expectedCurrentManifestSha256, retainPreviousDigest: true}), /Installed runtime manifest differs/);
+  await fs.rm(f.destination, {recursive: true});
+  await assert.rejects(f.install({expectedCurrentManifestSha256, retainPreviousDigest: true}), {code: 'ENOENT'});
+  assert.equal((await readBundleManifest(f.source)).application_version, '0.1.10');
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
+});
+
+test('prepared directory inode change before activation refuses replacement', async t => {
+  const f = await fixture(t, {prepared: true}), old = path.dirname(f.source) + '-old'; let changed = false;
+  const run = async (command, args) => {
+    if (command === '/bin/ps' && !changed) {
+      changed = true; await fs.rename(path.dirname(f.source), old);
+      await fs.mkdir(path.dirname(f.source), {mode: 0o700});
+      await fs.rename(path.join(old, 'Disco.app'), f.source);
+    }
+    return f.run(command, args);
+  };
+  await assert.rejects(f.install({run}), /Prepared cache path identity changed/);
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+  assert.equal((await readBundleManifest(f.source)).application_version, '0.1.10');
+});
+
+for (const relative of ['Contents/Resources/runtime/mysql/bin/mysql', 'Contents/MacOS/Disco']) test(`prepared same-inode mutation during current verification rejects: ${relative}`, async t => {
+  const f = await fixture(t, {prepared: true}), file = path.join(f.source, relative);
+  const originalFile = await fs.stat(file), originalBundle = await fs.stat(f.source);
+  let mutated = false;
+  const run = async (command, args) => {
+    if (!mutated && command === '/usr/libexec/PlistBuddy' && args[2] === path.join(f.destination, 'Contents/Info.plist')) {
+      mutated = true;
+      assert.ok(f.calls.some(([priorCommand, priorArgs]) => priorCommand === '/usr/bin/codesign' && priorArgs.at(-1) === f.source));
+      const bytes = await fs.readFile(file); bytes[0] ^= 1;
+      await fs.writeFile(file, bytes); // Same inode and size: path identity alone cannot detect this.
+    }
+    return f.run(command, args); // Signature adapter deliberately still accepts the candidate.
+  };
+  await assert.rejects(f.install({run, retainPreviousDigest: true, expectedCurrentManifestSha256: await currentHash(f)}),
+    /Runtime resource checksum failed|Downloaded application bundle checksum differs/);
+  assert.equal(mutated, true);
+  assert.equal((await fs.stat(file)).ino, originalFile.ino);
+  assert.equal((await fs.stat(file)).size, originalFile.size);
+  assert.equal((await fs.stat(f.source)).ino, originalBundle.ino);
+  assert.equal(await bundleDigest(f.destination), f.originalDigest);
+  assert.deepEqual(await fs.readdir(path.dirname(f.destination)), ['Disco.app']);
+  assert.equal(f.calls.filter(([command]) => command === '/usr/bin/ditto').length, 0);
 });

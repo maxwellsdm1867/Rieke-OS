@@ -88,6 +88,7 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
   let active=false,stopped=false,timer=null,checking=null,downloading=null,installing=null,pending=null,offered=null,lastInstall=null;
   let receiptWrites=Promise.resolve();
   function set(state,fields={}){
+    if(state!==status.state)status={...status,phase:null,phase_progress:null};
     status={...status,...fields,state,can_download:state==='Available'&&Boolean(offered),can_restart:state==='Ready'&&Boolean(pending)};
     if(lastInstall){status.last_install={...lastInstall};if(['Current','Available','Ready','Deferred'].includes(state))status.check_error=lastInstall.message;}
     else delete status.last_install;
@@ -262,10 +263,11 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
     installing=(async()=>{
       let drained=false,operationCache=null,operationReceipt=null,phase='validate-prepared';
       try{
+        set('Validating',{message:'Checking the prepared update before closing Disco.'});
         await verifyPrepared();set('Draining',{message:'Saving drafts and closing scientific services before updating.'});
         phase='drain-services';const result=await prepareQuit();
         if(result?.ready!==true){set('Ready',{message:'Testing update remains pending until drafts, writers and services close.'});return{ready:false,reason:result?.reason||status.message};}
-        drained=true;phase='validate-after-drain';await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');
+        drained=true;phase='validate-after-drain';set('Validating',{message:'Checking the update after scientific services close.'});await verifyPrepared();if(stopped)throw new Error('Updater stopped during drain.');
         const helper=(!processIdentity||!installHelper)?require('../testing-install.cjs'):{};
         phase='identify-current-process';const identity=await (processIdentity||helper.processCreationIdentity)(process.pid,app.getPath('exe'));
         const cache=await ensurePrivateCache(app.getPath('userData'));
@@ -277,9 +279,10 @@ function createTestingUpdateCoordinator({app,manifest,distribution,publishStatus
         phase='persist-install-pointer';
         await atomicHint(cache,{format:'rieke-testing-last-install',version:1,receipt:operationReceipt},'last-install.json');
         lastInstall=null;
-        set('Installing',{check_error:null,message:'Handing the verified unsigned testing app to the owned installer.'});
+        set('Installing',{check_error:null,phase:'prepare-helper',message:'Preparing the installer…'});
         phase='helper-readiness';
-        const handoff=await (installHelper||helper.launchTestingInstall)({receiptPath,currentExecutable:receipt.current_executable,currentPid:process.pid});
+        const handoff=await (installHelper||helper.launchTestingInstall)({receiptPath,currentExecutable:receipt.current_executable,currentPid:process.pid,
+          onProgress:packet=>{if(!stopped&&status.state==='Installing'&&['validate-prepared','wait-parent-exit','validate-after-exit','replace-bundle','save-rollback-receipt','request-launch','restore-previous'].includes(packet?.phase))set('Installing',{phase:packet.phase,phase_progress:null});}});
         if(handoff?.ready===false)throw new Error('Testing installer did not acknowledge readiness.');
         authorizeQuit();app.quit?.();return{ready:true,installing:true};
       }catch(error){

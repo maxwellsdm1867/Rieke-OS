@@ -73,7 +73,7 @@ async function updateFixture(){
  const f=await fixture('0.1.0'),fresh=await fixture('0.1.1');
  await installCompleteBundle({...f,distribution:{channel:'unsigned-testing'}});
  const cache=path.join(f.root,'updates','unsigned-testing');await fs.mkdir(cache,{recursive:true,mode:0o700});
- const candidate=path.join(cache,'Rieke OS.app');await fs.rename(fresh.source,candidate);
+ const candidate=path.join(await fs.mkdtemp(path.join(cache,'candidate-')),'Rieke OS.app');await fs.rename(fresh.source,candidate);
  await fs.rm(fresh.root,{recursive:true,force:true});
  const archive=path.join(cache,'candidate.zip');await fs.writeFile(archive,'validated ZIP transport fixture',{mode:0o600});
  const {bundleDigest}=require('../bootstrap.cjs'),{sha256}=require('../testing-install.cjs');
@@ -196,7 +196,7 @@ test('prepared archive changed after readiness cannot replace current app',async
 test('helper readiness must match its spawned PID, current process, target version and archive before quit can proceed',async()=>{
  const f=await updateFixture();try{
   const directory=path.join(f.destination,'Contents/Resources/app.asar');await fs.mkdir(directory);
-  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
+  for(const file of ['testing-install.cjs','testing-install-progress.cjs','testing-install-progress-ui.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(__dirname,'..',file),path.join(directory,file));
   const helper=require(await fs.realpath(path.join(directory,'testing-install.cjs')));
   const {EventEmitter}=require('node:events'),{PassThrough}=require('node:stream');
   const spawnHelper=()=>{
@@ -257,7 +257,7 @@ test('actual Electron main and RUN_AS_NODE hash physical ASAR bytes and copy and
 test('native helper CLI loads from a real ASAR under Electron RUN_AS_NODE and safely defers an invalid private receipt',async()=>{
  const root=await fs.mkdtemp(path.join(os.tmpdir(),'rieke-native-helper-cli-'));try{
   const contents=path.join(root,'helper-content');await fs.mkdir(contents);
-  for(const file of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])
+  for(const file of ['testing-install.cjs','testing-install-progress.cjs','testing-install-progress-ui.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])
    await fs.copyFile(path.join(__dirname,'..',file),path.join(contents,file));
   const archive=path.join(root,'app.asar');await require('@electron/asar').createPackage(contents,archive);
   const home=path.join(root,'home'),cache=path.join(home,'profile/updates/unsigned-testing');await fs.mkdir(cache,{recursive:true});

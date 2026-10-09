@@ -6,6 +6,18 @@ import {updateNotice,releaseLink,watchAppUpdates,mergeUpdateCheck,claimUpdateDis
 import './AppUpdates.css';
 import {desktopBridge} from '../../desktopLifecycle.js';
 
+const updatePhases={
+  'validate-prepared':'Verifying the prepared update…',
+  'wait-parent-exit':'Waiting for Disco to close…',
+  'validate-after-exit':'Verifying the update before installation…',
+  'replace-bundle':'Installing the update…',
+  'save-rollback-receipt':'Saving update recovery information…',
+  'restore-previous':'Restoring the previous app…',
+  'request-launch':'Opening the updated app…',
+};
+const updateStages={Checking:'Checking for updates…',Downloading:'Downloading the update…',Validating:'Verifying the update…',Draining:'Waiting for current work to finish…',Installing:'Restarting to update…'};
+function percent(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0&&value<=100?Math.round(value):undefined;}
+
 function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,onRestart,download}){
   const dialog=useRef(null);
   useEffect(()=>{dialog.current.showModal();const element=dialog.current;return()=>element.close();},[]);
@@ -14,6 +26,12 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
   const desktop=!!desktopBridge();
   const testing=desktop&&status?.channel==='unsigned-testing';
   const ready=status?.state==='Ready'||!!notice&&(status?.staged_version===notice.version||download?.state==='complete'&&download.result?.version===notice.version);
+  const progressing=!error&&download?.state!=='failed'&&(busy||!!updateStages[status?.state]||download?.state==='running');
+  const phaseMessage=desktop&&updateStages[status?.state]&&typeof status?.message==='string'&&status.message.length<=240&&!/[\r\n\x00-\x1f]/.test(status.message)?status.message:null;
+  const stage=updatePhases[status?.phase]||phaseMessage||updateStages[status?.state]||(operation==='restart'?'Preparing to restart…':operation==='download'||download?.state==='running'?'Preparing the update…':'Checking for updates…');
+  const progress=progressing?(status?.state==='Downloading'?percent(status.progress)??percent(status.phase_progress):percent(status?.phase_progress)):undefined;
+  const readyMessage=desktop?'Update ready. Choose Restart to update when your work is saved.':download?.result?.message||'Update ready. Close Disco and all project services; the next launch will use this version.';
+  const message=progressing?stage:ready?readyMessage:notice?.message||status?.message||'Check for a published Disco release.';
   return createPortal(<dialog ref={dialog} className="app-update-dialog" aria-labelledby="app-update-title" onCancel={event=>{event.preventDefault();onClose();}}>
     <header><h2 id="app-update-title">App Updates</h2><button autoFocus className="icon-button" aria-label="Close updates" onClick={onClose}><X size={18}/></button></header>
     <p>Disco app version: <strong>{installed||'Development checkout'}</strong></p>
@@ -21,15 +39,14 @@ function UpdateDialog({status,busy,operation,error,onCheck,onClose,onDownload,on
 
     <p className="app-update-automatic">{testing?'Updates are checked automatically at startup and about once an hour. You choose when to download and restart to update.':desktop?'Updates are checked automatically at startup and about once an hour. Available updates download quietly.':'Updates are checked automatically when you open the app and every 15 minutes while it is visible. Available updates appear here quietly.'}</p>
     {!testing&&(desktop||status?.can_stage)&&<p>{desktop?'New versions download quietly. Choose Restart to update after verification; ordinary Quit closes the current app.':'After you close Disco and its project services, the next launch applies the prepared update.'}</p>}
-    <p role="status">{status?.state==='Installing'?'Restarting to update…':status?.state==='Draining'?'Waiting for current work to finish…':status?.state==='Validating'?'Verifying the update…':busy?(operation==='restart'?'Preparing to restart…':operation==='download'||status?.state==='Downloading'?'Downloading the update…':'Checking for updates…'):notice?.message||status?.message||'Check for a published Disco release.'}</p>
+    <div className="app-update-progress">
+      <div className="app-update-progress-label"><p role="status" aria-live="polite" aria-atomic="true">{message}</p>{progress!==undefined&&<span className="app-update-progress-percent" aria-hidden="true">{progress}%</span>}</div>
+      <div className="app-update-progress-track">{progressing&&<progress max={100} value={progress} aria-label={stage.replace(/…$/,'')} aria-valuetext={progress===undefined?'In progress':`${progress}%`}/>}</div>
+    </div>
 
     {status?.check_error&&!error&&<p role="status">{status.check_error}</p>}
     {error&&<p role="alert" className="error">{error}</p>}
     {notice&&!desktop&&!status?.can_stage&&<p>Automatic installation is not available for this installation. Review the release instructions before updating.</p>}
-    {desktop&&['Downloading','Validating'].includes(status?.state)&&<p role="status">Preparing the update. The current app remains active.</p>}
-    {desktop&&ready&&<p role="status">Update ready. Choose Restart to update; current work must finish before installation.</p>}
-    {download?.state==='running'&&<p role="status">Downloading and verifying the update. The current app remains active.</p>}
-    {ready&&!desktop&&<p role="status">{download?.result?.message||'Update ready. Close Disco and all project services; the next launch will use this version.'}</p>}
 
     {download?.state==='failed'&&<p role="alert">{download.error}</p>}
     {status?.checked_at&&<small>Last checked: {new Date(status.checked_at).toLocaleString()}</small>}
