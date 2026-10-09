@@ -8,8 +8,8 @@ and [desktop navigation](../AGENTS.md).
 
 | Public interface | Contract and errors |
 | --- | --- |
-| `new StartupSession(userData,compatibility)` | Uses `userData/startup-session.json`; moving source does not relocate preferences. Main supplies app-version:view-v1 compatibility. |
-| `load()` / `claim()` | Load accepts an owned regular nonsymlink file at most16384 bytes with compatible version1 schema. Unknown/corrupt/older state stays intact. Claim returns one compatible resume target or null and is consumed even when cancelled/no target. |
+| `new StartupSession(userData,compatibility)` | Uses `userData/startup-session.json`; moving source does not relocate preferences. Main supplies schema compatibility `view-v1`. |
+| `load()` / `claim()` | Load accepts an owned regular nonsymlink file at most16384 bytes with compatible version1 schema. Unknown/corrupt/incompatible state stays intact. Main accepts the explicitly reviewed `0.1.8:view-v1` and `0.1.9:view-v1` predecessors without rewriting on load. Claim returns one compatible resume target or null and is consumed even when cancelled/no target. |
 | `remember(projectId,projectPath,view)` | Requires non-launcher validated identity and normalized absolute path. Caps string view at80 characters; nonstring becomes overview. Preserves explicit chooser preference. Invalid session throws; persistence rejection propagates. |
 | `choose()` / `resume()` | Change cancellation/preference and persist chooser/resume when state exists. Transient cancelled=true in main does not itself change next-launch preference. |
 | `viewNamespace(projectId,projectPath,compatibility='view-v1')` | SHA-256 of exact identity/path/compatibility tuple. Checks absolute path but does not itself canonicalize it; main supplies the canonical recorded path. Different path or compatibility gets a different namespace. |
@@ -85,3 +85,19 @@ write authority and runs no observer in ordinary launches. The native timing
 runner starts the executable normally and attaches CDP only after this marker,
 so debugger/observer initialization cannot stall the startup being measured.
 Raw debugger-inclusive timings from the functional runner remain separate.
+
+### Compatible application updates
+
+`VIEW_COMPATIBILITY` and `compatibleViews` declare the current presentation schema
+and its explicit predecessor allowlist. App versions alone no longer invalidate
+presentation state. Main retains UUID + canonical path isolation and reuses the
+first existing scoped draft in current, 0.1.9, then 0.1.8 order. Existing unreadable
+bytes still require explicit recovery; they never fall through to an older view.
+Concurrent requests share the same selected DraftStore and its recovery state.
+New scopes use `view-v1`; reused legacy scopes keep their location. An unknown
+schema remains incompatible. Chooser preference survives a compatible update.
+The saved route and presentation return on project reentry; neither scientific
+results nor action consent become authoritative through this restoration.
+
+Updater notifications publish only while the scientific UI is running, so late
+update-check results cannot replace startup or recovery guidance.

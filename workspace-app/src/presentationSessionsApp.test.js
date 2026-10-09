@@ -185,3 +185,15 @@ test('same route key and protocol preserve the App session callback across resto
   assert.deepEqual(h.route,next);assert.equal(h.protocol.onSession,remember,'callback dependencies use key and protocol, not the route object');
  }finally{await h.close();}
 });
+
+
+test('selecting the current project retains its exact saved route and view',async()=>{
+ const route={page:'stores',key:'keep-current'};
+ const h=await createPresentationSessionHarness({saved:draft(checkpoint(route))});
+ try{
+  await h.mount();await h.waitFor(()=>h.root.findAllByType('presentation-stores').length>0);
+  await h.act(()=>h.probe('project-navigation').onSelect({current:true,available:true,name:'Current'}));
+  assert.deepEqual(h.route,route);
+  assert.deepEqual((await h.checkpoint()).route,route);
+ }finally{await h.close();}
+});

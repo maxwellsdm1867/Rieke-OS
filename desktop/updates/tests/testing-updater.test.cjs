@@ -185,16 +185,17 @@ test('actual extracted testing bundle permits declared dirty provenance and reje
 test('real ZIP preflight/extraction uses installed interpreter and never executes candidate code',{skip:process.platform!=='darwin'},async t=>{
   const f=await bundleFixture(t);
   const {promisify}=require('node:util'),run=promisify(require('node:child_process').execFile);
-  let installedBundle;
-  try{installedBundle=require('../../e2e/packaged-path.cjs').packagedSource(path.resolve(__dirname,'../..'),require('../../package.json').build);await fs.access(path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11'));}
-  catch{
-    // Small source unit-test fixture only. Packaged E2E always uses real bundled Python.
-    installedBundle=path.join(f.root,'installed','Rieke OS.app');
-    const hostPython=(await run('/usr/bin/which',['python3'])).stdout.trim();
-    const bin=path.join(installedBundle,'Contents/Resources/runtime/python/bin');await fs.mkdir(bin,{recursive:true});
-    await fs.symlink(hostPython,path.join(bin,'python3.11'));
-  }
+  // Keep this legacy-name candidate paired with an owned legacy-name install
+  // fixture even when this checkout contains a packaged Disco.app. Only its
+  // trusted interpreter is borrowed; candidate bytes are never executed.
+  let trustedPython;
+  try{
+    const packaged=require('../../e2e/packaged-path.cjs').packagedSource(path.resolve(__dirname,'../..'),require('../../package.json').build);
+    trustedPython=path.join(packaged,'Contents/Resources/runtime/python/bin/python3.11');await fs.access(trustedPython);
+  }catch{trustedPython=(await run('/usr/bin/which',['python3'])).stdout.trim();}
+  const installedBundle=path.join(f.root,'installed','Rieke OS.app');
   const python=path.join(installedBundle,'Contents/Resources/runtime/python/bin/python3.11');
+  await fs.mkdir(path.dirname(python),{recursive:true});await fs.symlink(trustedPython,python);
   const archive=path.join(f.root,'Rieke-OS-0.1.3-arm64.zip');
   const generate=String.raw`import os,sys,zipfile
 from pathlib import Path

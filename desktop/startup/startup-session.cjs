@@ -5,6 +5,12 @@ const {createHash}=require('node:crypto');
 const {atomicJSON}=require('../supervisor.cjs');
 const {validateProjectId}=require('../security.cjs');
 const FORMAT='disco-startup-session';
+// Presentation compatibility follows the saved schema, not the app release.
+const VIEW_COMPATIBILITY='view-v1';
+const LEGACY_VIEW_COMPATIBILITIES=['0.1.9:view-v1','0.1.8:view-v1'];
+function compatibleViews(compatibility){
+  return compatibility===VIEW_COMPATIBILITY?[compatibility,...LEGACY_VIEW_COMPATIBILITIES]:[compatibility];
+}
 function valid(value,compatibility){
   return value?.format===FORMAT&&value.version===1&&value.compatibility===compatibility&&
     ['resume','chooser'].includes(value.mode)&&typeof value.projectPath==='string'&&path.isAbsolute(value.projectPath)&&
@@ -19,7 +25,8 @@ class StartupSession {
   constructor(userData,compatibility){this.file=path.join(userData,'startup-session.json');this.compatibility=compatibility;this.value=null;this.claimed=false;this.cancelled=false;this.chain=Promise.resolve();}
   async load(){
     try{const stat=await fs.lstat(this.file);if(!stat.isFile()||stat.isSymbolicLink()||stat.uid!==process.getuid()||stat.size>16384)return;
-      const value=JSON.parse(await fs.readFile(this.file,'utf8'));if(valid(value,this.compatibility))this.value=value;
+      const value=JSON.parse(await fs.readFile(this.file,'utf8'));
+      if(compatibleViews(this.compatibility).some(version=>valid(value,version)))this.value={...value,compatibility:this.compatibility};
     }catch{} // Unknown/corrupt/older state is preserved and opens the chooser.
   }
   claim(){if(this.claimed)return null;this.claimed=true;this.target=!this.cancelled&&this.value?.mode==='resume'?{...this.value}:null;return this.target;}
@@ -31,4 +38,4 @@ class StartupSession {
   async choose(){this.cancelled=true;this.preference='chooser';if(this.value)await this.save({...this.value,mode:'chooser'});}
   async resume(){this.cancelled=false;this.preference='resume';if(this.value)await this.save({...this.value,mode:'resume'});}
 }
-module.exports={StartupSession,viewNamespace,valid};
+module.exports={StartupSession,viewNamespace,valid,VIEW_COMPATIBILITY,compatibleViews};

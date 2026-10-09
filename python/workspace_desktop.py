@@ -706,8 +706,11 @@ class DesktopServices:
 
 
 def desktop_open_project(project_dir, identity, retinanalysis_dir, *, timeout=300, managed=False):
-    from workspace_projects import list_managed_projects, list_projects
-    inventory = list_managed_projects(project_dir) if managed else list_projects(project_dir)
+    from workspace_projects import list_managed_projects, _project_record
+    # An explicit folder needs its own fresh manifests, not a scan of every
+    # sibling and remembered drive before the exact child can be opened.
+    inventory = (list_managed_projects(project_dir) if managed else
+                 {'projects': [_project_record(Path(project_dir).expanduser().resolve(strict=True), current=True)]})
     selected_path = str(Path(project_dir).expanduser().resolve())
     project = next((row for row in inventory['projects'] if row['uuid'] == identity and row['available']
                     and (managed or row['path'] == selected_path)), None)
