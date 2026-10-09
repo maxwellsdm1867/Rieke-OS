@@ -41,7 +41,7 @@ import Trace from '../../traces/ui/TraceViewer.jsx';
 import {inspectorPaneSizes, epochShortcutDirection, resourceForPath} from '../inspectorInteraction.js';
 export {Trace};
 
-function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null}) {
+function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,filters:baseFilters,revision,structureRevision=revision,annotationChange=null,onChange,onBack,onImport,onStores,onExport,onReviewDetails,splitRecipe=['date','cell','block'],onSplitChange,initialNavigation=null,onSessionChange,onQC,onTagFilter,onFilterChange,toolbarTarget=null,readContext=null,onSelectionChange,onReviewDecision,draftSelection=null,draftSelectionTarget=null,readPaused=false,browseRequest=0,initialPageRead=null}) {
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope(),pageSize=requestScope?.pageSize??60;
   const inheritedTreeReadOwner=useTreeBranchReads(),treeReadOwner=requestScope?null:inheritedTreeReadOwner;
   const id=protocol.definition.protocol_uuid,annotationOrigin=useId();
@@ -389,6 +389,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const highlightTools=(locked=false)=>readContext&&<EpochHighlightTools count={highlightedEpochs.length} allSelected={highlightedEpochs.length>0&&highlightedEpochs.every(uuid=>highlightedSelected.has(uuid))} disabled={locked||busy||readPaused||!!draftSelection?.disabled||!cellsReady} onSelect={()=>applyHighlighted(true)} onDeselect={()=>applyHighlighted(false)}/>;
   return <EpochViewer hideFilterControl viewFilters={filters} onViewFilters={onFilterChange} filterRevision={revision} filterDisabled={busy} className={designMode?'tree-design':'epoch-inspector-mode'} ariaLabel={designMode?'Tree overview workspace':'Epoch inspection workspace. Tab next epoch, Shift+Tab previous epoch; Up/Down or W/S also navigate.'} onKeyDown={epochKeys}
     toolbar={{portalTarget:toolbarTarget,treeControlsInPane:true,designMode:designMode,onBrowse:()=>{setDesignMode(false);setTreeMode(false);setTreeOpen(true);},onDesign:openTreeDesign,onTags:openTagsForSelection,metadataOpen:metadataOpen,onToggleMetadata:()=>toggleMetadata(!metadataOpen),actions:[
+        onReviewDetails&&{label:'Review details',run:onReviewDetails},
         {label:treeOpen?(designMode?'Hide tree editor':'Hide epoch list'):(designMode?'Show tree editor':'Show epoch list'),icon:GitBranch,run:()=>setTreeOpen(value=>!value)},
         !readContext&&!designMode&&{label:'Import mask file…',icon:FileJson,run:()=>(!readContext&&setMasksOpen(true)),disabled:busy},
         !readContext&&!designMode&&onImport&&{label:'Add data store',icon:Upload,run:onImport,disabled:busy},

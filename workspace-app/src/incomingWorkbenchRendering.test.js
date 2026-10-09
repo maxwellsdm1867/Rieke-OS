@@ -360,12 +360,12 @@ test('new queue preparation preserves the mounted Inspector and fences an open e
   const original=renderer.root.findByType(Frozen);
   const inspector=renderer.root.findAll(node=>node.type?.name==='Inspector')[0];assert.ok(inspector);
   await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Export').props.onClick());
-  const openDialog=renderer.root.findByType('dialog');
+  const openDialog=renderer.root.findByProps({className:'export-selection-dialog workbench-export-dialog'});
   assert.equal(contexts,1,'the selected preview requires no duplicate context load');
   await act(async()=>renderer.update(React.createElement(Cumulative,{...props,revision:1,queue:queue('new-queue')})));
   assert.equal(renderer.root.findAll(node=>node.type?.name==='Inspector')[0],inspector,'revision refresh cannot unmount the visible frozen tree during prepare');
   assert.equal(inspector.props.readContext.candidate_scope_revision,'scope-old-union');assert.equal(inspector.props.revision,'undefined:2');
-  assert.equal(renderer.root.findByType('dialog'),openDialog);
+  assert.equal(renderer.root.findByProps({className:'export-selection-dialog workbench-export-dialog'}),openDialog);
   assert.equal(openDialog.findAllByType('button').find(node=>node.props.className==='primary').props.disabled,true);
   await act(async()=>openDialog.findByType('form').props.onSubmit({preventDefault(){}}));
   assert.equal(renderer.root.findByType(Frozen),original,'old browser is preserved while preparing');
@@ -460,7 +460,7 @@ test('compact action bar keeps authoritative positive, zero and unavailable coun
   await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{}})));assert.deepEqual(metrics(),['Unavailable','Unavailable']);
   await act(async()=>renderer.update(React.createElement(Review,{...props,pendingCounts:{pending_cell_count:0,pending_epoch_count:0}})));assert.deepEqual(metrics(),['0','0']);
   assert.equal(button('Merge all'),undefined);assert.equal(button('Export').props.disabled,true,'zero selected IDs disables export');
-  const disclosure=renderer.root.findAllByType('details').find(node=>label(node).includes('Review details'));assert.equal(disclosure.props.open,undefined);
+  const disclosure=renderer.root.findByProps({className:'incoming-review-dialog incoming-review-details'});assert.equal(disclosure.props.open,undefined);assert.equal(renderer.root.findAllByType('summary').filter(node=>label(node)==='Review details').length,0);
   assert.ok(label(disclosure).includes('Shared tags publish immediately'));
   await act(async()=>button('Cancel').props.onClick());assert.equal(left,1);assert.equal(calls.length,1);assert.equal(calls[0].method,'GET');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}

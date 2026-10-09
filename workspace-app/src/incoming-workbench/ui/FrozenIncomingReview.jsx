@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../../api.js';
 import {Activity,CircleDot,Download,GitMerge,History,RefreshCw,X} from 'lucide-react';
@@ -18,6 +18,9 @@ import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
 import {incomingPageOffer,requireIncomingBootstrap} from '../incomingBootstrap.js';
 
 export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled,preparedContextToken,takePreparedContext}){
+  const detailsDialog=useRef(null),detailsTrigger=useRef(null),detailsTitle=useId();
+  function closeDetails(){detailsDialog.current?.close?.();}
+  function openDetails(){detailsTrigger.current=document.activeElement;detailsDialog.current?.showModal?.();}
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [draftSelectionTarget,setDraftSelectionTarget]=useState(null),[selectionIntent,setSelectionIntent]=useState(null);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
@@ -30,6 +33,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const loadOwner=useMemo(()=>({root,projectId,protocolId,revision,nonce,profileUuid:profile.profileUuid,
     profileReady:!!profile.profileUuid&&!profile.loading&&!profile.error,token:preparedContextToken}),
     [root,projectId,protocolId,revision,nonce,profile.profileUuid,profile.loading,profile.error,preparedContextToken]);
+  useLayoutEffect(()=>{closeDetails();},[loadOwner]);
   const activeOwner=useRef(loadOwner),claimedContext=useRef(null);
   activeOwner.current=loadOwner;
   const mergeLifetime=useRef(null);
@@ -193,7 +197,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     if(inFlight.current||unconfirmed||acceptPending||exportLocked)return;
     setPreview(null);operation.current=null;publish({preview:null,operation:null});
   }
-  function openExport(accept){if(!receipt&&!exportLocked){beginSelected(selected.current,accept?'merge-export':'export');return;}setExportDialog(accept);}
+  function openExport(accept){closeDetails();if(!receipt&&!exportLocked){beginSelected(selected.current,accept?'merge-export':'export');return;}setExportDialog(accept);}
   function reviewRemaining(){const next=nextWorkbenchWorkflow({...exportState,receipt});setExportState(next);setReceipt(null);setPreview(null);operation.current=null;publish({receipt:null,preview:null,operation:null,exportState:next});setNonce(value=>value+1);}
   const countLabel=value=>Number.isSafeInteger(value)&&value>=0?number(value):'Unavailable';
   const cells=pendingCounts?pendingCounts.pending_cell_count:contextFresh?context?.counts?.pending_cells:null;
@@ -212,10 +216,13 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
         <div className="incoming-draft-host" ref={setDraftSelectionTarget}/>
         <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export} title={capabilities.incoming_export?(receipt?'Export accepted additions':'Export exact incoming additions'):'Incoming-only export service is not yet available'} onClick={()=>openExport(false)}><Download size={14} aria-hidden="true"/> {receipt?'Export accepted':'Export'}</button>
         <button disabled={busy||externalBusy} title="Leave review; saved draft and pending operations remain available" onClick={onDefer}><X size={14} aria-hidden="true"/> Cancel</button>
-      <details className="incoming-review-details"><summary>Review details</summary><div>        <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||!capabilities.additive_accept} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
+
+      </div>
+    </div>
+      <dialog ref={detailsDialog} className="incoming-review-dialog incoming-review-details" aria-labelledby={detailsTitle} onClose={()=>{if(detailsTrigger.current?.isConnected)detailsTrigger.current.focus();}}><header><h2 id={detailsTitle}>Review details</h2><button onClick={closeDetails} aria-label="Close review details"><X size={16}/></button></header><div>        <button disabled={busy||externalBusy||!!selectionIntent||!!preview||unconfirmed||!contextFresh&&!receipt&&!exportLocked||!receipt&&!exportLocked&&!highlighted.length||!capabilities.incoming_export||!capabilities.additive_accept} onClick={()=>openExport(true)}><GitMerge size={14} aria-hidden="true"/> Merge & export</button>
 <div className="incoming-selection-tools">
       {onRefresh&&<button className="incoming-utility" disabled={refreshing} onClick={onRefresh}><RefreshCw size={13} aria-hidden="true"/> Refresh</button>}
-      {onHistory&&<button className="incoming-utility" onClick={onHistory}><History size={13} aria-hidden="true"/> Proposal history</button>}
+      {onHistory&&<button className="incoming-utility" onClick={()=>{closeDetails();onHistory();}}><History size={13} aria-hidden="true"/> Proposal history</button>}
       </div>
         <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
         <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>
@@ -223,11 +230,9 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
         {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
         {contextFresh&&<p>Draft version {context.draft.draft_version} · scope <code>{context.candidate_scope_revision.slice(0,12)}</code> · proposal <code>{item.candidate_revision_uuid.slice(0,8)}</code></p>}
         {scopeKind!=='cumulative_pending'&&contextFresh&&context?.counts&&<p>{countLabel(context.counts.incoming_epochs)} proposal additions · {countLabel(context.counts.already_present_epochs)} already in main.</p>}
-        <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh} onClick={defer}>Defer & return to queue</button>
-        {onNext&&<button disabled={busy||externalBusy||unconfirmed} onClick={onNext}>Next proposal</button>}
-      </div></details>
-      </div>
-    </div>
+        <button disabled={busy||externalBusy||exportLocked||!capabilities.drafts||!contextFresh} onClick={()=>{closeDetails();defer();}}>Defer & return to queue</button>
+        {onNext&&<button disabled={busy||externalBusy||unconfirmed} onClick={()=>{closeDetails();onNext();}}>Next proposal</button>}
+      </div></dialog>
       {context?.draft.deferred&&<button disabled={busy||externalBusy||exportLocked||!capabilities.drafts} onClick={()=>save([],{deferred:false})}>Resume deferred review</button>}
     {exportLocked&&!unconfirmed&&!exportState.exported&&<p role="status">A saved export workflow is awaiting a receipt. Reopen Export to resume it before changing this draft.</p>}
     {error&&<div className="error" role="alert">{error}<button disabled={busy||externalBusy} onClick={()=>setNonce(value=>value+1)}>Refresh draft</button></div>}
@@ -238,6 +243,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog selectedOnly externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector onReviewDetails={openDetails} initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }
