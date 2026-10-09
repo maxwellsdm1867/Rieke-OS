@@ -95,6 +95,13 @@ actual receipts for their outcome; a source test does not qualify installation.
 
 ## Remaining qualification limits
 
+The subsequent un-intercepted native relaunch test exposed a separate concrete
+failure: the Node-mode helper passed `ELECTRON_RUN_AS_NODE=1` through macOS `open`
+to the updated app. The installed host's `open(1)` explicitly documents inherited
+environment variables. Normal and rollback launches now remove this helper-only
+flag from their child environment. This explains a launch failure after a successful
+replacement; it does not recover the cause of the original generic Deferred receipt.
+
 - A successful macOS launch request is not an expected-build startup acknowledgment.
   Automatic rollback after a subsequent startup crash remains unimplemented.
 - Exception recovery is stronger, but the installation lock is still not a durable

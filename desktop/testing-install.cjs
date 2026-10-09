@@ -127,6 +127,9 @@ async function applyTestingInstall({receiptPath,currentExecutable=process.execPa
  const {receipt,installed,executable,bundle,cache,current,userData}=prepared;
  await boundedDisplay(()=>onPrepared(prepared)); // A missing progress window cannot prevent safe installation.
  const openArguments=['-n','-a',installed,'--env','HOME='+os.homedir(),'--args','--user-data-dir='+userData];
+ // macOS open inherits this process's environment. The helper's Node mode must
+ // never reach the GUI it launches, including a restored previous version.
+ const launchEnvironment={...process.env};delete launchEnvironment.ELECTRON_RUN_AS_NODE;
  publishReady({pid:process.pid,current_pid:receipt.current_pid,version:receipt.target_version,archive_sha256:receipt.archive_sha256});
  await stage('wait-parent-exit',async()=>{
  const deadline=Date.now()+timeoutMs;
@@ -156,7 +159,7 @@ async function applyTestingInstall({receiptPath,currentExecutable=process.execPa
  await stage('save-rollback-receipt',()=>atomicPrivateJSON(path.join(cache,'previous.json'),{format:'rieke-unsigned-testing-previous',version:1,channel:'unsigned-testing',identifier:APP_ID,
   install_path:installed,previous_path:result.previous,previous_version:current.application_version,previous_bundle_sha256:priorDigest,
   previous_manifest_sha256:receipt.current_manifest_sha256,current_version:receipt.target_version}));
- await stage('request-launch',()=>run('/usr/bin/open',openArguments));
+ await stage('request-launch',()=>run('/usr/bin/open',openArguments,{env:launchEnvironment}));
  }
  catch(error){
   const activationFailure={phase:error.updatePhase,error:error.message};
@@ -173,7 +176,7 @@ async function applyTestingInstall({receiptPath,currentExecutable=process.execPa
   try{await fs.rename(result.previous,installed);priorRestored=true;}catch(rollbackError){await fs.rename(failed,installed);throw rollbackError;}
   if(await bundleDigest(installed)!==priorDigest)throw new Error('Restored previous application checksum differs');
   await fs.rm(path.join(cache,'previous.json'),{force:true});
-  await run('/usr/bin/open',openArguments);
+  await run('/usr/bin/open',openArguments,{env:launchEnvironment});
   const outcome={state:'Restored',destination:installed,version:current.application_version,failedCandidateRetained:true,failure:failureDetails(error),phases,elapsed_ms:Date.now()-started};
   await atomicPrivateJSON(receiptPath+'.result.json',outcome);return outcome;
   }catch(recoveryError){recoveryError.updatePhase='restore-previous';recoveryError.activationFailure=activationFailure;recoveryError.previousPath=priorRestored?installed:result.previous;recoveryError.failedCandidatePath=priorRestored?failed:null;throw recoveryError;}

@@ -45,7 +45,7 @@ async function fixture(t) {
   let identities = 0, ready = 0, opens = 0;
   const hooks = {exit: async () => {}, open: async () => {}};
   const calls = [];
-  const run = async (command, args) => {
+  const run = async (command, args, options) => {
     calls.push([command, args]);
     if (command === path.join(installed, 'Contents/Resources/runtime/python/bin/python3.11')) {
       if (++identities > 1) await hooks.exit();
@@ -68,7 +68,7 @@ async function fixture(t) {
       assert.ok(args[3].startsWith(root + path.sep) && args[4].startsWith(root + path.sep));
       await fs.cp(args[3], args[4], {recursive: true}); return {stdout: ''};
     }
-    if (command === '/usr/bin/open') {assert.equal(args[2], installed); await hooks.open(++opens); return {stdout: ''};}
+    if (command === '/usr/bin/open') {assert.equal(args[2], installed); await hooks.open(++opens, args, options); return {stdout: ''};}
     assert.fail(`Unexpected command rejected: ${command}`);
   };
   return {root, installed, cache, candidate, receipt, receiptPath, executable, hooks, calls,
@@ -163,4 +163,32 @@ test('stalled initial progress and reporter promises cannot hold installation in
   assert.equal(f.opens(), 1);
   assert.deepEqual(events.slice(0, 4), ['validate-prepared', 'reporter', 'ready', 'wait-parent-exit']);
   assert.ok(events.includes('request-launch'));
+});
+
+
+for (const restore of [false, true]) test(`${restore ? 'restored' : 'updated'} GUI launch removes helper Node mode without changing helper environment`, async t => {
+  const hadFlag = Object.hasOwn(process.env, 'ELECTRON_RUN_AS_NODE');
+  const originalFlag = process.env.ELECTRON_RUN_AS_NODE;
+  t.after(() => {
+    if (hadFlag) process.env.ELECTRON_RUN_AS_NODE = originalFlag;
+    else delete process.env.ELECTRON_RUN_AS_NODE;
+  });
+  process.env.ELECTRON_RUN_AS_NODE = '1';
+  const f = await fixture(t), expectedEnvironment = {...process.env};
+  delete expectedEnvironment.ELECTRON_RUN_AS_NODE;
+  f.hooks.open = async (count, args, options) => {
+    assert.equal(process.env.ELECTRON_RUN_AS_NODE, '1', 'Helper must retain Node mode until it exits');
+    assert.ok(options && options.env);
+    assert.equal(Object.hasOwn(options.env, 'ELECTRON_RUN_AS_NODE'), false);
+    assert.notEqual(options.env, process.env);
+    assert.deepEqual(options.env, expectedEnvironment, 'Unrelated launch environment remains intact');
+    assert.equal(options.env.HOME, process.env.HOME);
+    assert.deepEqual(args, ['-n', '-a', f.installed, '--env', 'HOME=' + os.homedir(), '--args', '--user-data-dir=' + path.dirname(path.dirname(f.cache))]);
+    if (restore && count === 1) throw Error('candidate launch refused');
+  };
+  const outcome = await f.apply();
+  assert.equal(outcome.state, restore ? 'Restored' : 'Installed');
+  assert.equal(f.opens(), restore ? 2 : 1);
+  assert.equal((await readBundleManifest(f.installed)).application_version, restore ? '0.1.9' : '0.1.10');
+  assert.equal(process.env.ELECTRON_RUN_AS_NODE, '1');
 });

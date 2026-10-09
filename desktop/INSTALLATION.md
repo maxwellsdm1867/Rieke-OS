@@ -135,3 +135,9 @@ The observer has no install, quit or rollback capability. Missing/closed progres
 UI does not change installation decisions. Download percentage measures bytes;
 verification/install phases are indeterminate, with no claimed ETA. Terminal
 `Installed` still represents a launch request, not application readiness.
+
+Both normal and rollback relaunches explicitly remove `ELECTRON_RUN_AS_NODE`
+from the environment passed to macOS `open`. The helper needs this flag to run
+inside the packaged Electron runtime, but `open` inherits its caller's environment;
+passing the flag onward starts the new executable as Node instead of the GUI.
+The isolated native audit exposed this after successful bundle replacement.
