@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import base64
 import contextlib
+import contextvars
 import copy
 import datetime as dt
 import json
@@ -68,10 +69,38 @@ def workbench_tables(dj):
     return WorkbenchDraft, WorkbenchDecision, WorkbenchReceipt
 
 
+_recipe_reads = contextvars.ContextVar('workbench_recipe_reads', default=None)
+
+
+class _RecipeReads:
+    """Privately owned recipes for one context derivation, never a read receipt."""
+    def __init__(self, history):
+        from disco.decisions.explorer import is_canonical_binding_reader
+        self.history = history
+        self.canonical = is_canonical_binding_reader(history.protocol_binding)
+        self.records, self.members = {}, {}
+
+    def get(self, revision):
+        if not self.canonical:
+            return self.history.get(revision)
+        revision = str(uuid.UUID(revision))
+        if revision not in self.records:
+            self.records[revision] = self.history.get(revision)
+        return self.records[revision]
+
+
 def _members(recipe):
+    reads = _recipe_reads.get()
+    key = id(recipe)
+    if reads is not None and reads.canonical and key in reads.members:
+        saved_recipe, members = reads.members[key]
+        if saved_recipe is recipe:
+            return members
     members = {row['uuid']: row['metadata_hash'] for row in recipe['epochs']}
     if len(members) != len(recipe['epochs']):
         raise ValueError('Frozen membership contains duplicate epoch identities')
+    if reads is not None and reads.canonical:
+        reads.members[key] = (recipe, members)
     return members
 
 
@@ -97,14 +126,29 @@ class ProtocolWorkbench:
         return dict(project_uuid=self.project, protocol_uuid=protocol,
                     candidate_revision_uuid=revision, actor=actor)
 
+    @contextlib.contextmanager
+    def _context_reads(self):
+        # Dependency discovery runs before this scope. Closing context always
+        # creates its own scope, including nested/reentrant reads and failures.
+        token = _recipe_reads.set(_RecipeReads(self.history))
+        try:
+            yield
+        finally:
+            _recipe_reads.reset(token)
+
+    def _recipe(self, revision):
+        reads = _recipe_reads.get()
+        return (reads.get(revision) if reads is not None and reads.history is self.history
+                else self.history.get(revision))['recipe']
+
     def proposal(self, protocol, revision):
         rows = (self.suggestions.Table & dict(project_uuid=self.project,
             protocol_uuid=protocol)).to_dicts()
         found = [row['summary'] for row in rows if row['summary']['candidate_revision_uuid'] == revision]
         if not found:
             raise KeyError('Incoming candidate not found for this protocol in this project')
-        candidate = self.history.get(revision)['recipe']
-        baseline = self.history.get(found[0]['baseline_revision_uuid'])['recipe']
+        candidate = self._recipe(revision)
+        baseline = self._recipe(found[0]['baseline_revision_uuid'])
         if candidate.get('parent_revision_uuid') != baseline['revision_uuid']:
             raise ValueError('Incoming candidate baseline does not match its sealed parent')
         return found[0], baseline, candidate
@@ -151,7 +195,7 @@ class ProtocolWorkbench:
             publication = main.get('additive_publication', {})
             if not parent or publication.get('previous_revision_uuid') != parent:
                 return False
-            previous = self.history.get(parent)['recipe']
+            previous = self._recipe(parent)
             matches = [row['receipt'] for row in transitions if row['receipt'].get('binding', {}).get('revision_uuid') == identity
                        and row['receipt']['binding'].get('version') == version
                        and row['receipt'].get('expected_binding_version') == version - 1
@@ -221,7 +265,7 @@ class ProtocolWorkbench:
         return guard, generation
 
     def context(self, protocol, revision, actor, *, query_revision_guard=None):
-        with elapsed("disco.workbench.workbench", "context"):
+        with elapsed("disco.workbench.workbench", "context"), self._context_reads():
             key = self.key(protocol, revision, actor)
             summary, baseline, candidate = self.proposal(protocol, revision)
             header, decisions = self.draft(key)
@@ -232,6 +276,10 @@ class ProtocolWorkbench:
                 query_revision = query_revision_guard()
                 result = self.service.query_result(protocol) if binding is None else None
             main = binding['recipe'] if binding else None
+            reads = _recipe_reads.get()
+            if binding and reads.canonical:
+                # A binding's UUID cache is not fresh recipe storage authority.
+                main = self._recipe(binding['revision_uuid'])
             previous = _members(main) if main else _members(result)
             base, proposed = _members(baseline), _members(candidate)
             incoming = {key: value for key, value in proposed.items() if key not in base}
@@ -496,7 +544,8 @@ class ProtocolWorkbench:
             recipe = copy.copy(context['candidate'])
             recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()]
             binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
-            scoped.binding_provider = lambda protocol: binding if protocol == context['protocol_uuid'] else self.service.binding(protocol)
+            from workspace_service import _FrozenProtocolBinding
+            scoped.binding_provider = _FrozenProtocolBinding(context['protocol_uuid'], binding, self.service.binding)
             scoped.binding_header_provider = None
             scoped._tree_catalog_cache = {}
             scoped._epoch_page_cache = None
@@ -614,7 +663,7 @@ class ProtocolWorkbench:
                 queue_revision=revision, next_cursor=next_cursor, total_candidate_count=len(items),
                 capabilities=dict(frozen_browse=True, drafts=True, additive_accept=True,
                     incoming_export=getattr(self, 'incoming_export', False),
-                    cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False)))
+                    cumulative_pending_browse=getattr(self, 'cumulative_pending_browse', False), initial_page=True))
 
 
 def public_receipt(receipt):
@@ -646,8 +695,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         profile = selected_author() or (shared.default_profile if shared else None)
         return profile['profile_uuid'] if profile else os.environ.get('USER', 'local-user')
 
-    def body(required, optional=()):
-        if request.args or (request.content_length is not None and request.content_length > 65536):
+    def body(required, optional=(), *, query_options=()):
+        if request.args.keys() - set(query_options) or any(len(request.args.getlist(key)) != 1 for key in request.args) or (request.content_length is not None and request.content_length > 65536):
             raise ValueError('Workbench body must be at most 64KiB with no URL options')
         value = request.get_json()
         if not isinstance(value, dict) or not set(required) <= value.keys() or value.keys() - set(required) - set(optional):
@@ -698,7 +747,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
                 readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection'}
+                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection'}
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -746,7 +795,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if annotations:
                 row['annotations'] = annotations[row['epoch_uuid']]
 
-    def public_context(context, filters=None, *, transaction_authority=None):
+    def public_context(context, filters=None, *, transaction_authority=None, include_initial_page=False):
         if transaction_authority is not None:
             context['_transaction_authority'] = transaction_authority
         start_read(context, filters)
@@ -757,7 +806,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        return finish(context, dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True,
+        payload = dict(contract_version=1, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True, list_selection=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -769,7 +818,24 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 excluded_epochs=sum(manager.decision(context, key)['excluded'] for key in context['incoming'])),
             ineligible_incoming_epoch_count=len(context['ineligible']),
             publication_blocked=bool(context['base_conflicts'] or context['main_conflicts']
-                or context['blocked_main'] or context['annotation_changed'] or not context['valid_base'])))
+                or context['blocked_main'] or context['annotation_changed'] or not context['valid_base']))
+        page = None
+        if include_initial_page:
+            page = scoped.epoch_page(context['protocol_uuid'], filters, 0, 60, include_cells=True)
+            page.pop('_shared_annotation_generation', None)
+            row_decisions(context, page['epochs'])
+        result = finish(context, payload)
+        if page is None:
+            return result
+        page.update({key: result[key] for key in ('generation', 'candidate_scope_revision',
+            'query_revision', 'expected_binding_version')})
+        # Keep the fresh projection separate from durable prepare receipt data.
+        bootstrap = dict(contract_version=1, kind='workbench_initial_page', context=result, page=page,
+            actor=context['actor'], project_uuid=context['project_uuid'], protocol_uuid=context['protocol_uuid'],
+            candidate_revision_uuid=context['candidate_revision_uuid'],
+            root='/protocols/' + context['protocol_uuid'] + '/workbench/candidates/' + context['candidate_revision_uuid'],
+            request=dict(filters=filters or {}, offset=0, limit=60, include_cells=True))
+        return dict(result, bootstrap=bootstrap)
 
     @app.errorhandler(WorkbenchConflict)
     def conflict(error):
@@ -800,12 +866,15 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.get(candidate + '/context')
     def workbench_context(protocol, revision):
-        filters = query_filters({'candidate_scope_revision'})
+        filters = query_filters({'candidate_scope_revision', 'include_initial_page'})
+        include = request.args.get('include_initial_page', 'false')
+        if include not in ('true', 'false'):
+            raise ValueError('include_initial_page must be true or false')
         with guarded(protocol, revision, filters) as owner:
             context = manager.context(protocol, revision, owner)
             if 'candidate_scope_revision' in request.args:
                 manager.check_scope(context, request.args['candidate_scope_revision'])
-            return jsonify(public_context(context, filters))
+            return jsonify(public_context(context, filters, include_initial_page=include == 'true'))
 
     @app.patch(candidate + '/draft')
     def workbench_patch(protocol, revision):
@@ -935,6 +1004,44 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
             return jsonify(finish(context, result))
+
+    @app.post(candidate + '/list-selection')
+    def workbench_list_selection(protocol, revision):
+        value = body({'candidate_scope_revision', 'cells'}, {'filters'})
+        cells = value['cells']
+        if (not isinstance(cells, list) or len(cells) > 1000
+                or any(not isinstance(cell, dict) or set(cell) != {'cell_uuid', 'epochs'}
+                    or not isinstance(cell['cell_uuid'], str) or type(cell['epochs']) is not int or not 0 <= cell['epochs'] <= 1000 for cell in cells)):
+            raise ValueError('Selection requires exact cell counts and at most 1,000 epochs')
+        cells = [dict(cell_uuid=str(uuid.UUID(cell['cell_uuid'])), epochs=cell['epochs']) for cell in cells]
+        if len({cell['cell_uuid'] for cell in cells}) != len(cells) or sum(cell['epochs'] for cell in cells) > 1000:
+            raise ValueError('Selection requires unique cells and at most 1,000 epochs')
+        filters = validate_filters(value.get('filters'))
+        with guarded(protocol, revision, filters) as owner:
+            context = checked(protocol, revision, owner, value['candidate_scope_revision'], filters)
+            scoped = manager.frozen_service(context)
+            result, seen = [], set()
+            # Use the existing page reader, including custom overrides, so its
+            # chronology and cell-filter semantics remain exact. Only admission
+            # is shared; each bounded page is still checked for completeness.
+            for cell in cells:
+                identities = []
+                for offset in range(0, max(1, cell['epochs']), 60):
+                    page = scoped.epoch_page(protocol, {**filters, 'cell_uuid': cell['cell_uuid']}, offset, 60)
+                    rows = page.get('epochs')
+                    if (page.get('total') != cell['epochs'] or page.get('offset') != offset
+                            or not isinstance(rows, list) or len(rows) != min(60, cell['epochs'] - offset)):
+                        raise WorkbenchConflict('Incoming cell membership changed during selection')
+                    for row in rows:
+                        identity = row.get('epoch_uuid')
+                        if (identity not in context['pending'] or row.get('cell_uuid') != cell['cell_uuid']
+                                or identity in seen):
+                            raise WorkbenchConflict('Incoming selection contains duplicate or unavailable identities')
+                        seen.add(identity)
+                        identities.append(identity)
+                result.append(dict(**cell, epoch_uuids=identities))
+            return jsonify(finish(context, dict(cells=result, count=len(seen),
+                epoch_uuids=[identity for cell in result for identity in cell['epoch_uuids']])))
 
     @app.post(candidate + '/selection-summary')
     def workbench_selection_summary(protocol, revision):

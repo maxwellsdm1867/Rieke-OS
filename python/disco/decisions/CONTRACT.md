@@ -45,3 +45,39 @@ relocation review and gain no new freshness or transaction semantics.
 the public receive interface using inert annotations and an owned temporary
 folder. They cover replay/refusal only, not first delivery, SQL commit, native
 lookup, author-file failure, source freshness or cross-process durability.
+
+## Page-local export counts
+
+`CurationStore.export_link_counts(epoch_ids)` returns a fresh UUID-to-integer map
+for the caller's requested page UUIDs, including zero for unexported epochs.
+It uses the same project-scoped export-index signature polling, recipe validation
+and rebuild behavior as `export_memberships()` and `epoch_exports()`. It does not
+copy or expose the stored links. Existing full-membership and per-epoch public
+snapshots remain deeply detached. The epoch-page HTTP owner supplies already
+admitted UUIDs and retains its opening/closing authority checks; counts confer no
+membership or action authority. Injected stores overriding `export_memberships()`
+retain their snapshot-based policy; adapters without the count accessor also use
+the existing snapshot path. Header polling and cold index reconstruction still
+scale with the project's export revisions/memberships.
+
+The existing curation and API integration suites cover bounded lookups, page-only
+projection, exact counts, cross-protocol additions, removal, corrupt recipe refusal
+and public snapshot mutation isolation using transactional doubles. They do not
+qualify native SQL durability or packaged performance.
+
+## Optional epoch annotation display count
+
+`GET /api/epochs/<uuid>/annotations` retains its existing full response by
+default. A single `include_cell_epoch_count=false` omits only the display count
+and avoids enumerating registered project epochs; `true` retains the current
+exact project-wide cell count under the same lock. Other query parameters,
+repeated options and values other than `true`/`false` are refused. The registered
+epoch lookup, inherited/direct tags and author revisions are unchanged. The
+count neither defines cell membership nor authorizes annotation writes.
+
+The native annotation editor omits this count while it is hidden and requests
+it for Whole cell display when absent. Supplied request owners retain their
+existing URL contract. Mounted tests cover pending/stale reads and exact cell
+UUID/revision writes; backend tests cover no-enumeration reads and full counts
+after registration, deletion and cell-link changes. These fixtures do not
+qualify native SQL durability.

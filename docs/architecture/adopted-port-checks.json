@@ -1059,7 +1059,8 @@
           "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
-          "workspace-app/src/testDiscovery.test.js"
+          "workspace-app/src/testDiscovery.test.js",
+          "workspace-app/src/protocolBrowseEntry.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py",
@@ -1512,7 +1513,9 @@
             "workspace-app/src/components/NeuronIcon.jsx",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/incoming-workbench/ui/FrozenIncomingReview.jsx",
-            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx"
+            "workspace-app/src/exports/ui/WorkbenchExportDialog.jsx",
+            "workspace-app/src/annotations/annotationProfile.js",
+            "workspace-app/src/incoming-workbench/incomingBootstrap.js"
           ]
         },
         {
@@ -1534,6 +1537,8 @@
             "workspace-app/src/incoming-workbench/ui/IncomingMergePreview.jsx",
             "workspace-app/src/exports/workbenchExport.js",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
+            "workspace-app/src/annotations/annotationProfile.js",
+            "workspace-app/src/incoming-workbench/incomingBootstrap.js",
             "workspace-app/src/incoming-workbench/importedSelection.js"
           ]
         },
@@ -1682,6 +1687,13 @@
         },
         {
           "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/incomingBootstrap.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
           "file": "workspace-app/src/incoming-workbench/importedSelection.js",
           "allow": [
             "workspace-app/src/incoming-workbench/incomingSelection.js",
@@ -1713,7 +1725,9 @@
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/architectureImports.test.js",
           "workspace-app/src/testDiscovery.test.js",
-          "workspace-app/src/treeTagCoverageWorkflow.test.js"
+          "workspace-app/src/treeTagCoverageWorkflow.test.js",
+          "workspace-app/src/incoming-workbench/incomingBootstrap.test.js",
+          "workspace-app/src/incomingBootstrapResource.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -2719,7 +2733,9 @@
             "workspace_audit",
             "workspace_protocol_identity",
             "workspace_service",
-            "workspace_state_generation"
+            "workspace_state_generation",
+            "contextvars",
+            "disco.decisions.explorer"
           ]
         },
         {
@@ -2763,7 +2779,9 @@
       ],
       "tests": {
         "python": [
-          "python/disco/workbench/tests/test_workspace_diff.py"
+          "python/disco/workbench/tests/test_workspace_diff.py",
+          "python/tests/test_workspace_workbench.py",
+          "python/tests/test_workspace_workbench_pending.py"
         ],
         "javascript": []
       }
@@ -2806,7 +2824,9 @@
           "python/tests/test_trace_workers.py",
           "python/tests/test_workspace_api.py",
           "python/tests/test_workspace_service.py",
-          "python/tests/test_workspace_project_shell.py"
+          "python/tests/test_workspace_project_shell.py",
+          "python/tests/test_workspace_protocol_browse.py",
+          "python/tests/test_workspace_protocol_summary.py"
         ],
         "javascript": [
           "workspace-app/src/apiCommandPolicy.test.js",
@@ -3336,6 +3356,13 @@
             ]
           },
           {
+            "path": "workspace-app/src/incoming-workbench/incomingBootstrap.js",
+            "exports": [
+              "requireIncomingBootstrap",
+              "incomingPageOffer"
+            ]
+          },
+          {
             "path": "workspace-app/src/incoming-workbench/importedSelection.js",
             "exports": [
               "loadImportedSelection"
@@ -3837,7 +3864,8 @@
               "ACTION",
               "ExplorerHistory",
               "explorer_table",
-              "protocol_binding_table"
+              "protocol_binding_table",
+              "is_canonical_binding_reader"
             ]
           },
           {
@@ -4472,7 +4500,7 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "38fb6fea831d83a54190abaae6e59abdc079ebad83417f5dc196f7646221a1b2",
+        "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
         "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
         "sites": [
           {
@@ -4495,7 +4523,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4546,7 +4574,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
                 "contract_id": null
               }
             ]
@@ -4568,7 +4596,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -4590,7 +4618,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -4612,7 +4640,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -4682,7 +4710,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "38fb6fea831d83a54190abaae6e59abdc079ebad83417f5dc196f7646221a1b2",
+                "file_sha256": "6ad642e8af3cbf5c3bad443cfd8b1b255c752afe197af99912c99a1bda9977d7",
                 "contract_id": "backend-navigation"
               }
             ]
@@ -4691,7 +4719,7 @@
       },
       {
         "file": "python/tests/test_workspace_annotations.py",
-        "file_sha256": "1b05b9d8d95d7fb94d06b1fa29e045fff6bf8323057256eb63c9442557a8de74",
+        "file_sha256": "0f7fd2412e56ba9205120ec077bbf7f49e2452ce9f7249d9e2a98be79c3316a6",
         "reason": "Freeze monotonic time to verify scoped autocomplete cache contents and reads.",
         "sites": [
           {
@@ -4711,7 +4739,7 @@
               {
                 "module": "disco.decisions.annotations",
                 "file": "python/disco/decisions/annotations.py",
-                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "file_sha256": "547c9414ed1c74ffef5140d1bb6a04c30e391adede9f7e464b1cd1e70ef62c90",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4720,7 +4748,7 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "9f74118a5c57b40fcb33fcbb11b532ccd1fd7f51b853de34d6b88a8ddb936e00",
+        "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
         "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction.",
         "sites": [
           {
@@ -4740,7 +4768,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4829,7 +4857,7 @@
       },
       {
         "file": "python/tests/test_workspace_curation.py",
-        "file_sha256": "9127c1b08146e41cca46b04ef8e7ffd68f0ba572427046ef1932adab73ee866d",
+        "file_sha256": "9ae93ce7dfa961cefce1559e659dcb0fbee8c71601c0fc5d215b57d64b5eeef8",
         "reason": "Inject owned in-memory workspace table fixtures during curation construction.",
         "sites": [
           {
@@ -4849,7 +4877,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4878,7 +4906,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4981,7 +5009,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
                 "contract_id": null
               }
             ]
@@ -5014,7 +5042,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "2849869acd5113fc7e8959674418e4efca07e91249af4edf0b702dfac8f66c35",
+                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
                 "contract_id": null
               }
             ]
@@ -5233,7 +5261,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5255,7 +5283,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5277,7 +5305,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5310,7 +5338,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5343,7 +5371,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5365,7 +5393,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5387,7 +5415,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5409,7 +5437,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5431,7 +5459,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5453,7 +5481,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5475,7 +5503,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5508,7 +5536,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5530,7 +5558,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5552,7 +5580,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5574,7 +5602,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "8aeca014a0dfbf0b2999ed5e4e0ec1a759d18518752a14420d1bad04da4a12dd",
+                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
                 "contract_id": null
               }
             ]
@@ -5603,7 +5631,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "9f74118a5c57b40fcb33fcbb11b532ccd1fd7f51b853de34d6b88a8ddb936e00",
+                "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
                 "contract_id": null
               }
             ]
@@ -5698,7 +5726,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5720,7 +5748,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5818,7 +5846,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "9a9337f348e403c0d75841489dce5a5f572ab6905674687aef21ada1fbf9ca62",
+                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5846,7 +5874,7 @@
               {
                 "module": "disco.decisions.annotations",
                 "file": "python/disco/decisions/annotations.py",
-                "file_sha256": "c625f0cc323e8728e6122feba3acacd8ead877c1731ea03052957aa8ec41ad12",
+                "file_sha256": "547c9414ed1c74ffef5140d1bb6a04c30e391adede9f7e464b1cd1e70ef62c90",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5871,7 +5899,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "51e9fe591a1d12f6c3c817dabbf0638c18b03627ad011cab24d123cc2940a991",
+                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
                 "contract_id": "backend-decisions"
               }
             ]

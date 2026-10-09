@@ -75,12 +75,16 @@ def draft_carry(manager, protocol, actor, pending):
 
 
 def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_context):
-    from flask import jsonify
+    from flask import jsonify, request
 
     @app.post('/api/protocols/<protocol>/workbench/prepare')
     def workbench_prepare(protocol):
         with elapsed("disco.workbench.workbench_pending", "workbench_prepare"):
-            value = body({'expected_queue_revision'}, {'operation_uuid'})
+            value = body({'expected_queue_revision'}, {'operation_uuid'}, query_options={'include_initial_page'})
+            include = request.args.get('include_initial_page', 'false')
+            if include not in ('true', 'false'):
+                raise ValueError('include_initial_page must be true or false')
+            include_page = include == 'true'
             if not isinstance(value['expected_queue_revision'], str):
                 raise ValueError('Expected an authoritative queue revision')
             protocol = str(uuid.UUID(protocol))
@@ -89,12 +93,16 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                 request_hash = checksum(dict(kind='workbench_prepare', protocol_uuid=protocol, actor=owner, **value))
                 operation = str(uuid.UUID(value['operation_uuid'])) if 'operation_uuid' in value else str(uuid.uuid5(uuid.UUID(manager.project), request_hash))
                 existing = manager.receipt(operation, owner, request_hash)
-                if existing:
+                if existing and not include_page:
                     return jsonify(existing)
             with guarded(protocol) as owner:
                 existing = manager.receipt(operation, owner, request_hash)
                 if existing:
-                    return jsonify(existing)
+                    if not include_page:
+                        return jsonify(existing)
+                    fresh = public_context(manager.context(protocol, existing['candidate_revision_uuid'], owner),
+                        include_initial_page=True)
+                    return jsonify(dict(existing, bootstrap=fresh['bootstrap']))
                 manager.service.refresh()
                 queue = manager.queue(protocol, owner, 1)
                 if value['expected_queue_revision'] != queue['queue_revision']:
@@ -111,7 +119,14 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                 with manager.service.dj.conn().transaction:
                     existing = manager.receipt(operation, owner, request_hash)
                     if existing:
-                        return jsonify(existing)
+                        if not include_page:
+                            return jsonify(existing)
+                        fresh = public_context(manager.context(protocol, existing['candidate_revision_uuid'], owner,
+                            query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority,
+                            include_initial_page=True)
+                        # The transaction must exit before this response can be
+                        # published. Replay still receives no fresh-v1 header.
+                        return jsonify(dict(existing, bootstrap=fresh['bootstrap']))
                     if records:
                         summary = records[0]['summary']
                         record = manager.history.get(summary['candidate_revision_uuid'])
@@ -162,7 +177,9 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                             query_revision_guard=transaction_authority[0])['sha256'] != snapshot['sha256']:
                         raise WorkbenchConflict('Cumulative source, annotation or main authority changed during preparation')
                     context = public_context(manager.context(protocol, revision, owner,
-                        query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority)
+                        query_revision_guard=transaction_authority[0]), transaction_authority=transaction_authority,
+                        include_initial_page=include_page)
+                    bootstrap = context.pop('bootstrap', None)
                     result = dict(contract_version=1, kind='workbench_pending_union', candidate_revision_uuid=revision,
                         root='/protocols/' + protocol + '/workbench/candidates/' + revision,
                         candidate_scope_revision=context['candidate_scope_revision'], context=context,
@@ -176,6 +193,11 @@ def register_pending_routes(app, manager, db_lock, guarded, actor, body, public_
                     manager.tables[2].insert1(dict(project_uuid=manager.project, operation_uuid=operation,
                         protocol_uuid=protocol, candidate_revision_uuid=revision, actor=owner, request_sha256=request_hash, receipt=result))
                     manager._event(owner, 'workbench_queue_prepared', result, operation)
-                return jsonify(result), 200 if records else 201
+                # This response computed and closed its context in this request.
+                # The durable receipt body stays exact; replay returns above
+                # must never acquire this response-local freshness signal.
+                response = jsonify(dict(result, bootstrap=bootstrap) if bootstrap is not None else result)
+                response.headers['X-Disco-Workbench-Context'] = 'fresh-v1'
+                return response, 200 if records else 201
 
     manager.cumulative_pending_browse = True

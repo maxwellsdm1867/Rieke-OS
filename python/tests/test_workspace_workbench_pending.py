@@ -109,6 +109,44 @@ class CumulativePendingTests(unittest.TestCase):
         self.assertIn(response.status_code, (200, 201), response.get_json())
         return response.get_json(), body
 
+    def test_fresh_context_header_is_response_only_and_receipt_replay_stays_exact(self):
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        first = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(first.status_code, 201, first.get_json())
+        self.assertEqual(first.headers.get('X-Disco-Workbench-Context'), 'fresh-v1')
+        prepared = first.get_json()
+        stored = self.manager.receipt(prepared['operation_uuid'], prepared['actor'])
+        self.assertEqual(stored, prepared)
+        with patch.object(self.case.service, 'refresh', side_effect=AssertionError('Replay must not recompute context')):
+            replay = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        self.assertIsNone(replay.headers.get('X-Disco-Workbench-Context'))
+        self.assertEqual(replay.get_data(), first.get_data())
+        # A new operation may reuse the stored candidate while computing a
+        # current context. Candidate reuse is not durable receipt replay.
+        current = self.case.client.post(self.case.base + '/workbench/prepare', json={
+            **body, 'operation_uuid': str(uuid.uuid4())}, headers=self.case.headers)
+        self.assertEqual(current.status_code, 200, current.get_json())
+        self.assertTrue(current.get_json()['reused'])
+        self.assertEqual(current.headers.get('X-Disco-Workbench-Context'), 'fresh-v1')
+
+    def test_prepare_commit_failure_never_advertises_a_fresh_context(self):
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        connection = self.case.connection
+        transaction = type(connection).transaction.fget
+        @contextlib.contextmanager
+        def failing_commit():
+            with transaction(connection):
+                yield
+                raise RuntimeError('Commit failed after context construction')
+        self.case.app.config['TESTING'] = False
+        before = copy.deepcopy([table.rows for table in connection.tables])
+        with patch.object(type(connection), 'transaction', property(lambda _: failing_commit())):
+            response = self.case.client.post(self.case.base + '/workbench/prepare', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 500, response.get_json())
+        self.assertIsNone(response.headers.get('X-Disco-Workbench-Context'))
+        self.assertEqual([table.rows for table in connection.tables], before)
+
     def more_import(self, same_cell=False):
         self.fixture.source_sha = uuid.uuid4().hex * 2
         identity = self.fixture.add_recording(same_cell=same_cell)
@@ -142,6 +180,103 @@ class CumulativePendingTests(unittest.TestCase):
         response = self.case.client.post(root + '/accept', json=body, headers=self.case.headers)
         self.assertEqual(response.status_code, 200, response.get_json())
         return response.get_json()
+
+    def test_prepare_bootstrap_is_response_only_and_replay_reads_fresh_authority(self):
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        path = self.case.base + '/workbench/prepare'
+        response = self.case.client.post(path + '?include_initial_page=true', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        value = response.get_json()
+        bootstrap = value.pop('bootstrap')
+        self.assertEqual(response.headers.get('X-Disco-Workbench-Context'), 'fresh-v1')
+        self.assertEqual(bootstrap['context'], value['context'])
+        self.assertEqual(bootstrap['page']['query_revision'], value['candidate_scope_revision'])
+        receipt = next(row['receipt'] for row in self.tables[2].rows if row['operation_uuid'] == value['operation_uuid'])
+        self.assertEqual(receipt, value)
+        self.assertNotIn('bootstrap', receipt)
+        self.patch_draft(value, [dict(epoch_uuid=self.added, reviewed=True)])
+        replay = self.case.client.post(path + '?include_initial_page=true', json=body, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        self.assertNotIn('X-Disco-Workbench-Context', replay.headers)
+        replay_value = replay.get_json()
+        fresh = replay_value.pop('bootstrap')
+        self.assertEqual(replay_value, value)
+        self.assertNotEqual(fresh['context']['candidate_scope_revision'], value['candidate_scope_revision'])
+        self.assertEqual(fresh['page']['candidate_scope_revision'], fresh['context']['candidate_scope_revision'])
+        ordinary = self.case.client.post(path, json=body, headers=self.case.headers)
+        self.assertEqual(ordinary.get_json(), value)
+        self.assertEqual(receipt, value)
+        for query in ('include_initial_page=bad', 'include_initial_page=true&include_initial_page=false', 'unknown=true'):
+            self.assertEqual(self.case.client.post(path + '?' + query, json=body, headers=self.case.headers).status_code, 400)
+
+    def test_native_bootstrap_and_transaction_race_replay_use_locked_authority(self):
+        tracker = self.native_transaction_receipts()
+        body = dict(expected_queue_revision=self.queue()['queue_revision'])
+        path = self.case.base + '/workbench/prepare?include_initial_page=true'
+        first = self.case.client.post(path, json=body, headers=self.case.headers)
+        self.assertEqual(first.status_code, 201, first.get_json())
+        receipt = first.get_json(); receipt.pop('bootstrap')
+        lookup = self.manager.receipt
+        calls = []
+        def race(*args):
+            calls.append(args)
+            return None if len(calls) < 3 else lookup(*args)
+        with patch.object(self.manager, 'receipt', side_effect=race):
+            replay = self.case.client.post(path, json=body, headers=self.case.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        result = replay.get_json(); bootstrap = result.pop('bootstrap')
+        self.assertEqual(result, receipt)
+        self.assertEqual(bootstrap['page']['candidate_scope_revision'], bootstrap['context']['candidate_scope_revision'])
+        self.assertNotIn('X-Disco-Workbench-Context', replay.headers)
+        self.assertEqual(tracker.tx_token_attempts, 0)
+        self.assertGreater(tracker.locked_checks, 0)
+        self.assertEqual(len(calls), 3)
+
+    def test_prepare_bootstrap_failed_commit_publishes_neither_receipt_nor_page(self):
+        request = dict(expected_queue_revision=self.queue()['queue_revision'])
+        connection = self.case.connection
+        original = type(connection).transaction.fget
+        before = copy.deepcopy([table.rows for table in connection.tables])
+        @contextlib.contextmanager
+        def fail():
+            with original(connection):
+                yield
+                raise RuntimeError('Bootstrap commit failed')
+        with patch.object(type(connection), 'transaction', property(lambda _: fail())):
+            response = self.case.client.post(self.case.base + '/workbench/prepare?include_initial_page=true',
+                json=request, headers=self.case.headers)
+        self.assertEqual(response.status_code, 500)
+        self.assertNotIn('bootstrap', response.get_json())
+        self.assertNotIn('X-Disco-Workbench-Context', response.headers)
+        self.assertEqual([table.rows for table in connection.tables], before)
+
+    def test_cumulative_list_selection_shares_admission_and_preserves_cell_order(self):
+        from disco.operation_timing import capture_timings
+        self.more_import()
+        prepared, _ = self.prepare()
+        root = '/api' + prepared['root']
+        context = self.get_context(root)
+        cells = [dict(cell_uuid=cell['cell_uuid'], epochs=cell['epochs']) for cell in reversed(context['protocol']['cells'])]
+        expected = []
+        for cell in cells:
+            page = self.case.client.get(root + '/epochs', query_string=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], cell_uuid=cell['cell_uuid'], limit=60)).get_json()
+            expected.extend(row['epoch_uuid'] for row in page['epochs'])
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], cells=cells)
+        with capture_timings() as timings:
+            response = self.case.client.post(root + '/list-selection', json=body, headers=self.case.headers)
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()['epoch_uuids'], expected)
+        self.assertEqual([cell['cell_uuid'] for cell in response.get_json()['cells']], [cell['cell_uuid'] for cell in cells])
+        self.assertEqual(sum(row['operation'] == 'context' for row in timings), 2)
+        canonical_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in timings)
+        original = self.manager.history.get
+        with patch.object(self.manager.history, 'get', side_effect=original), capture_timings() as custom_timings:
+            custom = self.case.client.post(root + '/list-selection', json=body, headers=self.case.headers)
+        self.assertEqual(custom.status_code, 200, custom.get_json())
+        self.assertEqual(custom.get_json(), response.get_json())
+        custom_reads = sum(row['operation'] == 'get' and row['module'] == 'disco.decisions.explorer' for row in custom_timings)
+        self.assertLess(canonical_reads, custom_reads)
 
     def test_three_imports_overlap_duplicate_partial_accept_reopen_and_fourth_discovery(self):
         second, _ = self.more_import()

@@ -27,6 +27,63 @@ TREE_CACHE_MAX_SCOPES = 8
 EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
 
 
+class _FrozenProtocolBinding:
+    """Owned frozen read input; unrelated protocols retain the caller's policy."""
+    def __init__(self, protocol, binding, fallback):
+        self.protocol = protocol
+        self._binding = copy.deepcopy(binding)
+        self.fallback = fallback
+
+    def __call__(self, protocol):
+        return copy.deepcopy(self._binding) if protocol == self.protocol else self.fallback(protocol)
+
+
+_FROZEN_BINDING_READ = _FrozenProtocolBinding.__call__
+
+
+def _readonly_binding_reader(service, protocol):
+    """Only known readers may run before the original-result snapshot."""
+    if getattr(service.binding, '__func__', None) is not _CANONICAL_BINDING_READ:
+        return False
+    provider = getattr(service, 'binding_provider', None)
+    if type(provider) is _FrozenProtocolBinding:
+        return provider.protocol == protocol and type(provider).__call__ is _FROZEN_BINDING_READ
+    from disco.decisions.explorer import is_canonical_binding_reader
+    return is_canonical_binding_reader(provider)
+
+
+def _protocol_summary_can_share(service, filters):
+    """Reuse only pure canonical reads within this one summary response."""
+    return (getattr(service, 'curation_provider', False) is None
+        and all(type(getattr(service, name, None)) is dict for name in ('rows', 'cells', 'protocols'))
+        and (filters is None or (type(filters) is dict and not set(filters) - {
+            'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label'}))
+        and all(getattr(getattr(service, name, None), '__func__', getattr(service, name, None)) is method
+                for name, method in _PROTOCOL_SUMMARY_READS.items())
+        and (getattr(service, 'binding_provider', None) is None
+             or all(_readonly_binding_reader(service, key) for key in service.protocols)))
+
+
+def _summarize_cells(service, rows, *, current_protocol=None, current_query=None):
+    # Bin before invoking membership readers, preserving the public reader order.
+    bins = {}
+    for row in rows:
+        bins.setdefault(row['cell_uuid'], []).append(row)
+    result = []
+    memberships = {key: {member['uuid'] for member in (
+        current_query if current_query is not None and key == current_protocol else service.query_result(key))['epochs']}
+        for key in service.protocols}
+    for identity, items in bins.items():
+        epoch_ids = {row['epoch_uuid'] for row in items}
+        result.append({**service.cells[identity], 'epochs': len(items),
+            'duration_seconds': sum(r['duration_seconds'] for r in items),
+            'reviewed': sum(bool(r['curation']['reviewed']) for r in items),
+            'included': sum(bool(r['curation']['included']) for r in items),
+            'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids],
+            'group_labels': sorted({r['group_label'] for r in items}, key=str)})
+    return sorted(result, key=lambda c: (c['cell_type'] or '', c['date'], c['label']))
+
+
 class _SourceDetails(Mapping):
     """Dispatch lazy details through the already validated owning source.
 
@@ -684,8 +741,19 @@ class WorkspaceService:
         with elapsed("workspace_service", "query_result"):
             self._ready()
             protocol_uuid = _uuid(protocol_uuid)
-            original = copy.deepcopy(self.protocols[protocol_uuid]['result'])
-            binding = self.binding(protocol_uuid)
+            source = self.protocols[protocol_uuid]['result']
+            if _readonly_binding_reader(self, protocol_uuid):
+                binding = self.binding(protocol_uuid)
+                # Bound membership replaces these fields in full. Copy only
+                # retained original fields, even when the frozen scope is tiny.
+                replaced = {'epochs', 'cells', 'source_revisions', 'effective_query',
+                            'effective_view', 'dataset_binding'} if binding is not None else set()
+                original = copy.deepcopy({key: value for key, value in source.items() if key not in replaced})
+            else:
+                # Custom providers may mutate source inputs or raise. Preserve
+                # their existing snapshot-before-provider behavior exactly.
+                original = copy.deepcopy(source)
+                binding = self.binding(protocol_uuid)
             if binding is None:
                 if self.protocols[protocol_uuid]['definition'].get('initial_revision_uuid'):
                     raise ValueError('Pinned protocol creation was interrupted. Retry creating it from the same saved selection and name.')
@@ -788,20 +856,7 @@ class WorkspaceService:
                 'duration_seconds': sum(r['duration_seconds'] for r in rows)}
 
     def _cell_summary(self, rows):
-        bins = {}
-        for row in rows:
-            bins.setdefault(row['cell_uuid'], []).append(row)
-        result = []
-        memberships = {key: {member['uuid'] for member in self.query_result(key)['epochs']} for key in self.protocols}
-        for identity, items in bins.items():
-            epoch_ids = {row['epoch_uuid'] for row in items}
-            result.append({**self.cells[identity], 'epochs': len(items),
-                'duration_seconds': sum(r['duration_seconds'] for r in items),
-                'reviewed': sum(bool(r['curation']['reviewed']) for r in items),
-                'included': sum(bool(r['curation']['included']) for r in items),
-                'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids],
-                'group_labels': sorted({r['group_label'] for r in items}, key=str)})
-        return sorted(result, key=lambda c: (c['cell_type'] or '', c['date'], c['label']))
+        return _summarize_cells(self, rows)
 
     def overview(self):
         self._ready()
@@ -826,18 +881,54 @@ class WorkspaceService:
                 'events': self.events(25)}
 
     def protocol(self, protocol_uuid, filters=None):
-        rows = self.filtered_rows(protocol_uuid, filters)
-        all_rows = self.filtered_rows(protocol_uuid)
-        query = self.query_result(protocol_uuid)
+        shared = _protocol_summary_can_share(self, filters)
+        if shared:
+            filters = validate_filters(filters)
+            query = self.query_result(protocol_uuid)
+            all_rows = self._filter_rows([
+                self._decorate(self.rows[member['uuid']], {}) for member in query['epochs']
+            ], {}, protocol_uuid)
+            rows = self._filter_rows(all_rows, filters, protocol_uuid) if filters else all_rows
+        else:
+            rows = self.filtered_rows(protocol_uuid, filters)
+            all_rows = self.filtered_rows(protocol_uuid)
+            query = self.query_result(protocol_uuid)
         definition = self.protocols[_uuid(protocol_uuid)]['definition']
         return {'definition': definition, 'starter_query': definition['query'],
                 'effective_query': query.get('effective_query', definition['query']),
                 'binding': query.get('dataset_binding'),
                 'counts': self._counts(rows), 'total_counts': self._counts(all_rows),
                 'selection_options': {'cell_types': sorted({r['cell_type'] for r in all_rows if r.get('cell_type')})},
-                'cells': self._cell_summary(rows),
+                'cells': (_summarize_cells(self, rows, current_protocol=_uuid(protocol_uuid), current_query=query)
+                          if shared else self._cell_summary(rows)),
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
+
+    def protocol_browse(self, protocol_uuid):
+        """Small unfiltered entry; page receipts still own scientific actions.
+
+        Custom readers keep the full public protocol path. This projection only
+        skips display aggregates for the captured canonical membership readers;
+        it does not cache membership, details or an authority token.
+        """
+        if (any(getattr(getattr(self, name, None), '__func__', getattr(self, name, None)) is not method
+                for name, method in _PROTOCOL_BROWSE_READS.items())
+                or not _readonly_binding_reader(self, protocol_uuid)):
+            return None
+        result = self.query_result(protocol_uuid)
+        definition = self.protocols[_uuid(protocol_uuid)]['definition']
+        rows = [self.rows[member['uuid']] for member in result['epochs']]
+        scope = self.source_scope()
+        excluded = set(scope['excluded_source_revisions'])
+        affected = [row for row in rows if row['source_sha256'] in excluded]
+        return {'definition': copy.deepcopy(definition), 'starter_query': copy.deepcopy(definition['query']),
+                'effective_query': copy.deepcopy(result.get('effective_query', definition['query'])),
+                'binding': copy.deepcopy(result.get('dataset_binding')),
+                'selection_options': {'cell_types': sorted({row['cell_type'] for row in rows if row.get('cell_type')})},
+                'groups': sorted({row['group_label'] for row in rows}, key=str),
+                'source_eligibility': {'excluded_epoch_count': len(affected),
+                    'excluded_sources': sorted({row['source_sha256'] for row in affected}),
+                    'propagation_required': bool(affected), 'source_scope_revision': scope['revision']}}
 
     def epoch_page(self, protocol_uuid, filters=None, offset=0, limit=100, anchor_uuid=None, *, include_curation=True, include_cells=False):
         with elapsed("workspace_service", "epoch_page"):
@@ -1328,3 +1419,13 @@ class WorkspaceService:
             raise KeyError('Event not found in this project')
         row = rows[0]
         return {**row, 'occurred_at': row['occurred_at'].replace(tzinfo=dt.timezone.utc).isoformat()}
+
+
+# Capture source identities once; class-level overrides retain custom-read ordering.
+_CANONICAL_BINDING_READ = WorkspaceService.binding
+_PROTOCOL_BROWSE_READS = {name: getattr(WorkspaceService, name) for name in
+    ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
+     'validate_metadata_filters', '_epoch_page_identities', 'source_scope', 'binding')}
+_PROTOCOL_SUMMARY_READS = {name: getattr(WorkspaceService, name) for name in
+    ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
+     '_counts', '_cell_summary', '_ready', 'validate_metadata_filters', 'binding')}

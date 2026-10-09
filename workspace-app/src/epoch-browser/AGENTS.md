@@ -105,3 +105,29 @@ Candidate/query/revision/split or presentation changes mask old highlights befor
 paint; highlights are not persisted and never imply merge/export consent.
 Left browsing suppresses branch actions; Edit Tree keeps group controls. Individual
 epoch switches retain actual selection and show Select/Deselect action labels.
+
+Inspector requests all-cell summaries on the first page of an exact view. Later
+anchor/offset pages reuse that list only while the project, actor/read owner,
+query and binding receipts match. A mismatched receipt disables cell actions
+and requests cells again. Scope/owner changes require fresh receipts; retained
+cell presentation alone never grants authority. Focused-cell navigation retains
+its separate all-cell read. This removes repeated full-cell payloads, not backend
+scope-admission work. See inspectorNavigationLifecycle.test.js and
+workflowResponsiveness.test.js for exact read counts and stale-action checks.
+
+Main Protocol opens Inspect with the opt-in `projection=browse` descriptor rather
+than the full overview summary. Definition, binding, query, source eligibility and
+filter choices do not grant page or mutation authority. Project/actor/request-owner
+changes retire retained descriptors; structural refresh keeps same-owner Inspector
+presentation inert until the descriptor and bounded pages are fresh. Read failures
+retain the existing error/retry presentation. Annotation-profile unavailability
+does not prevent read-only entry. Overview and export demand their full summaries
+only while visible; legacy protocol requests retain their full response. See
+`../protocolBrowseEntry.test.js` and `../workflowResponsiveness.test.js`.
+
+Workbench may provide an opaque `initialPageRead` for the exact first bounded
+page. Inspector passes it only to its normal rows resource; focused-cell, anchor,
+trace and later-page reads retain their own requests. The incoming owner validates
+and owns the offer; `api.useResource` claims it in an effect and retires it on
+pause/reload/owner/path/revision changes with first-render stale-data masking.
+See [incoming bootstrap contract](../incoming-workbench/AGENTS.md#initial-contextpage-offer).

@@ -146,7 +146,8 @@ test('mounted structural refresh invalidates project/import/metadata summaries e
     const metadata=h.root.find(node=>typeof node.type==='function'&&node.type.name==='MetadataRefresh');
     await h.act(()=>metadata.props.onChange());
     const paths=new Set(h.fixture.requests.slice(before).map(record=>record.path));
-    for(const path of ['/projects','/overview','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A'])assert.ok(paths.has(path),path);
+    for(const path of ['/projects','/overview','/protocol-suggestions','/jobs','/metadata/status','/metadata/fields','/protocols/protocol-A?projection=browse'])assert.ok(paths.has(path),path);
+    assert.equal(paths.has('/protocols/protocol-A'),false,'structural refresh demands the compact entry, not a hidden overview');
   }finally{await h.close();}
 });
 
@@ -202,12 +203,12 @@ test('standalone annotations accept a fresh epoch snapshot after explicit refres
     const Tags=await h.component('AnnotationTags');
     await h.mount(Tags,{epoch,revision:0,onChange:()=>{}});
     await sharedSave(h,'standalone');
-    assert.ok(h.fixture.requests.some(record=>record.path==='/epochs/epoch-0/annotations'));
+    assert.ok(h.fixture.requests.some(record=>record.path==='/epochs/epoch-0/annotations?include_cell_epoch_count=false'));
     const fresh={...epoch,annotations:{...epoch.annotations,revisions:{epoch:{author:1},cell:{author:0}},epoch_tags:[{tag:'standalone',profile_uuid:'author',author_name:'Scientist'}]}};
     await h.render(Tags,{epoch:fresh,revision:1,onChange:()=>{}});
     const before=h.fixture.requests.length;
     await h.render(Tags,{epoch:fresh,revision:2,onChange:()=>{}});
-    assert.equal(h.fixture.requests.slice(before).filter(record=>record.path.endsWith('/annotations')).length,0);
+    assert.equal(h.fixture.requests.slice(before).filter(record=>record.path.split('?')[0].endsWith('/annotations')).length,0);
     assert.equal(sharedInput(h).props.disabled,false);
   }finally{await h.close();}
 });
@@ -244,4 +245,20 @@ test('late successful tag Tab cannot navigate a newly filtered Inspector after i
     assert.equal(h.fixture.requests.slice(before).filter(record=>record.path.includes('anchor_uuid')).length,0);
     assert.equal(h.viewer.epoch,null);assert.equal(h.fixture.mounts,1);
   }finally{await h.close();}
+});
+
+test('cell reuse retires on actor changes and requires a fresh all-cell receipt',async()=>{
+ const h=await createWorkflowHarness();let release;
+ try{
+  await h.mount();await ready(h);
+  await h.act(()=>h.viewer.treePane.listProps.onFocus('epoch-61'));
+  await h.waitFor(()=>!h.viewer.navigation.loading&&!h.viewer.treePane.listProps.disabled);
+  const start=h.fixture.requests.length;
+  h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocols/protocol-A/epochs'&&url.searchParams.get('include_cells')==='true'?new Promise(resolve=>{release=()=>resolve(fallback());}):fallback();
+  h.fixture.profile={...h.fixture.profile,profileUuid:'other-author'};
+  await h.render(h.App,{});await h.waitFor(()=>!!release);
+  assert.equal(h.viewer.treePane.listProps.disabled,true);
+  await h.act(()=>release());await h.waitFor(()=>!h.viewer.treePane.listProps.disabled);
+  assert.equal(h.fixture.requests.slice(start).filter(record=>record.path.includes('include_cells=true')).length,1);
+ }finally{release?.();await h.close();}
 });

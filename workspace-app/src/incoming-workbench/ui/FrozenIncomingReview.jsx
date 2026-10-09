@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useLayoutEffect,useRef,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../../api.js';
 import {Activity,CircleDot,Download,GitMerge,History,RefreshCw,X} from 'lucide-react';
@@ -14,8 +14,10 @@ import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
 import IncomingMergePreview from './IncomingMergePreview.jsx';
 import {nextWorkbenchWorkflow} from "../../exports/workbenchExport.js";
 import {acceptWorkbench,acceptanceFailureKind,requireWorkbenchContext,saveWorkbenchDecisions,workbenchCandidateRoot,workbenchRoot,workbenchPreviewCounts} from '../workbenchAuthority.js';
+import {useAnnotationProfile} from '../../annotations/annotationProfile.js';
+import {incomingPageOffer,requireIncomingBootstrap} from '../incomingBootstrap.js';
 
-export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled}){
+export default function FrozenIncomingReview({projectId,protocolId,item,revision,onChange,onDefer,onNext,onQC,session,onSession,capabilities={},exportIntent=null,acceptOperation=null,scopeKind='proposal',externalBusy=false,preserveBrowser=false,pendingCounts=null,onHistory,onRefresh,refreshing=false,filterTarget=null,toolbarTarget=null,mergeRequest=null,onMergeRequestHandled,preparedContextToken,takePreparedContext}){
   const root=workbenchCandidateRoot(protocolId,item.candidate_revision_uuid);
   const [draftSelectionTarget,setDraftSelectionTarget]=useState(null),[selectionIntent,setSelectionIntent]=useState(null);
   const [context,setContext]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[nonce,setNonce]=useState(0);
@@ -23,10 +25,16 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   const [highlighted,setHighlighted]=useState(session?.selected||[]);
   const [filters,setFilters]=useState(session?.filters||{}),[preview,setPreview]=useState(session?.preview||null),[receipt,setReceipt]=useState(session?.receipt||null);
   const [exportState,setExportState]=useState(session?.exportState||(exportIntent?{format:exportIntent.format,name:exportIntent.name}:{})),[exportDialog,setExportDialog]=useState(null);
-  const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedRevision=useRef(revision),displayed=useRef(null);
+  const selected=useRef(session?.selected||[]),operation=useRef(session?.operation||null),inFlight=useRef(false),viewer=useRef(session?.viewer||null),current=useRef(null),snapshot=useRef(null),loadedOwner=useRef(null),displayed=useRef(null);
+  const profile=useAnnotationProfile();
+  const loadOwner=useMemo(()=>({root,projectId,protocolId,revision,nonce,profileUuid:profile.profileUuid,
+    profileReady:!!profile.profileUuid&&!profile.loading&&!profile.error,token:preparedContextToken}),
+    [root,projectId,protocolId,revision,nonce,profile.profileUuid,profile.loading,profile.error,preparedContextToken]);
+  const activeOwner=useRef(loadOwner),claimedContext=useRef(null);
+  activeOwner.current=loadOwner;
   const mergeLifetime=useRef(null);
-  useLayoutEffect(()=>{const owner={};mergeLifetime.current=owner;return()=>{if(mergeLifetime.current===owner)mergeLifetime.current=null;};},[root,projectId,revision,externalBusy,capabilities.drafts,capabilities.additive_accept]);
-  const contextFresh=context!==null&&loadedRevision.current===revision;
+  useLayoutEffect(()=>{const owner={};mergeLifetime.current=owner;return()=>{if(mergeLifetime.current===owner)mergeLifetime.current=null;};},[loadOwner,externalBusy,capabilities.drafts,capabilities.additive_accept]);
+  const contextFresh=context!==null&&loadedOwner.current===loadOwner;
   // A multi-batch draft save advances authority between batches. Keep the
   // browser on its inert committed view until the complete save settles.
   if(contextFresh&&!busy&&!externalBusy)displayed.current={context,revision};
@@ -39,9 +47,23 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   useEffect(()=>{publish({});},[filters,receipt,preview,unconfirmed,acceptPending,exportState,publish]);
   useEffect(()=>{
     const controller=new AbortController();setContext(null);setError('');
-    api(`${root}/context`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted){loadedRevision.current=revision;setContext(requireWorkbenchContext(value));}}).catch(error=>{if(!controller.signal.aborted)setError(error.message);});
+    // Effect replay may reuse this component's claim. A real remount gets a
+    // new ref and cannot claim the parent's consumed response a second time.
+    let initial=claimedContext.current?.owner===loadOwner?claimedContext.current.context:null;
+    if(!initial&&nonce===0&&!externalBusy){
+      initial=takePreparedContext?.({...loadOwner,candidate:item.candidate_revision_uuid});
+      if(initial)claimedContext.current={owner:loadOwner,context:initial};
+    }
+    if(initial){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(initial));}
+    else api(`${root}/context${capabilities.initial_page===true?'?include_initial_page=true':''}`,{signal:controller.signal}).then(value=>{
+      if(capabilities.initial_page===true){
+        const bootstrap=requireIncomingBootstrap(value.bootstrap,{root,protocolId,projectId,candidateRevision:item.candidate_revision_uuid});
+        if(loadOwner.profileReady&&bootstrap.actor!==loadOwner.profileUuid)throw new Error('The incoming bootstrap belongs to a different actor. Refresh the profile and proposal.');
+      }
+      if(!controller.signal.aborted&&activeOwner.current===loadOwner){loadedOwner.current=loadOwner;setContext(requireWorkbenchContext(value));}
+    }).catch(error=>{if(!controller.signal.aborted&&activeOwner.current===loadOwner)setError(error.message);});
     return()=>controller.abort();
-  },[root,nonce,revision]);
+  },[loadOwner,takePreparedContext]);
   useEffect(()=>{
     if(!acceptOperation||session?.unconfirmed||session?.exportState?.prepared)return;
     const controller=new AbortController();
@@ -53,12 +75,17 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     return()=>controller.abort();
   },[protocolId,acceptOperation,item.candidate_revision_uuid]);
   async function save(decisions,{deferred,selectionMode}={}){
-    if(externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||unconfirmed||exportState.pending||!exportState.exported&&(exportState.acceptOperation||exportState.prepared)||!capabilities.drafts||!current.current)return false;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
-      await saveWorkbenchDecisions({root,context:current.current,decisions,deferred,selectionMode},api,value=>{current.current=value;setContext(value);});
+      await saveWorkbenchDecisions({root,context:current.current,decisions,deferred,selectionMode},api,value=>{
+        if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
+      });
+      // The server may have committed the old owner's draft. Its reply cannot
+      // replace a newer owner's read or navigate that owner out of review.
+      if(activeOwner.current!==loadOwner)return false;
       publish({});return true;
-    }catch(error){setError(`Some decisions may already be saved. Refresh the draft before continuing. ${error.message}`);setContext(null);return false;}
+    }catch(error){if(activeOwner.current===loadOwner){setError(`Some decisions may already be saved. Refresh the draft before continuing. ${error.message}`);setContext(null);}return false;}
     finally{inFlight.current=false;setBusy(false);}
   }
   function select(next){selected.current=next;setHighlighted(next);publish({selected:next});}
@@ -68,7 +95,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
   }
   async function defer(){if(await save([],{deferred:true}))onDefer();}
   function beginSelected(ids,kind='merge'){
-    if(externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!contextFresh||receipt||preview||selectionIntent)return;
     setError('');
     try{
       const intent={...selectedReview(current.current,ids),kind,scope:current.current.candidate_scope_revision,version:current.current.draft.draft_version};
@@ -79,12 +106,12 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     }catch(error){setError(error.message);}
   }
   async function prepareSelection(intent,review){
-    if(externalBusy||inFlight.current||exportLocked||!current.current)return;
+    if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!current.current)return;
     if(current.current.candidate_scope_revision!==intent.scope||current.current.draft.draft_version!==intent.version){setSelectionIntent(null);setError('The draft changed. Inspect the current selection and choose Merge or Export again.');return;}
     const owner=mergeLifetime.current;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
-      const ensureCurrent=()=>{if(!owner||mergeLifetime.current!==owner)throw Error('The incoming workspace changed while preparing the merge. Choose Merge or Export again in the current workspace.');};
+      const ensureCurrent=()=>{if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed while preparing the merge. Choose Merge or Export again in the current workspace.');};
       const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},(path,options)=>{ensureCurrent();return api(path,options);},value=>{ensureCurrent();current.current=value;setContext(value);});
       ensureCurrent();
       if(intent.kind==='merge'){
@@ -99,7 +126,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     finally{inFlight.current=false;if(mergeLifetime.current!==null){setSelectionIntent(null);setBusy(false);}}
   }
   async function accept(){
-    if(externalBusy||!contextFresh&&!unconfirmed||inFlight.current||exportState.pending||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
+    if(activeOwner.current!==loadOwner||externalBusy||!contextFresh&&!unconfirmed||inFlight.current||exportState.pending||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
     try{await submitAcceptance(preview);}
     finally{inFlight.current=false;setBusy(false);}
   }
@@ -108,15 +135,28 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     try{const result=await acceptWorkbench(root,acceptedPreview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);onChange?.();}
     catch(error){
       if(acceptanceFailureKind(error)==='rejected'){
-        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});setContext(null);
-        setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);
+        setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});
+        if(activeOwner.current===loadOwner){setContext(null);setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);}
       }else{setUnconfirmed(true);publish({unconfirmed:true,acceptPending:false,preview:acceptedPreview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
     }
     finally{setAcceptPending(false);}
   }
+  const pageOffers=useRef(new WeakMap());
+  const pageOffer=useMemo(()=>{
+    const bootstrap=visible?.context.bootstrap;
+    if(!bootstrap||!contextFresh||visible.context!==context||profile.loading||profile.error||bootstrap.actor!==profile.profileUuid||
+      bootstrap.root!==root||bootstrap.project_uuid!==projectId||bootstrap.protocol_uuid!==protocolId)return null;
+    if(pageOffers.current.has(bootstrap))return pageOffers.current.get(bootstrap);
+    const offer=incomingPageOffer(bootstrap,{root,protocolId,projectId,candidateRevision:item.candidate_revision_uuid,
+      profileUuid:profile.profileUuid,profileReady:true});
+    if(offer)pageOffers.current.set(bootstrap,offer);
+    return offer;
+  },[visible?.context.bootstrap,contextFresh,context,root,protocolId,projectId,item.candidate_revision_uuid,profile.profileUuid,profile.loading,profile.error]);
+  const initialPageRead=contextFresh&&!busy&&!externalBusy?pageOffer:null;
   const protocol=visible?.context.protocol;
   const readContext=visible?{root,candidate_scope_revision:visible.context.candidate_scope_revision,
     ...(visible.context.tree_selection===true?{tree_selection:true}:{}),
+    ...(visible.context.list_selection===true?{list_selection:true,expected_binding_version:visible.context.expected_binding_version}:{}),
     ...(visible.context.tree_column_pages===true?{tree_column_pages:true}:{}),
     ...(visible.context.selection_summary===true?{selection_summary:true,expected_binding_version:visible.context.expected_binding_version}:{}),
     ...(typeof visible.context.candidate_recipe_sha256==='string'&&visible.context.candidate_recipe_sha256&&Number.isSafeInteger(visible.context.expected_binding_version)&&visible.context.expected_binding_version>=0
@@ -138,7 +178,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     if(!Number.isSafeInteger(context.counts?.pending_epochs)||context.counts.pending_epochs<=0){onMergeRequestHandled?.('No confirmed pending additions are available for a merge preview.');return;}
     if(sourceMerge){
       const owner=mergeLifetime.current,scope=current.current.candidate_scope_revision;
-      const isCurrent=()=>owner!==null&&mergeLifetime.current===owner&&liveMergeRequest.current?.request_uuid===mergeRequest.request_uuid&&current.current?.candidate_scope_revision===scope;
+      const isCurrent=()=>owner!==null&&mergeLifetime.current===owner&&activeOwner.current===loadOwner&&liveMergeRequest.current?.request_uuid===mergeRequest.request_uuid&&current.current?.candidate_scope_revision===scope;
       inFlight.current=true;setBusy(true);setError('');
       void loadImportedSelection({root,context:current.current,sourceSha256:mergeRequest.source_sha256,request:api,isCurrent}).then(ids=>{
         if(!isCurrent())return;
@@ -198,6 +238,6 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     {receipt&&!exportLocked&&<button disabled={busy||externalBusy} onClick={reviewRemaining}>Review remaining additions</button>}
     {(exportState.completed||[]).map((value,index)=><p key={value.exported?.dataset_uuid||value.receipt?.event_uuid||index}>{value.receipt&&<>Earlier acceptance · receipt {value.receipt.event_uuid} </>}{value.exported&&<a href={value.exported.download_url} download>{value.exported.name||'Download earlier incoming export'}</a>}</p>)}
     {exportDialog!==null&&<WorkbenchExportDialog selectedOnly externalBusy={externalBusy||!contextFresh&&!exportLocked&&!receipt} protocolId={protocolId} item={item} accept={exportDialog} acceptReceipt={receipt} state={exportState} onState={value=>{setExportState(value);if(value.receipt)setReceipt(value.receipt);publish({exportState:value,...(value.receipt?{receipt:value.receipt}:{})});}} onClose={()=>{setExportDialog(null);setNonce(value=>value+1);}} onChanged={onChange}/>}
-    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
+    {visible&&adapterReady?<div className="incoming-browser" tabIndex={-1} aria-label="Incoming epoch browser">{filterTarget&&createPortal(<ProtocolViewFilter readContext={readContext} purpose="browse" projectId={projectId} protocol={protocol} filters={filters} revision={visible.revision} disabled={busy||externalBusy||exportLocked||!!selectionIntent||!!preview} onChange={setFilters}/>,filterTarget)}<Inspector initialPageRead={initialPageRead} draftSelectionTarget={draftSelectionTarget} readPaused={busy||externalBusy||!contextFresh} draftSelection={{selected:highlighted,disabled:busy||externalBusy||exportLocked||!!selectionIntent||!!preview||!capabilities.drafts||!contextFresh||!!receipt,onMerge:capabilities.additive_accept?ids=>beginSelected(ids):null}} toolbarTarget={toolbarTarget} readContext={readContext} projectId={projectId} protocol={protocol} filters={filters} revision={`${visible.revision}:${visible.context.draft.draft_version}`} onChange={onChange} onBack={defer} onQC={onQC} onFilterChange={setFilters} onTagFilter={predicate=>setFilters(current=>({...clearTagFilters(current),tag_predicate:JSON.stringify(predicate)}))} onSelectionChange={select} onReviewDecision={decide} initialNavigation={viewer.current} onSessionChange={rememberViewer} splitRecipe={session?.splitRecipe||['date','cell','block']} onExport={capabilities.incoming_export&&!unconfirmed&&!externalBusy&&contextFresh?()=>openExport(false):undefined}/></div>:contextFresh&&<p role="status">Frozen proposal loaded. The candidate browser adapter is not yet available in this build. No global query is substituted.</p>}
   </section>;
 }

@@ -81,12 +81,12 @@ test('actual Inspector keeps shared tag reads and saves working with automatic m
  const input=()=>h.root.findAllByType('input').find(n=>n.props['aria-label']?.startsWith('Tag ')&&!n.props['aria-label'].startsWith('Tag to add'));
  try{
   await h.mount();await h.waitFor(()=>!!input()&&!input().props.disabled);
-  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-0/annotations'));
+  assert.equal(h.viewer.epoch.epoch_uuid,'epoch-0');assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-0/annotations?include_cell_epoch_count=false'));
   assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
   await h.act(()=>input().props.onChange({target:{value:'trace inspection'}}));await h.act(()=>input().parent.props.onSubmit({preventDefault(){}}));
   await h.waitFor(()=>!!input()&&!input().props.disabled);assert.deepEqual(h.fixture.annotations.get('epoch-0'),['trace inspection']);
   await h.act(()=>h.viewer.navigation.onMove(1));await h.waitFor(()=>h.viewer.epoch?.epoch_uuid==='epoch-1'&&!!input()&&!input().props.disabled);
-  assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-1/annotations'));assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
+  assert(h.fixture.requests.some(r=>r.path==='/epochs/epoch-1/annotations?include_cell_epoch_count=false'));assert.equal(h.fixture.requests.filter(r=>/^\/epochs\/[^/?]+(?:\?|$)/.test(r.path)).length,0);
  }finally{await h.close();}
 });
 

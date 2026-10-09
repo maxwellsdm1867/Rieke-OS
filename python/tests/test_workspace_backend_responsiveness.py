@@ -66,10 +66,24 @@ class BackendResponsivenessTests(unittest.TestCase):
         pager = TreePages(self.service)
         body = {'splits':'cell,parameters/example'}
         root = pager.page(body)
-        with patch.object(self.service, '_tree_rows', side_effect=AssertionError('No membership rescan')), \
-             patch.object(self.index, 'values', side_effect=AssertionError('No projection reread')), \
-             patch('disco.navigation.tree_pages.selection_revision', side_effect=AssertionError('No membership rehash')):
-            self.assertEqual(TreePages(self.service).page(body), root)
+        # Observe the canonical reader without replacing its identity: replacing
+        # a membership policy must invalidate this cache, even with warm pages.
+        membership_code = self.service._tree_rows.__code__
+        membership_calls = []
+        previous_profile = sys.getprofile()
+        def observe(frame, event, arg):
+            if event == 'call' and frame.f_code is membership_code:
+                membership_calls.append(frame.f_code)
+            if previous_profile is not None:
+                previous_profile(frame, event, arg)
+        try:
+            sys.setprofile(observe)
+            with patch.object(self.index, 'values', side_effect=AssertionError('No projection reread')), \
+                 patch('disco.navigation.tree_pages.selection_revision', side_effect=AssertionError('No membership rehash')):
+                self.assertEqual(TreePages(self.service).page(body), root)
+        finally:
+            sys.setprofile(previous_profile)
+        self.assertEqual(membership_calls, [], 'No membership rescan')
         child = {**body, 'path':root['branches'][0]['path'], 'revision':root['revision']}
         expected = pager.page(child)
         with patch.object(self.index, 'values', side_effect=AssertionError('No projection reread')):

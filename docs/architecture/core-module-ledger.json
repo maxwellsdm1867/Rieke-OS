@@ -695,7 +695,18 @@
       },
       "area": "Frontend",
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "current_implementation_reviews": [
+        {
+          "review_id": "stage5-browsing-read-composition",
+          "implementation_commits": [
+            "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+            "f2400fa632dbe520015485f6fbd40141e9942565",
+            "4171672813805b8fb871699baf1e41f73797f447"
+          ],
+          "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+        }
+      ]
     },
     {
       "id": "group-save",
@@ -2789,7 +2800,18 @@
           "python/disco/workbench/AGENTS.md"
         ],
         "current_backend_keeps": {}
-      }
+      },
+      "current_implementation_reviews": [
+        {
+          "review_id": "stage5-browsing-read-composition",
+          "implementation_commits": [
+            "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+            "f2400fa632dbe520015485f6fbd40141e9942565",
+            "4171672813805b8fb871699baf1e41f73797f447"
+          ],
+          "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+        }
+      ]
     },
     {
       "id": "export-publication",
@@ -3512,7 +3534,18 @@
         "current_frontend_guidance": [
           "workspace-app/src/epoch-browser/AGENTS.md"
         ]
-      }
+      },
+      "current_implementation_reviews": [
+        {
+          "review_id": "stage5-browsing-read-composition",
+          "implementation_commits": [
+            "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+            "f2400fa632dbe520015485f6fbd40141e9942565",
+            "4171672813805b8fb871699baf1e41f73797f447"
+          ],
+          "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+        }
+      ]
     },
     {
       "id": "workspace-navigation",
@@ -4291,7 +4324,7 @@
         "identity_types_order_units_provenance": {
           "identities": "Immutable candidate UUID, candidate_scope_revision, draft version, queue revision, project/protocol and one-shot request UUID remain distinct.",
           "types": "Contract_version1, explicit boolean capabilities, safe nonnegative pending counts; null pending cell count remains unavailable. Incoming selection requires exact nonduplicate scoped cells/epochs.",
-          "order": "Queue pages merge by candidate UUID and same queue revision. Selection fetches 60-row pages in scoped cell order, max1000 complete epochs; never substitute Main cell totals.",
+          "order": "Queue pages merge by candidate UUID and same queue revision. Advertised list_selection resolves exact per-cell and flattened UUID order in one guarded ID read; older contexts retain verified 60-row paging. Both preserve scoped cell order, exact counts and max1000 complete epochs; never substitute Main cell totals.",
           "units": "Counts are distinct pending cells/epochs, not summed overlapping proposal counts. No duration/recorded-unit conversion.",
           "provenance": "Frozen queue/context receipts establish membership; view restoration cannot reconstruct live merge consent. Original recorded UUIDs remain exact."
         },
@@ -4325,7 +4358,18 @@
         "status": "unmeasured"
       },
       "contract_gaps": [],
-      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit"
+      "contract_review_status": "Source reviewed; runtime gaps and qualification limits remain explicit",
+      "current_implementation_reviews": [
+        {
+          "review_id": "stage5-browsing-read-composition",
+          "implementation_commits": [
+            "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+            "f2400fa632dbe520015485f6fbd40141e9942565",
+            "4171672813805b8fb871699baf1e41f73797f447"
+          ],
+          "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+        }
+      ]
     },
     {
       "id": "trace-window-presentation",
@@ -7060,7 +7104,18 @@
           "python/disco/workbench/AGENTS.md"
         ],
         "current_backend_keeps": {}
-      }
+      },
+      "current_implementation_reviews": [
+        {
+          "review_id": "stage5-browsing-read-composition",
+          "implementation_commits": [
+            "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+            "f2400fa632dbe520015485f6fbd40141e9942565",
+            "4171672813805b8fb871699baf1e41f73797f447"
+          ],
+          "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+        }
+      ]
     },
     {
       "id": "external-tag-receipts",
@@ -7520,7 +7575,47 @@
       }
     ],
     "separate_runtime_authorization": "Only P07 enforcement, group-save and presentation-session increments were implemented here. Other candidates require bounded review before runtime changes.",
-    "coverage_review_status": "Independent Astra consolidation source GO after adding five missing core areas and correcting recipe subset wording. Source review does not close execution or qualification gaps."
+    "coverage_review_status": "Independent Astra consolidation source GO after adding five missing core areas and correcting recipe subset wording. Source review does not close execution or qualification gaps.",
+    "implementation_reviews": [
+      {
+        "id": "stage5-browsing-read-composition",
+        "implementation_commits": [
+          "babe86c33ff105d33aa6abe5635ff94fee9f9a29",
+          "f2400fa632dbe520015485f6fbd40141e9942565",
+          "4171672813805b8fb871699baf1e41f73797f447"
+        ],
+        "scope": "Current implementation contract review; historical source_observed_at, metrics and qualification remain unchanged.",
+        "contracts": [
+          "python/disco/workbench/CONTRACT.md",
+          "workspace-app/src/epoch-browser/AGENTS.md",
+          "workspace-app/src/incoming-workbench/AGENTS.md"
+        ],
+        "changes": {
+          "recipe_read_sharing": "Canonical pinned ExplorerHistory readers share fully verified detached recipes and membership maps only within one context derivation. Dependency discovery remains outside; independent closing derivation re-verifies current main and every recipe. Custom readers retain direct calls; exceptions and nesting restore prior context.",
+          "list_selection": "Advertised list_selection uses one bounded guarded ID read with ordered cells, exact per-cell counts and UUID order, flattened equality and unique identities, candidate/query/binding fences, abort/current-owner checks and the 1000-epoch cap. Older contexts retain verified 60-row paging; no selection consent or mutation is inferred.",
+          "browse_projection": "Opt-in projection=browse supplies protocol definition, binding, query, eligibility and filter descriptors without hidden overview aggregates. Full overview/export summaries remain demand-driven; legacy responses remain full. Descriptor freshness is separate from page and mutation authority.",
+          "response_bootstrap": "Advertised initial_page and boolean include_initial_page produce context plus initial 60-row page under one opening and independent closing authority. Prepare commit still precedes publication. Every replay builds a fresh response-only bootstrap without altering stored receipt, request hash or operation identity; historical receipt context cannot supply current action fields.",
+          "renderer_initial_read": "incomingBootstrap validates exact actor/project/protocol/candidate/root, generation/query/binding, request and complete cell/page identity. Frozen review owns an opaque offer; Inspector forwards it only to its first rows resource. api.useResource claims in an effect, supports the same StrictMode consumer with detached DTOs, bypasses custom ports/caches and permanently retires on pause/reload/path/revision/owner/offer change. Render-time masking prevents A-B-A stale actionability. Sessions and prepared receipts omit bootstrap."
+        },
+        "qualification": "Source/contract adoption record only. No new test, benchmark, native, scientific or assembled-package qualification is asserted by this documentation update."
+      },
+      {
+        "id": "stage6-protocol-summary-allocation",
+        "implementation_commits": [
+          "4fc3f6fa5419593ae45a5be59e72156a2231f9dc"
+        ],
+        "scope": "One full protocol summary assembly; historical observations and qualification remain unchanged.",
+        "contracts": [
+          "python/disco/metadata/KEEP.md"
+        ],
+        "changes": {
+          "canonical_summary": "Ordinary filters with plain core mappings, captured transitive reader methods, no curation provider and readonly binding readers for all protocols reuse one fresh query and one decorated scope within the summary call. Current protocol cell membership uses that same result; other protocol memberships still read fresh. Count dictionaries remain independent.",
+          "fallback": "Custom methods/providers/mappings, foreign mutable frozen binding fallbacks, curation providers and metadata/tag filters retain legacy read order, errors and public response shape. The public cell-summary signature and bin-before-provider order remain unchanged.",
+          "authority": "No API full-state oracle, independent epoch-page/closing check, transaction, receipt, cross-request cache or process garbage-collector policy is changed."
+        },
+        "qualification": "Independent source review and 79 focused source tests passed. Ordinary performance, native behavior and packaged-app qualification are not asserted by this adoption record."
+      }
+    ]
   },
   "review_scenarios": [
     {

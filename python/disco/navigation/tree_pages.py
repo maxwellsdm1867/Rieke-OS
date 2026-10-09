@@ -303,7 +303,7 @@ class TreePages:
             return self._build_scope(body)
         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
         structural = _structural_scope(body)
-        if structural and not _structural_contract(service):
+        if not _structural_contract(service):
             # An unproven policy cannot reuse a native membership/cache key.
             return self._build_scope(body)
         protocol = body.get('protocol_uuid')
@@ -317,7 +317,7 @@ class TreePages:
         # place without replacing service.protocols. Frozen binding headers are
         # immutable; other scopes compare their exact UUID sequence on each hit.
         membership = (tuple(member['uuid'] for member in service.protocols[protocol]['result']['epochs'])
-                      if structural and protocol and binding is None else None)
+                      if protocol and binding is None else None)
         generation = (id(index), index.generation, id(service.rows),
                       id(service._fingerprints), id(service.protocols))
         base_bytes = sys.getsizeof(service._fingerprints) + TREE_SCOPE_CACHE_OVERHEAD
@@ -379,9 +379,14 @@ class TreePages:
             scoped_generation = generation(service, scoped_context)
         index = getattr(service, 'disk_index', None)
         from disco.metadata.disk_index import DiskMetadataIndex
-        structural = (isinstance(index, DiskMetadataIndex) and _structural_scope(body)
-                      and _structural_contract(service))
-        if structural and protocol:
+        canonical_index = isinstance(index, DiskMetadataIndex) and _structural_contract(service)
+        structural = canonical_index and _structural_scope(body)
+        # Recorded/joint splits still project their exact typed values below.
+        # Only membership can borrow basic rows: custom and frozen adapters keep
+        # their public reader, as do live annotation/metadata-filter policies.
+        raw_membership = canonical_index and not any(field in filters for field in (
+            'tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
+        if raw_membership and protocol:
             # Tree summaries have no curation fields. Use the same checked raw
             # membership as the bounded epoch endpoint; only leaf annotations
             # are subsequently fetched for the displayed page.

@@ -39,9 +39,9 @@ for(const mainState of ['pending','failed'])test(`Workbench queue loads while th
   assert.ok(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A/workbench?limit=20'));
   assert.equal(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A?tag=saved-main-filter'),false,'incoming scope does not need a filtered main summary');
   assert.equal(h.fixture.requests.some(r=>r.method!=='GET'),false,'opening the empty queue never changes scientific state');
-  if(mainState==='pending')assert.ok(h.fixture.pending.size>0,'Workbench became ready before the main summary completed');
+  assert.equal(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A'),false,'Workbench never starts the hidden main summary');
   await h.act(()=>h.root.findByProps({'aria-label':'Inspect'}).props.onClick());
   assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
-  assert.equal(h.root.findAllByType('workflow-viewer').length,0,'main Inspector retains its summary readiness gate');
+  assert.equal(h.root.findAllByType('workflow-viewer').length,0,'main Inspector requires its compact entry readiness gate');
  }finally{release();await h.settle(10);await h.close();}
 });

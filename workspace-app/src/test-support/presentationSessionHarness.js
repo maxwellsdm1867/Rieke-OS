@@ -31,7 +31,7 @@ export async function createPresentationSessionHarness({route={page:'overview',k
   if(path==='/protocol-suggestions')return {suggestions:[{protocol_uuid:'protocol-A',candidate_revision_uuid:'candidate',status:'pending',diff_counts:{added:1,removed:0,changed:0}}]};
   if(path==='/workbench/summary')return {workbench_counts:[]};
   if(path==='/jobs')return {jobs:[]};
-  if(/^\/protocols\/protocol-[AB]$/.test(path))return {definition:{protocol_uuid:path.split('/').at(-1),name:'Fixture protocol'},binding:{revision_uuid:'binding'},cells:[],counts:{epochs:0,cells:0,included:0},filters:{},source_eligibility:{}};
+  if(/^\/protocols\/protocol-[AB]$/.test(path))return {definition:{protocol_uuid:path.split('/').at(-1),name:'Fixture protocol'},binding:{revision_uuid:'binding'},query_revision:'query',expected_binding_version:1,cells:[],counts:{epochs:0,cells:0,included:0},filters:{},source_eligibility:{}};
   if(/^\/protocols\/protocol-[AB]\/workbench$/.test(path))return {contract_version:1,queue_revision:'queue',pending_epoch_count:0,pending_cell_count:0,candidates:[],capabilities:{cumulative_pending_browse:true,frozen_browse:true,drafts:true,additive_accept:true,incoming_export:true}};
   throw Error(`Unexpected presentation request: ${path}`);
  }

@@ -19,3 +19,9 @@ test('source merge consent cannot be restored, retargeted or claimed twice',()=>
  assert.equal(createIncomingMergeIntents().claim(intent,'project','p'),false);assert.equal(ledger.claim({...intent,source_sha256:'other'},'project','p'),false);
  const next=ledger.issue('project','p',options);assert.equal(ledger.claim(next,'project','p'),true);assert.equal(ledger.claim(next,'project','p'),false);
 });
+
+ test('source hold keeps row paging when fresh context advertises ID-only selection',async()=>{
+ const paths=[];
+ const ids=await loadImportedSelection({root,context:{...context,list_selection:true,expected_binding_version:4},sourceSha256:'new-source',request:async(path,options)=>{paths.push(path);assert.equal(options.method,undefined);assert.match(path,/\/epochs\?/);return page;}});
+ assert.deepEqual(ids,['new']);assert.equal(paths.length,1);
+ });

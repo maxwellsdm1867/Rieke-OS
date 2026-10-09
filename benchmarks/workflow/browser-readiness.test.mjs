@@ -282,3 +282,73 @@ test('observer sends lightweight timing header only when enabled and keeps actio
     assert.equal(calls[2].headers.get('X-Disco-Timing'),null);
   }
 });
+
+function combinedPrepared(t,{returning=false}={}){
+  const fixture=prepared(t),{w,spec}=fixture;
+  const saved=w.incomingSession.prepared;
+  saved.root='/protocols/protocol/workbench/candidates/candidate';saved.actor='actor';
+  Object.assign(saved.context,{publication_blocked:false,candidate_revision_uuid:'candidate',candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:2,
+    generation:{metadata:'metadata',binding:'binding'},protocol:{definition:{protocol_uuid:'protocol',project_uuid:'project'},query_revision:'scope',expected_binding_version:2}});
+  const bootstrap={contract_version:1,kind:'workbench_initial_page',root:saved.root,actor:'actor',protocol_uuid:'protocol',project_uuid:'project',candidate_revision_uuid:'candidate',
+    request:{filters:{},offset:0,limit:60,include_cells:true},context:structuredClone(saved.context),
+    page:{candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:2,generation:{metadata:'metadata',binding:'binding'},total:1,offset:0,limit:60,epochs:[{epoch_uuid:'a',cell_uuid:'cell'}],cells:[{cell_uuid:'cell',epochs:1}]}};
+  w.requests.splice(1);
+  Object.assign(w.requests[0],{start:0,end:1,request_id:'combined',method:returning?'GET':'POST',url:returning?'/api'+saved.root+'/context?include_initial_page=true':'/api/protocols/protocol/workbench/prepare?include_initial_page=true'});
+  w.requests[0].result.bootstrap=bootstrap;
+  if(returning){delete spec.prepared;delete spec.requestPath;spec.savedPrepared={candidate_revision_uuid:'candidate',candidate_scope_revision:'scope',queue_revision:'queue'};}
+  return {...fixture,bootstrap};
+}
+
+for(const returning of [false,true])test(`combined ${returning?'return context':'prepare'} accepts the exact page after two visible observations without a fabricated request`,t=>{
+  const {w,spec}=combinedPrepared(t,{returning});
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+  assert.equal(w.requests.length,1);assert.equal(w.completed.current.captured_requests.length,1);
+  assert.match(w.completed.current.captured_requests[0].url,returning?/\/context\?/:/\/prepare\?/);
+});
+
+test('combined receipt replay keeps reuse operation and HTTP status assertions',t=>{
+  const {w,spec}=combinedPrepared(t);Object.assign(spec,{expectedReused:true,expectedOperation:'operation',expectedCandidate:'candidate',expectedPrepareStatus:200});
+  Object.assign(w.requests[0].result,{reused:true,operation_uuid:'operation'});
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),true);
+  assert.equal(w.completed.current.evidence.prepared.operation_uuid,'operation');
+});
+
+const bootstrapFaults={
+  version:b=>{b.contract_version=2;},kind:b=>{b.kind='other';},root:b=>{b.root='/other';},
+  candidate:b=>{b.candidate_revision_uuid='other';},project:b=>{b.project_uuid='other';},protocol:b=>{b.protocol_uuid='other';},actor:b=>{b.actor='other';},
+  contextCount:b=>{b.context.counts.incoming_epochs=2;},blocked:b=>{b.context.publication_blocked=true;},
+  contextCandidate:b=>{b.context.candidate_revision_uuid='other';},contextScope:b=>{b.context.candidate_scope_revision='other';},
+  contextQuery:b=>{b.context.query_revision='other';},contextProtocol:b=>{b.context.protocol.definition.protocol_uuid='other';},
+  contextBinding:b=>{b.context.expected_binding_version=3;},pageBinding:b=>{b.page.expected_binding_version=3;},
+  pageScope:b=>{b.page.candidate_scope_revision='other';},pageQuery:b=>{b.page.query_revision='other';},
+  pageGeneration:b=>{b.page.generation.metadata='other';},missingGeneration:b=>{delete b.context.generation;},
+  offset:b=>{b.page.offset=1;},limit:b=>{b.page.limit=1;},total:b=>{b.page.total=2;},truncated:b=>{b.page.epochs=[];},
+  wrongUuid:b=>{b.page.epochs[0].epoch_uuid='wrong';},unknownCell:b=>{b.page.epochs[0].cell_uuid='other';},
+  missingCells:b=>{delete b.page.cells;},wrongCellCount:b=>{b.page.cells[0].epochs=2;},
+  requestFilters:b=>{b.request.filters={cell_uuid:'other'};},requestOffset:b=>{b.request.offset=1;},requestCells:b=>{b.request.include_cells=false;},
+};
+for(const [name,mutate] of Object.entries(bootstrapFaults))test(`combined page refuses ${name}`,t=>{
+  const {spec,bootstrap}=combinedPrepared(t,{returning:true});mutate(bootstrap);
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});
+for(const fault of ['prior-action','unrelated-endpoint','wrong-candidate-endpoint'])test(`combined page cannot borrow ${fault} evidence`,t=>{
+  const {w,spec}=combinedPrepared(t,{returning:true});
+  if(fault==='prior-action')w.requests[0].action_id='previous';
+  else w.requests[0].url=fault==='unrelated-endpoint'?'/api/unrelated':'/api/protocols/protocol/workbench/candidates/other/context';
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});
+for(const fault of ['permuted','duplicate'])test(`combined first page refuses ${fault} UUIDs`,t=>{
+  const {spec,bootstrap}=combinedPrepared(t,{returning:true});spec.preparedUuids=['a','b'];bootstrap.context.counts.incoming_epochs=2;bootstrap.page.total=2;bootstrap.page.cells[0].epochs=2;
+  bootstrap.page.epochs=(fault==='permuted'?['b','a']:['a','a']).map(epoch_uuid=>({epoch_uuid,cell_uuid:'cell'}));
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});
+test('combined backend evidence cannot finish before incoming membership is rendered',t=>{
+  const {spec}=combinedPrepared(t);const query=globalThis.document.querySelector;
+  globalThis.document.querySelector=selector=>selector.includes('data-inspection-membership-ready')?null:query(selector);
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});
+
+for(const key of ['candidate_revision_uuid','candidate_scope_revision'])test(`combined context envelope refuses mismatched ${key}`,t=>{
+  const {w,spec}=combinedPrepared(t,{returning:true});w.requests[0].result[key]='other';
+  assert.equal(readiness(spec),false);assert.equal(readiness(spec),false);
+});

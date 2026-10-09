@@ -43,6 +43,17 @@ partly commit; refresh after a later failure. Durable operation UUID replay and
 uncertain request recovery keep their existing exact body/root/receipt semantics.
 No client-intent cohort key or remembered view acquires backend authority.
 
+A successful preparation response that computed and closed its context during
+that request includes `X-Disco-Workbench-Context: fresh-v1` only after its SQL
+transaction exits successfully. This covers both a new cumulative recipe and
+a new operation reusing an existing candidate. Durable receipt replay, including
+all early replay returns, does not include the header. The stored receipt and
+returned JSON body remain exact and unchanged by this signal. A renderer may
+use that one response's context for its initial display under matching local
+owner/lifetime checks; the header grants no new page, mutation or replay authority.
+The pending suite checks fresh 200/201 responses, byte-identical replay bodies,
+absent replay headers and failed-commit refusal using transactional doubles.
+
 ## Recipes and separate publication
 
 Recipes preserve canonical UUID/fingerprint membership, typed metadata, source
@@ -199,3 +210,52 @@ ancestor prefixes only within one guarded response. Target validation and the
 closing generation/scope check remain mandatory. Overridden page/scope readers
 retain independent page reads. No metadata projection or permission is shared
 across requests by this optimization.
+
+
+## Response-local recipe derivation and list selection
+
+Each context derivation owns a private recipe resolver. Only the existing pinned
+canonical ExplorerHistory readers can share a fully verified detached recipe and
+its membership map within that derivation. Dependency discovery is outside this
+scope; closing context creates a new resolver and freshly verifies all recipes,
+including current main rather than treating the binding's UUID cache as storage
+authority. Custom readers retain direct calls. Nested reads and exceptions restore
+the previous context; no recipe or derived map is reused across context boundaries.
+This reduces repeated work but remains linear in frozen membership.
+
+Context advertises `list_selection: true`. POST `list-selection` receives the
+current candidate scope, filters, and an ordered list of unique cells with exact
+nonnegative epoch counts totaling at most 1,000. One guarded read uses the existing
+bounded page reader (including custom overrides) to enumerate each requested cell
+in its usual chronology, refuses partial/wrong-cell/duplicate/mismatched pages,
+and returns the exact per-cell and flattened UUID order after an independent
+closing check. Empty selection returns empty IDs; an incorrect zero cell count
+still refuses. No draft, annotation, merge or export state changes. Renderer
+selection verifies counts, per-cell order, flattened identity equality, candidate
+scope, binding and cancellation before publishing; older contexts retain paging.
+
+## Optional context and first-page response
+
+Queue capability `initial_page: true` supports the strictly boolean URL option
+`include_initial_page=true` on GET candidate `context` and POST protocol `prepare`.
+The prepare body, request hash, operation UUID and durable receipt are unchanged.
+Default responses retain their existing shape. Opt-in responses keep their normal
+top-level fields and add a response-only `bootstrap` containing current context,
+actor/project/protocol/candidate/root identity, requested filters, and the ordinary
+60-row initial epoch page with exact cell counts. The existing protocol/page readers
+are used, including custom overrides; both outputs share one opening generation
+and independent closing check. No global or cross-request projection is reused.
+
+Fresh preparation builds that page beside the context before the existing closing
+transaction checks, then publishes only after successful commit. All replay paths
+construct a new guarded bootstrap, including a receipt found after transaction
+entry using the captured locked authority. They retain the original receipt's
+body and never gain `fresh-v1`. The bootstrap is attached to a new response object;
+neither stored receipt nor its nested context is mutated. Thus historic receipt
+scope and fresh bootstrap scope may differ deliberately. Existing exact receipt
+recovery remains available without the option. Failed closing checks or commits
+publish neither context/page bundle nor freshness signal.
+
+The pending tests cover fresh/ordinary/replay equivalence, changed-draft replay,
+transaction-race replay, native token refusal and failed commit. Workbench tests
+compare bundled context/page with independent fresh reads and reject closing changes.

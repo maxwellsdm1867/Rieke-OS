@@ -142,6 +142,52 @@ class StructuralNavigationTests(unittest.TestCase):
                     self.pager.page({**body, 'revision':root['revision']})
                 self.assertEqual(self.pager.page({**body, 'anchor_uuid':chosen[0]})['count'],1)
 
+    def test_metadata_membership_and_custom_policies_are_rechecked(self):
+        self.index()
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'parameters/example'}
+        for method in ('query_result', 'filtered_rows', '_tree_rows', '_filter_rows'):
+            self.pager.page(body)
+            original = getattr(self.service, method)
+            chosen = [self.service.ids[0]]
+            def custom(*args, **kwargs):
+                result = original(*args, **kwargs)
+                if method == 'query_result':
+                    result['epochs'] = [member for member in result['epochs'] if member['uuid'] in chosen]
+                    return result
+                return [row for row in result if row['epoch_uuid'] in chosen]
+            with self.subTest(method=method), patch.object(self.service, method, side_effect=custom):
+                root = self.pager.page(body)
+                self.assertEqual(root['count'], 1)
+                chosen[:] = [self.service.ids[1]]
+                with self.assertRaises(StaleTreePage):
+                    self.pager.page({**body, 'revision': root['revision']})
+                leaf = self.pager.page({**body, 'anchor_uuid': chosen[0]})
+                self.assertEqual([row['epoch_uuid'] for row in leaf['epochs']], chosen)
+        root = self.pager.page(body)
+        self.service.protocols[self.service.protocol_id]['result']['epochs'].pop()
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision': root['revision']})
+
+    def test_metadata_live_filters_and_custom_binding_keep_decorated_reader(self):
+        import cProfile
+        self.index()
+        body = {'protocol_uuid': self.service.protocol_id, 'splits': 'parameters/example'}
+        for filters, count in (({'tag': 'present'}, 0), ({'tagged': 'true'}, 0),
+                ({'tag_predicate': '{"all":[]}'}, 2), ({'metadata_predicate': '{"all":[]}'}, 2)):
+            profile = cProfile.Profile()
+            with profile:
+                page = self.pager.page({**body, 'filters': filters})
+            self.assertEqual(page['count'], count)
+            self.assertGreater(sum(entry.callcount for entry in profile.getstats()
+                if getattr(entry.code, 'co_name', '') == '_decorate'), 0)
+        binding = self.binding(self.service.ids[0])
+        self.service.set_binding_provider(lambda protocol: binding, header_provider=lambda protocol: None)
+        root = self.pager.page(body)
+        self.assertEqual(root['count'], 1)
+        binding['recipe']['epochs'] = [{'uuid': self.service.ids[1], 'metadata_hash': 'b'*64}]
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision': root['revision']})
+
     def test_borrowed_scope_is_reused_across_depths_and_anchor_requests(self):
         self.index()
         body = {'protocol_uuid':self.service.protocol_id, 'splits':'date,cell,block'}
