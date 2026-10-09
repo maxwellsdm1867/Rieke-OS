@@ -4,13 +4,26 @@
 const fs=require('./physical-fs.cjs').promises;
 const path=require('node:path');
 const os=require('node:os');
-const {promisify}=require('node:util');
+const {promisify,isDeepStrictEqual}=require('node:util');
 const {execFile,spawn}=require('node:child_process');
-const {createHash,randomUUID}=require('node:crypto');
+const {createHash,randomUUID,randomBytes}=require('node:crypto');
 const runFile=promisify(execFile);
-const {APP_ID,enclosingApp,bundleDigest,installCompleteBundle,readBundleManifest,compatibleManifest,assertNotRunning,verifyTestingBundle}=require('./bootstrap.cjs');
+const {APP_ID,enclosingApp,bundleDigest,installCompleteBundle,compatibleManifest,assertNotRunning,verifyTestingBundle}=require('./bootstrap.cjs');
 const {compareVersions,stableVersion,verifyResources}=require('./updater-validation.cjs');
 const READY='RIEKE_TESTING_INSTALL_READY=';
+const PROGRESS='RIEKE_TESTING_INSTALL_PROGRESS=';
+const PROGRESS_PHASES=new Set(['validate-prepared','wait-parent-exit','validate-after-exit','replace-bundle','save-rollback-receipt','request-launch','restore-previous']);
+async function boundedDisplay(action){
+ let timer;
+ try{await Promise.race([Promise.resolve().then(action),new Promise(resolve=>{timer=setTimeout(resolve,500);})]);}catch{}
+ finally{clearTimeout(timer);}
+}
+function failureDetails(error){
+ const bounded=value=>String(value||'').replace(/[\x00-\x08\x0b-\x1f\x7f]/g,'').slice(0,4096);
+ return {error:bounded(error.message)||'Testing update could not complete.',error_type:bounded(error.name),
+  activation_failure:error.activationFailure||null,previous_path:error.previousPath||null,failed_candidate_path:error.failedCandidatePath||null,phases:error.updatePhases||[],phase:bounded(error.updatePhase)||'unknown',code:bounded(error.code)||null,stderr:bounded(error.stderr)||null};
+}
+
 async function sha256(file){
  const digest=createHash('sha256'),handle=await fs.open(file,'r');
  try{for await(const chunk of handle.createReadStream())digest.update(chunk);}finally{await handle.close();}
@@ -50,7 +63,7 @@ async function atomicPrivateJSON(file,value){
  try{await fs.rename(temporary,file);const directory=await fs.open(path.dirname(file),'r');try{await directory.sync();}finally{await directory.close();}}
  finally{await fs.rm(temporary,{force:true});}
 }
-async function validatePrepared({receiptPath,currentExecutable,run=runFile,requireParent=true}){
+async function loadPreparedContext({receiptPath,currentExecutable}){
  const receipt=await privateReceipt(receiptPath);
  const restoring=receipt.operation==='restore';
  if(receipt.operation!==undefined&&!['update','restore'].includes(receipt.operation))throw new Error('Unsigned testing operation is invalid');
@@ -61,7 +74,7 @@ async function validatePrepared({receiptPath,currentExecutable,run=runFile,requi
  if(path.basename(cache)!=='unsigned-testing'||path.basename(path.dirname(cache))!=='updates')throw new Error('Update cache does not belong to the current application profile');
  const userData=path.dirname(path.dirname(cache)),profile=await fs.lstat(userData);
  if(profile.isSymbolicLink()||!profile.isDirectory()||profile.uid!==process.getuid())throw new Error('Current application profile ownership differs');
- let bundle;
+ let bundle,archive=null;
  if(restoring){
   const prior=await privateReceipt(path.join(cache,'previous.json'),{previous:true});
   const expected=path.join(path.dirname(installed),'.Rieke OS.previous.app');
@@ -69,32 +82,56 @@ async function validatePrepared({receiptPath,currentExecutable,run=runFile,requi
   if(info.isSymbolicLink()||!info.isDirectory()||info.uid!==process.getuid()||await fs.realpath(receipt.bundle_path)!==expected||prior.previous_path!==expected||prior.install_path!==installed||prior.current_version!==receipt.current_version||prior.previous_version!==receipt.target_version||prior.previous_bundle_sha256!==receipt.bundle_sha256||prior.previous_manifest_sha256!==receipt.runtime_manifest_sha256)throw new Error('Restore does not identify the retained verified previous app');
   bundle=expected;
  }else{
-  const archive=await ownedCachePath(receipt.archive_path,cache);
+  archive=await ownedCachePath(receipt.archive_path,cache);
   bundle=await ownedCachePath(receipt.bundle_path,cache,{directory:true});
-  if(await sha256(archive)!==receipt.archive_sha256)throw new Error('Prepared update archive or bundle checksum differs');
+  const candidateDirectory=path.dirname(bundle);
+  if(path.dirname(candidateDirectory)!==cache||!/^candidate-[a-zA-Z0-9]{6}$/.test(path.basename(candidateDirectory))||!['Disco.app','Rieke OS.app'].includes(path.basename(bundle)))throw new Error('Prepared application must be directly inside its private candidate cache');
+  for(const directory of [cache,candidateDirectory]){
+   const info=await fs.lstat(directory);
+   if(!info.isDirectory()||info.isSymbolicLink()||info.uid!==process.getuid()||(info.mode&0o077)||await fs.realpath(directory)!==directory)throw new Error('Prepared cache paths must be private owned directories without links');
+  }
  }
- if(await bundleDigest(bundle)!==receipt.bundle_sha256)throw new Error('Prepared update archive or bundle checksum differs');
  const manifestPath=path.join(bundle,'Contents/Resources/runtime/runtime-manifest.json');
  const currentPath=path.join(installed,'Contents/Resources/runtime/runtime-manifest.json');
- if(await sha256(manifestPath)!==receipt.runtime_manifest_sha256||await sha256(currentPath)!==receipt.current_manifest_sha256)throw new Error('Prepared update or installed runtime manifest differs');
- const current=await readBundleManifest(installed),candidate=await readBundleManifest(bundle);
+ const candidateBytes=await fs.readFile(manifestPath),currentBytes=await fs.readFile(currentPath);
+ if(createHash('sha256').update(candidateBytes).digest('hex')!==receipt.runtime_manifest_sha256||createHash('sha256').update(currentBytes).digest('hex')!==receipt.current_manifest_sha256)throw new Error('Prepared update or installed runtime manifest differs');
+ const current=JSON.parse(currentBytes.toString('utf8')),candidate=JSON.parse(candidateBytes.toString('utf8'));
+
  stableVersion(receipt.target_version);
  if(current.application_version!==receipt.current_version||candidate.application_version!==receipt.target_version||(!restoring&&compareVersions(receipt.target_version,receipt.current_version)<=0)||!compatibleManifest(candidate,current))throw new Error('Unsigned update version or data compatibility differs');
+ return {receipt,installed,executable,bundle,archive,cache,current,candidate,userData};
+}
+async function validatePrepared({receiptPath,currentExecutable,run=runFile,requireParent=true}){
+ const prepared=await loadPreparedContext({receiptPath,currentExecutable});
+ const {receipt,installed,executable,bundle,current,candidate}=prepared;
+ if(receipt.operation!=='restore'&&await sha256(prepared.archive)!==receipt.archive_sha256)throw new Error('Prepared update archive or bundle checksum differs');
+ if(await bundleDigest(bundle,{runtimeManifest:candidate,runtimeManifestSha256:receipt.runtime_manifest_sha256})!==receipt.bundle_sha256)throw new Error('Prepared update archive or bundle checksum differs');
  await verifyResources(path.join(installed,'Contents/Resources/runtime'),current.resources);
- await verifyResources(path.join(bundle,'Contents/Resources/runtime'),candidate.resources);
  await verifyTestingBundle(bundle,run);
  await require('./install-name.cjs').assertBundleDestination(bundle,installed,run);
  if(requireParent){
   const identity=await processCreationIdentity(receipt.current_pid,executable,run);
   if(!identity.alive||identity.created_at!==receipt.current_created_at||await fs.realpath(identity.executable)!==executable)throw new Error('Current app process ownership changed');
  }
- return {receipt,installed,executable,bundle,cache,current,candidate,userData};
+ return prepared;
 }
-async function applyTestingInstall({receiptPath,currentExecutable=process.execPath,run=runFile,publishReady=packet=>process.stdout.write(READY+JSON.stringify(packet)+'\n'),timeoutMs=90000,pollMs=200}){
- const prepared=await validatePrepared({receiptPath,currentExecutable,run});
+async function applyTestingInstall({receiptPath,currentExecutable=process.execPath,run=runFile,publishReady=packet=>process.stdout.write(READY+JSON.stringify(packet)+'\n'),publishProgress=()=>{},onPrepared=()=>{},timeoutMs=90000,pollMs=200}){
+ const started=Date.now(),phases=[];
+ async function stage(name,action){
+  const start=Date.now();
+  await boundedDisplay(()=>publishProgress({pid:process.pid,phase:name})); // Display has a bounded wait and no authority.
+  try{return await action();}catch(error){error.updatePhase ||= name;error.updatePhases=phases;throw error;}
+  finally{phases.push({phase:name,elapsed_ms:Date.now()-start});}
+ }
+ const prepared=await stage('validate-prepared',()=>validatePrepared({receiptPath,currentExecutable,run}));
  const {receipt,installed,executable,bundle,cache,current,userData}=prepared;
+ await boundedDisplay(()=>onPrepared(prepared)); // A missing progress window cannot prevent safe installation.
  const openArguments=['-n','-a',installed,'--env','HOME='+os.homedir(),'--args','--user-data-dir='+userData];
+ // macOS open inherits this process's environment. The helper's Node mode must
+ // never reach the GUI it launches, including a restored previous version.
+ const launchEnvironment={...process.env};delete launchEnvironment.ELECTRON_RUN_AS_NODE;
  publishReady({pid:process.pid,current_pid:receipt.current_pid,version:receipt.target_version,archive_sha256:receipt.archive_sha256});
+ await stage('wait-parent-exit',async()=>{
  const deadline=Date.now()+timeoutMs;
  for(;;){
   const identity=await processCreationIdentity(receipt.current_pid,executable,run);
@@ -103,50 +140,87 @@ async function applyTestingInstall({receiptPath,currentExecutable=process.execPa
   if(Date.now()>=deadline)throw new Error('Current app exit was not acknowledged; installation deferred');
   await new Promise(resolve=>setTimeout(resolve,pollMs));
  }
- // Cached data is checked again after actual exit, before touching installation.
- await validatePrepared({receiptPath,currentExecutable,run,requireParent:false});
- const priorDigest=await bundleDigest(installed);
- const result=await installCompleteBundle({source:bundle,destination:installed,distribution:{channel:'unsigned-testing'},expectedBundleSha256:receipt.bundle_sha256,run,allowRollback:true,ignorePid:process.pid});
- await atomicPrivateJSON(path.join(cache,'previous.json'),{format:'rieke-unsigned-testing-previous',version:1,channel:'unsigned-testing',identifier:APP_ID,
+ });
+ // Rebind the same operation after exit. Bootstrap owns the single fresh
+ // source/current validation and final staged-byte proof before replacement.
+ const afterExit=await stage('validate-after-exit',async()=>{
+  const value=await loadPreparedContext({receiptPath,currentExecutable});
+  if(!isDeepStrictEqual(value.receipt,receipt))throw new Error('Update receipt changed after readiness');
+  for(const field of ['installed','executable','bundle','archive','cache','userData'])
+   if(value[field]!==prepared[field])throw new Error('Prepared update resolved paths changed after readiness');
+  if(receipt.operation!=='restore'&&await sha256(value.archive)!==receipt.archive_sha256)throw new Error('Prepared update archive or bundle checksum differs');
+  return value;
+ });
+ const result=await stage('replace-bundle',()=>installCompleteBundle({source:afterExit.bundle,destination:afterExit.installed,distribution:{channel:'unsigned-testing'},expectedBundleSha256:receipt.bundle_sha256,
+  expectedCurrentManifestSha256:receipt.current_manifest_sha256,retainPreviousDigest:true,
+  ...(receipt.operation==='restore'?{}:{preparedCache:afterExit.cache}),run,allowRollback:true,ignorePid:process.pid}));
+ const priorDigest=result.previousDigest;
+ try{
+ await stage('save-rollback-receipt',()=>atomicPrivateJSON(path.join(cache,'previous.json'),{format:'rieke-unsigned-testing-previous',version:1,channel:'unsigned-testing',identifier:APP_ID,
   install_path:installed,previous_path:result.previous,previous_version:current.application_version,previous_bundle_sha256:priorDigest,
-  previous_manifest_sha256:receipt.current_manifest_sha256,current_version:receipt.target_version});
- try{await run('/usr/bin/open',openArguments);}
+  previous_manifest_sha256:receipt.current_manifest_sha256,current_version:receipt.target_version}));
+ await stage('request-launch',()=>run('/usr/bin/open',openArguments,{env:launchEnvironment}));
+ }
  catch(error){
-  // A refused launch may be Gatekeeper. Preserve its attributes and return to
+  const activationFailure={phase:error.updatePhase,error:error.message};
+  let priorRestored=false,failed=null;
+  // Receipt persistence and launch are both part of activation. Preserve attributes and return to
   // the verified previous app; never clear quarantine or suppress OS approval.
+  try{
+  await boundedDisplay(()=>publishProgress({pid:process.pid,phase:'restore-previous'}));
   if(!result.previous||await bundleDigest(result.previous)!==priorDigest)throw error;
   await assertNotRunning(installed,run,process.pid);
-  const failed=path.join(cache,'failed-candidate-'+randomUUID()+'.app');
+  // Keep both renames on the installation volume even when the cache lives elsewhere.
+  failed=path.join(path.dirname(installed),'.Rieke OS.failed-candidate-'+randomUUID()+'.app');
   await fs.rename(installed,failed);
-  try{await fs.rename(result.previous,installed);}catch(rollbackError){await fs.rename(failed,installed);throw rollbackError;}
+  try{await fs.rename(result.previous,installed);priorRestored=true;}catch(rollbackError){await fs.rename(failed,installed);throw rollbackError;}
   if(await bundleDigest(installed)!==priorDigest)throw new Error('Restored previous application checksum differs');
   await fs.rm(path.join(cache,'previous.json'),{force:true});
-  await run('/usr/bin/open',openArguments);
-  const outcome={state:'Restored',destination:installed,version:current.application_version,failedCandidateRetained:true};
+  await run('/usr/bin/open',openArguments,{env:launchEnvironment});
+  const outcome={state:'Restored',destination:installed,version:current.application_version,failedCandidateRetained:true,failure:failureDetails(error),phases,elapsed_ms:Date.now()-started};
   await atomicPrivateJSON(receiptPath+'.result.json',outcome);return outcome;
+  }catch(recoveryError){recoveryError.updatePhase='restore-previous';recoveryError.activationFailure=activationFailure;recoveryError.previousPath=priorRestored?installed:result.previous;recoveryError.failedCandidatePath=priorRestored?failed:null;throw recoveryError;}
  }
- const outcome={state:receipt.operation==='restore'?'Restored':'Installed',destination:installed,previous:result.previous,version:receipt.target_version};
+ const outcome={state:receipt.operation==='restore'?'Restored':'Installed',destination:installed,previous:result.previous,version:receipt.target_version,launch_requested:true,phases,elapsed_ms:Date.now()-started};
  await atomicPrivateJSON(receiptPath+'.result.json',outcome);
  return outcome;
 }
-async function launchTestingInstall({receiptPath,currentExecutable=process.execPath,currentPid=process.pid,run=runFile,spawnHelper=spawn,readyTimeoutMs=150000}){
- const prepared=await validatePrepared({receiptPath,currentExecutable,run});
+async function privateReceiptResult(file){
+ const stat=await fs.lstat(file);
+ if(!stat.isFile()||stat.isSymbolicLink()||stat.uid!==process.getuid()||(stat.mode&0o077)||stat.size>65536)throw new Error('Invalid helper result');
+ return JSON.parse(await fs.readFile(file,'utf8'));
+}
+async function launchTestingInstall({receiptPath,currentExecutable=process.execPath,currentPid=process.pid,run=runFile,spawnHelper=spawn,readyTimeoutMs=150000,onProgress=()=>{}}){
+ // The child performs full validation before its readiness acknowledgement.
+ // Do not repeat that multi-gigabyte scan in the parent just before spawning it.
+ const prepared=await loadPreparedContext({receiptPath,currentExecutable});
  if(prepared.receipt.current_pid!==currentPid||!path.resolve(__filename).startsWith(prepared.installed+path.sep))throw new Error('Install helper must originate from this exact current app');
+ const identity=await processCreationIdentity(currentPid,prepared.executable,run);
+ if(!identity.alive||identity.created_at!==prepared.receipt.current_created_at||await fs.realpath(identity.executable)!==prepared.executable)throw new Error('Current app process ownership changed');
  const script=path.join(__dirname,'testing-install.cjs');
+ const resultPath=receiptPath+'.result.json';
+ try{await privateReceiptResult(resultPath);await fs.rm(resultPath);}catch(error){if(error.code!=='ENOENT')throw error;}
  const child=spawnHelper(prepared.executable,[script,'--apply',receiptPath],{detached:true,stdio:['ignore','pipe','pipe'],cwd:prepared.cache,
   env:{HOME:process.env.HOME,TMPDIR:process.env.TMPDIR,LANG:process.env.LANG||'en_US.UTF-8',PATH:'/usr/bin:/bin',ELECTRON_RUN_AS_NODE:'1'}});
- const resultPath=receiptPath+'.result.json';
  await new Promise((resolve,reject)=>{
   let buffer='',done=false;
   const timer=setTimeout(()=>finish(new Error('Install helper readiness was not acknowledged; current app stays open')),readyTimeoutMs);
   const finish=error=>{if(done)return;done=true;clearTimeout(timer);if(error)reject(error);else resolve();};
-  child.once('error',finish);child.once('exit',()=>finish(new Error('Install helper exited before readiness acknowledgement')));
+  child.once('error',finish);child.once('exit',async()=>{
+   let detail;
+   try{detail=await privateReceiptResult(resultPath);}catch{}
+   finish(new Error(detail?.error ? `Install helper failed (${detail.phase||'unknown'}): ${detail.error}` : 'Install helper exited before readiness acknowledgement'));
+  });
   child.stderr?.on('data',()=>{});
   child.stdout.on('data',chunk=>{
    buffer+=chunk.toString('utf8');if(buffer.length>65536)return finish(new Error('Install helper readiness packet exceeded bounds'));
    let end;
    while((end=buffer.indexOf('\n'))>=0){
     const line=buffer.slice(0,end);buffer=buffer.slice(end+1);
+    if(line.startsWith(PROGRESS)){
+     try{const packet=JSON.parse(line.slice(PROGRESS.length));if(packet.pid===child.pid&&PROGRESS_PHASES.has(packet.phase))Promise.resolve(onProgress({phase:packet.phase})).catch(()=>{});}catch{}
+     continue;
+    }
     if(!line.startsWith(READY))continue;
     try{const packet=JSON.parse(line.slice(READY.length));
      if(packet.pid!==child.pid||packet.current_pid!==currentPid||packet.version!==prepared.receipt.target_version||packet.archive_sha256!==prepared.receipt.archive_sha256)throw new Error('Install helper readiness identity differs');
@@ -180,11 +254,32 @@ async function restoreTestingPriorBundle({app,manifest,prepareQuit,authorizeQuit
 async function main(){
  if(process.env.ELECTRON_RUN_AS_NODE!=='1'||process.argv[2]!=='--apply'||process.argv.length!==4)throw new Error('Install helper invocation is invalid');
  const receiptPath=process.argv[3];
- try{await applyTestingInstall({receiptPath});}
+ // This process outlives the parent's stdout pipe. Broken display transport is
+ // not an installation error and must not interrupt bundle replacement.
+ process.stdout.on('error',()=>{});
+ let reporter=null,heartbeat=null,progressPath=null,record=null,writes=Promise.resolve(),observerClosed=false;
+ const persist=()=>{if(!progressPath||!record)return Promise.resolve();const snapshot={...record,updated_at:new Date().toISOString()};writes=writes.catch(()=>{}).then(()=>atomicPrivateJSON(progressPath,snapshot)).catch(()=>{});return writes;};
+ try{
+  const outcome=await applyTestingInstall({receiptPath,
+   publishProgress:packet=>{try{process.stdout.write(PROGRESS+JSON.stringify(packet)+'\n');}catch{}if(record){record.phase=packet.phase;void persist();}},
+   onPrepared:async prepared=>{
+    const operationId=path.basename(receiptPath,'.json'),capability=randomBytes(32).toString('hex');
+    progressPath=path.join(prepared.cache,operationId+'.json.progress.json');
+    record={format:'rieke-unsigned-testing-progress',version:1,operation_id:operationId,capability,helper_pid:process.pid,state:'Running',phase:'wait-parent-exit',progress:null};
+    await persist();
+    if(observerClosed)return;
+    reporter=require('./testing-install-progress.cjs').launchProgressReporter({progressPath,operationId,capability,
+     onError:()=>{record.observer_error='PROGRESS_UNAVAILABLE';void persist();}});
+    heartbeat=setInterval(()=>{void persist();},10000);heartbeat.unref();
+   }});
+  if(record){record.state=outcome.state;await boundedDisplay(persist);}
+ }
  catch(error){
-  try{await privateReceipt(receiptPath);await atomicPrivateJSON(receiptPath+'.result.json',{state:'Deferred',error:'Testing update could not complete; installation and macOS protections were preserved.',error_type:error.name});}catch{}
+  try{await privateReceipt(receiptPath);await atomicPrivateJSON(receiptPath+'.result.json',{state:'Deferred',...failureDetails(error)});}catch{}
+  if(record){record.state='Deferred';await boundedDisplay(persist);}
   process.exitCode=1;
  }
+ finally{observerClosed=true;if(heartbeat)clearInterval(heartbeat);await boundedDisplay(()=>writes);await boundedDisplay(()=>reporter?.close());}
 }
 if(require.main===module)main().catch(()=>{process.exitCode=1;});
 module.exports={processCreationIdentity,applyTestingInstall,launchTestingInstall,restoreTestingPriorBundle,sha256,bundleDigest};

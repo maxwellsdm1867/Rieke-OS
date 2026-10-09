@@ -39,7 +39,16 @@ async function hashFile(file,algorithm='sha256'){
 async function verifyArchive(file,descriptor){
   const info=await fs.lstat(file);
   if(!info.isFile()||info.isSymbolicLink()||info.uid!==process.getuid()||info.size!==descriptor.archive.size)throw new Error('Prepared archive size or ownership changed.');
-  if(await hashFile(file)!==descriptor.archive.sha256||await hashFile(file,'sha512')!==descriptor.archive.sha512)throw new Error('Testing archive checksum failed.');
+  const handle=await fs.open(file,constants.O_RDONLY|constants.O_NOFOLLOW);
+  try{
+    const opened=await handle.stat();
+    if(!opened.isFile()||opened.uid!==process.getuid()||opened.size!==descriptor.archive.size||opened.dev!==info.dev||opened.ino!==info.ino)throw new Error('Prepared archive size or ownership changed.');
+    // Both descriptor digests cover the same bytes from one physical read.
+    const sha256=crypto.createHash('sha256'),sha512=crypto.createHash('sha512');
+    let size=0;
+    for await(const chunk of handle.createReadStream({autoClose:false})){size+=chunk.length;sha256.update(chunk);sha512.update(chunk);}
+    if(size!==descriptor.archive.size||sha256.digest('hex')!==descriptor.archive.sha256||sha512.digest('base64')!==descriptor.archive.sha512)throw new Error('Testing archive checksum failed.');
+  }finally{await handle.close();}
 }
 async function ensurePrivateCache(userData){
   await fs.mkdir(userData,{recursive:true,mode:0o700});
@@ -98,12 +107,16 @@ async function inspectTestingBundle({bundle,descriptor,manifest,hostVersion,run=
   const sourcePath=await regularContained(bundle,'Contents/Resources/runtime/application/python/workspace-source.json');
   const release=JSON.parse(await fs.readFile(releasePath,'utf8')),source=JSON.parse(await fs.readFile(sourcePath,'utf8'));
   if(release.version!==candidate.application_version||release.database_compatibility!==candidate.database_compatibility||JSON.stringify(release.workspace_formats)!==JSON.stringify(candidate.workspace_formats)||source.commit!==candidate.parser_commit||source.python!==candidate.python_version)throw new Error('Runtime compatibility differs from application declarations.');
-  await verifyResources(runtime,candidate.resources);
+  const builtinDigest=require('../testing-install.cjs').bundleDigest;
+  bundleDigest||=builtinDigest;
+  // The built-in scanner verifies resources against the same bytes used for the
+  // whole-bundle digest. Injected digest implementations retain the independent check.
+  if(bundleDigest!==builtinDigest)await verifyResources(runtime,candidate.resources);
   // Structural integrity accepts an ad-hoc testing seal; this is not a
   // Developer ID, notarization, or Gatekeeper authorization assertion.
   await run('/usr/bin/codesign',['--verify','--deep','--strict',bundle],{timeout:180000});
-  bundleDigest||=require('../testing-install.cjs').bundleDigest;
-  return {version:descriptor.application_version,bundle_path:bundle,bundle_sha256:await bundleDigest(bundle),runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true,source_dirty:candidate.source_dirty,trust:'official-repository-https-checksums',developer_id_verified:false,native_staging_verified:false,startup_health_verified:false};
+  const digest=bundleDigest===builtinDigest?await bundleDigest(bundle,{runtimeManifest:candidate,runtimeManifestSha256:descriptor.runtime_manifest_sha256}):await bundleDigest(bundle);
+  return {version:descriptor.application_version,bundle_path:bundle,bundle_sha256:digest,runtime_manifest_sha256:descriptor.runtime_manifest_sha256,validated:true,source_dirty:candidate.source_dirty,trust:'official-repository-https-checksums',developer_id_verified:false,native_staging_verified:false,startup_health_verified:false};
 }
 async function validateTestingCandidate({downloadedFile,descriptor,manifest,cacheDirectory,installedBundle,hostVersion,run=runFile,bundleDigest}){
   require('../install-name.cjs').assertInstallNameCompatible(descriptor.archive.filename.startsWith('Disco-')?'Disco':'Rieke OS',installedBundle);

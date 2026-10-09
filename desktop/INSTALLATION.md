@@ -81,3 +81,63 @@ physical ASAR, normal replacement/rollback/reopen and scientific app acceptance
 remain separately reviewed gates. Read [macOS policy](../docs/dev/macos-compatibility.md),
 [benchmarks](../docs/dev/benchmarks.md) and [registry](../benchmarks/registry.json).
 No performance, power-loss, native compatibility or release qualification follows.
+
+## Updater failure recovery audit (2026-10-09)
+
+Complete-bundle replacement now restores the retained app when verification of
+its replacement fails after activation, including the final signature check. A
+failed first installation removes the rejected canonical destination. Failure to
+publish the testing rollback receipt is covered by the same restoration path as
+launch refusal. These are exception-recovery guarantees, not power-loss recovery.
+
+Testing helper results record bounded failure message/code/stderr and phase,
+along with completed phase durations. Helper startup failures surface the private
+result's reason to the caller. Successful `Installed` still means that macOS
+accepted the launch request (`launch_requested: true`); it does not prove the new
+process reached application readiness. Automatic early-crash rollback and durable
+crash-recoverable transaction journals remain open work.
+
+Archive SHA256 and SHA512 are computed in one file traversal. An adjacent duplicate
+unsigned source signature check is removed; validation after drain/parent exit
+and of the copied staging bundle remains required. Timing observations and native
+qualification limits belong in the separate updater audit evidence.
+
+`bundleDigest(bundle, {runtimeManifest, runtimeManifestSha256})` optionally checks
+runtime resources against the same canonical records that produce the unchanged
+whole-bundle checksum. Both the parsed manifest and the captured manifest hash
+must match the supplied raw-byte hash. Exact resource inventory, content, size,
+permissions and runtime-contained link targets are still checked. Unsigned
+candidate/source/staging checks use this shared scan; signed resource verification
+is unchanged. After actual parent exit the helper retains the current-app digest
+from its resource-validated scan, avoiding an adjacent second whole-app read.
+The initial application audit and macOS signature checks remain separate checks.
+
+The parent now admits receipt/path/process identity without repeating the child's
+full scan. The child still verifies the prepared bytes before READY. After the
+exact parent exits, resolved paths and the entire receipt must remain unchanged;
+bootstrap owns the fresh candidate/current resource and digest checks. Its
+`expectedCurrentManifestSha256` binds the old installation and
+`retainPreviousDigest` returns the verified rollback digest.
+
+For unsigned updates only, `preparedCache` permits a validated direct
+`candidate-XXXXXX/<app>` in the private cache to become staging. On the same
+filesystem it is renamed into place, avoiding copying identical bytes and a
+copied-byte scan. Cache/directory identities are checked again before replacement;
+final signature and quarantine checks remain. Cross-filesystem updates retain the
+copy-and-verify path. Rejected activated bundles return to their staging location;
+activation failures retain the failed app beside the installation so recovery
+renames stay on the installation filesystem. Explicit restore keeps its copy path.
+
+Progress is display-only. Bounded child packets update the open app without
+granting READY authority. After validated preparation, a private capability-bound
+record drives a separate macOS progress window through sanitized stdin frames.
+The observer has no install, quit or rollback capability. Missing/closed progress
+UI does not change installation decisions. Download percentage measures bytes;
+verification/install phases are indeterminate, with no claimed ETA. Terminal
+`Installed` still represents a launch request, not application readiness.
+
+Both normal and rollback relaunches explicitly remove `ELECTRON_RUN_AS_NODE`
+from the environment passed to macOS `open`. The helper needs this flag to run
+inside the packaged Electron runtime, but `open` inherits its caller's environment;
+passing the flag onward starts the new executable as Node instead of the GUI.
+The isolated native audit exposed this after successful bundle replacement.
