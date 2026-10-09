@@ -620,7 +620,8 @@ class WorkspaceService:
             if definition['project_uuid'] != project['project_uuid']:
                 raise ValueError('Protocol points to another project')
             result = evaluate_protocol_file(file,
-                catalog_connection=(self.project_dir / 'catalog.json', config, dj))
+                catalog_connection=(self.project_dir / 'catalog.json', config, dj),
+                verified_source_metadata=(rows, details))
             result.setdefault('project_uuid', project['project_uuid'])
             result.setdefault('protocol_name', definition['query']['all'][0]['value'])
             result.setdefault('source_revisions', [s['source_sha256'] for s in sources])

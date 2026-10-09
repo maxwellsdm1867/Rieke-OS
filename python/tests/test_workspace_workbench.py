@@ -1040,7 +1040,8 @@ class WorkbenchTests(unittest.TestCase):
                 if 'information_schema.tables' in sql:
                     self.answer = [(table,) for table in self.values]
                 elif sql.startswith('SHOW COLUMNS'):
-                    self.answer = [('project_uuid', 'varchar'), ('id', 'int')]
+                    self.answer = [('project_uuid', 'varchar(36)', 'NO', 'PRI', None, ''),
+                                   ('id', 'int', 'NO', 'PRI', None, '')]
                 else:
                     table = next(name for name in self.values if '`' + name + '`' in sql)
                     if sql.startswith('DELETE'):

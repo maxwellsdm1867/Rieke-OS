@@ -17,6 +17,7 @@ import uuid
 from recording_workspace import workspace_tables
 from disco.workbench.recipes import member_map, verify
 from workspace_audit import build_audit_payload
+from workspace_authored_json import write_row
 
 
 class RevisionConflict(ValueError):
@@ -379,10 +380,10 @@ class CurationStore:
             if set(recipe["source_revisions"]) != set(snapshot["source_revisions"]) or not set(
                     recipe["source_revisions"]).issubset({row["source_sha256"] for row in sources}):
                 raise ValueError("Export source revision is not registered to this project")
-            self.DatasetRevision.insert1({"project_uuid": self.project_uuid, "dataset_uuid": dataset_uuid,
+            write_row(self.DatasetRevision, {"project_uuid": self.project_uuid, "dataset_uuid": dataset_uuid,
                 "protocol_uuid": protocol_uuid, "created_at": dt.datetime.now(dt.timezone.utc).replace(tzinfo=None),
                 "actor": actor, "recipe": recipe, "artifact_path": str(path),
-                "artifact_sha256": artifact_sha256, "epoch_count": len(eligible)})
+                "artifact_sha256": artifact_sha256, "epoch_count": len(eligible)}, schema='dataset_revision')
             event_uuid = self._event(actor, "dataset_revision_exported", {
                 "protocol_uuid": protocol_uuid, "dataset_uuid": dataset_uuid,
                 "artifact_path": str(path), "artifact_sha256": artifact_sha256,

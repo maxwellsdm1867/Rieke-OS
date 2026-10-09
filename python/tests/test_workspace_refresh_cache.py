@@ -3,6 +3,7 @@ import copy
 import gc
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import tempfile
@@ -94,7 +95,7 @@ class RefreshCacheTests(unittest.TestCase):
         self.sources.insert1(record)
         return record
 
-    def evaluate(self, path, *, catalog_connection):
+    def evaluate(self, path, *, catalog_connection, verified_source_metadata=None):
         self.assertEqual(catalog_connection[:2], (self.folder/'catalog.json',
             json.loads((self.folder/'catalog.json').read_text())))
         members, cells = [], []
@@ -103,6 +104,9 @@ class RefreshCacheTests(unittest.TestCase):
             for cell, _, _, epoch in module.epochs(document):
                 members.append({'uuid': epoch['uuid'], 'metadata_hash': module._fingerprint(epoch)})
                 cells.append({'uuid': cell['uuid']})
+        # A real evaluation does not retain call-scoped lazy detail readers.
+        # Mock call history must not pin their disposable native index leases.
+        self.evaluator.call_args.kwargs.pop('verified_source_metadata', None)
         return {'epochs': members, 'cells': cells}
 
     def test_protocol_evaluation_reuses_only_the_exact_refresh_catalog(self):
@@ -137,6 +141,91 @@ class RefreshCacheTests(unittest.TestCase):
             evaluate_protocol_file(path, catalog_connection=(self.folder/'catalog.json', config, connection))
             admit.assert_called_once_with('changed')
             tables.assert_called_with(admit.return_value)
+
+    def json_catalog_fixture(self, *, rounded=False):
+        from python.tests.test_workspace_catalog_json import Witness, convert
+        records = {name: [] for name in ('Protocol','EpochBlock','EpochGroup','Cell','Epoch')}
+        records['Protocol'] = [{'protocol_id': 1, 'name': 'example'}]
+        for number, source in enumerate(self.sources.rows, 1):
+            document = json.loads(Path(source['manifest']['metadata_path']).read_text())
+            for cell, group, block, epoch in module.epochs(document):
+                records['EpochBlock'].append({'id':number,'parent_id':number,
+                    'experiment_id':source['experiment_id'],'protocol_id':1})
+                records['EpochGroup'].append({'id':number,'parent_id':number})
+                records['Cell'].append({'id':number,'h5_uuid':cell['uuid'],
+                    'label':cell['label'],'type':cell['type']})
+                metadata = {key:epoch[key] for key in ('parameters','properties','attributes')}
+                records['Epoch'].append({'id':number,'h5_uuid':epoch['uuid'],
+                    'parent_id':number,'experiment_id':source['experiment_id'],
+                    **(convert(metadata) if rounded else metadata)})
+        witness = Witness()
+        schema = types.SimpleNamespace(**{name:Table(('id',), rows=rows) for name,rows in records.items()},
+            schema=types.SimpleNamespace(connection=witness))
+        config_module = types.ModuleType('retinanalysis.config')
+        config_module.schema = schema
+        return config_module, records, witness
+
+    def test_exact_source_admission_never_reads_lazy_details_or_probes_json(self):
+        from recording_workspace import evaluate_protocol_file
+        config_module, records, witness = self.json_catalog_fixture()
+        class NoDetails:
+            def __getitem__(self, identity):
+                raise AssertionError('Exact catalog hash must not load lazy source details')
+        with patch.dict(sys.modules, {'retinanalysis.config':config_module}), \
+                patch('recording_workspace.workspace_tables',return_value=(None,self.sources,None,None)):
+            context=(self.folder/'catalog.json',json.loads((self.folder/'catalog.json').read_text()),object())
+            ordinary=evaluate_protocol_file(self.folder/'protocols/example.protocol.json',catalog_connection=context)
+            admitted=evaluate_protocol_file(self.folder/'protocols/example.protocol.json',catalog_connection=context,
+                verified_source_metadata=(self.service.rows,NoDetails()))
+            self.assertEqual(admitted,ordinary)
+            self.assertEqual(witness.calls,[])
+
+    def test_refresh_representation_proof_preserves_source_values_and_rejects_sql_tampering(self):
+        from recording_workspace import evaluate_protocol_file
+        from python.tests.test_workspace_catalog_json import VALUE, ROUNDED
+        metadata_path=Path(self.records[0]['manifest']['metadata_path'])
+        document=json.loads(metadata_path.read_text())
+        epoch=next(module.epochs(document))[3];epoch['parameters']['value']=VALUE
+        metadata_path.write_text(json.dumps(document))
+        self.records[0]['manifest']['metadata_sha256']=hashlib.sha256(metadata_path.read_bytes()).hexdigest()
+        self.sources.rows[0]['manifest']['metadata_sha256']=self.records[0]['manifest']['metadata_sha256']
+        config_module,records,witness=self.json_catalog_fixture(rounded=True)
+        identity=epoch['uuid'];expected_hash=module._fingerprint(epoch)
+        with patch.dict(sys.modules,{'retinanalysis.config':config_module}), \
+                patch('recording_workspace.workspace_tables',return_value=(None,self.sources,None,None)), \
+                patch('workspace_service.evaluate_protocol_file',evaluate_protocol_file):
+            self.service.refresh()
+            detail=self.service.epoch(identity)
+            self.assertEqual(detail['parameters']['value'],VALUE)
+            self.assertEqual(self.service.rows[identity]['metadata_hash'],expected_hash)
+            self.assertEqual(records['Epoch'][0]['parameters']['value'],ROUNDED)
+            context=(self.folder/'catalog.json',json.loads((self.folder/'catalog.json').read_text()),object())
+            ordinary=evaluate_protocol_file(self.folder/'protocols/example.protocol.json',catalog_connection=context)
+            member=next(row for row in ordinary['epochs'] if row['uuid']==identity)
+            self.assertNotEqual(member['metadata_hash'],expected_hash)  # Default still hashes SQL.
+            for changed in (math.nextafter(VALUE,math.inf),VALUE+0.01):
+                records['Epoch'][0]['parameters']['value']=changed
+                with self.assertRaises(ValueError):self.service.refresh()
+                self.assertFalse(self.service._loaded)
+                records['Epoch'][0]['parameters']['value']=ROUNDED
+                self.service.refresh()
+            self.assertTrue(all('CAST(%s AS JSON)' in sql for sql,args in witness.calls))
+
+    def test_source_admission_rejects_unknown_uuid_and_inconsistent_source_fingerprint(self):
+        from recording_workspace import evaluate_protocol_file
+        config_module,records,witness=self.json_catalog_fixture()
+        context=(self.folder/'catalog.json',json.loads((self.folder/'catalog.json').read_text()),object())
+        with patch.dict(sys.modules,{'retinanalysis.config':config_module}), \
+                patch('recording_workspace.workspace_tables',return_value=(None,self.sources,None,None)):
+            with self.assertRaisesRegex(ValueError,'outside verified source'):
+                evaluate_protocol_file(self.folder/'protocols/example.protocol.json',catalog_connection=context,
+                    verified_source_metadata=({},{}))
+            source_rows=copy.deepcopy(self.service.rows)
+            source_rows[next(iter(source_rows))]['metadata_hash']='invalid'
+            with self.assertRaisesRegex(ValueError,'detail disagrees'):
+                evaluate_protocol_file(self.folder/'protocols/example.protocol.json',catalog_connection=context,
+                    verified_source_metadata=(source_rows,self.service.details))
+            self.assertEqual(witness.calls,[])
 
     def test_warm_cache_skips_h5_and_json_projection_but_validates_sql(self):
         self.assertEqual(self.service.last_refresh['rebuilt_sources'], 2)

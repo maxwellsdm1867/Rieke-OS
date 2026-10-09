@@ -9,6 +9,7 @@ import uuid
 
 from recording_workspace import now, workspace_tables
 from workspace_audit import build_audit_payload
+from workspace_authored_json import write_row
 from disco.workbench.recipes import checksum, member_map
 from disco.operation_timing import elapsed
 
@@ -199,9 +200,9 @@ class ExplorerHistory:
         audit['recipe_sha256'] = recipe['content_sha256']
         occurred = dt.datetime.fromisoformat(timestamp).astimezone(dt.timezone.utc).replace(tzinfo=None)
         with (contextlib.nullcontext() if _in_transaction else self.dj.conn().transaction):
-            self.Revision.insert1({'project_uuid': self.project_uuid, 'revision_uuid': identity,
+            write_row(self.Revision, {'project_uuid': self.project_uuid, 'revision_uuid': identity,
                 'created_at': occurred, 'name': summary['name'], 'parent_revision_uuid': parent_revision_uuid,
-                'summary': summary, 'recipe': recipe})
+                'summary': summary, 'recipe': recipe}, schema='explorer_revision')
             self.Event.insert1({'event_uuid': identity, 'project_uuid': self.project_uuid,
                 'occurred_at': occurred, 'actor': actor, 'action': ACTION, 'payload': audit})
         return {'revision_uuid': identity, 'recipe': recipe, 'summary': summary}

@@ -322,11 +322,20 @@ def _dump(project_dir, path):
                     return result
             return Result()
     try:
+        # prepare_project holds its inventory lock throughout this call. Also
+        # protect direct owned dump callers: the dump and numeric correction
+        # scan must observe one quiescent donor, not separately timed snapshots.
+        with connection.cursor() as cursor:
+            cursor.execute('SET SESSION lock_wait_timeout=15')
+            cursor.execute('FLUSH TABLES WITH READ LOCK')
         adapter = QueryAdapter()
         before = verify_export_triggers(adapter, DATABASES)
         if before['managed_present'] and not before['safe_to_omit']:
             raise ValueError(before['reason'])
         _dump_logical(project_dir, path, omit_derived_triggers=before['managed_present'])
+        from workspace_json_transport import append_json_float_corrections
+        append_json_float_corrections(connection, path, DATABASES,
+                                      omitted_triggers=before['managed_present'])
         after = verify_export_triggers(adapter, DATABASES)
         if before['contract_fingerprint'] != after['contract_fingerprint']:
             raise ValueError('Database trigger coverage changed during backup; no transfer was published')

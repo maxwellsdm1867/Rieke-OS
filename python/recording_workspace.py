@@ -482,7 +482,13 @@ def prepare(source, project, repository, progress=None, expected_sha256=None):
             source_parameters.update(dict(source_epoch['protocolParameters'].attrs))
             source_parameters = json.loads(json.dumps(source_parameters, cls=parser.NpEncoder, allow_nan=False))
             for parameter, value in source_parameters.items():
-                if parameter not in epoch['parameters'] or epoch['parameters'][parameter] != value:
+                # H5-to-parser comparison is exact typed JSON. Python equality
+                # conflates True/1, 1/1.0 and signed zero; no SQL converter has
+                # participated at this boundary, so its rounding policy cannot
+                # excuse an extraction change.
+                if (parameter not in epoch['parameters'] or
+                        json.dumps(epoch['parameters'][parameter], sort_keys=True, allow_nan=False) !=
+                        json.dumps(value, sort_keys=True, allow_nan=False)):
                     raise ValueError(f"Source parameter mismatch for epoch {epoch['uuid']}: {parameter}")
             for kind in ("responses", "stimuli"):
                 for device, stream in epoch[kind].items():
@@ -688,8 +694,14 @@ def sync_job_history(project_dir, Event, project_id):
                       skip_duplicates=True)
 
 
-def evaluate_protocol_file(file, *, catalog_connection=None):
-    """Execute a saved protocol query against its project-scoped main catalog."""
+def evaluate_protocol_file(file, *, catalog_connection=None, verified_source_metadata=None):
+    """Execute a saved protocol query against its project-scoped main catalog.
+
+    Ordinary calls retain catalog-derived hashes. Workspace read admission may
+    supply (source_rows, source_details) only after verifying source/H5 seals.
+    Exact hashes need no detail read. A differing hash requires full metadata
+    representation proof before the original source hash becomes the result.
+    """
     file = Path(file).resolve()
     definition = json.loads(file.read_text())
     name = validate_protocol_definition(definition)
@@ -729,12 +741,30 @@ def evaluate_protocol_file(file, *, catalog_connection=None):
                   [{"parent_id": b["id"]} for b in blocks]).to_dicts()
     group_rows = (catalog.EpochGroup & [{"id": b["parent_id"]} for b in blocks]).to_dicts()
     cell_rows = (catalog.Cell & [{"id": g["parent_id"]} for g in group_rows]).to_dicts()
+    members, json_witnesses = [], []
+    for epoch in epoch_rows:
+        identity = epoch['h5_uuid']
+        actual = {key: epoch[key] for key in ('parameters', 'properties', 'attributes')}
+        metadata_hash = hashlib.sha256(json.dumps(actual, sort_keys=True, allow_nan=False).encode()).hexdigest()
+        if verified_source_metadata is not None:
+            source_rows, source_details = verified_source_metadata
+            if identity not in source_rows:
+                raise ValueError('Database query returned an epoch outside verified source')
+            source_hash = source_rows[identity]['metadata_hash']
+            if metadata_hash != source_hash:
+                detail = source_details[identity]
+                expected = {key: detail[key] for key in ('parameters', 'properties', 'attributes')}
+                if hashlib.sha256(json.dumps(expected, sort_keys=True, allow_nan=False).encode()).hexdigest() != source_hash:
+                    raise ValueError('Verified source detail disagrees with its metadata fingerprint')
+                json_witnesses.append((expected, actual, 'Epoch', 'metadata', identity))
+                metadata_hash = source_hash
+        members.append({'uuid': identity, 'row_id': epoch['id'], 'metadata_hash': metadata_hash})
+    if json_witnesses:
+        from workspace_catalog_identity import verify_mysql_json_documents
+        verify_mysql_json_documents(catalog.schema.connection, json_witnesses)
     return {"protocol_uuid": definition["protocol_uuid"], "protocol_name": name,
             "project_uuid": definition["project_uuid"],
-            "epochs": [{"uuid": e["h5_uuid"], "row_id": e["id"],
-                        "metadata_hash": hashlib.sha256(json.dumps(
-                            {k: e[k] for k in ["parameters", "properties", "attributes"]},
-                            sort_keys=True, allow_nan=False).encode()).hexdigest()} for e in epoch_rows],
+            "epochs": members,
             "cells": [{"uuid": c["h5_uuid"], "label": c["label"], "type": c["type"]} for c in cell_rows],
             "source_revisions": [s["source_sha256"] for s in sources]}
 
@@ -838,7 +868,8 @@ def import_catalog(project_dir, experiment, manifest, folder, container, progres
             validate_manifest_cell_count(manifest, all_cell_ids, epoch_cell_ids)
             # Catalog population retains all cells under either manifest convention.
             # Same-SHA rechecks must not compare this total to a legacy active count.
-            counts = validate_catalog_identity(experiment, catalog, experiment_id, emit)
+            counts = validate_catalog_identity(experiment, catalog, experiment_id, emit,
+                                              mysql_json_rounding=True)
             if counts['Cell'] != len(all_cell_ids):
                 raise ValueError("Catalog cell count differs from source")
             if counts['Epoch'] != manifest['counts']['epochs']:

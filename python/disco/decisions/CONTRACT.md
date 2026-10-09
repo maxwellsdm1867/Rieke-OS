@@ -81,3 +81,14 @@ existing URL contract. Mounted tests cover pending/stale reads and exact cell
 UUID/revision writes; backend tests cover no-enumeration reads and full counts
 after registration, deletion and cell-link changes. These fixtures do not
 qualify native SQL durability.
+
+Completed dataset publication retains the exact sealed export recipe through
+`workspace_authored_json.write_row`. It admits only the declared plain
+`DatasetRevision` schema and complete primary key for native typed JSON writes,
+then verifies exact readback before audit/publication in the existing transaction.
+Custom writers still execute their own methods and must preserve exact JSON.
+Existing recipe seals, curation/source/binding checks, artifact identity and export
+index verification are unchanged; no acquisition representation tolerance applies.
+Focused publication/readback and lossy-writer rollback examples are in
+`python/tests/test_workspace_authored_json.py`; native evidence and its limits are
+in `docs/dev/h5-conversion-audit-2026-10-09.md`.

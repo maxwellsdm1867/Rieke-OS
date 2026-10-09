@@ -1821,7 +1821,10 @@
       "affected_paths": [
         "python/disco/backup/**",
         "python/workspace_api.py",
-        "python/workspace_service.py"
+        "python/workspace_service.py",
+        "python/workspace_portability.py",
+        "python/workspace_state_snapshot.py",
+        "python/workspace_json_transport.py"
       ],
       "rules": [
         {
@@ -1877,7 +1880,9 @@
       ],
       "tests": {
         "python": [
-          "python/disco/backup/tests/test_backend_recovery_public.py"
+          "python/disco/backup/tests/test_backend_recovery_public.py",
+          "python/tests/test_workspace_snapshot_json_transport.py",
+          "python/tests/test_workspace_json_transport.py"
         ],
         "javascript": []
       }
@@ -1891,7 +1896,9 @@
       "affected_paths": [
         "python/disco/decisions/**",
         "python/workspace_api.py",
-        "python/workspace_service.py"
+        "python/workspace_service.py",
+        "python/workspace_authored_json.py",
+        "python/workspace_json_transport.py"
       ],
       "rules": [
         {
@@ -2017,7 +2024,8 @@
             "recording_workspace",
             "time",
             "uuid",
-            "workspace_audit"
+            "workspace_audit",
+            "workspace_authored_json"
           ]
         },
         {
@@ -2043,7 +2051,8 @@
             "hashlib",
             "recording_workspace",
             "uuid",
-            "workspace_audit"
+            "workspace_audit",
+            "workspace_authored_json"
           ]
         },
         {
@@ -2126,7 +2135,9 @@
       "tests": {
         "python": [
           "python/disco/decisions/tests/test_checkpoint_refusal_public.py",
-          "python/disco/decisions/tests/test_workspace_undo.py"
+          "python/disco/decisions/tests/test_workspace_undo.py",
+          "python/tests/test_workspace_authored_json.py",
+          "python/tests/test_workspace_json_transport.py"
         ],
         "javascript": []
       }
@@ -2335,7 +2346,9 @@
       "affected_paths": [
         "python/disco/navigation/**",
         "python/workspace_api.py",
-        "python/workspace_service.py"
+        "python/workspace_service.py",
+        "python/workspace_authored_json.py",
+        "python/workspace_json_transport.py"
       ],
       "rules": [
         {
@@ -2380,7 +2393,8 @@
             "disco.decisions.curation",
             "hashlib",
             "json",
-            "uuid"
+            "uuid",
+            "workspace_authored_json"
           ]
         },
         {
@@ -2448,7 +2462,9 @@
       ],
       "tests": {
         "python": [
-          "python/disco/navigation/tests/test_workspace_predicates.py"
+          "python/disco/navigation/tests/test_workspace_predicates.py",
+          "python/tests/test_workspace_authored_json.py",
+          "python/tests/test_workspace_json_transport.py"
         ],
         "javascript": []
       }
@@ -2933,7 +2949,10 @@
         "python": [
           "python/tests/test_workspace_linked_sqlite.py",
           "python/tests/test_workspace_linked_export_api.py",
-          "python/tests/test_workspace_shared_recordings.py"
+          "python/tests/test_workspace_shared_recordings.py",
+          "python/tests/test_workspace_catalog_json.py",
+          "python/tests/test_workspace_catalog_identity.py",
+          "python/tests/test_workspace_refresh_cache.py"
         ],
         "javascript": [
           "workspace-app/src/exportFormats.test.js",
@@ -3574,7 +3593,7 @@
     "reviewed_loader_sites": [
       {
         "file": "python/recording_workspace.py",
-        "file_sha256": "65889ef571aeabac432932634cae593e82023e7e77f9c8668a59da5354de4b98",
+        "file_sha256": "98e2209d61eadffffa64b9bf7052b139d67bfaebd5daf873194db32e9400733a",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3587,7 +3606,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Committed CLI imports now retain verified managed recordings before catalog import; parser dynamic loader call ASTs, destinations and policies are unchanged. See linked-sqlite-managed-recordings.md."
+        "reason": "H5 parameter checks preserve typed JSON; import and source-verified read admission use bounded MySQL JSON witnesses. Parser load_parser function AST, dynamic-loader calls, destinations and source-loading policy match main5aaf0be. See docs/dev/h5-json-precision-2026-10-09.md."
       },
       {
         "file": "python/tests/test_benchmark.py",
@@ -4635,7 +4654,7 @@
       {
         "file": "python/disco/navigation/tree_pages.py",
         "file_sha256": "320c65af90e7422362e107a81ecd6791a371a9c7ef7461ecec89a7759040bfcf",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority.",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:2",
@@ -4657,7 +4676,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
+                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4667,7 +4686,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Install opt-in timing observers on the fixed module/function table, preserving wrapped call behavior and opt-in gate.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Name:56",
@@ -4730,7 +4749,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -4752,7 +4771,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -4774,7 +4793,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -4784,7 +4803,7 @@
       {
         "file": "python/tests/test_recording_workspace.py",
         "file_sha256": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
-        "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions.",
+        "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:52",
@@ -4808,7 +4827,7 @@
               {
                 "module": "workspace_state_snapshot",
                 "file": "python/workspace_state_snapshot.py",
-                "file_sha256": "9f27b6269fc1c071b8c20b99fa6731066510af04cdc016e0743656b1ce1670ee",
+                "file_sha256": "a5739d070a735e1aa4588e1051ddb43ec33ea99d99323e88f934f942ef1bfcda",
                 "contract_id": null
               }
             ]
@@ -4883,7 +4902,7 @@
       {
         "file": "python/tests/test_workspace_api.py",
         "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
-        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction.",
+        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:111",
@@ -4902,7 +4921,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
+                "file_sha256": "b1972b6f28c67b8296264ca9f625767d9576d21cc78294af667158736cdf7f5f",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -4992,7 +5011,7 @@
       {
         "file": "python/tests/test_workspace_curation.py",
         "file_sha256": "9ae93ce7dfa961cefce1559e659dcb0fbee8c71601c0fc5d215b57d64b5eeef8",
-        "reason": "Inject owned in-memory workspace table fixtures during curation construction.",
+        "reason": "Inject owned in-memory workspace table fixtures during curation construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:48",
@@ -5011,7 +5030,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
+                "file_sha256": "b1972b6f28c67b8296264ca9f625767d9576d21cc78294af667158736cdf7f5f",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5021,7 +5040,7 @@
       {
         "file": "python/tests/test_workspace_epoch_page_performance.py",
         "file_sha256": "9d84a4eb9649d6acccd68d5e15c5ed3d44f1b79e221d3a0e5770f9b8e0caff9b",
-        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior.",
+        "reason": "Warm-page test rejects recipe deepcopy; structural-only native-index fixture bypasses constructor to isolate method/fallback behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:55",
@@ -5040,7 +5059,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
+                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5274,7 +5293,7 @@
       {
         "file": "python/tests/test_workspace_migration.py",
         "file_sha256": "c47705178461b51e6f28c41941d8d7e0ba20f7e590c1450679b68db156f7c2f1",
-        "reason": "Simulate missing source/path, reject unsupported connection profiles, and capture mysqldump command arguments without running transfer.",
+        "reason": "Simulate missing source/path, reject unsupported connection profiles, and capture mysqldump command arguments without running transfer. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:7",
@@ -5344,7 +5363,7 @@
               {
                 "module": "workspace_portability",
                 "file": "python/workspace_portability.py",
-                "file_sha256": "049538364b3ce882a4cce1b9d93a68d09b1cff3bdb88aa1449d44d65e51bb452",
+                "file_sha256": "8df8721952059401babdd5a1e8d8d09bbb1b654f62ab79d6d1d2935b9a91d355",
                 "contract_id": null
               }
             ]
@@ -5375,8 +5394,8 @@
       },
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
-        "file_sha256": "9617cc4d6dbb32ae07816cf9c4c7ae5d5b3b8cc324637148dedad07233c83752",
-        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation.",
+        "file_sha256": "9c93e170412616ef58a68dcd962686db4f606bf9555cb12b85eb74ae8ef4a465",
+        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Name:40",
@@ -5395,7 +5414,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -5417,7 +5436,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -5439,13 +5458,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:494",
+            "selector": "Attribute:591",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5472,13 +5491,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:502",
+            "selector": "Attribute:599",
             "ast_sha256": "9b66d8b81a7b15352c762eb8b15859183009e5c548da4cd1150e527c832c7ef5",
             "category": "test-oracle-call",
             "origins": [
@@ -5505,13 +5524,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:750",
+            "selector": "Name:969",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5527,13 +5546,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:779",
+            "selector": "Name:998",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5549,13 +5568,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:849",
+            "selector": "Name:1068",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5571,13 +5590,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:852",
+            "selector": "Name:1071",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5593,13 +5612,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:874",
+            "selector": "Name:1093",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5615,13 +5634,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:877",
+            "selector": "Name:1096",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5637,13 +5656,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:601",
+            "selector": "Attribute:698",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5670,13 +5689,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:928",
+            "selector": "Name:1147",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5692,13 +5711,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:930",
+            "selector": "Name:1149",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5714,13 +5733,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:968",
+            "selector": "Name:1187",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5736,7 +5755,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "003fe4d139aec0275db3ed196700b14968adec008273577033067807457a18c6",
+                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
                 "contract_id": null
               }
             ]
@@ -5841,7 +5860,7 @@
       {
         "file": "python/tests/test_workspace_tags.py",
         "file_sha256": "d9a3d99626e35e745e9e0515655caa0a2bb8312e9aa2b7dc04111222b93c8527",
-        "reason": "Freeze monotonic clock for TTL reuse and immediate invalidation versus rollback assertions.",
+        "reason": "Freeze monotonic clock for TTL reuse and immediate invalidation versus rollback assertions. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:82",
@@ -5860,7 +5879,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
+                "file_sha256": "b1972b6f28c67b8296264ca9f625767d9576d21cc78294af667158736cdf7f5f",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5882,7 +5901,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
+                "file_sha256": "b1972b6f28c67b8296264ca9f625767d9576d21cc78294af667158736cdf7f5f",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -5892,7 +5911,7 @@
       {
         "file": "python/tests/test_workspace_workbench_exports.py",
         "file_sha256": "e88d8c5fd7d5d24e51ad2507481d89668a7bb8c90bd6446b4742bf10305b995a",
-        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged.",
+        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:55",
@@ -5918,7 +5937,7 @@
               {
                 "module": "recording_workspace",
                 "file": "python/recording_workspace.py",
-                "file_sha256": "65889ef571aeabac432932634cae593e82023e7e77f9c8668a59da5354de4b98",
+                "file_sha256": "98e2209d61eadffffa64b9bf7052b139d67bfaebd5daf873194db32e9400733a",
                 "contract_id": null
               }
             ]
@@ -5957,7 +5976,7 @@
       {
         "file": "python/workspace_protocol_state.py",
         "file_sha256": "7ecd66e10cf48bd7f104db0bcb081faf55312c72831ce944644ba6f90014c179",
-        "reason": "Capture exact decision-store/shared-annotation/history methods for structural identity checks and fallback oracle; preserve all response/transaction proof behavior.",
+        "reason": "Capture exact decision-store/shared-annotation/history methods for structural identity checks and fallback oracle; preserve all response/transaction proof behavior. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
             "selector": "Call:1",
@@ -5980,7 +5999,7 @@
               {
                 "module": "disco.decisions.curation",
                 "file": "python/disco/decisions/curation.py",
-                "file_sha256": "f57dcb0e7fecc6dd8f850df6ff4cbda49c8737723c584d15f8a4fc2efee7aaca",
+                "file_sha256": "b1972b6f28c67b8296264ca9f625767d9576d21cc78294af667158736cdf7f5f",
                 "contract_id": "backend-decisions"
               }
             ]
@@ -6033,7 +6052,7 @@
               {
                 "module": "disco.decisions.explorer",
                 "file": "python/disco/decisions/explorer.py",
-                "file_sha256": "b4640071ce845fd1021caecabc6b59e55024cd71915630688354ca6d1e185912",
+                "file_sha256": "c67f6a0a8b67f97d44cb6a85bd7dda691f3c76027318503ccc18e7ac2e4dbfc1",
                 "contract_id": "backend-decisions"
               }
             ]

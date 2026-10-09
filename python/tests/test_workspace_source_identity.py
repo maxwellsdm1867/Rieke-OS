@@ -250,6 +250,32 @@ class SourceIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Source parameter mismatch'):
             self.prepare()
 
+    def test_prepare_refuses_parser_type_and_signed_zero_changes(self):
+        epoch = self.cells()[1]['epoch_groups'][0]['epoch_blocks'][0]['epochs'][0]
+        path = ('/experiment-' + uid(1) + '/epochGroups/group-' + uid(21) +
+                '/epochBlocks/block-' + uid(22) + '/epochs/epoch-' + uid(23) + '/protocolParameters')
+        for original, parsed in ((np.int64(1), True), (np.int64(1), 1.0),
+                                 (np.float64(1.0), 1), (np.float64(-0.0), 0.0),
+                                 (np.array([1, 2]), [1.0, 2.0])):
+            with h5py.File(self.path, 'r+') as h5:
+                if 'representation' in h5[path].attrs:
+                    del h5[path].attrs['representation']
+                h5[path].attrs['representation'] = original
+            epoch['parameters']['representation'] = parsed
+            with self.subTest(original=original, parsed=parsed), self.assertRaisesRegex(ValueError, 'Source parameter mismatch'):
+                self.prepare()
+
+    def test_prepare_keeps_exact_binary64_parameter_before_sql_conversion(self):
+        epoch = self.cells()[1]['epoch_groups'][0]['epoch_blocks'][0]['epochs'][0]
+        value = 0.15261696363083765
+        with h5py.File(self.path, 'r+') as h5:
+            h5['/experiment-' + uid(1) + '/epochGroups/group-' + uid(21) +
+               '/epochBlocks/block-' + uid(22) + '/epochs/epoch-' + uid(23) + '/protocolParameters'].attrs['representation'] = value
+        epoch['parameters']['representation'] = value
+        document, _, _, _ = self.prepare()
+        parsed = next(item for _, _, _, item in workspace.epochs(document) if item['uuid'] == epoch['uuid'])
+        self.assertEqual(parsed['parameters']['representation'].hex(), value.hex())
+
     def test_prepare_retains_empty_block_protocol_parameters_and_verified_metadata(self):
         with h5py.File(self.path, 'r+') as h5:
             block = h5['/experiment-' + uid(1) + '/epochGroups/group-' + uid(21) + '/epochBlocks/empty-' + uid(30)]

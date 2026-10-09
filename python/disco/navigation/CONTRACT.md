@@ -87,3 +87,22 @@ DiskMetadataIndex's sealed generation and source checks cover their recorded
 projection; annotation-scope and joint/component fields remain excluded. This
 adds no renderer cache permission: metadata parent bodies still fail the existing
 reusableTreeBody admission policy and use fresh bundles even with retained geometry.
+
+## Exact persisted query literals
+
+Saved preset predicates, version recipes and last-run results use the narrowly
+admitted `workspace_authored_json.write_row` path. On canonical DataJoint tables,
+it builds one typed JSON expression per field, preserving finite binary64 values
+before the first write, then checks exact readback inside the caller's existing
+transaction. Complete primary keys and declared plain scalar/JSON schemas are
+required. Custom writers still run their own write methods and must preserve the
+same exact JSON on readback. Failed readback rolls back with the surrounding audit.
+No acquisition ULP allowance applies to authored predicates; query equality,
+canonical query keys, version checks and live membership semantics are unchanged.
+The shared expression's explicit depth/extra-parameter bounds fail before writing;
+large float-free membership payloads retain the existing packet-size contract.
+
+`python/tests/test_workspace_authored_json.py` exercises public preset save/read,
+update/version, exact equality membership and lossy custom-writer rollback.
+Native MySQL 8.4.2 API evidence is retained in the October 9 conversion audit;
+these focused tests alone do not qualify native SQL or another database runtime.
