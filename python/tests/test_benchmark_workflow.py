@@ -13,7 +13,7 @@ class WorkflowContractTests(unittest.TestCase):
     def test_dependency_identity_ignores_only_application_versions(self):
         locked = {'name': 'disco', 'version': '0.1.8', 'lockfileVersion': 3,
                   'packages': {'': {'name': 'disco', 'version': '0.1.8', 'dependencies': {'a': '1.0'}},
-                               'node_modules/a': {'version': '1.0', 'integrity': 'sha512-original', 'resolved': 'https://example/a'}}}
+                               'node_modules/a': {'version': '1.0', 'integrity': 'sha512-original', 'resolved': 'https://example/a', 'dev': True}}}
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'package-lock.json'
             path.write_text(json.dumps(locked))
@@ -29,6 +29,10 @@ class WorkflowContractTests(unittest.TestCase):
                 self.assertNotEqual(original, bench.dependency_identity(path), field)
             changed = copy.deepcopy(locked)
             changed['packages']['']['dependencies']['a'] = '2.0'
+            path.write_text(json.dumps(changed))
+            self.assertNotEqual(original, bench.dependency_identity(path))
+            changed = copy.deepcopy(locked)
+            changed['packages']['node_modules/a']['dev'] = 1
             path.write_text(json.dumps(changed))
             self.assertNotEqual(original, bench.dependency_identity(path))
             path.write_text('{}')

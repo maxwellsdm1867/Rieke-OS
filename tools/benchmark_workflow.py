@@ -33,7 +33,8 @@ def dependency_identity(path):
         raise ValueError('Expected npm v3 lockfile with a root package')
     value.pop('version', None)
     value['packages'][''].pop('version', None)
-    return value
+    # JSON spelling also preserves type distinctions such as true versus 1.
+    return json.dumps(value, sort_keys=True, separators=(',', ':'))
 
 
 def number(value, name, *, positive=False):
