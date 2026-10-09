@@ -53,7 +53,7 @@ function CellEpochPage({highlightedEpochs,cell,offset,restoreOffset,onFrontier,e
         <time>{epoch.start_time?.split(/[T ]/)[1]?.slice(0,8)||'—'}</time>
         <span className="epoch-short-protocol" title={humanize(epoch.protocol_name?.split('.').at(-1))}>{humanize(epoch.protocol_name?.split('.').at(-1))||'—'}</span>
       </button>
-      {source.readContext&&<><IncomingEpochSelect epoch={epoch} selected={targets} onSelect={setTargets} disabled={disabled||page.loading}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={disabled||page.loading} onClick={event=>onTagEpoch(epoch,event)}/></>}
+      {source.readContext&&<><IncomingEpochSelect epoch={epoch} selected={targets} onSelect={setTargets} onToggle={event=>onSelect(event,{cellUuid:cell.cell_uuid,index:offset+index,uuid:epoch.epoch_uuid},epoch,page.data,true)} disabled={disabled||page.loading}/><TreeGroupTagButton showLabel label="Tag This Epoch" count={1} disabled={disabled||page.loading} onClick={event=>onTagEpoch(epoch,event)}/></>}
       {onToggleInclusion&&<EpochInclusionToggle incoming={!!source.readContext} epoch={epoch} label={`${datedCellLabel(cell,true)} epoch ${offset+index+1}`} disabled={disabled||page.loading} onToggle={onToggleInclusion}/>}
     </div>;})}
     {more&&(expanded||offset<restoreOffset||reveal)?<CellEpochPage highlightedEpochs={highlightedEpochs} cell={cell} offset={offset+pageSize} restoreOffset={restoreOffset} onFrontier={onFrontier} expected={expected??receipt} onFault={onFault} revealEpoch={reveal?revealEpoch:null} seen={[...seen,...page.data.epochs.map(row=>row.epoch_uuid)]} source={source} revision={revision} pageReads={pageReads} focused={focused} onFocus={onFocus} targets={targets} onSelect={onSelect} disabled={disabled} navigationDisabled={navigationDisabled} onToggleInclusion={onToggleInclusion} inclusionForEpoch={inclusionForEpoch} setTargets={setTargets} onTagEpoch={onTagEpoch}/>:more&&<button ref={tail} className="epoch-load-more" disabled={navigationDisabled} onFocus={()=>{if(!navigationDisabled)setExpanded(true);}} onClick={()=>setExpanded(true)}>Load more epochs</button>}
@@ -173,21 +173,22 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
     finally{if(isCurrent())setSelecting(false);}
   }
   const gestures=()=>({ids:callbacks.current.setHighlightedEpochs?callbacks.current.highlightedEpochs||[]:callbacks.current.targets,set:callbacks.current.setHighlightedEpochs||callbacks.current.setTargets});
-  async function select(event,target,epoch,page){
+  async function select(event,target,epoch,page,explicit=false){
     if(navigationDisabled||committedScope.current!==scope)return;
     const shift=event.shiftKey,multiple=event.metaKey||event.ctrlKey;
-    if(disabled&&(shift||multiple))return;
+    if(disabled&&(explicit||shift||multiple))return;
     request.current?.abort();request.current=null;setSelecting(false);setError('');
+    const selection=()=>explicit?{ids:callbacks.current.targets,set:callbacks.current.setTargets}:gestures();
     const token=generation.current;let controller;
     const isCurrent=()=>token===generation.current&&(!controller||(request.current===controller&&!controller.signal.aborted));
     try{
-      target={...target,revision:epochPageRevision(props.source,page)};
+      target={...target,explicit,revision:epochPageRevision(props.source,page)};
       if(!epoch?.epoch_uuid||epoch.epoch_uuid!==target.uuid||epoch.cell_uuid!==target.cellUuid)throw new Error('Epoch selection ownership changed. Refresh and select again.');
-      callbacks.current.onFocus?.(target.uuid,epoch);
-      if(!multiple&&!shift){if(callbacks.current.setHighlightedEpochs)callbacks.current.setHighlightedEpochs([target.uuid]);else if(!props.source.readContext)callbacks.current.setTargets([]);}
-      if(shift&&anchor.current){
+      if(!explicit)callbacks.current.onFocus?.(target.uuid,epoch);
+      if(!explicit&&!multiple&&!shift){if(callbacks.current.setHighlightedEpochs)callbacks.current.setHighlightedEpochs([target.uuid]);else if(!props.source.readContext)callbacks.current.setTargets([]);}
+      if(shift&&anchor.current&&anchor.current.explicit===explicit){
         controller=new AbortController();request.current=controller;setSelecting(true);
-        const before=JSON.stringify(gestures().ids);
+        const before=JSON.stringify(selection().ids);
         const ids=await epochSelectionRange({pageSize,cells:ordered,anchor:anchor.current,target,
           pageRevision:part=>epochPageRevision(props.source,part),loadPage:async(cellUuid,offset)=>{
           if(!isCurrent())throw new DOMException('Selection changed','AbortError');
@@ -195,11 +196,12 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
           const {path,options}=epochPageRequest(source,{cellUuid,offset});return api(path,{...options,signal:controller.signal});
         }});
         if(!isCurrent())return;
-        if(JSON.stringify(gestures().ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
-        gestures().set(mergeEpochSelection(gestures().ids,ids));
+        if(JSON.stringify(selection().ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
+        const remove=explicit&&selection().ids.includes(target.uuid)?new Set(ids):null;
+        selection().set(remove?selection().ids.filter(id=>!remove.has(id)):mergeEpochSelection(selection().ids,ids));
       }else{
         anchor.current=target;
-        if(multiple||shift)gestures().set(toggleEpochSelection(gestures().ids,target.uuid));
+        if(explicit||multiple||shift)selection().set(toggleEpochSelection(selection().ids,target.uuid));
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setError(error.message);}
     finally{if(isCurrent())setSelecting(false);}

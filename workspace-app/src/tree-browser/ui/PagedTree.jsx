@@ -55,33 +55,36 @@ export default function PagedTree(props){
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
   const gestures=current=>({ids:current.setHighlightedEpochs?current.highlightedEpochs||[]:current.selectedEpochs||[],set:current.setHighlightedEpochs||current.setSelectedEpochs});
-  async function selectEpoch(uuid,item,event,page,index){
+  async function selectEpoch(uuid,item,event,page,index,explicit=false){
     if(props.active===false||props.actionsDisabled||!continuityCurrent(props)||selectionScope.current!==scopeKey)return;
     selectionRequest.current?.abort();setSelectionError('');
-    props.onSelectEpoch?.(uuid,item);
-    if(!gestures(props).set||!event)return;
-    const target={uuid,index:page.offset+index,path:page.path,revision:page.revision};
+    if(!explicit)props.onSelectEpoch?.(uuid,item);
+    const selection=current=>explicit?{ids:current.selectedEpochs||[],set:current.setSelectedEpochs}:gestures(current);
+    if(!selection(props).set||!event)return;
+    const target={uuid,index:page.offset+index,path:page.path,revision:page.revision,explicit};
     const token=generation.current;
     let request;
     const isCurrent=()=>token===generation.current&&continuityMatches(props,callbacks.current)&&(!request||(selectionRequest.current===request&&!request.signal.aborted));
     try{
-      if(event.shiftKey&&anchor.current){
+      if(event.shiftKey&&anchor.current&&anchor.current.explicit===explicit){
         if(JSON.stringify(anchor.current.path)!==JSON.stringify(page.path)||anchor.current.revision!==page.revision)throw new Error('Select a range within one tree branch, or use Command/Ctrl-click across branches.');
         const lo=Math.min(anchor.current.index,target.index),hi=Math.max(anchor.current.index,target.index);
         request=new AbortController();selectionRequest.current=request;
-        const before=JSON.stringify(gestures(props).ids);
+        const before=JSON.stringify(selection(props).ids);
         const result=selectionReader.rangeEpochIds(props,{page,firstIndex:lo,lastIndex:hi,signal:request.signal});
         // Same-page selection remains synchronous; fetched ranges await transport.
         const ids=Array.isArray(result)?result:await result;
         if(!isCurrent())return;
-        if(JSON.stringify(gestures(callbacks.current).ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
-        gestures(callbacks.current).set?.(mergeEpochSelection(gestures(callbacks.current).ids,ids));
+        if(JSON.stringify(selection(callbacks.current).ids)!==before)throw new Error('Selection changed while loading. Select the range again.');
+        const current=selection(callbacks.current);
+        const remove=explicit&&selection(props).ids.includes(uuid)?new Set(ids):null;
+        current.set?.(remove?current.ids.filter(id=>!remove.has(id)):mergeEpochSelection(current.ids,ids));
       }else{
         anchor.current=target;
-        if(event.metaKey||event.ctrlKey)gestures(props).set(toggleEpochSelection(gestures(props).ids,uuid));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
+        if(explicit||event.metaKey||event.ctrlKey)selection(props).set(toggleEpochSelection(selection(props).ids,uuid));else if(props.setHighlightedEpochs)props.setHighlightedEpochs([uuid]);else if(!props.readContext)props.setSelectedEpochs([]);
       }
     }catch(error){if(isCurrent()&&error.name!=='AbortError')setSelectionError(error.message);}
   }
-  const selectionProps={onSelectEpoch:selectEpoch,onSelectBranch:props.design?undefined:selectCell};
+  const selectionProps={onSelectEpoch:selectEpoch,onSelectEpochToggle:(...args)=>selectEpoch(...args,true),onSelectBranch:props.design?undefined:selectCell};
   return <div className="tree-view-workspace">{selectionError&&<p role="alert">{selectionError}</p>}{!props.presentation&&<div className="tree-view-switch" role="group" aria-label="Tree presentation"><button aria-pressed={view==='tree'} className={view==='tree'?'active':''} onClick={()=>changeView('tree')}>Expandable tree</button><button aria-pressed={view==='columns'} className={view==='columns'?'active':''} onClick={()=>changeView('columns')}>Columns</button></div>}{view==='tree'?<HierarchyTree {...props} {...selectionProps} initialNavigation={remembered.current.hierarchyNavigation} onNavigationChange={remember}/>:<ColumnTree {...props} {...selectionProps} initialNavigation={remembered.current.columnNavigation} onNavigationChange={remember}/>}</div>;
 }

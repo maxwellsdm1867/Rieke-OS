@@ -225,6 +225,30 @@ test('a held old-profile preview keeps committed draft work but cannot publish a
  }finally{pending.resolve(response({error:'Cancelled test'},409));await view.close();}
 });
 
+test('one-action merge stops after a held draft when its profile owner changes',async()=>{
+ let selected='actor-one',drafts=0,previews=0;const pending=deferred(),value=livePrepared('one');
+ value.context.draft={draft_version:1,selection_mode:'selected',decisions:[{epoch_uuid:'epoch-one',selected:false,reviewed:true,excluded:false}],decisions_total:1,decisions_truncated:false};
+ const view=await harness(async(path,options={})=>{
+  const endpoint=String(path).replace(/^\/api/,'');
+  if(endpoint==='/annotation-profiles')return response(authorProfiles(selected));
+  if(endpoint==='/annotation-profiles/selected'){selected=JSON.parse(options.body).profile_uuid;return response({selected_profile_uuid:selected,profile:{profile_uuid:selected}});}
+  if(endpoint===base+'/prepare')return response(value,201,{'X-Disco-Workbench-Context':'fresh-v1'});
+  if(endpoint.endsWith('/draft')){drafts++;return pending.promise;}
+  if(endpoint.endsWith('/preview')||endpoint.endsWith('/accept')){previews++;throw Error('Retired consent must not submit another command');}
+  assert.ok(endpoint.endsWith('/context'));return response({...context('union-one'),candidate_scope_revision:`current-${selected}`});
+ },{withProfile:true});
+ try{
+  await view.render({hidden:true,queue:queue('one')});await view.render({queue:queue('one')});
+  await act(async()=>view.container.querySelector('[data-preview-action]').click());assert.equal(drafts,1);assert.equal(previews,0);
+  await act(async()=>view.profile.selectProfile('actor-two'));
+  await act(async()=>pending.resolve(response({...value.context,candidate_scope_revision:'old-draft-saved',draft:{...value.context.draft,draft_version:2}})));
+  assert.equal(view.container.querySelector('[data-inspector-scope]').dataset.inspectorScope,'current-actor-two');
+  assert.equal(view.container.querySelector('[aria-label="Additive acceptance preview"]'),null);
+  assert.equal(view.saved.drafts['union-one'].preview,null);assert.equal(view.saved.drafts['union-one'].operation,null);
+  assert.equal(drafts,1);assert.equal(previews,0,'no preview or acceptance follows old draft completion');
+ }finally{pending.resolve(response({error:'Cancelled test'},409));await view.close();}
+});
+
 test('ReactDOM StrictMode first entry rejoins one preparation and opens Inspector without Retry',async()=>{
  const gate=deferred(),bodies=[];
  const view=await harness(async(path,options={})=>{const endpoint=String(path).replace(/^\/api/,'');if(endpoint===base+'/prepare'){bodies.push(options.body);await gate.promise;return response(prepared('one'));}return contextResponse(endpoint);});

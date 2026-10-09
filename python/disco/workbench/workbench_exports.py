@@ -128,7 +128,13 @@ def publish_incoming_export(manager, store, context, fingerprints, actor, option
             sources=[dict(source_sha256=source['source_sha256'], source_path=source['source_path'])
                 for source in service.sources if source['source_sha256'] in source_revisions],
             export_scope=scope, waveforms='references-only; original H5 files must remain accessible')
-        write_json(artifact, package)
+        if format == 'linked-sqlite':
+            from workspace_linked_sqlite import prepare_linked_package, build_linked_export_bundle
+            package = prepare_linked_package(package, service.manifests, service.project_dir,
+                                             grouping_sources=service.sources)
+            artifact = build_linked_export_bundle(package, output)
+        else:
+            write_json(artifact, package)
         if format == 'wheeler-sqlite':
             from workspace_sqlite import build_sqlite_export
             from disco.decisions.external_tags import prepare_return_folder

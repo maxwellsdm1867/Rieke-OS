@@ -26,6 +26,17 @@ FORMAT = 'disco-workflow-v1'
 BROWSER_FORMAT = 'disco-workflow-browser-v1'
 
 
+def dependency_identity(path):
+    """Ignore only the application's version, never locked dependency data."""
+    value = json.loads(Path(path).read_text())
+    if value.get('lockfileVersion') != 3 or not isinstance(value.get('packages', {}).get(''), dict):
+        raise ValueError('Expected npm v3 lockfile with a root package')
+    value.pop('version', None)
+    value['packages'][''].pop('version', None)
+    # JSON spelling also preserves type distinctions such as true versus 1.
+    return json.dumps(value, sort_keys=True, separators=(',', ':'))
+
+
 def number(value, name, *, positive=False):
     if type(value) not in (int, float) or not math.isfinite(value) or value < 0 or positive and value == 0:
         raise ValueError(f'Invalid {name}')
@@ -628,6 +639,9 @@ def compare(baseline_path, candidate_path, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command',required=True)
+    dependencies = commands.add_parser('dependencies-match')
+    dependencies.add_argument('baseline',type=Path)
+    dependencies.add_argument('candidate',type=Path)
     command = commands.add_parser('run')
     command.add_argument('--source-root',type=Path,default=ROOT)
     command.add_argument('--output',type=Path,required=True)
@@ -642,7 +656,10 @@ def main():
     comparison.add_argument('--output',type=Path,required=True)
     args = parser.parse_args()
     try:
-        if args.command == 'run':
+        if args.command == 'dependencies-match':
+            if dependency_identity(args.baseline) != dependency_identity(args.candidate):
+                raise ValueError('Incomparable locked browser dependencies')
+        elif args.command == 'run':
             import fcntl
             import tempfile
             with (Path(tempfile.gettempdir())/'disco-everyday-million.lock').open('a') as lock:

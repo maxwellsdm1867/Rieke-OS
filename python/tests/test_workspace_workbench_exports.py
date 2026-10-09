@@ -22,7 +22,7 @@ class IncomingExportTests(unittest.TestCase):
         root = self.case.base + '/workbench/receipts/' + acceptance['operation_uuid']
         context = self.case.client.get(root + '/export-context')
         self.assertEqual(context.status_code, 200, context.get_json())
-        self.assertEqual(set(context.get_json()['formats']), {'reference-json', 'wheeler-sqlite', 'matlab-mat'})
+        self.assertEqual(set(context.get_json()['formats']), {'reference-json', 'wheeler-sqlite', 'matlab-mat', 'linked-sqlite'})
         return root, dict(expected_export_scope_revision=context.get_json()['export_scope_revision'],
             operation_uuid=str(uuid.uuid4()), format=format, name='Accepted additions')
 

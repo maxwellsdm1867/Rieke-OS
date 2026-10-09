@@ -1,3 +1,4 @@
+import ExportSaveLocation from './ExportSaveLocation.jsx';
 import {useState} from 'react';
 import {Check, Database, Download, FileJson, FileCode, History, RefreshCw} from 'lucide-react';
 import {api, number, time, useResource} from "../../api.js";
@@ -6,18 +7,19 @@ import {Empty, Status} from "../../components/Common.jsx";
 import './ProtocolExports.css';
 
 const destinations = [
+  {format:'linked-sqlite',title:'Linked SQLite · internal use',detail:'Small reference database + Python loader; needs managed source folders',icon:Database},
   {format:'matlab-mat',title:'MATLAB data (.mat)',detail:'Recorded metadata, selection and H5 references',icon:FileCode},
   {format:'wheeler-sqlite',title:'Wheeler SQL database',detail:'SQLite · queryable epoch metadata + H5 links',icon:Database},
 ];
 export function ExportDestination({value,onChange,disabled}) {
-  return <fieldset className="export-destinations" disabled={disabled}>
+  return <><fieldset className="export-destinations" disabled={disabled}>
     <legend>Export to</legend>
     <div className="export-destination-options">{destinations.map(({format,title,detail,icon:Icon})=><label key={format} className={value===format?'selected':''}>
       <input type="radio" name="export-destination" value={format} checked={value===format} onChange={()=>onChange(format)}/>
       <Icon size={22}/><span><strong>{title}</strong><small>{detail}</small></span>{value===format&&<Check size={17} className="destination-check"/>}
     </label>)}</div>
     <details key={value==='reference-json'?'reference':'primary'} open={value==='reference-json'||undefined}><summary>Advanced formats{value==='reference-json'?' · Reference JSON selected':''}</summary><label className="reference-destination"><input type="radio" name="export-destination" checked={value==='reference-json'} onChange={()=>onChange('reference-json')}/><FileJson size={16}/> Reference JSON · query + frozen membership</label></details>
-  </fieldset>;
+  </fieldset><ExportSaveLocation/></>;
 }
 
 export default function ProtocolExports({protocolId,revision,onReuse,disabled}) {

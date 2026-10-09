@@ -5,10 +5,10 @@ import {useWorkspaceRequest} from "../../workspaceRequest.js";
 import {mergeEpochSelection,toggleEpochSelection} from '../../epochSelection.js';
 import {incomingTreeSelectionScope,incomingBranchOn,incomingBranchCommand} from '../incomingSelection.js';
 
-export function IncomingEpochSelect({epoch,selected=[],onSelect,disabled=false}){
+export function IncomingEpochSelect({epoch,selected=[],onSelect,onToggle,disabled=false}){
   if(!onSelect)return null;
   const checked=selected.includes(epoch.epoch_uuid);
-  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={checked?'Deselect this epoch':'Select this epoch'} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
+  return <button type="button" role="switch" className="incoming-selection-switch" aria-label={`Select epoch ${epoch.epoch_number??epoch.epoch_uuid}`} aria-checked={checked} title={`${checked?'Deselect':'Select'} this epoch${onToggle?'; Shift-click to select or deselect a range':''}`} disabled={disabled||!checked&&selected.length>=1000} onClick={event=>{event.stopPropagation();if(onToggle)onToggle(event);else onSelect(toggleEpochSelection(selected,epoch.epoch_uuid));}}><span className="incoming-switch-track" aria-hidden="true"><span/></span><span>{checked?'Deselect':'Select'}</span></button>;
 }
 export function useIncomingTreeSelection(props,page=null){
   const request=useWorkspaceRequest(api);

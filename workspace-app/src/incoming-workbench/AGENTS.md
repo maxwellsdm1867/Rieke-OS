@@ -168,6 +168,42 @@ remain clickable; pending controls show Selecting/Deselecting and aria-busy.
 Authority-disabled and 1,000-epoch limits remain. Queue and stale-lifetime examples
 are in `incomingTreeSelectionQueue.test.js`.
 
+Epoch Select/Deselect switches also accept Shift-click: the first ordinary switch
+click establishes an anchor, and Shift-click applies the target switch's direction
+to the complete range. Column/hierarchy ranges stay inside one branch; the cell
+list supports its existing ordered cross-cell range reader. Plain switch clicks
+accumulate independent targets. Switch gestures change actual selected UUIDs,
+not highlights or trace focus; label gestures retain their separate highlight
+store. Scope retirement, concurrent selection changes, complete paging and the
+1,000-epoch bound retain the existing all-or-nothing checks.
+
+The counted Merge action is explicit consent to review and add exactly its selected
+UUIDs. It performs versioned selected-draft save, a fresh sealed additive preview,
+and acceptance in one action. Excluded UUIDs refuse the operation before saving;
+no focused-row fallback or replacement/removal is permitted. A revision, owner or
+availability change before submission retires the action. Once submitted, uncertain
+acceptance retains the exact preview and operation UUID for receipt recovery.
+Selection/navigation/session restoration alone never issues that consent. Export
+retains its separate review and confirmation workflow. Mounted one-action, lost
+reply, excluded selection, incomplete preview and interrupted-lifetime checks are
+in `incomingWorkbenchRendering.test.js`.
+
+Edit Tree shares the same ephemeral highlighted UUID set and single counted
+Select Highlighted / Deselect Highlighted toolbar action. Command/Ctrl-click
+adds or removes rows from this set; highlighted labels are bold and green fills
+continue to denote selected membership. Presentation changes retire highlights.
+
+Imported-data hold consent carries exact project, protocol, frozen candidate and
+recording SHA identity. `importedSelection.js` exposes `loadImportedSelection`:
+it verifies complete frozen pages with existing bounded selection reads, then
+keeps only rows from that recording and preserves draft exclusions. A suggestion
+may contain older pending sources, so its trigger SHA never authorizes the whole
+proposal. Missing source identities/counts, stale pages, incomplete drafts and
+scopes over 1,000 epochs refuse direct merging and require inspection. The ledger
+issues this consent only in memory, claims it once, and rejects altered payloads;
+restoring a route cannot reconstruct it. Backend additive acceptance and exact
+operation recovery still own publication. `importedSelection.test.js` checks
+source isolation, exclusions, bounded refusal, stale reads and single-use consent.
 
 Capable contexts advertise `list_selection`. Whole-view/cell selection then uses
 one bounded `list-selection` read, verifying exact requested cell order/counts,

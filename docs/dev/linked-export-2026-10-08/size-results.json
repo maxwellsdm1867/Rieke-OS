@@ -1,0 +1,29 @@
+{
+  "fixture": "owned synthetic 411 epochs; 11 cells; 22 acquisition groups; 106 blocks; 47 parameters, including a 120-element array; one synthetic H5",
+  "counts": {
+    "epochs": 411,
+    "cells": 11,
+    "epoch_groups": 22,
+    "epoch_blocks": 106,
+    "streams": 411,
+    "analysis_groups": 36
+  },
+  "all_epoch_metadata_exact": true,
+  "first_last_trace_windows_exact": true,
+  "frozen_top_level_group_membership_exact": true,
+  "full_sqlite_bytes": 11141120,
+  "full_reference_json_bytes": 4566160,
+  "full_export_directory_bytes": 15860914,
+  "linked_sqlite_bytes": 1712128,
+  "linked_download_zip_bytes": 339514,
+  "linked_export_directory_bytes": 2205275,
+  "existing_source_metadata_bytes": 905005,
+  "existing_h5_bytes": 3150312,
+  "full_export_seconds": 0.48844875000213506,
+  "linked_export_seconds": 0.18700854200142203,
+  "metadata_files_after_two_linked_exports": 1,
+  "h5_files_after_two_linked_exports": 1,
+  "scope": "One local diagnostic, not a general performance or native-publication qualification. Full and linked receive identical synthetic records. Loader checks every exported record and two real sample windows.",
+  "sqlite_reduction_percent": 84.63235294117646,
+  "directory_reduction_percent": 86.09616696742697
+}

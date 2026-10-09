@@ -15,6 +15,9 @@ def materialize_export_format(package, output, *, format, matlab_writer, write_j
     """
     if format == 'reference-json':
         return output / 'recordings.json'
+    if format == 'linked-sqlite':
+        from workspace_linked_sqlite import build_linked_export_bundle
+        return build_linked_export_bundle(package, output)
     if format == 'wheeler-sqlite':
         from workspace_sqlite import build_sqlite_export
         artifact = output / 'recordings.sqlite'

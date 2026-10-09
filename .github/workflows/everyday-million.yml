@@ -119,7 +119,7 @@ jobs:
           prepare_browser_baseline() {
             source_dir="$1"
             for package_dir in workspace-app desktop; do
-              if ! cmp -s "$GITHUB_WORKSPACE/$package_dir/package-lock.json" "$source_dir/$package_dir/package-lock.json"; then
+              if ! "$python_bin" -B tools/benchmark_workflow.py dependencies-match "$source_dir/$package_dir/package-lock.json" "$GITHUB_WORKSPACE/$package_dir/package-lock.json"; then
                 printf 'Incomparable browser baseline: %s/%s/package-lock.json differs from candidate.\n' "$source_dir" "$package_dir" >&2
                 return 1
               fi

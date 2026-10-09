@@ -1,3 +1,4 @@
+import {downloadExport} from '../downloadExport.js';
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from "../../api.js";
 import {acceptWorkbench,acceptanceFailureKind,previewWorkbench,requireWorkbenchContext,workbenchCandidateRoot,workbenchPreviewCounts} from "../../incoming-workbench/workbenchAuthority.js";
@@ -41,7 +42,7 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
         prepared=receipt?await acceptedExportRequest(protocolId,receipt,{format,name,operationUuid},api):candidateExportRequest(root,preview,{format,name,operationUuid});
         publish({prepared,phase});
       }
-      const exported=await submitWorkbenchExport(prepared,api);publish({receipt,exported,phase:'exported'});onChanged?.();
+      const exported=await submitWorkbenchExport(prepared,api);publish({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
     }catch(error){
       if(phase==='accepting'&&acceptanceFailureKind(error)==='rejected'){
         publish({phase:'rejected',acceptOperation:null,preview:null,error:`Acceptance rejected. Reopen to refresh the proposal. ${error.message}`});setContext(null);

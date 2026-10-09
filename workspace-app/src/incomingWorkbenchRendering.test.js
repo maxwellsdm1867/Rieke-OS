@@ -11,11 +11,12 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const create=(plugins=[])=>createServer({plugins,root,configFile:false,optimizeDeps:{noDiscovery:true,include:[]},esbuild:{jsx:'automatic'},server:{middlewareMode:true,hmr:false,ws:false},appType:'custom'});
 const frozenBrowserProbe={name:'frozen-browser-probe',enforce:'pre',resolveId(source,importer){if(importer?.endsWith('/FrozenIncomingReview.jsx')&&['../../epoch-browser/ui/Inspector.jsx','../../typed-query/ui/ProtocolViewFilter.jsx'].includes(source))return `\0probe-${source}`;},load(id){if(id==='\0probe-../../epoch-browser/ui/Inspector.jsx')return `import React from 'react';export const FROZEN_CANDIDATE_INSPECTOR_SUPPORTED=true;export default function Inspector(props){return React.createElement('div',{'data-frozen-scope':props.readContext.candidate_scope_revision,'data-revision':props.revision});}`;if(id==='\0probe-../../typed-query/ui/ProtocolViewFilter.jsx')return `export default function Filter(){return null;}`;}};
 
-test('selected merge requires explicit review, saves exact selection and preserves exclusions before preview',async()=>{
+test('one explicit selected merge saves exact review, preserves exclusions and accepts with fresh preview fences',async()=>{
  const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer;
  let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[{epoch_uuid:'old',selected:true,reviewed:true,excluded:true}],decisions_total:1,decisions_truncated:false},counts:{pending_epochs:2,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
  globalThis.fetch=async(path,options={})=>{
   if(options.method==='PATCH'){const body=JSON.parse(options.body);calls.push({path,body});assert.equal(body.expected_version,context.draft.draft_version);assert.equal(body.expected_candidate_scope_revision,'scope');const decisions=[...context.draft.decisions];for(const next of body.decisions){const index=decisions.findIndex(value=>value.epoch_uuid===next.epoch_uuid),value={selected:false,reviewed:false,excluded:false,...decisions[index],...next};if(index<0)decisions.push(value);else decisions[index]=value;}context={...context,draft:{...context.draft,draft_version:context.draft.draft_version+1,decisions,decisions_total:decisions.length}};}
+  if(String(path).endsWith('/accept')){const body=JSON.parse(options.body);calls.push({path,body});return {ok:true,status:200,json:async()=>({binding:{revision_uuid:'merged',version:3},event_uuid:'event',operation_uuid:body.operation_uuid})};}
   if(options.method==='POST'){assert.ok(String(path).endsWith('/preview'));const body=JSON.parse(options.body);calls.push({path,body});assert.equal(body.expected_draft_version,2);assert.equal(body.mode,'selected');return {ok:true,status:200,json:async()=>({preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:2,accepted_epoch_count:2,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:42,accepted_cell_count:1})};}
   return {ok:true,status:200,json:async()=>context};
  };
@@ -24,13 +25,12 @@ test('selected merge requires explicit review, saves exact selection and preserv
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
   const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
   await act(async()=>inspector().props.onSelectionChange(['a','b']));assert.deepEqual(calls,[]);
-  await act(async()=>inspector().props.draftSelection.onMerge(['a','b']));assert.deepEqual(calls,[],'opening review must not auto-review');
+  await act(async()=>inspector().props.draftSelection.onMerge(['a','b']));
   assert.equal(inspector().props.draftSelection.disabled,true);
-  const review=renderer.root.findAllByType('button').find(node=>label(node)==='Mark selected reviewed & preview');
-  await act(async()=>review.props.onClick());
   assert.deepEqual(calls[0].body.decisions,[{epoch_uuid:'old',selected:false},{epoch_uuid:'a',selected:true,reviewed:true},{epoch_uuid:'b',selected:true,reviewed:true}]);
   assert.deepEqual(context.draft.decisions[0],{epoch_uuid:'old',selected:false,reviewed:true,excluded:true});
-  assert.equal(calls.length,2);assert.ok(renderer.root.findAllByType('button').some(node=>label(node)==='Add these additions to main'));
+  assert.equal(calls.length,3);assert.deepEqual(calls[2].body,{expected_candidate_scope_revision:'scope',expected_draft_version:2,mode:'selected',preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',operation_uuid:calls[2].body.operation_uuid});
+  assert.match(label(renderer.root),/Acceptance saved/);assert.equal(renderer.root.findAllByProps({'aria-label':'Review selected epochs'}).length,0);
   await act(async()=>renderer.unmount());
  }finally{globalThis.fetch=oldFetch;await server.close();}
 });
@@ -82,7 +82,7 @@ test('actual Workbench renders authoritative queue and session worklist controls
   await act(async()=>renderer.unmount());
   const restored=renderToStaticMarkup(React.createElement(Workbench,{...props,session:saved}));
   assert.match(restored,/1 selected proposals/);
-  const dir=fileURLToPath(new URL('../../review-evidence',import.meta.url));
+  const dir=fileURLToPath(new URL('../../benchmarks/results/selection-review',import.meta.url));
   await mkdir(dir,{recursive:true});await writeFile(`${dir}/workbench-component.html`,html);
  }finally{await server.close();}
 });
@@ -509,4 +509,70 @@ test('single-proposal refresh holds the same inert Inspector until fresh authori
   await act(async()=>inspector.props.draftSelection.onMerge(['epoch']));assert.equal(reads,2);
   await act(async()=>release());assert.equal(renderer.root.find(node=>node.type?.name==='Inspector'),inspector);assert.equal(inspector.props.readPaused,false);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('single-action merge preserves the same acceptance identity after a lost reply',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,saved,attempts=0;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:0,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},protocol:{definition:{protocol_uuid:'p'}}};
+ globalThis.fetch=async(path,options={})=>{
+  const body=options.body&&JSON.parse(options.body);let value=context;
+  if(path.endsWith('/draft')){context={...context,draft:{...context.draft,draft_version:1,decisions:body.decisions,decisions_total:body.decisions.length}};value=context;}
+  if(path.endsWith('/preview'))value={preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1};
+  if(path.endsWith('/accept')){calls.push(body);if(!attempts++)throw Error('reply lost');value={binding:{revision_uuid:'main',version:3},event_uuid:'event',operation_uuid:body.operation_uuid};}
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},onSession:value=>{saved=value;}}));});
+  await act(async()=>renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.onMerge(['a']));
+  assert.equal(saved.unconfirmed,true);assert.equal(calls.length,1);assert.equal(saved.preview.mode,'selected');
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Recover acceptance receipt').props.onClick());
+  assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);assert.equal(saved.receipt.event_uuid,'event');assert.equal(saved.unconfirmed,false);
+ }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+for(const transition of ['revision','unmount','draft-revision','draft-unmount','excluded','short-preview'])test(`single-action merge refuses acceptance after ${transition}`,async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,release,pending;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:0,selection_mode:'selected',decisions:transition==='excluded'?[{epoch_uuid:'a',excluded:true}]:[],decisions_total:transition==='excluded'?1:0,decisions_truncated:false},protocol:{definition:{protocol_uuid:'p'}}};
+ globalThis.fetch=async(path,options={})=>{
+  calls.push(path);let value=context;
+  if(path.endsWith('/draft')){const body=JSON.parse(options.body);if(transition.startsWith('draft-'))await new Promise(resolve=>{release=resolve;});context={...context,draft:{...context.draft,draft_version:1,decisions:body.decisions,decisions_total:body.decisions.length}};value=context;}
+  if(path.endsWith('/preview')){if(['revision','unmount'].includes(transition))await new Promise(resolve=>{release=resolve;});value={preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:transition==='short-preview'?0:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1};}
+  if(path.endsWith('/accept'))assert.fail('must not accept');
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const props={protocolId:'p',item:{candidate_revision_uuid:'c'},revision:0,capabilities:{drafts:true,frozen_browse:true,additive_accept:true}};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  await act(async()=>{pending=renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.onMerge(['a']);});
+  if(transition.endsWith('revision'))await act(async()=>renderer.update(React.createElement(Review,{...props,revision:1})));
+  if(transition.endsWith('unmount'))await act(async()=>renderer.unmount());
+  if(release)await act(async()=>{release();await pending;});else await pending;
+  assert.equal(calls.filter(path=>path.endsWith('/accept')).length,0);
+  if(transition==='excluded')assert.equal(calls.length,1,'excluded selection never writes its draft');
+  if(transition.startsWith('draft-'))assert.equal(calls.filter(path=>path.endsWith('/preview')).length,0,'retired draft save cannot start a preview');
+ }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+for(const canceled of [false,true,'revision'])test(`source hold intent ${canceled===true?'cancellation cannot merge':canceled==='revision'?'revision retirement releases controls':'merges only exact imported nonexcluded UUIDs'}`,async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,writes=[],handled=[];let renderer,release;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:0,selection_mode:'selected',decisions:[{epoch_uuid:'excluded',excluded:true}],decisions_total:1,decisions_truncated:false},counts:{pending_epochs:3,pending_cells:1},protocol:{definition:{protocol_uuid:'p'},counts:{epochs:3},cells:[{cell_uuid:'cell',epochs:3}]}};
+ const request={kind:'merge_source',request_uuid:'hold',project_uuid:'project',protocol_uuid:'p',candidate_revision_uuid:'c',source_sha256:'imported-source'};
+ globalThis.fetch=async(path,options={})=>{
+  const body=options.body&&JSON.parse(options.body);let value=context;
+  if(path.includes('/epochs?')){if(canceled)await new Promise(resolve=>{release=resolve;});value={query_revision:'scope',offset:0,total:3,epochs:[{epoch_uuid:'new',cell_uuid:'cell',source_sha256:'imported-source'},{epoch_uuid:'excluded',cell_uuid:'cell',source_sha256:'imported-source'},{epoch_uuid:'unrelated',cell_uuid:'cell',source_sha256:'older-source'}]};}
+  if(options.method){writes.push({path,body});}
+  if(path.endsWith('/draft')){assert.deepEqual(body.decisions,[{epoch_uuid:'new',selected:true,reviewed:true}]);context={...context,draft:{...context.draft,draft_version:1,decisions:[...context.draft.decisions,...body.decisions],decisions_total:2}};value=context;}
+  if(path.endsWith('/preview'))value={preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1};
+  if(path.endsWith('/accept'))value={binding:{revision_uuid:'main',version:3},event_uuid:'event',operation_uuid:body.operation_uuid};
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const props={projectId:'project',protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},mergeRequest:request,onMergeRequestHandled:message=>handled.push(message)};
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  if(canceled){await act(async()=>renderer.update(React.createElement(Review,{...props,...(canceled==='revision'?{revision:1}:{mergeRequest:null})})));await act(async()=>release());assert.equal(writes.length,0);assert.equal(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.disabled,false);if(canceled==='revision')assert.match(handled.at(-1),/workspace changed/);}
+  else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Acceptance saved/);}
+ }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

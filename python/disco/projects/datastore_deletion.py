@@ -39,6 +39,9 @@ def managed_recording(root, locator):
         raise ValueError('Managed recording locator escapes project storage')
     if path.exists() and not stat.S_ISREG(path.lstat().st_mode):
         raise ValueError('Managed recording is not a regular file')
+    from disco.projects.recording_registry import dependents
+    if dependents(root, path):
+        return None  # Detach this catalog, retain bytes referenced by another project.
     return path
 
 
@@ -90,8 +93,13 @@ class DataStoreDeletion:
             raise ValueError('Source manifest identity differs from its registration')
         path = managed_recording(self.root, manifest['source_path'])
         from disco.projects.recording_files import recording_display_name
+        from disco.projects.recording_registry import dependents, owner
+        shared_projects = dependents(self.root, manifest['source_path'])
+        owning = owner(self.root, manifest['source_path'])
         return {'source_sha256': identity, 'filename': recording_display_name(manifest),
             'source_path': manifest['source_path'], 'managed_file': path is not None,
+            'shared_recording_retained': bool(shared_projects or (owning and Path(owning['path']) != self.root.resolve())),
+            'dependent_projects': shared_projects,
             'file_exists': path.exists() if path is not None else None,
             'registration_revision': checksum(row), 'external_original_retained': path is None}
 
@@ -113,7 +121,8 @@ class DataStoreDeletion:
         if self.connection.query("SELECT GET_LOCK('recording_workspace_import', 30)").fetchone()[0] != 1:
             raise RuntimeError('An import is still writing this project')
         try:
-            with self.stores.registration_locks():
+            from disco.projects.recording_registry import recording_lock
+            with self.stores.registration_locks(), recording_lock(self.root):
                 yield
         finally:
             self.connection.query("SELECT RELEASE_LOCK('recording_workspace_import')")

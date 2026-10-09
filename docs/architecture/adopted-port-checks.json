@@ -549,9 +549,10 @@
           "language": "python",
           "file": "python/workspace_export_artifacts.py",
           "allow": [
+            "disco.decisions.external_tags",
             "pathlib",
-            "workspace_sqlite",
-            "disco.decisions.external_tags"
+            "workspace_linked_sqlite",
+            "workspace_sqlite"
           ]
         },
         {
@@ -1538,7 +1539,8 @@
             "workspace-app/src/exports/workbenchExport.js",
             "workspace-app/src/incoming-workbench/workbenchAuthority.js",
             "workspace-app/src/annotations/annotationProfile.js",
-            "workspace-app/src/incoming-workbench/incomingBootstrap.js"
+            "workspace-app/src/incoming-workbench/incomingBootstrap.js",
+            "workspace-app/src/incoming-workbench/importedSelection.js"
           ]
         },
         {
@@ -1689,6 +1691,14 @@
           "file": "workspace-app/src/incoming-workbench/incomingBootstrap.js",
           "allow": [
             "workspace-app/src/incoming-workbench/workbenchAuthority.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/incoming-workbench/importedSelection.js",
+          "allow": [
+            "workspace-app/src/incoming-workbench/incomingSelection.js",
+            "workspace-app/src/incoming-workbench/selectedIncomingWorkflow.js"
           ]
         }
       ],
@@ -2450,6 +2460,7 @@
             "datetime",
             "disco.projects.datastores",
             "disco.projects.recording_files",
+            "disco.projects.recording_registry",
             "disco.projects.storage",
             "disco.workbench.recipes",
             "hashlib",
@@ -2472,6 +2483,7 @@
             "copy",
             "datetime",
             "disco.decisions.curation",
+            "disco.projects.recording_files",
             "disco.workbench.diff",
             "disco.workbench.recipes",
             "hashlib",
@@ -2573,6 +2585,7 @@
           "language": "python",
           "file": "python/disco/projects/recording_files.py",
           "allow": [
+            "disco.projects.recording_registry",
             "disco.projects.storage",
             "hashlib",
             "pathlib",
@@ -2611,6 +2624,19 @@
             "workspace_frontend",
             "workspace_launcher",
             "workspace_projects"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/recording_registry.py",
+          "allow": [
+            "contextlib",
+            "fcntl",
+            "json",
+            "os",
+            "pathlib",
+            "tempfile",
+            "uuid"
           ]
         }
       ],
@@ -2655,6 +2681,7 @@
             "uuid",
             "workspace_export_artifacts",
             "workspace_export_folder",
+            "workspace_linked_sqlite",
             "workspace_matlab"
           ]
         },
@@ -2745,6 +2772,7 @@
             "pathlib",
             "recording_workspace",
             "uuid",
+            "workspace_linked_sqlite",
             "workspace_matlab",
             "workspace_protocol_identity",
             "workspace_sqlite"
@@ -2823,6 +2851,72 @@
           "workspace-app/src/apiCommandPolicy.test.js",
           "workspace-app/src/epochPrefetch.test.js",
           "workspace-app/src/workspaceRequest.test.js"
+        ]
+      }
+    },
+    {
+      "id": "linked-sqlite-managed-recordings",
+      "contract": {
+        "path": "docs/architecture/linked-sqlite-managed-recordings.md",
+        "heading": "Linked SQLite and managed recordings"
+      },
+      "affected_paths": [
+        "python/workspace_linked_sqlite.py",
+        "python/linked_export_loader.py",
+        "python/workspace_sqlite.py",
+        "python/disco/projects/recording_registry.py",
+        "python/disco/projects/recording_files.py",
+        "python/disco/projects/datastore_deletion.py",
+        "python/recording_workspace.py",
+        "workspace-app/src/exports/**"
+      ],
+      "rules": [
+        {
+          "language": "python",
+          "file": "python/linked_export_loader.py",
+          "allow": [
+            "__future__",
+            "argparse",
+            "collections",
+            "copy",
+            "h5py",
+            "hashlib",
+            "json",
+            "numpy",
+            "pathlib",
+            "sqlite3",
+            "uuid"
+          ]
+        },
+        {
+          "language": "python",
+          "file": "python/workspace_linked_sqlite.py",
+          "allow": [
+            "__future__",
+            "disco.navigation.tree",
+            "disco.projects.recording_files",
+            "disco.workbench.recipes",
+            "hashlib",
+            "json",
+            "linked_export_loader",
+            "os",
+            "pathlib",
+            "sqlite3",
+            "tempfile",
+            "workspace_sqlite",
+            "zipfile"
+          ]
+        }
+      ],
+      "tests": {
+        "python": [
+          "python/tests/test_workspace_linked_sqlite.py",
+          "python/tests/test_workspace_linked_export_api.py",
+          "python/tests/test_workspace_shared_recordings.py"
+        ],
+        "javascript": [
+          "workspace-app/src/exportFormats.test.js",
+          "workspace-app/src/dataExportUi.test.js"
         ]
       }
     }
@@ -3352,6 +3446,12 @@
               "requireIncomingBootstrap",
               "incomingPageOffer"
             ]
+          },
+          {
+            "path": "workspace-app/src/incoming-workbench/importedSelection.js",
+            "exports": [
+              "loadImportedSelection"
+            ]
           }
         ]
       },
@@ -3439,7 +3539,7 @@
     "reviewed_loader_sites": [
       {
         "file": "python/recording_workspace.py",
-        "file_sha256": "a14524bbaf9fe2f87d6c0b9589325c31c99ab44dce2c7487c9fd842266a3f7b2",
+        "file_sha256": "65889ef571aeabac432932634cae593e82023e7e77f9c8668a59da5354de4b98",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3452,7 +3552,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Workbench loading optimization adds exact-catalog connection reuse to protocol evaluation. Existing dynamic loader call ASTs, destinations and policies are unchanged; see the Workbench preparation section of 0.1.8-first-port-slices.md."
+        "reason": "Committed CLI imports now retain verified managed recordings before catalog import; parser dynamic loader call ASTs, destinations and policies are unchanged. See linked-sqlite-managed-recordings.md."
       },
       {
         "file": "python/tests/test_benchmark.py",
@@ -4332,7 +4432,8 @@
             "module": "disco.projects.recording_files",
             "exports": [
               "recording_display_name",
-              "retain_recording"
+              "retain_recording",
+              "managed_recording_owner"
             ]
           },
           {
@@ -4356,6 +4457,19 @@
               "create_project_shell",
               "session_receipt",
               "unused_session"
+            ]
+          },
+          {
+            "path": "python/disco/projects/recording_registry.py",
+            "module": "disco.projects.recording_registry",
+            "exports": [
+              "project_identity",
+              "recording_lock",
+              "read_registry",
+              "owner",
+              "candidates",
+              "register_reference",
+              "dependents"
             ]
           }
         ],
@@ -4559,7 +4673,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
+                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
                 "contract_id": null
               }
             ]
@@ -4811,7 +4925,7 @@
               {
                 "module": "workspace_sqlite",
                 "file": "python/workspace_sqlite.py",
-                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "file_sha256": "d726256d9153f9872d1e85e39d00de359ba7567ccd3be874fdfe5ecc3c7d9292",
                 "contract_id": null
               }
             ]
@@ -4833,7 +4947,7 @@
               {
                 "module": "workspace_sqlite",
                 "file": "python/workspace_sqlite.py",
-                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "file_sha256": "d726256d9153f9872d1e85e39d00de359ba7567ccd3be874fdfe5ecc3c7d9292",
                 "contract_id": null
               }
             ]
@@ -4972,7 +5086,7 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "09dc4a661b7973acbf6048140ff7fe49a639a8a2d3b3d46cf4dc175df62d6ad1",
+                "file_sha256": "5c6476c70506f5df1f0c67b9c77ebb8d69eb5eb19eaad8ac4514b98b21fe64eb",
                 "contract_id": "backend-workbench"
               }
             ]
@@ -4994,7 +5108,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
+                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
                 "contract_id": null
               }
             ]
@@ -5021,13 +5135,13 @@
               {
                 "module": "disco.workbench.candidate_exports",
                 "file": "python/disco/workbench/candidate_exports.py",
-                "file_sha256": "09dc4a661b7973acbf6048140ff7fe49a639a8a2d3b3d46cf4dc175df62d6ad1",
+                "file_sha256": "5c6476c70506f5df1f0c67b9c77ebb8d69eb5eb19eaad8ac4514b98b21fe64eb",
                 "contract_id": "backend-workbench"
               },
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "e18b270c200af6dd223a23b60d55e1bfba7fafa2805f92201b9a206a60730ec9",
+                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
                 "contract_id": null
               }
             ]
@@ -5049,7 +5163,7 @@
               {
                 "module": "workspace_sqlite",
                 "file": "python/workspace_sqlite.py",
-                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "file_sha256": "d726256d9153f9872d1e85e39d00de359ba7567ccd3be874fdfe5ecc3c7d9292",
                 "contract_id": null
               }
             ]
@@ -5093,7 +5207,7 @@
               {
                 "module": "workspace_sqlite",
                 "file": "python/workspace_sqlite.py",
-                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "file_sha256": "d726256d9153f9872d1e85e39d00de359ba7567ccd3be874fdfe5ecc3c7d9292",
                 "contract_id": null
               }
             ]
@@ -5115,7 +5229,7 @@
               {
                 "module": "workspace_sqlite",
                 "file": "python/workspace_sqlite.py",
-                "file_sha256": "36c7247ec44bb87c1663d5b0b0676ba0908c76e1263255dc0c631bf49e152dad",
+                "file_sha256": "d726256d9153f9872d1e85e39d00de359ba7567ccd3be874fdfe5ecc3c7d9292",
                 "contract_id": null
               }
             ]
@@ -5742,8 +5856,8 @@
       },
       {
         "file": "python/tests/test_workspace_workbench_exports.py",
-        "file_sha256": "34e08d4d2d39ae2f78146b2648d758a605e96694d9fb1d17303c1741334b03b3",
-        "reason": "Inject artifact staging failure and reject unsupported MATLAB shape before directory materialization; preserve bindings/publication assertions.",
+        "file_sha256": "e88d8c5fd7d5d24e51ad2507481d89668a7bb8c90bd6446b4742bf10305b995a",
+        "reason": "Available formats now include linked SQLite; the two existing artifact-staging failure targets and publication assertions remain unchanged.",
         "sites": [
           {
             "selector": "Call:55",
@@ -5763,13 +5877,13 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
                 "contract_id": "backend-workbench"
               },
               {
                 "module": "recording_workspace",
                 "file": "python/recording_workspace.py",
-                "file_sha256": "a14524bbaf9fe2f87d6c0b9589325c31c99ab44dce2c7487c9fd842266a3f7b2",
+                "file_sha256": "65889ef571aeabac432932634cae593e82023e7e77f9c8668a59da5354de4b98",
                 "contract_id": null
               }
             ]
@@ -5798,7 +5912,7 @@
               {
                 "module": "disco.workbench.workbench_exports",
                 "file": "python/disco/workbench/workbench_exports.py",
-                "file_sha256": "16bc11bf6e777ae7064ed78ea9a8ead461d71992b833e28bda4c233749527eaa",
+                "file_sha256": "a1787d1c4a3c413f9f0cf63a5ac2f8505c5cec8a9c69789a8af1f1a4ab3b61c7",
                 "contract_id": "backend-workbench"
               }
             ]

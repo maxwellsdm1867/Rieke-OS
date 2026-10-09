@@ -195,3 +195,44 @@ binding, candidate root or recipe changes create a different intent identity.
 The scoped Inspector adapter owns focus/tree continuity and fresh-membership
 validation; the key is never sent as read or write authority. The mounted
 pass-through regression brings the focused total to 41 passing checks.
+
+## One-action selected merge (2026-10-08)
+
+The counted Workbench Merge button explicitly approves its exact selected UUIDs
+and adds them in one action. The renderer saves selected/reviewed decisions using
+current draft/scope versions, obtains a fresh selected-mode sealed additive preview,
+and submits acceptance with its binding/query fences and a new operation UUID.
+There is no intervening review or confirmation click. Excluded selection refuses
+before saving; unrelated review marks and exclusions remain intact. Selection,
+focus, navigation and restored sessions do not authorize this action. Existing main
+membership and curation remain preserved by the additive service.
+
+The selection must contain 1–1,000 distinct exact UUIDs and the complete actor draft
+must be available. Incomplete preview membership refuses acceptance. A mounted
+owner/revision/availability change during preparation also refuses submission.
+Partial draft failures require refresh; uncertain acceptance preserves the original
+preview and operation UUID for explicit receipt recovery. A successful acceptance
+publishes its receipt before refreshing the parent. Export keeps its existing
+separate review/preview workflow. These semantics supersede the previous selected
+merge's separate review and preview confirmation steps; they do not change the
+backend's additive authority, replacement semantics or transaction boundaries.
+
+`incomingWorkbenchRendering.test.js` exercises one-action exact save/preview/accept,
+retained exclusions, lost-reply recovery with identical request identity, and refusal
+for excluded selection, short preview, revision change and unmount. These are owned
+component/API doubles, not native data or release qualification.
+
+## Imported-recording hold (2026-10-08)
+
+On each imported-data card, a normal click inspects that exact candidate. Holding
+the same control for one second issues a single-use project/protocol/candidate/source
+intent. Fresh frozen pages identify the source's exact eligible UUIDs, excluding
+authored exclusions and unrelated older pending sources; the selected merge above
+then saves, previews and accepts. Leaving or cancelling the request retires consent;
+restored routes cannot issue it again. File browsing and H5 ingestion are unchanged.
+
+This uses the existing complete frozen-selection bound: a candidate larger than
+1,000 epochs refuses the shortcut and asks for inspection/manual selection. It does
+not silently merge a partial candidate. Component and policy tests cover the timer,
+source identity, exclusions, stale reads, navigation departure and receipt recovery.
+They do not qualify a packaged app or native H5 throughput.

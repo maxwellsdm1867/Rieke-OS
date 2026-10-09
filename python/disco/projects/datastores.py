@@ -342,8 +342,12 @@ class DataStores:
                 file_status = 'unreadable'
             metadata_size, metadata_status, metadata_path = metadata_file_size(manifest, self.service.project_dir)
             imported_at = imports.get(identity) or manifest.get('imported_at')
+            from disco.projects.recording_files import managed_recording_owner
+            recording_owner = managed_recording_owner(self.service.project_dir, path) if detail_source is not None else None
             results.append({'source_sha256': identity, 'filename': source.get('filename', path.name),
                 'source_path': str(path), 'file_status': file_status, 'size_bytes': size,
+                'recording_owner': recording_owner,
+                'shared_recording': bool(recording_owner and Path(recording_owner['path']) != self.service.project_dir.resolve()),
                 'metadata_size_bytes': metadata_size, 'metadata_file_status': metadata_status, 'metadata_path': metadata_path,
                 'checked_at': checked_at, 'check_kind': 'filesystem_availability_and_size',
                 'recorded_size_bytes': manifest.get('source_size'), 'modified_at': modified,

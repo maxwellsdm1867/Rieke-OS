@@ -14,8 +14,8 @@ from disco.workbench.workbench import ProtocolWorkbench, WorkbenchConflict
 class WorkbenchTests(unittest.TestCase):
     def setUp(self):
         fixture = ImportSuggestionTests()
-        fixture.setUp()
         self.addCleanup(fixture.doCleanups)
+        fixture.setUp()
         self.fixture, self.case = fixture, fixture.case
         self.manager = self.case.app.extensions['protocol_workbench']
         self.tables = (Table(('project_uuid', 'protocol_uuid', 'candidate_revision_uuid', 'actor')),
@@ -30,7 +30,9 @@ class WorkbenchTests(unittest.TestCase):
         self.author = patch('disco.decisions.author_preferences.selected_author', return_value={'profile_uuid': 'actor-one'})
         self.author.start()
         self.addCleanup(self.author.stop)
-        fixture.run_import()
+        job = fixture.run_import()
+        self.assertIn(job['status'], ('complete', 'complete_with_warnings'), job)
+        self.assertTrue(self.case.suggestion_rows.rows, job)
         # Import preflight's source table uses a real fixture digest; the inherited
         # service deliberately uses 'a'*64 as its pre-existing metadata source.
         if not any(row['source_sha256'] == 'a' * 64 for row in self.case.sources.rows):

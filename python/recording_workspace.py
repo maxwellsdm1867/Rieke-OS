@@ -987,6 +987,10 @@ def main():
             reporter.emit, args.expected_sha256)
         manifest["operation_uuid"] = job_file.stem
         if not args.parse_only:
+            from disco.projects.recording_files import retain_recording
+            retained = retain_recording(project_dir, source, manifest['source_sha256'])
+            manifest['source_path'] = str(retained)
+            write_json(folder / 'import-manifest.json', manifest)
             job["status"] = "importing"
             write_json(job_file, job)
             manifest = import_catalog(project_dir, experiment, manifest, folder, container, reporter.emit)

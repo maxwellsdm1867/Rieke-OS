@@ -7,7 +7,7 @@ export default function useIncomingMergeIntent({intent,claim,projectId,protocolI
     seen.current.add(intent.request_uuid);
     const authorized=claim?.(intent)===true;
     if(!authorized||!mergeIntentMatches(intent,projectId,protocolId)){setMessage('This merge request is no longer active for this project and protocol. Use Merge all to request a new preview.');return;}
-    setPending(intent);setMessage('');onOpen();
+    setPending(intent);setMessage('');onOpen(intent);
   },[intent,claim,projectId,protocolId,onOpen]);
   function finish(message=''){setPending(null);setMessage(message);}
   useEffect(()=>{

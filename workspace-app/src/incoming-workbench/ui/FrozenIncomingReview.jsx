@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
 import {api,number} from '../../api.js';
 import {Activity,CircleDot,Download,GitMerge,History,RefreshCw,X} from 'lucide-react';
@@ -7,6 +7,7 @@ import NeuronIcon from '../../components/NeuronIcon.jsx';
 import {clearTagFilters} from '../../typed-query/protocolViewFilter.js';
 import IncomingCellTypes from './IncomingCellTypes.jsx';
 import {mergeIntentMatches} from '../incomingMergeIntent.js';
+import {loadImportedSelection} from '../importedSelection.js';
 import Inspector,* as InspectorCapabilities from '../../epoch-browser/ui/Inspector.jsx';
 import ProtocolViewFilter from '../../typed-query/ui/ProtocolViewFilter.jsx';
 import WorkbenchExportDialog from "../../exports/ui/WorkbenchExportDialog.jsx";
@@ -31,6 +32,8 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     [root,projectId,protocolId,revision,nonce,profile.profileUuid,profile.loading,profile.error,preparedContextToken]);
   const activeOwner=useRef(loadOwner),claimedContext=useRef(null);
   activeOwner.current=loadOwner;
+  const mergeLifetime=useRef(null);
+  useLayoutEffect(()=>{const owner={};mergeLifetime.current=owner;return()=>{if(mergeLifetime.current===owner)mergeLifetime.current=null;};},[loadOwner,externalBusy,capabilities.drafts,capabilities.additive_accept]);
   const contextFresh=context!==null&&loadedOwner.current===loadOwner;
   // A multi-batch draft save advances authority between batches. Keep the
   // browser on its inert committed view until the complete save settles.
@@ -97,40 +100,46 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
     try{
       const intent={...selectedReview(current.current,ids),kind,scope:current.current.candidate_scope_revision,version:current.current.draft.draft_version};
       if(intent.excluded.length){setError(`${intent.excluded.length} selected epochs are excluded. Adjust the selection or explicitly change those exclusions before continuing.`);return;}
+      if(kind==='merge')return prepareSelection(intent,true);
       setSelectionIntent(intent);
-      if(!intent.unreviewed.length)void prepareSelection(intent,false);
+      if(!intent.unreviewed.length)return prepareSelection(intent,false);
     }catch(error){setError(error.message);}
   }
   async function prepareSelection(intent,review){
     if(activeOwner.current!==loadOwner||externalBusy||inFlight.current||exportLocked||!current.current)return;
     if(current.current.candidate_scope_revision!==intent.scope||current.current.draft.draft_version!==intent.version){setSelectionIntent(null);setError('The draft changed. Inspect the current selection and choose Merge or Export again.');return;}
+    const owner=mergeLifetime.current;
     inFlight.current=true;setBusy(true);setError('');setPreview(null);operation.current=null;
     try{
-      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},api,value=>{
-        if(activeOwner.current===loadOwner){current.current=value;setContext(value);}
-      });
-      if(activeOwner.current!==loadOwner)return;
+      const ensureCurrent=()=>{if(!owner||mergeLifetime.current!==owner||activeOwner.current!==loadOwner)throw Error('The incoming workspace changed while preparing the merge. Choose Merge or Export again in the current workspace.');};
+      const value=await prepareSelectedIncoming({root,context:current.current,ids:intent.ids,review},(path,options)=>{ensureCurrent();return api(path,options);},value=>{ensureCurrent();current.current=value;setContext(value);});
+      ensureCurrent();
       if(intent.kind==='merge'){
         if(exportState.exported)setExportState(nextWorkbenchWorkflow(exportState));
         setPreview(value);operation.current=crypto.randomUUID();publish({preview:value,operation:operation.current});
+        if(value.accepted_epoch_count>0)await submitAcceptance(value);
       }else{
         const next={...nextWorkbenchWorkflow(exportState),mode:'selected',preview:value,phase:'previewed'};
         setExportState(next);publish({exportState:next});setExportDialog(intent.kind==='merge-export');
       }
-    }catch(error){if(activeOwner.current===loadOwner){setError(`Draft changes may already be saved. Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}}
-    finally{setSelectionIntent(null);inFlight.current=false;setBusy(false);}
+    }catch(error){if(mergeLifetime.current===owner){setError(`Draft changes may already be saved. Refresh and inspect the selection before trying again. ${error.message}`);setContext(null);}}
+    finally{inFlight.current=false;if(mergeLifetime.current!==null){setSelectionIntent(null);setBusy(false);}}
   }
   async function accept(){
     if(activeOwner.current!==loadOwner||externalBusy||!contextFresh&&!unconfirmed||inFlight.current||exportState.pending||!preview||receipt)return;inFlight.current=true;setBusy(true);setError('');
-    setAcceptPending(true);publish({acceptPending:true});
-    try{const result=await acceptWorkbench(root,preview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,operation:operation.current});setPreview(null);onChange?.();}
+    try{await submitAcceptance(preview);}
+    finally{inFlight.current=false;setBusy(false);}
+  }
+  async function submitAcceptance(acceptedPreview){
+    setAcceptPending(true);publish({acceptPending:true,preview:acceptedPreview,operation:operation.current});
+    try{const result=await acceptWorkbench(root,acceptedPreview,operation.current,api);setUnconfirmed(false);setReceipt(result);publish({receipt:result,unconfirmed:false,acceptPending:false,preview:null,operation:operation.current});setPreview(null);onChange?.();}
     catch(error){
       if(acceptanceFailureKind(error)==='rejected'){
         setPreview(null);operation.current=null;setUnconfirmed(false);publish({unconfirmed:false,acceptPending:false,preview:null,operation:null});
         if(activeOwner.current===loadOwner){setContext(null);setError(`Acceptance was rejected. Refresh the proposal and preview again. ${error.message}`);}
-      }else{setUnconfirmed(true);publish({unconfirmed:true,acceptPending:false,preview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
+      }else{setUnconfirmed(true);publish({unconfirmed:true,acceptPending:false,preview:acceptedPreview,operation:operation.current});setError(`Acceptance may have committed. Retry this same operation to recover its receipt; do not create another operation. ${error.message}`);}
     }
-    finally{inFlight.current=false;setBusy(false);setAcceptPending(false);}
+    finally{setAcceptPending(false);}
   }
   const pageOffers=useRef(new WeakMap());
   const pageOffer=useMemo(()=>{
@@ -154,19 +163,32 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       ?{cohort_key:JSON.stringify([root,visible.context.candidate_recipe_sha256,visible.context.expected_binding_version])}:{})}:null;
   const adapterReady=capabilities.frozen_browse===true&&InspectorCapabilities.FROZEN_CANDIDATE_INSPECTOR_SUPPORTED===true&&!!protocol;
   const exportLocked=unconfirmed||!!exportState.pending||!exportState.exported&&(!!exportState.acceptOperation||!!exportState.prepared);
-  const handledMergeRequests=useRef(new Set());
+  const handledMergeRequests=useRef(new Set()),liveMergeRequest=useRef(mergeRequest);
+  liveMergeRequest.current=mergeRequest;
   useEffect(()=>{
     if(!mergeRequest||handledMergeRequests.current.has(mergeRequest.request_uuid))return;
-    if(!mergeIntentMatches(mergeRequest,projectId,protocolId)||scopeKind!=='cumulative_pending'){
+    const sourceMerge=mergeRequest.kind==='merge_source';
+    if(!mergeIntentMatches(mergeRequest,projectId,protocolId)||(sourceMerge?scopeKind!=='proposal'||mergeRequest.candidate_revision_uuid!==item.candidate_revision_uuid:scopeKind!=='cumulative_pending')){
       handledMergeRequests.current.add(mergeRequest.request_uuid);onMergeRequestHandled?.('The merge request does not match this cumulative workspace.');return;
     }
     if(externalBusy||busy||!contextFresh&&!error)return;
     handledMergeRequests.current.add(mergeRequest.request_uuid);
-    if(error||!contextFresh||!capabilities.additive_accept){onMergeRequestHandled?.('Refresh the incoming draft before requesting a merge preview.');return;}
+    if(error||!contextFresh||!capabilities.additive_accept||!capabilities.drafts){onMergeRequestHandled?.('Refresh the incoming draft before requesting a merge preview.');return;}
     if(exportLocked||acceptPending||receipt||preview){onMergeRequestHandled?.('A saved operation or preview is already open. Resolve or cancel it before requesting another merge.');return;}
     if(!Number.isSafeInteger(context.counts?.pending_epochs)||context.counts.pending_epochs<=0){onMergeRequestHandled?.('No confirmed pending additions are available for a merge preview.');return;}
-    onMergeRequestHandled?.('Select the epochs to merge, then choose Merge to review and preview them.');
-  },[mergeRequest,projectId,protocolId,scopeKind,externalBusy,busy,contextFresh,context,error,exportLocked,acceptPending,receipt,preview,capabilities.additive_accept,onMergeRequestHandled]);
+    if(sourceMerge){
+      const owner=mergeLifetime.current,scope=current.current.candidate_scope_revision;
+      const isCurrent=()=>owner!==null&&mergeLifetime.current===owner&&activeOwner.current===loadOwner&&liveMergeRequest.current?.request_uuid===mergeRequest.request_uuid&&current.current?.candidate_scope_revision===scope;
+      inFlight.current=true;setBusy(true);setError('');
+      void loadImportedSelection({root,context:current.current,sourceSha256:mergeRequest.source_sha256,request:api,isCurrent}).then(ids=>{
+        if(!isCurrent())return;
+        inFlight.current=false;setBusy(false);onMergeRequestHandled?.(ids.length?'':'No eligible additions from this H5 remain to merge.');
+        if(ids.length){select(ids);return beginSelected(ids);}
+      }).catch(error=>{if(isCurrent()){setError(error.message);onMergeRequestHandled?.('Imported additions could not be verified. Inspect this proposal before merging.');}}).finally(()=>{inFlight.current=false;if(mergeLifetime.current!==null){setBusy(false);if(mergeLifetime.current!==owner&&liveMergeRequest.current?.request_uuid===mergeRequest.request_uuid)onMergeRequestHandled?.('The incoming workspace changed. Hold the import button again to request a fresh merge.');}});
+      return;
+    }
+    onMergeRequestHandled?.('Select the epochs to merge, then choose Merge to add them to Main.');
+  },[mergeRequest,projectId,protocolId,scopeKind,externalBusy,busy,contextFresh,context,error,exportLocked,acceptPending,receipt,preview,capabilities.additive_accept,capabilities.drafts,onMergeRequestHandled]);
   function cancelPreview(){
     if(inFlight.current||unconfirmed||acceptPending||exportLocked)return;
     setPreview(null);operation.current=null;publish({preview:null,operation:null});
@@ -197,7 +219,7 @@ export default function FrozenIncomingReview({projectId,protocolId,item,revision
       </div>
         <p>{scopeKind==='cumulative_pending'?'Distinct pending cells and epochs across saved proposals. Review opens only the unmerged incoming set; original proposals remain in history.':'This browser shows one frozen proposal. Its pending counts may overlap other proposals; the queue totals count each identity once.'}</p>
         <p>Review marks and exclusions are saved to your draft. Shared tags publish immediately. Merge to main adds eligible epochs and preserves existing main recordings and curation. Opening this view does not mark anything reviewed.</p>
-        <p>Select marks exact epochs for Merge or Export. Merge saves that selection to your draft, asks for any required review, and shows a fresh preview before confirmation. Shared tags and exclusions stay separate. Cancel keeps saved draft changes and does not undo a submitted operation.</p>
+        <p>Select marks exact epochs for Merge or Export. Merge marks that exact selection reviewed, checks a fresh preview, and adds eligible epochs to Main in one action. Shared tags and exclusions stay separate. Cancel keeps saved draft changes and does not undo a submitted operation.</p>
         {exportIntent&&<p>Reused incoming export settings. The previous artifact stays unchanged; export requires an explicit action.</p>}
         {contextFresh&&<p>Draft version {context.draft.draft_version} · scope <code>{context.candidate_scope_revision.slice(0,12)}</code> · proposal <code>{item.candidate_revision_uuid.slice(0,8)}</code></p>}
         {scopeKind!=='cumulative_pending'&&contextFresh&&context?.counts&&<p>{countLabel(context.counts.incoming_epochs)} proposal additions · {countLabel(context.counts.already_present_epochs)} already in main.</p>}

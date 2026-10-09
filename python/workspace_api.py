@@ -1470,7 +1470,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not isinstance(body, dict):
             raise ValueError('Export requires an options object')
         export_format = body.get('format', 'reference-json')
-        if not isinstance(export_format, str) or export_format not in {'reference-json', 'matlab-mat', 'wheeler-sqlite'}:
+        if not isinstance(export_format, str) or export_format not in {'reference-json', 'matlab-mat', 'wheeler-sqlite', 'linked-sqlite'}:
             raise ValueError('Unsupported export format')
         managed_directory(project_dir, 'exports')  # Recheck live links before any query/publication work.
         with db_lock, data_stores.registration_locks(), (shared_annotations.lock() if shared_annotations else contextlib.nullcontext()):
@@ -1525,7 +1525,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 annotations=shared_annotations.for_epochs([service.rows[item['epoch_uuid']] for item in package['epochs']])
                 for item in package['epochs']:item['annotations']=annotations[item['epoch_uuid']]
             artifact = output / "recordings.json"
-            write_json(artifact, package)
+            if export_format == 'linked-sqlite':
+                from workspace_linked_sqlite import prepare_linked_package
+                package = prepare_linked_package(package, service.manifests, service.project_dir,
+                                                 grouping_sources=service.sources)
+            else:
+                write_json(artifact, package)
             try:
                 def matlab_writer(recipe, output_dir, *, epoch_records):
                     from workspace_matlab import build_matlab_export
@@ -1679,12 +1684,24 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             from disco.projects.recording_files import retain_recording
             original_source = source
             source = retain_recording(project_dir, source, check['source_sha256'])
+            from disco.projects.recording_files import managed_recording_owner
+            owner = managed_recording_owner(project_dir, source)
+            shared_recording = owner is not None and Path(owner['path']) != Path(project_dir).resolve()
             job.update(source=str(source), retained_in_project=True,
-                recording_storage={'kind': 'managed_copy', 'path': str(source),
+                recording_storage={'kind': 'managed_reference' if shared_recording else 'managed_copy', 'path': str(source),
+                    'owner_project': owner, 'shared': shared_recording,
                     'sha256': check['source_sha256'], 'verified': True,
                     'original_removal_safe': False})
             if source != original_source:
                 job['original_source'] = str(original_source)
+                if job.get('managed_upload'):
+                    upload_root = managed_directory(project_dir, 'raw-uploads')
+                    expected_folder = upload_root / str(uuid.UUID(job['upload_directory_uuid']))
+                    if original_source.is_symlink() or original_source.parent != expected_folder:
+                        raise ValueError('Reused recording staging cleanup path failed validation')
+                    original_source.unlink()
+                    original_source.parent.rmdir()
+                    job['duplicate_staging_removed'] = True
             write_json(job_file, job)
             job.update(status='freezing_baselines')
             reporter.emit('freezing_baselines')

@@ -2744,7 +2744,7 @@
       ],
       "bounded_next_design": "Keep authority owner; separately characterize queue/prepare/refresh/recovery composition. A future simplified session interface must retain exact uncertain operations and distinction between presentation and scientific draft state.",
       "contract": {
-        "inputs": "Queue/context/frozen scoped readers, prepare(expected_queue_revision), draft patch, sealed preview and accept(operation UUID) expose versioned DTOs. Draft batches <=250 boolean decisions. Preview selected mode requires saved selected+reviewed not excluded; all mode includes eligible pending minus explicit exclusions.",
+        "inputs": "Queue/context/frozen scoped readers, prepare(expected_queue_revision), draft patch, sealed preview and accept(operation UUID) expose versioned DTOs. Draft batches <=250 boolean decisions. Preview selected mode requires saved selected+reviewed not excluded; all mode includes eligible pending minus explicit exclusions. The counted selected Merge action explicitly authorizes exact selected review/save, fresh preview and acceptance in one action; navigation and restored state remain inert.",
         "outputs": "Versioned queue/context/scoped rows, actor draft context, sealed preview counts/hash and durable additive acceptance receipt with resulting binding and exact accepted/selected UUIDs/fingerprints.",
         "identity_types_order_units_provenance": "Project/protocol/candidate/baseline/main UUIDs and recipe hashes; metadata fingerprint v2, actor draft version, query/binding/source/shared-annotation/predicate witnesses form candidate_scope_revision. Pending membership is candidate minus baseline minus current main. Fingerprints, not labels, carry original proposal/draft provenance. Canonical memberships and accepted UUIDs sorted; scientific units are preserved by frozen readers, no review conversion. Counts are epochs versus distinct cells, never interchangeable.",
         "errors_partial_success": "Reject stale scope/draft/binding/query/preview, changed fingerprints, ineligible sources, changed predicate tags or invalid additive lineage. Multiple renderer draft batches can partially succeed; require refresh after later failure. Opening/highlighting/defer does not approve science. Missing count can be unavailable, not zero.",
@@ -4225,7 +4225,8 @@
         "workspace-app/src/incoming-workbench/incomingSelectionSummary.js",
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.jsx",
         "workspace-app/src/incoming-workbench/ui/IncomingSelectionSummary.css",
-        "workspace-app/src/incoming-workbench/incomingTreeSelection.js"
+        "workspace-app/src/incoming-workbench/incomingTreeSelection.js",
+        "workspace-app/src/incoming-workbench/importedSelection.js"
       ],
       "verification": {
         "existing_tests": [

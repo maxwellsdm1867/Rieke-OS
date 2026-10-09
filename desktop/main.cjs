@@ -219,7 +219,7 @@ function configureSession() {
   ownedSession.on('will-download', (event, item, contents) => {
     if (![...windows].some(win => win.webContents === contents) || !isOwnedURL(item.getURL(), supervisor?.origins)) { event.preventDefault(); return; }
     const filename = path.basename(item.getFilename()).replace(/[\x00-\x1f]/g, '_');
-    item.setSaveDialogOptions({title: 'Save export', defaultPath: filename});
+    item.setSaveDialogOptions({title: 'Save export', defaultPath: path.join(app.getPath('downloads'), filename)});
   });
 }
 function restoreStartupWindow(window){

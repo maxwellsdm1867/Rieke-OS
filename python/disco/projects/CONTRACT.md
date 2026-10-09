@@ -20,7 +20,9 @@ Retention resolves the existing source, verifies SHA-256 even for an already-man
 source, and otherwise copies into a fresh UUID directory under `raw-uploads` using
 exclusive output creation. Verification failure removes only that new output and
 directory before reraising; original source deletion remains the import caller's
-policy. Repeating an external copy may allocate another directory. There is no SQL
+policy. Real project manifests enable verified reuse in this project or a sibling
+under the same workspace; see the [managed recording contract](../../../docs/architecture/linked-sqlite-managed-recordings.md#managed-recording-contract).
+Legacy callers without project manifests keep contained-copy behavior. There is no SQL
 commit, scientific validation, cancellation token or hard-death cleanup guarantee.
 Opaque byte-copy success neither proves catalog commit nor authorizes deleting an
 original. Display name uses a valid independent filename or the locator basename.
