@@ -22,7 +22,7 @@ Queue candidates deduplicate exact UUIDs within one queue revision. Protocol,
 project, candidate scope revision, draft version, queue revision and one-shot request
 UUID remain distinct. Explicit contract v1/capability checks and safe nonnegative
 counts remain mandatory; null counts mean unavailable. Frozen selection traverses
-60-row pages in scoped cell order up to 1,000 complete epochs. Main cell totals,
+60-row pages in scoped cell order. Current capable Workbench selections have no fixed epoch-count ceiling. Main cell totals,
 partial pages, duplicates, wrong-cell rows or changed revisions cannot substitute
 for exact scoped membership. Counts do not sum overlapping proposal totals.
 
@@ -119,8 +119,7 @@ layout/paint, native data reads and full backend qualification remain separate.
 verifies complete current descendant IDs through `resolveTreeGroup` before any
 selection change. Branch color is the nearest explicit on/off command, not child
 coverage. A child or epoch can be off while its parent remains on; flipping the
-parent overwrites all downstream commands and selected UUIDs. Existing 1,000-target,
-partial-page, duplicate, cancellation and final-revision checks remain mandatory.
+parent overwrites all downstream commands and selected UUIDs. Complete membership, partial-page, duplicate, cancellation and final-revision checks remain mandatory.
 Inspector owns ephemeral branch commands shared by column/hierarchy presentations.
 They are not persisted in sessions and never replace selected UUIDs for merge/export.
 Global selection tools send explicit root-command metadata only after successful
@@ -141,7 +140,7 @@ Incoming left browsing uses optional ephemeral highlighted UUIDs separate from
 selected UUIDs. Plain/Command/Shift gestures affect highlights through existing
 bounded range readers and freshness fences. The top selection toolbar has one
 counted highlight action: Select Highlighted unions this set; when every highlighted
-UUID is selected, Deselect Highlighted subtracts it, with the existing 1,000 limit.
+UUID is selected, Deselect Highlighted subtracts it, without imposing a Workbench selection-count ceiling.
 The action is disabled for an empty set or while selection authority is unavailable.
 Candidate/query/revision/split or presentation changes mask old highlights before
 paint; highlights are not persisted and never imply merge/export consent.
@@ -165,7 +164,7 @@ verification. Following commands wait for both prior selection and intent commit
 Failure, scope/owner change, external selection/intent changes and unmount retire
 dependent commands. Stale A-B-A handlers cannot enqueue. Other branch switches
 remain clickable; pending controls show Selecting/Deselecting and aria-busy.
-Authority-disabled and 1,000-epoch limits remain. Queue and stale-lifetime examples
+Authority-disabled checks remain; older services retain their advertised finite selection limits. Queue and stale-lifetime examples
 are in `incomingTreeSelectionQueue.test.js`.
 
 Epoch Select/Deselect switches also accept Shift-click: the first ordinary switch
@@ -174,8 +173,7 @@ to the complete range. Column/hierarchy ranges stay inside one branch; the cell
 list supports its existing ordered cross-cell range reader. Plain switch clicks
 accumulate independent targets. Switch gestures change actual selected UUIDs,
 not highlights or trace focus; label gestures retain their separate highlight
-store. Scope retirement, concurrent selection changes, complete paging and the
-1,000-epoch bound retain the existing all-or-nothing checks.
+store. Scope retirement, concurrent selection changes, complete paging and the complete-membership requirement retain the existing all-or-nothing checks.
 
 The counted Merge action is explicit consent to review and add exactly its selected
 UUIDs. It performs versioned selected-draft save, a fresh sealed additive preview,
@@ -242,7 +240,7 @@ held requests and the actual Inspector hook composition.
 recording. `useSourceMerge.js` binds its operation to App lifetime. Inspect still
 opens Workbench; direct hold never selects a client cohort or navigates there.
 Server source selection preserves main membership, full exclusions and publication
-fences, including candidates over the interactive 1,000-epoch selection limit.
+fences, independently of interactive selection.
 
 Persist the exact acceptance body, operation UUID and actor through the existing
 desktop draft saver before submission. Recovery hydration runs independently of
@@ -254,3 +252,40 @@ owner opens Overview. Lost/invalid replies retain recovery identity.
 
 Run `sourceMerge.test.js`, `useSourceMerge.test.js`, `importMergeAppRoute.test.js`,
 renderer-draft tests and the backend Workbench authority suite for these contracts.
+
+## Large exact Workbench selections
+
+`selection_manifests` advertises the current uncapped-selection contract. Shared
+selection helpers keep their Main defaults; only capable incoming views opt out.
+Select all batches cell descriptors and verifies full ordered UUID membership;
+large cells retain bounded 60-row reads. No partial response changes selection.
+`createWorkbenchSelection` uploads at most 1,000 UUIDs per request and verifies the
+final count, scope/binding receipts and SHA-256 against the full original array.
+The ephemeral manifest is actor/project/protocol/candidate/scope bound, expires
+and may be evicted. It grants no draft review, acceptance or export consent.
+
+View selected carries the opaque token in readContext, separately from ordinary
+filters. Every selected-view read resolves it freshly; stale/expired tokens refuse
+and never widen to all incoming epochs. View loading retires on owner, selection,
+pause or navigation changes. Tokens are not presentation checkpoints. Summary and
+atomic selected-review use the same complete selection; selected-review replaces
+selected flags using the full server draft, preserves exclusions and review flags
+outside the explicit set, and requires explicit consent to mark that set reviewed.
+Existing sealed preview, exact counts and acceptance/replay remain authoritative.
+
+`compactWorkbenchSelections` only compacts recognized Workbench selected arrays
+in the disk checkpoint when their aggregate presentation budget is exceeded. Live
+selections remain exact. It records an omitted count for a restart notice; it never
+restores a partial selection or drops a preview, operation, receipt or export state.
+Frozen review publishes its recovery operation and awaits `flushDesktopDrafts`
+before acceptance. Failed persistence or retired ownership submits nothing.
+
+The large-selection backend/renderer tests cover 1,691 incoming epochs, truncated
+saved draft details, tokenized views, exact summary/merge membership, replay and
+persistence failure. Manifest transfer tests cover 20,001 IDs; disk compaction
+covers 100,000. These fixtures do not establish arbitrary-size native latency.
+
+Unconfirmed Workbench recovery reads the existing receipt with GET. A missing
+receipt never submits acceptance. Retry this merge is a separate explicit action
+using the original preview and operation UUID, including after a pre-submit save
+was retired by navigation. Restored acceptPending state cannot recreate consent.

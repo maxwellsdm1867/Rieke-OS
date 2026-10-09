@@ -107,6 +107,7 @@ test('mounted additive review preserves an uncertain acceptance operation and re
   let value=context,status=200;
   if(endpoint===`${root}/preview`)value={preview_sha256:'sealed-preview',expected_binding_version:2,expected_query_revision:'main-query',selected_epoch_count:7,accepted_epoch_count:7,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:47,accepted_cell_count:2};
   else if(endpoint===`${root}/accept`){if(accepts++===0){status=503;value={error:'Reply lost after possible commit'};}else value={binding:{revision_uuid:'main-plus-additions',version:3},event_uuid:'one-event',operation_uuid:body.operation_uuid};}
+  else if(endpoint===`/protocols/history/workbench/receipts/${saved?.operation}`)value={binding:{revision_uuid:'main-plus-additions',version:3},event_uuid:'one-event',operation_uuid:saved.operation};
   else assert.equal(endpoint,`${root}/context`,'frozen review makes no global browse or replacement request');
   return {ok:status===200,status,json:async()=>value};
  };
@@ -125,7 +126,7 @@ test('mounted additive review preserves an uncertain acceptance operation and re
   await act(async()=>button('Recover acceptance receipt').props.onClick());
   assert.equal(saved.receipt.binding.revision_uuid,'main-plus-additions');assert.equal(saved.unconfirmed,false);assert.equal(changed,1);
   const acceptanceCalls=calls.filter(call=>call.path.endsWith('/accept'));
-  assert.equal(acceptanceCalls.length,2);assert.deepEqual(acceptanceCalls[0].body,acceptanceCalls[1].body);assert.equal(acceptanceCalls[1].body.operation_uuid,operation);
+  assert.equal(acceptanceCalls.length,1);assert.equal(calls.filter(call=>call.path.includes('/receipts/')&&call.method==='GET').length,1);assert.equal(acceptanceCalls[0].body.operation_uuid,operation);
   assert.equal(calls.filter(call=>call.path.endsWith('/preview')).length,0);
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
@@ -299,6 +300,7 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
   const endpoint=String(path).replace(/^\/api/,''),body=options.body?JSON.parse(options.body):null;let value,status=200;
   if(endpoint.endsWith('/context'))value=context;
   else if(endpoint===`${root}/accept`){if(attempts++===0){await new Promise(resolve=>{release=resolve;});status=503;value={error:'Reply lost'};}else value={operation_uuid:body.operation_uuid,candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};}
+  else if(endpoint==='/protocols/history/workbench/receipts/same-operation')value={operation_uuid:'same-operation',candidate_revision_uuid:'old-union',event_uuid:'accepted-old',binding:{revision_uuid:'new-main',version:2}};
   else if(endpoint.endsWith('/prepare')){prepares++;value={...prepared,candidate_revision_uuid:'new-union',root:root.replace('old-union','new-union'),context:{...prepared.context,candidate_revision_uuid:'new-union'},queue_revision:body.expected_queue_revision};}
   else assert.fail(`Unexpected ${endpoint}`);
   return {ok:status===200,status,json:async()=>value};
@@ -317,7 +319,7 @@ test('queue changes preserve in-flight acceptance and older confirmed receipt ke
   assert.equal(prepares,1);assert.equal(saved.prepared.candidate_revision_uuid,'new-union');
   const exportButton=renderer.root.findAllByType('button').find(node=>label(node)==='Export accepted additions');assert.ok(exportButton,'old accepted subset remains exportable');
   await act(async()=>exportButton.props.onClick());
-  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('accepted-old')));assert.equal(attempts,2,'opening old receipt export does not accept again');
+  assert.ok(renderer.root.findAllByType('p').some(node=>label(node).includes('accepted-old')));assert.equal(attempts,1,'receipt lookup and opening export do not accept again');
  }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
 
@@ -526,7 +528,7 @@ test('single-action merge preserves the same acceptance identity after a lost re
   await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'p',item:{candidate_revision_uuid:'c'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true},onSession:value=>{saved=value;}}));});
   await act(async()=>renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.onMerge(['a']));
   assert.equal(saved.unconfirmed,true);assert.equal(calls.length,1);assert.equal(saved.preview.mode,'selected');
-  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Recover acceptance receipt').props.onClick());
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Retry this merge').props.onClick());
   assert.equal(calls.length,2);assert.deepEqual(calls[0],calls[1]);assert.equal(saved.receipt.event_uuid,'event');assert.equal(saved.unconfirmed,false);
  }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });
@@ -575,4 +577,93 @@ for(const canceled of [false,true,'revision'])test(`source hold intent ${cancele
   if(canceled){await act(async()=>renderer.update(React.createElement(Review,{...props,...(canceled==='revision'?{revision:1}:{mergeRequest:null})})));await act(async()=>release());assert.equal(writes.length,0);assert.equal(renderer.root.find(node=>node.type?.name==='Inspector').props.draftSelection.disabled,false);if(canceled==='revision')assert.match(handled.at(-1),/workspace changed/);}
   else{assert.deepEqual(writes.map(call=>call.path.split('/').at(-1)),['draft','preview','accept']);assert.match(label(renderer.root),/Acceptance saved/);}
  }finally{if(renderer)await act(()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('one explicit Merge handles 1691 selected epochs and a truncated saved draft through a sealed manifest',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[],ids=Array.from({length:1691},(_,i)=>`00000000-0000-0000-0000-${String(i).padStart(12,'0')}`),uploaded=[];let renderer;
+ const {createHash}=await import('node:crypto');
+ let context={selection_manifests:true,expected_binding_version:2,candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:305,decisions_truncated:true},counts:{pending_epochs:1691,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  const body=options.body?JSON.parse(options.body):null;let value=context;
+  if(options.method==='POST'){
+   calls.push({path:String(path),body});
+   if(String(path).endsWith('/selection-manifest')){assert.equal(body.offset,uploaded.length);uploaded.push(...body.epoch_uuids);value={selection_token:body.upload_uuid,count:uploaded.length,total:1691,complete:uploaded.length===1691,selection_sha256:createHash('sha256').update(JSON.stringify(uploaded)).digest('hex'),candidate_scope_revision:'scope',query_revision:'scope',expected_binding_version:2};}
+   else if(String(path).endsWith('/selected-review')){assert.equal(body.review,true);assert.equal(body.expected_version,1);context={...context,candidate_scope_revision:'saved',draft:{...context.draft,draft_version:2}};value=context;}
+   else if(String(path).endsWith('/preview')){assert.equal(body.expected_candidate_scope_revision,'saved');value={preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1691,accepted_epoch_count:1691,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:1731,accepted_cell_count:1};}
+   else if(String(path).endsWith('/accept'))value={binding:{revision_uuid:'merged',version:3},event_uuid:'event',operation_uuid:body.operation_uuid};
+   else assert.fail(String(path));
+  }
+  return {ok:true,status:200,json:async()=>value};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
+  await act(async()=>inspector().props.onSelectionChange(ids));assert.equal(calls.length,0);
+  await act(async()=>inspector().props.draftSelection.onMerge(ids));
+  assert.deepEqual(uploaded,ids);assert.deepEqual(calls.map(call=>call.path.split('/').at(-1)),['selection-manifest','selection-manifest','selected-review','preview','accept']);assert.match(label(renderer.root),/Acceptance saved/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('Workbench acceptance waits for recovery persistence and a failed save submits nothing',async()=>{
+ const server=await create([frozenBrowserProbe]),oldFetch=globalThis.fetch,calls=[];let renderer,snapshot,stop;
+ let context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:1,pending_cells:1},protocol:{definition:{protocol_uuid:'history'}}};
+ globalThis.fetch=async(path,options={})=>{
+  if(options.method==='PATCH'){context={...context,draft:{...context.draft,draft_version:2,decisions:[{epoch_uuid:'a',selected:true,reviewed:true}],decisions_total:1}};}
+  if(options.method==='POST'){calls.push(String(path));assert.ok(String(path).endsWith('/preview'),'accept must not be sent');return {ok:true,status:200,json:async()=>({preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1})};}
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const {registerDraftSaver}=await server.ssrLoadModule('/src/desktopLifecycle.js');
+  stop=registerDraftSaver(async()=>{assert.equal(snapshot.acceptPending,true);assert.equal(snapshot.preview.preview_sha256,'sealed');assert.ok(snapshot.operation);throw Error('disk full');});
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{selected:[],selection_omitted_count:100000},onSession:value=>{snapshot=value;},capabilities:{drafts:true,frozen_browse:true,additive_accept:true}}));});
+  assert.match(label(renderer.root),/100,000 epochs was too large to restore/);
+  const inspector=()=>renderer.root.find(node=>node.type?.name==='Inspector');
+  assert.deepEqual(inspector().props.draftSelection.selected,[]);
+  await act(async()=>inspector().props.onSelectionChange(['a']));
+  assert.doesNotMatch(label(renderer.root),/too large to restore/);
+  await act(async()=>inspector().props.draftSelection.onMerge(['a']));
+  assert.equal(calls.length,1);assert.match(label(renderer.root),/Merge was not submitted/);assert.equal(snapshot.acceptPending,false);assert.ok(snapshot.operation);assert.equal(snapshot.preview.preview_sha256,'sealed');
+ }finally{stop?.();if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('owner retirement during recovery save cannot become a committing recovery after restart',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,snapshot,disk,release,stop,pending;const posts=[],gets=[];
+ const preview={mode:'selected',expected_candidate_scope_revision:'scope',expected_draft_version:1,preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1};
+ const context={candidate_scope_revision:'scope',draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false}};
+ globalThis.fetch=async(path,options={})=>{
+  if(String(path).includes('/receipts/')){gets.push(String(path));return {ok:false,status:404,json:async()=>({error:'No receipt'})};}
+  if(options.method==='POST'){posts.push(JSON.parse(options.body));return {ok:true,status:200,json:async()=>({binding:{revision_uuid:'main',version:3},event_uuid:'event',operation_uuid:posts.at(-1).operation_uuid})};}
+  return {ok:true,status:200,json:async()=>context};
+ };
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  const {registerDraftSaver}=await server.ssrLoadModule('/src/desktopLifecycle.js');
+  const props={protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{preview,operation:'never-submitted'},capabilities:{drafts:true,additive_accept:true},onSession:value=>{snapshot=value;}};
+  const button=name=>renderer.root.findAllByType('button').find(node=>label(node)===name);
+  stop=registerDraftSaver(()=>{disk=structuredClone(snapshot);return new Promise(resolve=>{release=resolve;});});
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,props));});
+  await act(async()=>{pending=button('Add these additions to main').props.onClick();for(let i=0;i<12;i++)await Promise.resolve();});
+  assert.equal(disk.acceptPending,true);
+  await act(async()=>renderer.update(React.createElement(Review,{...props,revision:1})));
+  await act(async()=>{release();await pending;});assert.equal(posts.length,0);stop();stop=null;
+  await act(async()=>renderer.unmount());
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{...props,session:disk}));});
+  await act(async()=>button('Recover acceptance receipt').props.onClick());
+  assert.equal(posts.length,0);assert.equal(gets.length,1);assert.match(label(renderer.root),/No acceptance receipt was confirmed/);
+  await act(async()=>button('Retry this merge').props.onClick());
+  assert.equal(posts.length,1);assert.equal(posts[0].operation_uuid,'never-submitted');assert.equal(posts[0].preview_sha256,'sealed');
+ }finally{stop?.();if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('a rejected explicit retry cannot erase an earlier uncertain acceptance identity',async()=>{
+ const server=await create(),oldFetch=globalThis.fetch;let renderer,saved;const preview={mode:'selected',expected_candidate_scope_revision:'old-actor-scope',expected_draft_version:1,preview_sha256:'sealed',expected_binding_version:2,expected_query_revision:'query',selected_epoch_count:1,accepted_epoch_count:1,already_present_epoch_count:0,retained_epoch_count:40,next_epoch_count:41,accepted_cell_count:1};
+ globalThis.fetch=async(path,options={})=>options.method==='POST'?{ok:false,status:409,json:async()=>({error:'Operation belongs to another actor'})}:{ok:true,status:200,json:async()=>({candidate_scope_revision:'new-actor-scope',draft:{draft_version:0,decisions:[],decisions_total:0,decisions_truncated:false}})};
+ try{
+  const {default:Review}=await server.ssrLoadModule('/src/incoming-workbench/ui/FrozenIncomingReview.jsx');
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Review,{protocolId:'history',item:{candidate_revision_uuid:'candidate'},session:{unconfirmed:true,operation:'original',preview},capabilities:{drafts:true,additive_accept:true},onSession:value=>{saved=value;}}));});
+  await act(async()=>renderer.root.findAllByType('button').find(node=>label(node)==='Retry this merge').props.onClick());
+  assert.equal(saved.operation,'original');assert.equal(saved.unconfirmed,true);assert.deepEqual(saved.preview,preview);assert.match(label(renderer.root),/may have committed/);
+ }finally{if(renderer)await act(async()=>renderer.unmount());globalThis.fetch=oldFetch;await server.close();}
 });

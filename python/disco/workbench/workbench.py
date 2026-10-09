@@ -12,6 +12,7 @@ import contextvars
 import copy
 import datetime as dt
 import json
+import time
 import uuid
 
 from workspace_audit import build_audit_payload
@@ -110,6 +111,7 @@ class ProtocolWorkbench:
         self.state, self.revision_guard = state, revision_guard
         self.project = service.project['project_uuid']
         self._tables = tables
+        self.selection_manifests = {}
 
     @property
     def tables(self):
@@ -424,6 +426,102 @@ class ProtocolWorkbench:
                 (self.tables[1].update1 if item['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
         return self.context(protocol, revision, actor)
 
+    def selection_manifest(self, context, token, *, complete=True):
+        if not isinstance(token, str):
+            raise ValueError('Selection token must be text')
+        now = time.monotonic()
+        for key, value in list(self.selection_manifests.items()):
+            if now - value['touched'] > 900:
+                del self.selection_manifests[key]
+        value = self.selection_manifests.get(token)
+        owner = (self.project, context['protocol_uuid'], context['candidate_revision_uuid'],
+                 context['actor'], context['candidate_scope_revision'])
+        if value is None or value['owner'] != owner or complete and not value['complete']:
+            raise WorkbenchConflict('The exact selection expired or changed. Select or open the selected view again.')
+        value['touched'] = now
+        return value
+
+    def append_selection_manifest(self, context, body):
+        if not isinstance(body['upload_uuid'], str):
+            raise ValueError('Selection upload requires a UUID')
+        token = str(uuid.UUID(body['upload_uuid']))
+        ids, offset, total = body['epoch_uuids'], body['offset'], body['total']
+        if (type(offset) is not int or type(total) is not int or not 0 <= offset <= total
+                or not 1 <= total <= len(context['pending']) or not isinstance(ids, list)
+                or not 1 <= len(ids) <= 1000 or offset + len(ids) > total):
+            raise ValueError('Selection upload requires complete bounded batches and an exact pending count')
+        if any(not isinstance(key, str) or str(uuid.UUID(key)) != key for key in ids):
+            raise ValueError('Selection upload requires canonical epoch UUIDs')
+        if len(set(ids)) != len(ids) or set(ids) - context['pending'].keys():
+            raise ValueError('Selection contains duplicate or out-of-candidate epochs')
+        if set(ids) & context['unavailable']:
+            raise WorkbenchConflict('Selected recording metadata changed or is unavailable')
+        if token not in self.selection_manifests:
+            if offset:
+                raise WorkbenchConflict('Selection upload is missing its first batch')
+            # Bound ephemeral uploads, never scientific selection cardinality.
+            if len(self.selection_manifests) >= 32:
+                oldest = min(self.selection_manifests, key=lambda key: self.selection_manifests[key]['touched'])
+                del self.selection_manifests[oldest]
+            self.selection_manifests[token] = dict(owner=(self.project, context['protocol_uuid'],
+                context['candidate_revision_uuid'], context['actor'], context['candidate_scope_revision']),
+                ids=[], seen=set(), total=total, complete=False, touched=time.monotonic())
+        value = self.selection_manifest(context, token, complete=False)
+        if total != value['total']:
+            raise WorkbenchConflict('Selection upload count changed')
+        if offset < len(value['ids']):
+            if value['ids'][offset:offset + len(ids)] != ids:
+                raise WorkbenchConflict('Selection upload retry differs from its original batch')
+        else:
+            if offset != len(value['ids']) or value['seen'].intersection(ids):
+                raise WorkbenchConflict('Selection upload has missing or duplicate epochs')
+            value['ids'].extend(ids)
+            value['seen'].update(ids)
+        value['complete'] = len(value['ids']) == total
+        if value['complete']:
+            value['sha256'] = checksum(value['ids'])
+        return dict(selection_token=token, count=len(value['ids']), total=total,
+                    complete=value['complete'], selection_sha256=value.get('sha256'))
+
+    def prepare_selection(self, context, ids, body):
+        self.check_scope(context, body['expected_candidate_scope_revision'])
+        if type(body['expected_version']) is not int or body['expected_version'] != context['draft_version']:
+            raise WorkbenchConflict('Review draft version changed')
+        if type(body['review']) is not bool:
+            raise ValueError('Explicit selection review must be boolean')
+        selected = set(ids)
+        if not selected or selected - context['pending'].keys():
+            raise ValueError('Select exact pending epochs before review')
+        self.publishable(context, selected)
+        if any(self.decision(context, key)['excluded'] for key in ids):
+            raise ValueError('Selected epochs are excluded. Adjust the selection or explicitly change their exclusions.')
+        if not body['review'] and any(not self.decision(context, key)['reviewed'] for key in ids):
+            raise ValueError('Review the selected epochs before continuing')
+        # Only the complete server draft can clear previous selected choices.
+        affected = selected | {key for key in context['pending'] if context['decisions'].get(key, {}).get('selected')}
+        rows = []
+        key = self.key(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
+        for identity in sorted(affected):
+            if identity not in selected:
+                saved = context['decisions'][identity]
+                rows.append(dict(**key, epoch_uuid=identity, metadata_hash=saved['metadata_hash'],
+                    selected=False, reviewed=bool(saved.get('reviewed')), excluded=bool(saved.get('excluded'))))
+                continue
+            decision = self.decision(context, identity)
+            decision['selected'] = identity in selected
+            if identity in selected and body['review']:
+                decision['reviewed'] = True
+            rows.append(dict(**key, epoch_uuid=identity, metadata_hash=context['incoming'][identity], **decision))
+        with self.service.dj.conn().transaction:
+            current, _ = self.draft(key)
+            if current['version'] != context['draft_version']:
+                raise WorkbenchConflict('Review draft version changed')
+            draft = dict(**key, version=context['draft_version'] + 1, selection_mode='selected', deferred=context['deferred'])
+            (self.tables[0].update1 if context['draft_version'] else self.tables[0].insert1)(draft)
+            for row in rows:
+                (self.tables[1].update1 if row['epoch_uuid'] in context['decisions'] else self.tables[1].insert1)(row)
+        return self.context(context['protocol_uuid'], context['candidate_revision_uuid'], context['actor'])
+
     def preview(self, context, body):
         self.check_scope(context, body['expected_candidate_scope_revision'])
         if type(body['expected_draft_version']) is not int or body['expected_draft_version'] != context['draft_version']:
@@ -557,7 +655,8 @@ class ProtocolWorkbench:
                 raise WorkbenchConflict('Frozen candidate metadata is unavailable or changed; browsing cannot reconstruct it')
             scoped = copy.copy(self.service)
             recipe = copy.copy(context['candidate'])
-            recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()]
+            recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()
+                                if '_view_ids' not in context or key in context['_view_ids']]
             binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
             from workspace_service import _FrozenProtocolBinding
             scoped.binding_provider = _FrozenProtocolBinding(context['protocol_uuid'], binding, self.service.binding)
@@ -566,7 +665,7 @@ class ProtocolWorkbench:
             scoped._epoch_page_cache = None
             scoped._tree_scope_cache = {}
             scoped._tree_page_scope_cache = None
-            scoped._registered_tree_cache = getattr(self.service, '_registered_tree_cache', None)
+            scoped._registered_tree_cache = None if '_view_ids' in context else getattr(self.service, '_registered_tree_cache', None)
             def decisions(protocol, fingerprints):
                 return {key: dict(included=True, reviewed=False, review_state='unreviewed',
                     tags=[], revision=0, metadata_fingerprint=value, approval_stale=False)
@@ -716,9 +815,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
         value = request.get_json()
         if not isinstance(value, dict) or not set(required) <= value.keys() or value.keys() - set(required) - set(optional):
             raise ValueError('Malformed Workbench request; required fences or supported fields missing')
-        return value
+        return dict(value)
 
     def query_filters(allowed=()):
+        allowed = {*allowed, 'selection_token'}
         fields = {'epoch_uuid', 'cell_uuid', 'cell_type', 'group_label', 'tag', 'tagged', 'tag_predicate', 'metadata_predicate'}
         if request.args.keys() - fields - set(allowed) or any(len(request.args.getlist(key)) != 1 for key in request.args):
             raise ValueError('Unknown or repeated Workbench query option')
@@ -762,7 +862,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
                 from workspace_state_generation import StateGenerationAuthority
                 tracker = getattr(service, '_explore_state_generation', None)
                 readonly = request.method == 'GET' or request.endpoint in {
-                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection'}
+                    'workbench_preview', 'workbench_tree_page', 'workbench_candidate_summary', 'workbench_selection_summary', 'workbench_tree_selection', 'workbench_list_selection', 'workbench_selection_manifest'}
                 contract = (tracker.response_contract() if readonly and type(tracker) is StateGenerationAuthority
                             else contextlib.nullcontext())
                 with contract:
@@ -770,6 +870,9 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     def start_read(context, filters=None):
         from disco.metadata.explore_queries import generation, StaleQuery
+        token = request.args.get('selection_token') if request.method == 'GET' else ((request.get_json(silent=True) or {}).get('selection_token') if request.endpoint != 'workbench_selected_review' else None)
+        if token is not None:
+            context['_view_ids'] = manager.selection_manifest(context, token)['seen']
         context['_read_context'] = dict(predicate={'all': []}, protocol_uuid=context['protocol_uuid'], filters=filters or {})
         try:
             context['_read_generation'] = (context['_transaction_authority'][1](context['_read_context'])
@@ -821,7 +924,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
                 source_scope_revision=context['source_scope_revision']), review_scope='incoming_candidate')
         ids = sorted(context['decisions'])
-        payload = dict(contract_version=1, actor=context['actor'], source_additive_accept=True, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True, list_selection=True,
+        payload = dict(contract_version=1, actor=context['actor'], source_additive_accept=True, selection_manifests=True, protocol=protocol, tree_column_pages=True, selection_summary=True, tree_selection=True, list_selection=True,
             candidate_revision_uuid=context['candidate_revision_uuid'], candidate_recipe_sha256=context['candidate_recipe_sha256'],
             expected_query_revision=context['expected_query_revision'],
             draft=dict(draft_version=context['draft_version'], selection_mode=context['selection_mode'], deferred=context['deferred'],
@@ -890,6 +993,21 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             if 'candidate_scope_revision' in request.args:
                 manager.check_scope(context, request.args['candidate_scope_revision'])
             return jsonify(public_context(context, filters, include_initial_page=include == 'true'))
+
+    @app.post(candidate + '/selection-manifest')
+    def workbench_selection_manifest(protocol, revision):
+        value = body({'candidate_scope_revision', 'upload_uuid', 'offset', 'total', 'epoch_uuids'})
+        with guarded(protocol, revision) as owner:
+            context = checked(protocol, revision, owner, value['candidate_scope_revision'])
+            return jsonify(finish(context, manager.append_selection_manifest(context, value)))
+
+    @app.post(candidate + '/selected-review')
+    def workbench_selected_review(protocol, revision):
+        value = body({'expected_candidate_scope_revision', 'expected_version', 'selection_token', 'review'})
+        with guarded(protocol, revision) as owner:
+            context = manager.context(protocol, revision, owner)
+            ids = manager.selection_manifest(context, value['selection_token'])['ids']
+            return jsonify(public_context(manager.prepare_selection(context, ids, value)))
 
     @app.patch(candidate + '/draft')
     def workbench_patch(protocol, revision):
@@ -971,7 +1089,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
     @app.post(candidate + '/tree/page')
     def workbench_tree_page(protocol, revision):
         value = body({'candidate_scope_revision'}, {'filters', 'splits', 'path', 'offset', 'limit', 'revision', 'anchor_uuid',
-            'include_ancestors', 'ancestor_offsets', 'counts_only'})
+            'include_ancestors', 'ancestor_offsets', 'counts_only', 'selection_token'})
+        value.pop('selection_token', None)
         expected = value.pop('candidate_scope_revision')
         include_ancestors = value.pop('include_ancestors', False)
         ancestor_offsets = value.pop('ancestor_offsets', [])
@@ -1005,32 +1124,35 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/tree/selection')
     def workbench_tree_selection(protocol, revision):
-        value = body({'candidate_scope_revision', 'revision', 'path', 'expected_count'}, {'filters', 'splits'})
+        value = body({'candidate_scope_revision', 'revision', 'path', 'expected_count'}, {'filters', 'splits', 'selection_token'})
+        value.pop('selection_token', None)
         expected = value.pop('candidate_scope_revision')
         count = value.pop('expected_count')
-        if type(count) is not int or not 1 <= count <= 1000 or not isinstance(value['revision'], str):
-            raise ValueError('Tree selection requires a current revision and 1–1,000 epochs')
+        if type(count) is not int or count < 1 or not isinstance(value['revision'], str):
+            raise ValueError('Tree selection requires a current revision and a positive exact epoch count')
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
             context = checked(protocol, revision, owner, expected, filters)
+            if count > len(context['pending']):
+                raise WorkbenchConflict('The complete branch count changed. Refresh this view.')
             pager = TreePages(manager.frozen_service(context))
             try:
-                result = pager.selection(dict(protocol_uuid=protocol, **value), count)
+                result = pager.selection(dict(protocol_uuid=protocol, **value), count, max_count=len(context['pending']))
             except StaleTreePage as error:
                 raise WorkbenchConflict(str(error)) from error
             return jsonify(finish(context, result))
 
     @app.post(candidate + '/list-selection')
     def workbench_list_selection(protocol, revision):
-        value = body({'candidate_scope_revision', 'cells'}, {'filters'})
+        value = body({'candidate_scope_revision', 'cells'}, {'filters', 'selection_token'})
         cells = value['cells']
         if (not isinstance(cells, list) or len(cells) > 1000
                 or any(not isinstance(cell, dict) or set(cell) != {'cell_uuid', 'epochs'}
-                    or not isinstance(cell['cell_uuid'], str) or type(cell['epochs']) is not int or not 0 <= cell['epochs'] <= 1000 for cell in cells)):
-            raise ValueError('Selection requires exact cell counts and at most 1,000 epochs')
+                    or not isinstance(cell['cell_uuid'], str) or type(cell['epochs']) is not int or cell['epochs'] < 0 for cell in cells)):
+            raise ValueError('Selection requires exact cell counts in batches of at most 1,000 cells')
         cells = [dict(cell_uuid=str(uuid.UUID(cell['cell_uuid'])), epochs=cell['epochs']) for cell in cells]
-        if len({cell['cell_uuid'] for cell in cells}) != len(cells) or sum(cell['epochs'] for cell in cells) > 1000:
-            raise ValueError('Selection requires unique cells and at most 1,000 epochs')
+        if len({cell['cell_uuid'] for cell in cells}) != len(cells):
+            raise ValueError('Selection requires unique cells')
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
             context = checked(protocol, revision, owner, value['candidate_scope_revision'], filters)
@@ -1060,8 +1182,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/selection-summary')
     def workbench_selection_summary(protocol, revision):
-        value = body({'candidate_scope_revision', 'epoch_uuids'})
-        supplied = value['epoch_uuids']
+        value = body({'candidate_scope_revision'}, {'epoch_uuids', 'selection_token'})
+        if ('epoch_uuids' in value) == ('selection_token' in value):
+            raise ValueError('Selection summary requires exactly one selection source')
+        supplied = value.get('epoch_uuids', [])
         if not isinstance(supplied, list) or len(supplied) > 1000 or any(not isinstance(key, str) for key in supplied):
             raise ValueError('Selection summary requires at most 1,000 epoch UUIDs')
         try:
@@ -1072,6 +1196,8 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             raise ValueError('Selection summary requires distinct epoch UUIDs')
         with guarded(protocol, revision) as owner:
             context = checked(protocol, revision, owner, value['candidate_scope_revision'])
+            if 'selection_token' in value:
+                ids = manager.selection_manifest(context, value['selection_token'])['ids']
             if set(ids) - set(context['pending']):
                 raise ValueError('Selected epochs are outside the frozen incoming candidate')
             if set(ids) & context['unavailable']:
@@ -1093,7 +1219,7 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
 
     @app.post(candidate + '/summary')
     def workbench_candidate_summary(protocol, revision):
-        value = body({'candidate_scope_revision'}, {'filters'})
+        value = body({'candidate_scope_revision'}, {'filters', 'selection_token'})
         filters = validate_filters(value.get('filters'))
         with guarded(protocol, revision, filters) as owner:
             context = checked(protocol, revision, owner, value['candidate_scope_revision'], filters)

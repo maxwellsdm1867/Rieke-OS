@@ -1,3 +1,4 @@
+import {compactWorkbenchSelections} from './incoming-workbench/selectedIncomingWorkflow.js';
 import InspectImportButton from './recording-import/ui/InspectImportButton.jsx';
 import {downloadExport} from './exports/downloadExport.js';
 import ProjectWelcome from './project-workspace/ui/ProjectWelcome.jsx';
@@ -211,7 +212,7 @@ export default function App(){
   function importCompleted(jobUuid){changed();if(jobUuid)pendingImportReview.current=jobUuid;}
   const suggestions=activeProtocolSuggestions(suggestionsResource.data),importJobs=useImportMonitor(structureRevision,importCompleted,!!transfer,dataReady);
   const importQueue=useImportQueue(importJobs,setTransfer,changed);
-  function snapshotWorkspace(){return {...presentation.current.checkpoint(route),sourceMerge:sourceMerge.snapshot()};}
+  function snapshotWorkspace(){return compactWorkbenchSelections({...presentation.current.checkpoint(route),sourceMerge:sourceMerge.snapshot()});}
   function restoreWorkspace(value){
     const requestedRoute=presentation.current.restore(value);
     navigation.restore(requestedRoute);draftRestored(count=>count+1);

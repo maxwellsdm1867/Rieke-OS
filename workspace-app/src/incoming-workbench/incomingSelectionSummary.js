@@ -1,7 +1,7 @@
 import {incomingCellTypes} from './incomingCellTypes.js';
 
 export function selectedSummaryIds(selected){
-  if(!Array.isArray(selected)||selected.length>1000||selected.some(id=>typeof id!=='string'||!id)||new Set(selected).size!==selected.length)return null;
+  if(!Array.isArray(selected)||selected.some(id=>typeof id!=='string'||!id)||new Set(selected).size!==selected.length)return null;
   return [...selected].sort();
 }
 

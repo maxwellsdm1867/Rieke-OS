@@ -40,9 +40,9 @@ export function workbenchPreviewCounts(preview){
     return {key,label,count:preview[key]};
   });
 }
-export async function acceptWorkbench(root,preview,operationUuid,request){
+export async function acceptWorkbench(root,preview,operationUuid,request,{receiptOnly=false}={}){
   if(typeof operationUuid!=='string'||!operationUuid)throw new Error('A stable operation identity is required for acceptance.');
-  const receipt=await request(`${root}/accept`,{method:'POST',body:{expected_candidate_scope_revision:preview.expected_candidate_scope_revision,expected_draft_version:preview.expected_draft_version,mode:preview.mode,preview_sha256:preview.preview_sha256,expected_binding_version:preview.expected_binding_version,expected_query_revision:preview.expected_query_revision,operation_uuid:operationUuid}});
+  const receipt=receiptOnly?await request(`${root.replace(/\/candidates\/[^/]+$/,'')}/receipts/${encodeURIComponent(operationUuid)}`):await request(`${root}/accept`,{method:'POST',body:{expected_candidate_scope_revision:preview.expected_candidate_scope_revision,expected_draft_version:preview.expected_draft_version,mode:preview.mode,preview_sha256:preview.preview_sha256,expected_binding_version:preview.expected_binding_version,expected_query_revision:preview.expected_query_revision,operation_uuid:operationUuid}});
   if(!receipt.binding?.revision_uuid||!Number.isSafeInteger(receipt.binding.version)||!receipt.event_uuid||receipt.operation_uuid!==operationUuid)throw new Error('Acceptance receipt is incomplete. Check this operation before retrying.');
   return receipt;
 }
@@ -52,4 +52,22 @@ export function selectionDecisions(previous,next){
 }
 export function acceptanceFailureKind(error){
   return [400,404,409,422].includes(error?.status)&&error?.saved!==true?'rejected':'unconfirmed';
+}
+
+// A sealed selection is read data, never consent. Every chunk retains the same
+// frozen scope; only the subsequent explicit review command can save decisions.
+export async function createWorkbenchSelection({root,context,ids,signal},request){
+  requireWorkbenchContext(context);
+  if(!Array.isArray(ids)||!ids.length||ids.some(id=>typeof id!=='string'||!id)||new Set(ids).size!==ids.length)throw Error('Choose distinct incoming epoch identities.');
+  const selection=[...ids],upload=crypto.randomUUID();
+  const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(selection)))),byte=>byte.toString(16).padStart(2,'0')).join('');
+  let value;
+  for(let offset=0;offset<selection.length;offset+=1000){
+    if(signal?.aborted)throw new DOMException('Selection changed. Select again.','AbortError');
+    const batch=selection.slice(offset,offset+1000),count=offset+batch.length;
+    value=await request(`${root}/selection-manifest`,{method:'POST',signal,body:{candidate_scope_revision:context.candidate_scope_revision,upload_uuid:upload,offset,total:selection.length,epoch_uuids:batch}});
+    if(signal?.aborted)throw new DOMException('Selection changed. Select again.','AbortError');
+    if(value?.selection_token!==upload||value.count!==count||value.total!==selection.length||value.complete!==(count===selection.length)||value.candidate_scope_revision!==context.candidate_scope_revision||value.query_revision!==context.candidate_scope_revision||value.expected_binding_version!==context.expected_binding_version||value.complete&&value.selection_sha256!==digest)throw Error('The complete exact selection could not be verified. Select again.');
+  }
+  return value;
 }

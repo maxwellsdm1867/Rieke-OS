@@ -1,20 +1,20 @@
 export const MAX_SELECTED_EPOCHS=1000;
 
-export function toggleEpochSelection(selected,uuid){
+export function toggleEpochSelection(selected,uuid,limit=MAX_SELECTED_EPOCHS){
   if(selected.includes(uuid))return selected.filter(key=>key!==uuid);
-  if(selected.length>=MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs for one tag operation.');
+  if(selected.length>=limit)throw new Error('Select at most 1,000 epochs for one tag operation.');
   return [...selected,uuid];
 }
 
-export function mergeEpochSelection(selected,ids){
+export function mergeEpochSelection(selected,ids,limit=MAX_SELECTED_EPOCHS){
   const result=[...new Set([...selected,...ids])];
-  if(result.length>MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs for one tag operation.');
+  if(result.length>limit)throw new Error('Select at most 1,000 epochs for one tag operation.');
   return result;
 }
 
 // Range order is the displayed date/cell order, then each cell's epoch order.
 // Fetch intervening pages before publishing any selection, never a partial range.
-export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevision=page=>page.query_revision,pageSize=60}){
+export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevision=page=>page.query_revision,pageSize=60,limit=MAX_SELECTED_EPOCHS}){
   if(typeof anchor.revision!=='string'||!anchor.revision||target.revision!==anchor.revision)throw new Error('Epoch query changed. Refresh and select the range again.');
   const startCell=cells.findIndex(cell=>cell.cell_uuid===anchor.cellUuid);
   const endCell=cells.findIndex(cell=>cell.cell_uuid===target.cellUuid);
@@ -26,7 +26,7 @@ export async function epochSelectionRange({cells,anchor,target,loadPage,pageRevi
     from:cell.cell_uuid===first.cellUuid?first.index:0,
     to:cell.cell_uuid===last.cellUuid?last.index:cell.epochs-1}));
   if(spans.some(({cell,from,to})=>!Number.isInteger(cell.epochs)||from<0||to>=cell.epochs||to<from))throw new Error('Epoch order changed. Select the range again.');
-  if(spans.reduce((sum,span)=>sum+span.to-span.from+1,0)>MAX_SELECTED_EPOCHS)throw new Error('Select at most 1,000 epochs for one tag operation.');
+  if(spans.reduce((sum,span)=>sum+span.to-span.from+1,0)>limit)throw new Error('Select at most 1,000 epochs for one tag operation.');
   const ids=[];
   for(const {cell,from,to} of spans){
     for(let offset=Math.floor(from/pageSize)*pageSize;offset<=to;offset+=pageSize){

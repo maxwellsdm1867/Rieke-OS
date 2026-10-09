@@ -28,6 +28,6 @@ test('Merge uses only explicit selected IDs, including zero while an epoch or ce
   b=await render({targets:['one']});assert.equal(label(b),'Merge (1 epoch)');await act(async()=>b.props.onClick());assert.deepEqual(merged,[['one']]);
   b=await render({targets:['one','two'],disabled:true});assert.equal(label(b),'Merge (2 epochs)');assert.equal(b.props.disabled,true);
   b=await render({targets:[null]});assert.equal(label(b),'Merge (count unavailable)');assert.equal(b.props.disabled,true);
-  await render({targets:['one'],viewSelected:true});assert.ok(renderer.root.findAllByType('button').some(node=>label(node)==='Return to all'));assert.doesNotMatch(label(renderer.root),/Import|Merge all|Merge selected/);
+  await render({targets:['one'],viewSelected:true,disabled:true});assert.equal(renderer.root.findAllByType('button').find(node=>label(node)==='Return to all').props.disabled,false,'An expired selected-view read must not trap the user');assert.ok(renderer.root.findAllByType('button').some(node=>label(node)==='Return to all'));assert.doesNotMatch(label(renderer.root),/Import|Merge all|Merge selected/);
  }finally{if(renderer)await act(async()=>renderer.unmount());await server.close();}
 });

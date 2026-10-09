@@ -114,7 +114,7 @@
       "scientific_contract": {
         "identities": "Tree revision and branch path must match; expectedRevision takes precedence. Selection continuity proof is separate from write readiness and project/profile authority.",
         "types": "Supplied page scope/path/offset are caller-provided. Kind and missing-row checks are retained; fetched pages additionally validate exact revision.",
-        "order": "First-epoch traversal follows first branches in server order; range uses normalized ascending absolute positions and page size60, max1000 epochs. Paths remain opaque.",
+        "order": "First-epoch traversal follows first branches in server order; range uses normalized ascending absolute positions and page size60; Main and legacy ranges max1000, capable Workbench ranges retain complete exact membership without a fixed count ceiling. Paths remain opaque.",
         "units": "Indices/counts are epochs, scrollTop is nonnegative CSS pixels in presentation snapshots; no scientific duration inference.",
         "provenance": "Membership/order comes from server tree DTOs, not client labels or visible row subset."
       },
@@ -211,7 +211,7 @@
         "identity_types_order_units_provenance": {
           "identities": "Tree revision and branch path must match; expectedRevision takes precedence. Selection continuity proof is separate from write readiness and project/profile authority.",
           "types": "The supplied page is trusted as existing behavior. Additional pages must be epoch-kind and exact revision; missing row fails rather than partial selection.",
-          "order": "First-epoch traversal follows first branches in server order; range uses normalized ascending absolute positions and page size60, max1000 epochs. Paths remain opaque.",
+          "order": "First-epoch traversal follows first branches in server order; range uses normalized ascending absolute positions and page size60; Main and legacy ranges max1000, capable Workbench ranges retain complete exact membership without a fixed count ceiling. Paths remain opaque.",
           "units": "Indices/counts are epochs, scrollTop is nonnegative CSS pixels in presentation snapshots; no scientific duration inference.",
           "provenance": "Membership/order comes from server tree DTOs, not client labels or visible row subset."
         },
@@ -4198,7 +4198,7 @@
       "scientific_contract": {
         "identities": "Immutable candidate UUID, candidate_scope_revision, draft version, queue revision, project/protocol and one-shot request UUID remain distinct.",
         "types": "Contract_version1, explicit boolean capabilities, safe nonnegative pending counts; null pending cell count remains unavailable. Incoming selection requires exact nonduplicate scoped cells/epochs.",
-        "order": "Queue pages merge by candidate UUID and same queue revision. Selection fetches 60-row pages in scoped cell order, max1000 complete epochs; never substitute Main cell totals.",
+        "order": "Queue pages merge by candidate UUID and same queue revision. Selection verifies complete scoped membership in cell order with bounded pages and transport; capable Workbench selections have no fixed epoch-count ceiling. Never substitute Main cell totals.",
         "units": "Counts are distinct pending cells/epochs, not summed overlapping proposal counts. No duration/recorded-unit conversion.",
         "provenance": "Frozen queue/context receipts establish membership; view restoration cannot reconstruct live merge consent. Original recorded UUIDs remain exact."
       },
@@ -4328,7 +4328,7 @@
         "identity_types_order_units_provenance": {
           "identities": "Immutable candidate UUID, candidate_scope_revision, draft version, queue revision, project/protocol and one-shot request UUID remain distinct.",
           "types": "Contract_version1, explicit boolean capabilities, safe nonnegative pending counts; null pending cell count remains unavailable. Incoming selection requires exact nonduplicate scoped cells/epochs.",
-          "order": "Queue pages merge by candidate UUID and same queue revision. Advertised list_selection resolves exact per-cell and flattened UUID order in one guarded ID read; older contexts retain verified 60-row paging. Both preserve scoped cell order, exact counts and max1000 complete epochs; never substitute Main cell totals.",
+          "order": "Queue pages merge by candidate UUID and same queue revision. Advertised list_selection resolves exact per-cell and flattened UUID order in one guarded ID read; older contexts retain verified 60-row paging. Both preserve scoped cell order and exact counts; capable Workbench selections use sealed manifests without a fixed epoch-count ceiling. Never substitute Main cell totals.",
           "units": "Counts are distinct pending cells/epochs, not summed overlapping proposal counts. No duration/recorded-unit conversion.",
           "provenance": "Frozen queue/context receipts establish membership; view restoration cannot reconstruct live merge consent. Original recorded UUIDs remain exact."
         },

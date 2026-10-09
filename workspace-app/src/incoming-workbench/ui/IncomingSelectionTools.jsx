@@ -20,7 +20,7 @@ export default function IncomingSelectionTools({source,cells,targets=[],onSelect
     <button disabled={locked||!cells.length} onClick={selectAll}><CheckSquare size={13}/> Select all</button>
     <button disabled={locked} onClick={()=>onSelect([],{treeSelection:{on:false}})}><Square size={13}/> Deselect all</button>
     {typeof children==='function'?children(locked):children}
-    <button disabled={locked||!viewSelected&&!targets.length} aria-pressed={viewSelected} onClick={onViewSelected}><Eye size={13}/> {viewSelected?'Return to all':'View selected'}</button>
+    <button disabled={viewSelected?working:locked||!targets.length} aria-pressed={viewSelected} onClick={onViewSelected}><Eye size={13}/> {viewSelected?'Return to all':'View selected'}</button>
     <button className="primary" disabled={locked||count==null||count===0||!onMerge} aria-description="Merge these selected epochs into Main, marking them reviewed. Existing Main data is preserved." onClick={()=>onMerge([...targets])}><GitMerge size={14}/> Merge ({count==null?'count unavailable':`${number(count)} ${count===1?'epoch':'epochs'}`})</button>
     {working&&<p className="incoming-draft-feedback" role="status">Selecting all scoped epochs…</p>}{error&&<p className="incoming-draft-feedback" role="alert">{error}</p>}
   </section>;

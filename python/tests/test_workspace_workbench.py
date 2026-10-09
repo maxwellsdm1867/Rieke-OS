@@ -141,11 +141,11 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(result['candidate_scope_revision'], context['candidate_scope_revision'])
         self.assertEqual([table.rows for table in self.tables], before)
         self.assertEqual(self.list_selection(context, []).get_json()['epoch_uuids'], [])
-        for cells in [[dict(cell_uuid=cell, epochs=True)], [dict(cell_uuid=cell, epochs=1001)],
+        for cells in [[dict(cell_uuid=cell, epochs=True)],
                       [dict(cell_uuid=cell, epochs=1)] * 2, [dict(cell_uuid='bad', epochs=1)], [dict(cell_uuid=None, epochs=1)],
                       [dict(cell_uuid=123, epochs=1)], [dict(cell_uuid=[], epochs=1)]]:
             self.assertEqual(self.list_selection(context, cells).status_code, 400)
-        for cells in [[dict(cell_uuid=cell, epochs=0)], [dict(cell_uuid=cell, epochs=2)],
+        for cells in [[dict(cell_uuid=cell, epochs=1001)], [dict(cell_uuid=cell, epochs=0)], [dict(cell_uuid=cell, epochs=2)],
                       [dict(cell_uuid=str(uuid.uuid4()), epochs=1)]]:
             self.assertEqual(self.list_selection(context, cells).status_code, 409)
         filtered = self.list_selection(context, filters={'cell_type': 'does-not-match'})
@@ -159,6 +159,7 @@ class WorkbenchTests(unittest.TestCase):
         for index in range(999):
             identity = str(uuid.UUID(int=index + 10000))
             self.case.service.rows[identity] = dict(source, epoch_uuid=identity)
+            self.case.service.details[identity] = copy.deepcopy(self.case.service.details[self.added])
             self.case.service._fingerprints[identity] = self.case.service._fingerprints[self.added]
             recipe['epochs'].append(dict(uuid=identity, metadata_hash=self.case.service._fingerprints[identity]))
         for key in ('epoch_count', 'matched_count'):
@@ -170,7 +171,104 @@ class WorkbenchTests(unittest.TestCase):
         expected = sorted([self.added, *[str(uuid.UUID(int=index + 10000)) for index in range(999)]])
         self.assertEqual(response.get_json()['epoch_uuids'], expected)
         self.assertEqual(response.get_json()['count'], 1000)
-        self.assertEqual(self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1001)]).status_code, 400)
+        self.assertEqual(self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=1001)]).status_code, 409)
+
+    def large_selection_fixture(self, count=1691):
+        from disco.workbench.recipes import checksum
+        source = self.case.service.rows[self.added]
+        recipe_row = next(row for row in self.case.explorer_revisions.rows if row['revision_uuid'] == self.revision)
+        recipe = recipe_row['recipe']
+        ids = [self.added]
+        for index in range(count - 1):
+            identity = str(uuid.UUID(int=index + 20000))
+            ids.append(identity)
+            self.case.service.rows[identity] = dict(source, epoch_uuid=identity)
+            self.case.service.details[identity] = copy.deepcopy(self.case.service.details[self.added])
+            self.case.service._fingerprints[identity] = self.case.service._fingerprints[self.added]
+            recipe['epochs'].append(dict(uuid=identity, metadata_hash=self.case.service._fingerprints[identity]))
+        for key in ('epoch_count', 'matched_count'):
+            recipe[key] = recipe_row['summary'][key] = len(recipe['epochs'])
+        recipe.pop('content_sha256'); recipe['content_sha256'] = checksum(recipe)
+        return ids, source
+
+    def upload_selection(self, context, ids):
+        token = str(uuid.uuid4())
+        for offset in range(0, len(ids), 1000):
+            response = self.case.client.post(self.root + '/selection-manifest', headers=self.case.headers, json=dict(
+                candidate_scope_revision=context['candidate_scope_revision'], upload_uuid=token,
+                offset=offset, total=len(ids), epoch_uuids=ids[offset:offset+1000]))
+            self.assertEqual(response.status_code, 200, response.get_json())
+            self.assertEqual(response.get_json()['complete'], offset+1000 >= len(ids))
+        return token
+
+    def test_large_exact_selection_view_summary_review_and_accept_share_membership(self):
+        ids, source = self.large_selection_fixture()
+        context = self.get_context()
+        listed = self.list_selection(context, [dict(cell_uuid=source['cell_uuid'], epochs=len(ids))])
+        self.assertEqual(listed.status_code, 200, listed.get_json())
+        self.assertEqual(set(listed.get_json()['epoch_uuids']), set(ids))
+        # Existing decisions exceed public detail; old selected IDs must still be cleared.
+        for offset in range(0, 305, 250):
+            context = self.save(context, [dict(epoch_uuid=key, selected=True, reviewed=True) for key in ids[offset:min(offset+250,305)]]).get_json()
+        context = self.save(context, [dict(epoch_uuid=ids[0], excluded=True)]).get_json()
+        self.assertTrue(context['draft']['decisions_truncated'])
+        chosen = sorted(ids[305:])
+        before = copy.deepcopy([table.rows for table in self.tables])
+        token = self.upload_selection(context, chosen)
+        self.assertEqual([table.rows for table in self.tables], before, 'Manifest upload is not draft review')
+        query = dict(candidate_scope_revision=context['candidate_scope_revision'], selection_token=token)
+        summary = self.case.client.post(self.root + '/selection-summary', json=query, headers=self.case.headers)
+        self.assertEqual(summary.status_code, 200, summary.get_json())
+        self.assertEqual(summary.get_json()['epoch_uuids'], chosen)
+        self.assertEqual(summary.get_json()['counts']['epochs'], len(chosen))
+        page = self.case.client.get(self.root + '/epochs', query_string={**query, 'limit': 60, 'include_cells': 'true'})
+        self.assertEqual(page.status_code, 200, page.get_json())
+        self.assertEqual(page.get_json()['total'], len(chosen))
+        self.assertTrue(set(row['epoch_uuid'] for row in page.get_json()['epochs']) <= set(chosen))
+        tree = self.case.client.post(self.root + '/tree/page', json={**query, 'splits':'cell'}, headers=self.case.headers)
+        self.assertEqual(tree.status_code, 200, tree.get_json())
+        self.assertEqual(tree.get_json()['selection']['count'], len(chosen))
+        body = dict(expected_candidate_scope_revision=context['candidate_scope_revision'], expected_version=context['draft']['draft_version'], selection_token=token, review=True)
+        saved = self.case.client.post(self.root + '/selected-review', json=body, headers=self.case.headers)
+        self.assertEqual(saved.status_code, 200, saved.get_json())
+        current = self.manager.context(self.protocol, self.revision, 'actor-one')
+        self.assertEqual(self.manager.selection(current, 'selected'), set(chosen))
+        self.assertTrue(self.manager.decision(current, ids[0])['excluded'])
+        self.assertEqual(self.case.client.get(self.root + '/epochs', query_string=query).status_code, 409)
+        saved = saved.get_json()
+        preview_body = dict(mode='selected', expected_candidate_scope_revision=saved['candidate_scope_revision'], expected_draft_version=saved['draft']['draft_version'])
+        preview = self.case.client.post(self.root + '/preview', json=preview_body, headers=self.case.headers)
+        self.assertEqual(preview.status_code, 200, preview.get_json())
+        self.assertEqual(preview.get_json()['selected_epoch_count'], len(chosen))
+        accept = {**preview_body, **{key:preview.get_json()[key] for key in ('preview_sha256','expected_binding_version','expected_query_revision')}, 'operation_uuid':str(uuid.uuid4())}
+        result = self.accept(accept)
+        self.assertEqual(result.status_code, 200, result.get_json())
+        self.assertEqual(self.accept(accept).get_json(), result.get_json())
+        receipt = next(row['receipt'] for row in self.tables[2].rows if row['operation_uuid'] == accept['operation_uuid'])
+        self.assertEqual(set(receipt['selected_epoch_uuids']), set(chosen))
+
+    def test_selection_upload_refuses_incomplete_changed_duplicate_and_expired_manifests(self):
+        ids, _ = self.large_selection_fixture()
+        context = self.get_context()
+        token = str(uuid.uuid4())
+        body = dict(candidate_scope_revision=context['candidate_scope_revision'], upload_uuid=token, offset=0,total=len(ids),epoch_uuids=ids[:1000])
+        send = lambda value: self.case.client.post(self.root + '/selection-manifest', json=value, headers=self.case.headers)
+        first = send(body)
+        self.assertEqual(first.status_code, 200, first.get_json())
+        self.assertEqual(send(body).get_json(), first.get_json())
+        query = dict(candidate_scope_revision=context['candidate_scope_revision'], selection_token=token)
+        self.assertEqual(self.case.client.get(self.root + '/epochs', query_string=query).status_code, 409)
+        self.assertEqual(send({**body,'offset':1001,'epoch_uuids':ids[1001:]}).status_code, 409)
+        self.assertEqual(send({**body,'offset':1000,'epoch_uuids':[ids[0]]}).status_code, 409)
+        self.assertEqual(send({**body,'epoch_uuids':list(reversed(ids[:1000]))}).status_code, 409)
+        final = send({**body,'offset':1000,'epoch_uuids':ids[1000:]})
+        self.assertEqual(final.status_code, 200, final.get_json())
+        internal = self.manager.context(self.protocol, self.revision, 'actor-one')
+        with self.assertRaises(WorkbenchConflict):
+            self.manager.selection_manifest({**internal,'actor':'another-author'}, token)
+        self.manager.selection_manifests[token]['touched'] -= 901
+        self.assertEqual(self.case.client.get(self.root + '/epochs', query_string=query).status_code, 409)
+        self.assertEqual(len(self.tables[0].rows),0)
 
     def test_list_selection_custom_pages_and_closing_changes_fail_closed(self):
         context = self.get_context()
@@ -290,7 +388,7 @@ class WorkbenchTests(unittest.TestCase):
         self.assertEqual(response.get_json()['epoch_uuids'], [self.added])
         self.assertEqual(response.get_json()['count'], 1)
         self.assertEqual(response.get_json()['revision'], root['revision'])
-        for patch_body in [{'expected_count': True}, {'expected_count': 0}, {'expected_count': 1001}, {'offset': 0}, {'limit': 1000}, {'anchor_uuid': self.added}, {'counts_only': False}, {'revision': None}]:
+        for patch_body in [{'expected_count': True}, {'expected_count': 0}, {'offset': 0}, {'limit': 1000}, {'anchor_uuid': self.added}, {'counts_only': False}, {'revision': None}]:
             invalid = self.case.client.post(self.root + '/tree/selection', json={**body, **patch_body}, headers=self.case.headers)
             self.assertEqual(invalid.status_code, 400, invalid.get_json())
         for patch_body in [{'expected_count': 2}, {'revision': 'a' * 64}, {'candidate_scope_revision': 'old'}]:
