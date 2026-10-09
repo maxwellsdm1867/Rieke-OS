@@ -14,8 +14,8 @@ from disco.workbench.workbench import ProtocolWorkbench, WorkbenchConflict
 class WorkbenchTests(unittest.TestCase):
     def setUp(self):
         fixture = ImportSuggestionTests()
-        fixture.setUp()
         self.addCleanup(fixture.doCleanups)
+        fixture.setUp()
         self.fixture, self.case = fixture, fixture.case
         self.manager = self.case.app.extensions['protocol_workbench']
         self.tables = (Table(('project_uuid', 'protocol_uuid', 'candidate_revision_uuid', 'actor')),

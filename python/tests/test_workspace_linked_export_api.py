@@ -6,6 +6,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 import shutil
+import threading
 import zipfile
 
 from linked_export_loader import LinkedExport
@@ -17,6 +18,17 @@ from test_workspace_linked_sqlite import linked_fixture
 
 
 class LinkedExportAPITests(unittest.TestCase):
+    def test_failed_nested_fixture_restores_thread_class(self):
+        original = threading.Thread
+        fixture = LinkedExportAPITests()
+        try:
+            with patch(__name__ + '.linked_fixture', side_effect=RuntimeError('Injected fixture failure')):
+                with self.assertRaisesRegex(RuntimeError, 'Injected fixture failure'):
+                    fixture.setup_incoming()
+        finally:
+            fixture.doCleanups()
+        self.assertIs(threading.Thread, original)
+
     def setup_case(self, candidate=False):
         if candidate:
             self.candidate = candidate_tests.CandidateExportTests()
@@ -114,9 +126,9 @@ class LinkedExportAPITests(unittest.TestCase):
                 return donor.ids[0]
             fixture.add_recording = add_recording
         workflow = incoming_tests.IncomingExportTests()
+        self.addCleanup(workflow.doCleanups)
         with patch.object(suggestion_tests.ImportSuggestionTests, 'setUp', prepare):
             workflow.setUp()
-        self.addCleanup(workflow.doCleanups)
         self.case = workflow.case
         return workflow, added_ids
 
