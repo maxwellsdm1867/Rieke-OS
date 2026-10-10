@@ -61,3 +61,10 @@ Actual signed/native installation, installed helper resolution, shutdown/reopen
 and final-app acceptance remain separate gates. See [benchmarks](../../docs/dev/benchmarks.md),
 [registry](../../benchmarks/registry.json) and [macOS policy](../../docs/dev/macos-compatibility.md).
 No owner benchmark/performance or release qualification is claimed here.
+
+Testing installation outcomes are display-only: a private `last-install.json`
+pointer binds a generated operation receipt to its bounded helper result. A prior
+failed or restored attempt remains visible after a normal metadata refresh; it
+never grants restart, restore, or download authority. Raw error/stderr stays in
+private diagnostics. Corrupt, exposed, symlinked, oversized or foreign records
+are ignored. A new handoff replaces the pointer and clears the old display.

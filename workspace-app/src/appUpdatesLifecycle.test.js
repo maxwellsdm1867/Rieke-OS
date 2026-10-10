@@ -28,7 +28,7 @@ async function harness(initial=testing,{source=false}={}){
       load:id=>id==='\0update-portal'?'export const createPortal=children=>children;':undefined}]});
   const {default:AppUpdates}=await server.ssrLoadModule('/src/app-updates/ui/AppUpdates.jsx');let renderer;
   await act(async()=>{renderer=TestRenderer.create(React.createElement(AppUpdates),{createNodeMock:node=>node.type==='dialog'?{showModal(){},close(){}}:null});});
-  const h={fixture,get text(){return text(renderer.toJSON());},get buttons(){return renderer.root.findAllByType('button');},
+  const h={fixture,get text(){return text(renderer.toJSON());},get buttons(){return renderer.root.findAllByType('button');},get progress(){return renderer.root.findAllByType('progress');},
     async click(name){const button=h.buttons.find(node=>text(node).trim()===name||node.props['aria-label']===name);assert.ok(button,`Button missing: ${name}`);await act(async()=>button.props.onClick());},
     async open(){await act(async()=>h.buttons.find(node=>node.props['aria-haspopup']==='dialog').props.onClick());},
     async emit(status){fixture.status=status;await act(async()=>listener(status));},
@@ -100,5 +100,41 @@ test('prepared signed desktop update also requires an explicit Restart to update
   const notice=h.buttons.find(node=>node.props['aria-haspopup']==='dialog');assert.match(notice.props.title,/choose Restart to update/);assert.doesNotMatch(notice.props.title,/next launch/);
   await h.open();assert.match(h.text,/ordinary Quit closes the current app/);assert.doesNotMatch(h.text,/next launch|prepared for an orderly quit/);
   assert.equal(h.fixture.restarts,0);h.fixture.restartResult={ready:true,installing:true};await h.click('Restart to update');assert.equal(h.fixture.restarts,1);
+ }finally{await h.close();}
+});
+test('desktop download displays actual progress and completion removes the bar without restarting',async()=>{
+ const h=await harness({...testing,state:'Downloading',available:'0.1.4',progress:37});try{
+  await h.open();assert.equal(h.progress.length,1);assert.equal(h.progress[0].props.value,37);assert.equal(h.progress[0].props.max,100);
+  assert.equal(h.progress[0].props['aria-valuetext'],'37%');assert.match(h.text,/37%/);assert.match(h.progress[0].props['aria-label'],/Downloading/);
+  assert.equal(h.buttons.find(node=>text(node).trim()==='Check for updates').props.disabled,true);
+  await h.emit({...testing,state:'Downloading',available:'0.1.4',progress:100});assert.equal(h.progress[0].props.value,100);
+  await h.emit({...testing,state:'Ready',available:'0.1.4',progress:100});assert.equal(h.progress.length,0);assert.doesNotMatch(h.text,/100%/);
+  assert.match(h.text,/Update ready/);assert.equal(h.buttons.find(node=>text(node).trim()==='Restart to update').props.disabled,false);
+  assert.equal(h.fixture.restarts,0);
+ }finally{await h.close();}
+});
+test('unmeasured update stages stay indeterminate and phase progress never uses stale download percent',async()=>{
+ const h=await harness(testing);try{
+  await h.open();
+  for(const state of ['Checking','Validating','Draining','Installing']){
+   await h.emit({...testing,state,available:'0.1.4',progress:100});assert.equal(h.progress.length,1);
+   assert.equal(h.progress[0].props.value,undefined,state);assert.equal(h.progress[0].props['aria-valuetext'],'In progress');assert.doesNotMatch(h.text,/100%/);
+  }
+  await h.emit({...testing,state:'Installing',phase:'replace-bundle',phase_progress:42.4});
+  assert.equal(h.progress[0].props.value,42);assert.match(h.text,/Installing the update/);assert.match(h.text,/42%/);
+  for(const phase_progress of [NaN,Infinity,-1,101,'75']){
+   await h.emit({...testing,state:'Installing',phase:'request-launch',phase_progress});assert.equal(h.progress[0].props.value,undefined);
+   assert.match(h.text,/Opening the updated app/);
+  }
+  assert.equal(h.fixture.restarts,0);assert.equal(h.fixture.downloads,0);
+ }finally{await h.close();}
+});
+test('failure stops progress and keeps retry actions usable',async()=>{
+ const h=await harness({...testing,state:'Validating',available:'0.1.4'});try{
+  await h.open();assert.equal(h.progress.length,1);
+  await h.emit({...testing,state:'Available',available:'0.1.4',can_download:true,check_error:'Update validation failed. Retry the download.'});
+  assert.equal(h.progress.length,0);assert.match(h.text,/Update validation failed/);
+  assert.equal(h.buttons.find(node=>text(node).trim()==='Download update').props.disabled,false);
+  assert.equal(h.buttons.some(node=>text(node).trim()==='Restart to update'),false);
  }finally{await h.close();}
 });

@@ -52,7 +52,7 @@ async function fixture(t){
  async function signed(){const previous=path.join(profile,'updates/previous/Rieke OS.app');await bundle(previous,'0.9.0');await fs.writeFile(path.join(profile,'updates/previous.json'),JSON.stringify({team:'OWNED123',identifier:'org.riekeos.desktop',application_version:'0.9.0',source_commit:'a'.repeat(40)}));return previous;}
  async function testing(){
   const cache=path.join(profile,'updates/unsigned-testing');await fs.mkdir(cache,{recursive:true,mode:0o700});
-  const candidate=path.join(cache,'Rieke OS.app');await bundle(candidate,'1.1.0');const archive=path.join(cache,'candidate.zip');await fs.writeFile(archive,'inert archive');
+  const candidate=path.join(await fs.mkdtemp(path.join(cache,'candidate-')),'Rieke OS.app');await bundle(candidate,'1.1.0');const archive=path.join(cache,'candidate.zip');await fs.writeFile(archive,'inert archive');
   const directory=path.join(installed,'Contents/Resources/app.asar');await fs.mkdir(directory);
   for(const name of ['testing-install.cjs','bootstrap.cjs','updater-validation.cjs','physical-fs.cjs','install-name.cjs'])await fs.copyFile(path.join(rootDesktop,name),path.join(directory,name));
   const receipt={format:'rieke-unsigned-testing-update',version:1,channel:'unsigned-testing',identifier:'org.riekeos.desktop',validated:true,operation:'update',install_path:installed,current_executable:executable,current_pid:12345,current_created_at:17,current_version:'1.0.0',target_version:'1.1.0',archive_path:archive,archive_sha256:await sha256(archive),bundle_path:candidate,bundle_sha256:await bundleDigest(candidate),runtime_manifest_sha256:await sha256(path.join(candidate,'Contents/Resources/runtime/runtime-manifest.json')),current_manifest_sha256:await sha256(path.join(installed,'Contents/Resources/runtime/runtime-manifest.json'))};
@@ -99,4 +99,23 @@ test('testing readiness does not bypass changed creation identity while waiting 
  await assert.rejects(applyTestingInstall({receiptPath:x.receiptPath,currentExecutable:f.executable,run:f.run,timeoutMs:1,pollMs:1,publishReady:value=>{packet=value;}}),/ownership changed while waiting/);
  assert.equal(packet.current_pid,12345);assert.equal(packet.pid,process.pid);
  assert.equal(JSON.parse(await fs.readFile(path.join(f.installed,'Contents/Resources/runtime/runtime-manifest.json'))).application_version,'1.0.0');
+});
+
+test('helper exit surfaces its private bounded failure receipt without granting quit authority',async t=>{
+ const f=await fixture(t),x=await f.testing();
+ await assert.rejects(x.helper.launchTestingInstall({receiptPath:x.receiptPath,currentExecutable:f.executable,currentPid:12345,run:f.run,spawnHelper:()=>{
+  const child=f.child();
+  setImmediate(async()=>{
+   await fs.writeFile(x.receiptPath+'.result.json',JSON.stringify({state:'Deferred',phase:'validate-prepared',error:'Prepared update archive or bundle checksum differs'}),{mode:0o600});
+   child.emit('exit',1);
+  });return child;
+ }}),/validate-prepared.*checksum differs/);
+});
+
+test('helper retry cannot report a stale failure as the new attempt',async t=>{
+ const f=await fixture(t),x=await f.testing();
+ await fs.writeFile(x.receiptPath+'.result.json',JSON.stringify({state:'Deferred',phase:'old-attempt',error:'stale error'}),{mode:0o600});
+ await assert.rejects(x.helper.launchTestingInstall({receiptPath:x.receiptPath,currentExecutable:f.executable,currentPid:12345,run:f.run,spawnHelper:()=>{
+  const child=f.child();setImmediate(()=>child.emit('exit',1));return child;
+ }}),error=>/exited before readiness/.test(error.message)&&!error.message.includes('stale error'));
 });

@@ -2,13 +2,32 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:os'),crypto=require('node:crypto'),http=require('node:http');
 const {Readable}=require('node:stream');
-const {validateDescriptor,approvedURL,inspectTestingBundle,validateTestingCandidate,revalidateTestingCandidate}=require('../testing-update-validation.cjs');
+const {validateDescriptor,approvedURL,inspectTestingBundle,validateTestingCandidate,revalidateTestingCandidate,verifyArchive}=require('../testing-update-validation.cjs');
 const {createTestingUpdateCoordinator}=require('../testing-updater.cjs');
 const current={application_version:'0.1.2',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1]};
 const bytes=Buffer.from('candidate archive bytes');
 const descriptor={format:'rieke-desktop-test-release',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS',application_version:'0.1.3',platform:'darwin',architecture:'arm64',mysql_version:'8.4.2',database_compatibility:1,workspace_formats:[1],minimum_macos_version:'14.0',archive:{filename:'Rieke-OS-0.1.3-arm64.zip',size:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex'),sha512:crypto.createHash('sha512').update(bytes).digest('base64')},asar_sha256:'a'.repeat(64),runtime_manifest_sha256:'b'.repeat(64)};
 const distribution={format:'rieke-desktop-distribution',version:1,channel:'unsigned-testing',repository:'maxwellsdm1867/Rieke-OS'};
 const base='https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.3/';
+test('archive verification requires both digests and rejects changed bytes, truncation and links',async t=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),'disco-archive-digests-'));
+  t.after(()=>fs.rm(root,{recursive:true,force:true}));
+  const file=path.join(root,'candidate.zip'),payload=crypto.randomBytes(256*1024+17);
+  const value={archive:{size:payload.length,sha256:crypto.createHash('sha256').update(payload).digest('hex'),sha512:crypto.createHash('sha512').update(payload).digest('base64')}};
+  await fs.writeFile(file,payload,{mode:0o600});
+  await verifyArchive(file,value);
+  for(const [algorithm,encoding] of [['sha256','hex'],['sha512','base64']]){
+    const wrong=crypto.createHash(algorithm).update('different bytes').digest(encoding);
+    await assert.rejects(verifyArchive(file,{archive:{...value.archive,[algorithm]:wrong}}),/checksum failed/);
+  }
+  const changed=Buffer.from(payload);changed[changed.length-1]^=1;
+  await fs.writeFile(file,changed);
+  await assert.rejects(verifyArchive(file,value),/checksum failed/);
+  await fs.writeFile(file,payload.subarray(0,-1));
+  await assert.rejects(verifyArchive(file,value),/size or ownership changed/);
+  const link=path.join(root,'linked.zip');await fs.symlink(file,link);
+  await assert.rejects(verifyArchive(link,value),/size or ownership changed/);
+});
 test('testing descriptor and URL boundaries reject foreign provenance, migration and nonstable versions',()=>{
   assert.equal(validateDescriptor(descriptor,current,'14.2'),descriptor);
   for(const patch of [{channel:'signed'},{repository:'foreign/repo'},{application_version:'0.1.2'},{application_version:'0.1.3-beta'},{architecture:'x64'},{database_compatibility:2},{workspace_formats:[2]},{minimum_macos_version:'15.0'},{archive:{...descriptor.archive,filename:'../bad.zip'}},{archive:{...descriptor.archive,size:0}},{archive:{...descriptor.archive,sha512:'bad'}}])assert.throws(()=>validateDescriptor({...descriptor,...patch},current,'14.2'));
@@ -50,6 +69,79 @@ test('startup metadata notice never downloads; explicit download prepares and or
   await f.coordinator.download();assert.equal(f.coordinator.getStatus().state,'Ready');assert.equal(f.archiveCalls(),1);
   const result=await Promise.all([f.coordinator.installPrepared(),f.coordinator.installPrepared()]);
   assert.ok(result.every(r=>r.installing));assert.equal(f.helperCalls(),1);assert.equal(f.drains(),1);
+});
+test('installer progress is display-only and reports validation before quit',async t=>{
+  const statuses=[];let releaseHelper,enteredHelper;
+  const entered=new Promise(resolve=>{enteredHelper=resolve;});
+  const f=await fixture(t,{publishStatus:status=>statuses.push(status),installHelper:async({onProgress})=>{
+    onProgress({phase:'validate-prepared',progress:75});
+    onProgress({phase:'untrusted-phase',progress:100});
+    enteredHelper();await new Promise(resolve=>{releaseHelper=resolve;});return {ready:true};
+  }});
+  let quits=0;f.app.quit=()=>{quits++;};
+  await f.coordinator.start();await f.coordinator.download();const installing=f.coordinator.installPrepared();await entered;
+  assert.equal(quits,0);assert.equal(f.coordinator.getStatus().phase,'validate-prepared');
+  assert.equal(f.coordinator.getStatus().phase_progress,null);
+  assert.equal(f.coordinator.getStatus().can_restart,false);
+  assert.ok(statuses.some(status=>status.state==='Validating'&&status.message.includes('before closing')));
+  assert.ok(statuses.some(status=>status.state==='Validating'&&status.message.includes('after scientific')));
+  releaseHelper();assert.equal((await installing).ready,true);assert.equal(quits,1);
+});
+async function lastInstallFixture(f,result){
+  const cache=path.join(f.root,'updates/unsigned-testing');await fs.mkdir(cache,{recursive:true,mode:0o700});
+  const receipt='install-00000000-0000-4000-8000-000000000001.json';
+  const installed=path.join(f.root,'Rieke OS.app');
+  await fs.writeFile(path.join(cache,receipt),JSON.stringify({format:'rieke-unsigned-testing-update',version:1,validated:true,channel:'unsigned-testing',identifier:'org.riekeos.desktop',operation:'update',install_path:installed,current_version:'0.1.2',target_version:'0.1.3'}),{mode:0o600});
+  await fs.writeFile(path.join(cache,receipt+'.result.json'),JSON.stringify({...result,destination:installed}),{mode:0o600});
+  const pointer=path.join(cache,'last-install.json');
+  await fs.writeFile(pointer,JSON.stringify({format:'rieke-testing-last-install',version:1,receipt}),{mode:0o600});
+  return {cache,receipt,pointer};
+}
+test('private failed installation outcome remains visible after a successful Current check without exposing stderr',async t=>{
+  const f=await fixture(t,{manifest:{...current,application_version:'0.1.3'}});
+  await lastInstallFixture(f,{state:'Deferred',phase:'replace-bundle',error:'private command path',stderr:'private stderr'});
+  await f.coordinator.start();
+  const status=f.coordinator.getStatus();assert.equal(status.state,'Current');
+  assert.equal(status.last_install.phase,'replace-bundle');assert.match(status.check_error,/could not complete/);
+  assert.doesNotMatch(JSON.stringify(status),/private command path|private stderr/);
+  assert.equal(status.can_restart,false);assert.equal(f.helperCalls(),0);
+  await f.coordinator.check();assert.match(f.coordinator.getStatus().check_error,/replace-bundle/);
+});
+test('private rollback result explains the restored previous version',async t=>{
+  const f=await fixture(t);
+  await lastInstallFixture(f,{state:'Restored',version:'0.1.2',failure:{phase:'request-launch',error:'private path'}});
+  await f.coordinator.start();
+  assert.equal(f.coordinator.getStatus().last_install.state,'Restored');
+  assert.match(f.coordinator.getStatus().check_error,/previous app was restored/);
+});
+test('unsafe last-install pointers and nonprivate helper results are ignored',async t=>{
+  for(const fault of ['traversal','symlink','exposed-result','oversized-result','foreign-install','bad-schema']){
+    const f=await fixture(t),record=await lastInstallFixture(f,{state:'Deferred',phase:'replace-bundle'});
+    if(fault==='traversal')await fs.writeFile(record.pointer,JSON.stringify({format:'rieke-testing-last-install',version:1,receipt:'../'+record.receipt}));
+    if(fault==='symlink'){await fs.rename(record.pointer,record.pointer+'.target');await fs.symlink(record.pointer+'.target',record.pointer);}
+    if(fault==='exposed-result')await fs.chmod(path.join(record.cache,record.receipt+'.result.json'),0o644);
+    if(fault==='oversized-result')await fs.writeFile(path.join(record.cache,record.receipt+'.result.json'),' '.repeat(65537));
+    if(fault==='foreign-install'||fault==='bad-schema'){
+      const file=path.join(record.cache,record.receipt),receipt=JSON.parse(await fs.readFile(file));
+      if(fault==='foreign-install')receipt.install_path='/another/Disco.app';else receipt.version=999;
+      await fs.writeFile(file,JSON.stringify(receipt));
+    }
+    await f.coordinator.start();assert.equal(f.coordinator.getStatus().last_install,undefined,fault);assert.equal(f.helperCalls(),0);
+  }
+});
+test('helper handoff failures retain private diagnostics and show only their phase',async t=>{
+  const f=await fixture(t,{installHelper:async()=>{const error=new Error('private command details');error.stderr='private stderr';error.updatePhase='validate-prepared';throw error;}});
+  await f.coordinator.start();await f.coordinator.download();await f.coordinator.installPrepared();
+  const status=f.coordinator.getStatus();assert.equal(status.last_install.phase,'validate-prepared');
+  assert.doesNotMatch(JSON.stringify(status),/private command details|private stderr/);
+  const pointer=path.join(f.root,'updates/unsigned-testing/last-install.json');
+  const record=JSON.parse(await fs.readFile(pointer));assert.equal(record.failure.error,'private command details');
+  assert.equal((await fs.stat(pointer)).mode&0o077,0);
+  const restarted=createTestingUpdateCoordinator({app:f.app,manifest:current,distribution,transport:f.transport,hostVersion:'14.2',timers:{setTimeout:()=>({unref(){}}),clearTimeout(){}}});
+  try{
+    await restarted.start();assert.equal(restarted.getStatus().last_install.phase,'validate-prepared');
+    assert.doesNotMatch(JSON.stringify(restarted.getStatus()),/private command details|private stderr/);
+  }finally{restarted.stop();await restarted.flushReceipts();}
 });
 test('truncated and checksum-failed downloads never validate and permit a fresh explicit retry',async t=>{
   const f=await fixture(t);await f.coordinator.start();f.setDownloadFailure();
@@ -181,6 +273,28 @@ test('actual extracted testing bundle permits declared dirty provenance and reje
   const file=path.join(f.runtime,'frontend/index.html');await fs.appendFile(file,'corrupt');await assert.rejects(inspectTestingBundle(options),/metadata|checksum/);await fs.writeFile(file,'frontend');
   const asar=path.join(f.bundle,'Contents/Resources/app.asar');await fs.rename(asar,asar+'.copy');await fs.symlink('app.asar.copy',asar);
   await assert.rejects(inspectTestingBundle(options),/regular contained/);
+});
+test('built-in bundle inspection rejects resource or manifest changes at the final scan boundary',{skip:process.platform!=='darwin'},async t=>{
+  for(const mutation of ['same-size-resource','manifest-bytes']){
+    const f=await bundleFixture(t);
+    const run=async(exe,args,options)=>{
+      if(exe==='/usr/bin/codesign'){
+        if(mutation==='same-size-resource')await fs.writeFile(path.join(f.runtime,'frontend/index.html'),'FrontEnd');
+        else await fs.appendFile(path.join(f.runtime,'runtime-manifest.json'),' ');
+        return {stdout:'',stderr:''};
+      }
+      return f.run(exe,args,options);
+    };
+    await assert.rejects(inspectTestingBundle({bundle:f.bundle,descriptor:f.descriptor,manifest:current,hostVersion:'14.2',run}),/checksum|manifest/i,mutation);
+  }
+});
+test('an injected bundle digest cannot bypass independent resource verification',{skip:process.platform!=='darwin'},async t=>{
+  const f=await bundleFixture(t);let calls=0;
+  const bundleDigest=async()=>{calls++;return 'c'.repeat(64);};
+  const options={bundle:f.bundle,descriptor:f.descriptor,manifest:current,hostVersion:'14.2',run:f.run,bundleDigest};
+  await inspectTestingBundle(options);assert.equal(calls,1);
+  await fs.writeFile(path.join(f.runtime,'frontend/index.html'),'FrontEnd');
+  await assert.rejects(inspectTestingBundle(options),/checksum/);assert.equal(calls,1);
 });
 test('real ZIP preflight/extraction uses installed interpreter and never executes candidate code',{skip:process.platform!=='darwin'},async t=>{
   const f=await bundleFixture(t);
