@@ -50,3 +50,9 @@ identity, error, cancellation and lifetime contracts. Authority or runtime body
 changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
+
+Trace viewing preferences belong to the Explorer session, separately from matching
+navigation. Filter/search/preset changes may clear navigation without resetting
+Whole/Sample or the user’s sample bounds. Both result and tree layouts pass the
+same controlled preference into MatchingEpochs. Restored preferences are validated
+by the trace presentation owner and never restore read or mutation authority.

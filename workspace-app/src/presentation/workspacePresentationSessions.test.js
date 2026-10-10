@@ -147,3 +147,18 @@ test('independent owner instances share no retained presentation state',()=>{
  second.restore({sessions:[['qc',{marker:'second'}]]});second.pruneDeleted({removedEpochs:['first']});
  assert.equal(first.read(protocol()).session,value);assert.equal(first.read(route('cell-qc','qc')).session,undefined);
 });
+
+test('protocol viewing preference follows the latest choice while history retains its own focus',()=>{
+ const owner=createWorkspacePresentationSessions();
+ const whole={kind:'whole',start:0,count:20000},sample={kind:'sample',start:30000,count:1000};
+ const older={inspector:{focused:'old'},tracePreference:whole},latest={inspector:{focused:'new'},tracePreference:sample};
+ owner.remember(protocol('old'),older);owner.remember(protocol('new'),latest);
+ const restored=owner.read(protocol('old')).session;
+ assert.equal(restored.inspector,older.inspector);assert.equal(restored.tracePreference,sample);
+ assert.equal(older.tracePreference,whole,'read must not mutate historical snapshots');
+ assert.equal(owner.read(protocol('new')).session,latest);
+ assert.equal(owner.read(protocol('other','protocol-B')).session,undefined);
+ const restoredOwner=createWorkspacePresentationSessions();restoredOwner.restore(owner.checkpoint(protocol('old')));
+ assert.equal(restoredOwner.read(protocol('old')).session.tracePreference,sample);
+ owner.remember(protocol('new'),{...latest,tracePreference:whole});assert.equal(owner.read(protocol('old')).session.tracePreference,whole);
+});
