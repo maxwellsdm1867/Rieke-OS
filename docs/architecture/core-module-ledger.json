@@ -4408,7 +4408,7 @@
         "transactions": "Read-only trace I/O; no scientific mutation.",
         "idempotency": "Exact bounded window reads only.",
         "cancellation": "Resource owner cancels superseded requests; geometry is pure.",
-        "lifetime": "Protocol session owns the latest shared Inspect/Workbench viewing preference; Search matching session owns its own preference. Current viewer resource owns demanded whole arrays; cache/prefetch remain bounded. Invalid preferences fall back to Whole."
+        "lifetime": "Protocol session owns the latest shared Inspect/Workbench viewing preference; Search Explorer session owns its own preference independently of disposable matching navigation. Current viewer resource owns demanded whole arrays; cache/prefetch remain bounded. Invalid preferences fall back to Whole."
       },
       "caller_dependencies": [
         "Remote but owned trace endpoint; in-process geometry and resource cache."

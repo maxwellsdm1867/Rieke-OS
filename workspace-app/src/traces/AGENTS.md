@@ -17,7 +17,8 @@ streams without replacing the preference. `traceViewPreference.jsx` validates th
 presentation-only record and supplies it independently of request authority.
 Protocol owns the shared Inspect/Workbench choice in its existing session; history
 uses that protocol's latest choice. Search predicate stores its own choice in the
-matching session, independently of result revision. Missing/invalid preferences
+Explorer session, separately from disposable matching navigation and result
+revisions. Standalone MatchingEpochs retains its session fallback. Missing/invalid preferences
 start Whole epoch; standalone trace viewers retain a local choice while mounted.
 The unified controls show response identity/rate/total, Whole/Sample, Start/Count,
 window navigation and brief keyboard hints directly. Stream choices are inline

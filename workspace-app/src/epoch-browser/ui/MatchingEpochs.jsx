@@ -14,8 +14,10 @@ import './MatchingEpochs.css';
 import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import TagExchangeControls from '../../annotations/ui/TagExchangeControls.jsx';
 
-function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onQC}){
-  const [tracePreference,setTracePreference]=useState(()=>normalizeTraceViewPreference(session?.tracePreference));
+function MatchingEpochsContent({designMode=false,builder=null,columnTree=null,toolbarTarget=null,viewFilters,onViewFilters,filterRevision,filterDisabled=false,predicate,splits,preview,onRefresh,session,onSession,tracePreference:providedTracePreference,onTracePreference,onTagFilter,onAnnotationsChanged,onDesign,designDisabled=false,onExport,exportDisabled=false,actions=[],inclusionForEpoch,onToggleInclusion,onQC}){
+  const [localTracePreference,setLocalTracePreference]=useState(()=>normalizeTraceViewPreference(session?.tracePreference));
+  const tracePreference=providedTracePreference??localTracePreference;
+  const setTracePreference=onTracePreference??setLocalTracePreference;
   const navigationIntent=useRef(null);
   const saved=useRef(session?.revision===preview.tree_revision?session:null).current;
   const [focused,setFocused]=useState(saved?.focused||null),[request,setRequest]=useState(saved?.focused?{anchorUuid:saved.focused}:{offset:0});
