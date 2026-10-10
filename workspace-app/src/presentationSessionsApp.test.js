@@ -197,3 +197,28 @@ test('selecting the current project retains its exact saved route and view',asyn
   assert.deepEqual((await h.checkpoint()).route,route);
  }finally{await h.close();}
 });
+
+test('Protocol retains one viewing preference across Inspect, Workbench, history and restored projects',async()=>{
+ const h=await createPresentationSessionHarness();let checkpoint;
+ const preference=()=>h.root.find(node=>typeof node.type==='function'&&node.type.name==='TraceViewPreferenceProvider');
+ const sample={kind:'sample',start:30000,count:1000};
+ try{
+  await h.mount();await goProtocol(h,'protocol-A');await h.click('Inspect');await inspector(h);
+  assert.equal(preference().props.value.kind,'whole');
+  await h.act(()=>preference().props.onChange(sample));
+  await h.click('Workbench');assert.deepEqual(preference().props.value,sample);
+  await h.click('Inspect');await inspector(h);assert.deepEqual(preference().props.value,sample);
+  await goProtocol(h,'protocol-B');await h.click('Inspect');await inspector(h);assert.equal(preference().props.value.kind,'whole');
+  await goProtocol(h,'protocol-A');await h.click('Inspect');await inspector(h);assert.deepEqual(preference().props.value,sample);
+  const newer={kind:'sample',start:100,count:500};await h.act(()=>preference().props.onChange(newer));
+  await h.history('back');await inspector(h);assert.equal(preference().props.value.kind,'whole');
+  await h.history('back');await inspector(h);assert.deepEqual(preference().props.value,newer,'old visit adopts latest protocol viewing choice');
+  checkpoint=await h.checkpoint();
+ }finally{await h.close();}
+ const restored=await createPresentationSessionHarness({saved:draft(checkpoint)});
+ try{
+  await restored.mount();await inspector(restored);
+  const provider=restored.root.find(node=>typeof node.type==='function'&&node.type.name==='TraceViewPreferenceProvider');
+  assert.deepEqual(provider.props.value,{kind:'sample',start:100,count:500});
+ }finally{await restored.close();}
+});

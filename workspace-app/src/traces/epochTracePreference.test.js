@@ -38,7 +38,7 @@ test('EpochViewer retains Sample bounds across browse/tree remounts and an empty
  const button=label=>view().findAllByType('button').find(node=>text(node.props.children)===label);
  const assertSample=()=>{
   assert.equal(button('Sample').props['aria-pressed'],true);
-  assert.match(text(renderer.toJSON()),/Samples 30,000–30,999 · 1,000 of 67,500 total samples/);
+  assert.match(text(renderer.toJSON()),/1,000 \/ 67,500 samples/);
   assert.deepEqual(calls.at(-1),{start:30000,count:1000});
  };
  try{
@@ -58,6 +58,6 @@ test('EpochViewer retains Sample bounds across browse/tree remounts and an empty
   assert.equal(calls.length,before,'empty selection does not request a trace');
   await render();assertSample();assert.equal(calls.length,before+1);
   await render({pageKey:'fresh-page'});assert.equal(button('Whole epoch').props['aria-pressed'],true);
-  assert.match(text(renderer.toJSON()),/67,500 of 67,500 total samples/);
+  assert.match(text(renderer.toJSON()),/67,500 \/ 67,500 samples/);
  }finally{await act(async()=>renderer?.unmount());await server.close();}
 });

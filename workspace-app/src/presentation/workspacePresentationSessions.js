@@ -15,7 +15,9 @@ import {pruneDeletedSourceSelections} from './internal/deletedSourceSelections.j
  * remember(route, value) retains the exact value by route.key and updates only
  * that destination's fallback (page: stores/explore/protocol; protocol identity).
  * read(route) returns {session, restoreSession}; exact truthy values precede
- * destination fallbacks. Protocol restoreSession reports key presence, including
+ * destination fallbacks. Object protocol snapshots inherit the latest protocol
+ * tracePreference via a shallow copy when different; other fields retain their
+ * route-specific values. Protocol restoreSession reports key presence, including
  * falsy saved values. Explorer fallback requires route.resumeExplorer.
  * checkpoint(route) returns {route, sessions, protocolSessions,
  * lastExplorerSession, lastStoresSession}: copied entry arrays, shared values.
@@ -38,7 +40,12 @@ export function createWorkspacePresentationSessions(){
   },
   read(route){
    const saved=sessions.get(route.key);
-   if(route.page==='protocol')return {session:saved||protocolSessions.get(route.protocol),restoreSession:sessions.has(route.key)};
+   if(route.page==='protocol'){
+    const latest=protocolSessions.get(route.protocol),view=saved||latest;
+    // Viewing defaults follow the protocol's latest choice, not history's epoch.
+    const session=view&&typeof view==='object'&&!Array.isArray(view)&&latest&&Object.hasOwn(latest,'tracePreference')&&view.tracePreference!==latest.tracePreference?{...view,tracePreference:latest.tracePreference}:view;
+    return {session,restoreSession:sessions.has(route.key)};
+   }
    if(route.page==='stores')return {session:saved||lastStoresSession,restoreSession:false};
    if(route.page==='explore')return {session:saved||(route.resumeExplorer?lastExplorerSession:null),restoreSession:false};
    return {session:saved,restoreSession:false};

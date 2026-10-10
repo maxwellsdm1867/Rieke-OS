@@ -4,7 +4,10 @@ This module owns in-memory route snapshots, Protocol/Explorer/Stores fallbacks,
 checkpoint replacement and deletion pruning for one App mount. Start with the
 [public factory and behavioral contract](workspacePresentationSessions.js).
 Its five methods are `remember`, `read`, `checkpoint`, `restore`, `pruneDeleted`.
-The returned values preserve existing shallow references and permissive inputs.
+The returned values preserve existing shallow references and permissive inputs,
+except a protocol route snapshot is shallow-copied when its tracePreference differs
+from that protocol’s latest saved choice. Only that presentation field is replaced;
+route-specific focus and scientific authority remain unchanged.
 
 App owns navigation validation, stable callbacks, persistence, project/unmount
 composition and scientific authority. Restore replaces stores before App validates

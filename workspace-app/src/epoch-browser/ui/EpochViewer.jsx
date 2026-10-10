@@ -1,3 +1,4 @@
+import {useTraceViewPreference} from '../../traces/traceViewPreference.jsx';
 import ScientificContext from '../../components/ScientificContext.jsx';
 import {useState} from 'react';
 import {Activity,ArrowLeft,Tags,X} from 'lucide-react';
@@ -21,8 +22,8 @@ import AnnotationTags from '../../annotations/ui/AnnotationTags.jsx';
 import useTreeCellSelection from '../../annotations/useTreeCellSelection.js';
 
 // Source adapters provide data and mutations; every viewer assembles its UI here.
-export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,readContext=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
-  const [tracePreference,setTracePreference]=useState(undefined);
+export default function EpochViewer({className='epoch-inspector-mode',ariaLabel='Epoch inspection',onKeyDown,toolbar,toolbarChildren,viewFilters,onViewFilters,filterRevision,filterDisabled=false,hideFilterControl=false,before,layout,designMode=false,builder,columnTree,treePane,resource={},epoch,targets=[],navigation,traceRevision,tracePreference:providedTracePreference,onTracePreference,readContext=null,inclusion,detailDisabled=false,onQC,tags,detailExtras,metadata}){
+  const [tracePreference,setTracePreference]=useTraceViewPreference(providedTracePreference,onTracePreference);
   const [previewOpen,setPreviewOpen]=useState(true);
   const [tagsOpen,setTagsOpen]=useState(false);
   const cellSelection=useTreeCellSelection(designMode&&!readContext?columnTree:null);

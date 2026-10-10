@@ -1,6 +1,7 @@
+import {useTraceViewPreference} from '../traceViewPreference.jsx';
 import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
-import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,RotateCcw,ZoomIn,ZoomOut} from 'lucide-react';
+import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
 import {api,number,useResource} from '../../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
@@ -45,14 +46,14 @@ function paintTrace(canvas,data){
 // Keep the canvas mounted; retain the page preference while changing epoch identity.
 export default function Trace({epoch,revision=0,readContext=null,viewPreference,onViewPreference}){
   const owner=useWorkspaceRequestScope();
-  return <TraceViewer viewPreference={viewPreference} onViewPreference={onViewPreference} epoch={epoch} revision={revision} readContext={readContext??(owner?epoch?.trace_read_context??owner.traceReadContext:null)??null}/>;
+  const [preference,setPreference]=useTraceViewPreference(viewPreference,onViewPreference);
+  return <TraceViewer viewPreference={preference} onViewPreference={setPreference} epoch={epoch} revision={revision} readContext={readContext??(owner?epoch?.trace_read_context??owner.traceReadContext:null)??null}/>;
 }
 Trace.supportsFrozenReadContext=true;
 function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference}){
   const owner=useWorkspaceRequestScope();
-  const [localPreference,setLocalPreference]=useState({kind:'whole',start:0,count:MAX_TRACE_SAMPLES});
-  const preference=viewPreference??localPreference;
-  const setPreference=onViewPreference??setLocalPreference;
+  const preference=viewPreference;
+  const setPreference=onViewPreference;
   const whole=preference.kind==='whole';
   const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
   const streams=(epoch?.streams || []).filter(stream=>stream.kind==='responses'&&stream.sample_count>0);
@@ -170,7 +171,31 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     moveWindow({start,count});
   }
   return <section className="trace-viewer trace-section" aria-label="Recorded response viewer">
-    <div className="tv-tools"><div className="tv-modes" aria-label="Trace extent"><button aria-pressed={whole} className={whole?'active':''} onClick={()=>setPreference({...preference,kind:'whole'})}>Whole epoch</button><button aria-pressed={!whole} className={!whole?'active':''} onClick={()=>setPreference({...preference,kind:'sample'})}>Sample</button></div><div className="tv-modes" aria-label="Drag interaction"><button className={mode==='zoom'?'active':''} aria-pressed={mode==='zoom'} disabled={whole} onClick={()=>setMode('zoom')}><MousePointer2 size={13}/> Drag to zoom</button><button className={mode==='pan'?'active':''} aria-pressed={mode==='pan'} disabled={whole} onClick={()=>setMode('pan')}><Hand size={13}/> Pan</button></div><div className="tv-zoom-buttons"><button disabled={whole||!stream||pending||bounded.count<=Math.min(2,total)} onClick={()=>zoom(.5)} title="Zoom in around cursor or window center" aria-label="Zoom in"><ZoomIn size={15}/></button><button disabled={whole||!stream||pending||bounded.count>=Math.min(MAX_TRACE_SAMPLES,total)} onClick={()=>zoom(2)} title="Zoom out, up to 20,000 full-rate samples" aria-label="Zoom out"><ZoomOut size={15}/></button><button disabled={!stream||pending} onClick={()=>setPreference({...preference,kind:'whole'})} title="Show the whole epoch"><RotateCcw size={13}/> Reset</button></div><span>Y-axis auto-scales</span></div>
+    <header className="tv-controls" aria-label="Response and viewing controls">
+      <div className="tv-response-line">
+        <h3 title="Full-rate recorded samples. No filtering or resampling."><Activity size={14}/> Response</h3>
+        <div className="tv-streams" aria-label="Response stream">
+          {streams.length===1?<span>{stream.device} · {stream.units||'unit not recorded'}</span>:streams.map((item,index)=><button key={item.uuid} aria-pressed={stream?.uuid===item.uuid} aria-label={`Response ${index+1}: ${item.device} · ${item.units||'unit not recorded'}`} title={item.uuid} onClick={()=>{setSelectedStream(item.uuid);setEntryError('');drag.current=null;cursor.current=null;}}>{item.device}{streams.filter(other=>other.device===item.device).length>1?` ${index+1}`:''} · {item.units||'unit not recorded'}</button>)}
+        </div>
+        <span className="tv-recording-info">{stream?`${number(valid?data.sample_rate:stream.sample_rate)} Hz · ${number(total)} total samples`:'No response stream'}</span>
+      </div>
+      <div className="tv-window-controls">
+        <div className="tv-modes" aria-label="Trace extent"><button aria-pressed={whole} className={whole?'active':''} onClick={()=>setPreference({...preference,kind:'whole'})}>Whole epoch</button><button aria-pressed={!whole} className={!whole?'active':''} onClick={()=>setPreference({...preference,kind:'sample'})}>Sample</button></div>
+        <form className="tv-window-fields" onSubmit={submitWindow}>
+          <label>Start<input aria-label="Start sample" disabled={whole||!stream} type="number" value={entryStart} min="0" max={Math.max(0,total-1)} step="1" onChange={event=>setEntryStart(event.target.value)}/></label>
+          <label>Count<input aria-label="Sample count" disabled={whole||!stream} type="number" value={entryCount} min="1" max={whole?total:Math.min(total,MAX_TRACE_SAMPLES)} step="1" onChange={event=>setEntryCount(event.target.value)}/></label>
+          <button disabled={whole||!stream||pending} type="submit">Apply</button>
+        </form>
+        <div className="tv-window-step"><button aria-label="Previous window" title="Previous window" disabled={whole||!stream||pending||bounded.start===0} onClick={()=>moveWindow({...bounded,start:bounded.start-bounded.count})}><ArrowLeft size={14}/></button><button aria-label="Next window" title="Next window" disabled={whole||!stream||pending||bounded.start+bounded.count>=total} onClick={()=>moveWindow({...bounded,start:bounded.start+bounded.count})}><ArrowRight size={14}/></button></div>
+        <div className="tv-range" tabIndex={0} aria-label="Available trace window" title={stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · zero-based, inclusive`:undefined}><span>{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}</span><small>{stream?`${number(bounded.count)} / ${number(total)} samples`:'—'}</small></div>
+      </div>
+      <div className="tv-tools">
+        <div className="tv-modes" aria-label="Drag interaction"><button className={mode==='zoom'?'active':''} aria-pressed={mode==='zoom'} disabled={whole} onClick={()=>setMode('zoom')} title="Drag to zoom"><MousePointer2 size={13}/> Zoom</button><button className={mode==='pan'?'active':''} aria-pressed={mode==='pan'} disabled={whole} onClick={()=>setMode('pan')}><Hand size={13}/> Pan</button></div>
+        <div className="tv-zoom-buttons"><button disabled={whole||!stream||pending||bounded.count<=Math.min(2,total)} onClick={()=>zoom(.5)} title="Zoom in around cursor or window center" aria-label="Zoom in"><ZoomIn size={15}/></button><button disabled={whole||!stream||pending||bounded.count>=Math.min(MAX_TRACE_SAMPLES,total)} onClick={()=>zoom(2)} title="Zoom out, up to 20,000 full-rate samples" aria-label="Zoom out"><ZoomOut size={15}/></button></div>
+        <span className="tv-shortcuts">← → cursor · Shift ← → pan · + / − zoom · Home whole</span>
+      </div>
+      {entryError&&<p className="tv-warning" role="alert">{entryError}</p>}
+    </header>
     <div ref={surface} data-epoch-arrows="ignore" className={`tv-plot tv-${mode}`} tabIndex={0} role="group" aria-label={whole?"Whole epoch trace. Left/Right move the sample cursor. Choose Sample to pan or zoom.":"Trace plot. Left/Right move the sample cursor. Shift and Left/Right pan. Plus and minus zoom. Home resets."} onKeyDown={keyDown}>
       <canvas ref={base} className="tv-base" aria-hidden="true"/><canvas ref={overlay} className="tv-overlay" aria-hidden="true" onPointerDown={pointerDown} onPointerMove={pointerMove} onPointerUp={pointerUp} onPointerCancel={()=>{drag.current=null;scheduleOverlay();}}/>
       {!stream&&<div className="tv-status">This epoch has no indexed response stream.</div>}
@@ -183,11 +208,5 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;scheduleOverlay();}}}/></label></div>
     <p id={cursorHelp} className="tv-cursor-help">Move over the plot or use the sample cursor to read a recorded value.</p>
     <div className="tv-gap-notice" role="status" tabIndex={gapCount>0?0:undefined}>{gapCount>0?`${number(gapCount)} missing or non-finite samples appear as gaps; they are not plotted as zero.`:''}</div>
-    <div className="tv-window-navigation"><button disabled={whole||!stream||pending||bounded.start===0} onClick={()=>moveWindow({...bounded,start:bounded.start-bounded.count})}><ArrowLeft size={14}/> Previous window</button><span tabIndex={0} aria-label="Available trace window">{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}<small>{stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · ${number(bounded.count)} of ${number(total)} total samples`:'No indexed response stream'}</small></span><button disabled={whole||!stream||pending||bounded.start+bounded.count>=total} onClick={()=>moveWindow({...bounded,start:bounded.start+bounded.count})}>Next window <ArrowRight size={14}/></button></div>
-    {!whole&&<details className="tv-window-settings" open><summary>Window coordinates & keyboard controls</summary><form onSubmit={submitWindow}><label>Start sample<input disabled={!stream} type="number" value={entryStart} min="0" max={Math.max(0,total-1)} step="1" onChange={event=>setEntryStart(event.target.value)}/></label><label>Sample count<input disabled={!stream} type="number" value={entryCount} min="1" max={Math.min(total,MAX_TRACE_SAMPLES)} step="1" onChange={event=>setEntryCount(event.target.value)}/></label><button disabled={!stream||pending} type="submit">Show window</button></form>{entryError&&<p className="tv-warning" role="alert">{entryError}</p>}<p>Focus the plot: ← / → moves one sample; Shift + ← / → pans; + / − zooms; Home resets. Dragging requests samples only on release. No filtering or resampling is applied.</p></details>}
-    <footer className="tv-recording-footer">
-    <div className="tv-heading"><h3><Activity size={16}/> Recorded response</h3><label>Stream<select aria-label="Response stream" value={stream?.uuid || ''} disabled={!stream} onChange={event=>{setSelectedStream(event.target.value);setEntryError('');drag.current=null;cursor.current=null;}}>{!stream&&<option value="">No indexed response stream</option>}{streams.map(item=><option key={item.uuid} value={item.uuid}>{item.device} · {item.units || 'unit not recorded'}</option>)}</select></label></div>
-    <div className="tv-data-info"><span className="tv-full-rate">Full sample rate</span><span>{stream?`${number(valid?data.sample_rate:stream.sample_rate)} Hz`:'Sample rate unavailable'}</span><span>{number(total)} samples in stream</span><span>{!stream?'No indexed response stream':whole?'Whole epoch · all recorded samples':'Sample window · up to 20,000 samples'}</span></div>
-    </footer>
   </section>;
 }

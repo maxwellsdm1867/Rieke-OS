@@ -12,9 +12,16 @@ Sample windows and each transport read use safe integer bounds and at most
 complete trace after count, identity, source hash, rate and unit checks. Complete
 arrays are never put in the shared cache. Cancellation and publication belong to
 the existing useResource lifetime and supplied request owner. Sample is explicit;
-its start/count preference survives epoch and layout changes in EpochViewer,
-clamping to shorter streams without replacing the preference. A fresh page starts
-with Whole epoch. Other standalone trace viewers retain their choice while mounted.
+its start/count preference survives epoch and layout changes, clamping to shorter
+streams without replacing the preference. `traceViewPreference.jsx` validates the
+presentation-only record and supplies it independently of request authority.
+Protocol owns the shared Inspect/Workbench choice in its existing session; history
+uses that protocol's latest choice. Search predicate stores its own choice in the
+matching session, independently of result revision. Missing/invalid preferences
+start Whole epoch; standalone trace viewers retain a local choice while mounted.
+The unified controls show response identity/rate/total, Whole/Sample, Start/Count,
+window navigation and brief keyboard hints directly. Stream choices are inline
+buttons; no dropdown or disclosure hides the window controls.
 Full mode permits cursor inspection; zoom/pan/window controls require Sample.
 Reset/Home returns to Whole epoch. Both modes show displayed and total counts.
 Pan and zoom clamp to recording bounds. Time is seconds using the positive finite

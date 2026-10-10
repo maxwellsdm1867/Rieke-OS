@@ -1253,7 +1253,8 @@
             "One module and one fresh-agent discovery scenario"
           ]
         }
-      }
+      },
+      "trace_viewing_followup": "Object protocol route snapshots inherit only tracePreference from the latest protocol session, via shallow copy when different. Focus/history and scientific authority retain existing precedence. Protocol validates preference values; no waveform data or source authority is persisted in them."
     },
     {
       "id": "desktop-lifecycle",
@@ -4407,7 +4408,7 @@
         "transactions": "Read-only trace I/O; no scientific mutation.",
         "idempotency": "Exact bounded window reads only.",
         "cancellation": "Resource owner cancels superseded requests; geometry is pure.",
-        "lifetime": "Current viewer lifetime owns demand-loaded whole trace; shared cache and prefetch remain bounded. Page owner retains Whole/Sample preference across epochs and layout changes."
+        "lifetime": "Protocol session owns the latest shared Inspect/Workbench viewing preference; Search matching session owns its own preference. Current viewer resource owns demanded whole arrays; cache/prefetch remain bounded. Invalid preferences fall back to Whole."
       },
       "caller_dependencies": [
         "Remote but owned trace endpoint; in-process geometry and resource cache."
@@ -4416,7 +4417,8 @@
         "workspace-app/src/traces/ui/TraceViewer.jsx",
         "workspace-app/src/traces/ui/traceGeometry.js",
         "workspace-app/src/traces/traceReadContext.js",
-        "workspace-app/src/traces/readWholeTrace.js"
+        "workspace-app/src/traces/readWholeTrace.js",
+        "workspace-app/src/traces/traceViewPreference.jsx"
       ],
       "verification": {
         "existing_tests": [
@@ -4425,7 +4427,9 @@
           "workspace-app/src/epochResourceLifecycle.test.js",
           "workspace-app/src/traces/readWholeTrace.test.js",
           "workspace-app/src/traces/traceExtentLifecycle.test.js",
-          "workspace-app/src/traces/epochTracePreference.test.js"
+          "workspace-app/src/traces/epochTracePreference.test.js",
+          "workspace-app/src/traces/traceViewPreference.test.js",
+          "workspace-app/src/traces/traceSurfaceIntegration.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [

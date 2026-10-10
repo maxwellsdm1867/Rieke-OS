@@ -1782,7 +1782,8 @@
             "workspace-app/src/traces/traceReadContext.js",
             "workspace-app/src/components/NavigationLoading.jsx",
             "workspace-app/src/workspaceRequest.js",
-            "workspace-app/src/traces/readWholeTrace.js"
+            "workspace-app/src/traces/readWholeTrace.js",
+            "workspace-app/src/traces/traceViewPreference.jsx"
           ]
         },
         {
@@ -1805,6 +1806,14 @@
             "workspace-app/src/traces/ui/traceGeometry.js",
             "workspace-app/src/traces/traceReadContext.js"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/traces/traceViewPreference.jsx",
+          "allow": [
+            "react",
+            "workspace-app/src/traces/ui/traceGeometry.js"
+          ]
         }
       ],
       "tests": {
@@ -1817,7 +1826,9 @@
           "workspace-app/src/testDiscovery.test.js",
           "workspace-app/src/traces/readWholeTrace.test.js",
           "workspace-app/src/traces/traceExtentLifecycle.test.js",
-          "workspace-app/src/traces/epochTracePreference.test.js"
+          "workspace-app/src/traces/epochTracePreference.test.js",
+          "workspace-app/src/traces/traceViewPreference.test.js",
+          "workspace-app/src/traces/traceSurfaceIntegration.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -3559,6 +3570,14 @@
             "path": "workspace-app/src/traces/readWholeTrace.js",
             "exports": [
               "readWholeTrace"
+            ]
+          },
+          {
+            "path": "workspace-app/src/traces/traceViewPreference.jsx",
+            "exports": [
+              "normalizeTraceViewPreference",
+              "TraceViewPreferenceProvider",
+              "useTraceViewPreference"
             ]
           }
         ]
