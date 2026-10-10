@@ -6,7 +6,17 @@ request/cache scope identity. All existing exports and viewer props remain publi
 
 ## Contract
 
-Windows use safe integer bounds and at most 20,000 full-rate recorded samples.
+Sample windows and each transport read use safe integer bounds and at most
+20,000 full-rate recorded samples. The active viewer defaults to Whole epoch:
+`readWholeTrace.js` sequentially demand-reads exact chunks and publishes only the
+complete trace after count, identity, source hash, rate and unit checks. Complete
+arrays are never put in the shared cache. Cancellation and publication belong to
+the existing useResource lifetime and supplied request owner. Sample is explicit;
+its start/count preference survives epoch and layout changes in EpochViewer,
+clamping to shorter streams without replacing the preference. A fresh page starts
+with Whole epoch. Other standalone trace viewers retain their choice while mounted.
+Full mode permits cursor inspection; zoom/pan/window controls require Sample.
+Reset/Home returns to Whole epoch. Both modes show displayed and total counts.
 Pan and zoom clamp to recording bounds. Time is seconds using the positive finite
 sample rate; the span is `(count - 1) / sampleRate`, including both actual endpoint
 samples. Only finite numeric samples determine extents. Null/nonfinite samples
@@ -20,7 +30,9 @@ produces no time range and no finite samples produces no extent. Retrieval error
 remain visible/retryable.
 
 The shared resource/cache owner retains freshness, cancellation, eviction and
-bounded lifetime. The viewer never prefetches an entire recording. Backend trace
+bounded lifetime. The viewer never prefetches an entire recording; full-stream reads are demand
+loads only for the currently inspected epoch. Memory and paint work for Whole
+epoch grow with stream length; native large-recording performance is unqualified. Backend trace
 reads establish source ownership/provenance; geometry does not qualify bytes or
 calibration. No scientific mutation belongs here.
 

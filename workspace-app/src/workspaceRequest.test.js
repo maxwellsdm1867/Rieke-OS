@@ -104,7 +104,7 @@ test('existing trace viewer requests the restored selection naturally and refuse
   const wrongUnits={...port,request:async()=>({epoch_uuid:id(5),stream_uuid:id(6),start:0,count:20000,sample_rate:10000,units:null,values:Array(20000).fill(1),read_context:context})};
   await act(async()=>renderer.update(React.createElement(WorkspaceRequestProvider,{port:wrongUnits},React.createElement(Trace,{epoch}))));
   assert.equal(renderer.root.findAll(node=>node.props.role==='alert').length,1,'canonical null units must not equal recorded pA');
-  const exact={...port,request:async()=>({epoch_uuid:id(5),stream_uuid:id(6),start:0,count:20000,sample_rate:10000,units:'pA',values:Array(20000).fill(1),read_context:context})};
+  const exact={...port,request:async path=>{const query=new URLSearchParams(path.split('?')[1]),start=Number(query.get('start')),count=Number(query.get('count'));return {epoch_uuid:id(5),stream_uuid:id(6),start,count,total_samples:25000,source_sha256:context.source_sha256,decimated:false,sample_rate:10000,units:'pA',values:Array(count).fill(1),read_context:context};}};
   await act(async()=>renderer.update(React.createElement(WorkspaceRequestProvider,{port:exact},React.createElement(Trace,{epoch}))));
   assert.equal(renderer.root.findAll(node=>node.props.role==='alert').length,0,'exact recorded context, rate and units are admitted');
 

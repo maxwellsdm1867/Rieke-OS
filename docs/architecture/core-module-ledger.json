@@ -4387,7 +4387,7 @@
       "id": "trace-window-presentation",
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
-      "purpose": "Render bounded trace windows without changing recorded samples or joining missing values.",
+      "purpose": "Default to a complete recorded epoch for QC, with explicit bounded Sample windows, preserving every recorded sample and missing-value gap.",
       "owner": "TraceViewer plus traceGeometry and traceReadContext; backend trace reader owns source validation.",
       "status": "implemented",
       "interface": {
@@ -4397,7 +4397,7 @@
       "scientific_contract": {
         "identities": "Epoch UUID and stream UUID plus candidate root/scope revision when present; never fall back from frozen scope to global trace.",
         "types": "Safe integer total/window; positive finite sample rate; only finite numeric samples contribute extents. Missing/nonfinite values break segments instead of interpolation.",
-        "order": "At most20,000 samples/window; pan/zoom clamp to recording bounds. Time endpoints include first and last recorded sample, span=(count\u22121)/sampleRate.",
+        "order": "At most 20,000 samples per transport read and Sample window. Whole epoch sequentially assembles exact ordered chunks; publishes only complete verified data. Inclusive endpoint span=(count-1)/sampleRate.",
         "units": "Time range seconds from samples per second. Amplitude values retain source units; tick formatting is display only.",
         "provenance": "Geometry does not qualify stream ownership, source bytes or calibration; backend source/trace receipt does."
       },
@@ -4407,7 +4407,7 @@
         "transactions": "Read-only trace I/O; no scientific mutation.",
         "idempotency": "Exact bounded window reads only.",
         "cancellation": "Resource owner cancels superseded requests; geometry is pure.",
-        "lifetime": "Current viewer window plus bounded epoch trace cache; no whole-recording prefetch."
+        "lifetime": "Current viewer lifetime owns demand-loaded whole trace; shared cache and prefetch remain bounded. Page owner retains Whole/Sample preference across epochs and layout changes."
       },
       "caller_dependencies": [
         "Remote but owned trace endpoint; in-process geometry and resource cache."
@@ -4415,13 +4415,17 @@
       "source_paths": [
         "workspace-app/src/traces/ui/TraceViewer.jsx",
         "workspace-app/src/traces/ui/traceGeometry.js",
-        "workspace-app/src/traces/traceReadContext.js"
+        "workspace-app/src/traces/traceReadContext.js",
+        "workspace-app/src/traces/readWholeTrace.js"
       ],
       "verification": {
         "existing_tests": [
           "workspace-app/src/traceGeometry.test.js",
           "workspace-app/src/traceReadContext.test.js",
-          "workspace-app/src/epochResourceLifecycle.test.js"
+          "workspace-app/src/epochResourceLifecycle.test.js",
+          "workspace-app/src/traces/readWholeTrace.test.js",
+          "workspace-app/src/traces/traceExtentLifecycle.test.js",
+          "workspace-app/src/traces/epochTracePreference.test.js"
         ],
         "execution_this_review": "Not run; source and existing test locations inspected. Listed tests are evidence surfaces, not a new pass receipt.",
         "deliberate_fault_ideas": [
