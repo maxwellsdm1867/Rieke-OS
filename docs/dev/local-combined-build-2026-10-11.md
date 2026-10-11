@@ -252,3 +252,9 @@ by the agent. The bounded failure/clean-Quit checks remain valid evidence of the
 fix, and the now-successful real chooser verifies normal listing after access
 was granted. The transient Git index-lock collision from the resumed read/add
 commands cleared when the status command finished; no lock was forcibly removed.
+
+
+After access approval, the focused export-file search across Documents, Downloads
+and Desktop completed with zero read errors, excluding Kosmos. Large candidates
+were older data-backup archives and other research databases, not verified Disco
+exports; none were deleted. The final disk check showed about 6.7 GiB free.
