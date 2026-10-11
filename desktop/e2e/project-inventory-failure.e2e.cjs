@@ -22,8 +22,10 @@ async function main(){
  const health=await ownedControl(fixture,'health');
  assert.equal(health.ready,true);assert.equal(health.services.length,0);
  receipt.checks.push({name:'denied directory renders chooser with retry, without opening a database',passed:true});
- await fs.chmod(workspace,0o700);
  const retry=page.getByRole('button',{name:'Retry project list',exact:true});
+ // Let the automatic initial refresh settle while access is still denied.
+ await page.waitForFunction(()=>Array.from(document.querySelectorAll('button')).some(button=>button.textContent==='Retry project list'&&!button.disabled));
+ await fs.chmod(workspace,0o700);
  await retry.click();
  await page.getByText('No projects yet',{exact:true}).waitFor();
  assert.equal(await page.getByText(/Project folders could not be read/).count(),0);
