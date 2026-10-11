@@ -15,3 +15,9 @@
 
 .cell-type-comparison{grid-column:1/-1;display:block;width:240px;max-width:100%;height:5px;overflow:hidden;background:var(--plot-grid);border-radius:3px;margin-top:4px}
 .cell-type-comparison>i{display:block;height:100%;border-radius:3px}
+
+/* Share the widest count track across rows instead of sizing each name separately. */
+.cell-type-legend{grid-template-columns:48px max-content minmax(0,1fr);column-gap:14px}
+.cell-type-legend>button,.cell-type-legend>.cell-type-entry{display:grid;grid-template-columns:subgrid;grid-column:1/-1}
+.cell-type-legend .cell-type-identity{grid-column:2/-1;grid-template-columns:subgrid}
+.cell-type-legend .cell-type-count{text-align:right}

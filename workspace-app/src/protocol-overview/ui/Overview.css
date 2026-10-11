@@ -47,3 +47,16 @@
   .ov-qc-protocols>summary>span{margin-left:0}
   .ov-activity-row{flex-wrap:wrap}
 }
+
+/* Date rows share tracks so count width cannot change a bar's origin or scale. */
+.ov-date-list{display:grid;grid-template-columns:7px minmax(0,1fr) minmax(30px,.65fr) max-content;column-gap:12px;padding-inline:8px}
+.ov-date-list>button{display:grid;grid-template-columns:subgrid;grid-column:1/-1;padding-inline:0;border-inline-width:0}
+.ov-date-count{display:grid;grid-template-columns:minmax(0,1fr) 4ch;gap:4px;align-items:baseline}
+.ov-date-count>span:first-child{text-align:right}
+.ov-date-list>.ov-empty{grid-column:1/-1}
+.ov-protocol-row{font-variant-numeric:tabular-nums}
+.ov-protocol-number,.ov-protocol-duration{text-align:right}
+.ov-coverage>span:first-child{justify-content:flex-end}
+@container project-overview (max-width:640px){
+ .ov-date-list{grid-template-columns:7px minmax(0,1fr) max-content}
+}
