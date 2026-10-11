@@ -177,7 +177,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
         <div className="tv-streams" aria-label="Response stream">
           {streams.length===1?<span>{stream.device} · {stream.units||'unit not recorded'}</span>:streams.map((item,index)=><button key={item.uuid} aria-pressed={stream?.uuid===item.uuid} aria-label={`Response ${index+1}: ${item.device} · ${item.units||'unit not recorded'}`} title={item.uuid} onClick={()=>{setSelectedStream(item.uuid);setEntryError('');drag.current=null;cursor.current=null;}}>{item.device}{streams.filter(other=>other.device===item.device).length>1?` ${index+1}`:''} · {item.units||'unit not recorded'}</button>)}
         </div>
-        <span className="tv-recording-info">{stream?`${number(valid?data.sample_rate:stream.sample_rate)} Hz · ${number(total)} total samples`:'No response stream'}</span>
+        <span className="tv-recording-info">{stream?`${number(valid?data.sample_rate:stream.sample_rate)} Hz`:'No response stream'}</span>
       </div>
       <div className="tv-window-controls">
         <div className="tv-modes" aria-label="Trace extent"><button aria-pressed={whole} className={whole?'active':''} onClick={()=>setPreference({...preference,kind:'whole'})}>Whole epoch</button><button aria-pressed={!whole} className={!whole?'active':''} onClick={()=>setPreference({...preference,kind:'sample'})}>Sample</button></div>
@@ -187,12 +187,8 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
           <button disabled={whole||!stream||pending} type="submit">Apply</button>
         </form>
         <div className="tv-window-step"><button aria-label="Previous window" title="Previous window" disabled={whole||!stream||pending||bounded.start===0} onClick={()=>moveWindow({...bounded,start:bounded.start-bounded.count})}><ArrowLeft size={14}/></button><button aria-label="Next window" title="Next window" disabled={whole||!stream||pending||bounded.start+bounded.count>=total} onClick={()=>moveWindow({...bounded,start:bounded.start+bounded.count})}><ArrowRight size={14}/></button></div>
-        <div className="tv-range" tabIndex={0} aria-label="Available trace window" title={stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · zero-based, inclusive`:undefined}><span>{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}</span><small>{stream?`${number(bounded.count)} / ${number(total)} samples`:'—'}</small></div>
-      </div>
-      <div className="tv-tools">
         <div className="tv-modes" aria-label="Drag interaction"><button className={mode==='zoom'?'active':''} aria-pressed={mode==='zoom'} disabled={whole} onClick={()=>setMode('zoom')} title="Drag to zoom"><MousePointer2 size={13}/> Zoom</button><button className={mode==='pan'?'active':''} aria-pressed={mode==='pan'} disabled={whole} onClick={()=>setMode('pan')}><Hand size={13}/> Pan</button></div>
         <div className="tv-zoom-buttons"><button disabled={whole||!stream||pending||bounded.count<=Math.min(2,total)} onClick={()=>zoom(.5)} title="Zoom in around cursor or window center" aria-label="Zoom in"><ZoomIn size={15}/></button><button disabled={whole||!stream||pending||bounded.count>=Math.min(MAX_TRACE_SAMPLES,total)} onClick={()=>zoom(2)} title="Zoom out, up to 20,000 full-rate samples" aria-label="Zoom out"><ZoomOut size={15}/></button></div>
-        <span className="tv-shortcuts">← → cursor · Shift ← → pan · + / − zoom · Home whole</span>
       </div>
       {entryError&&<p className="tv-warning" role="alert">{entryError}</p>}
     </header>
@@ -206,6 +202,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
       {invalidResponse&&<div className="tv-status tv-error" role="alert">Trace identity, sample rate, units or window does not match the request. No plot is shown.<button onClick={resource.reload}>Retry trace</button></div>}
     </div>
     <div className="tv-readout"><output aria-live="off" aria-label="Recorded sample readout" aria-describedby={cursorHelp}><span className="tv-measure"><small>Sample</small><span className="tv-value" ref={sampleReadout} tabIndex={0} aria-label="Recorded sample index">—</span></span><span className="tv-measure"><small>Time</small><span className="tv-value" ref={timeReadout} tabIndex={0} aria-label="Time from stream start in seconds">—</span></span><span className="tv-measure"><small>Response</small><span className="tv-value" ref={responseReadout} tabIndex={0} aria-label="Recorded response and scientific units">—</span></span></output><label>Sample cursor<input ref={cursorInput} type="number" step="1" min={bounded.start} max={bounded.start+bounded.count-1} disabled={!valid||pending} aria-label="Exact sample index for cursor" onChange={event=>{const sample=Number(event.target.value);if(event.target.value!==''&&Number.isInteger(sample)&&sample>=bounded.start&&sample<bounded.start+bounded.count){cursor.current=sample-bounded.start;scheduleOverlay();}}}/></label></div>
+    <div className="tv-footer"><div className="tv-range" tabIndex={0} aria-label="Available trace window" title={stream?`Samples ${number(bounded.start)}–${number(bounded.start+bounded.count-1)} · zero-based, inclusive`:undefined}><span>{range?`${formatTick(range.first,1/data.sample_rate)}–${formatTick(range.last,1/data.sample_rate)} s`:'—'}</span><small>{stream?`${number(bounded.count)} / ${number(total)} samples`:'—'}</small></div><span className="tv-shortcuts">← → cursor · Shift ← → pan · + / − zoom · Home whole</span></div>
     <p id={cursorHelp} className="tv-cursor-help">Move over the plot or use the sample cursor to read a recorded value.</p>
     <div className="tv-gap-notice" role="status" tabIndex={gapCount>0?0:undefined}>{gapCount>0?`${number(gapCount)} missing or non-finite samples appear as gaps; they are not plotted as zero.`:''}</div>
   </section>;

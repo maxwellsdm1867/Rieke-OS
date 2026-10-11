@@ -21,7 +21,8 @@ Explorer session, separately from disposable matching navigation and result
 revisions. Standalone MatchingEpochs retains its session fallback. Missing/invalid preferences
 start Whole epoch; standalone trace viewers retain a local choice while mounted.
 The unified controls show response identity/rate/total, Whole/Sample, Start/Count,
-window navigation and brief keyboard hints directly. Stream choices are inline
+window navigation and Zoom/Pan in one wrapping control row. Displayed time/sample
+range and brief keyboard hints sit below the plot. Stream choices are inline
 buttons; no dropdown or disclosure hides the window controls.
 Full mode permits cursor inspection; zoom/pan/window controls require Sample.
 Reset/Home returns to Whole epoch. Both modes show displayed and total counts.
