@@ -1,6 +1,6 @@
 # Historical core benchmark observations
 
-This archive retains 21 historical core benchmark summaries gathered during the October 11, 2026 local development-storage cleanup. It preserves the measured commits, runtime profiles, raw numeric samples, original case statuses and SHA-256 of each original receipt. The versioned benchmark runner and its history remain in Git.
+This archive retains 112 distinct historical core benchmark summaries gathered during the October 11, 2026 local development-storage cleanup, including later local and CI runs. Duplicate receipt copies are deduplicated by SHA-256. It preserves the measured commits, runtime profiles, raw numeric samples, original case statuses and SHA-256 of each original receipt. The versioned benchmark runner and its history remain in Git.
 
 These files are derived public summaries, **not original gate receipts**. They cannot be passed to the release gate, used to qualify the current app, or treated as new test executions. No historical receipt was edited or relabeled. Dirty runs and missing hardware identity remain diagnostic; the early `abff764` runs retain the documented qualification limitation. Different suites or runtime profiles must not be ranked as comparable measurements.
 
