@@ -16,7 +16,7 @@
 .project-folder-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;padding:5px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:11px}
 .project-folder-tabs>button{justify-content:center;gap:9px;padding:11px 8px;border:1px solid transparent;color:var(--ink-muted);background:transparent;font-size:12px;border-radius:7px}
 .project-folder-tabs>button:hover:not(:disabled){color:var(--ink-secondary);background:var(--accent-soft)}
-.project-folder-tabs>button[aria-selected=true]{color:var(--ink-secondary);background:var(--surface);border-color:var(--border);box-shadow:0 2px 5px color-mix(in srgb,var(--shadow-base) 2%,transparent)}
+.project-folder-tabs>button[aria-selected=true]{color:var(--ink-secondary);background:var(--surface);box-shadow:none}
 .project-folder-task{padding:21px 0 0}.project-folder-task-title{margin-bottom:18px}.project-folder-task-title p{margin-top:5px;font-size:11px}
 .project-folder-contents{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));padding:13px 2px;background:var(--surface);border:1px solid var(--border-subtle);border-radius:10px;margin-bottom:20px}
 .project-folder-contents>span{display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--ink-muted);border-right:1px solid var(--border-subtle)}.project-folder-contents>span:last-child{border-right:0}

@@ -13,7 +13,7 @@
 .tree-group-tag-choices small{width:100%;line-height:1.5;color:var(--ink-secondary)}
 .incoming-tree-actions{display:inline-flex;align-items:center;gap:4px;flex-shrink:0}
 .incoming-explicit-select,.incoming-tree-actions>.tree-group-tag-button{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-height:26px;padding:4px 6px;font-size:10px;white-space:nowrap;flex-shrink:0}
-.incoming-explicit-select[aria-pressed=true]{background:var(--success-soft);color:var(--success-ink);border-color:var(--success-border)}
+.incoming-explicit-select[aria-pressed=true]{background:var(--success-soft);color:var(--success-ink);}
 .incoming-tree-actions>.tree-group-tag-button{color:var(--ink);border-color:var(--border-strong,var(--border));font-weight:600}
 .incoming-explicit-select:focus-visible{outline:2px solid var(--success-ink);outline-offset:2px}
 .tp-group-tag-wrap>.incoming-tree-actions{position:absolute;right:9px;bottom:8px}
@@ -27,7 +27,7 @@
 
 /* Binary branch intent stays on when an individual descendant is switched off. */
 .incoming-selection-switch{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:28px;min-width:58px;padding:4px 7px;border:1px solid var(--border);border-radius:7px;background:var(--accent-soft);color:var(--accent);font-size:10px;font-weight:650;white-space:nowrap;cursor:pointer}
-.incoming-selection-switch[aria-checked=true]{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
+.incoming-selection-switch[aria-checked=true]{background:var(--success-soft);color:var(--success-ink)}
 .incoming-selection-switch:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .incoming-selection-switch:disabled{cursor:default;opacity:.55}
 .incoming-switch-track{display:inline-flex;align-items:center;width:23px;height:14px;padding:2px;border-radius:20px;background:var(--accent)}

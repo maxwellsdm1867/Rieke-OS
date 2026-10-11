@@ -20,3 +20,43 @@ Verification: production frontend build and architecture guard passed. Existing
 selection/lifecycle checks and required core/million-query runs are recorded in
 `benchmarks/results/selection-style-*`. These are source checks, not native visual
 or installed-package qualification.
+
+## UI-wide rule and second sweep
+
+The user broadened this from epoch selection to the whole UI. The current owner is
+`codex/next-version-integration` at the `full-epoch-qc/Rieke-OS` checkout. This sweep
+starts from combined local commit `7d0d8f2`; it preserves its alignment changes.
+The rule is now in `workspace-app/src/AGENTS.md`.
+
+Audited all 66 frontend CSS files, desktop recovery CSS, and inline frontend
+JS/JSX border/shadow declarations. Removed remaining selection-specific border
+colors, outlines and shadows in QC, export format choices, theme choices, project
+files/folder tabs, annotation scope and branch controls, protocol tabs, tree/view
+pickers, date/cell-type choices, predicate field/value options, search results,
+trace mode buttons and Workbench controls. Removed decorative thick edges in
+nested/negated predicates, refresh warnings and combined branch labels. Negation
+keeps its explicit NOT control and uses header fill. QC selection now keeps the
+same padding as unselected rows. Global hover no longer strengthens a border.
+
+Existing neutral container borders and row/pane separators stay uniform. The
+remaining narrow lines are structural hierarchy connectors, native control
+indicators or drag insertion/resize affordances. None adds a rounded-card side
+stripe to communicate selection. Keyboard-only focus indicators remain; export
+choices now show their wrapper focus indicator only for keyboard focus, not
+ordinary mouse selection. The import-toast wrapper no longer frames focused
+child buttons.
+
+Visual checks used actual ThemePicker and ExportDestination components plus
+representative markup with product styles for QC, warnings, predicate groups,
+field/value/split choices, project categories, cell types, search and tabs. Light
+and dark captures and computed styles confirm fills, absent selection shadows,
+uniform existing container borders and unchanged QC padding. Mouse selection and
+keyboard radio navigation were checked separately. The production build passed.
+This is a whole-source audit with representative visual checks, not an exhaustive
+native walkthrough or an installed-app update.
+
+Local visual evidence (including source hashes):
+`/Users/maxwellsdm/.codex/visualizations/2026/10/11/01a12c3c-18e4-7403-bd40-707bf00df109/selection-styling/`.
+The coordinating alignment chat owns final combined architecture/core/million
+validation after this commit. Earlier benchmark timing flags remain attributed to
+their original runs; no new performance or release qualification is claimed here.

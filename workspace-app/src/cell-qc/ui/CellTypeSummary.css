@@ -5,7 +5,7 @@
 .cell-type-legend{display:grid;gap:6px;min-width:0}
 .cell-type-legend button,.cell-type-entry{display:flex;align-items:center;justify-content:flex-start;gap:14px;padding:10px 6px;color:var(--ink-secondary);width:100%;min-width:0;text-align:left;white-space:normal}
 .cell-type-legend button{border:1px solid transparent;background:transparent}
-.cell-type-legend button:hover,.cell-type-legend button[aria-pressed=true]{background:var(--surface-subtle);border-color:var(--border)}
+.cell-type-legend button:hover,.cell-type-legend button[aria-pressed=true]{background:var(--surface-subtle);}
 .cell-type-neuron{display:flex;align-items:center;justify-content:center;flex:0 0 48px}
 .cell-type-neuron>svg{max-width:100%;flex-shrink:0}
 .cell-type-identity{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:5px 13px;min-width:0}

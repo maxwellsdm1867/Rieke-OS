@@ -61,3 +61,20 @@ public entry/import rules; run `python3 -B tools/architecture_guard.py check
 --language javascript` from the repository root. Tests and the guard require
 `RIEKE_TEST_DOM_MODULE` to be unset. No native qualification follows from these
 frontend checks.
+
+## Selection and highlight styling
+
+Selection, active navigation and highlights use background fill, label emphasis
+and existing checkmarks or switches. Do not add or recolor a border, outline,
+inset shadow or side stripe just to show selection. An existing uniform neutral
+container border may remain; changing state must not change its width or padding.
+Do not decorate rounded cards, warnings or nested query groups with a thick edge.
+Use their text, icons, background and indentation to convey meaning.
+
+Hover follows the same rule. Keyboard-only focus indicators on controls remain
+visible; row labels may use a distinct focus fill instead of a text outline.
+Do not show focus-within outlines on an entire choice just because it was clicked.
+Structural pane separators, tree connector lines, native control indicators and
+transient drag insertion markers are not decorative selection stripes.
+Apply this rule across the UI, including dialogs, pickers, QC, imports, exports,
+appearance, search and project management—not only the epoch trees.
