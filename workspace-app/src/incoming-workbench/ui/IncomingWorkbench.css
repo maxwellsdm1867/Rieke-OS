@@ -183,15 +183,15 @@
 .incoming-review .incoming-draft-tools>button.primary:hover:not(:disabled){background:color-mix(in srgb,var(--success-ink) 88%,var(--ink));border-color:var(--success-ink)}
 .incoming-review .incoming-draft-tools>button.primary:focus-visible{outline:2px solid var(--success-ink);outline-offset:3px}
 .incoming-review .incoming-draft-tools>button.primary:disabled{background:var(--surface-subtle);border-color:var(--border);color:var(--ink-muted);opacity:.65;cursor:not-allowed}
-/* Explicit selection owns green; tagged-only rows keep a quiet side marker. */
+/* Explicit selection owns green; saved tags retain their explicit badges. */
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.has-shared-tags,
 .incoming-browser .inspection-cell-tree .cell-tree-cell.has-shared-tags>summary,
 .incoming-browser .hierarchy-tree .ht-leaf.has-shared-tags,
 .incoming-browser .hierarchy-tree .ht-branch>button.has-shared-tags,
-.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:transparent;box-shadow:inset 2px 0 var(--ink-muted)}
+.incoming-browser .column-tree :is(.tp-epoch,.tp-branch).has-shared-tags{background:transparent;box-shadow:none}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.bulk-selected,
 .incoming-browser .hierarchy-tree .ht-leaf.incoming-epoch-on,
-.incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:inset 3px 0 var(--success-ink);color:var(--ink)}
+.incoming-browser .column-tree .tp-epoch.selected{background:var(--success-soft);box-shadow:none;color:var(--ink)}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.active:not(.bulk-selected):not(.is-highlighted){background:transparent}
 .incoming-browser .column-tree .tp-branch.selected:not(.incoming-branch-on):not(.incoming-branch-off){background:var(--surface-subtle);box-shadow:none;border-color:var(--border)}
 .incoming-browser .inspection-cell-tree .cell-tree-cell>summary{display:flex;align-items:center;gap:4px;flex-wrap:wrap}

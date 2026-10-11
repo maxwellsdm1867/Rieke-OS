@@ -108,8 +108,8 @@ Selection, tags and inclusion still require a fresh complete page.
 Edit Tree projects the latest clicked branch path immediately, before its read
 completes. Keep verified ancestor columns that match that path; hide unrelated
 old descendants and traces while showing a loading column for the requested group.
-The open path has a full accent border and `aria-current="step"`, independently
-of green scientific selection. Border styling must not change card geometry.
+The open path uses bold label emphasis and `aria-current="step"`, independently
+of green scientific selection. Emphasis must not change card geometry.
 A failed read retains the requested path and retry destination rather than reviving
 unrelated descendants. Only current visible receipt objects may navigate; captured
 handlers from hidden or replaced columns remain inert. This changes read-only

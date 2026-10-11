@@ -2,5 +2,5 @@
 
 .epoch-highlight-action{white-space:nowrap;font-variant-numeric:tabular-nums}
 .epoch-highlight-action:not(:disabled){background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
-.inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted,.hierarchy-tree .ht-leaf.is-highlighted{outline:1px solid var(--accent);outline-offset:-1px}
+.inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted,.hierarchy-tree .ht-leaf.is-highlighted{background:var(--accent-soft);outline:0}
 .hierarchy-tree .ht-branch:not(:has(>.incoming-tree-actions)):not(:has(>.tree-group-tag-button)){grid-template-columns:minmax(0,1fr)}

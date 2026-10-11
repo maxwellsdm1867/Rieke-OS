@@ -1,5 +1,5 @@
 .column-tree{min-width:0;position:relative}.column-tree .tp-columns{scroll-behavior:auto;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain}.column-tree .tp-column{width:230px;min-width:230px}.column-tree .tp-combined-column{width:300px;min-width:300px}.column-tree .tp-terminal{width:270px;min-width:270px}.column-tree .tp-pagination{flex-shrink:0;border-top:1px solid var(--border);padding:8px;background:var(--surface)}.column-tree .tp-branch-title strong,.column-tree .tp-level-heading strong{color:var(--ink)}.column-tree .tp-branch:disabled{cursor:wait}.column-tree .tp-column-content{overscroll-behavior-y:contain;overscroll-behavior-x:auto;overflow-x:hidden}.column-tree .tp-total{padding:13px 18px}.column-tree .tp-path{padding:8px 12px}.column-tree .tp-prompt{min-width:150px}.column-tree .tp-level-heading small{color:var(--ink-secondary)}
-.column-tree .tp-epoch.selected{background:var(--surface-subtle);border-left:3px solid var(--accent);color:var(--ink);scroll-margin-block:8px}.column-tree .tp-epoch.selected strong{color:var(--ink);font-weight:650}.column-tree .tp-branch.selected{scroll-margin-block:8px}
+.column-tree .tp-epoch.selected{background:var(--surface-subtle);border-left:0;color:var(--ink);scroll-margin-block:8px}.column-tree .tp-epoch.selected strong{color:var(--ink);font-weight:650}.column-tree .tp-branch.selected{scroll-margin-block:8px}
 
 .column-tree .tp-epoch{padding:5px 7px;min-height:30px;display:flex;flex-direction:row;align-items:center;gap:6px}.column-tree .tp-epoch>strong{display:flex;align-items:center;gap:6px;min-width:0;font-size:11px;white-space:nowrap}.column-tree .column-epoch-protocol{font-size:10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.column-tree .tp-epoch .annotation-row-pills{max-width:110px}
 
@@ -38,7 +38,7 @@
 .column-tree .tp-terminal .tp-epoch-row{min-height:38px;gap:4px;padding:3px 5px;margin:0 0 3px;border-radius:6px;background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums}
 .column-tree .tp-terminal .tp-epoch-row.incoming-epoch-off{background:var(--accent-soft)}
 .column-tree .tp-terminal .tp-epoch-row.incoming-epoch-on{background:var(--success-soft);color:var(--success-ink)}
-.column-tree .tp-terminal .tp-epoch-row.is-focused{outline:1px solid var(--border-strong);outline-offset:-1px}
+.column-tree .tp-terminal .tp-epoch-row.is-focused{background:var(--accent-soft)}
 .column-tree .tp-terminal .tp-epoch-row>button.tp-epoch{background:inherit;border:0;border-radius:3px;box-shadow:none;min-height:32px;padding:4px 5px;color:inherit;gap:4px;flex-wrap:wrap;text-align:left}
 .column-tree .tp-terminal .tp-epoch-row>.tp-epoch strong{font-size:12px;font-weight:500;color:inherit;flex-wrap:wrap;white-space:normal}
 .column-tree .tp-terminal .tp-epoch-row>.incoming-selection-switch{background:inherit;border:0;box-shadow:none;min-width:32px;width:32px;min-height:30px;padding:4px;flex:0 0 32px}
@@ -57,9 +57,15 @@
 /* Highlights are a batch-action set, independent of green selection fill. */
 .column-tree .tp-terminal .tp-epoch-row.is-highlighted>.tp-epoch strong{font-weight:700}
 .column-tree.is-edit-tree .tp-terminal .tp-epoch-row.incoming-epoch-off{background:var(--surface)}
-.column-tree.is-edit-tree .tp-terminal .tp-epoch-row.is-highlighted{background:var(--accent-soft);outline:1px solid var(--accent);outline-offset:-1px}
+.column-tree.is-edit-tree .tp-terminal .tp-epoch-row.is-highlighted{background:var(--accent-soft)}
 .column-tree.is-edit-tree .tp-terminal .tp-epoch-row.is-highlighted.incoming-epoch-on{background:var(--success-soft)}
 
 /* The open path is separate from green scientific selection; no geometry shift. */
-.column-tree.is-edit-tree .tp-branch.is-active-path{border-color:var(--accent);outline:1px solid var(--accent);outline-offset:-2px}
+.column-tree.is-edit-tree .tp-branch.is-active-path{font-weight:700}
 .column-tree .tp-pending-column{padding:20px 14px;color:var(--ink-muted);font-size:12px}
+
+/* Row-label focus uses emphasis; adjacent action buttons retain focus rings. */
+.column-tree .tp-terminal .tp-epoch-row>.tp-epoch:focus-visible{outline:0;background:color-mix(in srgb,var(--ink) 8%,transparent)}
+.column-tree .tp-branch:focus-visible{outline:0;background:var(--accent-soft)}
+.column-tree.is-edit-tree .tp-branch.is-active-path .tp-branch-title strong{font-weight:700}
+.column-tree .tp-terminal .tp-epoch-row.is-focused.incoming-epoch-on{background:var(--success-soft)}

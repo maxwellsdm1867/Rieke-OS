@@ -34,7 +34,7 @@
 .hierarchy-tree .ht-branch>button>svg{margin-top:2px;color:var(--ink-secondary)}
 .hierarchy-tree .ht-branch>button:hover,
 .hierarchy-tree .ht-leaf:hover{background:var(--surface-subtle)}
-.hierarchy-tree .ht-branch>button.selected{background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent);color:var(--accent)}
+.hierarchy-tree .ht-branch>button.selected{background:var(--accent-soft);box-shadow:none;color:var(--accent)}
 .hierarchy-tree .ht-branch>button:focus-visible,
 .hierarchy-tree .ht-leaf>button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .hierarchy-tree .ht-value{line-height:18px}
@@ -46,7 +46,7 @@
 .hierarchy-tree .ht-leaf>button:first-child{min-height:25px;padding:2px 5px;gap:6px;flex-wrap:nowrap;font-size:11px;font-weight:550;line-height:18px}
 .hierarchy-tree .ht-leaf>button:first-child>svg{display:none}
 .hierarchy-tree .ht-leaf .ht-value{font-size:11px;font-variant-numeric:tabular-nums}
-.hierarchy-tree .ht-leaf:has(>button.selected){background:var(--accent-soft);box-shadow:inset 3px 0 var(--accent)}
+.hierarchy-tree .ht-leaf:has(>button.selected){background:var(--accent-soft);box-shadow:none}
 .hierarchy-tree .ht-leaf>button.selected{background:transparent;color:var(--ink)}
 .hierarchy-tree .ht-leaf .annotation-row-pills{max-width:96px;gap:3px;flex-wrap:nowrap;line-height:1.2}
 .hierarchy-tree .ht-leaf>button.epoch-inclusion-toggle{min-height:23px;padding:3px;font-weight:550}
@@ -56,7 +56,7 @@
 
 .hierarchy-tree .ht-branch>button .tree-tag-coverage{color:var(--ink-secondary)}
 
-.hierarchy-tree .ht-branch>button.selected{box-shadow:inset 3px 0 var(--accent)}
+.hierarchy-tree .ht-branch>button.selected{box-shadow:none}
 .hierarchy-tree .ht-branch>button .tree-tag-coverage{font-size:10px;font-weight:600;line-height:1.4;white-space:normal}
 
 .hierarchy-tree .ht-branch>button.incoming-branch-on{background:var(--success-soft);border-color:var(--success-border);color:var(--success-ink)}
@@ -82,3 +82,6 @@
 .hierarchy-tree .ht-leaf>.epoch-inclusion-toggle{width:24px;min-width:24px;min-height:26px;padding:3px;border:0;background:transparent}
 .hierarchy-tree .ht-leaf:has(>.incoming-selection-switch)>.ht-inclusion-state{grid-column:1/-1}
 .hierarchy-tree .ht-leaf>button:first-child>.ht-value{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Fill and label emphasis identify keyboard focus without framing the text. */
+.hierarchy-tree .ht-branch>button:first-child:focus-visible,.hierarchy-tree .ht-leaf>button:first-child:focus-visible{outline:0;background:color-mix(in srgb,var(--ink) 8%,transparent)}
