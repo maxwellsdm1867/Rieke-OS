@@ -1,0 +1,5153 @@
+{
+  "format": "disco-historical-benchmark-summary",
+  "schema_version": 1,
+  "archived_on": "2026-10-11",
+  "description": "Derived public summaries of historical core receipts retained during local disk cleanup. These are not original gate receipts, current performance claims, or release qualification. Original receipt hashes bind each summary to private retained raw evidence.",
+  "privacy": "Machine identifiers, absolute local paths, private native traces and raw process logs are omitted. Source commits, runtime versions, numeric samples and original case statuses are preserved.",
+  "runs": [
+    {
+      "run_id": "Rieke-OS-017-canonical-tree-integration/canonical-tree-integration/core1",
+      "original_receipt_sha256": "27b800a74b6c43bd98b8954a386c1011dbf68e390b294f6f94f95cf6f15864b4",
+      "created_at": "2026-10-04T08:49:52.087652+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "fa7ed3e913903dec260e6cb1427120139996ffc1",
+          "tree": "b3bcb1656199973194c2a1ece98e5db93fee4854",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "fa7ed3e913903dec260e6cb1427120139996ffc1",
+          "tree": "b3bcb1656199973194c2a1ece98e5db93fee4854",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.110166,
+              0.086417,
+              0.082208,
+              0.088167
+            ],
+            "warm_reader_ms": [
+              0.06,
+              0.057458,
+              0.053708,
+              0.054292
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.168625,
+              1.999917,
+              1.594125,
+              2.729
+            ],
+            "warm_reader_ms": [
+              2.336458,
+              1.630458,
+              1.080166,
+              1.149542
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.370625,
+              2.036792,
+              2.135792,
+              1.483083
+            ],
+            "warm_reader_ms": [
+              1.018125,
+              1.062083,
+              0.996875,
+              2.037292
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.545875,
+              0.726833,
+              0.461917,
+              1.302417
+            ],
+            "warm_reader_ms": [
+              0.339167,
+              0.350333,
+              0.329417,
+              0.367084
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.315875,
+              0.266458,
+              0.262833,
+              0.265917
+            ],
+            "warm_reader_ms": [
+              0.150583,
+              0.145459,
+              0.143417,
+              0.146208
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.995209,
+              3.18175,
+              1.99125,
+              1.943125
+            ],
+            "warm_reader_ms": [
+              1.858792,
+              2.009958,
+              2.136709,
+              1.982791
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              106.09841600000004,
+              101.41349999999966,
+              103.63525000000027,
+              105.150666
+            ],
+            "authority_ms": [
+              106.20058300000005,
+              101.5090409999998,
+              103.75716700000021,
+              105.24904100000003
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              7.630750000000035,
+              11.163375000000087,
+              11.225291999999627,
+              10.81658299999981
+            ],
+            "authority_ms": [
+              7.724292000000105,
+              11.250583000000006,
+              11.301041999999597,
+              10.891957999999704
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.219880500000727,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-017-canonical-tree-integration/canonical-tree-integration/core2",
+      "original_receipt_sha256": "19cb66e043991836e4bf5a8fabaf6723a98f40049b3e24ac2da464bbe6972679",
+      "created_at": "2026-10-04T08:50:06.522419+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "fa7ed3e913903dec260e6cb1427120139996ffc1",
+          "tree": "b3bcb1656199973194c2a1ece98e5db93fee4854",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "fa7ed3e913903dec260e6cb1427120139996ffc1",
+          "tree": "b3bcb1656199973194c2a1ece98e5db93fee4854",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.096375,
+              0.097792,
+              0.08375,
+              0.084125
+            ],
+            "warm_reader_ms": [
+              0.057583,
+              0.0615,
+              0.055125,
+              0.053208
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.524625,
+              2.008166,
+              1.427708,
+              2.567833
+            ],
+            "warm_reader_ms": [
+              1.592209,
+              1.039167,
+              1.0465,
+              1.0495
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.424917,
+              1.4025,
+              2.090958,
+              1.369834
+            ],
+            "warm_reader_ms": [
+              0.979291,
+              1.31325,
+              0.982708,
+              1.331417
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.473334,
+              0.44475,
+              0.442666,
+              0.916417
+            ],
+            "warm_reader_ms": [
+              0.347041,
+              0.365125,
+              0.332709,
+              0.311375
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.289541,
+              0.3175,
+              0.267417,
+              0.260375
+            ],
+            "warm_reader_ms": [
+              0.146125,
+              0.148709,
+              0.143208,
+              0.142125
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.95775,
+              1.959042,
+              1.936625,
+              2.054333
+            ],
+            "warm_reader_ms": [
+              2.207541,
+              1.857583,
+              1.86125,
+              2.0615
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              107.61012499999993,
+              102.45491599999968,
+              106.45449999999983,
+              116.03458300000011
+            ],
+            "authority_ms": [
+              107.77437499999996,
+              102.55699999999979,
+              106.57445899999993,
+              116.13958300000013
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              7.85349999999994,
+              11.433874999999716,
+              11.188333000000057,
+              10.603166999999758
+            ],
+            "authority_ms": [
+              7.949333000000024,
+              11.522791999999754,
+              11.258250000000317,
+              10.698292000000038
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 12.745457124998211,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-017-main-integration/main-integration/core1",
+      "original_receipt_sha256": "dad13f642ec19355913d9a293924bf17b5db40d709a04cd5109af3c979389a7a",
+      "created_at": "2026-10-04T05:45:02.894187+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "db6c49673f8f9df7a633a1f41055b4b2f7f15280",
+          "tree": "963d4fb2d2028e73c69c2c099478622db84c2cb9",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "db6c49673f8f9df7a633a1f41055b4b2f7f15280",
+          "tree": "963d4fb2d2028e73c69c2c099478622db84c2cb9",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.096917,
+              0.080459,
+              0.089708,
+              0.081083
+            ],
+            "warm_reader_ms": [
+              0.056375,
+              0.054792,
+              0.058416,
+              0.051417
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.033833,
+              1.790959,
+              1.573583,
+              2.912125
+            ],
+            "warm_reader_ms": [
+              2.020166,
+              1.11675,
+              1.095083,
+              1.102292
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.552125,
+              1.584083,
+              1.7835,
+              1.567291
+            ],
+            "warm_reader_ms": [
+              1.311875,
+              1.029583,
+              1.153292,
+              1.604209
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.480458,
+              0.5,
+              0.499083,
+              1.207791
+            ],
+            "warm_reader_ms": [
+              0.354291,
+              0.363166,
+              0.339792,
+              0.333666
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.431708,
+              0.327042,
+              0.31825,
+              0.323584
+            ],
+            "warm_reader_ms": [
+              0.298834,
+              0.148791,
+              0.150958,
+              0.162375
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.150083,
+              2.328417,
+              2.250041,
+              1.939916
+            ],
+            "warm_reader_ms": [
+              1.863792,
+              2.021333,
+              1.945917,
+              1.829917
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              112.68149999999991,
+              105.39170800000011,
+              104.79033299999992,
+              103.28162500000008
+            ],
+            "authority_ms": [
+              112.79704199999992,
+              105.5144580000001,
+              104.96004200000016,
+              103.44112500000028
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.077999999999975,
+              11.382458000000042,
+              12.31554099999994,
+              12.384625000000142
+            ],
+            "authority_ms": [
+              9.171875,
+              11.478041000000303,
+              12.393790999999965,
+              12.459959000000254
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.648434624999936,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-017-main-integration/main-integration/core2",
+      "original_receipt_sha256": "7c4c2ce60568edd9782fa929b23bb33dd7a5b0b7fcd12cc29e2707543be38b2a",
+      "created_at": "2026-10-04T05:45:16.596120+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "db6c49673f8f9df7a633a1f41055b4b2f7f15280",
+          "tree": "963d4fb2d2028e73c69c2c099478622db84c2cb9",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "db6c49673f8f9df7a633a1f41055b4b2f7f15280",
+          "tree": "963d4fb2d2028e73c69c2c099478622db84c2cb9",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.091458,
+              0.083417,
+              0.077292,
+              0.080959
+            ],
+            "warm_reader_ms": [
+              0.057083,
+              0.057542,
+              0.052875,
+              0.051083
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.499542,
+              1.411,
+              1.415125,
+              2.137167
+            ],
+            "warm_reader_ms": [
+              1.458208,
+              1.020542,
+              1.028084,
+              1.059833
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.577,
+              1.492791,
+              2.041791,
+              1.380416
+            ],
+            "warm_reader_ms": [
+              1.16025,
+              0.9785,
+              0.943084,
+              1.337291
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.455084,
+              0.434833,
+              0.519791,
+              0.859625
+            ],
+            "warm_reader_ms": [
+              0.322875,
+              0.332209,
+              0.3235,
+              0.31775
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.291,
+              0.357833,
+              0.357292,
+              0.300666
+            ],
+            "warm_reader_ms": [
+              0.150625,
+              0.162042,
+              0.166208,
+              0.155583
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.170125,
+              2.22525,
+              1.971459,
+              1.988625
+            ],
+            "warm_reader_ms": [
+              1.998416,
+              2.067625,
+              2.216083,
+              1.841291
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              110.29674999999997,
+              99.35258299999987,
+              107.94345799999974,
+              105.7144159999998
+            ],
+            "authority_ms": [
+              110.42312500000003,
+              99.45695799999976,
+              108.09420799999998,
+              105.84058300000015
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.040082999999868,
+              11.524333000000297,
+              11.10229100000015,
+              11.278707999999824
+            ],
+            "authority_ms": [
+              8.137666999999965,
+              11.615583000000242,
+              11.179000000000087,
+              11.397750000000087
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 14.385353208002925,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-017-startup-integration/startup-integration/core1",
+      "original_receipt_sha256": "7458ef7399d380c51b99acdac8326dfc21a46c6a61c58786a919d0e1b666c725",
+      "created_at": "2026-10-04T07:30:16.898695+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "c5e473edc16c0e9f377e9d314f0cfec13cd0ce30",
+          "tree": "b2a81895512e9e43f70189c957d0b961cb0b4c37",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "c5e473edc16c0e9f377e9d314f0cfec13cd0ce30",
+          "tree": "b2a81895512e9e43f70189c957d0b961cb0b4c37",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.090167,
+              0.079625,
+              0.081542,
+              0.081166
+            ],
+            "warm_reader_ms": [
+              0.055791,
+              0.053459,
+              0.051959,
+              0.051541
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.499834,
+              1.39425,
+              1.565292,
+              2.028917
+            ],
+            "warm_reader_ms": [
+              1.456,
+              1.368084,
+              1.161458,
+              1.022125
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.592333,
+              1.391167,
+              2.550333,
+              1.40725
+            ],
+            "warm_reader_ms": [
+              1.135917,
+              0.967791,
+              0.960667,
+              1.37975
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.444334,
+              0.541,
+              0.491125,
+              0.939916
+            ],
+            "warm_reader_ms": [
+              0.334334,
+              0.41125,
+              0.333291,
+              0.318
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.306042,
+              0.345625,
+              0.273791,
+              0.355083
+            ],
+            "warm_reader_ms": [
+              0.148417,
+              0.161833,
+              0.145375,
+              0.159792
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.99425,
+              2.282791,
+              1.935166,
+              1.939417
+            ],
+            "warm_reader_ms": [
+              1.867,
+              1.844416,
+              2.236417,
+              1.816625
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              113.05899999999997,
+              102.84958300000017,
+              104.90787499999988,
+              108.4448339999999
+            ],
+            "authority_ms": [
+              113.16091699999993,
+              102.95041600000013,
+              105.08583399999998,
+              108.53020900000001
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.32337500000017,
+              11.592791999999918,
+              11.49520799999982,
+              10.462208999999802
+            ],
+            "authority_ms": [
+              8.41820900000016,
+              11.688083000000006,
+              11.5625,
+              10.534208999999919
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.949374417003128,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-017-startup-integration/startup-integration/core2",
+      "original_receipt_sha256": "377058e0031a05d248d61436f9c8966ad806b7bda9d49c4fd0f25075b1647ed2",
+      "created_at": "2026-10-04T07:30:31.790491+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "c5e473edc16c0e9f377e9d314f0cfec13cd0ce30",
+          "tree": "b2a81895512e9e43f70189c957d0b961cb0b4c37",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "c5e473edc16c0e9f377e9d314f0cfec13cd0ce30",
+          "tree": "b2a81895512e9e43f70189c957d0b961cb0b4c37",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.0945,
+              0.080042,
+              0.139125,
+              0.095542
+            ],
+            "warm_reader_ms": [
+              0.057084,
+              0.053959,
+              0.061458,
+              0.055667
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.54075,
+              1.715625,
+              1.579125,
+              2.092792
+            ],
+            "warm_reader_ms": [
+              1.557,
+              1.304375,
+              1.065292,
+              1.529125
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.490708,
+              1.423625,
+              2.101042,
+              1.369959
+            ],
+            "warm_reader_ms": [
+              1.224125,
+              1.353833,
+              0.976709,
+              1.338791
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.459166,
+              0.426167,
+              0.4445,
+              0.820041
+            ],
+            "warm_reader_ms": [
+              0.323916,
+              0.328334,
+              0.324833,
+              0.321917
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.293083,
+              0.277625,
+              0.268209,
+              0.261209
+            ],
+            "warm_reader_ms": [
+              0.149167,
+              0.143584,
+              0.143833,
+              0.142125
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.161416,
+              2.0165,
+              2.286583,
+              1.9075
+            ],
+            "warm_reader_ms": [
+              2.212708,
+              1.825292,
+              1.851417,
+              1.825041
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              106.47029099999986,
+              102.82262499999979,
+              111.98795799999971,
+              106.7961250000003
+            ],
+            "authority_ms": [
+              106.59916599999997,
+              102.92275000000018,
+              112.12783299999955,
+              106.90141600000015
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.309374999999818,
+              9.817167000000154,
+              10.673209000000043,
+              11.346292000000176
+            ],
+            "authority_ms": [
+              8.404999999999973,
+              9.9028330000001,
+              10.73700000000008,
+              11.422625000000153
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 12.944708958006231,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-2ada079/core-1",
+      "original_receipt_sha256": "04687bdc274a1d77b66b03ae7b60a4527f6e19c14d91c5c5550ed563cc7019d5",
+      "created_at": "2026-10-03T23:04:26.440769+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "2ada07966c6f690511e5b78266104477276146d9",
+          "tree": "1e1fda29fb912bb9fcb57d1c7ee3db01f1336b68",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "2ada07966c6f690511e5b78266104477276146d9",
+          "tree": "1e1fda29fb912bb9fcb57d1c7ee3db01f1336b68",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.095584,
+              0.080292,
+              0.078625,
+              0.082667
+            ],
+            "warm_reader_ms": [
+              0.057167,
+              0.054417,
+              0.054,
+              0.052708
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.642291,
+              1.419708,
+              1.480583,
+              2.164458
+            ],
+            "warm_reader_ms": [
+              1.617916,
+              1.160417,
+              1.23375,
+              1.045125
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.37875,
+              1.540292,
+              1.623916,
+              1.61075
+            ],
+            "warm_reader_ms": [
+              0.988292,
+              1.032083,
+              0.949458,
+              1.527708
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.480375,
+              0.435125,
+              0.459042,
+              1.241625
+            ],
+            "warm_reader_ms": [
+              0.328792,
+              0.339209,
+              0.33525,
+              0.380625
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.299667,
+              0.544458,
+              0.278583,
+              0.393708
+            ],
+            "warm_reader_ms": [
+              0.148583,
+              0.190042,
+              0.148541,
+              0.162166
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.560667,
+              1.9745,
+              2.064417,
+              2.319375
+            ],
+            "warm_reader_ms": [
+              2.164084,
+              2.240958,
+              1.8715,
+              1.871916
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              110.07029199999988,
+              103.3744999999999,
+              108.65312499999982,
+              108.33374999999978
+            ],
+            "authority_ms": [
+              110.22699999999986,
+              103.46895799999993,
+              108.82524999999987,
+              108.45849999999973
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.513541999999916,
+              10.611625000000004,
+              11.379542000000129,
+              12.773415999999997
+            ],
+            "authority_ms": [
+              8.609291999999868,
+              10.720458000000235,
+              11.44858400000021,
+              12.849957999999788
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 14.42516154200348,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-2ada079/core-2",
+      "original_receipt_sha256": "9464ac9203d78dbd180f8e0550c1c946795a2bf361e9a8119969c7c26d095aaa",
+      "created_at": "2026-10-03T23:04:40.923709+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "2ada07966c6f690511e5b78266104477276146d9",
+          "tree": "1e1fda29fb912bb9fcb57d1c7ee3db01f1336b68",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "2ada07966c6f690511e5b78266104477276146d9",
+          "tree": "1e1fda29fb912bb9fcb57d1c7ee3db01f1336b68",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.101792,
+              0.086625,
+              0.079083,
+              0.083375
+            ],
+            "warm_reader_ms": [
+              0.061167,
+              0.057291,
+              0.053208,
+              0.051125
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.510375,
+              1.760083,
+              1.535625,
+              2.67925
+            ],
+            "warm_reader_ms": [
+              2.242625,
+              1.144458,
+              1.084125,
+              1.341125
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.45925,
+              1.882291,
+              1.704959,
+              1.406125
+            ],
+            "warm_reader_ms": [
+              0.991959,
+              1.276708,
+              0.945583,
+              1.459667
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.471916,
+              0.425042,
+              0.446584,
+              0.904166
+            ],
+            "warm_reader_ms": [
+              0.318792,
+              0.333334,
+              0.323667,
+              0.326291
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.355375,
+              0.305042,
+              0.322959,
+              0.273333
+            ],
+            "warm_reader_ms": [
+              0.168625,
+              0.163209,
+              0.150208,
+              0.146834
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.362417,
+              1.980959,
+              2.13275,
+              2.322416
+            ],
+            "warm_reader_ms": [
+              2.028417,
+              2.090625,
+              1.847416,
+              1.894417
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              113.02400000000011,
+              104.86304100000007,
+              105.51408300000003,
+              107.80499999999984
+            ],
+            "authority_ms": [
+              113.1455410000001,
+              105.01812500000005,
+              105.65029199999981,
+              107.91845799999965
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.076000000000022,
+              12.3654590000001,
+              11.485791000000063,
+              10.532333999999992
+            ],
+            "authority_ms": [
+              9.173457999999982,
+              12.45291700000007,
+              11.56433300000026,
+              10.609124999999949
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.4012568750004,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-ad52bcf/core1",
+      "original_receipt_sha256": "46899c4c0635551e03e85f11bfd441ca1c511e084a3a63e883b9734a0d0e816f",
+      "created_at": "2026-10-04T00:25:50.755385+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "ad52bcf9a1b3f80a302bac19fc94a53f0ed0a776",
+          "tree": "148b7db74f8814e4e77a826ac8c0ea406fbe3b22",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "ad52bcf9a1b3f80a302bac19fc94a53f0ed0a776",
+          "tree": "148b7db74f8814e4e77a826ac8c0ea406fbe3b22",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.093958,
+              0.117625,
+              0.096833,
+              0.085916
+            ],
+            "warm_reader_ms": [
+              0.056708,
+              0.064417,
+              0.060958,
+              0.053166
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.53725,
+              1.673292,
+              1.422208,
+              2.439542
+            ],
+            "warm_reader_ms": [
+              1.549292,
+              1.142875,
+              1.041833,
+              1.027292
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.336208,
+              1.361959,
+              1.631834,
+              1.373625
+            ],
+            "warm_reader_ms": [
+              0.972,
+              1.444042,
+              0.934375,
+              1.331042
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.439667,
+              0.473875,
+              0.46075,
+              0.83975
+            ],
+            "warm_reader_ms": [
+              0.31625,
+              0.345917,
+              0.339875,
+              0.318542
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.292875,
+              0.269292,
+              0.406458,
+              0.277875
+            ],
+            "warm_reader_ms": [
+              0.14875,
+              0.14775,
+              0.169791,
+              0.1475
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.954167,
+              1.972833,
+              1.933833,
+              1.944916
+            ],
+            "warm_reader_ms": [
+              1.839208,
+              1.843959,
+              2.0495,
+              1.855167
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              113.017292,
+              102.94470799999999,
+              105.14137500000015,
+              105.04574999999977
+            ],
+            "authority_ms": [
+              113.13058300000012,
+              103.06116600000041,
+              105.30033300000014,
+              105.13724999999977
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.800666999999976,
+              11.153249999999844,
+              12.987791000000016,
+              11.887790999999652
+            ],
+            "authority_ms": [
+              8.891332999999804,
+              11.254667000000154,
+              13.056250000000091,
+              11.975207999999839
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.995693583001412,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-ad52bcf/core2",
+      "original_receipt_sha256": "0556ae3fbbb641010276e43ca4bde777ae3641d0eb0af88f575e08eeb78eab40",
+      "created_at": "2026-10-04T00:26:04.804317+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "ad52bcf9a1b3f80a302bac19fc94a53f0ed0a776",
+          "tree": "148b7db74f8814e4e77a826ac8c0ea406fbe3b22",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "ad52bcf9a1b3f80a302bac19fc94a53f0ed0a776",
+          "tree": "148b7db74f8814e4e77a826ac8c0ea406fbe3b22",
+          "dirty": false,
+          "application_version": "0.1.7",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "96869625c823908d3fc912e63f4a0e0bdf20a4b249dbe66de523d0fc98413e95"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.089292,
+              0.128,
+              0.09825,
+              0.086917
+            ],
+            "warm_reader_ms": [
+              0.055292,
+              0.065084,
+              0.063083,
+              0.053834
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.51825,
+              1.722083,
+              1.407083,
+              2.495542
+            ],
+            "warm_reader_ms": [
+              1.524125,
+              1.033875,
+              1.031375,
+              1.086125
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.355208,
+              1.358792,
+              1.751292,
+              1.384375
+            ],
+            "warm_reader_ms": [
+              0.968625,
+              1.172542,
+              0.9365,
+              1.331958
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.441458,
+              0.595291,
+              0.479084,
+              0.910417
+            ],
+            "warm_reader_ms": [
+              0.322584,
+              0.469583,
+              0.335292,
+              0.317834
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.297792,
+              0.435917,
+              0.288334,
+              0.275542
+            ],
+            "warm_reader_ms": [
+              0.150667,
+              0.154042,
+              0.147333,
+              0.144167
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.9315,
+              2.128292,
+              2.29425,
+              2.023584
+            ],
+            "warm_reader_ms": [
+              2.122666,
+              1.823583,
+              2.00175,
+              1.849958
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              109.96983399999999,
+              101.08854199999996,
+              102.98670900000025,
+              102.70870800000012
+            ],
+            "authority_ms": [
+              110.08570899999995,
+              101.22008300000016,
+              103.11587499999996,
+              102.8587080000002
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.396833000000015,
+              11.307832999999846,
+              12.020792000000256,
+              10.684166999999889
+            ],
+            "authority_ms": [
+              9.49287500000014,
+              11.40508299999965,
+              12.092542000000321,
+              10.754542000000129
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.131452208002884,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-bf65887/core-1",
+      "original_receipt_sha256": "ea6830d68932e98b0650c717c7766644a2268744155e9ba5d2af71d095074c5a",
+      "created_at": "2026-10-03T23:32:51.040567+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "bf65887d55af34a02d6f9e4baac545d420a507d9",
+          "tree": "da9d981925c15cfb489734d47ed40e0870e384f1",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "bf65887d55af34a02d6f9e4baac545d420a507d9",
+          "tree": "da9d981925c15cfb489734d47ed40e0870e384f1",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.100584,
+              0.117958,
+              0.092417,
+              0.1135
+            ],
+            "warm_reader_ms": [
+              0.058333,
+              0.065708,
+              0.055708,
+              0.058666
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.554125,
+              1.812125,
+              1.426875,
+              2.38475
+            ],
+            "warm_reader_ms": [
+              1.580542,
+              1.086916,
+              1.035208,
+              1.052583
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.364083,
+              1.380875,
+              1.99075,
+              1.423792
+            ],
+            "warm_reader_ms": [
+              0.988292,
+              1.215333,
+              0.96275,
+              1.425583
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.573125,
+              0.494167,
+              0.506209,
+              1.075542
+            ],
+            "warm_reader_ms": [
+              0.431,
+              0.491958,
+              0.337458,
+              0.637958
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.336583,
+              0.360542,
+              0.291416,
+              0.296375
+            ],
+            "warm_reader_ms": [
+              0.158291,
+              0.175334,
+              0.225666,
+              0.157125
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.322917,
+              2.103,
+              2.247458,
+              1.973458
+            ],
+            "warm_reader_ms": [
+              1.896,
+              2.45225,
+              2.207083,
+              1.834292
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              107.25254100000006,
+              101.86450000000013,
+              106.30620799999997,
+              107.54320899999993
+            ],
+            "authority_ms": [
+              107.42441600000006,
+              101.972084,
+              106.49137500000006,
+              107.6469589999997
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.70333400000004,
+              10.746499999999742,
+              11.024916999999732,
+              11.377250000000004
+            ],
+            "authority_ms": [
+              8.792333999999983,
+              10.839124999999967,
+              11.092208999999912,
+              11.487457999999606
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 14.496116250000341,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-bf65887/core-2",
+      "original_receipt_sha256": "d1934fd8bc0f8da7d48dff2c0d8f846f1dfd50384b7f71726d5ffa9d096e19ee",
+      "created_at": "2026-10-03T23:33:05.593900+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "bf65887d55af34a02d6f9e4baac545d420a507d9",
+          "tree": "da9d981925c15cfb489734d47ed40e0870e384f1",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "bf65887d55af34a02d6f9e4baac545d420a507d9",
+          "tree": "da9d981925c15cfb489734d47ed40e0870e384f1",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.130459,
+              0.096458,
+              0.082792,
+              0.081417
+            ],
+            "warm_reader_ms": [
+              0.06975,
+              0.059791,
+              0.054167,
+              0.051292
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.510959,
+              1.898625,
+              1.475666,
+              2.005625
+            ],
+            "warm_reader_ms": [
+              2.099208,
+              1.229,
+              1.05025,
+              1.026625
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.349416,
+              1.947625,
+              1.681291,
+              1.369125
+            ],
+            "warm_reader_ms": [
+              0.978709,
+              1.053083,
+              0.941875,
+              1.687792
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.504917,
+              0.469292,
+              0.452,
+              1.160917
+            ],
+            "warm_reader_ms": [
+              0.330875,
+              0.598625,
+              0.32125,
+              0.446709
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.396334,
+              0.360583,
+              0.277333,
+              0.262542
+            ],
+            "warm_reader_ms": [
+              0.196333,
+              0.201292,
+              0.143375,
+              0.143375
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.538917,
+              1.964,
+              1.915542,
+              2.332709
+            ],
+            "warm_reader_ms": [
+              1.985084,
+              1.907834,
+              1.819375,
+              1.863833
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              109.17116600000008,
+              101.17120799999975,
+              103.57945800000016,
+              137.873834
+            ],
+            "authority_ms": [
+              109.28187500000013,
+              101.36470799999961,
+              103.71762500000023,
+              138.00762499999973
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              7.961708000000044,
+              11.02579199999991,
+              10.907916000000114,
+              62.99112500000001
+            ],
+            "authority_ms": [
+              8.058457999999973,
+              11.11483300000009,
+              10.978415999999925,
+              63.062708000000384
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.547134042000835,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-c72b190/core-1",
+      "original_receipt_sha256": "8358561818c26310d6d40ade342ef0a1f6a6f48394280d29225c0400c5cc6f40",
+      "created_at": "2026-10-03T22:08:52.479206+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "c72b190661cd94c009c83a118e0b0a429f6e2987",
+          "tree": "37d62b37c9850cc11731c96d227949618053f2cd",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "c72b190661cd94c009c83a118e0b0a429f6e2987",
+          "tree": "37d62b37c9850cc11731c96d227949618053f2cd",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.107542,
+              0.096959,
+              0.0845,
+              0.123542
+            ],
+            "warm_reader_ms": [
+              0.060167,
+              0.063792,
+              0.053709,
+              0.0595
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.072791,
+              1.767542,
+              1.774084,
+              2.083916
+            ],
+            "warm_reader_ms": [
+              2.197417,
+              1.109084,
+              1.070333,
+              1.023333
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.354333,
+              1.449375,
+              1.602041,
+              1.378292
+            ],
+            "warm_reader_ms": [
+              1.348042,
+              0.972208,
+              0.93525,
+              1.338292
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.447833,
+              0.420667,
+              0.449208,
+              1.290875
+            ],
+            "warm_reader_ms": [
+              0.316541,
+              0.325916,
+              0.325459,
+              0.397584
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.306291,
+              0.2685,
+              0.258583,
+              0.261542
+            ],
+            "warm_reader_ms": [
+              0.145541,
+              0.145541,
+              0.143583,
+              0.14325
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.962833,
+              1.90425,
+              1.994167,
+              2.436375
+            ],
+            "warm_reader_ms": [
+              1.8405,
+              2.259875,
+              1.831375,
+              1.827292
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              107.12329200000022,
+              103.28729200000043,
+              114.17645800000037,
+              107.2312079999997
+            ],
+            "authority_ms": [
+              107.24191700000006,
+              103.39441700000043,
+              114.33262500000001,
+              107.34066699999994
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.964333000000124,
+              12.75708399999985,
+              10.842208999999912,
+              11.768875000000207
+            ],
+            "authority_ms": [
+              10.065624999999955,
+              12.853375000000142,
+              10.913958999999977,
+              11.843499999999949
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.661938666999049,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-c72b190/core-2",
+      "original_receipt_sha256": "838eac174ac33e082f8ac49a1442dbe949b5713db09727c2da2be0dfa3b8eb74",
+      "created_at": "2026-10-03T22:09:06.196803+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "c72b190661cd94c009c83a118e0b0a429f6e2987",
+          "tree": "37d62b37c9850cc11731c96d227949618053f2cd",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "c72b190661cd94c009c83a118e0b0a429f6e2987",
+          "tree": "37d62b37c9850cc11731c96d227949618053f2cd",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.086333,
+              0.125333,
+              0.099083,
+              0.099792
+            ],
+            "warm_reader_ms": [
+              0.057041,
+              0.067417,
+              0.06075,
+              0.054959
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.718875,
+              1.586708,
+              1.749459,
+              2.8845
+            ],
+            "warm_reader_ms": [
+              1.78175,
+              1.072792,
+              1.133833,
+              1.130417
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.668,
+              2.429333,
+              2.115666,
+              2.038666
+            ],
+            "warm_reader_ms": [
+              1.114542,
+              1.113417,
+              1.091333,
+              1.7615
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.478417,
+              0.529584,
+              0.655792,
+              1.575875
+            ],
+            "warm_reader_ms": [
+              0.326125,
+              0.408167,
+              0.353833,
+              0.336458
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.313125,
+              0.353708,
+              0.322083,
+              0.276
+            ],
+            "warm_reader_ms": [
+              0.148375,
+              0.161417,
+              0.151708,
+              0.148
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.141459,
+              1.930875,
+              1.933459,
+              2.3425
+            ],
+            "warm_reader_ms": [
+              1.847583,
+              1.987125,
+              1.847,
+              1.915
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              110.52475000000004,
+              103.41437499999984,
+              104.86362499999996,
+              106.50950000000012
+            ],
+            "authority_ms": [
+              110.66254200000003,
+              103.51833399999987,
+              105.00295800000004,
+              106.62187499999982
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.239082999999937,
+              11.303457999999864,
+              10.717165999999906,
+              11.342207999999573
+            ],
+            "authority_ms": [
+              8.335792000000083,
+              11.395332999999937,
+              10.788125000000036,
+              11.460915999999997
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 12.79767216700202,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-e7987d1/core-1",
+      "original_receipt_sha256": "4c67b107b9477c8d07f2f4874e284b48b529637762f1a826c9d9a34fb6ccb92c",
+      "created_at": "2026-10-03T22:00:42.732941+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.091958,
+              0.079833,
+              0.167959,
+              0.085041
+            ],
+            "warm_reader_ms": [
+              0.056292,
+              0.053875,
+              0.103459,
+              0.05125
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.526625,
+              1.395417,
+              1.761208,
+              2.141
+            ],
+            "warm_reader_ms": [
+              1.491666,
+              1.020541,
+              1.157334,
+              1.048042
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.343041,
+              1.359375,
+              2.267958,
+              1.375542
+            ],
+            "warm_reader_ms": [
+              0.975417,
+              0.959417,
+              0.98475,
+              1.341334
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.43725,
+              0.772167,
+              0.510834,
+              0.890667
+            ],
+            "warm_reader_ms": [
+              0.316334,
+              0.406041,
+              0.4405,
+              0.314792
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.282208,
+              0.270458,
+              0.354292,
+              0.262625
+            ],
+            "warm_reader_ms": [
+              0.146791,
+              0.144292,
+              0.207791,
+              0.141417
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.963458,
+              2.1475,
+              2.1505,
+              2.094292
+            ],
+            "warm_reader_ms": [
+              1.828916,
+              2.061416,
+              2.117041,
+              2.200334
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              109.33179199999995,
+              100.28391600000032,
+              105.35312500000009,
+              103.62837499999978
+            ],
+            "authority_ms": [
+              109.45216700000014,
+              100.39437500000031,
+              105.52545899999996,
+              103.78437500000018
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.994416999999885,
+              11.283625000000029,
+              13.29275000000007,
+              11.225124999999935
+            ],
+            "authority_ms": [
+              9.109249999999975,
+              11.380541999999878,
+              13.36758299999974,
+              11.297791999999845
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 18.929701125001884,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-e7987d1/core-2",
+      "original_receipt_sha256": "9a084e8a9922101fcdac5f9f9b5b55477b18e11b7988ff462288150a22e933db",
+      "created_at": "2026-10-03T22:01:01.720656+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.086208,
+              0.117375,
+              0.100833,
+              0.087834
+            ],
+            "warm_reader_ms": [
+              0.055667,
+              0.064583,
+              0.058875,
+              0.053167
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.527125,
+              1.627167,
+              1.428083,
+              1.885333
+            ],
+            "warm_reader_ms": [
+              1.530958,
+              1.032083,
+              1.074292,
+              1.685083
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.510042,
+              1.54475,
+              2.1115,
+              1.834
+            ],
+            "warm_reader_ms": [
+              1.08425,
+              1.763875,
+              1.144917,
+              2.026875
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.522542,
+              0.514875,
+              0.574834,
+              1.55275
+            ],
+            "warm_reader_ms": [
+              0.350625,
+              0.391208,
+              0.357917,
+              0.377708
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.332458,
+              0.287084,
+              0.30725,
+              0.39175
+            ],
+            "warm_reader_ms": [
+              0.152875,
+              0.1775,
+              0.160625,
+              0.306167
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.336208,
+              2.364,
+              1.937042,
+              1.946625
+            ],
+            "warm_reader_ms": [
+              1.868708,
+              1.854583,
+              2.280292,
+              1.840583
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              111.48929199999998,
+              102.42841700000008,
+              106.55345800000032,
+              113.99270800000022
+            ],
+            "authority_ms": [
+              111.6053750000001,
+              102.53833299999997,
+              106.70604099999991,
+              114.08899999999994
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.498832999999877,
+              13.483750000000327,
+              11.028834000000188,
+              11.52475000000004
+            ],
+            "authority_ms": [
+              9.60716599999978,
+              13.577708000000257,
+              11.101666999999907,
+              11.59787499999993
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 11.695503250000911,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-e7987d1/core-3",
+      "original_receipt_sha256": "debc8d53b78faae110279bf3f679f55f051cf4fef4035e24aa655f7a23f14545",
+      "created_at": "2026-10-03T22:01:37.788277+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.092042,
+              0.101625,
+              0.122334,
+              0.093083
+            ],
+            "warm_reader_ms": [
+              0.188917,
+              0.061375,
+              0.098667,
+              0.055708
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.502667,
+              1.628917,
+              1.433125,
+              2.744791
+            ],
+            "warm_reader_ms": [
+              1.491084,
+              1.0405,
+              1.045208,
+              1.07175
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.379083,
+              1.382291,
+              1.749959,
+              1.379625
+            ],
+            "warm_reader_ms": [
+              0.98175,
+              1.502167,
+              0.947375,
+              1.335583
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.596833,
+              0.479166,
+              0.442708,
+              0.825542
+            ],
+            "warm_reader_ms": [
+              0.321209,
+              0.402375,
+              0.321167,
+              0.3135
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.551375,
+              0.293792,
+              0.292875,
+              0.269625
+            ],
+            "warm_reader_ms": [
+              0.183708,
+              0.150125,
+              0.150542,
+              0.145625
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.938542,
+              2.027209,
+              2.005541,
+              1.954791
+            ],
+            "warm_reader_ms": [
+              2.279375,
+              1.836708,
+              1.885916,
+              2.302625
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              109.7013750000001,
+              106.57250000000022,
+              105.79237499999999,
+              111.19399999999996
+            ],
+            "authority_ms": [
+              109.82145800000012,
+              106.679709,
+              105.92966699999988,
+              111.2958749999998
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              8.176292000000103,
+              10.923291999999947,
+              10.457875000000058,
+              10.414416999999958
+            ],
+            "authority_ms": [
+              8.291709000000083,
+              11.013459000000239,
+              10.529749999999694,
+              10.487166999999772
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 11.621297708999919,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmark-integration/integration-e7987d1/core-4",
+      "original_receipt_sha256": "d77bdbdc503ac6f9c3de295fec2550207fa23a1d4768abb8fa3fa13c07a45fa9",
+      "created_at": "2026-10-03T22:01:49.464426+00:00",
+      "suite_version": "1.0.3",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "e7987d1719f4e7323f0ed82e9b31d00aae93ff6b",
+          "tree": "707e3ce1c276a0df00e9f45eb313421bc9a24355",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "Apple M1 Pro",
+        "logical_cpus": 10,
+        "memory_bytes": "17179869184",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"19.3.0\",\"react-dom\":\"19.3.0\",\"react-test-renderer\":\"19.3.0\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "e77e0224ad33a561485e896aaee3ccb6b5166d94126b1cd046b4a970f105a21a"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.096209,
+              0.13225,
+              0.083667,
+              0.0845
+            ],
+            "warm_reader_ms": [
+              0.059459,
+              0.098375,
+              0.058125,
+              0.054041
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.522833,
+              1.75075,
+              1.415958,
+              2.838542
+            ],
+            "warm_reader_ms": [
+              1.538208,
+              1.035209,
+              1.030625,
+              1.139875
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.434417,
+              1.398125,
+              2.372125,
+              1.381917
+            ],
+            "warm_reader_ms": [
+              0.995625,
+              1.272084,
+              1.108542,
+              1.459708
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.440416,
+              0.433125,
+              0.448708,
+              0.840542
+            ],
+            "warm_reader_ms": [
+              0.312417,
+              0.3335,
+              0.325375,
+              0.312375
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.426666,
+              0.360417,
+              0.284583,
+              0.265584
+            ],
+            "warm_reader_ms": [
+              0.245334,
+              0.242167,
+              0.146917,
+              0.145792
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.299625,
+              2.359625,
+              1.955792,
+              1.920292
+            ],
+            "warm_reader_ms": [
+              2.099583,
+              1.885709,
+              1.826208,
+              2.203125
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              110.95733299999984,
+              98.79795899999999,
+              107.48912500000006,
+              106.38212499999963
+            ],
+            "authority_ms": [
+              111.073666,
+              98.90204200000016,
+              107.62400000000025,
+              106.48041699999976
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              9.759915999999976,
+              11.582707999999911,
+              12.225167000000056,
+              12.65362499999992
+            ],
+            "authority_ms": [
+              9.849790999999868,
+              11.672832999999628,
+              12.306959000000006,
+              12.733499999999822
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 11.485102083999664,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmarks/abff764-run-1",
+      "original_receipt_sha256": "a72ab0bef18d8b58417b6fd654550841a80f0512709fe1f5117d87cbd4cd8737",
+      "created_at": "2026-10-03T17:56:45.577165+00:00",
+      "suite_version": "1.0.0",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "abff764544f745732ff26558bc6c67ab80734748",
+          "tree": "03fffc023a462eb6efa1ab41b8e16e03c2f91b1e",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "abff764544f745732ff26558bc6c67ab80734748",
+          "tree": "03fffc023a462eb6efa1ab41b8e16e03c2f91b1e",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "unavailable",
+        "logical_cpus": 10,
+        "memory_bytes": "unavailable",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"18.3.1\",\"react-dom\":\"18.3.1\",\"react-test-renderer\":\"18.3.1\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "f4478fdc2f04db2a65231f2cb49a9e242dd893fa9bed22ab9d4e43f6a7df8b63"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.11075,
+              0.096833,
+              0.086333,
+              0.089333
+            ],
+            "warm_reader_ms": [
+              0.066291,
+              0.064042,
+              0.059833,
+              0.059167
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.597166,
+              1.479917,
+              1.477958,
+              2.901167
+            ],
+            "warm_reader_ms": [
+              1.623625,
+              1.09975,
+              1.131083,
+              1.391709
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.47025,
+              1.923625,
+              1.791958,
+              1.848583
+            ],
+            "warm_reader_ms": [
+              1.07575,
+              1.167583,
+              1.03525,
+              2.048209
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.511125,
+              0.488916,
+              0.841084,
+              0.928292
+            ],
+            "warm_reader_ms": [
+              0.369292,
+              0.383625,
+              0.473459,
+              0.365666
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.294625,
+              0.363416,
+              0.391333,
+              0.295542
+            ],
+            "warm_reader_ms": [
+              0.157291,
+              0.1725,
+              0.181917,
+              0.166959
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.021333,
+              2.079666,
+              2.0465,
+              1.983334
+            ],
+            "warm_reader_ms": [
+              1.878583,
+              2.017416,
+              1.87125,
+              1.8735
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              98.4725420000002,
+              91.55004200000008,
+              87.34245899999996,
+              87.52050000000008
+            ],
+            "authority_ms": [
+              98.59800000000018,
+              91.68058300000007,
+              87.49733399999968,
+              87.59633300000041
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              3.4651249999999436,
+              2.8067920000000868,
+              2.377208999999766,
+              2.2981660000000375
+            ],
+            "authority_ms": [
+              3.6596250000000055,
+              2.9521669999999176,
+              2.4624589999998534,
+              2.3801250000001346
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 11.127590915999917,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmarks/abff764-run-2",
+      "original_receipt_sha256": "6348deb8d9e861ec6b9cfc00467018dc3e1ece0c6f313ac2bf67bfc017191552",
+      "created_at": "2026-10-03T17:56:56.759404+00:00",
+      "suite_version": "1.0.0",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "abff764544f745732ff26558bc6c67ab80734748",
+          "tree": "03fffc023a462eb6efa1ab41b8e16e03c2f91b1e",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "abff764544f745732ff26558bc6c67ab80734748",
+          "tree": "03fffc023a462eb6efa1ab41b8e16e03c2f91b1e",
+          "dirty": false,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "unavailable",
+        "logical_cpus": 10,
+        "memory_bytes": "unavailable",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "frontend_packages": "{\"react\":\"18.3.1\",\"react-dom\":\"18.3.1\",\"react-test-renderer\":\"18.3.1\",\"vite\":\"8.3.1\",\"jsdom\":\"26.1.0\"}",
+        "dependencies": {
+          "workspace-app/package-lock.json": "f4478fdc2f04db2a65231f2cb49a9e242dd893fa9bed22ab9d4e43f6a7df8b63"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.094167,
+              0.3265,
+              0.104541,
+              0.115541
+            ],
+            "warm_reader_ms": [
+              0.064958,
+              0.086333,
+              0.066459,
+              0.071375
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.69075,
+              1.533458,
+              1.776416,
+              2.452625
+            ],
+            "warm_reader_ms": [
+              1.703583,
+              1.146042,
+              1.252666,
+              1.198083
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.590375,
+              1.522458,
+              2.087458,
+              1.5655
+            ],
+            "warm_reader_ms": [
+              1.094167,
+              1.099875,
+              1.289416,
+              1.568416
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.495416,
+              0.476292,
+              0.566208,
+              1.052041
+            ],
+            "warm_reader_ms": [
+              0.36725,
+              0.383667,
+              0.478541,
+              0.381291
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.32725,
+              0.3135,
+              0.27925,
+              0.36725
+            ],
+            "warm_reader_ms": [
+              0.168375,
+              0.161,
+              0.155166,
+              0.165625
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.024375,
+              2.195459,
+              2.222,
+              1.980375
+            ],
+            "warm_reader_ms": [
+              1.850459,
+              2.133875,
+              2.140917,
+              1.870291
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              98.16750000000002,
+              88.65391599999998,
+              89.53316700000005,
+              87.70829200000026
+            ],
+            "authority_ms": [
+              98.27741700000001,
+              88.77058299999999,
+              89.70350000000008,
+              87.804709
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              4.1782499999999345,
+              3.515625,
+              2.4026669999998376,
+              2.4548749999999018
+            ],
+            "authority_ms": [
+              4.300166999999874,
+              3.6483749999999873,
+              2.4912500000000364,
+              2.5339999999996508
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 10.429422749999958,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    },
+    {
+      "run_id": "Rieke-OS-benchmarks/development-smoke",
+      "original_receipt_sha256": "2b68dd0d0357662fb2b22b77e5b94a6c3a617d8cdc39b591703e34ea5206c033",
+      "created_at": "2026-10-03T17:53:41.545073+00:00",
+      "suite_version": "1.0.0",
+      "fixture": {
+        "version": "native-truth-v1+mounted-workflow-500-v1",
+        "sha256": "da968ac86b77903bca87c6cb4095b8f6b83df38d672a870dfa7e551eaef66a72"
+      },
+      "source": {
+        "source_start": {
+          "commit": "fafb826ee00cfa14b657e91ecae5db0c1eda4a84",
+          "tree": "2aca1e1529e95e4fbb975222eb92b61fb9028ff9",
+          "dirty": true,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        },
+        "source_end": {
+          "commit": "fafb826ee00cfa14b657e91ecae5db0c1eda4a84",
+          "tree": "2aca1e1529e95e4fbb975222eb92b61fb9028ff9",
+          "dirty": true,
+          "application_version": "0.1.6",
+          "database_compatibility": 1,
+          "schema_versions": {
+            "workspace_disk_index.py": 3,
+            "workspace_typed_index.py": 1,
+            "workspace_sqlite.py": 2
+          },
+          "schema_sources": {
+            "workspace_disk_index.py": "eefc12074b1829657616b33a606ba60e2b5f613fed79d065254f8542aaa6409e",
+            "workspace_typed_index.py": "9358a4bfc26550e7ac629b45132ea1e0b379c56cc29f795249d341f47802c20a",
+            "workspace_sqlite.py": "49eaf5814a98a808accd03d31f7ef9d652f03c353547570ffa83670daa4393b1"
+          }
+        }
+      },
+      "environment": {
+        "os": "macOS-27.0.1-arm64-arm-64bit",
+        "architecture": "arm64",
+        "cpu": "unavailable",
+        "logical_cpus": 10,
+        "memory_bytes": "unavailable",
+        "python": "3.11.13",
+        "sqlite": "3.50.4",
+        "node": "v24.13.0",
+        "python_packages": {
+          "numpy": "2.4.6",
+          "scipy": "1.17.1",
+          "h5py": "3.16.0",
+          "flask": "3.1.3",
+          "datajoint": "2.3.3"
+        },
+        "dependencies": {
+          "workspace-app/package-lock.json": "f4478fdc2f04db2a65231f2cb49a9e242dd893fa9bed22ab9d4e43f6a7df8b63"
+        }
+      },
+      "samples": 4,
+      "cases": [
+        {
+          "id": "db.typed.detail",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.113917,
+              0.096375,
+              0.124791,
+              0.103167
+            ],
+            "warm_reader_ms": [
+              0.06875,
+              0.066917,
+              0.07125,
+              0.064375
+            ]
+          },
+          "oracle_sha256": "41dc4e2dafdd647b2583382f440f230c0ce584ff928c13c1c8795936ecbe5fd0"
+        },
+        {
+          "id": "db.typed.page.scope",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.679875,
+              1.542958,
+              1.852375,
+              2.377833
+            ],
+            "warm_reader_ms": [
+              1.684,
+              1.831959,
+              1.747792,
+              1.344625
+            ]
+          },
+          "oracle_sha256": "cf9d547016c8421321b24041a3f8a51119a79eeb1dd4e64862a67141f0c1e2f5"
+        },
+        {
+          "id": "db.typed.filter.matrix",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              1.957166,
+              2.06075,
+              1.942625,
+              2.196042
+            ],
+            "warm_reader_ms": [
+              1.212458,
+              1.446667,
+              1.436375,
+              2.382333
+            ]
+          },
+          "oracle_sha256": "30956658235ffe6e2ce008c92edae02e85b9a1beb526b621b2d15fdfa83c9581"
+        },
+        {
+          "id": "db.typed.membership.exact",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.70825,
+              0.681333,
+              0.61175,
+              1.288084
+            ],
+            "warm_reader_ms": [
+              0.436625,
+              0.455083,
+              0.511708,
+              0.413167
+            ]
+          },
+          "oracle_sha256": "46108ad3e05dc7a6c92a1692803475a7b734374f7acc4c4fa9adcc22a6a9aa0d"
+        },
+        {
+          "id": "db.typed.facets.two",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              0.374,
+              0.342709,
+              0.33475,
+              0.555416
+            ],
+            "warm_reader_ms": [
+              0.174667,
+              0.180167,
+              0.17525,
+              0.224542
+            ]
+          },
+          "oracle_sha256": "12863aa7bca11fdbcfe2c744978db55f8eb276caab3a80484d40a500d2eab8fe"
+        },
+        {
+          "id": "db.typed.facets.all_eligible",
+          "status": "passed",
+          "metrics": {
+            "cold_reader_ms": [
+              2.359625,
+              2.494625,
+              2.311333,
+              2.29
+            ],
+            "warm_reader_ms": [
+              2.01025,
+              2.241583,
+              2.084584,
+              2.252167
+            ]
+          },
+          "oracle_sha256": "237839c713b02a984a51f0b83dfa3a8fb5c7d19d090d884193b4caa5cef97b72"
+        },
+        {
+          "id": "ui.mounted.inspector.first",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              98.53375000000005,
+              90.35312499999986,
+              89.15233399999988,
+              89.60604200000034
+            ],
+            "authority_ms": [
+              98.64149999999995,
+              90.46358299999997,
+              89.287417,
+              89.67200000000003
+            ]
+          }
+        },
+        {
+          "id": "ui.mounted.inspector.return",
+          "status": "passed",
+          "metrics": {
+            "content_ms": [
+              3.327209000000039,
+              3.074083999999857,
+              2.0058750000002874,
+              2.3390840000001845
+            ],
+            "authority_ms": [
+              3.45112499999982,
+              3.1717499999999745,
+              2.088042000000314,
+              2.4238750000004075
+            ]
+          }
+        },
+        {
+          "id": "correctness.navigation",
+          "status": "passed"
+        },
+        {
+          "id": "correctness.frozen_export_tags_ingest",
+          "status": "passed"
+        }
+      ],
+      "wall_seconds": 13.100931041999957,
+      "original_validation_error_count": 0,
+      "release_requirements": [
+        {
+          "id": "ui.native.navigation",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.native.tag_latency",
+          "status": "unsupported"
+        },
+        {
+          "id": "db.ingest.throughput",
+          "status": "unsupported"
+        }
+      ],
+      "qualification": "historical observation; no qualification re-evaluation performed"
+    }
+  ]
+}
