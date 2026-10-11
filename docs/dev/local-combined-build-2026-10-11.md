@@ -104,3 +104,42 @@ provider refuses access to UserNotificationCenter. The user was asked to check
 for a system dialog. The process sample is retained in the artifact directory.
 The new installed bundle and both earlier app bundles are retained. Installation
 success does not establish installed-profile readiness; that check remains open.
+
+### Shutdown investigation after the user's correction
+
+Compared both retained physical app bundles, not just Git history. The old
+31182a4 and new 942015b bundles have **identical bytes** for `main.cjs`,
+`supervisor.cjs`, `close/quit-coordinator.cjs`, `close/draft-barrier.cjs`,
+`workspace_desktop.py`, `workspace_launcher.py`, `workspace_frontend.py`, and
+`workspace_projects.py`. Git also reports no differences for these owners.
+There was no shutdown/launcher/project-listing implementation change in this
+integration.
+
+A controlled event-held directory-listing request reproduced the same behavior
+with each packaged Python owner: Quit returns 409 while that request is unfinished,
+then returns 200 after the read is released. No project/database was opened in
+that experiment. The existing 31 desktop close/startup checks and 17 backend
+boundary checks passed. This verifies the shutdown consequence, not the cause of
+the live OS directory stall.
+
+Both bundled interpreters, launched by the terminal, enumerated the real managed
+root in under 60 ms (three entries). The app-owned process instead stalled in
+`os.listdir`/`open`; its retained record and zero registered project/database
+operations explain why an ordinary restart waits for cleanup. The chooser injects
+its project inventory into the initial HTML, so that read can block the first UI
+document. All GET requests remain admitted until completion because some routes
+write caches; shutdown does not infer that an uncompleted GET is safe to kill.
+
+The ad-hoc designated code requirement changed with the bundle:
+old `a71d422658ce4178727318df5c3924e213da7d07`, new
+`6f5029eda1a0f4e690197f2c34bb478720526f9b`. That makes stale OS authorization a
+hypothesis worth testing, not an established cause. Available TCC logs did not
+establish a Documents denial or pending prompt; the specific read-only permission
+database query was denied by macOS. No attempt was made to bypass that denial or
+the computer-use provider's system-dialog restriction.
+
+Evidence is retained in
+`benchmarks/results/installed-shutdown-investigation-20261011/`, including both
+reproductions, exact Python hashes, and scoped test logs. No production code,
+shutdown policy, scientific project data or macOS permission was changed during
+this investigation. Installed-profile startup is still unverified.
