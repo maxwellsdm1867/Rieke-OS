@@ -229,6 +229,8 @@
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch:is(.active,.bulk-selected,.is-highlighted){box-shadow:none}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted:not(.bulk-selected){background:var(--accent-soft)}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted.bulk-selected{background:color-mix(in srgb,var(--success-soft) 84%,var(--success-ink))}
+/* Stronger selection fill needs stronger secondary text in every palette. */
+.incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch.is-highlighted.bulk-selected>button:first-child :is(time,.epoch-short-protocol){color:var(--ink-secondary)}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible{outline:0}
 .incoming-browser .inspector .inspection-cell-tree .cell-tree-epoch>button:first-child:focus-visible :is(strong,time){text-decoration:underline;text-decoration-thickness:2px;text-underline-offset:3px}
 

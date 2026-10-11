@@ -60,3 +60,25 @@ Local visual evidence (including source hashes):
 The coordinating alignment chat owns final combined architecture/core/million
 validation after this commit. Earlier benchmark timing flags remain attributed to
 their original runs; no new performance or release qualification is claimed here.
+
+## Highlight color verification
+
+The user emphasized that selected items must keep visible highlight fills. Checked
+27 representative Workbench, Select Data and Edit Tree row states across Light,
+Dark and Fred. System preference resolves to the checked Light/Dark palettes.
+Scientific Workbench selection remains green; transient highlights use the theme
+accent (blue in Light/Dark, purple in Fred). Combined selection/highlighting keeps
+its stronger green fill and label emphasis.
+
+The existing mixed green fill exposed a muted-text contrast weakness for timestamps
+and protocol names: 3.86:1 Light, 3.60:1 Dark and 4.20:1 Fred. Those two text elements
+now use semantic secondary ink on combined selected/highlighted rows, giving 5.48:1,
+5.44:1 and 5.78:1 respectively. No palette or selection-fill values changed. The
+minimum label contrast measured across the 27 checked states is 4.66:1. Also removed
+the redundant high-specificity global hover fill so it cannot override selected
+fills; the original base hover rule remains. Build passed. These are scoped computed
+color and visual checks, not a claim of complete accessibility qualification.
+
+Evidence is `colors-before.json`, `colors-after.json`, `color-audit.json`, and
+`colors.png` in the local visual-evidence directory above. The coordinating chat
+will bind final regression results to the new commit, not the prior candidate.

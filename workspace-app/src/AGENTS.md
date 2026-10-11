@@ -78,3 +78,8 @@ Structural pane separators, tree connector lines, native control indicators and
 transient drag insertion markers are not decorative selection stripes.
 Apply this rule across the UI, including dialogs, pickers, QC, imports, exports,
 appearance, search and project management—not only the epoch trees.
+
+Selected items must retain a visible background highlight in every palette. Check
+Light, Dark and Fred, including selected-plus-highlighted and hover states. Use
+semantic text colors with sufficient contrast on the actual fill; stronger fills
+may need `--ink-secondary` instead of muted text. System resolves to Light/Dark.

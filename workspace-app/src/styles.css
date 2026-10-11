@@ -41,7 +41,7 @@
 button, .button, input, select, textarea { border-color: var(--border); }
 button, .button { color: var(--ink-secondary); }
 button:disabled { opacity: .65; }
-button:not(:disabled):hover, .button:hover { background: var(--surface-subtle); }
+/* The base hover rule stays weak so selected fills remain authoritative. */
 button.primary, .button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 button.primary:not(:disabled):hover, .button.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 input, select, textarea { color: var(--ink); }
