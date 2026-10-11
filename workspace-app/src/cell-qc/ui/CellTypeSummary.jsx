@@ -1,10 +1,10 @@
-import NeuronIcon from "../../components/NeuronIcon.jsx";
+import CellTypeIcon from "../../components/CellTypeIcon.jsx";
 import {number} from "../../api.js";
 import {cellTypeColor} from '../cellTypes.js';
 import './CellTypeSummary.css';
 
 export function CellTypeIdentity({type,count,total}){
-  return <><span className="cell-type-neuron" style={{color:cellTypeColor(type)}}><NeuronIcon size={44}/></span><span className="cell-type-identity"><strong className="cell-type-count">{number(count)}</strong><span className="cell-type-name">{type}<small>{count===1?'cell':'cells'}</small></span>{total>0&&<span className="cell-type-comparison" aria-hidden="true"><i style={{width:`${100*count/total}%`,background:cellTypeColor(type)}}/></span>}</span></>;
+  return <><span className="cell-type-neuron" style={{color:cellTypeColor(type)}}><CellTypeIcon type={type} size={44}/></span><span className="cell-type-identity"><strong className="cell-type-count">{number(count)}</strong><span className="cell-type-name">{type}<small>{count===1?'cell':'cells'}</small></span>{total>0&&<span className="cell-type-comparison" aria-hidden="true"><i style={{width:`${100*count/total}%`,background:cellTypeColor(type)}}/></span>}</span></>;
 }
 
 // Input is the distinct authoritative cell summary, never epoch facet counts.

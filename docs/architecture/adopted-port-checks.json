@@ -1552,7 +1552,7 @@
             "workspace-app/src/incoming-workbench/incomingCellTypes.js",
             "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/api.js",
-            "workspace-app/src/components/NeuronIcon.jsx"
+            "workspace-app/src/components/CellTypeIcon.jsx"
           ]
         },
         {

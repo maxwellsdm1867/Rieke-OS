@@ -15,9 +15,23 @@ export function distinctCells(cells=[]) {
     seen.add(id);return true;
   });
 }
-// Match only the established RGC categories, never infer type from cell labels.
+// Exact presentation aliases only; never infer a type from a cell name or candidate label.
+export function cellTypePresentation(type) {
+  const parts=String(type || '').trim().toLowerCase().split(/[\\/]+/);
+  const key=parts.pop().trim().replace(/[ _-]+/g,'-');
+  const prefix=parts.join('/');
+  const ganglion=/^(on|off)-(midget|parasol)$/.test(key);
+  if(ganglion && (!prefix || prefix==='rgc'))return {shape:key.endsWith('midget')?'midget':'ganglion',polarity:key.split('-')[0],color:`var(--cell-${key})`};
+  const bipolarKey=key.replace(/-cells?$/,'');
+  const bipolar=['bipolar','bc'].includes(prefix) && /^(on|off)$/.test(bipolarKey)?`${bipolarKey}-bipolar`:bipolarKey;
+  if(/^(on|off)-bipolar$/.test(bipolar) && (!prefix || prefix==='bipolar' || prefix==='bc'))
+    return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar})`};
+  if((bipolar==='bipolar' && !prefix))return {shape:'bipolar',color:'var(--ink-muted)'};
+  const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
+  if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
+    return {shape:receptor,color:`var(--cell-${receptor})`};
+  return {shape:'ganglion',color:'var(--ink-muted)'};
+}
 export function cellTypeColor(type) {
-  const key=String(type || '').trim().replace(/^RGC\\/i,'').replace(/[ _-]+/g,'-').toLowerCase();
-  return ({'on-midget':'var(--cell-on-midget)','off-midget':'var(--cell-off-midget)',
-    'on-parasol':'var(--cell-on-parasol)','off-parasol':'var(--cell-off-parasol)'})[key] || 'var(--ink-muted)';
+  return cellTypePresentation(type).color;
 }

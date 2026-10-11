@@ -1,7 +1,9 @@
 # Recorded cell identity and QC presentation
 
 Start with `ui/CellQC.jsx` for QC navigation and bounded observations; `cellTypes.js`
-provides recorded-type/unique-cell policy. `ui/CellListSection.jsx`,
+provides recorded-type/unique-cell policy and exact presentation-only icon aliases.
+`../components/CellTypeIcon.jsx` consumes those aliases for simple retinal silhouettes;
+recorded labels remain unchanged and unknown types retain the neutral fallback. `ui/CellListSection.jsx`,
 `ui/CellTypeAccordions.jsx` and `ui/CellTypeSummary.jsx` present source cell summaries.
 Existing named exports, component props and adjacent CSS remain the public interface.
 

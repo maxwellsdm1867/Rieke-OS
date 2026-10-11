@@ -24,6 +24,8 @@
     Category colors stay stable across themes; text uses theme ink roles. */
  --cell-off-midget:#e69f00;--cell-on-midget:#d55e00;
  --cell-off-parasol:#56b4e9;--cell-on-parasol:#0072b2;
+ --cell-on-bipolar:#00866b;--cell-off-bipolar:#8a66b2;
+ --cell-cone:#bb638c;--cell-rod:#718096;
  color-scheme:light;color:var(--ink);background:var(--background);
 }
 :root[data-theme="dark"],[data-palette="dark"]{

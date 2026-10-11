@@ -1,4 +1,4 @@
-import NeuronIcon from './NeuronIcon.jsx';
+import CellTypeIcon from './CellTypeIcon.jsx';
 import {cellTypeColor} from "../cell-qc/cellTypes.js";
 import {useMemo,useState} from 'react';
 import {groupedCellPage} from '../tree-browser/boundedTree.js';
@@ -31,7 +31,7 @@ export function CellList({cells = [], onInspect,onQC}) {
       const total=cell.epoch_count ?? cell.epochs;
       const exported=cell.exported ?? 0;
       return <details className="cell-row" key={cell.cell_uuid || cell.uuid}>
-        <summary><div className="cell-identity"><span className="cell-glyph" style={{color:cellTypeColor(type)}}><NeuronIcon size={20}/></span><span><strong>{datedCellLabel(cell,true)}</strong></span></div>
+        <summary><div className="cell-identity"><span className="cell-glyph" style={{color:cellTypeColor(type)}}><CellTypeIcon type={type} size={20}/></span><span><strong>{datedCellLabel(cell,true)}</strong></span></div>
           <span>{number(total)}</span><span>{duration(cell.duration_seconds)}</span>
           <Badge kind={exported>0?'info':'neutral'}>{exported>0?`${number(exported)} epochs exported`:'No saved export'}</Badge>
           <span className="expand-hint">Details</span>
