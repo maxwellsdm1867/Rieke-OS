@@ -1,8 +1,8 @@
 # Combined local Disco build — October 11, 2026
 
 Current installed source: `ebb257d9fd4814794f09bd9e60e76b68333e438d`.
-The bounded inventory/shutdown follow-up and installed-profile limitation are
-recorded at the end of this document; the earlier 942015b results are historical.
+The bounded inventory/shutdown follow-up and successful folder-access recovery
+are recorded at the end; the earlier 942015b results are historical.
 
 The user requested one local build containing the current icon, selection,
 alignment and protocol changes, tracked in Git. The owning checkout is
@@ -240,3 +240,15 @@ unavailable. Scientific exports were not deleted. The user explicitly excluded
 `kosmos_export`; nothing there was changed and further work there stopped.
 The cleanup receipts and a concise `cleanup-summary.json` are retained with the
 build evidence. No GitHub branch or public release was changed.
+
+
+### Folder access resolved after user approval
+
+The user reported allowing file access. Pending file/Git access resumed, and a
+fresh launch of the installed ebb257d app then displayed both real project roots,
+`hahah` and `Spike Response Model`, with count 2 and no read error. This supersedes
+the unresolved installed-inventory status above. No privacy setting was changed
+by the agent. The bounded failure/clean-Quit checks remain valid evidence of the
+fix, and the now-successful real chooser verifies normal listing after access
+was granted. The transient Git index-lock collision from the resumed read/add
+commands cleared when the status command finished; no lock was forcibly removed.
