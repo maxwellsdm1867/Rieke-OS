@@ -22,9 +22,10 @@ def selection_protocols(service, identities):
 
 def protocol_compatibility(service, protocol_uuid, identities):
     expected = validate_protocol_definition(service.protocols[protocol_uuid]['definition'])
+    expected_ids = expected if isinstance(expected, list) else [expected]
     summary = selection_protocols(service, identities)
-    incompatible = sum(row['epoch_count'] for row in summary['protocols'] if row['protocol_id'] != expected)
-    return {**summary, 'expected_protocol_id': expected,
+    incompatible = sum(row['epoch_count'] for row in summary['protocols'] if row['protocol_id'] not in expected_ids)
+    return {**summary, 'expected_protocol_id': ' + '.join(expected_ids), 'expected_protocol_ids': expected_ids,
             'compatible': summary['epoch_count'] > 0 and incompatible == 0,
             'incompatible_epoch_count': incompatible}
 
@@ -58,8 +59,13 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     recipe = record['recipe']
     identities = [row['uuid'] for row in recipe['epochs']]
     summary = selection_protocols(service, identities)
-    if len(summary['protocols']) != 1 or summary['protocols'][0]['protocol_id'] != protocol_id:
-        raise ValueError('A new pinned protocol requires epochs from one exact recorded Protocol ID. Narrow this search first.')
+    protocol_ids = protocol_id if isinstance(protocol_id, list) else [protocol_id]
+    if (not protocol_ids or any(not isinstance(value, str) or not value for value in protocol_ids)
+            or len(protocol_ids) > 2000 or len(set(protocol_ids)) != len(protocol_ids)
+            or set(protocol_ids) != {row['protocol_id'] for row in summary['protocols']}):
+        raise ValueError('Review every exact recorded Protocol ID in this selection before creating a pinned protocol.')
+    protocol_ids = sorted(protocol_ids)
+    protocol_id = protocol_ids[0] if len(protocol_ids) == 1 else protocol_ids
     project_uuid = service.project['project_uuid']
     identity = str(uuid.uuid5(uuid.UUID(project_uuid), 'pinned:' + record['revision_uuid'] + ':' + name.casefold()))
     folder = service.project_dir / 'protocols'
@@ -70,7 +76,7 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     definition = {'format': 'recording-protocol-workspace', 'version': 1,
         'project_uuid': project_uuid, 'protocol_uuid': identity, 'name': name,
         'catalog_ref': '../catalog.json', 'initial_revision_uuid': record['revision_uuid'],
-        'query': {'version': 1, 'all': [{'field': 'EpochBlock.protocol_name', 'operator': 'eq', 'value': protocol_id}]},
+        'query': {'version': 1, 'all': [{'field': 'EpochBlock.protocol_name', 'operator': 'eq' if len(protocol_ids) == 1 else 'in', 'value': protocol_id}]},
         'view': {'group_by': recipe['tree_view']['fields'], 'layout': 'landscape'}}
     connection = service.dj.conn()
     lock = hashlib.sha256((project_uuid + identity).encode()).hexdigest()
@@ -80,8 +86,12 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
     try:
         if path.is_symlink():
             raise ValueError('Protocol manifest must be a regular local file')
-        if path.exists() and json.loads(path.read_text()) != definition:
-            raise ValueError('A different protocol manifest already uses this identity')
+        if path.exists():
+            stored = json.loads(path.read_text())
+            if {**stored, 'name': name} != definition:
+                raise ValueError('A different protocol manifest already uses this identity')
+            definition = stored
+            name = stored['name']
         existing = history.protocol_binding(identity)
         if existing and existing['revision_uuid'] != record['revision_uuid']:
             raise ValueError('This pinned protocol was already created and updated. Open it instead of recreating it.')
@@ -107,10 +117,11 @@ def create_pinned_protocol(service, history, record, name, protocol_id, actor):
             connection.query(f"SELECT RELEASE_LOCK('{lock}')")
     # Make it visible in this server immediately. Refresh reconstructs this same
     # base query from the project catalog, while the binding retains the subset.
-    base = [row for row in service.rows.values() if row['protocol_name'] == protocol_id]
+    protocol_id = protocol_ids[0] if len(protocol_ids) == 1 else protocol_ids
+    base = [row for row in service.rows.values() if row['protocol_name'] in protocol_ids]
     cells = {row['cell_uuid'] for row in base}
     service.protocols[identity] = {'definition': copy.deepcopy(definition), 'file': path,
-        'result': {'project_uuid': project_uuid, 'protocol_uuid': identity, 'protocol_name': protocol_id,
+        'result': {'project_uuid': project_uuid, 'protocol_uuid': identity, 'protocol_name': ' + '.join(protocol_ids),
             'source_revisions': sorted({row['source_sha256'] for row in base}),
             'epochs': [{'uuid': row['epoch_uuid'], 'metadata_hash': row['metadata_hash']} for row in base],
             'cells': [{'uuid': cell, 'label': service.cells[cell]['label'], 'type': service.cells[cell]['cell_type']} for cell in sorted(cells)]}}

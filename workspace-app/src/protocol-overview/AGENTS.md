@@ -42,3 +42,16 @@ node --import ./src/test-support/reactTestEnvironment.js --test src/overviewMode
 workflow tests mount real public components with controlled data after integration
 resolves callers. Keep all original assertions. No actual import, scientific
 application, native approval or performance qualification is part of this move.
+
+Protocol sections (Pinned, Protocols, Typing & backtracking) collapse independently;
+organizing temporarily reveals all sections. Renaming uses the managed manifest's
+compare-and-set display-name route and refreshes the app; UUID, query, binding and
+frozen membership stay unchanged. Audit failure restores the previous manifest.
+
+A new pinned dataset may explicitly contain multiple acquisition Protocol IDs.
+Creation submits every ID from the frozen revision and its recipe hash; multi-ID
+creation requires a review checkbox. The destination accepts a nonempty candidate
+only when every epoch belongs to its allowed recorded IDs. Overlap alone is never
+sufficient. Narrowing still shows removals and requires explicit consent. Direct
+candidate export preserves the entire saved selection without creating a binding.
+Public mounted checks: `src/protocolSidebarWorkflow.test.js`.

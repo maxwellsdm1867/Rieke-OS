@@ -616,19 +616,20 @@ class WorkspaceService:
         protocols = {}
         for file in sorted((self.project_dir / 'protocols').glob('*.protocol.json')):
             definition = json.loads(file.read_text())
-            validate_protocol_definition(definition)
+            acquisition_ids = validate_protocol_definition(definition)
+            acquisition_ids = acquisition_ids if isinstance(acquisition_ids, list) else [acquisition_ids]
             if definition['project_uuid'] != project['project_uuid']:
                 raise ValueError('Protocol points to another project')
             result = evaluate_protocol_file(file,
                 catalog_connection=(self.project_dir / 'catalog.json', config, dj),
                 verified_source_metadata=(rows, details))
             result.setdefault('project_uuid', project['project_uuid'])
-            result.setdefault('protocol_name', definition['query']['all'][0]['value'])
+            result.setdefault('protocol_name', ' + '.join(acquisition_ids))
             result.setdefault('source_revisions', [s['source_sha256'] for s in sources])
             query_ids = [e['uuid'] for e in result['epochs']]
             if len(set(query_ids)) != len(query_ids):
                 raise ValueError('Query returned duplicate epoch identities')
-            expected_ids = {key for key, row in rows.items() if row['protocol_name'] == result['protocol_name']}
+            expected_ids = {key for key, row in rows.items() if row['protocol_name'] in acquisition_ids}
             if set(query_ids) != expected_ids:
                 raise ValueError('Main database query disagrees with verified source membership')
             for member in result['epochs']:

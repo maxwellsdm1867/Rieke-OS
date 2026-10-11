@@ -3630,7 +3630,7 @@
     "reviewed_loader_sites": [
       {
         "file": "python/recording_workspace.py",
-        "file_sha256": "98e2209d61eadffffa64b9bf7052b139d67bfaebd5daf873194db32e9400733a",
+        "file_sha256": "7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -4764,7 +4764,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
+                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
                 "contract_id": null
               }
             ]
@@ -4786,7 +4786,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -4808,7 +4808,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -4830,7 +4830,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -4839,11 +4839,11 @@
       },
       {
         "file": "python/tests/test_recording_workspace.py",
-        "file_sha256": "e1caa26a9b3d54193d6594f89f9abd0b04b47afdfa5bae494a260e4120188cfa",
+        "file_sha256": "1a1cebf594abfd2ab8466948d187e11a8f3ccf160affce7bd79e4bc7fc33ca40",
         "reason": "Inject fsync and replace failures through the fixed two-item loop; preserve old JSON bytes and temporary-file cleanup assertions. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
-            "selector": "Call:52",
+            "selector": "Call:63",
             "ast_sha256": "f058efe6d9b4b496b82d975d099ccf7047d066361e3bdbc53cfc43b251035a91",
             "category": "test-computed-mock-target",
             "origins": [
@@ -5199,7 +5199,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
+                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
                 "contract_id": null
               }
             ]
@@ -5232,7 +5232,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "64d70170b3933f5ccd559400955fc0140debc0f8c2d7d468cd637fa231dac7df",
+                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
                 "contract_id": null
               }
             ]
@@ -5431,7 +5431,7 @@
       },
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
-        "file_sha256": "9c93e170412616ef58a68dcd962686db4f606bf9555cb12b85eb74ae8ef4a465",
+        "file_sha256": "00d8c5d0ab2f8d6f9c60cf62e07b9610e71d03fa9aec6b191b6eae649fd66880",
         "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
         "sites": [
           {
@@ -5451,7 +5451,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -5473,7 +5473,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -5495,13 +5495,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:591",
+            "selector": "Attribute:607",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5528,13 +5528,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:599",
+            "selector": "Attribute:615",
             "ast_sha256": "9b66d8b81a7b15352c762eb8b15859183009e5c548da4cd1150e527c832c7ef5",
             "category": "test-oracle-call",
             "origins": [
@@ -5561,13 +5561,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:969",
+            "selector": "Name:986",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5583,13 +5583,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:998",
+            "selector": "Name:1015",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5605,13 +5605,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1068",
+            "selector": "Name:1085",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5627,13 +5627,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1071",
+            "selector": "Name:1088",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5649,13 +5649,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1093",
+            "selector": "Name:1110",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5671,13 +5671,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1096",
+            "selector": "Name:1113",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5693,13 +5693,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Attribute:698",
+            "selector": "Attribute:714",
             "ast_sha256": "dc9c0cc8ab7aa121cba2c0d78ae6c9c073d8b2a77a5c3b179433b66e7d87f236",
             "category": "test-oracle-call",
             "origins": [
@@ -5726,13 +5726,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1147",
+            "selector": "Name:1164",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5748,13 +5748,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1149",
+            "selector": "Name:1166",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5770,13 +5770,13 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
           },
           {
-            "selector": "Name:1187",
+            "selector": "Name:1204",
             "ast_sha256": "882eb9f533b2631498835dd5dfce43ba1fdcd0c2b0327101fca3c92ac6116113",
             "category": "test-module-object",
             "origins": [
@@ -5792,7 +5792,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "e73b5947ca88d83557d1b0d722bf2080a2217afcc241e678198764bdad6ddc93",
+                "file_sha256": "0713f6d2d40a5faefffbc7dd2601d9801b7a7446c03606d7b1ec96a2f022e4f4",
                 "contract_id": null
               }
             ]
@@ -5974,7 +5974,7 @@
               {
                 "module": "recording_workspace",
                 "file": "python/recording_workspace.py",
-                "file_sha256": "98e2209d61eadffffa64b9bf7052b139d67bfaebd5daf873194db32e9400733a",
+                "file_sha256": "7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139",
                 "contract_id": null
               }
             ]

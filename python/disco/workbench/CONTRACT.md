@@ -287,3 +287,20 @@ explicit review consent, then atomically replaces selected draft membership usin
 complete server decisions. Main publication still uses the existing preview,
 operation UUID and durable acceptance receipt. Main tagging/undo bounds remain;
 Workbench tree selection admits only the exact current pending cardinality.
+
+## Pinned acquisition sets
+
+`recording_workspace.validate_protocol_definition` retains the v1 single-clause
+`eq` form (string return) and accepts an explicit `in` form (list return), limited
+to 1–2000 distinct nonempty recorded names. Empty, duplicate and unknown shapes
+fail closed. Native query evaluation uses a disjunction of exact names; source
+refresh independently verifies complete membership against that set. Display
+summaries do not define membership. Newly created pins always bind the exact saved
+candidate revision, even when their starter query allows several protocols.
+`workspace_protocol_identity` requires the reviewed IDs to exactly equal all IDs
+in that revision; update/export compatibility requires every member to fit the
+allowed set. No epoch is dropped or reassigned to make a mixed selection fit.
+Rename changes only manifest display name with expected-name checking and an audit
+record, retaining creation retry identity, binding and prior export provenance.
+HTTP tests in `test_workspace_protocol_binding.py` cover mixed creation, export,
+mismatch rejection and rename/retry; native SQL durability remains unqualified.
