@@ -5,7 +5,6 @@ import uuid
 import fcntl
 import os
 import tempfile
-from recording_workspace import write_json
 
 
 def read_registry(root):
@@ -25,6 +24,7 @@ def read_registry(root):
 
 
 def _update_registry(root, changes):
+    from recording_workspace import write_json
     root = Path(root)
     lock_path = root / '.rieke-os.lock'
     if lock_path.is_symlink():

@@ -11,3 +11,9 @@ The existing desktop ownership registry records an explicit quit attempt before 
 Regression tests cover healthy exit, final accepted writes, failed drafts, committed writes with failed backup coverage, active jobs, missing acknowledgements, crashed/replaced renderers, failed/stalled cleanup, repeated Quit, strict restoration, and exact-owned restart cleanup. An isolated local Python listener verifies the runtime ownership inspection on macOS; this is not a live research-project shutdown test. The original trigger that sent the reported installed app into recovery remains unestablished.
 
 Signed desktop releases still download verified updates quietly. Both signed and unsigned desktops require **Restart to update** for installation; ordinary Quit is bounded exit and retains the current app. Source-installation next-launch staging is unchanged.
+
+Project-directory enumeration is isolated in a fixed read-only helper. Explicit
+Quit cancels only those owned helpers before draining the parent requests. This
+addresses an OS-blocked project-list read without treating all GETs as harmless or
+loosening writer/database shutdown. See the existing
+[project inventory contract](../../python/disco/projects/CONTRACT.md#bounded-project-inventory).

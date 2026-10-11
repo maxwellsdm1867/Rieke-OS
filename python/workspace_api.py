@@ -1954,8 +1954,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
         if not frontend.exists():
             return "Build workspace-app first with npm run build.", 503
         from workspace_frontend import project_frontend_response
-        from workspace_projects import list_projects
-        return project_frontend_response(frontend, path, lambda: list_projects(project_dir))
+        from disco.projects.project_inventory import project_inventory
+        return project_frontend_response(frontend, path, lambda: project_inventory(app).current(project_dir),
+            unavailable={'projects': [], 'current_project_uuid': service.project['project_uuid'], 'launcher': False})
 
     if shared_annotations:
         from disco.decisions.external_tags import register_external_tag_routes

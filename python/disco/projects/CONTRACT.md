@@ -10,11 +10,49 @@ read the corresponding entry, then use its existing interface and examples.
 | Manage project directories | [storage.py](storage.py): `managed_directory`, `initialize_layout`, log helpers and `ManagedStorage` own contained metadata-only inventory. Callers supply project and code roots explicitly. |
 | Admit configured database | [project_database.py](project_database.py): `ensure_project_database(..., timeout=120)` validates project/catalog/provider identity before delegating to native or Docker ownership. `_run` remains used by portability; relocation does not make it private. |
 | Inspect folders | [project_validation.py](project_validation.py) performs folder preflight; [folder_browser.py](folder_browser.py) lists bounded local directories and registers existing routes. Inspection is not database readiness. |
+| Read project inventory | [project_inventory.py](project_inventory.py): `ProjectInventory.managed/current` reuse the retained discovery rules in a bounded read-only child. `pause/resume` control only those children; `ProjectInventoryUnavailable` is not an empty inventory. |
 | Persist preferences | [project_preferences.py](project_preferences.py): `ProjectPreferences`, `PreferenceConflict`, validation and route registration own portable shortcuts, not scientific membership or device geometry. |
 | Manage acquisitions | [datastores.py](datastores.py): `DataStores` separates freeze, archive and query eligibility. [datastore_deletion.py](datastore_deletion.py): `DataStoreDeletion` owns exact detachment and recoverable filesystem deletion. |
 | Migrate legacy source | [migration.py](migration.py) performs explicit source inspection/snapshot/restore into a separate owned destination. It delegates to the retained portability/native owners; it does not adopt the source database. |
 
 ## Retention and storage
+
+### Bounded project inventory
+
+Project-list GETs and initial HTML inventories use one `ProjectInventory` per
+Flask app. Reads are serialized, have a three-second deadline, and run only the
+fixed packaged discovery entry with `-I -B`. The child receives the discovery
+preference paths but no desktop capability or parser/database configuration.
+It reuses `workspace_projects` identity, path, duplicate-copy, unmount and ordering
+rules. Discovery imports no scientific writer; the startup registry's writer
+import is deferred until its existing mutation function is actually called.
+
+The fixed worker additionally refuses file mutation, process launch, sockets and
+SQLite connections through a Python audit hook. This is defense in depth for
+trusted packaged discovery code, not a general sandbox for arbitrary Python.
+`process_factory` is a constructor test seam; remote callers cannot supply code,
+commands, process IDs or a worker mode. Only this owner's exact `Popen` children
+may be killed on timeout or pause. A child that cannot exit is retained in the
+owner and prevents further spawning; no database process is cancelled.
+
+Explicit Quit pauses these readers before waiting for request completion. It
+continues to wait for scientific writers, jobs, database operations and child
+service receipts. Read cancellation grants none of those acknowledgements.
+Ordinary resume can admit a fresh inventory after a cancelled read.
+
+An unavailable inventory returns HTTP 503, and an initial HTML failure renders
+an explicitly unavailable inventory with its page context. The chooser offers a
+retry and never equates the failure with zero projects. The renderer cannot use
+that fallback identity to activate project data. Launcher construction defers
+root discovery/validation to the read worker; existing write owners still validate
+destinations before mutation. Folder inspection and mutations are not generalized
+into this worker.
+
+Executable cases: `python/tests/test_workspace_project_inventory.py` uses actual
+owned child processes, stalled reads, unchanged file snapshots and native-copy
+identities; it proves cancellation does not override a scientific writer. The
+mounted `workspace-app/src/projectInventoryRecovery.test.js` exercises the actual
+App retry flow and verifies no scientific activation from an unavailable shell.
 
 Retention resolves the existing source, verifies SHA-256 even for an already-managed
 source, and otherwise copies into a fresh UUID directory under `raw-uploads` using

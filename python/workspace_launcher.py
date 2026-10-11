@@ -12,15 +12,22 @@ from workspace_startup_registry import remember_project_result
 
 def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=None):
     """Used by both the launcher and an opened project's API."""
+    from disco.projects.project_inventory import project_inventory as inventory_owner, ProjectInventoryUnavailable
+    discovery = inventory_owner(app)
+
+    @app.errorhandler(ProjectInventoryUnavailable)
+    def unavailable_project_inventory(error):
+        return jsonify(error=str(error), code='project_inventory_unavailable'), 503
+
     from workspace_app_routes import register_app_routes
     register_app_routes(app)
     from disco.projects.folder_browser import register_folder_browser_routes
     register_folder_browser_routes(app, project_dir=project_dir)
     current = Path(project_dir).resolve() if project_dir else None
-    root_provider = root if callable(root) else lambda: managed_root(root or current.parent)
+    root_provider = root if callable(root) else lambda: root or current.parent
     @app.get('/api/projects')
     def project_inventory():
-        result = list_projects(current) if current else list_managed_projects(root_provider())
+        result = discovery.current(current) if current else discovery.managed(root_provider())
         from workspace_project_unmount import launcher_url
         return jsonify({**result, 'launcher': current is None, 'launcher_url': launcher_url()})
 
@@ -146,7 +153,9 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
 
 
 def create_launcher(root, retinanalysis_dir, *, application_dir=None):
-    root = managed_root(root)
+    # Discovery validates the root inside its bounded read worker. Every write
+    # still validates its destination through the existing mutation owner.
+    root = Path(root).expanduser()
     selected_root = [root]
     application = Path(application_dir or Path(__file__).resolve().parents[1]).resolve()
     app = Flask(__name__, static_folder=None)
@@ -206,7 +215,11 @@ def create_launcher(root, retinanalysis_dir, *, application_dir=None):
         if path.startswith('api/'):
             return jsonify(error='Open a project before using project operations.'),404
         from workspace_frontend import project_frontend_response
-        return project_frontend_response(frontend, path, lambda: {**list_managed_projects(selected_root[0]), 'launcher': True})
+        from disco.projects.project_inventory import project_inventory
+        return project_frontend_response(frontend, path,
+            lambda: {**project_inventory(app).managed(selected_root[0]), 'launcher': True},
+            unavailable={'projects': [], 'current_project_uuid': None,
+                         'managed_root': str(selected_root[0]), 'launcher': True})
     return app
 
 

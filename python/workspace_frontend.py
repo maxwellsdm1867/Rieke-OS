@@ -71,14 +71,20 @@ def require_project_page(port, project_dir, identity):
             'reopen it with this app, then retry. Its files and database are retained.') from error
 
 
-def project_frontend_response(frontend, path, inventory):
+def project_frontend_response(frontend, path, inventory, *, unavailable=None):
     if path != 'index.html':
         return send_from_directory(frontend, path)
     response = send_from_directory(frontend, path, conditional=False)
     response.direct_passthrough = False
-    data = json.dumps(inventory(), ensure_ascii=True).replace('<', '\\u003c')
-    bootstrap = '<script type="application/json" id="rieke-projects-bootstrap">' + data + '</script>'
     try:
+        try:
+            value = inventory()
+        except (ValueError, OSError) as error:
+            if unavailable is None:
+                raise
+            value = {**unavailable, 'inventory_unavailable': True, 'inventory_error': str(error)}
+        data = json.dumps(value, ensure_ascii=True).replace('<', '\\u003c')
+        bootstrap = '<script type="application/json" id="rieke-projects-bootstrap">' + data + '</script>'
         html = response.get_data(as_text=True).replace('</head>', bootstrap + '</head>', 1)
     finally:
         response.close()

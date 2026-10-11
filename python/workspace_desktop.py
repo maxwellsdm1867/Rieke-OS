@@ -114,6 +114,9 @@ class DesktopBoundary:
                 or bool(self.services and self.services.database_operation_records()))
 
     def _pause(self):
+        inventory = self.app.extensions.get('project_inventory')
+        if inventory:
+            inventory.pause()
         inbox = self.app.extensions.get('h5_inbox')
         if inbox:
             inbox.stop()
@@ -127,6 +130,9 @@ class DesktopBoundary:
             if self.services:
                 with self.services.lock:
                     self.services.draining = False
+            inventory = self.app.extensions.get('project_inventory')
+            if inventory:
+                inventory.resume()
             inbox = self.app.extensions.get('h5_inbox')
             if inbox:
                 inbox.start()

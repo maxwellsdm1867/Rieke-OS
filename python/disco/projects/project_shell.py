@@ -138,7 +138,7 @@ class ProjectData:
 def create_project_shell(project_dir, retinanalysis_dir, *, user_state, identity,
                          build, cleanup_failed):
     from workspace_launcher import register_project_routes
-    from workspace_projects import list_projects
+    from disco.projects.project_inventory import project_inventory
     from workspace_frontend import project_frontend_response
 
     project_dir = Path(project_dir).resolve()
@@ -150,7 +150,7 @@ def create_project_shell(project_dir, retinanalysis_dir, *, user_state, identity
                           desktop_stop_database=data.stop)
 
     def inventory():
-        return {**list_projects(project_dir), 'project_data': data.status()}
+        return {**project_inventory(app).current(project_dir), 'project_data': data.status()}
 
     @app.before_request
     def local_boundary():
@@ -210,6 +210,8 @@ def create_project_shell(project_dir, retinanalysis_dir, *, user_state, identity
     def frontend(path='index.html'):
         if path.startswith('api/'):
             return jsonify(error='Unknown API endpoint'), 404
-        return project_frontend_response(Path(os.environ['RIEKE_DESKTOP_FRONTEND']), path, inventory)
+        return project_frontend_response(Path(os.environ['RIEKE_DESKTOP_FRONTEND']), path, inventory,
+            unavailable={'projects': [], 'current_project_uuid': identity['project_uuid'],
+                         'launcher': False, 'project_data': data.status()})
 
     return app

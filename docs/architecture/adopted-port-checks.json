@@ -605,7 +605,9 @@
         "python/**",
         "docs/dev/DESKTOP_QUIT_COORDINATION.md",
         "tools/desktop_release_plan.py",
-        "python/tests/test_desktop_release_plan.py"
+        "python/tests/test_desktop_release_plan.py",
+        "python/disco/projects/project_inventory.py",
+        "python/tests/test_workspace_project_inventory.py"
       ],
       "rules": [
         {
@@ -741,7 +743,8 @@
           "workspace-app/src/projectUnmount.test.js",
           "workspace-app/src/apiCommandPolicy.test.js",
           "workspace-app/src/renderer-drafts/desktopDraftSession.test.js",
-          "workspace-app/src/startupRestore.test.js"
+          "workspace-app/src/startupRestore.test.js",
+          "workspace-app/src/projectInventoryRecovery.test.js"
         ],
         "python": [
           "python/tests/test_workspace_desktop.py",
@@ -750,7 +753,8 @@
           "python/tests/test_workspace_startup.py",
           "python/tests/test_lazy_startup_outcome.py",
           "python/tests/test_architecture_guard.py",
-          "python/tests/test_desktop_release_plan.py"
+          "python/tests/test_desktop_release_plan.py",
+          "python/tests/test_workspace_project_inventory.py"
         ],
         "desktop": [
           "desktop/tests/supervisor.test.cjs",
@@ -2501,7 +2505,13 @@
       "affected_paths": [
         "python/disco/projects/**",
         "python/workspace_api.py",
-        "python/workspace_service.py"
+        "python/workspace_service.py",
+        "python/workspace_launcher.py",
+        "python/workspace_frontend.py",
+        "python/workspace_startup_registry.py",
+        "python/tests/test_workspace_project_inventory.py",
+        "workspace-app/src/projectInventoryRecovery.test.js",
+        "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx"
       ],
       "rules": [
         {
@@ -2671,6 +2681,7 @@
           "allow": [
             "__future__",
             "contextlib",
+            "disco.projects.project_inventory",
             "flask",
             "json",
             "os",
@@ -2681,8 +2692,7 @@
             "werkzeug.wrappers",
             "workspace_desktop",
             "workspace_frontend",
-            "workspace_launcher",
-            "workspace_projects"
+            "workspace_launcher"
           ]
         },
         {
@@ -2697,14 +2707,32 @@
             "tempfile",
             "uuid"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/project_inventory.py",
+          "allow": [
+            "__future__",
+            "json",
+            "os",
+            "pathlib",
+            "subprocess",
+            "sys",
+            "threading",
+            "time",
+            "workspace_projects"
+          ]
         }
       ],
       "tests": {
         "python": [
           "python/disco/projects/tests/test_public_examples.py",
-          "python/tests/test_workspace_project_shell.py"
+          "python/tests/test_workspace_project_shell.py",
+          "python/tests/test_workspace_project_inventory.py"
         ],
-        "javascript": []
+        "javascript": [
+          "workspace-app/src/projectInventoryRecovery.test.js"
+        ]
       }
     },
     {
@@ -4562,6 +4590,16 @@
               "register_reference",
               "dependents"
             ]
+          },
+          {
+            "path": "python/disco/projects/project_inventory.py",
+            "module": "disco.projects.project_inventory",
+            "exports": [
+              "ProjectInventory",
+              "ProjectInventoryUnavailable",
+              "project_inventory",
+              "main"
+            ]
           }
         ],
         "private_test_edges": []
@@ -4723,7 +4761,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update.",
         "sites": [
           {
             "selector": "Name:56",
@@ -4764,7 +4802,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
+                "file_sha256": "958a860b892f488ffa1578dc52bb9b0ac1a07396c4fcd5c80c96c8498dd9f634",
                 "contract_id": null
               }
             ]
@@ -5158,7 +5196,7 @@
       {
         "file": "python/tests/test_workspace_export_boundary.py",
         "file_sha256": "91e363a0f2e0ee82aabfe20b46a48347ffe80fbb289d1b3fedb999fd58ee709d",
-        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries.",
+        "reason": "Select protocol/candidate owner in one existing fixture, inject serializer/report faults or alternate artifact paths, and assert publication/failure boundaries. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update.",
         "sites": [
           {
             "selector": "Assign:7",
@@ -5199,7 +5237,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
+                "file_sha256": "958a860b892f488ffa1578dc52bb9b0ac1a07396c4fcd5c80c96c8498dd9f634",
                 "contract_id": null
               }
             ]
@@ -5232,7 +5270,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "a1a75236b8a3d385a41188c1c48aa854f54f7e6abe7d05033d668dacda9f2118",
+                "file_sha256": "958a860b892f488ffa1578dc52bb9b0ac1a07396c4fcd5c80c96c8498dd9f634",
                 "contract_id": null
               }
             ]
