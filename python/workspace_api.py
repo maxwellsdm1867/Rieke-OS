@@ -571,6 +571,32 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 service.project = after
             return jsonify(project=after)
 
+    @app.post('/api/protocols/<protocol_uuid>/display-name')
+    def protocol_display_name(protocol_uuid):
+        body = explorer_request({'name', 'expected_name'}, {'name', 'expected_name'})
+        name = body['name']
+        if not isinstance(name, str) or not 1 <= len(name.strip()) <= 120 or any(ord(c) < 32 for c in name):
+            raise ValueError('Protocol name must contain 1–120 characters without control characters')
+        with db_lock:
+            entry = service.protocols[protocol_uuid]
+            path = entry['file']
+            if path.is_symlink() or path.parent.resolve() != (project_dir / 'protocols').resolve():
+                raise ValueError('Protocol manifest must be a regular managed file')
+            before = json.loads(path.read_text())
+            if before != entry['definition'] or (before['name'] != body['expected_name'] and before['name'] != name.strip()):
+                raise StaleWorkspace('Protocol changed. Refresh before renaming.')
+            after = {**before, 'name': name.strip()}
+            if before != after:
+                write_json(path, after)
+                try:
+                    record_event('protocol_display_name_changed', {'protocol_uuid': protocol_uuid,
+                        'before': before['name'], 'after': after['name']})
+                except Exception:
+                    write_json(path, before)
+                    raise
+                entry['definition'] = after
+            return jsonify(protocol_uuid=protocol_uuid, name=after['name'])
+
     @app.get('/api/storage')
     def storage_overview():
         return jsonify(storage.describe(service.config, service.sources))
@@ -1146,8 +1172,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
     @app.post('/api/explore/revisions/<revision_uuid>/create-protocol')
     def create_protocol_from_candidate(revision_uuid):
         from workspace_protocol_identity import create_pinned_protocol
-        body = explorer_request({'name', 'protocol_id', 'expected_recipe_sha256'},
-                                {'name', 'protocol_id', 'expected_recipe_sha256'})
+        body = explorer_request({'name', 'protocol_id', 'protocol_ids', 'expected_recipe_sha256'},
+                                {'name', 'expected_recipe_sha256'})
+        if ('protocol_id' in body) == ('protocol_ids' in body):
+            raise ValueError('Provide one exact Protocol ID or a reviewed list of Protocol IDs')
+        if 'protocol_ids' in body and not isinstance(body['protocol_ids'], list):
+            raise ValueError('Protocol IDs must be a list')
         with db_lock:
             recipe = explorer_history.get(revision_uuid)['recipe']
             with data_stores.registration_locks(), annotation_locks(service, recipe['predicate']):
@@ -1156,7 +1186,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 if body['expected_recipe_sha256'] != record['recipe']['content_sha256']:
                     raise StaleWorkspace('The saved selection changed. Review it again before creating a protocol.')
                 result = create_pinned_protocol(service, explorer_history, record, body['name'],
-                                                body['protocol_id'], os.environ.get('USER', 'local-user'))
+                                                body.get('protocol_ids', body.get('protocol_id')), os.environ.get('USER', 'local-user'))
                 return jsonify(result), 201 if result['created'] else 200
 
     @app.post('/api/explore/revisions/<revision_uuid>/compare-to-protocol')

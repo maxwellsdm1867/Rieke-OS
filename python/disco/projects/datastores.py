@@ -235,9 +235,11 @@ class DataStores:
             else:
                 definition = workspace['definition']
                 clauses = definition['query'].get('all', [])
-                if len(clauses) != 1 or clauses[0].get('field') != 'EpochBlock.protocol_name' or clauses[0].get('operator') != 'eq':
+                if len(clauses) != 1 or clauses[0].get('field') != 'EpochBlock.protocol_name' or clauses[0].get('operator') not in {'eq', 'in'}:
                     raise ValueError('Unsupported starter query for propagation')
-                predicate = {'field': 'protocol', 'operator': 'eq', 'value': clauses[0]['value']}
+                from recording_workspace import validate_protocol_definition
+                validate_protocol_definition(definition)
+                predicate = {'field': 'protocol', 'operator': clauses[0]['operator'], 'value': clauses[0]['value']}
                 grouping = definition.get('view', {}).get('group_by', ['date', 'cell'])
                 supported = {field['id'] for field in self.service.tree_fields(None)['fields']}
                 # Legacy MATLAB paths (e.g. cell.start_time) are not UI field

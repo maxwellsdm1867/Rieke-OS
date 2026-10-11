@@ -657,8 +657,15 @@ def validate_protocol_definition(definition):
     if set(query) != {"version", "all"} or query.get("version") != 1 or len(clauses) != 1:
         raise ValueError("Unsupported query shape; no fallback to an unrestricted query")
     clause = clauses[0]
-    if set(clause) != {"field", "operator", "value"} or clause.get("field") != "EpochBlock.protocol_name" or clause.get("operator") != "eq":
+    if set(clause) != {"field", "operator", "value"} or clause.get("field") != "EpochBlock.protocol_name" or clause.get("operator") not in {"eq", "in"}:
         raise ValueError("Unsupported query field/operator")
+    if clause['operator'] == 'in':
+        values = clause.get('value')
+        if (not isinstance(values, list) or not 1 <= len(values) <= 2000
+                or any(not isinstance(value, str) or not value for value in values)
+                or len(set(values)) != len(values)):
+            raise ValueError('Protocol query requires distinct nonempty acquisition protocol names')
+        return values
     if not isinstance(clause.get("value"), str) or not clause["value"]:
         raise ValueError("Protocol query requires a nonempty acquisition protocol name")
     return clause["value"]
@@ -730,7 +737,7 @@ def evaluate_protocol_file(file, *, catalog_connection=None, verified_source_met
     if not sources:
         return {"protocol_uuid": definition["protocol_uuid"], "epochs": [], "cells": []}
     experiment_ids = [{"experiment_id": s["experiment_id"]} for s in sources]
-    protocol_rows = (catalog.Protocol & {"name": name}).to_dicts()
+    protocol_rows = (catalog.Protocol & [{"name": item} for item in (name if isinstance(name, list) else [name])]).to_dicts()
     if not protocol_rows:
         return {"protocol_uuid": definition["protocol_uuid"], "epochs": [], "cells": []}
     blocks = (catalog.EpochBlock & experiment_ids &
@@ -762,7 +769,7 @@ def evaluate_protocol_file(file, *, catalog_connection=None, verified_source_met
     if json_witnesses:
         from workspace_catalog_identity import verify_mysql_json_documents
         verify_mysql_json_documents(catalog.schema.connection, json_witnesses)
-    return {"protocol_uuid": definition["protocol_uuid"], "protocol_name": name,
+    return {"protocol_uuid": definition["protocol_uuid"], "protocol_name": " + ".join(name) if isinstance(name, list) else name,
             "project_uuid": definition["project_uuid"],
             "epochs": members,
             "cells": [{"uuid": c["h5_uuid"], "label": c["label"], "type": c["type"]} for c in cell_rows],

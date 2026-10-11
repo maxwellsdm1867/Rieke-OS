@@ -109,6 +109,15 @@ class RefreshCacheTests(unittest.TestCase):
         self.evaluator.call_args.kwargs.pop('verified_source_metadata', None)
         return {'epochs': members, 'cells': cells}
 
+    def test_refresh_accepts_explicit_multi_protocol_manifest_and_checks_complete_membership(self):
+        path = self.folder/'protocols/example.protocol.json'
+        definition = json.loads(path.read_text())
+        definition['query']['all'][0].update(operator='in', value=['example', 'another'])
+        path.write_text(json.dumps(definition))
+        self.service.refresh()
+        self.assertEqual(set(self.service.protocols[self.protocol]['result']['epochs'][0]), {'uuid', 'metadata_hash'})
+        self.assertEqual(self.service.protocols[self.protocol]['result']['protocol_name'], 'example + another')
+
     def test_protocol_evaluation_reuses_only_the_exact_refresh_catalog(self):
         from recording_workspace import evaluate_protocol_file
         path = self.folder/'protocols/example.protocol.json'

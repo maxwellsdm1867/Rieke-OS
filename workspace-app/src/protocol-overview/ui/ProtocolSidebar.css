@@ -3,3 +3,5 @@
 .protocol-shortcuts .shortcut-drag-handle{touch-action:none;user-select:none;-webkit-user-select:none}.shortcut-drag-handle *{-webkit-user-drag:none}.protocol-shortcuts:has(.shortcut-drag-source),.protocol-shortcuts:has(.shortcut-drag-source) *{cursor:grabbing!important}
 
 .protocol-shortcuts .protocol-nav>span:not(.nav-protocol-dot){flex:1;min-width:0;white-space:normal;overflow-wrap:anywhere}.protocol-shortcuts .shortcut-update-badge{font-size:10px;white-space:nowrap;flex-shrink:0;background:var(--success-soft);color:var(--success-ink);border-radius:4px;padding:3px 5px;margin-left:3px}
+
+.shortcut-rename{display:flex;flex-wrap:wrap;gap:4px;padding:4px 10px}.shortcut-rename input{width:100%;min-width:0}.shortcut-rename button{padding:4px 8px}.shortcut-rename p{font-size:11px;width:100%}

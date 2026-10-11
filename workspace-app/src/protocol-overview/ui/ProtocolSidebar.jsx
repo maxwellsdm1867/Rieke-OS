@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ArrowUp, ArrowDown, ChevronRight, GripVertical, Pin, PinOff, Settings2, Archive, Undo2 } from 'lucide-react';
-import { humanize } from "../../api.js";
+import { ArrowUp, ArrowDown, ChevronRight, GripVertical, Pin, PinOff, Settings2, Archive, Undo2, Pencil } from 'lucide-react';
+import { api, humanize } from "../../api.js";
 import { moveShortcut,moveProtocolPreference,protocolShortcutGroups,protocolShortcutSection } from "../../ordering.js";
 import { startPointerDrag } from "../../pointerDrag.js";
 import './ProtocolSidebar.css';
@@ -8,11 +8,12 @@ import {pendingReviewBadge} from "../../incoming-workbench/incomingReview.js";
 import {useProjectPreference} from "../../project-preferences/useProjectPreference.js";
 
 const sectionNames = { pinned: 'Pinned', main: 'Protocols', support: 'Typing & backtracking' };
-export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],workbenchCounts=[],suggestionsError,onRetrySuggestions }) {
+export default function ProtocolSidebar({ projectId, protocols, activeId, onNavigate, suggestions=[],workbenchCounts=[],suggestionsError,onRetrySuggestions, onChanged }) {
   const projectPreferences=useProjectPreference(projectId,'protocol_shortcuts');
   const preferences=projectPreferences.value;
   const [organizing, setOrganizing] = useState(false);
-  const [supportOpen, setSupportOpen] = useState(false);
+  const [openSections, setOpenSections] = useState({pinned:true,main:true,support:false});
+  const [renaming,setRenaming]=useState(null),[renameBusy,setRenameBusy]=useState(false),[renameError,setRenameError]=useState('');
   const [dragging, setDragging] = useState(null);
   const [dropSpot, setDropSpot] = useState(null);
   const [announcement, setAnnouncement] = useState('');
@@ -23,6 +24,7 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
     if(focusAfterMove.current){handles.current.get(focusAfterMove.current)?.focus();focusAfterMove.current=null;}
   },[preferences]);
   useEffect(() => {
+    setOpenSections({pinned:true,main:true,support:false});setRenaming(null);setRenameError('');
     setDragging(null);setDropSpot(null);cancelDrag.current?.();cancelDrag.current=null;focusAfterMove.current=null;
   }, [projectId]);
   const section = p => protocolShortcutSection(p,preferences);
@@ -67,6 +69,14 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
       onFinish:()=>{cancelDrag.current=null;setDragging(null);setDropSpot(null);},
     });
   }
+  async function rename(event) {
+    event.preventDefault();if(renameBusy||!renaming?.name.trim())return;
+    setRenameBusy(true);setRenameError('');
+    try {
+      await api(`/protocols/${renaming.id}/display-name`,{method:'POST',body:{name:renaming.name.trim(),expected_name:renaming.original}});
+      setRenaming(null);onChanged?.();
+    } catch(error) {setRenameError(error.message);} finally {setRenameBusy(false);}
+  }
   function rows(items) {
     return items.map((p,index)=>{
       const name=humanize(p.name),group=section(p),id=p.protocol_uuid;
@@ -82,7 +92,13 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
             {group==='pinned'?<Pin size={12}/>:<span className="nav-protocol-dot"/>}<span>{name}</span>{reviewBadge&&<small className="shortcut-update-badge" title="Distinct incoming cells awaiting review in the authoritative cumulative queue. Open Workbench to review. If the count is unavailable, a generic Review notice is shown.">{reviewBadge}</small>}
           </button>
         </div>
+        {renaming?.id===id&&<form className="shortcut-rename" onSubmit={rename}>
+          <input aria-label="Pinned protocol name" maxLength={120} value={renaming.name} disabled={renameBusy} onChange={event=>setRenaming(value=>({...value,name:event.target.value}))}/>
+          <button disabled={renameBusy||!renaming.name.trim()}>Save</button><button type="button" disabled={renameBusy} onClick={()=>{setRenaming(null);setRenameError('');}}>Cancel</button>
+          {renameError&&<p role="alert">{renameError}</p>}
+        </form>}
         {organizing&&<div className="protocol-shortcut-actions" role="group" aria-label={`Organize ${name}`}>
+          {group==='pinned'&&<button disabled={renameBusy} title="Rename pinned protocol" aria-label={`Rename ${name}`} onClick={()=>{setRenaming({id,name:p.name,original:p.name});setRenameError('');}}><Pencil size={13}/></button>}
           <button title={group==='pinned'?'Unpin':'Pin to top'} aria-label={`${group==='pinned'?'Unpin':'Pin'} ${name}`} onClick={()=>commitMove(id,group==='pinned'?'main':'pinned')}>{group==='pinned'?<PinOff size={13}/>:<Pin size={13}/>}</button>
           <button title={group==='support'?'Show in protocols':'Move to typing & backtracking'} aria-label={`${group==='support'?'Show':'Tuck away'} ${name}`} onClick={()=>commitMove(id,group==='support'?'main':'support')}>{group==='support'?<Undo2 size={13}/>:<Archive size={13}/>}</button>
           <button title="Move up" aria-label={`Move ${name} up`} disabled={index===0} onClick={()=>reorder(items,index,-1)}><ArrowUp size={13}/></button>
@@ -94,13 +110,13 @@ export default function ProtocolSidebar({ projectId, protocols, activeId, onNavi
   function sectionRows(group) {
     const items=grouped[group];
     if(!organizing&&!items.length)return null;
-    const revealed=group!=='support'||organizing||supportOpen;
+    const revealed=organizing||openSections[group];
     return <div className={`shortcut-section ${organizing?'shortcut-section-organizing':''} ${dragging&&dropSpot?.group===group&&!dropSpot.id?'shortcut-section-target':''}`}
       role="group" aria-label={`${sectionNames[group]} shortcuts`} key={group}
       data-shortcut-section={group}>
-      {group==='support'?<button className="support-toggle" aria-expanded={revealed} onClick={()=>setSupportOpen(value=>!value)} disabled={organizing}>
-        <ChevronRight size={13} className={revealed?'expanded':''}/><span>Typing & backtracking</span><small>{items.length}</small>
-      </button>:(organizing||group==='pinned'||grouped.pinned.length>0)&&<div className="shortcut-section-label">{group==='pinned'&&<Pin size={10}/>} {sectionNames[group].toUpperCase()}</div>}
+      <button className="support-toggle" aria-expanded={revealed} aria-label={`${sectionNames[group]} section`} onClick={()=>setOpenSections(value=>({...value,[group]:!value[group]}))} disabled={organizing}>
+        <ChevronRight size={13} className={revealed?'expanded':''}/><span>{sectionNames[group]}</span><small>{items.length}</small>
+      </button>
       {revealed&&rows(items)}
       {organizing&&!items.length&&<div className="shortcut-empty-drop">Drop a protocol here</div>}
     </div>;

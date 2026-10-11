@@ -40,6 +40,16 @@ class RecordingWorkspaceSafetyTests(unittest.TestCase):
             with self.subTest(definition=definition), self.assertRaises(ValueError):
                 workspace.validate_protocol_definition(definition)
 
+    def test_explicit_protocol_set_is_bounded_and_never_unrestricted(self):
+        definition = self.definition()
+        clause = definition['query']['all'][0]
+        clause.update(operator='in', value=['example.Protocol', 'other.Protocol'])
+        self.assertEqual(workspace.validate_protocol_definition(definition), clause['value'])
+        for value in [[], ['example', 'example'], ['example', None], 'example', list(map(str, range(2001)))]:
+            clause['value'] = value
+            with self.subTest(value=str(value)[:80]), self.assertRaises(ValueError):
+                workspace.validate_protocol_definition(definition)
+
     def test_invalid_metadata_does_not_replace_a_valid_file(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "metadata.json"

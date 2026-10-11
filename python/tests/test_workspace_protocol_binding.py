@@ -221,6 +221,69 @@ class ProtocolBindingTests(api_tests.WorkspaceAPITests):
         package=self.client.get(exported.get_json()['download_url']).get_json()
         self.assertEqual([row['epoch_uuid'] for row in package['epochs']],self.service.ids[:1])
 
+    def test_mixed_pin_preserves_exact_membership_and_exports_both_protocols(self):
+        from workspace_protocol_identity import protocol_compatibility
+        self.service.rows[self.service.ids[1]]['protocol_name'] = 'other.example'
+        original = copy.deepcopy(self.service.rows)
+        candidate = self.save_candidate({'all': []})
+        body = {'name': 'Combined', 'protocol_ids': ['other.example', 'example'],
+                'expected_recipe_sha256': candidate['recipe']['content_sha256']}
+        endpoint = '/api/explore/revisions/' + candidate['revision_uuid'] + '/create-protocol'
+        response = self.client.post(endpoint, json=body, headers=self.headers)
+        self.assertEqual(response.status_code, 201, response.get_json())
+        identity = response.get_json()['protocol_uuid']; base = '/api/protocols/' + identity
+        definition = json.loads(self.service.protocol_file(identity).read_text())
+        self.assertEqual(definition['query']['all'][0], {'field': 'EpochBlock.protocol_name',
+            'operator': 'in', 'value': ['example', 'other.example']})
+        self.assertTrue(protocol_compatibility(self.service, identity, self.service.ids)['compatible'])
+        self.assertFalse(protocol_compatibility(self.service, self.service.protocol_id, self.service.ids)['compatible'])
+        current = self.client.get(base).get_json()
+        export = self.client.post(base + '/exports', json={'name': 'Combined',
+            'review_policy': 'include_unreviewed', 'query_revision': current['query_revision'],
+            'split_order': 'cell'}, headers=self.headers)
+        self.assertEqual(export.status_code, 201, export.get_json())
+        package = self.client.get(export.get_json()['download_url']).get_json()
+        self.assertEqual({row['epoch_uuid'] for row in package['epochs']}, set(self.service.ids))
+        self.assertEqual(self.service.rows, original)
+        retry = self.client.post(endpoint, json=body, headers=self.headers)
+        self.assertEqual(retry.status_code, 200, retry.get_json())
+        self.assertEqual(retry.get_json()['protocol_uuid'], identity)
+        for ids in [['example'], ['example', 'other.example', 'unrelated'], [], ['example', 'example'], 'example']:
+            rejected = self.client.post(endpoint, json={**body, 'protocol_ids': ids}, headers=self.headers)
+            self.assertEqual(rejected.status_code, 400, rejected.get_json())
+
+    def test_rename_retains_identity_binding_and_creation_retry(self):
+        candidate = self.narrow(); created = self.create_protocol(candidate).get_json()
+        identity = created['protocol_uuid']; path = self.service.protocol_file(identity)
+        before = json.loads(path.read_text())
+        binding = copy.deepcopy(self.explorer_history.protocol_binding(identity))
+        endpoint = '/api/protocols/' + identity + '/display-name'
+        with patch('recording_workspace.workspace_tables', return_value=(None, None, self.events, None)):
+            renamed = self.client.post(endpoint, json={'name': 'My combined dataset',
+                'expected_name': before['name']}, headers=self.headers)
+        self.assertEqual(renamed.status_code, 200, renamed.get_json())
+        self.assertEqual(json.loads(path.read_text()), {**before, 'name': 'My combined dataset'})
+        self.assertEqual(self.explorer_history.protocol_binding(identity), binding)
+        replay = self.client.post(endpoint, json={'name': 'My combined dataset', 'expected_name': before['name']}, headers=self.headers)
+        self.assertEqual(replay.status_code, 200, replay.get_json())
+        stale = self.client.post(endpoint, json={'name': 'Wrong', 'expected_name': before['name']}, headers=self.headers)
+        self.assertEqual(stale.status_code, 409)
+        retry = self.create_protocol(candidate)
+        self.assertEqual(retry.status_code, 200, retry.get_json())
+        self.assertEqual(retry.get_json()['name'], 'My combined dataset')
+        self.assertEqual(retry.get_json()['protocol_uuid'], identity)
+
+    def test_rename_audit_failure_restores_manifest(self):
+        candidate = self.narrow(); created = self.create_protocol(candidate).get_json()
+        identity = created['protocol_uuid']; path = self.service.protocol_file(identity)
+        before = path.read_bytes()
+        with patch('recording_workspace.workspace_tables', side_effect=OSError('Audit unavailable')):
+            result = self.client.post('/api/protocols/' + identity + '/display-name',
+                json={'name': 'Renamed', 'expected_name': created['name']}, headers=self.headers)
+        self.assertEqual(result.status_code, 500)
+        self.assertEqual(json.loads(path.read_bytes()), json.loads(before))
+        self.assertEqual(self.service.protocols[identity]['definition']['name'], created['name'])
+
     def test_creation_rejects_mixed_empty_mismatched_identity_and_stale_preview(self):
         self.service.rows[self.service.ids[1]]['protocol_name']='other.example'
         for predicate,override in [({'all': []},{}),
