@@ -291,6 +291,28 @@ class DataStores:
             self._imports, self._import_signature = times, signature
         return self._imports
 
+    def recording_sizes(self, identities):
+        """Check just the linked files, without epoch/catalog inventory reads."""
+        identities=tuple(dict.fromkeys(sha(value) for value in identities))
+        sources={source['source_sha256']:source for source in self.service.sources}
+        results=[]
+        for identity in identities:
+            if identity not in sources:raise ValueError('Unknown registered source')
+            source=sources[identity]
+            manifest=self.service.manifests.get(identity,{})
+            path=Path(source['source_path'])
+            status,size='available',None
+            try:
+                info=path.stat()
+                if not path.is_file():status='missing'
+                else:
+                    size=info.st_size
+                    if manifest.get('source_size') is not None and size!=manifest['source_size']:status='changed'
+            except FileNotFoundError:status='missing'
+            except OSError:status='unreadable'
+            results.append({'source_sha256':identity,'file_status':status,'size_bytes':size})
+        return {'data_stores':results}
+
     def inventory(self, detail_source=None):
         sources = self.service.sources if detail_source is None else [self._source(detail_source)]
         source_rows = {source['source_sha256']: [] for source in sources}

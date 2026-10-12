@@ -92,3 +92,13 @@ index verification are unchanged; no acquisition representation tolerance applie
 Focused publication/readback and lossy-writer rollback examples are in
 `python/tests/test_workspace_authored_json.py`; native evidence and its limits are
 in `docs/dev/h5-conversion-audit-2026-10-09.md`.
+
+## Protocol-local export status for overview reuse
+
+`CurationStore.protocol_export_status(protocol_uuid, epoch_ids)` returns the
+intersection of requested UUIDs with that protocol's saved exports, plus the
+immutable export-header signature. Its index polls and verifies only records
+restricted by project and protocol, using the existing recipe validation and
+identity checks. At most eight protocol indexes are retained. Project-wide
+history and per-epoch readers retain their existing full-index semantics. The
+status set and signature confer no export/mutation authority.

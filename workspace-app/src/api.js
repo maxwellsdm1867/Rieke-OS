@@ -20,9 +20,13 @@ export function createApiRequest(transport=requestApi){
 export const api=createApiRequest();
 export async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
-    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background'&&key!=='onResponse')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
+    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background'&&key!=='onResponse'&&key!=='notModified')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
+  if(response.status===304&&options.notModified&&options.headers?.['If-None-Match']){
+    options.onResponse?.({status:304,headers:response.headers});
+    return options.notModified;
+  }
   let decoded=true;
   const data = await response.json().catch(() => {decoded=false;return {};});
   if (!response.ok) {const message=typeof data.error==='string'?data.error:typeof data.error?.message==='string'?data.error.message:typeof data.message==='string'?data.message:`Request failed (${response.status})`;const error=new Error(message);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}

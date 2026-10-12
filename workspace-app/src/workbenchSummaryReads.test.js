@@ -8,7 +8,7 @@ test('Workbench never requests a hidden main summary and Overview demands curren
  try{
   h.fixture.respond=(url,options,fallback)=>url.pathname==='/api/protocols/protocol-A/workbench'?{contract_version:1,protocol_uuid:'protocol-A',queue_revision:'queue',candidates:[],next_cursor:null,capabilities:{}}:fallback();
   await h.mount(h.Protocol,base);await h.settle(30);
-  const summaryCount=()=>h.fixture.requests.filter(record=>record.path==='/protocols/protocol-A').length;
+  const summaryCount=()=>h.fixture.requests.filter(record=>record.path==='/protocols/protocol-A/overview').length;
   assert.equal(summaryCount(),0);
   for(let revision=1;revision<=5;revision++){await h.render(h.Protocol,{...base,revision});await h.settle(10);}
   assert.equal(summaryCount(),0,'five annotation revisions trigger no hidden main-summary reads');

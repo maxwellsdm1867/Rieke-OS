@@ -182,7 +182,7 @@ class ProtocolStateReader:
             raise ValueError('Curation includes epochs outside this protocol query')
         return result,current,revision,{key:current[key] for key in ids},result.get('dataset_binding',{}).get('version',0)
 
-    def _metadata(self, protocol, *, include_shared=True):
+    def _metadata(self, protocol, *, include_shared=True, scoped=False):
         service=self.service
         if not self._native_contract():
             return None
@@ -196,11 +196,21 @@ class ProtocolStateReader:
             return None
         header=provider(protocol) if provider else None
         entry=service.protocols[protocol]
+        # Native revisions describe this effective cohort, including a frozen
+        # binding, not its original query or unrelated project cells/epochs.
+        # The legacy oracle deliberately retains its historical global inputs.
+        query=service.query_result(protocol) if scoped else entry['result']
+        members=[member['uuid'] for member in query['epochs']] if scoped else None
+        fingerprints=({key:service._fingerprints[key] for key in members}
+                      if scoped else service._fingerprints)
+        cells=({key:service.cells[key] for key in sorted({service.rows[key]['cell_uuid'] for key in members})}
+               if scoped else service.cells)
         return {'generation':(id(index),index.generation,id(service.rows),id(service.protocols),id(service._fingerprints)),
             'project_uuid':service.project['project_uuid'],
-            'definition':entry['definition'],'query':entry['result'],
-            'fingerprints':service._fingerprints,'binding':header,
-            'cells':service.cells,
+            'definition':entry['definition'],'query':query,
+            'fingerprints':fingerprints,'binding':header,
+            'cells':cells,
+            **({'rows':{key:service.rows[key] for key in members}} if scoped else {}),
             'source_scope_revision':service.source_scope()['revision'],
             'shared_revision':self.shared.snapshot()['revision'] if self.shared and include_shared else None}
 
@@ -229,7 +239,8 @@ class ProtocolStateReader:
         for entry in self.native_cache.values():
             previous=entry['metadata']
             if previous['generation']!=metadata['generation']:continue
-            for key in ('fingerprints','cells'):
+            for key in ('fingerprints','cells','rows'):
+                if key not in metadata or key not in previous:continue
                 value=metadata[key]
                 if id(value) not in memo and (value==previous[key] if key=='fingerprints'
                         else _exact_equal(value,previous[key])):
@@ -325,7 +336,7 @@ class ProtocolStateReader:
             return None
         token=tracker.token(protocol)
         if token is None:return None
-        metadata=self._metadata(protocol,include_shared=False)
+        metadata=self._metadata(protocol,include_shared=False,scoped=True)
         if metadata is None:return None
         cached=self.native_cache.get(protocol)
         if cached is None or not self._metadata_equal(metadata,cached['metadata'],plain_epochs=cached['plain_epochs']) or self._bound_cells(cached['members'],metadata)!=cached['bound_cells']:
@@ -333,13 +344,14 @@ class ProtocolStateReader:
             if _retained_bytes(metadata,STATE_CACHE_BYTES)>STATE_CACHE_BYTES:return None
             snapshot=self._native_snapshot(metadata)
             plain_epochs=_plain_epoch_records(snapshot['query'].get('epochs'))
-            result=self.service.query_result(protocol)
+            result=copy.deepcopy(metadata['query'])
             for row in result['epochs']:row['metadata_hash']=metadata['fingerprints'][row['uuid']]
             result['metadata_fingerprint_version']=2
             result['source_scope']={'revision':metadata['source_scope_revision']}
             members=tuple(row['uuid'] for row in result['epochs'])
-            digest=checksum({'query':result,'definition':metadata['definition'],'cell_metadata':metadata['cells']})
-            after=self._metadata(protocol,include_shared=False)
+            digest=checksum({'query':result,'definition':metadata['definition'],'cell_metadata':metadata['cells'],
+                             'epoch_metadata':metadata['rows']})
+            after=self._metadata(protocol,include_shared=False,scoped=True)
             if after is None or not self._metadata_equal(after,snapshot,plain_epochs=plain_epochs) or tracker.token(protocol)!=token:return None
             allowed=None
             for entry in self.native_cache.values():
@@ -371,7 +383,7 @@ class ProtocolStateReader:
         self.store.state_generation.assert_current_locked(context['generation'])
         protocol=str(uuid.UUID(protocol_uuid))
         cached=self.native_cache.get(protocol)
-        current=self._metadata(protocol,include_shared=False)
+        current=self._metadata(protocol,include_shared=False,scoped=True)
         if (cached is None or current is None or cached['digest']!=context['metadata_digest']
                 or not self._metadata_equal(current,cached['metadata'],plain_epochs=cached['plain_epochs'])
                 or self._bound_cells(cached['members'],current)!=cached['bound_cells']):

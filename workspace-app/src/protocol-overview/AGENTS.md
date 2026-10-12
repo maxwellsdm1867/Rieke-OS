@@ -55,3 +55,29 @@ only when every epoch belongs to its allowed recorded IDs. Overlap alone is neve
 sufficient. Narrowing still shows removals and requires explicit consent. Direct
 candidate export preserves the entire saved selection without creating a binding.
 Public mounted checks: `src/protocolSidebarWorkflow.test.js`.
+
+## Overview lifetime and change-driven refresh
+
+`overviewCache.js` and `useOverviewResource.js` retain read-only summaries above
+route mounts in the App's project/path lifetime. Ordinary, pinned and typing
+protocols use the same owner. A revisit at the same local revision returns the
+snapshot without a request. Known structure/import changes refresh only visited
+summaries in the background, serially; visible reads coalesce with that work.
+Tag/curation changes invalidate hidden summaries without competing with the live
+editor; opening one refreshes it. Focus/reconnect revalidate to catch external
+changes. Protocol ETags can confirm reuse without rebuilding the summary.
+
+Keys include the caller's presentation scope and complete URL. Custom request
+owners bypass this cache. Request replacement, project disposal, errors and
+explicit retry preserve publication fences. Twelve entries/eight MiB bound
+retention; a currently visible oversized response may render but is evicted on
+release. Cached summaries never grant edit/export authority: those operations
+continue to obtain independent current receipts. `overviewSwitching.test.js`
+mounts the real App/Protocol; `overviewCache.test.js` covers invalidation,
+coalescing, late completions, failures and bounded retention.
+
+Protocol infographics use `/protocols/<uuid>/overview` and a separate
+`/protocols/<uuid>/recording-sizes` read. Cross-protocol links are intentionally
+absent from that overview DTO; missing fields must not be treated as complete
+empty membership. Project overview keeps the full project DTO. Linked file-size
+reads inspect only relevant registered paths and never request epoch inventory.
