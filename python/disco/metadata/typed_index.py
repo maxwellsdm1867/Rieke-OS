@@ -329,6 +329,7 @@ class TypedMetadataIndex(_TypedQueries):
             'format': FORMAT}).encode()).hexdigest()
         attach_native(self.connection,bound_source)
         self.connection.execute('CREATE TEMP TABLE supplied_scope(epoch_id INTEGER PRIMARY KEY)')
+        self._membership = None
         self.connection.execute('CREATE TEMP TABLE supplied_sources(source_sha TEXT PRIMARY KEY)')
         self.connection.execute('CREATE TEMP TABLE dictionary_matches(match_no INTEGER,value_id INTEGER,PRIMARY KEY(match_no,value_id)) WITHOUT ROWID')
         self._dictionary_match_no = 0
@@ -349,6 +350,8 @@ class TypedMetadataIndex(_TypedQueries):
         if (self._signature != _signature(self.path) or self._source_signature != _signature(self.source_path)
                 or self._seal_signature != _signature(self._seal_path)):
             raise ValueError('Typed metadata generation changed; reopen verified indexes')
+        if self._membership is not None:
+            self._membership.check(self)
 
     def _cancel_requested(self):
         return self._cancel_event.is_set() or bool(self._cancel_callback and self._cancel_callback())
@@ -370,6 +373,7 @@ class TypedMetadataIndex(_TypedQueries):
         if not self._closed:
             self.decoder.clear()
             self.connection.close()
+            self._membership = None
             self._closed = True
 
     def __enter__(self):

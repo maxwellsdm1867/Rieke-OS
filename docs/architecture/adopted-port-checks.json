@@ -2329,6 +2329,7 @@
           "file": "python/disco/metadata/typed_lifecycle.py",
           "allow": [
             "__future__",
+            "collections",
             "contextlib",
             "disco.metadata.cache_lifecycle",
             "disco.metadata.typed_index",
@@ -2338,7 +2339,9 @@
             "pathlib",
             "recording_workspace",
             "sqlite3",
-            "tempfile"
+            "tempfile",
+            "threading",
+            "weakref"
           ]
         },
         {
@@ -2347,6 +2350,7 @@
           "allow": [
             "__future__",
             "disco.metadata.metadata_objects",
+            "disco.metadata.typed_lifecycle",
             "disco.navigation.predicates",
             "hashlib",
             "json",
@@ -4298,7 +4302,9 @@
             "path": "python/disco/metadata/typed_lifecycle.py",
             "module": "disco.metadata.typed_lifecycle",
             "exports": [
+              "MembershipCache",
               "TypedGeneration",
+              "VerifiedMembership",
               "prepare"
             ]
           },
@@ -4692,11 +4698,11 @@
     "reviewed_use_sites": [
       {
         "file": "python/disco/metadata/tests/test_workspace_typed_index.py",
-        "file_sha256": "bc4727a1a8d1a2e6f378cbf45a7c94205fdeeaebf76692e1edc64af2d97ee205",
+        "file_sha256": "64656d4d63810beaa763163a1d9e3d483f675336b0aaf1982390883e0a630baf",
         "reason": "Inject a forbidden rehash to prove verified-open reuses the donor seal while retaining changed/closed donor refusal.",
         "sites": [
           {
-            "selector": "Call:154",
+            "selector": "Call:214",
             "ast_sha256": "22b5abb6605f33f13e7420419bc0d683fada41a08b35432c493cec2d467d2a4c",
             "category": "test-mock-target",
             "origins": [
@@ -4713,13 +4719,13 @@
               {
                 "module": "disco.metadata.typed_index",
                 "file": "python/disco/metadata/typed_index.py",
-                "file_sha256": "e7b21b45e0e4767f609f03f0849d8b4f7a08f1cb2c786e62fb83814b8e046527",
+                "file_sha256": "a930c0c4ec78ef8f9d119f83d4f94aaa6ccec6223907ed9c3a6f129140f3eec1",
                 "contract_id": "backend-metadata"
               },
               {
                 "module": "disco.metadata.typed_query",
                 "file": "python/disco/metadata/typed_query.py",
-                "file_sha256": "a9ff14f07f3b7832a8c82e173531b53a9c4f070b1c063bd1740147a81b83401e",
+                "file_sha256": "a4cbcf5d90561c958e3606d42f2cb04f4fd85ca1ba0c1b6cc791ce48eeb34a65",
                 "contract_id": "backend-metadata"
               }
             ]
@@ -5166,7 +5172,7 @@
       },
       {
         "file": "python/tests/test_workspace_explore_queries.py",
-        "file_sha256": "89b7259eee5d461285f5b27636f0762fa4dedc493a9e744f060fae35d0b665da",
+        "file_sha256": "4305e7c74f9cfa4718e5098500e9aa9f975ae09c57cae59c00a8cac4541c3573",
         "reason": "Choose the existing typed/native summary target and block it to exercise asynchronous request lifecycle.",
         "sites": [
           {
@@ -5186,7 +5192,7 @@
               {
                 "module": "disco.metadata.explore_queries",
                 "file": "python/disco/metadata/explore_queries.py",
-                "file_sha256": "eff2e233601993ed8983acbdac72d96e49a53d25aaec28d937f96fa75a3688e5",
+                "file_sha256": "05039cd9794c1d57f298c76747e5110b83d881c43be79a8c81245ef2263d3e24",
                 "contract_id": "backend-metadata"
               }
             ]
@@ -5889,7 +5895,7 @@
               {
                 "module": "disco.metadata.explore_queries",
                 "file": "python/disco/metadata/explore_queries.py",
-                "file_sha256": "eff2e233601993ed8983acbdac72d96e49a53d25aaec28d937f96fa75a3688e5",
+                "file_sha256": "05039cd9794c1d57f298c76747e5110b83d881c43be79a8c81245ef2263d3e24",
                 "contract_id": "backend-metadata"
               },
               {

@@ -118,15 +118,23 @@ class _TypedQueries:
 
 
     def _where(self, predicate=None, scope=None):
+        from disco.metadata.typed_lifecycle import VerifiedMembership
+        identities = scope.get('epoch_ids') if isinstance(scope, dict) else scope
+        reusable = isinstance(identities, VerifiedMembership)
+        if reusable:
+            sources = tuple(sorted(set(scope.get('sources', ())))) if isinstance(scope, dict) else ()
+            if sources != identities.sources:
+                raise ValueError('Protocol membership source scope mismatch')
+        self._use_membership(identities if reusable else None)
         self.connection.execute('DELETE FROM dictionary_matches')
         self._dictionary_match_no = 0
         explicit = scope is not None and (not isinstance(scope, dict) or 'epoch_ids' in scope)
         sources = isinstance(scope, dict) and 'sources' in scope
-        if sources:
+        if sources and not reusable:
             self.connection.execute('DELETE FROM supplied_sources')
             self.connection.executemany('INSERT OR IGNORE INTO supplied_sources VALUES (?)',
                                         self._scope_values(scope['sources']))
-        if explicit:
+        if explicit and not reusable:
             self._supply_identities(scope['epoch_ids'] if isinstance(scope, dict) else scope,
                                     restrict_sources=sources)
         previous = getattr(self, '_identity_scoped', False)
@@ -181,6 +189,26 @@ class _TypedQueries:
             self.connection.execute('DELETE FROM supplied_scope WHERE NOT EXISTS ('
                 'SELECT 1 FROM native.epochs e WHERE e.epoch_id=supplied_scope.epoch_id '
                 'AND e.source_sha IN (SELECT source_sha FROM supplied_sources))')
+
+    def _use_membership(self, membership):
+        if membership is not None:
+            membership.check(self)
+        if getattr(self, '_membership', None) is membership:
+            return
+        # Only connection-private scratch tables are writable. End their old
+        # transaction before detaching a previous immutable membership image.
+        self.connection.commit()
+        if self._membership is not None:
+            self.connection.execute('DROP VIEW supplied_scope')
+            self.connection.execute('DETACH DATABASE membership')
+            self._membership = None
+            self.connection.execute('ALTER TABLE supplied_scope_rows RENAME TO supplied_scope')
+        if membership is not None:
+            self.connection.execute('ALTER TABLE supplied_scope RENAME TO supplied_scope_rows')
+            self.connection.execute('ATTACH DATABASE ? AS membership',
+                                    [membership.path.as_uri() + '?mode=ro&immutable=1'])
+            self.connection.execute('CREATE TEMP VIEW supplied_scope AS SELECT epoch_id FROM membership.members')
+            self._membership = membership
 
 
     def membership(self, predicate=None, scope=None):

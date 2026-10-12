@@ -44,6 +44,78 @@ class TypedIndexTests(unittest.TestCase):
         self.order = sorted(self.rows, key=lambda r: (r.get('date') or '', r.get('start_time') or '', r['epoch_uuid']))
         self.definitions = self.native.catalog()
 
+    def test_reusable_membership_matches_queries_across_connections_without_readmitting(self):
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        ids = [row['epoch_uuid'] for row in self.rows[:20]]
+        factory = unittest.mock.Mock(return_value=iter(ids + ids[:2] + ['unknown']))
+        handle = cache.get({'revision': 'one'}, ['source'], factory)
+        self.assertIs(cache.get({'revision': 'one'}, ['source'], factory), handle)
+        factory.assert_called_once()
+        for predicate in ({'all': []}, {'field': 'parameters/wide', 'operator': 'gt', 'value': 3},
+                          {'field': 'parameters/a~1b~0', 'operator': 'contains', 'value': 1}):
+            expected = self.index.preview(predicate, {'epoch_ids': ids, 'sources': ['source']},
+                                          facet_fields=['parameters/wide'])
+            with TypedMetadataIndex.open_verified(self.index) as reader:
+                with patch.object(reader, '_supply_identities', side_effect=AssertionError('readmission')):
+                    actual = reader.preview(predicate, {'epoch_ids': handle, 'sources': ['source']},
+                                            facet_fields=['parameters/wide'])
+                self.assertEqual(actual, expected)
+                # Same connection can safely return to a caller-supplied scope.
+                self.assertEqual(reader.membership(scope={'epoch_ids': []}), [])
+
+    def test_reusable_membership_rebind_sources_and_live_reader_lifetime(self):
+        import gc
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        first_id, second_id = [row['epoch_uuid'] for row in self.rows[:2]]
+        first = cache.get({'revision': 'one'}, ['other', 'source'], lambda: [first_id])
+        with TypedMetadataIndex.open_verified(self.index) as old:
+            self.assertEqual(old.membership(scope={'epoch_ids': first, 'sources': ['other', 'source']}), [first_id])
+            first_path = first.path
+            del first
+            for i in range(18):
+                latest = cache.get({'revision': str(i)}, ['other', 'source'], lambda: [second_id])
+            gc.collect()
+            self.assertTrue(first_path.exists())
+            self.assertEqual(old.membership(scope={'epoch_ids': old._membership, 'sources': ['source', 'other']}), [first_id])
+            self.assertEqual(self.index.membership(scope={'epoch_ids': latest, 'sources': ['other', 'source']}), [second_id])
+            with self.assertRaisesRegex(ValueError, 'source scope mismatch'):
+                self.index.membership(scope={'epoch_ids': latest, 'sources': []})
+        gc.collect()
+        self.assertFalse(first_path.exists())
+
+    def test_reusable_membership_failed_build_is_discarded_and_mutation_refuses(self):
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        def interrupted():
+            yield self.rows[0]['epoch_uuid']
+            raise InterruptedError('interrupted')
+        with self.assertRaises(InterruptedError):
+            cache.get({'revision': 'one'}, ['other'], interrupted)
+        self.assertEqual(cache.entries, {})
+        self.assertEqual(list(Path(cache.directory.name).iterdir()), [])
+        handle = cache.get({'revision': 'one'}, ['other'], lambda: [self.rows[0]['epoch_uuid']])
+        with handle.path.open('ab') as stream:
+            stream.write(b'changed')
+        with self.assertRaisesRegex(ValueError, 'membership generation changed'):
+            self.index.membership(scope={'epoch_ids': handle, 'sources': ['other']})
+
+    def test_reusable_membership_concurrent_first_queries_build_once(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        ids = [row['epoch_uuid'] for row in self.rows]
+        factory = unittest.mock.Mock(return_value=ids)
+        def query(_):
+            handle = cache.get({'revision': 'one'}, ['source', 'other'], factory)
+            with TypedMetadataIndex.open_verified(self.index) as reader:
+                return reader.membership(scope={'epoch_ids': handle, 'sources': ['source', 'other']})
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(query, range(2)))
+        self.assertEqual(results, [[row['epoch_uuid'] for row in self.order]] * 2)
+        factory.assert_called_once()
+
     def truth(self, predicate=None, scope=None):
         result = []
         for row in self.order:

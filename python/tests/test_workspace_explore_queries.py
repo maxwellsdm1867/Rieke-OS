@@ -295,6 +295,34 @@ class TypedServiceAdapterTests(RequestedSummaryTests):
         self.service.typed_index, status = prepare(index)
         self.assertEqual(status, 'built')
 
+    def test_bound_protocol_queries_reuse_membership_and_rebind_invalidates(self):
+        import uuid
+        protocol = self.service.protocol_id
+        history = self.service.binding_provider.__self__
+        revision = str(uuid.uuid4())
+        history._recipe_cache[revision] = {'epochs': [{'uuid': self.service.ids[0]}]}
+        self.fixture.protocol_bindings.insert1({'project_uuid': self.service.project['project_uuid'],
+            'protocol_uuid': protocol, 'revision_uuid': revision, 'version': 1})
+        self.assertTrue(queries.typed_policy(self.service))
+        for _ in range(2):
+            result = self.service.explore_page({'all': []}, protocol_uuid=protocol)
+            self.assertEqual([row['epoch_uuid'] for row in result['rows']], [self.service.ids[0]])
+        self.assertEqual(len(self.service.typed_index.memberships.entries), 1)
+        # A warm query must not hydrate/copy the recipe, including after a new
+        # reader is opened for another page or summary.
+        class NoRecipe(dict):
+            def __getitem__(self, key):
+                raise AssertionError('warm query read recipe')
+        history._recipe_cache[revision] = NoRecipe()
+        result = self.service.explore_page({'all': []}, protocol_uuid=protocol)
+        self.assertEqual([row['epoch_uuid'] for row in result['rows']], [self.service.ids[0]])
+        replacement = str(uuid.uuid4())
+        history._recipe_cache[replacement] = {'epochs': [{'uuid': self.service.ids[1]}]}
+        self.fixture.protocol_bindings.rows[0].update(revision_uuid=replacement, version=2)
+        result = self.service.explore_page({'all': []}, protocol_uuid=protocol)
+        self.assertEqual([row['epoch_uuid'] for row in result['rows']], [self.service.ids[1]])
+        self.assertEqual(len(self.service.typed_index.memberships.entries), 2)
+
     def test_custom_filter_policy_retains_authoritative_reader_and_cursor_fence(self):
         original = self.service._filter_rows
         selected = {self.service.ids[0]}
