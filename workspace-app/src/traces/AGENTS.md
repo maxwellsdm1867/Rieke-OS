@@ -104,3 +104,11 @@ comparison helper. TraceViewer obtains explicit supplied request/context owners
 from `../workspaceRequest.js`; supplied contexts cannot borrow global cache or
 trace prefetch. Default legacy rendering remains supported. The viewport resize
 paint runs before display, retaining exact samples and existing geometry.
+
+Canonical short trace reads use `requestTraceWindow` from the existing `api.js`
+resource adapter. Source/descriptor checks, shared cache lookup, generation tokens
+and fresh-response admission stay with that resource owner; the viewer supplies
+its epoch, stream, exact window and cache revision. Scoped/imported reads still
+use their supplied owner and never enter the global cache. This preserves the
+existing prefetch keys and rejects stale warm or in-flight responses without
+making presentation depend directly on `resourceCache.js`.

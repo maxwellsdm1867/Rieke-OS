@@ -2918,7 +2918,7 @@
       "implementation_commits": [],
       "source_observed_at": "df40a19efbb13237cab2b7ff1bb4750313118854",
       "purpose": "Reuse short-lived global epoch metadata and bounded initial trace snapshots without turning them into mutation authority.",
-      "owner": "createResourceCache and epochResourceCache; useEpochResource and TraceViewer are consumers.",
+      "owner": "createResourceCache and epochResourceCache; api.requestTraceWindow owns canonical short-window admission; useEpochResource and TraceViewer are consumers.",
       "status": "implemented",
       "interface": {
         "inputs": "Exact global epoch/trace path, revision, response and cache generation token; optional clock/limits/request/signal.",

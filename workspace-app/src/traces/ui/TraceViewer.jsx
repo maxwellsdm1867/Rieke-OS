@@ -2,8 +2,7 @@ import {useTraceViewPreference} from '../traceViewPreference.jsx';
 import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
-import {api,number,useResource} from '../../api.js';
-import {cachedResourceRequest,epochResourceCache} from '../../resourceCache.js';
+import {api,number,useResource,requestTraceWindow} from '../../api.js';
 import {clampWindow,dragWindow,finiteExtent,formatTick,MAX_TRACE_SAMPLES,sampleAtPixel,ticks,timeRange,zoomWindow} from './traceGeometry.js';
 import './TraceViewer.css';
 import {readWholeTrace} from '../readWholeTrace.js';
@@ -80,23 +79,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const requestPort=useMemo(()=>{
     if(chunked)return {request:(_path,{signal})=>readWholeTrace({request:owner?.request??api,epochUuid:epoch.epoch_uuid,sourceSha256:epoch.source_sha256,stream,readContext,signal,window:{start:readWindow.start,count:readWindow.count}})};
     if(owner||imported||!stream)return undefined;
-    // Preserve the existing prefetch cache key while resource publication still
-    // fences the full source identity. A warm response must match this descriptor.
-    const matches=value=>value?.epoch_uuid===epoch.epoch_uuid&&value.stream_uuid===stream.uuid&&value.start===readWindow.start&&value.count===readWindow.count&&value.values?.length===readWindow.count&&
-      (!epoch.source_sha256||value.source_sha256===epoch.source_sha256)&&(!Number.isFinite(stream.sample_rate)||value.sample_rate===stream.sample_rate)&&
-      (stream.units===undefined||value.units===stream.units);
-    return {request:async(path,{signal})=>{
-      const warm=epochResourceCache.peek(path,contextKey);
-      if(!warm||matches(warm)){
-        const result=await cachedResourceRequest(path,{request:api,revision:contextKey,signal});
-        if(matches(result))return result;
-      }
-      const token=epochResourceCache.token(),fresh=await api(path,{signal});
-      signal?.throwIfAborted();
-      if(!matches(fresh))throw Error('Trace source or descriptor does not match the selected recording. Refresh and retry.');
-      epochResourceCache.put(path,contextKey,fresh,token);
-      return fresh;
-    }};
+    return {request:(path,{signal})=>requestTraceWindow(path,{revision:contextKey,signal,epoch,stream,window:readWindow})};
   },[chunked,owner,epoch?.epoch_uuid,epoch?.source_sha256,stream?.uuid,stream?.sample_count,stream?.sample_rate,stream?.units,contextKey,readWindow.start,readWindow.count,imported]);
   const resource=useResource(requestPath,identity,0,{cache:false,requestPort});
   const loaded=traceResponseMatches(resource.data,readContext)&&resource.path===requestPath&&resource.data?.epoch_uuid===epoch?.epoch_uuid&&resource.data?.stream_uuid===stream?.uuid&&resource.data?.start===readWindow.start&&resource.data?.count===readWindow.count&&resource.data?.values?.length===readWindow.count?resource.data:null;
