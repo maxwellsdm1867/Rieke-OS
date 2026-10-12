@@ -141,3 +141,14 @@ large float-free membership payloads retain the existing packet-size contract.
 update/version, exact equality membership and lossy custom-writer rollback.
 Native MySQL 8.4.2 API evidence is retained in the October 9 conversion audit;
 these focused tests alone do not qualify native SQL or another database runtime.
+
+## Predicate inspection trace descriptors
+
+`POST /explore/epochs` includes each bounded row's recorded `streams` descriptors,
+including an empty list when no streams exist, just as protocol inspection pages
+do. These locators let the shared viewer fetch waveform samples independently of
+Live metadata. Page construction does not load full epoch details or read H5;
+waveforms retain the existing lazy trace endpoint and source checks. Predicate
+membership, chronological paging, anchors and preview revision checks are unchanged.
+Backend coverage lives in `test_workspace_matching_epochs.py`; shared-viewer
+navigation and metadata-toggle coverage lives in `traceSurfaceIntegration.test.js`.

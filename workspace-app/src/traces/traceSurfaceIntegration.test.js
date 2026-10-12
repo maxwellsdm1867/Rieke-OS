@@ -9,17 +9,21 @@ const text=n=>typeof n==='string'?n:Array.isArray(n)?n.map(text).join(''):n?.chi
 const epoch={epoch_uuid:'epoch-1',cell_uuid:'cell-1',date:'2026-10-01',streams:[{uuid:'stream-1',kind:'responses',device:'Amp1',sample_count:67500,sample_rate:10000,units:'pA'}],curation:{included:true,tags:[]}};
 const cells=[{cell_uuid:'cell-1',epochs:1,label:'Cell one',date:'2026-10-01'}];
 const protocol={definition:{protocol_uuid:'p'},query_revision:'scope',expected_binding_version:1,cells};
-async function harness(){
+async function harness({epochCount=1}={}){
+ const epochs=Array.from({length:epochCount},(_,index)=>({...epoch,epoch_uuid:`epoch-${index+1}`,streams:epoch.streams.map(stream=>({...stream,uuid:`stream-${index+1}`}))}));
+ // Match the bounded /explore/epochs projection; full detail is a separate read.
+ const predicateKeys=['epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams'];
+ const predicateRows=epochs.map(row=>Object.fromEntries(predicateKeys.map(key=>[key,row[key]??null])));
  const dom=new JSDOM('<!doctype html><body></body>',{url:'http://localhost/'}),calls=[];
  let previewSerial=0;
  const preferences={format:'rieke-project-preferences',version:1,project_uuid:'project',state:{recent_searches:[],protocol_shortcuts:{}},revisions:{recent_searches:0,protocol_shortcuts:0}};
  const context={candidate_revision_uuid:'candidate',candidate_scope_revision:'scope',candidate_recipe_sha256:'recipe',expected_binding_version:1,protocol,draft:{draft_version:1,selection_mode:'selected',decisions:[],decisions_total:0,decisions_truncated:false},counts:{pending_epochs:1,pending_cells:1}};
  const globals={window:dom.window,document:dom.window.document,localStorage:dom.window.localStorage,ResizeObserver:class{observe(){}disconnect(){}},getComputedStyle:()=>({getPropertyValue:()=> '#555'}),requestAnimationFrame:()=>1,cancelAnimationFrame:()=>{},fetch:async(input,options={})=>{
   const url=new URL(input,'http://localhost'),path=url.pathname.replace(/^\/api/,'');calls.push({path,query:url.searchParams,method:options.method||'GET'});let value;
-  if(path.endsWith('/trace')){const start=+url.searchParams.get('start'),count=+url.searchParams.get('count');value={epoch_uuid:'epoch-1',stream_uuid:'stream-1',start,count,total_samples:67500,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array(count).fill(1)};}
+  if(path.endsWith('/trace')){const start=+url.searchParams.get('start'),count=+url.searchParams.get('count');value={epoch_uuid:path.split('/').at(-2),stream_uuid:url.searchParams.get('stream_uuid'),start,count,total_samples:67500,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array(count).fill(1)};}
   else if(path.endsWith('/context'))value=context;
-  else if(path.endsWith('/epochs'))value={epochs:[epoch],cells,total:1,offset:0,limit:60,query_revision:'scope',expected_binding_version:1,revision:'search-two'};
-  else if(path.includes('/epochs/'))value=epoch;
+  else if(path.endsWith('/epochs'))value={epochs:path==='/explore/epochs'?predicateRows:epochs,cells,total:epochCount,offset:0,limit:60,query_revision:'scope',expected_binding_version:1,revision:'search-two'};
+  else if(path.includes('/epochs/'))value=epochs.find(row=>row.epoch_uuid===path.split('/').at(-1));
   else if(path==='/metadata/fields'||path==='/explore/field-registry')value={fields:[]};
   else if(path==='/search-presets'||path==='/explore/revisions')value={items:[],total:0};
   else if(path==='/project-preferences'){if(options.method==='PUT'){const body=JSON.parse(options.body);preferences.state[body.field]=body.value;preferences.revisions[body.field]++;}value=preferences;}
@@ -126,7 +130,7 @@ async function harness(){
   await act(async()=>button('Whole epoch').props.onClick());assertWhole();
   assert.equal(calls.filter(c=>c.path.endsWith('/trace')).length,reads,'rectangle zoom, live pan and Whole add no reads');
  }
- return {calls,render,rectangleAndPan,assertWhole,sample,assertSample,zoomWhole,get savedSearch(){return savedSearch;},get savedExplorer(){return savedExplorer;},
+ return {calls,render,rectangleAndPan,assertWhole,sample,assertSample,zoomWhole,get viewer(){return renderer.root.findByType(EpochViewer).props;},async live(value){await act(async()=>renderer.root.findByType(EpochViewer).props.metadata.loadingPolicy.onLiveChange(value));},async move(direction){await act(async()=>renderer.root.findByType(EpochViewer).props.navigation.onMove(direction));},get savedSearch(){return savedSearch;},get savedExplorer(){return savedExplorer;},
  async filter(){await act(async()=>renderer.root.findByType(Matching).props.onViewFilters({tag:'qc'}));},
  async applySearch(){await act(async()=>renderer.root.findByType(PredicateDialog).props.onSearch(predicateToDraft({all:[]}),{all:[]},new AbortController().signal));},async focus(){await act(async()=>renderer.root.findByProps({'data-fixture-focus':true}).props.onClick());},async close(){await act(async()=>renderer?.unmount());await server.close();dom.window.close();for(const[k,v]of old)v?Object.defineProperty(globalThis,k,v):delete globalThis[k];}};
 }
@@ -159,4 +163,26 @@ test('actual MetadataExplorer retains Sample through filter/navigation reset and
 
 for(const surface of ['main','workbench','search','explorer','overview'])test(`${surface} shares rectangle zoom, live pan, exact bounds and loaded-trace reuse`,async()=>{
  const h=await harness();try{await h.render({surface,shared:!['search','explorer'].includes(surface)});if(surface==='explorer')await h.focus();h.assertWhole();await h.rectangleAndPan(surface);}finally{await h.close();}
+});
+
+for(const surface of ['main','workbench','search'])test(`${surface} shared traces follow epoch navigation with Live metadata off, including after toggling it`,async()=>{
+ const h=await harness({epochCount:2});
+ const detailReads=()=>h.calls.filter(call=>/\/epochs\/[^/]+$/.test(call.path));
+ const assertEpoch=id=>{
+  assert.equal(h.viewer.epoch.epoch_uuid,`epoch-${id}`);
+  assert.equal(h.viewer.epoch.streams[0].uuid,`stream-${id}`);
+  assert(h.calls.some(call=>call.path.endsWith(`/epochs/epoch-${id}/trace`)&&call.query.get('stream_uuid')===`stream-${id}`));
+  h.assertWhole();
+ };
+ try{
+  await h.render({surface,shared:surface!=='search'});
+  assert.equal(h.viewer.metadata.loadingPolicy.live,false);assertEpoch(1);
+  await h.move(1);assertEpoch(2);
+  assert.equal(detailReads().length,0,'trace navigation must not load full metadata');
+  await h.live(true);assertEpoch(2);assert.equal(detailReads().length,1);
+  await h.live(false);const reads=detailReads().length;
+  await h.move(-1);assertEpoch(1);
+  await h.move(1);assertEpoch(2);
+  assert.equal(detailReads().length,reads,'turning metadata off keeps traces independent');
+ }finally{await h.close();}
 });

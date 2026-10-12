@@ -44,6 +44,26 @@ class MatchingEpochTests(unittest.TestCase):
         self.assertFalse({'metadata','responses','parameters','curation'} & a['epochs'][0].keys())
         self.assertEqual(self.fixture.events.rows,events)
 
+    def test_matching_pages_supply_trace_descriptors_without_details_or_waveform_reads(self):
+        first, second = self.service.ids
+        streams = [{'uuid': str(uuid.uuid4()), 'kind': 'responses', 'device': 'Amp1',
+                    'sample_count': 3, 'sample_rate': 10000, 'sample_rate_units': 'Hz',
+                    'units': 'pA', 'h5_path': '/response', 'data_path': '/response/data'}]
+        self.service.rows[first]['streams'] = streams
+        revision = self.preview()['tree_revision']
+        with patch('h5py.File', side_effect=AssertionError('Pages must not read waveforms')), \
+             patch.object(self.service, 'epoch', side_effect=AssertionError('Pages must not load full epoch details')):
+            page = self.page(revision, limit=1).get_json()
+            next_page = self.page(revision, anchor_uuid=second, limit=1).get_json()
+        self.assertEqual(page['epochs'][0]['epoch_uuid'], first)
+        self.assertEqual(page['epochs'][0]['streams'], streams)
+        protocol_page = self.client.get(self.fixture.base + '/epochs', headers=self.headers).get_json()
+        protocol_row = next(row for row in protocol_page['epochs'] if row['epoch_uuid'] == first)
+        self.assertEqual(page['epochs'][0]['streams'], protocol_row['streams'])
+        self.assertEqual(next_page['epochs'][0]['epoch_uuid'], second)
+        self.assertEqual(next_page['epochs'][0]['streams'], [])
+        self.assertFalse({'metadata', 'parameters', 'properties', 'responses'} & page['epochs'][0].keys())
+
     def test_cell_overview_is_complete_and_cell_pages_never_broaden_predicate(self):
         first,second=self.service.ids
         cell=self.service.rows[first]['cell_uuid']

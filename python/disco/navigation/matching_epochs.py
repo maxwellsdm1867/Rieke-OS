@@ -45,7 +45,7 @@ def register_matching_epoch_routes(app, service, db_lock, registration_locks, re
                 if anchor_index is None:
                     raise ValueError('Epoch is outside this predicate')
                 offset = anchor_index // limit * limit
-            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds')
+            keys = ('epoch_uuid','cell_uuid','cell_label','cell_type','date','start_time','block_uuid','epoch_number','protocol_name','duration_seconds','streams')
             selected=rows[offset:offset+limit]
             shared=getattr(service,'shared_annotations',None)
             annotations=shared.for_epochs(selected) if shared else {}
