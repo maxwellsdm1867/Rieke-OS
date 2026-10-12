@@ -112,3 +112,7 @@ its epoch, stream, exact window and cache revision. Scoped/imported reads still
 use their supplied owner and never enter the global cache. This preserves the
 existing prefetch keys and rejects stale warm or in-flight responses without
 making presentation depend directly on `resourceCache.js`.
+
+For a worked regression and dependency example, see the
+[predicate trace and cache boundary note](../../../docs/dev/predicate-trace-boundary.md).
+Run the architecture guard when adding cross-module imports, before packaging.
