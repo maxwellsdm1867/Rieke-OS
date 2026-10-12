@@ -762,7 +762,7 @@ class WorkspaceService:
                 return original
             recipe = binding['recipe']
             identities = [member['uuid'] for member in recipe['epochs']]
-            if set(identities) - self.rows.keys():
+            if any(key not in self.rows for key in identities):
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             cells = {self.rows[key]['cell_uuid'] for key in identities}
             original.update(
@@ -987,19 +987,20 @@ class WorkspaceService:
         from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
         cache = None
-        overhead = sys.getsizeof(self._fingerprints) + 16 * 1024
+        overhead = 16 * 1024
         if isinstance(index, DiskMetadataIndex):
             index._check()
             generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
             previous = getattr(self, '_epoch_page_cache', None)
             if overhead < EPOCH_PAGE_CACHE_BYTES:
-                if previous is None or previous[0] != generation or previous[2] != self._fingerprints:
-                    previous = self._epoch_page_cache = (generation,{},dict(self._fingerprints))
+                if previous is None or previous[0] != generation:
+                    previous = self._epoch_page_cache = (generation,{})
                 cache = previous[1]
             else:
                 self._epoch_page_cache = None
         entry = cache.get(key) if cache is not None else None
-        if entry is not None and (signature is None or signature == entry[0]):
+        if (entry is not None and (signature is None or signature == entry[0])
+                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())):
             cache.pop(key)
             cache[key] = entry
             identities = entry[1]
@@ -1015,7 +1016,7 @@ class WorkspaceService:
                 members = binding['recipe']['epochs'] if binding else protocol['result']['epochs']
                 key = (protocol_uuid, binding and binding['version'], binding and binding.get('revision_uuid'), tuple(sorted(ordinary.items())))
             signature = tuple(member['uuid'] for member in members)
-            if binding is not None and set(signature) - self.rows.keys():
+            if binding is not None and any(identity not in self.rows for identity in signature):
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
             identities = tuple(row['epoch_uuid'] for row in rows)
@@ -1024,9 +1025,12 @@ class WorkspaceService:
                 # strings twice even if borrowed/shared, keeping admission cheap.
                 size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)
                            for values in (signature,identities))
+                fingerprints={identity:self._fingerprints[identity] for identity in signature}
+                size+=sys.getsizeof(fingerprints)+sum(sys.getsizeof(key)+sys.getsizeof(value)
+                                                    for key,value in fingerprints.items())
                 if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
                     cache.pop(key,None)
-                    cache[key] = (signature,identities,size)
+                    cache[key] = (signature,identities,size,fingerprints)
                     while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
                         cache.pop(next(iter(cache)))
         if tag_filters:

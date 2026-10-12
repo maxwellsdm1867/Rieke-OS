@@ -105,3 +105,12 @@ interaction evidence. Harness changes alter benchmark suite identity; preserve
 historical receipts and do not claim comparability or speed improvements. Native
 packaging, installed behavior and scientific import/export qualification remain
 separate gates. Frontend source tests provide none of that qualification.
+
+Overview may call `useProtocolTreeLayout(id, initial, {enabled: false})` to defer
+its first GET. The default remains enabled. The first Inspect/Export demand
+loads the saved layout and retains its existing lifetime through subsequent tab
+returns; disabling a never-requested protocol does not fetch. A changed protocol
+ID needs its own demand. App no longer gates Overview on tree-layout readiness;
+Inspect/Export retain that gate. The public hook test checks deferred first demand,
+no repeated tab read, and a new protocol's independent first read. Saver, default
+order, accepted writes, cancellation and retry semantics remain unchanged.

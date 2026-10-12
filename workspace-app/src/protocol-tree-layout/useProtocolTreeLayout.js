@@ -8,13 +8,17 @@ import {createTreeLayoutSaver} from './treeLayoutPersistence.js';
  * Cleanup aborts the load and fences publication, without clearing the old saver
  * or cancelling accepted writes. See AGENTS.md and the real-hook tests.
  */
-export default function useProtocolTreeLayout(id,initial){
+export default function useProtocolTreeLayout(id,initial,{enabled=true}={}){
   const initialOrder=useRef(initial).current;
+  const [requestedId,setRequestedId]=useState(enabled?id:null);
+  const loadEnabled=enabled||requestedId===id;
+  useEffect(()=>{if(enabled)setRequestedId(id);},[enabled,id]);
   const [order,setOrder]=useState(Array.isArray(initialOrder)?initialOrder:['date','cell','block']);
   const [load,setLoad]=useState({ready:false,error:null}),[attempt,setAttempt]=useState(0);
   const [save,setSave]=useState({status:'saved',version:0});
   const saver=useRef(null);
   useEffect(()=>{
+    if(!loadEnabled)return;
     let mounted=true;
     const controller=new AbortController();
     setLoad({ready:false,error:null});
@@ -28,7 +32,7 @@ export default function useProtocolTreeLayout(id,initial){
       setSave({status:'saved',version:result.version});setLoad({ready:true,error:null});
     }).catch(error=>{if(mounted)setLoad({ready:false,error:error.message});});
     return()=>{mounted=false;controller.abort();};
-  },[id,attempt,initialOrder]);
+  },[id,attempt,initialOrder,loadEnabled]);
   const remember=useCallback(fields=>{setOrder(old=>JSON.stringify(old)===JSON.stringify(fields)?old:[...fields]);saver.current?.remember(fields);},[]);
   return {order,remember,...load,save,retrySave:()=>saver.current?.retry(),reload:()=>setAttempt(value=>value+1)};
 }

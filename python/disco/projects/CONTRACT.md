@@ -169,3 +169,13 @@ Selected-cell QC preparation remains explicit; export storage is prepared during
 validated export. The shell tests use temporary files and injected scientific
 construction. Actual restoration, unmount and database shutdown require the
 separate packaged Electron tests and timings.
+
+## Protocol linked recording sizes
+
+`DataStores.recording_sizes(source_sha256s)` projects filesystem availability
+and size for admitted registered source identities, without enumerating epochs,
+protocol memberships or exports. Missing, unreadable and changed-size files keep
+the inventory's existing status meaning. The HTTP protocol owner derives source
+identities from current effective membership and holds registration locks; no
+caller-supplied path is accepted. Metadata/H5 contents are not read, copied or
+modified. The full data-store inventory contract remains unchanged.

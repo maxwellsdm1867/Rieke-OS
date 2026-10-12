@@ -284,7 +284,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             add_cell_annotations(payload.get('cells',[]))
         return payload
 
-    def native_protocol_summary(protocol_uuid, query_filters, *, overview_context=False, export_memberships=None):
+    def native_protocol_summary(protocol_uuid, query_filters, *, overview_context=False, export_memberships=None,
+                                cross_protocols=True, exported_ids=None):
         """Protocol UI summary without loading whole-dataset saved tag JSON."""
         from workspace_service import validate_filters
         query_filters=validate_filters(query_filters)
@@ -303,12 +304,15 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             'duration_seconds':sum(service.rows[key]['duration_seconds'] for key in identities)}
         excluded &= ids;approved &= ids
         included=ids-excluded
-        export_memberships=store.export_memberships() if export_memberships is None else export_memberships
-        exported={key for key,links in export_memberships.items()
-                  if any(link['protocol_uuid']==protocol_uuid for link in links)}
+        if exported_ids is None:
+            export_memberships=store.export_memberships() if export_memberships is None else export_memberships
+            exported={key for key,links in export_memberships.items()
+                      if any(link['protocol_uuid']==protocol_uuid for link in links)}
+        else:
+            exported=exported_ids
         memberships=({key:set(identities if key==protocol_uuid else
             [member['uuid'] for member in service.query_result(key)['epochs']]) for key in service.protocols}
-            if not overview_context else {})
+            if not overview_context and cross_protocols else {})
         bins={}
         duration=0
         for row in rows:
@@ -321,7 +325,8 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             members=group['ids']
             cells.append({**service.cells[key],'epochs':len(members),'duration_seconds':group['duration_seconds'],
                 'reviewed':len(members & approved),'included':len(members & included),
-                'protocol_uuids':[identity for identity,scope in memberships.items() if members & scope],
+                **({'protocol_uuids':[identity for identity,scope in memberships.items() if members & scope]}
+                   if cross_protocols else {}),
                 'group_labels':sorted(group['group_labels'],key=str)})
         cells.sort(key=lambda row:(row['cell_type'] or '',row['date'],row['label']))
         cell_counts=summarize_cell_membership(rows,approved,exported,included)
@@ -772,6 +777,54 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             tracker=getattr(service,'_recovery_tracker',None)
             if tracker is not None:store.recovery_tracker=tracker
             return jsonify(store.tag_suggestions(request.args.get('q',''),int(raw_limit)))
+
+    @app.get('/api/protocols/<protocol_uuid>/recording-sizes')
+    def protocol_recording_sizes(protocol_uuid):
+        if request.args:raise ValueError('Unknown recording size option')
+        with db_lock:
+            result=service.query_result(protocol_uuid)
+            identities=sorted({service.rows[item['uuid']]['source_sha256'] for item in result['epochs']})
+            with data_stores.registration_locks(identities):
+                return jsonify(data_stores.recording_sizes(identities))
+
+    @app.get('/api/protocols/<protocol_uuid>/overview')
+    def protocol_overview(protocol_uuid):
+        """Cohort-only summary, conditionally reused after exact freshness checks.
+
+        Cross-protocol cell links belong to project navigation. They are absent
+        here, not replaced by a falsely complete list. Legacy/custom readers
+        keep their full policy and never issue a conditional reuse receipt.
+        """
+        protocol_uuid=str(uuid.UUID(protocol_uuid))
+        with db_lock:
+            query_filters=filters()
+            native_exports=(type(store) is CurationStore
+                and getattr(store.export_memberships,'__func__',None) is CurationStore.export_memberships
+                and getattr(store.protocol_export_status,'__func__',None) is CurationStore.protocol_export_status)
+            context=selected_state.native_context(protocol_uuid) if native_exports else None
+            proof=selected_state.native_cache.get(protocol_uuid) if context is not None else None
+            if proof is None:context=None
+            etag=None
+            if context is not None:
+                members=proof['members']
+                exported,signature=store.protocol_export_status(protocol_uuid,members)
+                etag=checksum({'projection':'protocol-overview-v1','query':context['query_revision'],
+                               'exports':signature,'filters':query_filters})
+                unchanged=request.headers.get('If-None-Match')=='"'+etag+'"'
+                payload=None if unchanged else native_protocol_summary(protocol_uuid,query_filters,
+                    cross_protocols=False,exported_ids=exported)
+                after=selected_state.native_context(protocol_uuid)
+                _,after_signature=store.protocol_export_status(protocol_uuid,())
+                if (after is None or after['query_revision']!=context['query_revision'] or after_signature!=signature):
+                    raise StaleWorkspace('Protocol summary changed while reading. Refresh and retry.')
+                response=app.response_class(status=304) if unchanged else jsonify(payload)
+                response.set_etag(etag)
+            else:
+                payload=enrich_protocol(copy.deepcopy(service.protocol(protocol_uuid,query_filters)),protocol_uuid,query_filters)
+                for cell in payload.get('cells',[]):cell.pop('protocol_uuids',None)
+                response=jsonify(payload)
+            response.headers['Cache-Control']='no-store'
+            return response
 
     @app.get("/api/protocols/<protocol_uuid>")
     def protocol(protocol_uuid):
