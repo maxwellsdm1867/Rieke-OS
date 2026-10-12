@@ -1,0 +1,82 @@
+{
+  "installation": {
+    "destination": "/Users/maxwellsdm/Applications/Disco.app",
+    "previous": "/Users/maxwellsdm/Applications/.Rieke OS.previous.app",
+    "previousDigest": "01766beb4c0fe9c56eb43112e528c821b9ed3c3d325434b9b7077aac5b48f115",
+    "retained_older_backup": "/Users/maxwellsdm/Applications/.Disco.pre-membership-rollback-1791773714692.app",
+    "source_commit": "0a4d0772fb1312b4bdb72fb23c2934ae95ed6d83",
+    "version": "0.1.10",
+    "candidate_bundle_sha256": "841a425225ac9f8f5a115d2e6f30dc4cfbe140554b9e5d8e58ac0fbfd6c829d8",
+    "manifest_sha256": "d0e4a9f3b83af4f20a5729c19fb803bb61750f305bc563adcfb6351aebce7bbd"
+  },
+  "native_live": {
+    "verified_at": "2026-10-12T03:02:18.550843+00:00",
+    "source_commit": "0a4d0772fb1312b4bdb72fb23c2934ae95ed6d83",
+    "source_dirty": false,
+    "manifest_sha256": "d0e4a9f3b83af4f20a5729c19fb803bb61750f305bc563adcfb6351aebce7bbd",
+    "processes": [
+      {
+        "pid": 61110,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/MacOS/Disco"
+      },
+      {
+        "pid": 61223,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Frameworks/Disco Helper.app/Contents/MacOS/Disco Helper"
+      },
+      {
+        "pid": 61224,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Frameworks/Disco Helper.app/Contents/MacOS/Disco Helper"
+      },
+      {
+        "pid": 61227,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/python/bin/python3.11"
+      },
+      {
+        "pid": 61253,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Frameworks/Disco Helper (Renderer).app/Contents/MacOS/Disco Helper (Renderer)"
+      },
+      {
+        "pid": 64540,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/python/bin/python3.11"
+      },
+      {
+        "pid": 64575,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/mysql/bin/mysqld"
+      },
+      {
+        "pid": 65046,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/python/bin/python3.11"
+      },
+      {
+        "pid": 65047,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/python/bin/python3.11"
+      },
+      {
+        "pid": 65048,
+        "exe": "/Users/maxwellsdm/Applications/Disco.app/Contents/Resources/runtime/python/bin/python3.11"
+      }
+    ],
+    "project": "/Users/maxwellsdm/Downloads/hahah",
+    "protocol": "Full Field Noise",
+    "scope": "unbound source query",
+    "epochs": 40,
+    "cells": 2,
+    "recorded_time": "6m 0s",
+    "native_trace_observation": {
+      "cell": "2026-10-07 Cell2",
+      "epoch_position": 22,
+      "stream": "Amp1 mV",
+      "sample_rate_hz": 10000,
+      "samples": 90000,
+      "extent_seconds": [
+        0,
+        8.9999
+      ],
+      "visible_plot": true
+    },
+    "final_view": "Overview",
+    "access_recovery": "User approved access; reopened existing project via native folder picker.",
+    "qualification": "Native usability check, not bound-cache performance qualification."
+  },
+  "raw_evidence": "/private/tmp/disco-membership-package-evidence"
+}
