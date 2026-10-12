@@ -7,7 +7,11 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
   const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
   if(shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} polarity={polarity} {...shared}/>;
   return <svg {...shared}>
-    {shape==='bipolar'?<>
+    {shape==='horizontal'?<>
+      <ellipse cx="12" cy="14" rx="2.8" ry="2.3"/>
+      <circle cx="12" cy="14" r=".65" fill="currentColor" stroke="none"/>
+      <path d="M9.6 12.8C8 11.4 6.7 10 4.3 10S2.6 8.9 1.5 8.4M5.8 10.2 5 7.5M5.1 8.1 3.5 7M9.6 12.8C7 13.1 4.8 13.3 2 12.2M3.5 12.7l-1 1.6M14.4 12.8c1.6-1.4 3-3 5.2-3.1S21.3 8.5 22 8M18.1 10.1l.2-2.8M18.2 8.1l-1.5-1M14.4 12.8c2.6.4 4.8.2 7.6-1M20 12.5l1.4 1.6"/>
+    </>:shape==='bipolar'?<>
       <path d="M11.8 6c-.1-1.5-1.5-2.3-3-2.7S7.2 2.1 7 1.5M8.8 3.3l-2 .3M11.8 6c.9-1.5 2.3-1.9 3.3-2.2s1.1-1.3 1.6-1.8M13.6 4.5l-.3-2M15.1 3.8l2 .3"/>
       <path d="M11.8 6c.15.7-.15 1.3 0 2"/>
       <ellipse cx="11.8" cy="10.5" rx="2.3" ry="2.5"/>

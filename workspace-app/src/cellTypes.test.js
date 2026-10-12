@@ -4,8 +4,8 @@ import {cellTypeColor,cellTypePresentation,recordedCellType,distinctCells} from 
 import {protocolCellSummary} from "./protocol-overview/protocolOverviewModel.js";
 import {overviewModel} from "./protocol-overview/ui/overviewModel.js";
 
-test('scientific colors are stable across subset order and recorded spelling, without changing labels',()=>{
-  for(const [name,color] of [['ON midget','var(--cell-on-midget)'],['OFF midget','var(--cell-off-midget)'],['ON parasol','var(--cell-on-parasol)'],['OFF parasol','var(--cell-off-parasol)']]) {
+test('polarity colors are stable across subset order and recorded spelling, without changing labels',()=>{
+  for(const [name,color] of [['ON midget','var(--cell-on)'],['OFF midget','var(--cell-off)'],['ON parasol','var(--cell-on)'],['OFF parasol','var(--cell-off)']]) {
     for(const type of [name,name.replace(' ','-'),`RGC\\${name.replace(' ','-')}`]) {
       const cell={cell_type:type};assert.equal(cellTypeColor(type),color);assert.equal(recordedCellType(cell),type);
     }
@@ -28,22 +28,22 @@ test('retinal icons follow exact recorded classes and polarity without inferring
     ['ON parasol','ganglion','on','on-parasol'],['OFF parasol','ganglion','off','off-parasol'],
     ['ON midget','midget','on','on-midget'],['OFF midget','midget','off','off-midget'],
     ['ON bipolar','bipolar','on','on-bipolar'],['OFF bipolar','bipolar','off','off-bipolar'],
-    ['Cone','cone',undefined,'cone'],['Rod','rod',undefined,'rod'],
+    ['Cone','cone',undefined,'cone'],['Rod','rod',undefined,'rod'],['Horizontal cell','horizontal',undefined,'horizontal'],
   ];
   for(const [type,shape,polarity,token] of examples){
     for(const spelling of [type,type.toUpperCase(),` ${type.replaceAll(' ','_')} `,type.replaceAll(' ','-')]){
       const cell=Object.freeze({cell_uuid:'recorded-id',cell_type:spelling});
       const presentation=cellTypePresentation(recordedCellType(cell));
       assert.equal(presentation.shape,shape);assert.equal(presentation.polarity,polarity);
-      assert.equal(presentation.color,`var(--cell-${token})`);assert.equal(recordedCellType(cell),spelling);
+      assert.equal(presentation.color,polarity?`var(--cell-${polarity})`:'var(--ink-muted)');assert.equal(recordedCellType(cell),spelling);
     }
   }
   for(const [type,canonical] of [
     ['RGC\\ON-midget','ON midget'],['RGC/OFF-parasol','OFF parasol'],
     ['Bipolar\\ON','ON bipolar'],['BC/OFF','OFF bipolar'],['ON bipolar cell','ON bipolar'],
-    ['Photoreceptor/Cone','Cone'],['Photoreceptors/Rods','Rod'],['Cones','Cone'],['Rod cells','Rod'],
+    ['Photoreceptor/Cone','Cone'],['Photoreceptors/Rods','Rod'],['Cones','Cone'],['Rod cells','Rod'],['HC','Horizontal cell'],['Horizontal cells','Horizontal cell'],
   ])assert.deepEqual(cellTypePresentation(type),cellTypePresentation(canonical));
-  for(const type of ['ON parasol candidate','possible cone','rod bipolar','ON-OFF bipolar','other/ON midget','OFF','Unknown',''])
+  for(const type of ['ON parasol candidate','possible cone','horizontal candidate','other/Horizontal','rod bipolar','ON-OFF bipolar','other/ON midget','OFF','Unknown',''])
     assert.equal(cellTypePresentation(type).color,'var(--ink-muted)',type);
   assert.equal(cellTypePresentation(recordedCellType({label:'ON parasol'})).color,'var(--ink-muted)');
 });

@@ -21,15 +21,16 @@ export function cellTypePresentation(type) {
   const key=parts.pop().trim().replace(/[ _-]+/g,'-');
   const prefix=parts.join('/');
   const ganglion=/^(on|off)-(midget|parasol)$/.test(key);
-  if(ganglion && (!prefix || prefix==='rgc'))return {shape:key.endsWith('midget')?'midget':'ganglion',polarity:key.split('-')[0],color:`var(--cell-${key})`};
+  if(ganglion && (!prefix || prefix==='rgc'))return {shape:key.endsWith('midget')?'midget':'ganglion',polarity:key.split('-')[0],color:`var(--cell-${key.split('-')[0]})`};
   const bipolarKey=key.replace(/-cells?$/,'');
   const bipolar=['bipolar','bc'].includes(prefix) && /^(on|off)$/.test(bipolarKey)?`${bipolarKey}-bipolar`:bipolarKey;
   if(/^(on|off)-bipolar$/.test(bipolar) && (!prefix || prefix==='bipolar' || prefix==='bc'))
-    return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar})`};
+    return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar.split('-')[0]})`};
   if((bipolar==='bipolar' && !prefix))return {shape:'bipolar',color:'var(--ink-muted)'};
+  if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--ink-muted)'};
   const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
   if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
-    return {shape:receptor,color:`var(--cell-${receptor})`};
+    return {shape:receptor,color:'var(--ink-muted)'};
   return {shape:'ganglion',color:'var(--ink-muted)'};
 }
 export function cellTypeColor(type) {
