@@ -131,7 +131,7 @@ async function harness({epochCount=1}={}){
   await act(async()=>button('Whole epoch').props.onClick());assertWhole();
   assert.equal(calls.filter(c=>c.path.endsWith('/trace')).length,reads,'rectangle zoom, live pan and Whole add no reads');
  }
- return {calls,render,rectangleAndPan,assertWhole,sample,assertSample,zoomWhole,get viewer(){return renderer.root.findByType(EpochViewer).props;},async live(value){await act(async()=>renderer.root.findByType(EpochViewer).props.metadata.loadingPolicy.onLiveChange(value));},async move(direction){await act(async()=>renderer.root.findByType(EpochViewer).props.navigation.onMove(direction));},get savedSearch(){return savedSearch;},get savedExplorer(){return savedExplorer;},
+ return {calls,render,rectangleAndPan,assertWhole,sample,assertSample,zoomWhole,get viewer(){return renderer.root.findByType(Viewer).props;},async live(value){await act(async()=>renderer.root.findByType(Viewer).props.metadata.loadingPolicy.onLiveChange(value));},async move(direction){await act(async()=>renderer.root.findByType(Viewer).props.navigation.onMove(direction));},get savedSearch(){return savedSearch;},get savedExplorer(){return savedExplorer;},
  async filter(){await act(async()=>renderer.root.findByType(Matching).props.onViewFilters({tag:'qc'}));},
  async applySearch(){await act(async()=>renderer.root.findByType(PredicateDialog).props.onSearch(predicateToDraft({all:[]}),{all:[]},new AbortController().signal));},async focus(){await act(async()=>renderer.root.findByProps({'data-fixture-focus':true}).props.onClick());},async close(){await act(async()=>renderer?.unmount());await server.close();dom.window.close();for(const[k,v]of old)v?Object.defineProperty(globalThis,k,v):delete globalThis[k];}};
 }

@@ -624,6 +624,7 @@ def restore_project(package_dir, destination):
                     from disco.projects.recording_files import recording_display_name
                     record['source_filename'] = mapping.get('source_filename') or recording_display_name(record)
                     record['source_path'] = str(target / mapping['recording_ref'])
+                    record.pop('recording_location', None)
                     record['metadata_path'] = str(target / mapping['metadata_ref'])
                     cursor.execute('UPDATE recording_workspace.source SET manifest=%s WHERE source_sha256=%s AND project_uuid=%s',
                                    (json.dumps(record), source['source_sha256'], identity))
@@ -633,6 +634,7 @@ def restore_project(package_dir, destination):
                         current = _json(local_manifest)
                         if current.get('source_sha256') != source['source_sha256']:
                             raise ValueError('Imported source file identity disagrees with database')
+                        current.pop('recording_location', None)
                         current.update(source_path=record['source_path'], source_filename=record['source_filename'], metadata_path=record['metadata_path'])
                         _write(local_manifest, current)
                 _update_artifact_locations(cursor, artifacts)
@@ -937,7 +939,8 @@ def rebase_project_paths(project_dir, connection=None):
         missing = []
         for source in sources:
             record = dict(source['manifest'])
-            recording = relocate(record['source_path'])
+            from disco.projects.recording_registry import relocated_library_recording
+            recording = relocated_library_recording(root, record) or relocate(record['source_path'])
             metadata = relocate(record['metadata_path'], metadata=True)
             for path, expected in ((recording, source['source_sha256']),
                                    (metadata, record['metadata_sha256'])):

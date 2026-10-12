@@ -295,6 +295,33 @@ class DirectFolderRelocationTests(unittest.TestCase):
         self.connection.commit.assert_called_once()
         self.assertFalse((self.root / '.project-path-rebase.pending').exists())
 
+    def test_master_folder_move_rebases_library_recording_with_matching_identity(self):
+        from disco.projects.recording_files import retain_recording
+        from disco.projects.recording_registry import recording_location
+        transfer._write(self.root / 'project.json', {'format': 'recording-project', 'version': 1, 'project_uuid': self.identity})
+        # Remove the fixture's legacy manifest so this represents a new import.
+        self.local.unlink()
+        retained = retain_recording(self.root, self.recording, self.sha)
+        self.manifest['recording_location'] = recording_location(self.root, retained)
+        self.manifest['source_path'] = str(self.base / 'old-master' / self.manifest['recording_location']['path'])
+        transfer._write(self.local, self.manifest)
+        self.assertTrue(self.relocate()['relocated'])
+        self.assertEqual(transfer._json(self.local)['source_path'], str(retained))
+        self.assertEqual(transfer._hash(retained), self.sha)
+
+    def test_master_folder_move_rejects_same_named_different_library(self):
+        from disco.projects.recording_files import retain_recording
+        from disco.projects.recording_registry import recording_location
+        transfer._write(self.root / 'project.json', {'format': 'recording-project', 'version': 1, 'project_uuid': self.identity})
+        self.local.unlink()
+        retained = retain_recording(self.root, self.recording, self.sha)
+        self.manifest['recording_location'] = dict(recording_location(self.root, retained), library_uuid=str(uuid.uuid4()))
+        self.manifest['source_path'] = str(self.base / 'missing-master' / self.manifest['recording_location']['path'])
+        transfer._write(self.local, self.manifest)
+        with self.assertRaisesRegex(ValueError, 'missing files'):
+            self.relocate()
+        self.connection.begin.assert_not_called()
+
     def test_missing_external_recording_and_hash_mismatch_fail_before_writes(self):
         before = self.local.read_bytes()
         self.manifest['source_path'] = str(self.base / 'unavailable-external.h5')

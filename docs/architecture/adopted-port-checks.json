@@ -2661,8 +2661,11 @@
             "disco.projects.recording_registry",
             "disco.projects.storage",
             "hashlib",
+            "os",
             "pathlib",
+            "re",
             "shutil",
+            "tempfile",
             "uuid"
           ]
         },
@@ -3667,7 +3670,7 @@
     "reviewed_loader_sites": [
       {
         "file": "python/recording_workspace.py",
-        "file_sha256": "7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139",
+        "file_sha256": "6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -4563,7 +4566,9 @@
             "exports": [
               "recording_display_name",
               "retain_recording",
-              "managed_recording_owner"
+              "managed_recording_owner",
+              "recording_storage_receipt",
+              "verified_duplicate_storage"
             ]
           },
           {
@@ -4599,7 +4604,16 @@
               "owner",
               "candidates",
               "register_reference",
-              "dependents"
+              "dependents",
+              "LIBRARY_DIRECTORY",
+              "LIBRARY_MARKER",
+              "library_identity",
+              "library_directory",
+              "sync_directory",
+              "library_candidate",
+              "is_managed_source",
+              "recording_location",
+              "relocated_library_recording"
             ]
           },
           {
@@ -4813,7 +4827,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "1347f75f9c9a56cc8363941b53769388e6cba6f15abc221e19a4e5c1ec1303e0",
+                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
                 "contract_id": null
               }
             ]
@@ -5248,7 +5262,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "1347f75f9c9a56cc8363941b53769388e6cba6f15abc221e19a4e5c1ec1303e0",
+                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
                 "contract_id": null
               }
             ]
@@ -5281,7 +5295,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "1347f75f9c9a56cc8363941b53769388e6cba6f15abc221e19a4e5c1ec1303e0",
+                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
                 "contract_id": null
               }
             ]
@@ -5449,7 +5463,7 @@
               {
                 "module": "workspace_portability",
                 "file": "python/workspace_portability.py",
-                "file_sha256": "8df8721952059401babdd5a1e8d8d09bbb1b654f62ab79d6d1d2935b9a91d355",
+                "file_sha256": "96199fb497f626f85057591a39717b4704bfe663e592209c4e613664a37474f9",
                 "contract_id": null
               }
             ]
@@ -6023,7 +6037,7 @@
               {
                 "module": "recording_workspace",
                 "file": "python/recording_workspace.py",
-                "file_sha256": "7dbf2d4d17fb0f06f084b0fd74a9e2376899afe07cba8257eb3c8fd803e55139",
+                "file_sha256": "6f8a583c021153c373ddc90e5f68aef1be8d690ed2882cbfb43eb814cb240230",
                 "contract_id": null
               }
             ]
@@ -6046,7 +6060,7 @@
               {
                 "module": "disco.projects.storage",
                 "file": "python/disco/projects/storage.py",
-                "file_sha256": "fb5b3b47f08c934999d6c2a678f435e2f475cced24ca54e60f6b5dc2d1650767",
+                "file_sha256": "6c9436a6d322c6848e612ece1d99b8f0bdd5d3d6ef50a9a5b4ad8bb449770b3c",
                 "contract_id": "backend-projects"
               },
               {

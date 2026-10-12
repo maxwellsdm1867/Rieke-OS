@@ -1028,6 +1028,10 @@ def main():
             from disco.projects.recording_files import retain_recording
             retained = retain_recording(project_dir, source, manifest['source_sha256'])
             manifest['source_path'] = str(retained)
+            from disco.projects.recording_registry import recording_location
+            location = recording_location(project_dir, retained)
+            if location is not None:
+                manifest['recording_location'] = location
             write_json(folder / 'import-manifest.json', manifest)
             job["status"] = "importing"
             write_json(job_file, job)

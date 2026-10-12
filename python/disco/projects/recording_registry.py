@@ -13,6 +13,67 @@ import tempfile
 import uuid
 
 
+LIBRARY_DIRECTORY = 'recordings'
+LIBRARY_MARKER = '.disco-library.json'
+
+
+def library_identity(directory):
+    """Read a library's durable identity without adopting arbitrary folders."""
+    directory = Path(directory)
+    marker = directory / LIBRARY_MARKER
+    if directory.is_symlink() or marker.is_symlink():
+        raise ValueError('Managed recording library cannot contain symbolic links')
+    if not marker.exists():
+        return None
+    value = json.loads(marker.read_text())
+    if not isinstance(value, dict) or value.get('format') != 'disco-recording-library' or type(value.get('version')) is not int or value['version'] != 1:
+        raise ValueError('Unsupported managed recording library')
+    return str(uuid.UUID(value['library_uuid']))
+
+
+def library_directory(project):
+    """Create/open the shared library. Caller holds recording_lock."""
+    root = Path(project).resolve().parent / LIBRARY_DIRECTORY
+    if library_identity(root) is not None:
+        return root
+    root.mkdir(exist_ok=True)
+    if any(root.iterdir()):
+        raise ValueError('The recordings folder is not a Disco library; choose a different project parent folder')
+    marker = root / LIBRARY_MARKER
+    with marker.open('x') as handle:
+        json.dump({'format': 'disco-recording-library', 'version': 1, 'library_uuid': str(uuid.uuid4())}, handle)
+        handle.write('\n')
+        handle.flush()
+        os.fsync(handle.fileno())
+    sync_directory(root)
+    sync_directory(root.parent)
+    return root
+
+
+def sync_directory(path):
+    descriptor = os.open(path, os.O_RDONLY)
+    try:
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+
+
+def library_candidate(project, expected_sha256):
+    """Recover a published copy even if registry publication was interrupted."""
+    root = Path(project).resolve().parent / LIBRARY_DIRECTORY
+    if library_identity(root) is None:
+        return None
+    directory = root / expected_sha256
+    if directory.is_symlink():
+        raise ValueError('Managed recording directory cannot be a symbolic link')
+    if not directory.exists():
+        return None
+    files = list(directory.iterdir())
+    if len(files) != 1 or files[0].is_symlink() or not files[0].is_file():
+        raise ValueError('Managed recording directory is incomplete or changed')
+    return files[0]
+
+
 def project_identity(root):
     root = Path(root)
     path = root / 'project.json'
@@ -48,7 +109,7 @@ def read_registry(project):
     if not path.exists():
         return {'format': 'disco-managed-recordings', 'version': 1, 'recordings': {}}
     value = json.loads(path.read_text())
-    if value.get('format') != 'disco-managed-recordings' or type(value.get('version')) is not int or value.get('version') != 1 or not isinstance(value.get('recordings'), dict):
+    if not isinstance(value, dict) or value.get('format') != 'disco-managed-recordings' or type(value.get('version')) is not int or value.get('version') not in (1, 2) or not isinstance(value.get('recordings'), dict):
         raise ValueError('Unsupported managed recording registry')
     for sha, entry in value['recordings'].items():
         if (not isinstance(sha, str) or len(sha) != 64 or any(c not in '0123456789abcdef' for c in sha)
@@ -57,7 +118,15 @@ def read_registry(project):
                 or not isinstance(entry.get('consumers'), list)):
             raise ValueError('Invalid managed recording registry entry')
         try:
-            uuid.UUID(entry['owner_project_uuid'])
+            if entry.get('owner_kind', 'project') == 'library' and value['version'] == 2:
+                uuid.UUID(entry['owner_library_uuid'])
+                parts = Path(entry['path']).parts
+                if len(parts) != 3 or parts[:2] != (LIBRARY_DIRECTORY, sha):
+                    raise ValueError('Invalid managed library recording path')
+            elif entry.get('owner_kind', 'project') == 'project':
+                uuid.UUID(entry['owner_project_uuid'])
+            else:
+                raise ValueError('Invalid managed recording owner kind')
             for consumer in entry['consumers']:
                 uuid.UUID(consumer['project_uuid'])
                 name = consumer['project_directory']
@@ -69,24 +138,53 @@ def read_registry(project):
 
 
 def owner(project, source):
-    """Return a real project owner under the same workspace, or None."""
-    project, source = Path(project).resolve(), Path(source).resolve()
+    """Return a library or legacy project owner under the same workspace."""
+    project, source = Path(project).resolve(), Path(source).absolute()
     workspace = project.parent
-    if not source.is_relative_to(workspace):
-        return None
-    relative = source.relative_to(workspace)
-    if len(relative.parts) < 3 or relative.parts[1] != 'raw-uploads':
-        return None
-    root = workspace / relative.parts[0]
-    identity = project_identity(root)
-    if identity is None:
+    if not source.is_relative_to(workspace) or '..' in source.parts:
         return None
     for current in (source, *source.parents):
         if current == workspace:
             break
         if current.is_symlink():
             return None
+    relative = source.relative_to(workspace)
+    if len(relative.parts) == 3 and relative.parts[0] == LIBRARY_DIRECTORY:
+        digest = relative.parts[1]
+        if len(digest) != 64 or any(c not in '0123456789abcdef' for c in digest):
+            return None
+        root = workspace / LIBRARY_DIRECTORY
+        identity = library_identity(root)
+        if identity is not None:
+            return {'kind': 'library', 'path': str(root), 'library_uuid': identity, 'project_uuid': None}
+        return None
+    if len(relative.parts) < 3 or relative.parts[1] != 'raw-uploads':
+        return None
+    root = workspace / relative.parts[0]
+    identity = project_identity(root)
+    if identity is None:
+        return None
     return {'path': str(root), 'project_uuid': identity}
+
+
+def is_managed_source(source):
+    """Do not advise deleting another project's/library's original input."""
+    source = Path(source).resolve()
+    for directory in source.parents:
+        if directory.name == 'raw-uploads' and project_identity(directory.parent) is not None:
+            return True
+        if directory.name == LIBRARY_DIRECTORY and library_identity(directory) is not None:
+            return True
+    return False
+
+
+def recording_location(project, source):
+    """Portable identity/relative locator alongside the current absolute path."""
+    owning = owner(project, source)
+    if owning and owning.get('kind') == 'library':
+        return {'kind': 'library', 'library_uuid': owning['library_uuid'],
+                'path': str(Path(source).relative_to(Path(project).resolve().parent))}
+    return None
 
 
 def candidates(project, expected_sha256):
@@ -97,14 +195,19 @@ def candidates(project, expected_sha256):
     entry = registry['recordings'].get(expected_sha256)
     yielded = set()
     if entry:
-        path = (workspace / entry['path']).resolve()
-        if not path.is_relative_to(workspace):
+        path = workspace / entry['path']
+        if not path.resolve().is_relative_to(workspace):
             raise ValueError('Recording registry path escapes workspace')
         owning = owner(project, path)
-        if path.exists() and (owning is None or owning['project_uuid'] != entry['owner_project_uuid']):
+        key = 'library_uuid' if entry.get('owner_kind') == 'library' else 'project_uuid'
+        if path.exists() and (owning is None or owning.get(key) != entry.get('owner_' + key)):
             raise ValueError('Managed recording owner identity changed')
         yielded.add(path)
         yield path
+    published = library_candidate(project, expected_sha256)
+    if published is not None and published not in yielded:
+        yielded.add(published)
+        yield published
     # Bootstrap recordings imported before this index existed. Only immediate
     # project children and their manifest files are inspected, never raw scans.
     for child in sorted(workspace.iterdir()):
@@ -120,7 +223,7 @@ def candidates(project, expected_sha256):
                 manifest = json.loads(path.read_text())
                 if manifest.get('source_sha256') != expected_sha256:
                     continue
-                raw = Path(manifest['source_path']).resolve()
+                raw = Path(manifest['source_path']).absolute()
                 if raw in yielded or owner(project, raw) is None:
                     continue
                 yielded.add(raw)
@@ -149,9 +252,14 @@ def register_reference(project, source, expected_sha256):
     consumers = (entry or {}).get('consumers', [])
     consumer = {'project_uuid': identity, 'project_directory': project.name}
     consumers = [value for value in consumers if value != consumer] + [consumer]
+    if owning.get('kind') == 'library':
+        registry['version'] = 2
+        ownership = {'owner_kind': 'library', 'owner_library_uuid': owning['library_uuid']}
+    else:
+        ownership = {'owner_project_uuid': owning['project_uuid'],
+                     'owner_project_directory': Path(owning['path']).name}
     registry['recordings'][expected_sha256] = {
-        'path': relative, 'owner_project_uuid': owning['project_uuid'],
-        'owner_project_directory': Path(owning['path']).name, 'consumers': consumers,
+        'path': relative, **ownership, 'consumers': consumers,
     }
     path = root / '.disco-recordings.json'
     descriptor, temporary = tempfile.mkstemp(prefix='.disco-recordings-', dir=root)
@@ -210,3 +318,22 @@ def dependents(project, source):
             except (OSError, ValueError, TypeError) as error:
                 raise ValueError('Cannot verify recording references in project ' + sibling.name) from error
     return result
+
+
+def relocated_library_recording(project, manifest):
+    """Resolve the same library after a master-folder move, never by name alone."""
+    location = manifest.get('recording_location')
+    if location is None:
+        return None
+    if not isinstance(location, dict) or location.get('kind') != 'library':
+        raise ValueError('Unsupported recording location')
+    relative = Path(location.get('path', ''))
+    parts = relative.parts
+    if (relative.is_absolute() or '..' in parts or len(parts) != 3 or
+            parts[:2] != (LIBRARY_DIRECTORY, manifest['source_sha256'])):
+        raise ValueError('Invalid library recording location')
+    candidate = Path(project).resolve().parent / relative
+    owning = owner(project, candidate)
+    if owning and owning.get('library_uuid') == location.get('library_uuid'):
+        return candidate
+    return None

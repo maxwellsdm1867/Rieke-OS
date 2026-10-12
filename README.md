@@ -210,20 +210,40 @@ disco/                       Application source and managed runtime
   workspace-app/dist/           Built browser interface
 
 Your workspace/                 Separate folder you choose in the app
+  recordings/                   Managed H5 library shared by its projects
+    .disco-library.json         Library identity
+    <checksum>/<original.h5>    One verified copy of each new recording
+  .disco-recordings.json        Locations and project references
   project-name-<id>/
     project.json                Project identity
     catalog.json                Database reference (no password)
     database/mysql/             This project's native MySQL data
     database/native.json        Local private database credentials (mode 0600)
     imports/                    Parsed metadata and source references
-    raw-uploads/                Copies uploaded through the browser
+    raw-uploads/                Import inbox, staging and earlier project-owned H5s
     protocols/                  Saved protocol definitions
     exports/                    Versioned exports
     logs/                       Import and application diagnostics
 ```
 
-Path imports reference original H5 recordings; keep those files available and
-unchanged. Browser uploads copy recordings into the project. Sharing this
+**Import once, use across projects.** New H5 imports are copied into the managed
+`recordings/` library beside your project folders and verified. Importing identical
+bytes into another project under the same parent reuses the managed recording,
+even if the selected filename differs. The app keeps the H5 bytes unchanged.
+
+After a successful import, Disco confirms: **“You can delete the original copy
+outside Disco, such as the file in Downloads. Keep the managed copy.”** Wait for
+that confirmation. Disco does not delete your external originals automatically.
+Failed or unconfirmed imports never grant that confirmation. Keep the `recordings/`
+folder intact and backed up; a managed copy on the same drive is not a backup.
+
+Removing a project or its data-store registration keeps shared library H5s.
+Older imports retain their current locations and deletion protections; this update
+does not automatically move existing files. Projects in different parent folders
+have separate libraries. Use **Prepare portable copy** to share a project with
+its recordings. Moving the entire master folder together preserves the new library
+identity and relative H5 locations when each project is reopened. Moving just a
+project does not make its shared H5s portable. Sharing this
 repository shares application code, not your projects, recordings, annotations,
 or database credentials. Export the intended scientific selection separately.
 

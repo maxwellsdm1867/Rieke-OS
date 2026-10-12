@@ -6,3 +6,6 @@
 @container (max-width:360px){.import-history-summary{grid-template-columns:14px 16px minmax(0,1fr)}.import-history-summary time{grid-column:3;grid-row:3;justify-self:start}.import-history-result{grid-column:3}.import-history-expanded{padding-left:0}}
 
 .import-page>.page-heading{margin-bottom:18px}.import-page>.import-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;padding:22px 20px;margin:0 0 14px;text-align:center}.import-page>.import-zone .import-icon{margin:0 0 12px;width:44px;height:44px}.import-page>.import-zone h2{margin-bottom:8px}.import-page>.import-zone p{max-width:640px;margin:0 0 16px}.import-page>.source-form{margin-bottom:24px}
+
+.import-managed-storage{padding:10px 12px;background:var(--surface-subtle);border-radius:8px;color:var(--ink-secondary)}
+.import-managed-storage code{overflow-wrap:anywhere}

@@ -7,7 +7,7 @@ Scientific selection, acceptance, freshness and publication authority are unchan
 
 The caller freezes its package under existing locks and checks, then
 `prepare_linked_package` binds existing checksummed import metadata. Metadata must
-be in that project's imports folder; H5 must belong to a project under the same
+be in that project's imports folder; H5 must belong to the managed library or a legacy project under the same
 workspace. Downloads and disposable caches are not durable dependencies.
 
 `validate_sqlite_package` shares the existing recipe, UUID membership, fingerprint,
@@ -38,21 +38,47 @@ Automatic annotation return is not supported by this reference format.
 
 ## Managed recording contract
 
-Committed GUI and CLI imports retain H5 in a project's raw-uploads folder.
+New GUI and CLI imports with real project manifests retain H5 under
+`<project-parent>/recordings/<sha256>/<original-filename>`. One library belongs to
+that parent folder, not to a consuming project. `.disco-library.json` binds its
+UUID; an existing nonempty unmarked directory is never adopted. Legacy callers
+without project manifests retain their original project-contained copy behavior.
 Parse-only runs do not claim retention; external originals are preserved.
-Sibling projects reuse identical SHA-256 files. A workspace-local
-`.disco-recordings.json` stores relative owner paths, owner UUIDs and consumers.
-An advisory lock serializes reuse and acquisition deletion. Existing import
-manifests bootstrap lookup; both candidate and input bytes are verified. Filename
-equality is insufficient. Caller-owned redundant upload staging can be removed;
-unowned originals cannot. Separate scientific catalogs and identity checks remain.
+
+The version-2 `.disco-recordings.json` indexes relative paths, library/project owner
+identity and conservative project UUID/directory consumers. Version-1 project-owned
+entries remain readable and reusable; new library ownership upgrades the index to
+version 2 without rewriting older entries. Older app versions that only understand
+version 1 must not import into a workspace after this upgrade. An advisory lock
+serializes reuse, publication and acquisition deletion. Existing import manifests
+bootstrap legacy lookup; both candidate and input bytes are verified. Filename
+equality is insufficient. Changed bytes, wrong library identity and symlinks refuse
+reuse. Copying uses an exclusive staging file, checksum verification and fsync,
+then atomically publishes its checksum directory before recording references. A
+published copy survives registry failure and is verified/reused on retry. Unpublished
+staging from a killed process can remain; there is no automatic garbage collection.
+
+Caller-owned upload staging is removed after retention; watched inbox staging is
+removed only after confirmed import and only if legacy dependency checks allow it.
+External originals are never automatically removed. A successful import receipt
+(or a duplicate with freshly verified managed bytes) can offer deletion of the
+original **outside Disco**. Managed-source inputs, uncertain completion, missing or
+changed copies and reconciliation-required jobs do not offer that instruction.
+Historical receipts describe the verified import event, not a live backup guarantee.
 
 References are conservative: failed imports and detached projects may keep them.
-There is no automatic reference garbage collection. Deleting a data store detaches
-its catalog but retains recordings used by another project. Recovery ordering is
-preserved. Manual filesystem deletion/movement cannot be intercepted. Keep shared
-owners available; existing project transfer copies external referenced H5 into the
-portable destination. Installing this feature does not migrate existing sources.
+Deleting a data store or project never deletes central library bytes. Legacy
+project-owned deletion retains its dependency fences and recovery ordering. This
+change does not migrate existing references or add library garbage collection.
+Separate scientific catalogs and identity checks remain unchanged.
+
+New import manifests also store the library UUID and relative recording location.
+Project relocation resolves the new adjacent library only on matching identity;
+existing relocation then checks full recording/metadata hashes before updating
+current SQL/local locators. Portable transfer materializes referenced H5s inside
+the destination and clears the library locator on restore. Historical provenance
+and exported recipes are not rewritten. Arbitrary manual H5 renames/deletions
+cannot be intercepted; use the whole master folder or a prepared portable copy.
 
 ## Validation
 

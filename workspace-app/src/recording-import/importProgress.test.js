@@ -80,3 +80,20 @@ test('import review opens only for newly successful imports, not old history or 
   assert.equal(completedImportToReview(null,[next],true),'next');
   assert.equal(completedImportToReview([],[{...next,status:'complete_with_warnings',catalog_committed:true}]),'next');
 });
+
+
+test('managed-copy guidance requires a verified successful receipt and keeps managed inputs safe',async()=>{
+  const {managedRecordingMessage}=await import('./importProgress.js');
+  const job={status:'complete',catalog_committed:true,recording_storage:{kind:'managed_library',path:'/Disco/recordings/file.h5',verified:true,original_removal_safe:true}};
+  assert.match(managedRecordingMessage(job),/saved and verified/);
+  assert.match(managedRecordingMessage(job),/reuse the same H5 without another copy/);
+  assert.match(managedRecordingMessage(job),/delete the original copy outside Disco/);
+  for(const status of ['queued','validating','interrupted','failed'])assert.equal(managedRecordingMessage({...job,status}),null);
+  assert.equal(managedRecordingMessage({...job,catalog_committed:null}),null);
+  assert.equal(managedRecordingMessage({...job,requires_reconciliation:true}),null);
+  assert.equal(managedRecordingMessage({...job,recording_storage:{...job.recording_storage,verified:false}}),null);
+  assert.equal(managedRecordingMessage({status:'duplicate'}),null);
+  assert.match(managedRecordingMessage({...job,status:'duplicate',catalog_committed:false}),/delete the original copy outside Disco/);
+  assert.doesNotMatch(managedRecordingMessage({...job,recording_storage:{...job.recording_storage,original_removal_safe:false}}),/delete/);
+  assert.doesNotMatch(managedRecordingMessage({...job,recording_storage:{...job.recording_storage,kind:'managed_reference'}}),/library reuse/);
+});

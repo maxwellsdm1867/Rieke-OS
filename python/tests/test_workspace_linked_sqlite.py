@@ -155,6 +155,27 @@ class LinkedSQLiteTests(unittest.TestCase):
         self.assertLess(self.path.stat().st_size, full.stat().st_size / 2)
         self.assertEqual(self.package, before)
 
+    def test_library_recording_supports_exact_linked_export_and_trace_after_original_removed(self):
+        from disco.projects.recording_files import retain_recording
+        source = self.package['sources'][0]
+        original = Path(source['source_path'])
+        metadata_manifest = Path(source['metadata_path']).parent / 'import-manifest.json'
+        metadata_manifest.unlink()  # Model new retention, not legacy manifest reuse.
+        retained = retain_recording(self.service.project_dir, original, source['source_sha256'])
+        self.assertTrue(retained.is_relative_to(self.root / 'recordings'))
+        source['source_path'] = str(retained)
+        for record in self.package['epochs']:
+            record['source_reference']['path'] = str(retained)
+        self.service.manifests[source['source_sha256']]['source_path'] = str(retained)
+        original.unlink()
+        self.package = prepare_linked_package(self.package, self.service.manifests, self.service.project_dir)
+        self.build()
+        row = self.package['epochs'][0]
+        with LinkedExport(self.path) as export:
+            self.assertEqual(export.record(row['epoch_uuid']), row)
+            trace = export.read_trace(row['epoch_uuid'], row['streams'][0]['uuid'], start=13, count=17)
+            self.assertEqual(trace['values'], (np.arange(13, 30) / 7).tolist())
+
     def test_metadata_change_and_missing_file_fail_closed(self):
         self.build()
         path = Path(self.package['sources'][0]['metadata_path'])

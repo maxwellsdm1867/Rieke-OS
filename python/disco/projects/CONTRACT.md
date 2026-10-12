@@ -15,6 +15,13 @@ read the corresponding entry, then use its existing interface and examples.
 | Manage acquisitions | [datastores.py](datastores.py): `DataStores` separates freeze, archive and query eligibility. [datastore_deletion.py](datastore_deletion.py): `DataStoreDeletion` owns exact detachment and recoverable filesystem deletion. |
 | Migrate legacy source | [migration.py](migration.py) performs explicit source inspection/snapshot/restore into a separate owned destination. It delegates to the retained portability/native owners; it does not adopt the source database. |
 
+`recording_registry.library_directory` and `library_candidate` create/recover the
+library only while the caller holds `recording_lock`. `library_identity`, `owner`
+and `is_managed_source` distinguish library, legacy project and external paths.
+`recording_location` / `relocated_library_recording` preserve identity across master
+folder relocation. The receipt helpers in `recording_files` describe verified
+storage separately from catalog completion; duplicate receipts verify bytes anew.
+
 ## Retention and storage
 
 ### Bounded project inventory
@@ -66,13 +73,14 @@ identities; it proves cancellation does not override a scientific writer. The
 mounted `workspace-app/src/projectInventoryRecovery.test.js` exercises the actual
 App retry flow and verifies no scientific activation from an unavailable shell.
 
-Retention resolves the existing source, verifies SHA-256 even for an already-managed
-source, and otherwise copies into a fresh UUID directory under `raw-uploads` using
-exclusive output creation. Verification failure removes only that new output and
-directory before reraising; original source deletion remains the import caller's
-policy. Real project manifests enable verified reuse in this project or a sibling
-under the same workspace; see the [managed recording contract](../../../docs/architecture/linked-sqlite-managed-recordings.md#managed-recording-contract).
-Legacy callers without project manifests keep contained-copy behavior. There is no SQL
+Retention resolves the existing source and verifies SHA-256 even for an already-managed
+source. Real projects retain new bytes under the sibling `recordings/<sha256>/`
+library, independent of the first importing project. Copy, verification and fsync
+precede atomic directory publication; registry publication follows under the shared
+lock. A complete checksum directory can be recovered after failed registry publication.
+Failure removes only the unpublished staging copy. Legacy references stay in place;
+external originals are never deleted by retention. See the [managed recording contract](../../../docs/architecture/linked-sqlite-managed-recordings.md#managed-recording-contract).
+Legacy callers without project manifests keep UUID-directory contained-copy behavior under `raw-uploads`. There is no SQL
 commit, scientific validation, cancellation token or hard-death cleanup guarantee.
 Opaque byte-copy success neither proves catalog commit nor authorizes deleting an
 original. Display name uses a valid independent filename or the locator basename.
@@ -81,7 +89,7 @@ original. Display name uses a valid independent filename or the locator basename
 Storage layout keeps project and code roots disjoint. Mutable database files remain
 owned by the database provider, not exposed as ordinary browser-managed files.
 Metadata-only inventory does not read trace samples. Existing file/byte limits and
-log categories remain defined in the public module; no format or persisted path moves.
+log categories remain defined in the public module; the project layout format and existing paths stay in place. The sibling library has a separate identity marker and version-2 recording registry.
 
 ## Database, acquisition and migration authority
 

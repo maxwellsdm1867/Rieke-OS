@@ -3,7 +3,7 @@ import {Check,CopyCheck,FileWarning,LoaderCircle,ChevronRight} from 'lucide-reac
 import {time} from '../../api.js';
 import {Empty} from '../../components/Common.jsx';
 import {ImportProgressMeter} from './ImportStatusBar.jsx';
-import {IMPORT_TERMINAL,isImportPending,jobProgressView,sourceName,elapsedLabel,sourceCountsLabel} from '../importProgress.js';
+import {IMPORT_TERMINAL,isImportPending,jobProgressView,sourceName,elapsedLabel,sourceCountsLabel,managedRecordingMessage} from '../importProgress.js';
 import './ImportHistory.css';
 export {IMPORT_TERMINAL};
 
@@ -13,22 +13,24 @@ export default function ImportHistory({jobs=[],onStores,observedAt}) {
   const pending=records.some(isImportPending);
   useEffect(()=>{if(!pending)return;const timer=setInterval(()=>setNow(Date.now()),1000);return()=>clearInterval(timer);},[pending]);
   if(!records.length)return <Empty title="No import attempts yet">Each attempt records its duplicate check, validation result and completion time.</Empty>;
-  return <div className="import-history">{records.map((raw,index)=><ImportHistoryRow key={raw?.job_uuid||index} raw={raw} now={now} observedAt={observedAt} onStores={onStores}/>)}</div>;
+  return <div className="import-history">{records.map((raw,index)=><ImportHistoryRow key={raw?.job_uuid||index} raw={raw} latest={index===0} now={now} observedAt={observedAt} onStores={onStores}/>)}</div>;
 }
 
-function ImportHistoryRow({raw,now,observedAt,onStores}){
+function ImportHistoryRow({raw,latest,now,observedAt,onStores}){
     const job=raw&&typeof raw==='object'&&!Array.isArray(raw)?raw:{status:'interrupted',error:'Saved job record is malformed; inspect diagnostic details before retrying.'};
     const view=jobProgressView(job,now,observedAt || now),duplicate=job.status==='duplicate';
     const Icon=view.pending?LoaderCircle:duplicate?CopyCheck:view.failed||view.warning||view.interrupted?FileWarning:Check;
     const warnings=Array.isArray(job.duplicate_check?.same_name_warnings)?job.duplicate_check.same_name_warnings:[];
+    const managedMessage=managedRecordingMessage(job);
     const attention=view.pending||view.failed||view.interrupted||view.warning||view.requiresReconciliation||warnings.length>0||!!job.audit_write_error||!!job.warnings?.length;
-    const [open,setOpen]=useState(attention);
-    useEffect(()=>{if(attention)setOpen(true);},[attention]);
+    const [open,setOpen]=useState(attention||(latest&&!!managedMessage));
+    useEffect(()=>{if(attention||(latest&&managedMessage))setOpen(true);},[attention,latest,managedMessage]);
     return <details open={open} onToggle={event=>{if(event.target===event.currentTarget)setOpen(event.currentTarget.open);}} className={`import-history-row ${view.failed||view.interrupted?'is-failed':duplicate?'is-duplicate':''}`}>
       <summary className="import-history-summary"><ChevronRight className="import-history-chevron" size={14}/><Icon size={16} className={view.pending?'spin':''} aria-hidden="true"/><strong className="import-history-filename" title={sourceName(job)}>{sourceName(job)}</strong><span className="import-history-result">{duplicate?'Already imported · skipped':view.label}</span><time>{time(job.finished_at || job.started_at || job.created_at)}</time></summary>
       <div className="import-history-expanded">
         <div className="import-history-progress">{view.pending&&<p>{view.stage}{job.progress?.message?` · ${job.progress.message}`:''}</p>}<ImportProgressMeter count={view.count} pending={view.pending} label={`${view.stage} progress`}/>{view.elapsed!=null&&<p>{elapsedLabel(view.elapsed)} elapsed{view.stageElapsed!=null&&view.pending?` · ${elapsedLabel(view.stageElapsed)} in this stage`:''}{view.pending&&view.progressAge!=null?` · last stage/count update ${elapsedLabel(view.progressAge)} ago`:''}</p>}</div>
         {view.committed&&sourceCountsLabel(job)&&<p>Source totals: {sourceCountsLabel(job)}</p>}{duplicate&&<p>Existing catalog records and query participation were kept. No parsing or duplicate records were added.</p>}
+        {managedMessage&&<div className="import-managed-storage"><p>{managedMessage}</p><p>Managed copy: <code>{job.recording_storage.path}</code></p></div>}
         {(view.failed||view.interrupted)&&<p role="status">{typeof job.error==='string'?job.error:job.diagnostics?.message}</p>}
         {view.requiresReconciliation&&<p className="import-name-warning">{view.committed?'Catalog commit is confirmed; finalization needs reconciliation. Inspect diagnostics before retrying follow-up work.':'Catalog commit state is unconfirmed. Inspect the data stores and diagnostic record before submitting this source again.'}</p>}
         {view.committed&&!view.requiresReconciliation&&(view.interrupted||view.warning)&&<p>The catalog import committed. Follow-up work needs attention; do not assume the data was rolled back.</p>}

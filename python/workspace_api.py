@@ -1743,6 +1743,9 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             check = classify_source(source, registered_sources, reporter.emit)
             job.update(source_sha256=check['source_sha256'], source_size=check['source_size'],
                        duplicate_check={'algorithm': 'sha256', 'same_name_warnings': check['same_name_warnings']})
+            from disco.projects.recording_registry import is_managed_source
+            removable_input = (job.get('origin') != 'h5-inbox' and
+                               (bool(job.get('managed_upload')) or not is_managed_source(source)))
             if check['duplicate']:
                 duplicate = check['duplicate']
                 if duplicate.get('project_uuid') != service.project['project_uuid']:
@@ -1750,6 +1753,12 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 job.update(status='duplicate', finished_at=now(), existing_source=duplicate,
                            catalog_delta={key + '_added': 0 for key in ('sources', 'cells', 'epochs', 'responses', 'stimuli', 'protocol_types')},
                            message='Already imported. No parsing or new catalog records; registration and query participation are unchanged.')
+                from disco.projects.recording_files import verified_duplicate_storage
+                storage = verified_duplicate_storage(project_dir, duplicate['source_path'], check['source_sha256'])
+                if storage is not None:
+                    storage['original_removal_safe'] = bool(removable_input and
+                        (job.get('managed_upload') or Path(storage['path']) != source.resolve()))
+                    job['recording_storage'] = storage
                 reporter.emit('duplicate', outcome='completed', catalog_committed=False)
                 if job.get('managed_upload'):
                     upload_root = managed_directory(project_dir, 'raw-uploads')
@@ -1767,14 +1776,11 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             from disco.projects.recording_files import retain_recording
             original_source = source
             source = retain_recording(project_dir, source, check['source_sha256'])
-            from disco.projects.recording_files import managed_recording_owner
-            owner = managed_recording_owner(project_dir, source)
-            shared_recording = owner is not None and Path(owner['path']) != Path(project_dir).resolve()
-            job.update(source=str(source), retained_in_project=True,
-                recording_storage={'kind': 'managed_reference' if shared_recording else 'managed_copy', 'path': str(source),
-                    'owner_project': owner, 'shared': shared_recording,
-                    'sha256': check['source_sha256'], 'verified': True,
-                    'original_removal_safe': False})
+            from disco.projects.recording_files import recording_storage_receipt
+            storage = recording_storage_receipt(project_dir, source, check['source_sha256'])
+            job.update(source=str(source),
+                retained_in_project=source.is_relative_to(Path(project_dir).resolve()),
+                retained_in_library=storage['kind'] == 'managed_library', recording_storage=storage)
             if source != original_source:
                 job['original_source'] = str(original_source)
                 if job.get('managed_upload'):
@@ -1860,7 +1866,25 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             except Exception as query_error:
                 job['warnings'].append({'stage': 'post_import_refresh', 'message': str(query_error)})
                 app.logger.exception('Import succeeded; post-import query suggestions could not complete')
-            job['recording_storage']['original_removal_safe'] = bool(job.get('managed_upload') or job.get('original_source'))
+            if job.get('origin') == 'h5-inbox' and source != original_source:
+                # The watched inbox is staging for new library imports. Preserve
+                # any older file still referenced by a sibling project.
+                from disco.projects.datastore_deletion import managed_recording
+                from disco.projects.recording_registry import recording_lock
+                try:
+                    with recording_lock(project_dir):
+                        removable = managed_recording(project_dir, original_source)
+                        if removable is not None:
+                            staged = classify_source(removable, [])
+                            if staged['source_sha256'] != check['source_sha256']:
+                                raise ValueError('The inbox file changed after retention; it was not removed')
+                            removable.unlink()
+                            job['inbox_staging_removed'] = True
+                except (OSError, ValueError) as cleanup_error:
+                    job['warnings'].append({'stage': 'inbox_cleanup', 'message':
+                        'The managed library copy is ready, but the inbox copy was kept: ' + str(cleanup_error)})
+            job['recording_storage']['original_removal_safe'] = bool(removable_input and
+                (job.get('managed_upload') or source != original_source))
             job.update(status='complete_with_warnings' if job['warnings'] else 'complete', finished_at=now())
             reporter.emit('complete', outcome='completed', commit_state='committed', catalog_committed=True)
         except Exception as error:
