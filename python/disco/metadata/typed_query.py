@@ -86,7 +86,7 @@ class _TypedQueries:
             # building a Python list or exceeding SQLite's parameter limit.
             match_no = self._dictionary_match_no
             self._dictionary_match_no += 1
-            dictionary = ('SELECT DISTINCT v.value_id,v.value_json FROM supplied_scope s '
+            dictionary = (f'SELECT DISTINCT v.value_id,v.value_json FROM {self._scope_relation()} s '
                 'CROSS JOIN epoch_values ev ON ev.epoch_id=s.epoch_id '
                 'JOIN typed_values v ON v.value_id=ev.value_id '
                 'WHERE ev.field_no=?' if getattr(self, '_identity_scoped', False) else
@@ -153,13 +153,13 @@ class _TypedQueries:
                         sql += ' AND c.epoch_id IN (SELECT e.epoch_id FROM native.epochs e JOIN supplied_sources s ON s.source_sha=e.source_sha)'
                     continue
                 if field == 'epoch_ids':
-                    sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
+                    sql += f' AND c.epoch_id IN (SELECT epoch_id FROM {self._scope_relation()})'
                     continue
                 part, params = self.predicate_sql({'field':field,'operator':'eq','value':value})
                 sql += ' AND (' + part + ')'
                 arguments.extend(params)
         elif scope is not None:
-            sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
+            sql += f' AND c.epoch_id IN (SELECT epoch_id FROM {self._scope_relation()})'
         return sql, arguments
 
     def _scope_values(self, values):
@@ -199,16 +199,17 @@ class _TypedQueries:
         # transaction before detaching a previous immutable membership image.
         self.connection.commit()
         if self._membership is not None:
-            self.connection.execute('DROP VIEW supplied_scope')
             self.connection.execute('DETACH DATABASE membership')
             self._membership = None
-            self.connection.execute('ALTER TABLE supplied_scope_rows RENAME TO supplied_scope')
         if membership is not None:
-            self.connection.execute('ALTER TABLE supplied_scope RENAME TO supplied_scope_rows')
             self.connection.execute('ATTACH DATABASE ? AS membership',
                                     [membership.path.as_uri() + '?mode=ro&immutable=1'])
-            self.connection.execute('CREATE TEMP VIEW supplied_scope AS SELECT epoch_id FROM membership.members')
             self._membership = membership
+
+    def _scope_relation(self):
+        # These are trusted constant names, never caller SQL. Refer directly to
+        # the primary-key table: a VIEW alias makes SQLite build a fresh IN-list.
+        return 'membership.members' if getattr(self, '_membership', None) is not None else 'supplied_scope'
 
 
     def membership(self, predicate=None, scope=None):

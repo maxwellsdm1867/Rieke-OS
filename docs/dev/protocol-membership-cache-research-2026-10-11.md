@@ -79,3 +79,11 @@ never replaced, and reference lifetime protects active readers. It intentionally
 does not claim restart reuse. Cache eviction rebuilds on later access and never
 limits membership size. Existing generation fences still decide whether results
 may be returned.
+
+### Planner verification
+
+A tiny EXPLAIN check found that a temporary VIEW alias produces LIST SUBQUERY
+and SCAN membership.members. The implementation now refers directly to the
+trusted constant relation membership.members, retaining SQLite's primary-key
+IN-operator optimization. Regression tests and the cache benchmark verify this
+plan property; legitimate sorting/aggregation remains query work over members.

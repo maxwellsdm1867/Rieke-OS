@@ -52,6 +52,10 @@ class TypedIndexTests(unittest.TestCase):
         handle = cache.get({'revision': 'one'}, ['source'], factory)
         self.assertIs(cache.get({'revision': 'one'}, ['source'], factory), handle)
         factory.assert_called_once()
+        with TypedMetadataIndex.open_verified(self.index) as reader:
+            plan = reader.explain(scope={'epoch_ids': handle, 'sources': ['source']})
+            self.assertTrue(any('IN-OPERATOR' in row[3] for row in plan), plan)
+            self.assertFalse(any('LIST SUBQUERY' in row[3] for row in plan), plan)
         for predicate in ({'all': []}, {'field': 'parameters/wide', 'operator': 'gt', 'value': 3},
                           {'field': 'parameters/a~1b~0', 'operator': 'contains', 'value': 1}):
             expected = self.index.preview(predicate, {'epoch_ids': ids, 'sources': ['source']},

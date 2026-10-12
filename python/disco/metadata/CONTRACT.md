@@ -73,7 +73,8 @@ bindings instead reuse an immutable, session-private SQLite membership file via
 project/protocol/revision/version and exact source eligibility. Only the canonical
 header/recipe provider receives this shortcut; unbound/custom policies fall back.
 Warm readers attach the verified file read-only without recipe hydration, UUID
-iteration or membership insertion. Existing opening/closing response fences
+iteration or membership insertion. SQL references the indexed table directly; a
+view alias would force SQLite to reconstruct an IN-list. Existing opening/closing response fences
 retain authority. Filters and annotations do not change base membership.
 
 Construction is serialized and publishes only a fully committed file; exceptions

@@ -43,22 +43,34 @@ def run():
                     def forbidden():
                         receipt['warm_recipe_reads'] += 1
                         raise AssertionError('Warm cache hydrated membership')
-                    for mode in ('rebuild', 'reuse'):
-                        samples = []
-                        for _ in range(7):
-                            start = time.perf_counter()
-                            scope = cache.get(authority, ['source'], forbidden) if mode == 'reuse' else iter(ids)
-                            with TypedMetadataIndex.open_verified(owner) as reader:
-                                result = reader.summaries(scope={'epoch_ids': scope, 'sources': ['source']},
-                                    facet_fields=['parameters/frequencyCutoff'])
-                            samples.append((time.perf_counter()-start)*1000)
-                            assert result['count'] == size
-                            assert result['facets']['parameters/frequencyCutoff'] == {
-                                'values': [{'value': 100, 'type': 'number', 'count': size//2},
-                                           {'value': 200, 'type': 'number', 'count': size//2}],
-                                'present_count': size, 'missing_count': 0, 'values_truncated': False}
-                        receipt['operations'][f'{mode}_{size}'] = {'median_ms': statistics.median(samples),
-                                                                  'milliseconds': samples, 'correct': True}
+                    for operation in ('page', 'summary'):
+                        for mode in ('rebuild', 'reuse'):
+                            samples = []
+                            for _ in range(7):
+                                start = time.perf_counter()
+                                scope = cache.get(authority, ['source'], forbidden) if mode == 'reuse' else iter(ids)
+                                with TypedMetadataIndex.open_verified(owner) as reader:
+                                    if operation == 'page':
+                                        result = reader.page(scope={'epoch_ids': scope, 'sources': ['source']})
+                                    else:
+                                        result = reader.summaries(scope={'epoch_ids': scope, 'sources': ['source']},
+                                            facet_fields=['parameters/frequencyCutoff'])
+                                samples.append((time.perf_counter()-start)*1000)
+                                if operation == 'page':
+                                    assert [r['epoch_uuid'] for r in result['rows']] == sorted(ids)[:60]
+                                else:
+                                    assert result['count'] == size
+                                    assert result['facets']['parameters/frequencyCutoff'] == {
+                                        'values': [{'value': 100, 'type': 'number', 'count': size//2},
+                                                   {'value': 200, 'type': 'number', 'count': size//2}],
+                                        'present_count': size, 'missing_count': 0, 'values_truncated': False}
+                            receipt['operations'][f'{mode}_{operation}_{size}'] = {'median_ms': statistics.median(samples),
+                                                                                'milliseconds': samples, 'correct': True}
+                    with TypedMetadataIndex.open_verified(owner) as reader:
+                        plan = reader.explain(scope={'epoch_ids': handle, 'sources': ['source']})
+                        assert any('IN-OPERATOR' in row[3] for row in plan), plan
+                        assert not any('LIST SUBQUERY' in row[3] for row in plan), plan
+                        receipt.setdefault('cached_plans', {})[str(size)] = plan
                     assert handle.path.exists()
         finally:
             native.close()

@@ -4698,11 +4698,11 @@
     "reviewed_use_sites": [
       {
         "file": "python/disco/metadata/tests/test_workspace_typed_index.py",
-        "file_sha256": "64656d4d63810beaa763163a1d9e3d483f675336b0aaf1982390883e0a630baf",
+        "file_sha256": "4555813e0410381838df55f730b1334e85831223f062b0f0cc04bcaefa4301b3",
         "reason": "Inject a forbidden rehash to prove verified-open reuses the donor seal while retaining changed/closed donor refusal.",
         "sites": [
           {
-            "selector": "Call:214",
+            "selector": "Call:220",
             "ast_sha256": "22b5abb6605f33f13e7420419bc0d683fada41a08b35432c493cec2d467d2a4c",
             "category": "test-mock-target",
             "origins": [
@@ -4725,7 +4725,7 @@
               {
                 "module": "disco.metadata.typed_query",
                 "file": "python/disco/metadata/typed_query.py",
-                "file_sha256": "a4cbcf5d90561c958e3606d42f2cb04f4fd85ca1ba0c1b6cc791ce48eeb34a65",
+                "file_sha256": "cda599dcd193579ee09a27a841c0355077a6c520db833ef9829ab22a3e7813d4",
                 "contract_id": "backend-metadata"
               }
             ]
