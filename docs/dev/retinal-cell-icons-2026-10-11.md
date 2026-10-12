@@ -97,7 +97,9 @@ soma size (6 × 5.6 viewBox units) and another 20% enlargement of the parasol so
 in each dimension, to 10.656 × 8.64. Bipolar soma size remains 4.6 × 5. These
 are identification schematics, not a common anatomical scale; the parasol size
 contrast is deliberately exaggerated. The midget's narrow tuft supplies an
-additional shape distinction without shrinking its original soma.
+additional shape distinction without shrinking its original soma. The ON parasol
+arbor is raised by two viewBox units to preserve a visible single dendritic stalk
+above the enlarged soma; it still lies closer to the soma than the OFF arbor.
 
 - [Dacey (1993), Table 1](https://cpb-us-e1.wpmucdn.com/sites.uw.edu/dist/6/8438/files/2020/09/dacey1993.pdf)
 - [Patterson et al. (2019), Figure 3F](https://pubmed.ncbi.nlm.nih.gov/31417169/)
@@ -125,7 +127,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `22c5d0f`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `7446e80`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
