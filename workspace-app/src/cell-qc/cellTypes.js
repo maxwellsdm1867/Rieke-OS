@@ -26,7 +26,9 @@ export function cellTypePresentation(type) {
   const bipolar=['bipolar','bc'].includes(prefix) && /^(on|off)$/.test(bipolarKey)?`${bipolarKey}-bipolar`:bipolarKey;
   if(/^(on|off)-bipolar$/.test(bipolar) && (!prefix || prefix==='bipolar' || prefix==='bc'))
     return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar.split('-')[0]})`};
-  if((bipolar==='bipolar' && !prefix))return {shape:'bipolar',color:'var(--ink-muted)'};
+  if((!prefix && /^(bipolar|generic-bipolar|untyped-bipolar|unspecified-bipolar|unspecified-type-bipolar)$/.test(bipolar)) ||
+    (['bipolar','bc'].includes(prefix) && /^(unknown|unclassified|unspecified|unspecified-type|untyped)$/.test(key)))
+    return {shape:'bipolar',color:'var(--ink-muted)'};
   if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--cell-outer)'};
   const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
   if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
