@@ -58,8 +58,8 @@ test('complete recorded taxonomy retains family context, exact subtype and neutr
   const cases=[
     ['RGC/ON-parasol','ganglion',undefined,'on','cell-on'],['RGC/OFF-parasol','ganglion',undefined,'off','cell-off'],
     ['RGC/ON-midget','midget',undefined,'on','cell-on'],['RGC/OFF-midget','midget',undefined,'off','cell-off'],
-    ['RGC/small bistratified','bistratified',undefined,undefined,'ink-muted'],
-    ['amacrine/AII','amacrine','aii',undefined,'ink-muted'],['amacrine/A17','amacrine','a17',undefined,'ink-muted'],['amacrine/starburst','amacrine','starburst',undefined,'ink-muted'],
+    ['RGC/small bistratified','bistratified',undefined,undefined,'cell-bistratified'],
+    ['amacrine/AII','amacrine','aii',undefined,'cell-amacrine'],['amacrine/A17','amacrine','a17',undefined,'cell-amacrine'],['amacrine/starburst','amacrine','starburst',undefined,'cell-amacrine'],
     ['bipolar/OFF-diffuse','bipolar','diffuse','off','cell-off'],['bipolar/OFF-midget','bipolar','midget','off','cell-off'],
     ['bipolar/ON-diffuse','bipolar','diffuse','on','cell-on'],['bipolar/ON-midget','bipolar','midget','on','cell-on'],['bipolar/rod','bipolar','rod','on','cell-on'],
     ['horizontal','horizontal',undefined,undefined,'cell-outer'],

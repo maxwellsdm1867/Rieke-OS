@@ -17,8 +17,8 @@ test('recorded types select consistent icons across overview, cell list, selecti
     const {default:Selection}=await server.ssrLoadModule('/src/protocol-overview/ui/SelectionOverview.jsx');
     const {default:Incoming}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingCellTypes.jsx');
     const examples=[
-      ['RGC/ON-parasol','cell-on'],['RGC/OFF-parasol','cell-off'],['RGC/ON-midget','cell-on'],['RGC/OFF-midget','cell-off'],['RGC/small bistratified','ink-muted'],
-      ['amacrine/AII','ink-muted'],['amacrine/A17','ink-muted'],['amacrine/starburst','ink-muted'],
+      ['RGC/ON-parasol','cell-on'],['RGC/OFF-parasol','cell-off'],['RGC/ON-midget','cell-on'],['RGC/OFF-midget','cell-off'],['RGC/small bistratified','cell-bistratified'],
+      ['amacrine/AII','cell-amacrine'],['amacrine/A17','cell-amacrine'],['amacrine/starburst','cell-amacrine'],
       ['bipolar/OFF-diffuse','cell-off'],['bipolar/OFF-midget','cell-off'],['bipolar/ON-diffuse','cell-on'],['bipolar/ON-midget','cell-on'],['bipolar/rod','cell-on'],
       ['horizontal','cell-outer'],['photoreceptor/S cone','cell-cone-s'],['photoreceptor/M cone','cell-cone-m'],['photoreceptor/L cone','cell-cone-l'],['photoreceptor/rod','cell-outer'],['unknown','ink-muted'],
       ['ON bipolar','cell-on'],['OFF bipolar','cell-off'],['Cones','ink-muted'],['Unspecified-type bipolar','ink-muted'],['Generic amacrine','ink-muted'],

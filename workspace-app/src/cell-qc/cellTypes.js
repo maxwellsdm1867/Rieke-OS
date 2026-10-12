@@ -23,7 +23,7 @@ const polarized=(shape,polarity,variant)=>({shape,polarity,color:`var(--cell-${p
 function ganglionPresentation(key) {
   const match=/^(on|off)-(midget|parasol)$/.exec(key);
   if(match)return polarized(match[2]==='midget'?'midget':'ganglion',match[1]);
-  if(key==='small-bistratified')return neutral('bistratified');
+  if(key==='small-bistratified')return {shape:'bistratified',color:'var(--cell-bistratified)'};
   return null;
 }
 function bipolarPresentation(key,qualified=false) {
@@ -40,7 +40,7 @@ function bipolarPresentation(key,qualified=false) {
 }
 function amacrinePresentation(key) {
   const subtype=key.replace(/-amacrine$/,'');
-  if(['aii','a17','starburst'].includes(subtype))return {...neutral('amacrine'),variant:subtype};
+  if(['aii','a17','starburst'].includes(subtype))return {shape:'amacrine',color:'var(--cell-amacrine)',variant:subtype};
   if(/^(amacrine|generic-amacrine|untyped-amacrine|unspecified-amacrine|unspecified-type-amacrine|ac)$/.test(key))return neutral('amacrine');
   return null;
 }

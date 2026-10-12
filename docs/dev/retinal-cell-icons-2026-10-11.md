@@ -25,10 +25,10 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | --- | --- | --- |
 | RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma and broad, fuller arbor |
 | RGC / ON-midget, OFF-midget | shared ON / OFF | original soma size, smaller than parasol; narrow tuft |
-| RGC / small bistratified | neutral | smaller upper tier and broader lower tier |
-| amacrine / AII | neutral | upper lobules and lower fine arbor |
-| amacrine / A17 | neutral | long, sparse processes with varicosities |
-| amacrine / starburst | neutral | broad, shallow arbor shown from the side |
+| RGC / small bistratified | blue | smaller upper tier and broader lower tier |
+| amacrine / AII | yellow/gold | upper lobules and lower fine arbor |
+| amacrine / A17 | yellow/gold | long, sparse processes with varicosities |
+| amacrine / starburst | yellow/gold | broad, shallow arbor shown from the side |
 | bipolar / ON-diffuse, OFF-diffuse | shared ON / OFF | wider dendritic and terminal fields |
 | bipolar / ON-midget, OFF-midget | shared ON / OFF | compact tuft and terminal field |
 | bipolar / rod | ON teal | dendritic tuft and a compact deep terminal arbor with rounded tips |
@@ -37,9 +37,9 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | photoreceptor / rod | outer-retina blue | cylindrical outer segment |
 | unknown | neutral | generic neuron |
 
-Rod bipolar is a recognized ON type, not a rod photoreceptor. Small bistratified
-and the amacrine subtypes remain neutral rather than acquiring a single inferred
-ON/OFF assignment. Cone colors encode the recorded S/M/L category as a UI
+Rod bipolar is a recognized ON type, not a rod photoreceptor. Small bistratified uses blue and identified amacrine
+subtypes use yellow/gold, distinguishing them from unspecified neutral-gray types.
+These category colors do not assign a single inferred ON/OFF polarity. Cone colors encode the recorded S/M/L category as a UI
 convention, not literal cell appearance. Unspecified cones are neutral, so they
 do not look identical to S cones. The established generic ON/OFF bipolar icons
 remain available when polarity is recorded but the subtype is not.
@@ -51,8 +51,10 @@ promotes a tentative subtype to a confirmed subtype. Bare family labels and
 common unspecified-family aliases are also supported.
 
 The color palette is shared by class: `--cell-on`, `--cell-off`, and
-`--cell-outer`, plus the three `--cell-cone-s/m/l` roles. Dark mode uses lighter
-versions; neutral icons use the theme's muted ink. Palette literals live only in
+`--cell-outer`, `--cell-amacrine`, `--cell-bistratified`, and the three `--cell-cone-s/m/l` roles. Dark mode uses lighter
+versions (warm yellow and light blue); Light and Fred use deeper gold and blue
+for contrast. On the normal/subtle surfaces the new gold/blue roles measure at
+least 4.0:1 contrast in Light/Fred and 7.0:1 in Dark; neutral icons use the theme's muted ink. Palette literals live only in
 `themes.css`. Morphology, depth, field size, branch count, and varicosity count
 are schematic, not measurements or a morphology classifier. Icons use side-view schematics. Starburst uses a broad, shallow arbor instead
 of a radial snowflake; this shorthand does not show its full en-face geometry.
@@ -127,7 +129,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `7446e80`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `19a87c1`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
