@@ -9,9 +9,10 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
   return <svg {...shared}>
     {shape==='bipolar'?<>
       <path d="M11.8 6c-.1-1.5-1.5-2.3-3-2.7S7.2 2.1 7 1.5M8.8 3.3l-2 .3M11.8 6c.9-1.5 2.3-1.9 3.3-2.2s1.1-1.3 1.6-1.8M13.6 4.5l-.3-2M15.1 3.8l2 .3"/>
-      <ellipse cx="11.8" cy="8.5" rx="2.3" ry="2.5"/>
-      <circle cx="11.8" cy="8.5" r=".65" fill="currentColor" stroke="none"/>
-      <path d={polarity==='off'?"M11.8 11c.8 1.8-.5 3.3.2 5":"M11.8 11c.8 3-.5 6.3.2 9"}/>
+      <path d="M11.8 6c.15.7-.15 1.3 0 2"/>
+      <ellipse cx="11.8" cy="10.5" rx="2.3" ry="2.5"/>
+      <circle cx="11.8" cy="10.5" r=".65" fill="currentColor" stroke="none"/>
+      <path d={polarity==='off'?"M11.8 13c.6 1-.4 2 .2 3":"M11.8 13c.8 2-.5 4.8.2 7"}/>
       <g transform={`translate(0 ${polarity==='off'?-4:0})`}>
         <path d="M12 20c-1.4.5-2.3 1.2-4.5 1M10 20.9l-.2 1.6M12 20c1.1.6 2.4.7 4.5.2M14.6 20.5l.7 1.5"/>
       </g>
