@@ -105,7 +105,11 @@ class TypedIndexTests(unittest.TestCase):
             self.assertEqual(outcomes[0], outcomes[1], case)
             if outcomes[0][0] != 'ok':
                 continue
-            for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'}, {'protocol':'VariableHistoryNoiseCurInject'}):
+            for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'},
+                    {'protocol':'VariableHistoryNoiseCurInject'},
+                    {'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-8','epoch-9','epoch-17']},
+                    {'sources':['source'], 'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-8','epoch-9','epoch-17']},
+                    {'epoch_ids':[]}):
                 with self.subTest(case=case, scope=scope):
                     expected = self.truth(case, scope)
                     self.assertEqual(list(self.index.iter_membership(case, scope)), [r['epoch_uuid'] for r in expected])
@@ -137,7 +141,10 @@ class TypedIndexTests(unittest.TestCase):
 
     def test_requested_facets_equal_independent_full_results_without_row_decoding(self):
         fields = list(self.index.fields)
-        for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'}):
+        for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'},
+                      {'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-9']},
+                      {'sources':['source'], 'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-9']},
+                      {'epoch_ids':[]}):
             rows = self.truth(scope=scope)
             full = self.index.summaries(scope=scope, facet_fields=fields)
             for field in fields:
@@ -156,6 +163,42 @@ class TypedIndexTests(unittest.TestCase):
         self.assertEqual(result['rows'], expected[:3])
         self.assertEqual(result['facets']['parameters/sometimes'], self.expected_facet('parameters/sometimes', expected))
         self.assertEqual(self.index.count(scope={'sources':[]}), 0)
+
+    def test_explicit_membership_and_sources_do_not_need_a_structural_parent(self):
+        ids = ['epoch-1','epoch-2','epoch-2','foreign','epoch-3','epoch-10']
+        for sources in (['source'], ['other'], [], ['missing']):
+            expected = self.truth(scope={'sources':sources, 'epoch_ids':ids})
+            # Both key orders and one-shot iterators must keep conjunction,
+            # duplicate/unknown handling and chronological pagination exact.
+            for reverse in (False, True):
+                pairs = [('sources', iter(sources)), ('epoch_ids', iter(ids))]
+                scoped = dict(reversed(pairs) if reverse else pairs)
+                result = self.index.preview(scope=scoped, facet_fields=['parameters/sometimes'], limit=3)
+                self.assertEqual(result['rows'], expected[:3])
+                self.assertEqual(result['count'], len(expected))
+                self.assertEqual(result['facets']['parameters/sometimes'],
+                                 self.expected_facet('parameters/sometimes', expected))
+        self.assertEqual(self.index.membership(scope=iter(ids)),
+                         [row['epoch_uuid'] for row in self.order if row['epoch_uuid'] in ids])
+
+    def test_dictionary_fallback_evaluates_only_values_reachable_from_explicit_members(self):
+        ids = ['epoch-1','epoch-2','epoch-9']
+        for predicate in ({'field':'parameters/wide','operator':'gt','value':3},
+                          {'field':'parameters/a~1b~0','operator':'contains','value':1}):
+            expected = self.truth(predicate, {'epoch_ids':ids})
+            original = predicates.matches
+            visited = []
+            def observe(node, values):
+                visited.append(values)
+                return original(node, values)
+            with patch.object(predicates, 'matches', side_effect=observe):
+                actual = self.index.membership(predicate, scope=iter(ids))
+            self.assertEqual(actual, [row['epoch_uuid'] for row in expected])
+            self.assertLessEqual(len(visited), len(ids))
+            visited.clear()
+            with patch.object(predicates, 'matches', side_effect=observe):
+                self.assertEqual(self.index.membership(predicate, scope=[]), [])
+            self.assertEqual(visited, [])
 
     def test_native_detail_decoder_and_source_bytes_preserved(self):
         for row in self.order:

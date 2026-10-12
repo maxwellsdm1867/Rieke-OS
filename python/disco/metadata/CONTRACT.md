@@ -55,6 +55,25 @@ close is idempotent. Native index reading has no generic cancellation token.
 Query orchestration preserves generation, source eligibility, binding, publication
 and annotation fences; disposable metadata cannot stand in for those proofs.
 
+## Explicit membership query work
+
+Explicit UUID scopes are admitted through the native UUID index before predicate
+compilation. When sources are supplied, source eligibility is applied during
+that point lookup; no project-wide source-member relation is materialized first.
+One-shot UUID/source iterables are consumed once, duplicate/unknown UUID handling
+is unchanged, and empty sources or membership still mean an empty intersection.
+
+Explicit scopes use the existing correlated epoch/field predicate and facet
+paths. Contains and wide-number comparisons enumerate distinct dictionary values
+reachable from admitted members, retaining the exact native predicate evaluator.
+Global discovery retains its existing dictionary/source strategy. Temporary scope
+tables remain connection-owned and are rebuilt per query; this change does not
+introduce a persistent membership authority or reuse a stale iterator. File,
+generation, cancellation and caller publication checks remain in force.
+
+The typed-index truth-table/facet tests now include explicit scopes, source
+intersections and empty cohorts; dictionary tests count evaluated values.
+
 ## Lifetime and source witnesses
 
 Projection, native and typed generations keep their existing independent witness

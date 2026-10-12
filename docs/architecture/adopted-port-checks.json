@@ -4692,11 +4692,11 @@
     "reviewed_use_sites": [
       {
         "file": "python/disco/metadata/tests/test_workspace_typed_index.py",
-        "file_sha256": "27b2d4f861f6bf93508784bf5c7a33eeb354dc182f9b508b938412d67169a624",
+        "file_sha256": "bc4727a1a8d1a2e6f378cbf45a7c94205fdeeaebf76692e1edc64af2d97ee205",
         "reason": "Inject a forbidden rehash to prove verified-open reuses the donor seal while retaining changed/closed donor refusal.",
         "sites": [
           {
-            "selector": "Call:125",
+            "selector": "Call:154",
             "ast_sha256": "22b5abb6605f33f13e7420419bc0d683fada41a08b35432c493cec2d467d2a4c",
             "category": "test-mock-target",
             "origins": [
@@ -4713,13 +4713,13 @@
               {
                 "module": "disco.metadata.typed_index",
                 "file": "python/disco/metadata/typed_index.py",
-                "file_sha256": "a526fee7012ae034e96b8163dfbbc9d1d43e3c460936590f000278e37b3bf892",
+                "file_sha256": "e7b21b45e0e4767f609f03f0849d8b4f7a08f1cb2c786e62fb83814b8e046527",
                 "contract_id": "backend-metadata"
               },
               {
                 "module": "disco.metadata.typed_query",
                 "file": "python/disco/metadata/typed_query.py",
-                "file_sha256": "5873851d5082e33137654eeb62163065a54cffdf66ea7adc554dbed6bf3a1298",
+                "file_sha256": "a93509ed6da4a8015f0ab2a7243f5d09b5bb7b44ba16177da401c42786a2ed8f",
                 "contract_id": "backend-metadata"
               }
             ]
@@ -4728,8 +4728,8 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "320c65af90e7422362e107a81ecd6791a371a9c7ef7461ecec89a7759040bfcf",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "file_sha256": "7adbde585c08bc4f80ccb98e2ac349101bb658855f7aed3ebcfc600cb490b054",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped.",
         "sites": [
           {
             "selector": "Call:2",
@@ -4938,7 +4938,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "320c65af90e7422362e107a81ecd6791a371a9c7ef7461ecec89a7759040bfcf",
+                "file_sha256": "7adbde585c08bc4f80ccb98e2ac349101bb658855f7aed3ebcfc600cb490b054",
                 "contract_id": "backend-navigation"
               }
             ]

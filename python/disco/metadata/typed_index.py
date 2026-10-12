@@ -493,14 +493,14 @@ class TypedMetadataIndex(_TypedQueries):
         """Exact count and requested facets without decoding row/detail DTOs."""
         self._validate_facets(facet_fields)
         where, arguments = self._where(predicate, scope)
-        selective = isinstance(scope, dict) and bool(set(scope)&{'cell','block','group'})
+        selective = scope is not None and (not isinstance(scope, dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         return self._summaries(where, arguments, facet_fields, selective)
 
     @_guard
     def preview(self, predicate=None, scope=None, facet_fields=(), limit=60, cursor=None):
         self._validate_facets(facet_fields)
         where, arguments = self._where(predicate, scope)
-        selective = isinstance(scope, dict) and bool(set(scope)&{'cell','block','group'})
+        selective = scope is not None and (not isinstance(scope, dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         result = self._summaries(where, arguments, facet_fields, selective)
         return {**result, **self._page(where, arguments, cursor, limit)}
 
@@ -528,7 +528,7 @@ class TypedMetadataIndex(_TypedQueries):
     def _where(self,predicate=None,scope=None):
         self._check()
         previous=getattr(self,'_structurally_scoped',False)
-        self._structurally_scoped=isinstance(scope,dict) and bool(set(scope)&{'cell','block','group'})
+        self._structurally_scoped=scope is not None and (not isinstance(scope,dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         try:
             return super()._where(predicate,scope)
         finally:

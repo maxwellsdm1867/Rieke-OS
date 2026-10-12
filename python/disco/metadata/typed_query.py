@@ -86,11 +86,17 @@ class _TypedQueries:
             # building a Python list or exceeding SQLite's parameter limit.
             match_no = self._dictionary_match_no
             self._dictionary_match_no += 1
-            rows = ((match_no, value_id) for value_id, raw in self.connection.execute(
-                'SELECT value_id,value_json FROM typed_values WHERE field_no=?', [number])
+            dictionary = ('SELECT DISTINCT v.value_id,v.value_json FROM supplied_scope s '
+                'CROSS JOIN epoch_values ev ON ev.epoch_id=s.epoch_id '
+                'JOIN typed_values v ON v.value_id=ev.value_id '
+                'WHERE ev.field_no=?' if getattr(self, '_identity_scoped', False) else
+                'SELECT value_id,value_json FROM typed_values WHERE field_no=?')
+            rows = ((match_no, value_id) for value_id, raw in self.connection.execute(dictionary, [number])
                 if predicates.matches(node, {field: json.loads(raw)}))
             self.connection.executemany('INSERT INTO dictionary_matches VALUES (?,?)', rows)
-            selector = 'v.value_id IN (SELECT value_id FROM dictionary_matches WHERE match_no=?)'
+            selector = ('EXISTS (SELECT 1 FROM dictionary_matches dm WHERE dm.match_no=? '
+                        'AND dm.value_id=v.value_id)' if getattr(self, '_identity_scoped', False) else
+                        'v.value_id IN (SELECT value_id FROM dictionary_matches WHERE match_no=?)')
             arguments.append(match_no)
         return ('c.epoch_id IN (SELECT ev.epoch_id FROM typed_values v JOIN epoch_values ev '
                 'ON ev.field_no=v.field_no AND ev.value_id=v.value_id WHERE v.field_no=? AND (' + selector + '))'), arguments
@@ -114,27 +120,37 @@ class _TypedQueries:
     def _where(self, predicate=None, scope=None):
         self.connection.execute('DELETE FROM dictionary_matches')
         self._dictionary_match_no = 0
-        sql, arguments = self.predicate_sql(predicate)
+        explicit = scope is not None and (not isinstance(scope, dict) or 'epoch_ids' in scope)
+        sources = isinstance(scope, dict) and 'sources' in scope
+        if sources:
+            self.connection.execute('DELETE FROM supplied_sources')
+            self.connection.executemany('INSERT OR IGNORE INTO supplied_sources VALUES (?)',
+                                        self._scope_values(scope['sources']))
+        if explicit:
+            self._supply_identities(scope['epoch_ids'] if isinstance(scope, dict) else scope,
+                                    restrict_sources=sources)
+        previous = getattr(self, '_identity_scoped', False)
+        self._identity_scoped = explicit
+        try:
+            sql, arguments = self.predicate_sql(predicate)
+        finally:
+            self._identity_scoped = previous
         if isinstance(scope, dict):
             allowed = {'protocol','cell','block','group','sources','epoch_ids'}
             if set(scope) - allowed:
                 raise ValueError('Unknown direct scope field')
             for field, value in scope.items():
                 if field == 'sources':
-                    self.connection.execute('DELETE FROM supplied_sources')
-                    self.connection.executemany('INSERT OR IGNORE INTO supplied_sources VALUES (?)',
-                                                self._scope_values(value))
-                    sql += ' AND c.epoch_id IN (SELECT e.epoch_id FROM native.epochs e JOIN supplied_sources s ON s.source_sha=e.source_sha)'
+                    if not explicit:
+                        sql += ' AND c.epoch_id IN (SELECT e.epoch_id FROM native.epochs e JOIN supplied_sources s ON s.source_sha=e.source_sha)'
                     continue
                 if field == 'epoch_ids':
-                    self._supply_identities(value)
                     sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
                     continue
                 part, params = self.predicate_sql({'field':field,'operator':'eq','value':value})
                 sql += ' AND (' + part + ')'
                 arguments.extend(params)
         elif scope is not None:
-            self._supply_identities(scope)
             sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
         return sql, arguments
 
@@ -152,10 +168,14 @@ class _TypedQueries:
                 raise ValueError('Scope identities must be strings')
             yield (value,)
 
-    def _supply_identities(self, identities):
+    def _supply_identities(self, identities, *, restrict_sources=False):
         self.connection.execute('DELETE FROM supplied_scope')
+        # Resolve only supplied UUIDs through the native unique index. Source
+        # eligibility is conjunctive here, without enumerating every source
+        # epoch to build a second project-sized IN relation on each query.
+        source_filter = ' AND source_sha IN (SELECT source_sha FROM supplied_sources)' if restrict_sources else ''
         self.connection.executemany(
-            'INSERT OR IGNORE INTO supplied_scope SELECT epoch_id FROM epochs WHERE epoch_uuid=?',
+            'INSERT OR IGNORE INTO supplied_scope SELECT epoch_id FROM epochs WHERE epoch_uuid=?'+source_filter,
             self._scope_values(identities))
 
 

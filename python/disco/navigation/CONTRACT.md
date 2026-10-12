@@ -88,6 +88,27 @@ projection; annotation-scope and joint/component fields remain excluded. This
 adds no renderer cache permission: metadata parent bodies still fail the existing
 reusableTreeBody admission policy and use fresh bundles even with retained geometry.
 
+## Protocol-local navigation dependencies
+
+An eligible protocol tree caches dependency fingerprints only for its complete
+effective membership, including members hidden by ordinary filters. A warm hit
+checks that cohort and one immutable binding header; it does not enumerate or
+copy project-wide fingerprints. Cold scopes obtain the native frozen recipe.
+Unbound membership order is still compared explicitly, member metadata changes
+invalidate the projection, and custom readers retain their existing fallback.
+The grouping reservation is proportional to scoped rows, bounded by the existing
+cap. All retained dependency fingerprints count against the same cache budget.
+
+Source discovery retains its project-wide witness. Switching between protocol
+and source-discovery cache modes releases the previous mode's witness. Published
+index/row generations still invalidate all projections; signature checks and
+response-end authority fences are unchanged. This is O(membership) freshness,
+not an unmaintained constant-time revision promise. No metadata, recipe, tags,
+selection order or mutation preconditions change.
+
+The protocol-isolation, hidden-member filter, immutable-binding and file-change
+cases are in `python/tests/test_workspace_tree_navigation_cache.py`.
+
 ## Exact persisted query literals
 
 Saved preset predicates, version recipes and last-run results use the narrowly
