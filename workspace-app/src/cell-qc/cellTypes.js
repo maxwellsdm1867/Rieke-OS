@@ -30,6 +30,9 @@ export function cellTypePresentation(type) {
     (['bipolar','bc'].includes(prefix) && /^(unknown|unclassified|unspecified|unspecified-type|untyped)$/.test(key)))
     return {shape:'bipolar',color:'var(--ink-muted)'};
   if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--cell-outer)'};
+  if((!prefix && /^(amacrine(-cells?)?|generic-amacrine|unspecified-amacrine|unspecified-type-amacrine|ac)$/.test(key)) ||
+    (['amacrine','ac'].includes(prefix) && /^(unknown|unclassified|unspecified|unspecified-type|untyped)$/.test(key)))
+    return {shape:'amacrine',color:'var(--ink-muted)'};
   const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
   if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
     return {shape:receptor,color:'var(--cell-outer)'};

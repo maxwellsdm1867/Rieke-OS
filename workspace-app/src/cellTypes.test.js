@@ -47,5 +47,8 @@ test('retinal icons follow exact recorded classes and polarity without inferring
     assert.equal(cellTypePresentation(type).color,'var(--ink-muted)',type);
   for(const type of ['Bipolar','Bipolar cell','Unspecified-type bipolar','Generic bipolar','BC/Unspecified','Bipolar/Unknown'])
     assert.deepEqual(cellTypePresentation(type),{shape:'bipolar',color:'var(--ink-muted)'},type);
+  for(const type of ['Amacrine','Amacrine cell','Generic amacrine','AC','Amacrine/Unspecified'])
+    assert.deepEqual(cellTypePresentation(type),{shape:'amacrine',color:'var(--ink-muted)'},type);
+  for(const type of ['possible amacrine','other/Amacrine'])assert.equal(cellTypePresentation(type).shape,'generic');
   assert.deepEqual(cellTypePresentation(recordedCellType({label:'ON parasol'})),{shape:'generic',color:'var(--ink-muted)'});
 });

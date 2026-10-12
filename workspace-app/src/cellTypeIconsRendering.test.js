@@ -16,7 +16,7 @@ test('recorded types select consistent icons across overview, cell list, selecti
     const {CellList}=await server.ssrLoadModule('/src/components/Common.jsx');
     const {default:Selection}=await server.ssrLoadModule('/src/protocol-overview/ui/SelectionOverview.jsx');
     const {default:Incoming}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingCellTypes.jsx');
-    const examples=[['RGC\\ON-parasol','on-parasol'],['OFF parasol','off-parasol'],['ON midget','on-midget'],['OFF midget','off-midget'],['Bipolar\\ON','on-bipolar'],['OFF bipolar','off-bipolar'],['Cones','cone'],['Rod','rod'],['Horizontal cell','horizontal'],['Unspecified-type bipolar','bipolar']];
+    const examples=[['RGC\\ON-parasol','on-parasol'],['OFF parasol','off-parasol'],['ON midget','on-midget'],['OFF midget','off-midget'],['Bipolar\\ON','on-bipolar'],['OFF bipolar','off-bipolar'],['Cones','cone'],['Rod','rod'],['Horizontal cell','horizontal'],['Unspecified-type bipolar','bipolar'],['Amacrine cell','amacrine']];
     for(const [type,token] of examples){
       const cell=Object.freeze({cell_uuid:`id-${token}`,cell_type:type,label:'Cell 1',date:'2026-10-11',epochs:1});
       const fixtures=[
@@ -28,7 +28,7 @@ test('recorded types select consistent icons across overview, cell list, selecti
       for(const [Component,props,selector] of fixtures){
         const svg=draw(Component,props).querySelector(selector);
         assert.ok(svg,`${type}: ${selector}`);
-        assert.equal(svg.style.color,/^(on|off)-/.test(token)?`var(--cell-${token.split('-')[0]})`:token==='bipolar'?'var(--ink-muted)':'var(--cell-outer)');
+        assert.equal(svg.style.color,/^(on|off)-/.test(token)?`var(--cell-${token.split('-')[0]})`:['bipolar','amacrine'].includes(token)?'var(--ink-muted)':'var(--cell-outer)');
         assert.equal(svg.getAttribute('aria-hidden'),'true','recorded text supplies accessible identity');
       }
       assert.equal(draw(Summary,{types:[{type,count:1}],total:1}).querySelector('.cell-type-name').firstChild.textContent,type);
