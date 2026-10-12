@@ -60,6 +60,10 @@ The unspecified photoreceptor retains a rounded outer segment with two internal
 lines representing stacked discs, plus a neutral basal ending. Disc and terminal
 counts are schematic.
 
+Ganglion somas, including small bistratified and unspecified RGC, sit 0.75
+viewBox units higher in the 24-unit icon. Dendritic fields and soma sizes remain
+unchanged by this positional adjustment; connecting stems meet the raised somas.
+
 The shared mapping serves overview summaries/accordions, cell lists, incoming
 chips, and selection overview. Decorative SVGs stay hidden from assistive
 technology; adjacent recorded labels provide accessible identity.
@@ -100,7 +104,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `2f4375f`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `0d5f216`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
