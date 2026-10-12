@@ -25,11 +25,22 @@ test('whole default, explicit Sample, remembered window, independent views and c
   await render('a');assert.equal(button('Whole epoch').props['aria-pressed'],true);
   assert.match(text(renderer.toJSON()),/0–6.7499 s/);assert.match(text(renderer.toJSON()),/67,500 \/ 67,500 samples/);
   assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[20000,20000,20000,7500]);
+  await act(async()=>view().findByProps({'aria-label':'Zoom in'}).props.onClick());
+  assert.equal(button('Whole epoch').props['aria-pressed'],true,'magnifier arms selection without choosing bounds');
+  await act(async()=>view().findAllByProps({role:'group'}).find(n=>n.props.onKeyDown).props.onKeyDown({key:'+',preventDefault(){}}));
+  assert.equal(button('Sample').props['aria-pressed'],true,'zooming the whole trace enters Sample mode');
+  assert.equal(view().findByProps({'aria-label':'Start sample'}).props.value,'16875');
+  assert.equal(view().findByProps({'aria-label':'Sample count'}).props.value,'33750');
+  await act(async()=>button('Whole epoch').props.onClick());
+  assert.equal(button('Whole epoch').props['aria-pressed'],true);
+  assert.equal(view().findAllByProps({'aria-label':'Start sample'}).length,0);
+  assert.equal(view().findByProps({'aria-label':'Zoom out'}).props.disabled,true);
   await act(async()=>button('Sample').props.onClick());
-  assert.equal(button('Sample').props['aria-pressed'],true);assert.match(text(renderer.toJSON()),/20,000 \/ 67,500 samples/);
+  assert.equal(button('Sample').props['aria-pressed'],true);assert.match(text(renderer.toJSON()),/200 \/ 67,500 samples/);
   const form=view().findByType('form'),inputs=form.findAllByType('input');
   await act(async()=>{inputs[0].props.onChange({target:{value:'30000'}});inputs[1].props.onChange({target:{value:'1000'}});});
   await act(async()=>form.props.onSubmit({preventDefault(){}}));
+  assert.deepEqual(calls.filter(c=>c.id==='a').map(c=>c.count),[20000,20000,20000,7500],'all viewport changes reuse the loaded samples');
   await render('b');assert.deepEqual(calls.filter(c=>c.id==='b').at(-1),{id:'b',start:30000,count:1000});
   await render('short');assert.deepEqual(calls.filter(c=>c.id==='short').at(-1),{id:'short',start:0,count:100});
   await render('c');assert.deepEqual(calls.filter(c=>c.id==='c').at(-1),{id:'c',start:30000,count:1000});
@@ -73,8 +84,53 @@ test('inline response choices retain exact UUIDs even with duplicate device name
  try{
   await act(async()=>{renderer=TestRenderer.create(React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch})));});
   assert.equal(renderer.root.findAllByType('select').length,0);assert.equal(renderer.root.findAllByType('details').length,0);
-  assert.equal(renderer.root.findByProps({'aria-label':'Start sample'}).props.disabled,true);
+  assert.equal(renderer.root.findAllByProps({'aria-label':'Start sample'}).length,0);
   const second=renderer.root.findByProps({'aria-label':'Response 2: Amp1 · pA'});
   await act(async()=>second.props.onClick());assert.deepEqual(calls,['s1','s2']);assert.equal(second.props['aria-pressed'],true);
  }finally{await act(async()=>renderer?.unmount());await server.close();}
+});
+
+test('short trace source changes retire loaded data even with the same epoch, stream and revision',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx');
+ const {WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
+ let renderer,source='A';const calls=[];
+ const port={identity:'short-source',request:async()=>{calls.push(source);return {epoch_uuid:'e',stream_uuid:'s',start:0,count:10,total_samples:10,sample_rate:10000,units:'pA',source_sha256:source,decimated:false,values:Array(10).fill(source==='A'?1:2)};}};
+ const render=async()=>act(async()=>{const element=React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch:{epoch_uuid:'e',source_sha256:source,streams:[{kind:'responses',uuid:'s',sample_count:10,sample_rate:10000,units:'pA'}]}}));if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);});
+ try{await render();source='B';await render();source='A';await render();assert.deepEqual(calls,['A','B','A']);}finally{await act(async()=>renderer?.unmount());await server.close();}
+});
+
+test('global prefetched short trace is reused without another read and stale sources are refused',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx');
+ const {epochResourceCache}=await server.ssrLoadModule('/src/resourceCache.js');
+ const oldFetch=globalThis.fetch;let source='A',renderer;const calls=[];
+ const response=()=>({epoch_uuid:'warm',stream_uuid:'s',start:0,count:10,total_samples:10,sample_rate:10000,units:'pA',source_sha256:source,decimated:false,values:Array(10).fill(1)});
+ globalThis.fetch=async()=>{calls.push(source);return {ok:true,json:async()=>response()};};
+ epochResourceCache.put('/epochs/warm/trace?stream_uuid=s&start=0&count=10',0,response());
+ const render=async()=>act(async()=>{const element=React.createElement(Trace,{epoch:{epoch_uuid:'warm',source_sha256:source,streams:[{kind:'responses',uuid:'s',sample_count:10,sample_rate:10000,units:'pA'}]}});if(renderer)renderer.update(element);else renderer=TestRenderer.create(element);});
+ try{
+  await render();assert.deepEqual(calls,[],'the prefetched trace is reused under its original cache revision');assert.match(text(renderer.toJSON()),/10 \/ 10 samples/);
+  source='B';await render();assert.deepEqual(calls,['B'],'a changed source cannot borrow old warmth');
+  source='A';await render();assert.deepEqual(calls,['B','A']);
+ }finally{await act(async()=>renderer?.unmount());epochResourceCache.invalidate();globalThis.fetch=oldFetch;await server.close();}
+});
+
+test('joining a prefetched old-source read cannot publish it for the current source',async()=>{
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx');
+ const {epochResourceCache,cachedResourceRequest}=await server.ssrLoadModule('/src/resourceCache.js');
+ const {api}=await server.ssrLoadModule('/src/api.js');
+ const oldFetch=globalThis.fetch;let release,renderer;const calls=[];
+ const response=source=>({epoch_uuid:'held-warm',stream_uuid:'s',start:0,count:10,total_samples:10,sample_rate:10000,units:'pA',source_sha256:source,decimated:false,values:Array(10).fill(1)});
+ globalThis.fetch=async()=>{calls.push('read');if(calls.length===1)return new Promise(resolve=>release=()=>resolve({ok:true,json:async()=>response('A')}));return {ok:true,json:async()=>response('B')};};
+ const pending=cachedResourceRequest('/epochs/held-warm/trace?stream_uuid=s&start=0&count=10',{request:api,revision:0});
+ try{
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(Trace,{epoch:{epoch_uuid:'held-warm',source_sha256:'B',streams:[{kind:'responses',uuid:'s',sample_count:10,sample_rate:10000,units:'pA'}]}}));});
+  assert.equal(calls.length,1,'joins the existing read until its identity can be checked');
+  await act(async()=>{release();await pending;});
+  assert.equal(calls.length,2,'mismatched shared response requires an independent fresh read');
+  assert.match(text(renderer.toJSON()),/10 \/ 10 samples/);
+  assert.equal(epochResourceCache.peek('/epochs/held-warm/trace?stream_uuid=s&start=0&count=10',0).source_sha256,'B');
+ }finally{release?.();await pending;await act(async()=>renderer?.unmount());epochResourceCache.invalidate();globalThis.fetch=oldFetch;await server.close();}
 });

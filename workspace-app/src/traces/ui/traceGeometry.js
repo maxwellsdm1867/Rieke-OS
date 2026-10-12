@@ -1,22 +1,22 @@
 export const MAX_TRACE_SAMPLES=20000;
-export function clampWindow(start,count,total){
+export function clampWindow(start,count,total,limit=MAX_TRACE_SAMPLES){
   if(!Number.isSafeInteger(total)||total<1)return {start:0,count:0};
-  const size=Math.max(1,Math.min(total,MAX_TRACE_SAMPLES,Math.floor(Number.isFinite(count)?count:MAX_TRACE_SAMPLES)));
+  const size=Math.max(1,Math.min(total,limit,Math.floor(Number.isFinite(count)?count:MAX_TRACE_SAMPLES)));
   return {start:Math.max(0,Math.min(total-size,Math.round(Number.isFinite(start)?start:0))),count:size};
 }
-export function zoomWindow(window,total,factor,anchor=window.start+(window.count-1)/2){
+export function zoomWindow(window,total,factor,anchor=window.start+(window.count-1)/2,limit=MAX_TRACE_SAMPLES){
   const count=Math.max(Math.min(2,total),Math.round(window.count*factor));
-  const bounded=clampWindow(0,count,total);
+  const bounded=clampWindow(0,count,total,limit);
   const fraction=window.count>1?Math.max(0,Math.min(1,(anchor-window.start)/(window.count-1))):.5;
-  return clampWindow(anchor-fraction*(bounded.count-1),bounded.count,total);
+  return clampWindow(anchor-fraction*(bounded.count-1),bounded.count,total,limit);
 }
-export function dragWindow(window,total,from,to,width,mode='zoom'){
+export function dragWindow(window,total,from,to,width,mode='zoom',limit=MAX_TRACE_SAMPLES){
   if(!(width>0)||window.count<1)return window;
   const a=Math.max(0,Math.min(width,from)),b=Math.max(0,Math.min(width,to));
-  if(mode==='pan')return clampWindow(window.start-Math.round((b-a)/width*(window.count-1)),window.count,total);
+  if(mode==='pan')return clampWindow(window.start-Math.round((b-a)/width*(window.count-1)),window.count,total,limit);
   const first=window.start+Math.round(Math.min(a,b)/width*(window.count-1));
   const last=window.start+Math.round(Math.max(a,b)/width*(window.count-1));
-  return clampWindow(first,Math.max(Math.min(2,total),last-first+1),total);
+  return clampWindow(first,Math.max(Math.min(2,total),last-first+1),total,limit);
 }
 export function sampleAtPixel(x,width,count){
   return count>0&&width>0?Math.max(0,Math.min(count-1,Math.round(x/width*(count-1)))):null;

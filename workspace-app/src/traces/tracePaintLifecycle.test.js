@@ -49,3 +49,58 @@ test('trace paints once per data change and redraws only for actual size, DPR or
     for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}
   }
 });
+
+test('box zoom commits only on release; pan preserves width and reuses whole samples',async()=>{
+ const names=['window','document','getComputedStyle','ResizeObserver','requestAnimationFrame','cancelAnimationFrame'];
+ const previous=Object.fromEntries(names.map(name=>[name,globalThis[name]]));
+ globalThis.window={devicePixelRatio:1,addEventListener(){},removeEventListener(){}};
+ globalThis.document={activeElement:null};globalThis.getComputedStyle=()=>({getPropertyValue:()=> '#555'});
+ const frames=new Map();let nextFrame=0,markerPaints=0;
+ const flush=()=>{const work=[...frames.values()];frames.clear();for(const fn of work)fn();};
+ globalThis.requestAnimationFrame=fn=>{frames.set(++nextFrame,fn);return nextFrame;};globalThis.cancelAnimationFrame=id=>frames.delete(id);globalThis.ResizeObserver=class{observe(){}disconnect(){}};
+ const canvas=isBase=>{const element={getBoundingClientRect:()=>({left:0,top:0,width:603,height:300}),setPointerCapture(){},hasPointerCapture(){return true;},releasePointerCapture(){}};element.getContext=()=>new Proxy({canvas:element},{get:(o,k)=>k in o?o[k]:()=>{if(!isBase&&['fillRect','strokeRect','arc','stroke'].includes(k))markerPaints++;}});return element;};
+ const base=canvas(true),overlay=canvas(false),surface={focus(){}};let renderer;const calls=[];
+ const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
+ const {default:Trace}=await server.ssrLoadModule('/src/traces/ui/TraceViewer.jsx');
+ const {WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');
+ const port={identity:'pointer-zoom',request:async path=>{const q=new URLSearchParams(path.split('?')[1]),start=+q.get('start'),count=+q.get('count');calls.push({start,count});return {epoch_uuid:'e',stream_uuid:'s',start,count,total_samples:67500,sample_rate:10000,units:'pA',source_sha256:'source',decimated:false,values:Array.from({length:count},(_,i)=>start+i)};}};
+ const epoch={epoch_uuid:'e',streams:[{kind:'responses',uuid:'s',sample_count:67500,sample_rate:10000,units:'pA'}]};
+ const button=label=>renderer.root.findAllByType('button').find(n=>n.props.children===label||Array.isArray(n.props.children)&&n.props.children.includes(' '+label));
+ const input=label=>renderer.root.findByProps({'aria-label':label}).props.value;
+ const pointer=()=>renderer.root.findByProps({className:'tv-overlay'}).props;
+ const event=(x,y=100)=>({button:0,pointerId:1,clientX:82+x,clientY:y,currentTarget:overlay});
+ try{
+  await act(async()=>{renderer=TestRenderer.create(React.createElement(WorkspaceRequestProvider,{port},React.createElement(Trace,{epoch})),{createNodeMock:node=>node.type==='canvas'?(node.props.className==='tv-base'?base:overlay):node.props.role==='group'?surface:{}});});
+  assert.equal(calls.length,4);
+  await act(async()=>renderer.root.findByProps({'aria-label':'Zoom in'}).props.onClick());assert.equal(button('Whole epoch').props['aria-pressed'],true);
+  await act(async()=>{pointer().onPointerDown(event(100,65));pointer().onPointerMove(event(400,195));});
+  assert.equal(button('Whole epoch').props['aria-pressed'],true,'dragging does not switch mode before release');
+  await act(async()=>pointer().onPointerUp(event(400,195)));
+  assert.equal(button('Sample').props['aria-pressed'],true);assert.equal(input('Start sample'),'13500');assert.equal(input('Sample count'),'40500');
+  const boundsText=()=>renderer.root.findByProps({'aria-label':'Selected response bounds'}).children.join('');
+  const beforePan=boundsText();assert.match(beforePan,/pA/);
+  assert.match(renderer.root.findByProps({'aria-label':'Selected sample bounds'}).children.join(''),/Start 13,500 · Stop 53,999/);
+  await act(async()=>button('Pan').props.onClick());flush();markerPaints=0;
+  await act(async()=>pointer().onPointerMove(event(200)));flush();
+  assert.equal(markerPaints,0,'Pan hover has no crosshair or sample marker');
+  await act(async()=>{pointer().onPointerDown(event(200));pointer().onPointerMove(event(250,115));});
+  flush();assert.equal(markerPaints,0,'Pan drag has no selection box or interactive markers');
+  assert.equal(input('Start sample'),'9450','pan moves while the pointer is held');
+  assert.equal(input('Sample count'),'40500','live pan keeps zoom width');
+  await act(async()=>pointer().onPointerMove(event(300,130)));
+  assert.equal(input('Start sample'),'5400','successive moves are anchored to drag start, without accumulating drift');
+  await act(async()=>pointer().onPointerUp(event(300,130)));
+  assert.equal(input('Start sample'),'5400','release does not apply the delta twice');
+  assert.notEqual(boundsText(),beforePan,'vertical panning moves response bounds');
+  assert.equal(input('Start sample'),'5400');assert.equal(input('Sample count'),'40500');
+  assert.equal(calls.length,4,'box zoom and pan do not reload any samples');
+  await act(async()=>button('Whole epoch').props.onClick());assert.equal(calls.length,4);assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0);
+  await act(async()=>{pointer().onPointerDown(event(200,65));pointer().onPointerMove(event(200,195));pointer().onPointerUp(event(200,195));});
+  assert.equal(input('Sample count'),'67500','vertical-only zoom preserves the whole time range');
+  assert.equal(renderer.root.findByProps({'aria-label':'Zoom out'}).props.disabled,false);
+  await act(async()=>renderer.root.findByProps({'aria-label':'Zoom out'}).props.onClick());
+  assert.equal(renderer.root.findAllByProps({'aria-label':'Selected response bounds'}).length,0,'zoom out recovers the whole response range');
+  assert.equal(calls.length,4,'vertical zoom and zoom out require no reads');
+  await act(async()=>button('Sample').props.onClick());assert.equal(input('Start sample'),'0');assert.equal(input('Sample count'),'200');assert.equal(calls.length,4);
+ }finally{await act(async()=>renderer?.unmount());await server.close();for(const name of names){if(previous[name]===undefined)delete globalThis[name];else globalThis[name]=previous[name];}}
+});

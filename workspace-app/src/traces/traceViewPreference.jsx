@@ -1,12 +1,11 @@
 import {createContext,useContext,useMemo,useState} from 'react';
-import {MAX_TRACE_SAMPLES} from './ui/traceGeometry.js';
 
 const Context=createContext(null);
 export function normalizeTraceViewPreference(value){
   if(!['whole','sample'].includes(value?.kind)||!Number.isSafeInteger(value.start)||value.start<0||
-     !Number.isSafeInteger(value.count)||value.count<1||value.count>MAX_TRACE_SAMPLES)
-    return {kind:'whole',start:0,count:MAX_TRACE_SAMPLES};
-  return {kind:value.kind,start:value.start,count:value.count};
+     !Number.isSafeInteger(value.count)||value.count<1)
+    return {kind:'whole',start:0,count:200};
+  return {kind:value.kind,start:value.start,count:value.count,...(Number.isFinite(value.amplitude?.min)&&Number.isFinite(value.amplitude?.max)&&value.amplitude.min<value.amplitude.max?{amplitude:{min:value.amplitude.min,max:value.amplitude.max}}:{})};
 }
 
 // Presentation only. Protocol owns persistence; trace read authority is separate.

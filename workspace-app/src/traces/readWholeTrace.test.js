@@ -45,3 +45,9 @@ test('imported whole trace checks historical context, recorded units/rate and so
  assert.equal((await read(()=>{})).count,67500);
  for(const change of [d=>d.read_context={...context,scope_data_revision:id(7)},d=>d.sample_rate=9999,d=>d.units=null,d=>d.source_sha256='b'.repeat(64)])await assert.rejects(read(change),/does not match/);
 });
+
+test('a large selected window reads only its exact interval in bounded chunks',async()=>{
+ const f=fixture();const data=await readWholeTrace({...f,epochUuid:'e',stream,window:{start:15000,count:35001}});
+ assert.deepEqual(f.calls.map(({start,count})=>[start,count]),[[15000,20000],[35000,15001]]);
+ assert.equal(data.start,15000);assert.equal(data.count,35001);assert.equal(data.values[0],15000);assert.equal(data.values.at(-1),50000);
+});
