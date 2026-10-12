@@ -7,7 +7,11 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
   const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
   if(shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} polarity={polarity} {...shared}/>;
   return <svg {...shared}>
-    {shape==='horizontal'?<>
+    {shape==='generic'?<>
+      <path d="M9.1 9.6C7.5 8.8 6.7 7 5 6.8M8.9 14.2c-1.8.6-3.1 2.1-4.9 2M14.9 9.6c1.4-1.1 2.4-3 4.1-3.6M15.1 14.2c1.4 1 1.9 3 3.7 3.8"/>
+      <circle cx="12" cy="12" r="3.7"/>
+      <circle cx="12" cy="12" r=".75" fill="currentColor" stroke="none"/>
+    </>:shape==='horizontal'?<>
       <ellipse cx="12" cy="14" rx="2.8" ry="2.3"/>
       <circle cx="12" cy="14" r=".65" fill="currentColor" stroke="none"/>
       <path d="M9.6 12.8C8 11.4 6.7 10 4.3 10S2.6 8.9 1.5 8.4M5.8 10.2 5 7.5M5.1 8.1 3.5 7M9.6 12.8C7 13.1 4.8 13.3 2 12.2M3.5 12.7l-1 1.6M14.4 12.8c1.6-1.4 3-3 5.2-3.1S21.3 8.5 22 8M18.1 10.1l.2-2.8M18.2 8.1l-1.5-1M14.4 12.8c2.6.4 4.8.2 7.6-1M20 12.5l1.4 1.6"/>
@@ -21,7 +25,7 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
         <path d="M12 20c-1.4.5-2.3 1.2-4.5 1M10 20.9l-.2 1.6M12 20c1.1.6 2.4.7 4.5.2M14.6 20.5l.7 1.5"/>
       </g>
     </>:<>
-      {shape==='cone'?<path d="M12 1.5 8.7 8h6.6L12 1.5ZM9.5 8v2c0 1 1 1.5 2.5 1.5s2.5-.5 2.5-1.5V8M10.4 5h3.2"/>:<path d="M10 9V3.5a2 2 0 0 1 4 0V9ZM10 4.5h4M10 7h4M10.5 9v2.5M13.5 9v2.5"/>}
+      {shape==='cone'?<path d="M11.2 2.2Q12 .9 12.8 2.2L15 6.7Q15.7 8 14.2 8H9.8Q8.3 8 9 6.7ZM9.5 8v2c0 1 1 1.5 2.5 1.5s2.5-.5 2.5-1.5V8M10.4 5h3.2"/>:<path d="M10 9V3.5a2 2 0 0 1 4 0V9ZM10 4.5h4M10 7h4M10.5 9v2.5M13.5 9v2.5"/>}
       <path d="M12 11.5c-1.8 0-3 1.3-3 3s1.2 3 3 3 3-1.3 3-3-1.2-3-3-3ZM12 17.5V20"/>
       {shape==='cone'?<path d="M12 20c-2 0-3.5 1-4 2h8c-.5-1-2-2-4-2Z"/>:<circle cx="12" cy="21" r="1.3"/>}
       <circle cx="12" cy="14.5" r=".65" fill="currentColor" stroke="none"/>

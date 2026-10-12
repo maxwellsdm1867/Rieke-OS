@@ -35,7 +35,7 @@ test('retinal icons follow exact recorded classes and polarity without inferring
       const cell=Object.freeze({cell_uuid:'recorded-id',cell_type:spelling});
       const presentation=cellTypePresentation(recordedCellType(cell));
       assert.equal(presentation.shape,shape);assert.equal(presentation.polarity,polarity);
-      assert.equal(presentation.color,polarity?`var(--cell-${polarity})`:'var(--ink-muted)');assert.equal(recordedCellType(cell),spelling);
+      assert.equal(presentation.color,polarity?`var(--cell-${polarity})`:'var(--cell-outer)');assert.equal(recordedCellType(cell),spelling);
     }
   }
   for(const [type,canonical] of [
@@ -45,5 +45,5 @@ test('retinal icons follow exact recorded classes and polarity without inferring
   ])assert.deepEqual(cellTypePresentation(type),cellTypePresentation(canonical));
   for(const type of ['ON parasol candidate','possible cone','horizontal candidate','other/Horizontal','rod bipolar','ON-OFF bipolar','other/ON midget','OFF','Unknown',''])
     assert.equal(cellTypePresentation(type).color,'var(--ink-muted)',type);
-  assert.equal(cellTypePresentation(recordedCellType({label:'ON parasol'})).color,'var(--ink-muted)');
+  assert.deepEqual(cellTypePresentation(recordedCellType({label:'ON parasol'})),{shape:'generic',color:'var(--ink-muted)'});
 });

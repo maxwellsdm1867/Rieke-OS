@@ -27,11 +27,11 @@ export function cellTypePresentation(type) {
   if(/^(on|off)-bipolar$/.test(bipolar) && (!prefix || prefix==='bipolar' || prefix==='bc'))
     return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar.split('-')[0]})`};
   if((bipolar==='bipolar' && !prefix))return {shape:'bipolar',color:'var(--ink-muted)'};
-  if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--ink-muted)'};
+  if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--cell-outer)'};
   const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
   if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
-    return {shape:receptor,color:'var(--ink-muted)'};
-  return {shape:'ganglion',color:'var(--ink-muted)'};
+    return {shape:receptor,color:'var(--cell-outer)'};
+  return {shape:'generic',color:'var(--ink-muted)'};
 }
 export function cellTypeColor(type) {
   return cellTypePresentation(type).color;

@@ -28,7 +28,7 @@ test('recorded types select consistent icons across overview, cell list, selecti
       for(const [Component,props,selector] of fixtures){
         const svg=draw(Component,props).querySelector(selector);
         assert.ok(svg,`${type}: ${selector}`);
-        assert.equal(svg.style.color,/^(on|off)-/.test(token)?`var(--cell-${token.split('-')[0]})`:'var(--ink-muted)');
+        assert.equal(svg.style.color,/^(on|off)-/.test(token)?`var(--cell-${token.split('-')[0]})`:'var(--cell-outer)');
         assert.equal(svg.getAttribute('aria-hidden'),'true','recorded text supplies accessible identity');
       }
       assert.equal(draw(Summary,{types:[{type,count:1}],total:1}).querySelector('.cell-type-name').firstChild.textContent,type);
