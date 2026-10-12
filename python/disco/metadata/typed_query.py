@@ -170,13 +170,17 @@ class _TypedQueries:
 
     def _supply_identities(self, identities, *, restrict_sources=False):
         self.connection.execute('DELETE FROM supplied_scope')
-        # Resolve only supplied UUIDs through the native unique index. Source
-        # eligibility is conjunctive here, without enumerating every source
-        # epoch to build a second project-sized IN relation on each query.
-        source_filter = ' AND source_sha IN (SELECT source_sha FROM supplied_sources)' if restrict_sources else ''
+        # Resolve UUIDs through the covering native unique index, then check
+        # source eligibility in one batch over those admitted members. Keeping
+        # the source check out of each insertion avoids interleaving wide native
+        # table reads with UUID admission for a large cohort.
         self.connection.executemany(
-            'INSERT OR IGNORE INTO supplied_scope SELECT epoch_id FROM epochs WHERE epoch_uuid=?'+source_filter,
+            'INSERT OR IGNORE INTO supplied_scope SELECT epoch_id FROM epochs WHERE epoch_uuid=?',
             self._scope_values(identities))
+        if restrict_sources:
+            self.connection.execute('DELETE FROM supplied_scope WHERE NOT EXISTS ('
+                'SELECT 1 FROM native.epochs e WHERE e.epoch_id=supplied_scope.epoch_id '
+                'AND e.source_sha IN (SELECT source_sha FROM supplied_sources))')
 
 
     def membership(self, predicate=None, scope=None):

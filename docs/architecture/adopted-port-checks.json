@@ -4719,7 +4719,7 @@
               {
                 "module": "disco.metadata.typed_query",
                 "file": "python/disco/metadata/typed_query.py",
-                "file_sha256": "a93509ed6da4a8015f0ab2a7243f5d09b5bb7b44ba16177da401c42786a2ed8f",
+                "file_sha256": "a9ff14f07f3b7832a8c82e173531b53a9c4f070b1c063bd1740147a81b83401e",
                 "contract_id": "backend-metadata"
               }
             ]

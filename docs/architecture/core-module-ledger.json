@@ -4547,7 +4547,7 @@
       "owner": "createTreeLayoutSaver/useProtocolTreeLayout and useProtocolSummaryPreferences; appearance is separate app preference owner.",
       "status": "implemented",
       "interface": {
-        "inputs": "Protocol ID, saved split order/version, optional initial recipe order; project/protocol/view preference key and requested summary field IDs.",
+        "inputs": "Protocol ID, saved split order/version, optional initial recipe order; project/protocol/view preference key and requested summary field IDs. Optional enabled=false defers the first saved-layout read until Inspect/Export demand; default remains enabled.",
         "outputs": "Ready layout/order with saving/saved/error/version state; normalized version1 summary fields and local persistence error."
       },
       "scientific_contract": {
@@ -4558,7 +4558,7 @@
         "provenance": "These preferences change presentation only; scientific grouping semantics remain server-owned."
       },
       "errors_and_partial_success": "Invalid saved layout keeps readiness false; persistence failures expose error/retry. Local summary storage failure keeps current chosen value but reports unsaved status.",
-      "freshness_and_invalidation": "Protocol/attempt changes restart layout load; mounted guard blocks late old loads. Preference key mismatch shows fresh defaults until its own key loads.",
+      "freshness_and_invalidation": "Protocol/attempt changes restart layout load; mounted guard blocks late old loads. Preference key mismatch shows fresh defaults until its own key loads. Overview does not require a tree-layout read. First enabled demand is retained for that protocol within the mount; a different protocol requires its own demand. See the local overview follow-up in the adoption record.",
       "execution_contract": {
         "transactions": "Owned layout PUT uses expected version; no native scientific transaction promised by frontend. LocalStorage is separate device preference state.",
         "idempotency": "Saver version/coalescing behavior remains endpoint-specific, not generic replay.",

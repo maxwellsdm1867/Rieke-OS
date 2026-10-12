@@ -58,8 +58,8 @@ and annotation fences; disposable metadata cannot stand in for those proofs.
 ## Explicit membership query work
 
 Explicit UUID scopes are admitted through the native UUID index before predicate
-compilation. When sources are supplied, source eligibility is applied during
-that point lookup; no project-wide source-member relation is materialized first.
+compilation. When sources are supplied, source eligibility is applied in one batch over
+admitted members; no project-wide source-member relation is materialized first.
 One-shot UUID/source iterables are consumed once, duplicate/unknown UUID handling
 is unchanged, and empty sources or membership still mean an empty intersection.
 
