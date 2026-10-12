@@ -23,8 +23,8 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 
 | Recorded category | Color | Schematic feature |
 | --- | --- | --- |
-| RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma (+20% follow-up) and broad, fuller arbor |
-| RGC / ON-midget, OFF-midget | shared ON / OFF | soma larger than bipolar but smaller than parasol; narrow tuft |
+| RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma and broad, fuller arbor |
+| RGC / ON-midget, OFF-midget | shared ON / OFF | original soma size, smaller than parasol; narrow tuft |
 | RGC / small bistratified | neutral | smaller upper tier and broader lower tier |
 | amacrine / AII | neutral | upper lobules and lower fine arbor |
 | amacrine / A17 | neutral | long, sparse processes with varicosities |
@@ -61,8 +61,8 @@ lines representing stacked discs, plus a neutral basal ending. Disc and terminal
 counts are schematic.
 
 Ganglion somas, including small bistratified and unspecified RGC, sit 0.75
-viewBox units higher in the 24-unit icon. Dendritic fields and soma sizes remain
-unchanged by this positional adjustment; connecting stems meet the raised somas.
+viewBox units higher in the 24-unit icon. Parasol somas are a further 0.5 units higher. Dendritic fields remain
+unchanged by these positional adjustments; connecting stems meet the raised somas.
 
 The shared mapping serves overview summaries/accordions, cell lists, incoming
 chips, and selection overview. Decorative SVGs stay hidden from assistive
@@ -92,11 +92,12 @@ The cross-study midget-ganglion/bipolar diameter comparison is roughly 1.5, not 
 universal matched-cell ratio: subtype, retinal location, preparation and species
 matter. Do not mix soma diameter with dendritic-field diameter.
 
-The schematic midget ellipse is 6.8 × 6.6 viewBox units versus bipolar 4.6 × 5,
-approximately 1.4 times its area-equivalent diameter. The wider parasol remains
-8.88 × 7.2. This preserves readable hierarchy without claiming one anatomical
-scale across the full sheet. The midget's narrow tuft supplies its strongest
-shape distinction.
+After comparing the proportions, the scientist requested the original midget
+soma size (6 × 5.6 viewBox units) and another 20% enlargement of the parasol soma
+in each dimension, to 10.656 × 8.64. Bipolar soma size remains 4.6 × 5. These
+are identification schematics, not a common anatomical scale; the parasol size
+contrast is deliberately exaggerated. The midget's narrow tuft supplies an
+additional shape distinction without shrinking its original soma.
 
 - [Dacey (1993), Table 1](https://cpb-us-e1.wpmucdn.com/sites.uw.edu/dist/6/8438/files/2020/09/dacey1993.pdf)
 - [Patterson et al. (2019), Figure 3F](https://pubmed.ncbi.nlm.nih.gov/31417169/)
@@ -124,7 +125,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `628ce7c`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `22c5d0f`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,

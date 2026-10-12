@@ -1,10 +1,11 @@
 /** Schematic retinal side view; ON arbors lie closer to the ganglion soma. */
 export default function NeuronIcon({size=19,strokeWidth=1.7,compact=false,parasol=false,somaOffset=0,polarity,...props}){
   const offset=polarity==='off'?0:4;
-  const rx=compact?3.4:parasol?4.44:3,ry=compact?3.3:parasol?3.6:2.8;
-  const somaY=17.3+somaOffset;
+  const rx=parasol?5.328:3,ry=parasol?4.32:2.8;
+  const somaY=17.3+somaOffset-(parasol?.5:0);
+  const somaTop=somaY-ry,arborY=7+offset;
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-    <path d={`M12 ${somaY-ry}C11.4 12.8 12.7 ${9+offset} 12 ${7+offset}`}/>
+    <path d={parasol?`M12 ${somaTop}C11.6 ${arborY+(somaTop-arborY)*.66} 12.5 ${arborY+(somaTop-arborY)*.33} 12 ${arborY}`:`M12 ${somaTop}C11.4 12.8 12.7 ${9+offset} 12 ${arborY}`}/>
     {compact?<g transform={`translate(0 ${offset})`}>
       <path d="M12 7c-1.1-1-2-.7-3.2-1.5M8.8 5.5l-.6-1.7M12 7c.9-1.1 2.1-1.2 3.1-2M15.1 5l.6-1.6M10.5 6.2l.2-1.6M13.6 5.9l-.3-1.8"/>
     </g>:<g transform={`translate(0 ${offset})`}>
