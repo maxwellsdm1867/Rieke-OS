@@ -5,7 +5,7 @@ import {cellTypePresentation} from '../cell-qc/cellTypes.js';
 export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...props}) {
   const {shape,color,polarity,variant}=cellTypePresentation(type);
   const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
-  if(shape==='generic' || shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} polarity={polarity} {...shared}/>;
+  if(shape==='generic' || shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} parasol={shape==='ganglion' && Boolean(polarity)} polarity={polarity} {...shared}/>;
   return <svg {...shared}>
     {shape==='bistratified'?<>
       <path d="M12 14.5C11.4 12 12.8 9 12 5M12 5c-1.5-.8-2.9-.5-4.5-1.3M9 4.1 8.7 2.6M12 5c1.5-.9 3-.6 4.7-1.5M15 4.1l.3-1.7M12 10c-2-1.2-4.5-.5-7-1.7M7.8 9l-.4-1.8M5 8.3l-1.7.2M12 10c2-1.4 4.8-.7 7-2M16 9l.6-2M19 8l1.5.2"/>
