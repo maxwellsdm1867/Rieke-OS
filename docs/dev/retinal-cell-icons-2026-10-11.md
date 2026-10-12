@@ -28,10 +28,10 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | RGC / small bistratified | neutral | smaller upper tier and broader lower tier |
 | amacrine / AII | neutral | upper lobules and lower fine arbor |
 | amacrine / A17 | neutral | long, sparse processes with varicosities |
-| amacrine / starburst | neutral | radial arbor, shown en face |
+| amacrine / starburst | neutral | broad, shallow arbor shown from the side |
 | bipolar / ON-diffuse, OFF-diffuse | shared ON / OFF | wider dendritic and terminal fields |
 | bipolar / ON-midget, OFF-midget | shared ON / OFF | compact tuft and terminal field |
-| bipolar / rod | ON teal | dendritic tuft and deep bulb-like terminals |
+| bipolar / rod | ON teal | dendritic tuft and a connected deep lobulated terminal |
 | horizontal | outer-retina blue | lateral arbor |
 | photoreceptor / S cone, M cone, L cone | blue / green / coral | identical rounded cone shape |
 | photoreceptor / rod | outer-retina blue | cylindrical outer segment |
@@ -54,8 +54,11 @@ The color palette is shared by class: `--cell-on`, `--cell-off`, and
 `--cell-outer`, plus the three `--cell-cone-s/m/l` roles. Dark mode uses lighter
 versions; neutral icons use the theme's muted ink. Palette literals live only in
 `themes.css`. Morphology, depth, field size, branch count, and varicosity count
-are schematic, not measurements or a morphology classifier. Most icons are
-side views; starburst is explicitly en face for recognition at small sizes.
+are schematic, not measurements or a morphology classifier. Icons use side-view schematics. Starburst uses a broad, shallow arbor instead
+of a radial snowflake; this shorthand does not show its full en-face geometry.
+The unspecified photoreceptor retains a rounded outer segment with two internal
+lines representing stacked discs, plus a neutral basal ending. Disc and terminal
+counts are schematic.
 
 The shared mapping serves overview summaries/accordions, cell lists, incoming
 chips, and selection overview. Decorative SVGs stay hidden from assistive
@@ -76,6 +79,15 @@ Species differences and within-type variability are not modeled by these icons.
 
 ## Validation
 
+An independent scientific visual review of the complete sheet identified the
+radial starburst's snowflake appearance and the rod bipolar's isolated terminal
+rings. Both were revised and visually re-reviewed, along with the generic
+photoreceptor's disc lines requested by the scientist. No blocking issue remained
+in these three schematics. Generic bipolar and horizontal were readable family
+symbols; the shared unknown-neuron silhouette remains an abstract convention.
+Fine subtype features, including A17 varicosities, cannot replace adjacent
+recorded labels at 16 px.
+
 `cellTypes.test.js` covers every photographed leaf, parent-path disambiguation,
 spelling variants, generic family fallback, candidate-label refusal, and source
 label preservation. `cellTypeIconsRendering.test.js` renders each category in
@@ -85,9 +97,9 @@ The complete preview includes all leaf types and generic fallbacks in Light,
 Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
-required everyday-million comparisons. For this taxonomy expansion the pinned
-reference is `34ce2e0`, and the previous source is `89e2c28`. Retain exact-source
-receipts under `benchmarks/results/retinal-taxonomy-*`; inspect actual results
+required everyday-million comparisons. For the scientific visual review follow-up the pinned
+reference is `34ce2e0`, and the previous source is `5f239de`. Retain exact-source
+receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
 installed, packaged, or release qualification.
