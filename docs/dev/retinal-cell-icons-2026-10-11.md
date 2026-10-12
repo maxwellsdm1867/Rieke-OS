@@ -23,7 +23,7 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 
 | Recorded category | Color | Schematic feature |
 | --- | --- | --- |
-| RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma and broad, fuller ganglion arbor |
+| RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma (+20% follow-up) and broad, fuller arbor |
 | RGC / ON-midget, OFF-midget | shared ON / OFF | smaller soma and a narrow, compact tuft |
 | RGC / small bistratified | neutral | smaller upper tier and broader lower tier |
 | amacrine / AII | neutral | upper lobules and lower fine arbor |
@@ -100,7 +100,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `3a9957e`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `2f4375f`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
