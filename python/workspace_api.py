@@ -1305,7 +1305,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
             row["exports"] = links
             if shared_annotations:
                 row['annotations']=shared_annotations.for_epochs([service.rows[epoch_uuid]])[epoch_uuid]
-                row['annotations']['cell_epoch_count']=sum(item['cell_uuid']==row['cell_uuid'] for item in service.rows.values())
+                row['annotations']['cell_epoch_count']=service.cell_epoch_count(row['cell_uuid'])
             return jsonify(row)
 
     @app.get("/api/epochs/<epoch_uuid>/trace")

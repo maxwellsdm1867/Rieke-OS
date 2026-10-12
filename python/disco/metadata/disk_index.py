@@ -94,6 +94,7 @@ class DiskMetadataIndex:
                 CREATE TABLE epochs(epoch_id INTEGER PRIMARY KEY,epoch_uuid TEXT UNIQUE NOT NULL,
                     source_sha TEXT,cell_uuid TEXT,row_json TEXT NOT NULL,detail_blob BLOB NOT NULL,fingerprint TEXT NOT NULL);
                 CREATE INDEX epochs_source ON epochs(source_sha);
+                CREATE INDEX epochs_cell ON epochs(cell_uuid,epoch_uuid);
                 CREATE TABLE fields(field_no INTEGER PRIMARY KEY,field_id TEXT UNIQUE NOT NULL,definition_json TEXT NOT NULL);
                 CREATE TABLE field_values(value_id INTEGER PRIMARY KEY,field_no INTEGER NOT NULL,value_json TEXT NOT NULL,
                     UNIQUE(field_no,value_json));
@@ -255,6 +256,17 @@ class DiskMetadataIndex:
     def rows(self):
         with self._connect() as connection:
             return {identity:json.loads(raw) for identity,raw in connection.execute('SELECT epoch_uuid,row_json FROM epochs ORDER BY epoch_id')}
+
+    def cell_epoch_ids(self, cell_uuid):
+        """Exact registered cell membership from this checked generation."""
+        with self._connect() as connection:
+            return [row[0] for row in connection.execute(
+                'SELECT epoch_uuid FROM epochs WHERE cell_uuid=? ORDER BY epoch_id', (cell_uuid,))]
+
+    def cell_epoch_count(self, cell_uuid):
+        """Count only; no basic-row JSON or metadata details are hydrated."""
+        with self._connect() as connection:
+            return connection.execute('SELECT COUNT(*) FROM epochs WHERE cell_uuid=?', (cell_uuid,)).fetchone()[0]
 
     def fingerprints(self,ids=None):
         with self._connect(ids) as connection:

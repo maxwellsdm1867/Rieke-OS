@@ -16,7 +16,7 @@ from disco.workbench.recipes import SPLIT_FIELDS, checksum, parse_splits
 from disco.navigation.tree import (field_value_order, joint_definition, joint_value,
                             value_key, protocol_family)
 from disco.navigation.predicates import validate as validate_predicate, matches
-from workspace_service import validate_filters, WorkspaceService
+from workspace_service import validate_filters, WorkspaceService, _frozen_navigation_owner
 from disco.decisions.explorer import ExplorerHistory
 from disco.operation_timing import elapsed
 
@@ -30,7 +30,7 @@ _STRUCTURAL_HISTORY_METHODS = {name: getattr(ExplorerHistory, name)
                                for name in ('protocol_binding', 'protocol_binding_header', 'get')}
 
 
-def _structural_contract(service):
+def _structural_contract(service, *, frozen_protocol=None):
     """Only borrow raw membership when its public policies are unchanged.
 
     Custom query/filter adapters may narrow or transform rows. Their public
@@ -43,6 +43,8 @@ def _structural_contract(service):
             return False
     provider = getattr(service, 'binding_provider', None)
     header = getattr(service, 'binding_header_provider', None)
+    if frozen_protocol is not None and _frozen_navigation_owner(service, frozen_protocol) is not None:
+        return True
     if provider is None:
         return header is None
     owner = getattr(provider, '__self__', None)
@@ -304,7 +306,7 @@ class TreePages:
             return self._build_scope(body)
         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
         structural = _structural_scope(body)
-        if not _structural_contract(service):
+        if not _structural_contract(service, frozen_protocol=body.get('protocol_uuid')):
             # An unproven policy cannot reuse a native membership/cache key.
             return self._build_scope(body)
         protocol = body.get('protocol_uuid')
@@ -313,6 +315,7 @@ class TreePages:
             if 'predicate' in body:
                 raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
         header_provider = getattr(service, 'binding_header_provider', None)
+        cache_owner = _frozen_navigation_owner(service, protocol) or service
         binding = (header_provider(protocol) if header_provider else service.binding(protocol)) if protocol else None
         # Provider-only/unbound protocol fixtures may mutate their membership in
         # place without replacing service.protocols. Frozen binding headers are
@@ -323,9 +326,9 @@ class TreePages:
                       id(service._fingerprints), id(service.protocols), protocol is not None)
         base_bytes = TREE_SCOPE_CACHE_OVERHEAD + (0 if protocol else sys.getsizeof(service._fingerprints))
         if base_bytes >= TREE_SCOPE_BYTE_BUDGET:
-            service._tree_page_scope_cache = None
+            cache_owner._tree_page_scope_cache = None
             return self._build_scope(body)
-        cached = getattr(service, '_tree_page_scope_cache', None)
+        cached = getattr(cache_owner, '_tree_page_scope_cache', None)
         if (cached is None or cached[0] != generation
                 or (protocol is None and cached[2] != service._fingerprints)):
             # The published fingerprint dictionary is also used by reconciliation
@@ -335,11 +338,12 @@ class TreePages:
             # Protocol entries carry only their own dependency fingerprints.
             # Source discovery retains the project-wide witness. Changing modes
             # releases that witness instead of charging it to a small protocol.
-            cached = service._tree_page_scope_cache = (generation, {},
+            cached = cache_owner._tree_page_scope_cache = (generation, {},
                 None if protocol else dict(service._fingerprints))
         cache = cached[1]
         key = (checksum({'protocol': protocol, 'binding': binding and {
-            'version': binding['version'], 'revision_uuid': binding.get('revision_uuid')},
+            'version': binding['version'], 'revision_uuid': binding.get('revision_uuid'),
+            'read_scope_revision': binding.get('read_scope_revision')},
             'source_scope': service.source_scope()['revision'] if protocol is None else None,
             'predicate': body.get('predicate'), 'filters': filters,
             'splits': body.get('splits', 'date,cell,block'),
@@ -403,11 +407,11 @@ class TreePages:
             scoped_generation = generation(service, scoped_context)
         index = getattr(service, 'disk_index', None)
         from disco.metadata.disk_index import DiskMetadataIndex
-        canonical_index = isinstance(index, DiskMetadataIndex) and _structural_contract(service)
+        canonical_index = isinstance(index, DiskMetadataIndex) and _structural_contract(service, frozen_protocol=protocol)
         structural = canonical_index and _structural_scope(body)
         # Recorded/joint splits still project their exact typed values below.
-        # Only membership can borrow basic rows: custom and frozen adapters keep
-        # their public reader, as do live annotation/metadata-filter policies.
+        # Only proven native or owned frozen membership can borrow basic rows.
+        # Custom readers and live annotation/metadata filters keep their policy.
         raw_membership = canonical_index and not any(field in filters for field in (
             'tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
         if raw_membership and protocol:

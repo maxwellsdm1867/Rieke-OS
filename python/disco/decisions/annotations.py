@@ -188,15 +188,14 @@ class SharedAnnotations:
         if kind is not None:relation=relation&{'target_kind':kind}
         if ids is not None:
             if not ids:return []
-            if len(ids)<=250 or selected_only:
-                result=[]
-                for offset in range(0,len(ids),250):
-                    result.extend((relation&[{'target_uuid':key} for key in ids[offset:offset+250]]).to_dicts())
-                return result
-        result=relation.to_dicts()
-        if ids is not None:
-            allowed=set(ids);result=[row for row in result if row['target_uuid'] in allowed]
-        return result
+            # Explicit targets never widen to a project scan. Keep the legacy
+            # selected_only keyword compatible; callers no longer need to know
+            # the batching threshold to retain their read scope.
+            result=[]
+            for offset in range(0,len(ids),250):
+                result.extend((relation&[{'target_uuid':key} for key in ids[offset:offset+250]]).to_dicts())
+            return result
+        return relation.to_dicts()
 
     @staticmethod
     def _validated_tags(row):
@@ -334,7 +333,8 @@ class SharedAnnotations:
         cell_epochs={key:set() for key in cells};epoch_cell={row['epoch_uuid']:row['cell_uuid'] for row in rows}
         for row in rows:cell_epochs[row['cell_uuid']].add(row['epoch_uuid'])
         tagged_cells=set();tagged_epochs=set();by_tag={}
-        for row in self._rows():
+        scoped_records = self._rows('cell', sorted(cells)) + self._rows('epoch', sorted(ids))
+        for row in scoped_records:
             if not row['tags']:continue
             if row['target_kind']=='cell' and row['target_uuid'] in cells:
                 tagged_cells.add(row['target_uuid']);affected=cell_epochs[row['target_uuid']]
@@ -598,7 +598,7 @@ def register_annotation_routes(app,service,store,db_lock):
         if request.args:raise ValueError('Cell annotations use the complete registered cell')
         with db_lock:
             result=store.read_targets('cell',[cell_uuid])[identity(cell_uuid)]
-            result['epoch_count']=sum(row['cell_uuid']==identity(cell_uuid) for row in service.rows.values())
+            result['epoch_count']=service.cell_epoch_count(identity(cell_uuid))
             return jsonify(result)
     @app.get('/api/epochs/<epoch_uuid>/annotations')
     def annotation_epoch(epoch_uuid):
@@ -612,5 +612,5 @@ def register_annotation_routes(app,service,store,db_lock):
             key=store._scope('epoch',[epoch_uuid])[0];row=service.rows[key]
             result=store.for_epochs([row])[key]
             if include_count=='true':
-                result['cell_epoch_count']=sum(item['cell_uuid']==row['cell_uuid'] for item in service.rows.values())
+                result['cell_epoch_count']=service.cell_epoch_count(row['cell_uuid'])
             return jsonify(result)

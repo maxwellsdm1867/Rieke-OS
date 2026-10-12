@@ -57,6 +57,31 @@ and annotation fences; disposable metadata cannot stand in for those proofs.
 
 ## Explicit membership query work
 
+`DiskMetadataIndex.cell_epoch_ids` and `cell_epoch_count` read the complete
+registered cell through `epochs_cell`, without decoding unrelated row/detail JSON.
+IDs retain registration order; the count does not hydrate rows. The existing
+connection lifetime checks index integrity before and after each query. The
+`WorkspaceService.cell_rows` and `cell_epoch_count` interface supplies canonical
+UUID handling and a row-mapping fallback for legacy/custom index adapters.
+Cell QC and annotation display counts share this interface. These operations
+include excluded sources, as the earlier registered-cell scans did; they do not
+represent a protocol's narrower membership or grant scientific action authority.
+
+For the native path, the published index and basic-row mapping must describe the
+same immutable metadata generation. Callers do not edit cell membership in place;
+refresh publishes replacement mappings and an index together. Index-less/custom
+index adapters retain live mapping behavior. This is not permission to pair an
+old sealed index with independently edited row maps. `cell_rows` also rejects a
+returned row whose recorded cell disagrees with the requested indexed cell.
+
+The added SQL index is built with a new disposable generation because refresh
+hashes `disk_index.py` into its generation identity. Existing artifacts are never
+modified or resealed in place. The additive index does not change format 3's
+recorded data layout; a standalone caller explicitly reopening an old format-3
+file with its old generation can still read correctly but will not acquire this
+new acceleration until rebuilt. One-time generation rebuilding is distinct from
+rebuilding a cohort on every browse operation.
+
 Explicit UUID scopes are admitted through the native UUID index before predicate
 compilation. When sources are supplied, source eligibility is applied in one batch over
 admitted members; no project-wide source-member relation is materialized first.

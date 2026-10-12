@@ -196,4 +196,21 @@ class DiskIndexTests(unittest.TestCase):
         with self.assertRaises(ValueError): DiskMetadataIndex.build(self.path,self.rows,bad,self.sources,'new','project')
         self.assertEqual(len(index.rows()),31)
 
+    def test_cell_lookup_and_count_use_exact_indexed_scope_without_details(self):
+        index=self.build(count=1100)
+        self.addCleanup(index.close)
+        expected=[row['epoch_uuid'] for row in self.rows if row['cell_uuid']=='cell-17']
+        with patch.object(index,'rows',side_effect=AssertionError('No complete row projection')):
+            self.assertEqual(index.cell_epoch_ids('cell-17'),expected)
+            self.assertEqual(index.cell_epoch_count('cell-17'),len(expected))
+            self.assertEqual(index.cell_epoch_ids('not-registered'),[])
+            self.assertEqual(index.cell_epoch_count('not-registered'),0)
+        self.assertFalse(index.details.cache)
+        with sqlite3.connect(self.path) as connection:
+            plan=connection.execute('EXPLAIN QUERY PLAN SELECT COUNT(*) FROM epochs WHERE cell_uuid=?',('cell-17',)).fetchall()
+        self.assertTrue(any('COVERING INDEX epochs_cell' in item[-1] for item in plan),plan)
+        with self.path.open('ab') as stream:stream.write(b'changed')
+        with self.assertRaises(ValueError):index.cell_epoch_ids('cell-17')
+        with self.assertRaises(ValueError):index.cell_epoch_count('cell-17')
+
 if __name__=='__main__': unittest.main()

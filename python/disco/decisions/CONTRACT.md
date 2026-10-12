@@ -48,6 +48,16 @@ lookup, author-file failure, source freshness or cross-process durability.
 
 ## Page-local export counts
 
+Shared annotation reads with explicit target IDs remain restricted to those IDs
+at every cardinality. `SharedAnnotations` hides the 250-target SQL batching inside
+its read implementation; the legacy `selected_only` keyword remains accepted but
+is no longer needed to prevent a broad read. Full snapshots explicitly omit IDs.
+`for_epochs` reads only the requested epoch IDs and their inherited cell IDs,
+preserving all author chips and revision maps. The nonindexed `summary` fallback
+likewise queries only its supplied epochs/cells, including zero reads for an empty
+scope. Generation-fenced indexed summary behavior is unchanged. These are read
+projection changes, not new annotation authority or mutation batching rules.
+
 `CurationStore.export_link_counts(epoch_ids)` returns a fresh UUID-to-integer map
 for the caller's requested page UUIDs, including zero for unexported epochs.
 It uses the same project-scoped export-index signature polling, recipe validation

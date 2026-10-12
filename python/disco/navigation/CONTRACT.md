@@ -90,6 +90,20 @@ reusableTreeBody admission policy and use fresh bundles even with retained geome
 
 ## Protocol-local navigation dependencies
 
+Tree navigation may also reuse the exact owned Workbench frozen reader when the
+requested protocol matches its header and canonical service methods are intact.
+The frozen header includes a read-scope identity distinguishing pending membership
+and selected views. Projection storage belongs to that frozen input; fresh service
+adapters attach to it without retaining their context or annotation closures.
+This is an explicit tree-only admission: `_structural_contract(service)` without
+a frozen protocol still refuses that adapter for native typed/binding authority.
+Custom policy, annotation filters and source-wide requests retain their existing
+fallback. Cached computation never grants permission to publish a Workbench read.
+
+An empty annotation-field snapshot returns the existing empty v1 evidence and
+revision without reading definitions, fingerprints or registered rows. Nonempty
+annotation snapshots retain their complete persisted evidence semantics.
+
 An eligible protocol tree caches dependency fingerprints only for its complete
 effective membership, including members hidden by ordinary filters. A warm hit
 checks that cohort and one immutable binding header; it does not enumerate or

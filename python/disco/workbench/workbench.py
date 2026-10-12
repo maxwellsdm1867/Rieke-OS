@@ -21,6 +21,60 @@ from disco.workbench.diff import summarize_diff
 from disco.workbench.recipes import checksum
 from workspace_protocol_identity import require_protocol_compatibility
 from disco.operation_timing import elapsed
+from workspace_service import WorkspaceService, _FrozenProtocolBinding
+
+
+_PROTOCOL_SUMMARY = WorkspaceService.protocol
+_CELL_SUMMARY = WorkspaceService._cell_summary
+
+
+class _FrozenReadProjections:
+    """One retained frozen input; fresh adapters still own live read policy.
+
+    Immutable candidate/base/main inputs determine pending membership. A selected
+    view adds its exact UUID set. Drafts and annotations stay on fresh adapters:
+    this retains computation, never a context or authority receipt.
+    """
+    def __init__(self):
+        self.entry = None
+
+    def bind(self, service, context):
+        from disco.metadata.disk_index import DiskMetadataIndex
+        from disco.navigation.tree_pages import _structural_contract
+        index = getattr(service, 'disk_index', None)
+        key = None
+        dependencies = ('project_uuid', 'protocol_uuid', 'candidate_revision_uuid', 'candidate_recipe_sha256',
+                        'baseline_revision_uuid', 'baseline_recipe_sha256', 'main_revision_uuid',
+                        'main_recipe_sha256', 'expected_binding_version', 'expected_query_revision')
+        if (isinstance(index, DiskMetadataIndex) and _structural_contract(service)
+                and all(field in context for field in dependencies)):
+            service._ready()
+            index._check()
+            view = checksum(sorted(context['_view_ids'])) if '_view_ids' in context else None
+            witness = {field: context[field] for field in dependencies if field != 'expected_query_revision'}
+            # An unbound main is not an immutable recipe. Keep its live query
+            # proof; bound-main draft/annotation changes do not alter membership.
+            if context['main_revision_uuid'] is None:
+                witness['unbound_query_revision'] = context['expected_query_revision']
+            projection_revision = checksum(dict(witness, metadata_generation=index.generation, selected_view=view))
+            key = (id(index), id(service.rows), id(service.details),
+                   id(service.cells), id(service.protocols), id(service._fingerprints),
+                   projection_revision)
+            if self.entry is not None and self.entry[0] == key:
+                return self.entry[1]
+        # Release the previous candidate, including its bounded navigation
+        # caches, rather than multiplying cache budgets across actors/views.
+        self.entry = None
+        recipe = copy.copy(context['candidate'])
+        recipe['epochs'] = [dict(uuid=identity, metadata_hash=fingerprint)
+            for identity, fingerprint in context['pending'].items()
+            if '_view_ids' not in context or identity in context['_view_ids']]
+        binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
+        provider = _FrozenProtocolBinding(context['protocol_uuid'], binding, service.binding,
+            read_scope_revision=projection_revision if key is not None else None)
+        if key is not None:
+            self.entry = key, provider
+        return provider
 
 
 class WorkbenchConflict(ValueError):
@@ -112,6 +166,7 @@ class ProtocolWorkbench:
         self.project = service.project['project_uuid']
         self._tables = tables
         self.selection_manifests = {}
+        self._read_projections = _FrozenReadProjections()
 
     @property
     def tables(self):
@@ -654,13 +709,9 @@ class ProtocolWorkbench:
             if context['unavailable'] & context['pending'].keys():
                 raise WorkbenchConflict('Frozen candidate metadata is unavailable or changed; browsing cannot reconstruct it')
             scoped = copy.copy(self.service)
-            recipe = copy.copy(context['candidate'])
-            recipe['epochs'] = [dict(uuid=key, metadata_hash=value) for key, value in context['pending'].items()
-                                if '_view_ids' not in context or key in context['_view_ids']]
-            binding = dict(version=1, revision_uuid=recipe['revision_uuid'], recipe=recipe)
-            from workspace_service import _FrozenProtocolBinding
-            scoped.binding_provider = _FrozenProtocolBinding(context['protocol_uuid'], binding, self.service.binding)
-            scoped.binding_header_provider = None
+            provider = self._read_projections.bind(self.service, context)
+            scoped.binding_provider = provider
+            scoped.binding_header_provider = provider.header if provider.read_scope_revision is not None else None
             scoped._tree_catalog_cache = {}
             scoped._epoch_page_cache = None
             scoped._tree_scope_cache = {}
@@ -918,7 +969,10 @@ def register_workbench_routes(app, service, history, suggestions, state, revisio
             context['_transaction_authority'] = transaction_authority
         start_read(context, filters)
         scoped = manager.frozen_service(context)
-        protocol = copy.deepcopy(scoped.protocol(context['protocol_uuid'], filters))
+        summary_options = ({'cross_protocols': False}
+            if (getattr(scoped.protocol, '__func__', None) is _PROTOCOL_SUMMARY
+                and getattr(scoped._cell_summary, '__func__', None) is _CELL_SUMMARY) else {})
+        protocol = copy.deepcopy(scoped.protocol(context['protocol_uuid'], filters, **summary_options))
         protocol.update(query_revision=context['candidate_scope_revision'],
             expected_query_revision=context['expected_query_revision'], expected_binding_version=context['expected_binding_version'],
             source_eligibility=dict(excluded_epoch_count=len(context['ineligible']), propagation_required=bool(context['ineligible']),
