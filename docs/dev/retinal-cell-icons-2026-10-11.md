@@ -24,7 +24,7 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | Recorded category | Color | Schematic feature |
 | --- | --- | --- |
 | RGC / ON-parasol, OFF-parasol | shared ON teal / OFF purple | larger, wider soma (+20% follow-up) and broad, fuller arbor |
-| RGC / ON-midget, OFF-midget | shared ON / OFF | smaller soma and a narrow, compact tuft |
+| RGC / ON-midget, OFF-midget | shared ON / OFF | soma larger than bipolar but smaller than parasol; narrow tuft |
 | RGC / small bistratified | neutral | smaller upper tier and broader lower tier |
 | amacrine / AII | neutral | upper lobules and lower fine arbor |
 | amacrine / A17 | neutral | long, sparse processes with varicosities |
@@ -81,6 +81,26 @@ Species differences and within-type variability are not modeled by these icons.
 - [Grimes et al. (2010)](https://pmc.ncbi.nlm.nih.gov/articles/PMC2967021/), Figure 1: A17 neurites and varicosities in rat retina.
 - [Kim et al. (2022)](https://pmc.ncbi.nlm.nih.gov/articles/PMC9126974/), Figure 6: radial macaque starburst morphology.
 
+### Soma proportions
+
+The midget ganglion soma must not become smaller than the bipolar soma simply
+because its dendritic field is compact. Dacey (1993), Table 1, summarizes macaque
+midget ganglion soma diameter as 12.1 ± 1.9 µm (n=148; attributed there to
+Watanabe & Rodieck, 1989), versus parasol 17.4 ± 2.7 µm. Patterson et al. (2019),
+Figure 3F, reports central macaque OFF midget bipolar soma diameters near 8 µm.
+The cross-study midget-ganglion/bipolar diameter comparison is roughly 1.5, not a
+universal matched-cell ratio: subtype, retinal location, preparation and species
+matter. Do not mix soma diameter with dendritic-field diameter.
+
+The schematic midget ellipse is 6.8 × 6.6 viewBox units versus bipolar 4.6 × 5,
+approximately 1.4 times its area-equivalent diameter. The wider parasol remains
+8.88 × 7.2. This preserves readable hierarchy without claiming one anatomical
+scale across the full sheet. The midget's narrow tuft supplies its strongest
+shape distinction.
+
+- [Dacey (1993), Table 1](https://cpb-us-e1.wpmucdn.com/sites.uw.edu/dist/6/8438/files/2020/09/dacey1993.pdf)
+- [Patterson et al. (2019), Figure 3F](https://pubmed.ncbi.nlm.nih.gov/31417169/)
+
 ## Validation
 
 An independent scientific visual review of the complete sheet identified the
@@ -104,7 +124,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `0d5f216`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `628ce7c`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,

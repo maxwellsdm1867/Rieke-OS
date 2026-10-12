@@ -1,7 +1,7 @@
 /** Schematic retinal side view; ON arbors lie closer to the ganglion soma. */
 export default function NeuronIcon({size=19,strokeWidth=1.7,compact=false,parasol=false,somaOffset=0,polarity,...props}){
   const offset=polarity==='off'?0:4;
-  const rx=compact?2:parasol?4.44:3,ry=compact?2.2:parasol?3.6:2.8;
+  const rx=compact?3.4:parasol?4.44:3,ry=compact?3.3:parasol?3.6:2.8;
   const somaY=17.3+somaOffset;
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
     <path d={`M12 ${somaY-ry}C11.4 12.8 12.7 ${9+offset} 12 ${7+offset}`}/>
