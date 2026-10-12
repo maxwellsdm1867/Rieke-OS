@@ -22,6 +22,47 @@ from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
 OPTIONAL_PID_ATTACH = 'python/lib/python3.11/site-packages/debugpy/_vendored/pydevd/pydevd_attach_to_process/attach.dylib'
+# The pinned package initializer imports plotting, CV and ML even when the
+# caller asks only for config.schema. Keep its public API verbatim, but defer
+# that initializer in the desktop process until a public convenience export is
+# actually requested. Scientific modules and schema declarations are unchanged.
+PARSER_PUBLIC_INIT_SHA256 = '77cfc5692391f123c633adb6d52d96a12d5a6200ac7079f6ddfbeb130d2f27b9'
+PARSER_DESKTOP_INIT = '''"""Desktop schema imports do not initialize the optional analysis API."""
+import os as _os
+from importlib import import_module as _import_module
+
+from ._database import schema
+from . import config
+
+
+def _load_public_api():
+    # Import machinery serializes this initialization and handles reentrant
+    # package imports. The retained initializer has the same relative-import
+    # package as before; its public objects are re-exported, not reimplemented.
+    module = _import_module("._disco_public_api", __name__)
+    globals().update({key: value for key, value in vars(module).items()
+                      if not key.startswith("__") or key == "__all__"})
+
+
+def __getattr__(name):
+    if name.startswith("_") and name != "__all__":
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    _load_public_api()
+    try:
+        return globals()[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+
+
+def __dir__():
+    _load_public_api()
+    return sorted(globals())
+
+
+# Retain ordinary parser/CLI import behavior. Only the desktop opts in.
+if _os.environ.get("RIEKE_DESKTOP_MODE") != "1":
+    _load_public_api()
+'''
 from desktop_application_profile import copy_python_application, audit_application
 sys.path.insert(0, str(ROOT / 'python'))
 from workspace_bootstrap import verify_checkout
@@ -73,7 +114,15 @@ print(json.dumps({'python':'.'.join(map(str,sys.version_info[:3])),
 
 
 def patch_parser(checkout):
-    """Patch only config ownership, leaving parser algorithms byte-identical."""
+    """Patch config ownership and desktop imports; retain scientific source bytes."""
+    package = checkout / 'src/retinanalysis'
+    initializer = package / '__init__.py'
+    original_initializer = initializer.read_bytes()
+    if hashlib.sha256(original_initializer).hexdigest() != PARSER_PUBLIC_INIT_SHA256:
+        raise ValueError('Pinned parser public initializer patch no longer applies exactly')
+    retained_initializer = package / '_disco_public_api.py'
+    if retained_initializer.exists():
+        raise ValueError('Parser public initializer was already patched')
     path = checkout / 'src/retinanalysis/config/settings.py'
     text = path.read_text()
     old = 'config_path = ir.files(retinanalysis) / os.path.join("config", "config.ini")'
@@ -86,11 +135,19 @@ else:
     config_path = ir.files(retinanalysis) / os.path.join("config", "config.ini")'''
     if text.count(old) != 1:
         raise ValueError('Pinned parser config patch no longer applies exactly')
+    retained_initializer.write_bytes(original_initializer)
+    initializer.write_text(PARSER_DESKTOP_INIT)
     path.write_text(text.replace(old, new))
     (checkout / 'src/retinanalysis/config/config.ini').unlink(missing_ok=True)
     return {'path': 'src/retinanalysis/config/settings.py',
             'original_sha256': hashlib.sha256(text.encode()).hexdigest(),
-            'patched_sha256': digest(path), 'purpose': 'RIEKE_PARSER_CONFIG external user state'}
+            'patched_sha256': digest(path), 'purpose': 'RIEKE_PARSER_CONFIG external user state',
+            'public_api': {'path': 'src/retinanalysis/__init__.py',
+                'original_sha256': PARSER_PUBLIC_INIT_SHA256,
+                'patched_sha256': digest(initializer),
+                'retained_path': 'src/retinanalysis/_disco_public_api.py',
+                'retained_sha256': digest(retained_initializer),
+                'purpose': 'Defer optional public analysis imports in desktop schema readers'}}
 
 
 def stage_tracked_parser(checkout, staged):

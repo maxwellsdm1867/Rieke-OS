@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 import uuid
 
 MANIFEST_LIMIT = 256 * 1024
@@ -70,9 +71,11 @@ def list_projects(project_dir):
     establish a second selectable project: current wins; ambiguous non-current
     identities are omitted. The method performs no database/network calls/writes.
     """
+    sys.audit('disco.project_inventory', 'validate_folder', 'current_project', str(project_dir))
     current_dir = Path(project_dir).expanduser().resolve(strict=True)
     if not current_dir.is_dir():
         raise ValueError('Current project must be a directory')
+    sys.audit('disco.project_inventory', 'inspect_project', 'current_project', str(current_dir))
     current = _project_record(current_dir, current=True)
     candidates = []
     try:
@@ -80,6 +83,7 @@ def list_projects(project_dir):
     except OSError:
         siblings = []
     for directory in siblings:
+        sys.audit('disco.project_inventory', 'inspect_project', 'candidate', str(directory))
         try:
             if directory == current_dir or directory.is_symlink() or not directory.is_dir():
                 continue
@@ -96,7 +100,10 @@ def list_projects(project_dir):
 def _combined_projects(discovered, root, current=None):
     """Read only saved exact folders; their parents are never searched."""
     from workspace_startup_registry import read_registry, read_project_index, ordered_projects
+    sys.audit('disco.project_inventory', 'read_registry', 'registry', str(root / '.rieke-os.json'))
     local = read_registry(root)
+    # The index reader emits its exact preference location after resolving it.
+    sys.audit('disco.project_inventory', 'read_project_index', 'registry', 'project-index')
     index = read_project_index()
     by_path = {project['path']: project for project in discovered}
     for saved in index['projects']:
@@ -104,6 +111,7 @@ def _combined_projects(discovered, root, current=None):
         if path in by_path:
             continue
         directory = Path(path)
+        sys.audit('disco.project_inventory', 'read_saved_project', 'saved_project', str(directory))
         try:
             if directory.is_symlink() or not directory.is_dir():
                 raise ValueError('Project folder is unavailable; reconnect its drive or add its new location')
@@ -147,12 +155,14 @@ def managed_root(path, *, allow_workspace_descendant=False):
 
 
 def list_managed_projects(root, current_project=None):
+    sys.audit('disco.project_inventory', 'validate_folder', 'managed_root', str(root))
     root = managed_root(root)
     projects = []
     if root.exists():
         if not root.is_dir():
             raise ValueError('Managed project root must be a directory')
         for directory in sorted(root.iterdir(), key=lambda item: item.name.casefold()):
+            sys.audit('disco.project_inventory', 'inspect_project', 'candidate', str(directory))
             try:
                 if directory.is_symlink() or not directory.is_dir():
                     continue

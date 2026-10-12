@@ -55,6 +55,28 @@ class ProjectInventoryTests(unittest.TestCase):
         self.spawned.set()
         return child
 
+    def faulty_listing(self, *, denied=False):
+        def spawn(command, **options):
+            # Run the real reader and diagnostics, replacing only the owned
+            # fixture's directory operation. No live app or scientific process.
+            source = str(Path(command[3]).parents[2])
+            code = '''import sys,time
+sys.path.insert(0,sys.argv[1])
+import workspace_projects
+from disco.projects.project_inventory import main
+def list_folder(path):
+    sys.audit('os.listdir', str(path))
+    if sys.argv[2] == 'denied': raise PermissionError('private-path-must-not-leak')
+    time.sleep(60)
+workspace_projects.Path.iterdir=list_folder
+main(sys.argv[3:])
+'''
+            child = subprocess.Popen([sys.executable, '-I', '-B', '-c', code,
+                source, 'denied' if denied else 'stalled', *command[4:]], **options)
+            self.children.append(child)
+            return child
+        return spawn
+
     def project(self, name, identity=None):
         folder = self.managed / name
         folder.mkdir()
@@ -98,6 +120,74 @@ class ProjectInventoryTests(unittest.TestCase):
             inventory.managed(self.managed)
         self.assertLess(time.monotonic() - started, 2)
         self.assertEqual(len(self.children), 1)
+        self.assertIsNotNone(self.children[0].poll())
+
+    def test_stalled_directory_reports_last_operation_and_retries_without_orphan_workers(self):
+        inventory = ProjectInventory(timeout=.25, process_factory=self.faulty_listing())
+        before = self.snapshot()
+        for _ in range(3):
+            with self.assertRaises(ProjectInventoryUnavailable) as caught:
+                inventory.managed(self.managed)
+            value = caught.exception.diagnostics
+            self.assertEqual(value['reason'], 'timeout')
+            self.assertEqual(value['operation'], 'list_directory')
+            self.assertEqual(value['scope'], 'managed_root')
+            self.assertEqual(value['path_id'], hashlib.sha256(os.fsencode(self.managed)).hexdigest()[:16])
+            self.assertEqual(value['worker_cleanup'], 'reaped')
+            self.assertLess(value['elapsed_ms'], 1500)
+            self.assertNotIn(str(self.root), str(caught.exception) + json.dumps(value))
+            self.assertTrue(all(child.poll() is not None for child in self.children))
+        self.assertEqual(self.snapshot(), before)
+        inventory.process_factory = subprocess.Popen
+        self.assertEqual(inventory.managed(self.managed)['projects'], [])
+
+    def test_permission_failure_is_not_empty_inventory_and_does_not_expose_child_errors(self):
+        inventory = ProjectInventory(process_factory=self.faulty_listing(denied=True))
+        result = self.launcher(inventory).test_client().get('/api/projects')
+        self.assertEqual(result.status_code, 503)
+        self.assertEqual(result.json['diagnostics']['reason'], 'permission_denied')
+        self.assertEqual(result.json['diagnostics']['operation'], 'list_directory')
+        self.assertEqual(result.json['diagnostics']['worker_cleanup'], 'reaped')
+        self.assertNotIn('projects', result.json)
+        self.assertNotIn('private-path-must-not-leak', result.get_data(as_text=True))
+        self.assertNotIn(str(self.root), result.get_data(as_text=True))
+
+    def test_worker_that_has_not_exited_prevents_spawning_until_reaped(self):
+        class PendingStop:
+            def __init__(self, child):
+                self.child = child
+            def __getattr__(self, name):
+                return getattr(self.child, name)
+            def kill(self):
+                pass  # Model a kernel read that has not acknowledged kill.
+        def pending(command, **options):
+            return PendingStop(self.held_read(command, **options))
+        inventory = ProjectInventory(timeout=.05, process_factory=pending)
+        with self.assertRaises(ProjectInventoryUnavailable) as caught:
+            inventory.managed(self.managed)
+        self.assertEqual(caught.exception.diagnostics['worker_cleanup'], 'pending')
+        for _ in range(3):
+            with self.assertRaises(ProjectInventoryUnavailable) as caught:
+                inventory.managed(self.managed)
+            self.assertEqual(caught.exception.diagnostics['reason'], 'worker_still_stopping')
+        self.assertEqual(len(self.children), 1)
+        self.children[0].kill()
+        self.children[0].wait(timeout=2)
+        inventory.timeout = 3
+        inventory.process_factory = subprocess.Popen
+        self.assertEqual(inventory.managed(self.managed)['projects'], [])
+
+    def test_excessive_output_is_bounded_and_worker_is_reaped(self):
+        def noisy(command, **options):
+            child = subprocess.Popen([sys.executable, '-I', '-B', '-c',
+                "import os,time; os.write(2,b'private-noise'*10000); os.write(1,b'x'*(9*1024*1024)); time.sleep(60)"], **options)
+            self.children.append(child)
+            return child
+        inventory = ProjectInventory(timeout=2, process_factory=noisy)
+        with self.assertRaises(ProjectInventoryUnavailable) as caught:
+            inventory.managed(self.managed)
+        self.assertEqual(caught.exception.diagnostics['reason'], 'output_limit')
+        self.assertNotIn('private-noise', json.dumps(caught.exception.diagnostics))
         self.assertIsNotNone(self.children[0].poll())
 
     def test_pause_cancels_read_without_waiting_for_its_deadline_and_resume_retries(self):

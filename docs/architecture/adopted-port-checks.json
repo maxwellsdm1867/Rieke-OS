@@ -2717,9 +2717,12 @@
           "file": "python/disco/projects/project_inventory.py",
           "allow": [
             "__future__",
+            "hashlib",
             "json",
+            "logging",
             "os",
             "pathlib",
+            "selectors",
             "subprocess",
             "sys",
             "threading",
@@ -3800,7 +3803,7 @@
       },
       {
         "file": "python/tests/test_desktop_runtime_packaging.py",
-        "file_sha256": "528964cbe6f2b95e76b5325711eb399da57f644571a1f390713350a546ed8803",
+        "file_sha256": "8dd1080f7102987abec98319a8a3328d70b936e5c0bc93d5a48105c7ed52f0e2",
         "sites": [
           {
             "selector": "call:spec_from_file_location:1",
@@ -3813,7 +3816,7 @@
             "kind": "ast-call"
           }
         ],
-        "reason": "Current module path relocation and revision-owned schema provenance; all original loader Call ASTs unchanged. Source-only evidence task-6/evidence/current-path-closure/source-ast-check.json; no native execution authorization."
+        "reason": "Desktop startup adds deferred parser API checks; existing settings fixture loader Call ASTs are unchanged and still load only owned test copies."
       },
       {
         "file": "python/tests/test_desktop_test_release.py",
