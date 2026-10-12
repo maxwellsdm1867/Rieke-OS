@@ -16,9 +16,16 @@ test('recorded types select consistent icons across overview, cell list, selecti
     const {CellList}=await server.ssrLoadModule('/src/components/Common.jsx');
     const {default:Selection}=await server.ssrLoadModule('/src/protocol-overview/ui/SelectionOverview.jsx');
     const {default:Incoming}=await server.ssrLoadModule('/src/incoming-workbench/ui/IncomingCellTypes.jsx');
-    const examples=[['RGC\\ON-parasol','on-parasol'],['OFF parasol','off-parasol'],['ON midget','on-midget'],['OFF midget','off-midget'],['Bipolar\\ON','on-bipolar'],['OFF bipolar','off-bipolar'],['Cones','cone'],['Rod','rod'],['Horizontal cell','horizontal'],['Unspecified-type bipolar','bipolar'],['Amacrine cell','amacrine']];
-    for(const [type,token] of examples){
-      const cell=Object.freeze({cell_uuid:`id-${token}`,cell_type:type,label:'Cell 1',date:'2026-10-11',epochs:1});
+    const examples=[
+      ['RGC/ON-parasol','cell-on'],['RGC/OFF-parasol','cell-off'],['RGC/ON-midget','cell-on'],['RGC/OFF-midget','cell-off'],['RGC/small bistratified','ink-muted'],
+      ['amacrine/AII','ink-muted'],['amacrine/A17','ink-muted'],['amacrine/starburst','ink-muted'],
+      ['bipolar/OFF-diffuse','cell-off'],['bipolar/OFF-midget','cell-off'],['bipolar/ON-diffuse','cell-on'],['bipolar/ON-midget','cell-on'],['bipolar/rod','cell-on'],
+      ['horizontal','cell-outer'],['photoreceptor/S cone','cell-cone-s'],['photoreceptor/M cone','cell-cone-m'],['photoreceptor/L cone','cell-cone-l'],['photoreceptor/rod','cell-outer'],['unknown','ink-muted'],
+      ['ON bipolar','cell-on'],['OFF bipolar','cell-off'],['Cones','ink-muted'],['Unspecified-type bipolar','ink-muted'],['Generic amacrine','ink-muted'],
+      ['RGC/unlisted subtype','ink-muted'],['bipolar/unlisted subtype','ink-muted'],['amacrine/unlisted subtype','ink-muted'],['photoreceptor/unlisted subtype','ink-muted'],
+    ];
+    for(const [index,[type,token]] of examples.entries()){
+      const cell=Object.freeze({cell_uuid:`id-${index}`,cell_type:type,label:'Cell 1',date:'2026-10-12',epochs:1});
       const fixtures=[
         [Summary,{types:[{type,count:1}],total:1},'.cell-type-neuron svg'],
         [CellList,{cells:[cell]},'.cell-glyph svg'],
@@ -28,12 +35,18 @@ test('recorded types select consistent icons across overview, cell list, selecti
       for(const [Component,props,selector] of fixtures){
         const svg=draw(Component,props).querySelector(selector);
         assert.ok(svg,`${type}: ${selector}`);
-        assert.equal(svg.style.color,/^(on|off)-/.test(token)?`var(--cell-${token.split('-')[0]})`:['bipolar','amacrine'].includes(token)?'var(--ink-muted)':'var(--cell-outer)');
+        assert.equal(svg.style.color,`var(--${token})`);
         assert.equal(svg.getAttribute('aria-hidden'),'true','recorded text supplies accessible identity');
       }
       assert.equal(draw(Summary,{types:[{type,count:1}],total:1}).querySelector('.cell-type-name').firstChild.textContent,type);
-      assert.match(draw(CellList,{cells:[cell]}).textContent,new RegExp(`id-${token}`));
+      assert.match(draw(CellList,{cells:[cell]}).textContent,new RegExp(`id-${index}`));
     }
+    const glyph=type=>draw(Selection,{cell:{cell_uuid:'identity',cell_type:type,epochs:1}}).querySelector('svg').innerHTML;
+    assert.notEqual(glyph('RGC/ON-midget'),glyph('bipolar/ON-midget'));
+    assert.notEqual(glyph('photoreceptor/rod'),glyph('bipolar/rod'));
+    assert.equal(glyph('photoreceptor/S cone'),glyph('photoreceptor/M cone'));
+    assert.equal(glyph('photoreceptor/M cone'),glyph('photoreceptor/L cone'));
+    assert.equal(new Set(['AII','A17','starburst','unknown'].map(type=>glyph(`amacrine/${type}`))).size,4);
     const unknown=draw(Selection,{cell:{cell_uuid:'unknown',label:'ON parasol',epochs:1}}).querySelector('svg');
     assert.equal(unknown.style.color,'var(--ink-muted)','a display name must not classify the cell');
   }finally{dom.window.close();await server.close();}

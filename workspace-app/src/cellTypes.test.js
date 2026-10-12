@@ -35,7 +35,7 @@ test('retinal icons follow exact recorded classes and polarity without inferring
       const cell=Object.freeze({cell_uuid:'recorded-id',cell_type:spelling});
       const presentation=cellTypePresentation(recordedCellType(cell));
       assert.equal(presentation.shape,shape);assert.equal(presentation.polarity,polarity);
-      assert.equal(presentation.color,polarity?`var(--cell-${polarity})`:'var(--cell-outer)');assert.equal(recordedCellType(cell),spelling);
+      assert.equal(presentation.color,polarity?`var(--cell-${polarity})`:shape==='cone'?'var(--ink-muted)':'var(--cell-outer)');assert.equal(recordedCellType(cell),spelling);
     }
   }
   for(const [type,canonical] of [
@@ -43,12 +43,44 @@ test('retinal icons follow exact recorded classes and polarity without inferring
     ['Bipolar\\ON','ON bipolar'],['BC/OFF','OFF bipolar'],['ON bipolar cell','ON bipolar'],
     ['Photoreceptor/Cone','Cone'],['Photoreceptors/Rods','Rod'],['Cones','Cone'],['Rod cells','Rod'],['HC','Horizontal cell'],['Horizontal cells','Horizontal cell'],
   ])assert.deepEqual(cellTypePresentation(type),cellTypePresentation(canonical));
-  for(const type of ['ON parasol candidate','possible cone','horizontal candidate','other/Horizontal','rod bipolar','ON-OFF bipolar','other/ON midget','OFF','Unknown',''])
+  for(const type of ['ON parasol candidate','possible cone','horizontal candidate','other/Horizontal','ON-OFF bipolar','other/ON midget','OFF','Unknown',''])
     assert.equal(cellTypePresentation(type).color,'var(--ink-muted)',type);
-  for(const type of ['Bipolar','Bipolar cell','Unspecified-type bipolar','Generic bipolar','BC/Unspecified','Bipolar/Unknown'])
+  for(const type of ['Bipolar','BC','Bipolar cell','Unspecified-type bipolar','Generic bipolar','BC/Unspecified','Bipolar/Unknown'])
     assert.deepEqual(cellTypePresentation(type),{shape:'bipolar',color:'var(--ink-muted)'},type);
   for(const type of ['Amacrine','Amacrine cell','Generic amacrine','AC','Amacrine/Unspecified'])
     assert.deepEqual(cellTypePresentation(type),{shape:'amacrine',color:'var(--ink-muted)'},type);
   for(const type of ['possible amacrine','other/Amacrine'])assert.equal(cellTypePresentation(type).shape,'generic');
   assert.deepEqual(cellTypePresentation(recordedCellType({label:'ON parasol'})),{shape:'generic',color:'var(--ink-muted)'});
+});
+
+
+test('complete recorded taxonomy retains family context, exact subtype and neutral family fallback',()=>{
+  const cases=[
+    ['RGC/ON-parasol','ganglion',undefined,'on','cell-on'],['RGC/OFF-parasol','ganglion',undefined,'off','cell-off'],
+    ['RGC/ON-midget','midget',undefined,'on','cell-on'],['RGC/OFF-midget','midget',undefined,'off','cell-off'],
+    ['RGC/small bistratified','bistratified',undefined,undefined,'ink-muted'],
+    ['amacrine/AII','amacrine','aii',undefined,'ink-muted'],['amacrine/A17','amacrine','a17',undefined,'ink-muted'],['amacrine/starburst','amacrine','starburst',undefined,'ink-muted'],
+    ['bipolar/OFF-diffuse','bipolar','diffuse','off','cell-off'],['bipolar/OFF-midget','bipolar','midget','off','cell-off'],
+    ['bipolar/ON-diffuse','bipolar','diffuse','on','cell-on'],['bipolar/ON-midget','bipolar','midget','on','cell-on'],['bipolar/rod','bipolar','rod','on','cell-on'],
+    ['horizontal','horizontal',undefined,undefined,'cell-outer'],
+    ['photoreceptor/S cone','cone',undefined,undefined,'cell-cone-s'],['photoreceptor/M cone','cone',undefined,undefined,'cell-cone-m'],['photoreceptor/L cone','cone',undefined,undefined,'cell-cone-l'],
+    ['photoreceptor/rod','rod',undefined,undefined,'cell-outer'],['unknown','generic',undefined,undefined,'ink-muted'],
+  ];
+  for(const [type,shape,variant,polarity,token] of cases){
+    for(const spelling of [type,type.replaceAll('/','\\'),type.toUpperCase().replaceAll(' ','_')]){
+      const cell=Object.freeze({cell_uuid:'recorded-cell',cell_type:spelling});
+      const presentation=cellTypePresentation(recordedCellType(cell));
+      assert.equal(presentation.shape,shape,spelling);assert.equal(presentation.variant,variant,spelling);
+      assert.equal(presentation.polarity,polarity,spelling);assert.equal(presentation.color,`var(--${token})`,spelling);
+      assert.equal(recordedCellType(cell),spelling);
+    }
+  }
+  for(const [family,shape] of [['RGC','ganglion'],['bipolar','bipolar'],['amacrine','amacrine'],['photoreceptor','photoreceptor'],['horizontal','horizontal']]){
+    for(const subtype of ['unknown','unspecified','new unrecognized subtype','ON-midget candidate'])
+      assert.deepEqual(cellTypePresentation(`${family}/${subtype}`),{shape,color:'var(--ink-muted)'});
+  }
+  assert.equal(cellTypePresentation('ON-midget').shape,'midget');
+  assert.equal(cellTypePresentation('ON midget bipolar').variant,'midget');
+  assert.equal(cellTypePresentation('Rod bipolar').variant,'rod');
+  for(const label of ['possible AII','S cone candidate','other/A17','possible starburst'])assert.deepEqual(cellTypePresentation(label),{shape:'generic',color:'var(--ink-muted)'});
 });

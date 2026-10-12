@@ -16,27 +16,59 @@ export function distinctCells(cells=[]) {
   });
 }
 // Exact presentation aliases only; never infer a type from a cell name or candidate label.
+const neutral=shape=>({shape,color:'var(--ink-muted)'});
+const normalizeTypePart=value=>value.trim().toLowerCase().replace(/[ _-]+/g,'-').replace(/-cells?$/,'');
+const families={rgc:'ganglion',ganglion:'ganglion','retinal-ganglion':'ganglion',bipolar:'bipolar',bc:'bipolar',amacrine:'amacrine',ac:'amacrine',horizontal:'horizontal',hc:'horizontal',photoreceptor:'photoreceptor',photoreceptors:'photoreceptor'};
+const polarized=(shape,polarity,variant)=>({shape,polarity,color:`var(--cell-${polarity})`,...(variant?{variant}:{})});
+function ganglionPresentation(key) {
+  const match=/^(on|off)-(midget|parasol)$/.exec(key);
+  if(match)return polarized(match[2]==='midget'?'midget':'ganglion',match[1]);
+  if(key==='small-bistratified')return neutral('bistratified');
+  return null;
+}
+function bipolarPresentation(key,qualified=false) {
+  if(qualified && /^(on|off)$/.test(key))return polarized('bipolar',key);
+  const generic=/^(on|off)-bipolar$/.exec(key);
+  if(generic)return polarized('bipolar',generic[1]);
+  const subtype=/^(on|off)-(midget|diffuse)(-bipolar)?$/.exec(key);
+  // Bare ON/OFF midget retains its established RGC meaning. The family path disambiguates it.
+  if(subtype && (qualified || subtype[3] || subtype[2]==='diffuse'))return polarized('bipolar',subtype[1],subtype[2]);
+  // Rod bipolar is a recognized ON type; bare rod remains a photoreceptor.
+  if(key==='rod-bipolar' || (qualified && key==='rod'))return polarized('bipolar','on','rod');
+  if(/^(bipolar|generic-bipolar|untyped-bipolar|unspecified-bipolar|unspecified-type-bipolar)$/.test(key))return neutral('bipolar');
+  return null;
+}
+function amacrinePresentation(key) {
+  const subtype=key.replace(/-amacrine$/,'');
+  if(['aii','a17','starburst'].includes(subtype))return {...neutral('amacrine'),variant:subtype};
+  if(/^(amacrine|generic-amacrine|untyped-amacrine|unspecified-amacrine|unspecified-type-amacrine|ac)$/.test(key))return neutral('amacrine');
+  return null;
+}
+function photoreceptorPresentation(key) {
+  const receptor=key.replace(/s$/,'');
+  if(receptor==='cone')return neutral('cone');
+  if(receptor==='rod')return {shape:'rod',color:'var(--cell-outer)'};
+  const cone=/^([sml])-cone$/.exec(receptor);
+  if(cone)return {shape:'cone',color:`var(--cell-cone-${cone[1]})`};
+  if(['photoreceptor','photoreceptors','generic-photoreceptor','unspecified-photoreceptor'].includes(key))return neutral('photoreceptor');
+  return null;
+}
 export function cellTypePresentation(type) {
-  const parts=String(type || '').trim().toLowerCase().split(/[\\/]+/);
-  const key=parts.pop().trim().replace(/[ _-]+/g,'-');
-  const prefix=parts.join('/');
-  const ganglion=/^(on|off)-(midget|parasol)$/.test(key);
-  if(ganglion && (!prefix || prefix==='rgc'))return {shape:key.endsWith('midget')?'midget':'ganglion',polarity:key.split('-')[0],color:`var(--cell-${key.split('-')[0]})`};
-  const bipolarKey=key.replace(/-cells?$/,'');
-  const bipolar=['bipolar','bc'].includes(prefix) && /^(on|off)$/.test(bipolarKey)?`${bipolarKey}-bipolar`:bipolarKey;
-  if(/^(on|off)-bipolar$/.test(bipolar) && (!prefix || prefix==='bipolar' || prefix==='bc'))
-    return {shape:'bipolar',polarity:bipolar.split('-')[0],color:`var(--cell-${bipolar.split('-')[0]})`};
-  if((!prefix && /^(bipolar|generic-bipolar|untyped-bipolar|unspecified-bipolar|unspecified-type-bipolar)$/.test(bipolar)) ||
-    (['bipolar','bc'].includes(prefix) && /^(unknown|unclassified|unspecified|unspecified-type|untyped)$/.test(key)))
-    return {shape:'bipolar',color:'var(--ink-muted)'};
-  if(!prefix && /^(horizontal(-cells?)?|hc)$/.test(key))return {shape:'horizontal',color:'var(--cell-outer)'};
-  if((!prefix && /^(amacrine(-cells?)?|generic-amacrine|unspecified-amacrine|unspecified-type-amacrine|ac)$/.test(key)) ||
-    (['amacrine','ac'].includes(prefix) && /^(unknown|unclassified|unspecified|unspecified-type|untyped)$/.test(key)))
-    return {shape:'amacrine',color:'var(--ink-muted)'};
-  const receptor=key.replace(/-cells?$/,'').replace(/s$/,'');
-  if(['cone','rod'].includes(receptor) && (!prefix || prefix==='photoreceptor' || prefix==='photoreceptors'))
-    return {shape:receptor,color:'var(--cell-outer)'};
-  return {shape:'generic',color:'var(--ink-muted)'};
+  const parts=String(type || '').split(/[\\/]+/).map(normalizeTypePart);
+  const key=parts.pop(),prefix=parts.join('/'),family=families[prefix];
+  if(prefix) {
+    // Preserve a recorded family even when its subtype has no icon; never guess a subtype.
+    if(family==='ganglion')return ganglionPresentation(key) || neutral('ganglion');
+    if(family==='bipolar')return bipolarPresentation(key,true) || neutral('bipolar');
+    if(family==='amacrine')return amacrinePresentation(key) || neutral('amacrine');
+    if(family==='photoreceptor')return photoreceptorPresentation(key) || neutral('photoreceptor');
+    if(family==='horizontal')return neutral('horizontal');
+    return neutral('generic');
+  }
+  if(['rgc','ganglion','retinal-ganglion','generic-ganglion','unspecified-ganglion'].includes(key))return neutral('ganglion');
+  if(key==='bc')return neutral('bipolar');
+  if(['horizontal','hc'].includes(key))return {shape:'horizontal',color:'var(--cell-outer)'};
+  return ganglionPresentation(key) || bipolarPresentation(key) || amacrinePresentation(key) || photoreceptorPresentation(key) || neutral('generic');
 }
 export function cellTypeColor(type) {
   return cellTypePresentation(type).color;
