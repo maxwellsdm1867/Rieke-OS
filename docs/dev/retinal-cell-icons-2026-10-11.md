@@ -35,7 +35,7 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | horizontal | outer-retina blue | lateral arbor |
 | photoreceptor / S cone, M cone, L cone | blue / green / coral | identical rounded cone shape |
 | photoreceptor / rod | outer-retina blue | cylindrical outer segment |
-| unknown | neutral | generic neuron |
+| unknown | neutral | original generic neuron with two small question marks beside its soma |
 
 Rod bipolar is a recognized ON type, not a rod photoreceptor. Small bistratified uses blue and identified amacrine
 subtypes use yellow/gold, distinguishing them from unspecified neutral-gray types.
@@ -46,7 +46,10 @@ remain available when polarity is recorded but the subtype is not.
 
 Unrecognized subtypes under a recorded family use a neutral family silhouette:
 ganglion, bipolar, amacrine, horizontal, or photoreceptor. An unknown family or
-unqualified candidate label uses the neutral neuron. A known family never
+unqualified candidate label uses the neutral neuron with two small question marks
+beside its soma. The underlying neuron shape stays unchanged; the markers are
+SVG paths and follow the neutral theme color. Known-family fallback icons do not
+receive these markers. A known family never
 promotes a tentative subtype to a confirmed subtype. Bare family labels and
 common unspecified-family aliases are also supported.
 
@@ -129,7 +132,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `19a87c1`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `6c0cf9a`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
