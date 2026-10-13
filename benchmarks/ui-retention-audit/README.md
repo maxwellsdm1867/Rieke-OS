@@ -36,10 +36,13 @@ Every checkpoint records a screenshot, visible control values, geometry/computed
 styles, view/trace node identity, route, error text and request ledger. Uncaught
 errors and blocked mutations are failures. A failed step is retained with its
 screenshot and error, and the driver continues independent checks; it is never
-excluded from a median or silently labeled unsupported. Candidate-only retention
+excluded from a median or silently labeled unsupported. Dependent checks are marked
+blocked with their exact failed prerequisites; they never count as passes. Candidate-only retention
 assertions are explicit; baseline state loss is recorded as a comparison result.
 Capabilities the fixture cannot exercise (notably channel selection and native
-file dialogs) are listed explicitly. Native audits supply those separate checks.
+file dialogs) are listed explicitly. Activity is separately marked unsupported only
+when its actual HTTP 500 and visible error are accompanied by the exact backend
+`FixtureService` missing-`Event` exception; this shared fixture has no event relation. Native audits supply those separate checks.
 
 The driver never clicks Save & export, Add tag, Merge, Apply to protocol, source
 lifecycle operations, or project creation/unmount. A request guard rejects those
@@ -64,3 +67,7 @@ No automatic image-similarity threshold declares a screen correct. The captured
 pairs require independent visual inspection for clipping, misalignment, duplicate
 controls, unexpected blank areas and transient-state leakage. Fixture UUIDs,
 paths and timestamps are preserved in the images rather than masked.
+
+The compact candidate checks the metadata wrapper is not absolutely positioned
+and hit-tests the real trace Apply control at its center before clicking it. This
+is an actual CSS/layout check; no force click bypasses overlapping content.

@@ -14,11 +14,26 @@ test('pane bounds reserve plot space, restore sensible defaults and overlay on n
   assert.ok(wide.tree<=wide.treeMax);assert.ok(wide.metadata<=wide.metadataMax);
   assert.ok(1300-wide.tree-wide.metadata-14>=300);
   assert.equal(wide.overlay,false);
-  const narrow=inspectorPaneSizes(760,{tree:340,metadata:400},true,true);
+  const narrow=inspectorPaneSizes(733,{tree:340,metadata:400},true,true);
   assert.equal(narrow.overlay,true);assert.equal(narrow.metadata,400);
   assert.equal(narrow.columns,'340px 7px minmax(0,1fr)');
   assert.equal(inspectorPaneSizes(1100,{},false,false).columns,'minmax(0,1fr)');
   assert.equal(inspectorPaneSizes(1100,{tree:NaN}).tree,270);
+});
+test('compact inline panes keep trace controls reachable whenever all pane minima fit',()=>{
+  for(const treeOpen of [true,false]){
+    const minimum=treeOpen?734:547;
+    for(const width of [minimum,760,857,989,1100]){
+      for(const requested of [{},{tree:560,metadata:560},{tree:180,metadata:240}]){
+        const sizes=inspectorPaneSizes(width,requested,treeOpen,true);
+        assert.equal(sizes.overlay,false);
+        assert.ok(sizes.metadata>=240);
+        assert.ok(sizes.tree>=180);
+        assert.ok(width-sizes.metadata-7-(treeOpen?sizes.tree+7:0)>=300);
+      }
+    }
+    assert.equal(inspectorPaneSizes(minimum-1,{},treeOpen,true).overlay,true);
+  }
 });
 test('W/S and Up/Down navigation preserve typing, composition, modifiers and native controls',()=>{
   const event={key:'s',target:{closest:()=>null}};

@@ -133,3 +133,14 @@ pause/reload/owner/path/revision changes with first-render stale-data masking.
 See [incoming bootstrap contract](../incoming-workbench/AGENTS.md#initial-contextpage-offer).
 
 Retained Activity reveal preserves highlights only while their semantic scope is unchanged; changed scope still clears them and retires actions. InspectionCellTree reuses its last user scroll position after fresh membership and bounded pages settle, through the existing cancelable two-frame restoration. Shared toolbar and selection portals use RetainedPortal so hidden busy panels cannot expose controls in the current header.
+
+## Compact pane geometry
+
+Resizable inspection panes remain inline whenever the 300px trace center, 240px
+metadata pane and optional 180px tree fit with their 7px dividers (734px with
+tree, 547px without). Requested widths are clamped without replacing saved user
+preferences. Below those minima metadata retains the existing overlay behavior.
+Legacy container rules apply only to non-resizable layouts. Sizing examples live
+in `inspectorInteraction.test.js`; the actual UI audit checks compact metadata
+position and trace Apply hit targets. This is a layout correction, not a change
+to response samples or presentation lifetime.

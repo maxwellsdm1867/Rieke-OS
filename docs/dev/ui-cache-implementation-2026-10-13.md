@@ -119,6 +119,21 @@ or a missing UUID defaults to its first response, never to a matching label.
 Warm mounted viewers retain their own selection. No samples or read authority
 are persisted with the choice.
 
+## Compact inspection correction
+
+The baseline/candidate UI click-through exposed an inherited metadata overlay at
+1100×760 that covered trace Count/Apply controls. Resizable panes now stay inline
+whenever their minimum widths fit, with clamped display sizes and unchanged saved
+preferences. The old 990px CSS overlay rule applies only to non-resizable layouts.
+Below the combined pane minima, the existing narrow overlay remains; hiding the
+tree lowers the inline threshold. The matched browser audit checks actual compact
+geometry and control hit targets.
+
+The same visual review found flex auto margins vertically centering short direct
+page children such as Data stores. The retained wrapper now preserves their
+original top alignment, full available width, max-width centering and natural
+height. Protocol pane layout is unaffected.
+
 ## Validation status
 
 Authored text and display options use the existing project DraftStore checkpoint,

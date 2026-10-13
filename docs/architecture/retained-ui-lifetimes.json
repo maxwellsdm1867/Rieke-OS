@@ -790,13 +790,13 @@
       ]
     },
     "src/epoch-browser/inspectorInteraction.js": {
-      "fingerprint": "3cc6c6354183e22fc37608888fde3ab9c3f260d2b970c3f8330d03f97c96a6d7",
+      "fingerprint": "a3f00cbd7f345f0df0df9aebc306fd9e041a4a1b79764814522520588c955690",
       "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "lifetime": "pure-presentation-geometry-and-navigation",
+      "reason": "Reviewed compact geometry: inline metadata whenever pane minima fit; clamping never writes saved preferences. No effects or lifetime change. CSS legacy overlay is scoped to non-resizable layouts; actual browser audit checks compact trace controls. Keyboard typing guards and bounded navigation decisions remain unchanged.",
       "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
+        "src/epoch-browser/inspectorInteraction.test.js",
+        "src/inspectionTreeLifecycle.test.js"
       ]
     },
     "src/epoch-browser/ui/EpochAnalysisInclusion.jsx": {

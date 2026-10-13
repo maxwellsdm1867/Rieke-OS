@@ -4,9 +4,10 @@ export function resourceForPath(resource,path){
 }
 export function inspectorPaneSizes(width,requested={},treeOpen=true,metadataOpen=false){
   const available=Math.max(360,Number.isFinite(width)?width:1100);
-  const overlay=metadataOpen&&available<990;
   const centerMin=300;
-  const metadataMax=Math.max(240,Math.min(560,overlay?available-48:available-centerMin-(treeOpen?190+PANE_GUTTER:0)-PANE_GUTTER));
+  const inlineMinimum=centerMin+240+PANE_GUTTER+(treeOpen?180+PANE_GUTTER:0);
+  const overlay=metadataOpen&&available<inlineMinimum;
+  const metadataMax=Math.max(240,Math.min(560,overlay?available-48:available-centerMin-(treeOpen?180+PANE_GUTTER:0)-PANE_GUTTER));
   const metadata=Math.round(Math.max(240,Math.min(metadataMax,Number.isFinite(requested.metadata)?requested.metadata:320)));
   const treeMax=Math.max(180,Math.min(560,available-centerMin-(metadataOpen&&!overlay?metadata+PANE_GUTTER:0)-PANE_GUTTER));
   const tree=Math.round(Math.max(180,Math.min(treeMax,Number.isFinite(requested.tree)?requested.tree:270)));
