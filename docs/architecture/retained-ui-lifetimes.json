@@ -372,7 +372,7 @@
       ]
     },
     "src/App.jsx": {
-      "fingerprint": "7629ff34d89c6728cb2791b0f6ba3a198b1255236754769b17200c8113e5a1cb",
+      "fingerprint": "a485356b88c67a7dd4c8c30e0926c8e745a0fb72c5c7fd376bd29428765e557f",
       "sites": [
         {
           "owner": "useStableSummary",
@@ -416,7 +416,7 @@
         }
       ],
       "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent.",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js",

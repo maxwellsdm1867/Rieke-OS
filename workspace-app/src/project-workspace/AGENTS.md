@@ -83,3 +83,12 @@ pending; missing or changed projects retain the chooser's recovery path.
 `useProjectPresentation.js` reads the optional `/project/presentation` shell snapshot before scientific activation. `validProjectPresentation` requires exact UUID/path and the versioned display-only envelope. Missing, invalid, failed or superseded reads never block opening. App shows the snapshot only in an inert Overview with no scientific callbacks or recording-size read; canonical data replaces it in the same component. It never hydrates protocol witnesses or mutation authority. `useProjectPresentation.test.js` covers identity and late responses.
 
 Native project selection uses `activateProject` without waiting for draft flushing because the document stays alive. Browser navigation still flushes before replacing the document. Target unmount uses prepare/confirm/cancel bridge calls for the exact UUID/path; checkpoint guards remain active until confirmed closure or cancellation.
+
+Native project selection first asks the authenticated desktop owner to activate
+an exact retained UUID/path. A successful hit performs no folder inspection/open
+requests. Only an explicit miss uses the existing inspection/restore/migration
+path; refusal or malformed replies surface an error and do not fall back. Older
+desktop bridges and ordinary browser navigation retain their existing behavior.
+The native owner revalidates live backend and caller identity; the renderer does
+not supply a cached URL or restore scientific authority. App composition cases
+live in `presentationSessionsApp.test.js`.

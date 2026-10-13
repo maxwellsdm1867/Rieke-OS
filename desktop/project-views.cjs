@@ -12,6 +12,31 @@ class ProjectViews {
     const operation=this.chain.catch(()=>{}).then(()=>this.open(binding,url,generation));
     this.chain=operation;return operation;
   }
+  activateRetained(owner,authorize) {
+    const generation=this.generation,key=bindingKey(owner.binding);
+    const check=()=>{
+      if(generation!==this.generation||!this.admit())throw Error('Project activation was cancelled.');
+      if(bindingKey(owner.binding)!==key)throw Error('The retained project binding changed.');
+      if(owner.closing)throw Error('This project is closing.');
+      if(owner.draftUnavailable)throw Error('This project renderer stopped. Quit and reopen Disco to recover its last saved view.');
+      const current=this.owners.get(key);
+      if(current!==owner){
+        if(!current&&owner.retired==='evicted')return false;
+        throw Error('The retained project owner changed.');
+      }
+      if(owner.isDestroyed())throw Error('This project renderer stopped. Quit and reopen Disco to recover its last saved view.');
+      return true;
+    };
+    const operation=this.chain.catch(()=>{}).then(async()=>{
+      // The caller's admission callback runs in the same queue as attachment.
+      // Even a clean eviction must not bypass its caller/lifecycle fence.
+      check();
+      await authorize();
+      if(!check())return {activated:false};
+      return this.show(owner);
+    });
+    this.chain=operation;return operation;
+  }
   async open(binding,url,generation) {
     if(generation!==this.generation)throw Error('Project activation was cancelled.');
     if(!this.admit())throw Error('Project activation is unavailable.');
@@ -26,6 +51,9 @@ class ProjectViews {
       try{await owner.webContents.loadURL(url);}catch(error){this.dispose(owner);throw error;}
       if(generation!==this.generation||!this.admit()||this.owners.get(key)!==owner)throw Error('Project activation was cancelled.');
     }
+    return this.show(owner);
+  }
+  async show(owner){
     if(this.active!==owner){
       const previous=this.active;
       if(previous){previous.active=false;this.window.contentView.removeChildView(previous.view);if(!previous.isDestroyed())previous.webContents.send('desktop:project-visibility',{visible:false});}
@@ -47,7 +75,8 @@ class ProjectViews {
   }
   resume(owner){if(!owner.isDestroyed())owner.webContents.send('desktop:project-resume',{});}
   cancelClose(identity){this.find(identity).forEach(owner=>{owner.closing=false;this.resume(owner);});}
-  dispose(owner){
+  dispose(owner,{evicted=false}={}){
+    owner.retired=evicted?'evicted':'closed';
     if(this.active===owner){this.active=null;owner.active=false;if(!this.window.isDestroyed())this.window.contentView.removeChildView(owner.view);}
     this.owners.delete(bindingKey(owner.binding));this.onDispose(owner);
     if(!owner.isDestroyed())owner.webContents.close();
@@ -64,7 +93,7 @@ class ProjectViews {
     for(const owner of [...this.owners.values()].filter(item=>item!==this.active&&!item.closing).sort((a,b)=>(a.used||0)-(b.used||0))){
       if(this.owners.size<=this.limit)return;
       // A failed or busy draft is a soft-cap exception, never permission to lose it.
-      try{const result=await this.prepare([owner]);if(result.ready&&owner!==this.active&&!owner.closing)this.dispose(owner);else this.resume(owner);}catch{this.resume(owner);}
+      try{const result=await this.prepare([owner]);if(result.ready&&owner!==this.active&&!owner.closing)this.dispose(owner,{evicted:true});else this.resume(owner);}catch{this.resume(owner);}
     }
   }
 }

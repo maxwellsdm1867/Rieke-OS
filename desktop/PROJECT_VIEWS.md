@@ -12,6 +12,26 @@ loads before replacing the visible view. Recovery/quit admission is checked both
 before and after load. Visibility notifications identify the sending document;
 only its native host owns bounds and native window controls.
 
+`desktop:activate-retained-project` / `activateRetainedProject({projectUuid,path})`
+is a retained-only project-switch entry. It validates the exact normalized path
+and UUID, finds an existing owner only in the caller's native host, and authorizes
+that owner's stored origin. It never inspects/opens a project folder, creates a
+WebContentsView or calls `loadURL`. A genuine absent or cleanly LRU-evicted view
+returns `{activated:false}` so the existing cold-open flow may run.
+When Electron lacks WebContentsView, a validated active scientific BrowserWindow
+also returns that cold miss; missing view state on supported Electron still rejects.
+
+`ProjectViews.activateRetained(owner,authorize)` serializes authorization and
+attachment with ordinary activations. It captures the owner, binding and lifecycle
+generation, then checks them again after awaited authorization and before showing
+anything. Main also captures the requesting active document, its activation token
+and main frame, and checks current supervisor bindings on both sides of the await.
+A different child on a reused port cannot replace the captured target. An earlier
+request cannot steal focus after the caller changes, even if it later reappears.
+Closing, crashed, replaced, stale, recovery or Quit states reject rather than
+reporting a cache miss. Only acknowledged LRU disposal carries the clean-eviction
+marker. No backend or scientific authority is inferred from retained DOM.
+
 The default cap is three documents, including a retained launcher. Clean inactive
 LRU documents are disposed only after a positive draft receipt. Draft failures,
 busy workflows or unconfirmed writes are soft-cap exceptions. Eviction runs after
@@ -25,7 +45,7 @@ that no longer reports that UUID/path. A renderer declaration alone cannot
 release a view. Closing the active target first activates the launcher, because
 the old renderer cannot navigate after its WebContents is destroyed.
 
-The preload adds `activateProject`, `projectVisibility`, `onProjectVisibility`,
+The preload adds `activateProject`, `activateRetainedProject`, `projectVisibility`, `onProjectVisibility`,
 `prepareProjectClose`, `cancelProjectClose`, `confirmProjectClosed`, and
 `onProjectResume`. These keep the existing origin/main-frame admission. Native
 host windows and scientific renderer owners are distinct collections. IPC,

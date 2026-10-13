@@ -5,7 +5,7 @@ const {pathToFileURL}=require('node:url');
 const {mkdtemp,rm}=require('node:fs/promises');
 const os=require('node:os');
 const ids=[1,2].map(n=>`00000000-0000-0000-0000-${String(n).padStart(12,'0')}`);
-async function fixture(t){
+async function fixture(t,{retainedViews=true}={}){
  const directory=await mkdtemp(path.join(os.tmpdir(),'disco-retained-test-'));t.after(()=>rm(directory,{recursive:true,force:true}));
  const handlers=new Map(),remembered=[],native=[],contents=[];let nextId=0;
  const app=new EventEmitter();Object.assign(app,{enableSandbox(){},setName(){},setPath(){},getPath:()=>directory,getVersion:()=> '0.1.12',isPackaged:false,requestSingleInstanceLock:()=>true,whenReady:()=>new Promise(()=>{}),quit(){}});
@@ -21,12 +21,13 @@ async function fixture(t){
   constructor(){super();this.webContents=new Contents();this.children=new Set();this.contentView={addChildView:v=>this.children.add(v),removeChildView:v=>this.children.delete(v)};native.push(this);}
   isDestroyed(){return false;}setTitle(value){this.title=value;}getContentSize(){return [1200,800];}show(){}
   async loadFile(file){this.webContents.mainFrame.url=pathToFileURL(file).href;}
+  async loadURL(url){await this.webContents.loadURL(url);}
  }
  class View{constructor(){this.webContents=new Contents();}setBounds(value){this.bounds=value;}}
  const records=ids.map((id,i)=>({bound:true,project_uuid:id,project_path:`/owned/project-${i}`,port:42002+i,pid:200+i,created_at:i+1,session_id:'session'}));
  const origin='http://127.0.0.1:42001';const supervisor={origin,origins:new Set([origin]),ready:true,sessionId:'session',registry:{services:records},expectedHealth:()=>({session_id:'session'}),async drain(){return {ready:true};},async api(){return {ready:true,session_id:'session',services:this.registry.services};},async authorizeProjectURL(url){const selected=new URL(url).origin;if(selected!==origin&&!this.registry.services.some(item=>selected===`http://127.0.0.1:${item.port}`))return false;this.origins.add(selected);return true;}};
  const actualRequire=require('node:module').createRequire(path.join(__dirname,'../main.cjs'));
- const electron={app,BrowserWindow:Window,WebContentsView:View,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
+ const electron={app,BrowserWindow:Window,WebContentsView:retainedViews?View:undefined,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},dialog:{},session:{},shell:{},Menu:{},powerMonitor:{}};
  const context={require:name=>name==='electron'?electron:actualRequire(name),__dirname:path.join(__dirname,'..'),process,console,URL,AbortSignal,setTimeout,clearTimeout,queueMicrotask};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8')+`\nglobalThis.h={createWindow,activateProject,projectViews,scientificWindows,rendererOwners,recovery,registerIPC,prepareQuit,set(value){supervisor=value;startupSession={remember:async(...args)=>globalThis.remembered.push(args)};draftStore=new DraftStore(globalThis.directory);}};`,Object.assign(context,{remembered,directory}));
  context.h.set(supervisor);context.h.registerIPC();const window=context.h.createWindow();
@@ -105,4 +106,73 @@ test('recovery host can reach verified restoration while hidden project senders 
  h.recovery('Recovery fixture');h.supervisor.loadManifest=async()=>{throw Error('Reached verified recovery boundary');};
  await assert.rejects(h.call(h.window,'desktop:restore-previous'),/Reached verified recovery boundary/);
  await assert.rejects(h.call(first,'desktop:restore-previous'),/paused/);
+});
+
+const retainedIdentity=index=>({projectUuid:ids[index],path:`/owned/project-${index}`});
+const deferred=()=>{let resolve;return {promise:new Promise(done=>{resolve=done;}),get resolve(){return resolve;}};};
+async function retainedPair(t){
+ const h=await fixture(t);await h.activateProject(h.window,'http://127.0.0.1:42002');const views=h.projectViews.get(h.window),first=views.active;
+ await h.activateProject(h.window,'http://127.0.0.1:42003');return {...h,views,first,second:views.active};
+}
+test('warm project IPC activates exact retained document using only its freshly authorized owned URL',async t=>{
+ const h=await retainedPair(t),calls=[],authorize=h.supervisor.authorizeProjectURL.bind(h.supervisor),created=h.contents.length;
+ h.supervisor.authorizeProjectURL=async url=>{calls.push(url);return authorize(url);};
+ const result=await h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0));
+ assert.equal(result.activated,true);assert.equal(h.views.active,h.first);assert.deepEqual(calls,['http://127.0.0.1:42002']);assert.equal(h.contents.length,created);assert.equal(h.first.webContents.loads.length,1);
+});
+test('warm project IPC returns a genuine absent-owner miss but rejects malformed or hidden callers',async t=>{
+ const h=await fixture(t);await h.activateProject(h.window,'http://127.0.0.1:42002');const views=h.projectViews.get(h.window),first=views.active;let authorized=0;
+ h.supervisor.authorizeProjectURL=async()=>{authorized++;return true;};
+ assert.equal((await h.call(first,'desktop:activate-retained-project',retainedIdentity(1))).activated,false);assert.equal(authorized,0);
+ for(const bad of [null,{...retainedIdentity(1),url:'http://127.0.0.1:1'},{projectUuid:'invalid',path:'/owned/project-1'},{projectUuid:ids[1],path:'/owned/../project-1'}])await assert.rejects(h.call(first,'desktop:activate-retained-project',bad),/Invalid project identity/);
+ await h.activateProject(h.window,'http://127.0.0.1:42003');await assert.rejects(h.call(first,'desktop:activate-retained-project',retainedIdentity(1)),/no longer active/);
+});
+test('fresh authorization cannot substitute another UUID or process incarnation that reused the retained port',async t=>{
+ for(const change of [record=>{record.project_uuid='00000000-0000-0000-0000-000000000099';},record=>{record.created_at++;}]){
+  const h=await retainedPair(t),wait=deferred(),created=h.contents.length;
+  h.supervisor.authorizeProjectURL=async()=>{await wait.promise;change(h.records[0]);return true;};
+  const pending=h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0)),rejected=assert.rejects(pending,/backend binding changed/);
+  await new Promise(resolve=>setImmediate(resolve));wait.resolve();await rejected;assert.equal(h.views.active,h.second);assert.equal(h.contents.length,created);
+ }
+});
+test('clean eviction during main authorization returns false while a retired caller still rejects',async t=>{
+ const h=await retainedPair(t),wait=deferred();h.supervisor.authorizeProjectURL=async()=>{await wait.promise;return true;};
+ const pending=h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0));await new Promise(resolve=>setImmediate(resolve));h.views.limit=1;await h.views.trim();wait.resolve();
+ assert.equal((await pending).activated,false);assert.equal(h.views.active,h.second);assert.equal(h.first.isDestroyed(),true);
+ const other=await retainedPair(t),gate=deferred();other.supervisor.authorizeProjectURL=async()=>{await gate.promise;return true;};
+ const stale=other.call(other.second,'desktop:activate-retained-project',retainedIdentity(0)),rejected=assert.rejects(stale,/requesting project is no longer active/);
+ await new Promise(resolve=>setImmediate(resolve));other.views.dispose(other.second);gate.resolve();await rejected;assert.equal(other.views.active,null);
+});
+test('queued warm request cannot steal focus after an intervening activation',async t=>{
+ const h=await retainedPair(t),wait=deferred(),activated=h.views.onActivate;
+ h.views.onActivate=async owner=>{await activated(owner);if(owner===h.first)await wait.promise;};
+ const held=h.views.activate(h.first.binding,h.first.binding.origin);await new Promise(resolve=>setImmediate(resolve));assert.equal(h.views.active,h.first);
+ const replacement=h.views.activate(h.second.binding,h.second.binding.origin);
+ const pending=h.call(h.first,'desktop:activate-retained-project',retainedIdentity(0)),rejected=assert.rejects(pending,/requesting project is no longer active/);
+ wait.resolve();await held;await replacement;await rejected;assert.equal(h.views.active,h.second);
+});
+test('recovery during warm authorization prevents attachment and does not report a cold miss',async t=>{
+ const h=await retainedPair(t),wait=deferred();h.supervisor.authorizeProjectURL=async()=>{await wait.promise;return true;};
+ const pending=h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0)),rejected=assert.rejects(pending,/cancelled/);
+ await new Promise(resolve=>setImmediate(resolve));h.recovery('held warm request');wait.resolve();await rejected;assert.equal(h.views.active,null);
+});
+test('warm IPC refuses closing and crashed targets instead of falling back to cold open',async t=>{
+ for(const status of ['closing','draftUnavailable']){
+  const h=await retainedPair(t);h.first[status]=true;let checks=0;h.supervisor.authorizeProjectURL=async()=>{checks++;return true;};
+  await assert.rejects(h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0)),status==='closing'?/closing/:/renderer stopped/);
+  assert.equal(h.views.active,h.second);assert.equal(checks,0);
+ }
+});
+test('explicit Quit during held warm authorization prevents a late project attachment',async t=>{
+ const h=await retainedPair(t),wait=deferred();h.supervisor.authorizeProjectURL=async()=>{await wait.promise;return true;};h.supervisor.quit=async()=>({ready:true});
+ const pending=h.call(h.second,'desktop:activate-retained-project',retainedIdentity(0)),rejected=assert.rejects(pending,/cancelled/);
+ await new Promise(resolve=>setImmediate(resolve));await h.call(h.second,'desktop:quit');wait.resolve();await rejected;assert.notEqual(h.views.active,h.first);
+});
+test('legacy scientific host without WebContentsView returns a validated cold-path miss',async t=>{
+ const h=await fixture(t,{retainedViews:false});await h.activateProject(h.window,'http://127.0.0.1:42002');h.scientificWindows.add(h.window);let calls=0;
+ h.supervisor.authorizeProjectURL=async()=>{calls++;return true;};const result=await h.call(h.window,'desktop:activate-retained-project',retainedIdentity(1));
+ assert.equal(result.activated,false);assert.equal(calls,0);assert.equal(h.projectViews.size,0);assert.equal(h.window.webContents.loads.length,1);
+ await assert.rejects(h.call(h.window,'desktop:activate-retained-project',{projectUuid:ids[1],path:'relative'}),/Invalid project identity/);
+ h.window.draftUnavailable=true;await assert.rejects(h.call(h.window,'desktop:activate-retained-project',retainedIdentity(1)),/no longer active/);
+ h.window.draftUnavailable=false;h.recovery('legacy recovery');await assert.rejects(h.call(h.window,'desktop:activate-retained-project',retainedIdentity(1)),/paused/);
 });

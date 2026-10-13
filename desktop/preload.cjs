@@ -8,6 +8,7 @@ function subscribe(channel, callback) {
 }
 contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   protocolVersion: 1,
+  activateRetainedProject:identity=>ipcRenderer.invoke('desktop:activate-retained-project',identity),
   activateProject:url=>ipcRenderer.invoke('desktop:activate-project',url),
   prepareProjectClose:identity=>ipcRenderer.invoke('desktop:prepare-project-close',identity),
   confirmProjectClosed:identity=>ipcRenderer.invoke('desktop:confirm-project-closed',identity),

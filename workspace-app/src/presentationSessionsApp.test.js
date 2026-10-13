@@ -250,3 +250,30 @@ test('a late Workbench apply cannot replace the current Protocol tab',async()=>{
   await h.act(()=>workbench().props.onApplied());assert.equal(h.root.findAllByProps({'aria-label':'Overview'}).find(h.visible).props['aria-selected'],true);
  }finally{await h.close();}
 });
+
+for(const outcome of ['hit','miss','refused','invalid','legacy'])test(`native project selection ${outcome} preserves retained admission and cold fallback boundaries`,async()=>{
+ const h=await createPresentationSessionHarness();const calls=[];
+ const target={uuid:'other-project',path:'/owned-other',available:true,name:'Other'};
+ try{
+  await h.mount();const originalFetch=globalThis.fetch;
+  globalThis.fetch=async(input,options={})=>{
+   const endpoint=new URL(input,'http://fixture').pathname;
+   if(['/api/projects/inspect-folder','/api/projects/open-folder'].includes(endpoint)){
+    calls.push(endpoint);assert.equal(options.method,'POST');assert.deepEqual(JSON.parse(options.body),{directory:target.path});
+    return {ok:true,status:200,json:async()=>endpoint.endsWith('inspect-folder')?{valid:true,kind:'project'}:{url:'http://127.0.0.1:41234/'}};
+   }
+   return originalFetch(input,options);
+  };
+  const bridge=h.browser.window.riekeDesktop;
+  bridge.activateProject=async url=>{calls.push('activate-opened');assert.equal(url,'http://127.0.0.1:41234/');return {activated:true};};
+  if(outcome!=='legacy')bridge.activateRetainedProject=async identity=>{
+   calls.push('retained');assert.deepEqual(identity,{projectUuid:target.uuid,path:target.path});
+   if(outcome==='refused')throw Error('Retained owner changed');
+   return outcome==='invalid'?{}:{activated:outcome==='hit'};
+  };
+  await h.act(()=>h.probe('project-navigation').onSelect(target));
+  assert.deepEqual(calls,outcome==='miss'?['retained','/api/projects/inspect-folder','/api/projects/open-folder','activate-opened']:outcome==='legacy'?['/api/projects/inspect-folder','/api/projects/open-folder','activate-opened']:['retained']);
+  assert.equal(h.probe('project-navigation').disabled,false,'Selection finishes even when admission refuses');
+  if(['refused','invalid'].includes(outcome))assert.ok(h.root.findAllByProps({role:'alert'}).some(node=>node.children.some(child=>typeof child==='string'&&child.includes(outcome==='refused'?'Retained owner changed':'did not confirm'))));
+ }finally{await h.close();}
+});

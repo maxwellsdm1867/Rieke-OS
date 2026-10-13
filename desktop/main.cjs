@@ -48,7 +48,7 @@ const windows = new Set();
 const scientificWindows = new Set();
 const projectViews = new Map();
 const rendererOwners = () => new Set([...windows,...scientificWindows]);
-const {ProjectViews}=require('./project-views.cjs');
+const {ProjectViews,bindingKey}=require('./project-views.cjs');
 const recoveryPage = path.join(__dirname, 'recovery.html');
 const sourceApp = enclosingApp(process.execPath);
 const destination = path.join(os.homedir(), 'Applications', 'Disco.app');
@@ -240,6 +240,36 @@ async function activateProject(window,url){
   if(!record)throw Error('Project binding is unavailable.');
   return viewsFor(window).activate({...record,origin},url);
 }
+async function activateRetainedProject(caller,value){
+  const identity=projectIdentity(value),window=caller.parentWindow||caller,views=projectViews.get(window);
+  const generation=navigationGeneration,callerUse=caller.used,callerFrame=caller.webContents.mainFrame;
+  const assertCaller=()=>{
+    if(generation!==navigationGeneration||quitting||integrityFailed||lifecycleStatus.state==='Recovery'||!supervisor?.ready)throw Error('Project activation was cancelled.');
+    if(!views||projectViews.get(window)!==views||views.active!==caller||caller.active!==true||caller.used!==callerUse||caller.closing||caller.draftUnavailable||caller.isDestroyed())throw Error('The requesting project is no longer active.');
+    if(caller.webContents.mainFrame!==callerFrame||!scientificWindows.has(caller)||!ownerCurrent(caller))throw Error('The requesting project binding changed.');
+    validateSender({sender:caller.webContents,senderFrame:callerFrame},rendererOwners(),supervisor.origins,[recoveryPage]);
+  };
+  if(!WebContentsView){
+    if(generation!==navigationGeneration||quitting||integrityFailed||lifecycleStatus.state==='Recovery'||!supervisor?.ready)throw Error('Project activation was cancelled.');
+    if(caller.parentWindow||!windows.has(caller)||!scientificWindows.has(caller)||caller.isDestroyed()||caller.draftUnavailable||caller.active===false||!ownerCurrent(caller))throw Error('The requesting project is no longer active.');
+    validateSender({sender:caller.webContents,senderFrame:callerFrame},rendererOwners(),supervisor.origins,[recoveryPage]);
+    return {activated:false};
+  }
+  assertCaller();
+  const matches=views.find(identity);
+  if(!matches.length)return {activated:false};
+  if(matches.length!==1)throw Error('The retained project binding is ambiguous.');
+  const target=matches[0],expected=bindingKey(target.binding),origin=target.binding.origin;
+  return views.activateRetained(target,async()=>{
+    assertCaller();
+    if(bindingKey(target.binding)!==expected||!ownerCurrent(target))throw Error('The retained project backend binding changed.');
+    // Authorization may discover a different child on a reused port. Never
+    // resolve that URL into a new view; prove this exact retained owner again.
+    if(!await supervisor.authorizeProjectURL(origin))throw Error('Project service failed ownership verification.');
+    assertCaller();
+    if(bindingKey(target.binding)!==expected||!ownerCurrent(target))throw Error('The retained project backend binding changed.');
+  });
+}
 function projectIdentity(value){
   if(!value||Object.keys(value).sort().join(',')!=='path,projectUuid'||typeof value.path!=='string'||!path.isAbsolute(value.path)||path.normalize(value.path)!==value.path||typeof value.projectUuid!=='string')throw TypeError('Invalid project identity');
   require('./security.cjs').validateProjectId(value.projectUuid);return value;
@@ -389,6 +419,7 @@ function registerIPC() {
   });
   handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant);appIcon=variant;return result;});
   noPayload('desktop:undo-text', window=>{if(window.active===false)throw Error('The project is not visible.');return window.webContents.undo();});
+  handle('desktop:activate-retained-project',(identity,owner)=>activateRetainedProject(owner,identity));
   handle('desktop:activate-project',(url,owner)=>{if(owner.active===false)throw Error('The project is not visible.');return activateProject(owner.parentWindow||owner,url);});
   noPayload('desktop:project-visibility',owner=>({visible:owner.active!==false}));
   handle('desktop:prepare-project-close',async(value)=>{

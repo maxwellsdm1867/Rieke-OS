@@ -74,3 +74,35 @@ test('suspending after host destruction preserves documents for their explicit l
  assert.equal(h.views.active,null);assert.equal(owner.active,false);assert.equal(owner.isDestroyed(),false);
  assert.equal(h.registered.has(owner),true);h.views.clear();assert.equal(owner.isDestroyed(),true);
 });
+
+test('retained-only activation authorizes in its queue and never loads or creates a document',async()=>{
+ const h=fixture();await h.views.activate(binding(1),'a');const first=h.views.active;await h.views.activate(binding(2),'b');let checks=0;
+ assert.deepEqual(await h.views.activateRetained(first,async()=>{checks++;}),{activated:true});
+ assert.equal(checks,1);assert.equal(h.views.active,first);assert.equal(h.created.length,2);assert.deepEqual(first.webContents.loads,['a']);
+});
+test('clean LRU eviction during retained authorization is a miss without recreating the view',async()=>{
+ const wait=deferred(),h=fixture();await h.views.activate(binding(1),'a');const first=h.views.active;await h.views.activate(binding(2),'b');const second=h.views.active;
+ let started=false;const pending=h.views.activateRetained(first,async()=>{started=true;await wait.promise;});await new Promise(resolve=>setImmediate(resolve));assert.equal(started,true);
+ h.views.limit=1;await h.views.trim();assert.equal(first.retired,'evicted');wait.resolve();
+ assert.deepEqual(await pending,{activated:false});assert.equal(h.views.active,second);assert.equal(h.created.length,2);
+});
+test('retained authorization cannot attach a closing, failed or changed owner',async()=>{
+ for(const [change,message] of [[owner=>{owner.closing=true;},/closing/],[owner=>{owner.draftUnavailable=true;},/renderer stopped/],[owner=>{owner.webContents.close();},/renderer stopped/],[owner=>{owner.binding.created_at++;},/binding changed/]]){
+  const wait=deferred(),h=fixture();await h.views.activate(binding(1),'a');const first=h.views.active;await h.views.activate(binding(2),'b');
+  const pending=h.views.activateRetained(first,()=>wait.promise),rejected=assert.rejects(pending,message);await new Promise(resolve=>setImmediate(resolve));change(first);wait.resolve();await rejected;
+  assert.equal(h.views.active.binding.project_uuid,2);assert.equal(h.created.length,2);
+ }
+});
+test('recovery or quit admission cancels held retained authorization',async()=>{
+ for(const cancelGeneration of [true,false]){
+  let allowed=true;const wait=deferred(),h=fixture({admit:()=>allowed});await h.views.activate(binding(1),'a');const first=h.views.active;await h.views.activate(binding(2),'b');
+  const pending=h.views.activateRetained(first,()=>wait.promise),rejected=assert.rejects(pending,/cancelled/);await new Promise(resolve=>setImmediate(resolve));
+  allowed=false;if(cancelGeneration)h.views.cancelActivations();wait.resolve();await rejected;assert.notEqual(h.views.active,first);assert.equal(h.created.length,2);
+ }
+});
+test('queued retained activation cannot substitute a replacement owner with the same binding',async()=>{
+ const wait=deferred(),h=fixture({load:url=>url==='b'?wait.promise:Promise.resolve()});await h.views.activate(binding(1),'a');const first=h.views.active;
+ const loading=h.views.activate(binding(2),'b');await new Promise(resolve=>setImmediate(resolve));h.views.dispose(first);
+ const replacement=h.views.activate(binding(1),'replacement');let authorized=0;const pending=h.views.activateRetained(first,async()=>{authorized++;}),rejected=assert.rejects(pending,/owner changed/);
+ wait.resolve();await loading;await replacement;await rejected;assert.notEqual(h.views.active,first);assert.equal(h.views.active.webContents.loads[0],'replacement');assert.equal(authorized,0);
+});

@@ -32,6 +32,22 @@ that renderer continues owning its work. Browser full-document navigation retain
 its prior flush requirement. Eviction, explicit project closure and Quit retain
 their draft/accepted-operation obligations.
 
+Native UI measurement also exposed that retaining the document alone left the
+ordinary folder inspection/open route in every warm project switch. The renderer
+now asks the desktop to activate the exact retained UUID/path first. The serialized
+native owner freshly authorizes its captured backend binding and rechecks the
+initiating caller, target and lifecycle before attachment. This path cannot create
+a replacement document. Only an explicit absent/clean eviction miss falls back
+to folder inspection; closing, stale ownership and recovery errors remain errors.
+Legacy desktop adapters without retained-view support explicitly use the existing
+cold path after sender and lifecycle validation.
+
+The early native 30-second return observation is not a valid performance baseline:
+the discovery helper could wait for the target project label in the departing
+document. Final comparisons must use the same corrected nonwaiting discovery
+helper for both sources. Eliminating folder requests and measuring visible-switch
+latency are separate checks.
+
 A crashed document cannot destroy another project's unsaved UI. The failed owner
 remains unconfirmed in lifecycle accounting; healthy owners still checkpoint.
 Global recovery hides retained documents, fences new work, and cancels queued or
