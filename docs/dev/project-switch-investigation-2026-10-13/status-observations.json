@@ -1,0 +1,265 @@
+[
+  {
+    "port": 60103,
+    "path": "/api/metadata/status",
+    "status": 200,
+    "elapsed_ms": 22.9,
+    "body": {
+      "annotation_preparation": {
+        "phase": "complete",
+        "phases": {
+          "preparing_protocol_reads": {
+            "seconds": 0.546628
+          }
+        },
+        "project_uuid": "440adc1c-158f-41df-895e-6c942ed35f6a",
+        "protocols_deferred": 0,
+        "protocols_prepared": 5,
+        "reused": true,
+        "seconds": 0.682613,
+        "status": "ready",
+        "storage": "native_sql"
+      },
+      "last_refresh": {
+        "cache_cleanup": {
+          "metadata": {
+            "leased_generations": [],
+            "removed_files": [
+              "83f71a76d79615c7b397f9433a6b4a49d3f9b5269c94695256b080cf5b2e393c.sqlite",
+              "83f71a76d79615c7b397f9433a6b4a49d3f9b5269c94695256b080cf5b2e393c.sqlite.sha256.json"
+            ]
+          },
+          "projections": {
+            "leased_generations": [],
+            "removed_files": [
+              "1d2fa1bded95797acf4f33bf5e86ae281c392c0d2f286949433b7b466804a331.json.sha256",
+              "1d2fa1bded95797acf4f33bf5e86ae281c392c0d2f286949433b7b466804a331.json.zlib",
+              "b1e080506bfb2e5be321d7ad4570785e5248b425ffe3ba3f1f4232a007b2f136.json.sha256",
+              "b1e080506bfb2e5be321d7ad4570785e5248b425ffe3ba3f1f4232a007b2f136.json.zlib",
+              "b9aff3fd9fad993bc435d7eb4e09fb7c9151684b6e83849f8348e8397217ec47.json.sha256",
+              "b9aff3fd9fad993bc435d7eb4e09fb7c9151684b6e83849f8348e8397217ec47.json.zlib",
+              "cd179f60440fb47f5b2f74a0cf4ccb8d7fbc52c4bf6baf66568689f270f413a7.json.sha256",
+              "cd179f60440fb47f5b2f74a0cf4ccb8d7fbc52c4bf6baf66568689f270f413a7.json.zlib"
+            ]
+          },
+          "typed_metadata": {
+            "leased_generations": [],
+            "removed_files": [
+              "cabe275557b7032bfc5baea675fa7a1353f378536a0c32b68ec6a46b71dbd670.sqlite",
+              "cabe275557b7032bfc5baea675fa7a1353f378536a0c32b68ec6a46b71dbd670.sqlite.sha256.json"
+            ]
+          }
+        },
+        "completed_at": "2026-10-13T20:16:52.435479+00:00",
+        "discovery_indexes_preserved": false,
+        "elapsed_seconds": 44.15220941597363,
+        "epochs": 4899,
+        "metadata_index": "built",
+        "metadata_index_generation": "de7252224dfa9f9443cef573c8732f8a966737c330f9e7708f9d65944694b6f1",
+        "metadata_index_seconds": 9.669019667024259,
+        "protocols": 5,
+        "rebuilt_sources": 4,
+        "reused_sources": 0,
+        "source_cache_hits": 0,
+        "source_cache_rebuilt": 4,
+        "sources": 4,
+        "status": "complete",
+        "timing_ms": {
+          "metadata_check": 39.59587513236329,
+          "source_rebuild": 20726.993831980508,
+          "sql_queries": 6069.826791994274,
+          "total": 44152.20941597363
+        },
+        "typed_metadata_index": "built",
+        "typed_metadata_index_seconds": 0.37501379201421514
+      },
+      "latest_attempt": {
+        "cache_cleanup": {
+          "metadata": {
+            "leased_generations": [],
+            "removed_files": [
+              "83f71a76d79615c7b397f9433a6b4a49d3f9b5269c94695256b080cf5b2e393c.sqlite",
+              "83f71a76d79615c7b397f9433a6b4a49d3f9b5269c94695256b080cf5b2e393c.sqlite.sha256.json"
+            ]
+          },
+          "projections": {
+            "leased_generations": [],
+            "removed_files": [
+              "1d2fa1bded95797acf4f33bf5e86ae281c392c0d2f286949433b7b466804a331.json.sha256",
+              "1d2fa1bded95797acf4f33bf5e86ae281c392c0d2f286949433b7b466804a331.json.zlib",
+              "b1e080506bfb2e5be321d7ad4570785e5248b425ffe3ba3f1f4232a007b2f136.json.sha256",
+              "b1e080506bfb2e5be321d7ad4570785e5248b425ffe3ba3f1f4232a007b2f136.json.zlib",
+              "b9aff3fd9fad993bc435d7eb4e09fb7c9151684b6e83849f8348e8397217ec47.json.sha256",
+              "b9aff3fd9fad993bc435d7eb4e09fb7c9151684b6e83849f8348e8397217ec47.json.zlib",
+              "cd179f60440fb47f5b2f74a0cf4ccb8d7fbc52c4bf6baf66568689f270f413a7.json.sha256",
+              "cd179f60440fb47f5b2f74a0cf4ccb8d7fbc52c4bf6baf66568689f270f413a7.json.zlib"
+            ]
+          },
+          "typed_metadata": {
+            "leased_generations": [],
+            "removed_files": [
+              "cabe275557b7032bfc5baea675fa7a1353f378536a0c32b68ec6a46b71dbd670.sqlite",
+              "cabe275557b7032bfc5baea675fa7a1353f378536a0c32b68ec6a46b71dbd670.sqlite.sha256.json"
+            ]
+          }
+        },
+        "completed_at": "2026-10-13T20:16:52.435479+00:00",
+        "discovery_indexes_preserved": false,
+        "elapsed_seconds": 44.15220941597363,
+        "epochs": 4899,
+        "metadata_index": "built",
+        "metadata_index_generation": "de7252224dfa9f9443cef573c8732f8a966737c330f9e7708f9d65944694b6f1",
+        "metadata_index_seconds": 9.669019667024259,
+        "protocols": 5,
+        "rebuilt_sources": 4,
+        "reused_sources": 0,
+        "source_cache_hits": 0,
+        "source_cache_rebuilt": 4,
+        "sources": 4,
+        "status": "complete",
+        "timing_ms": {
+          "metadata_check": 39.59587513236329,
+          "source_rebuild": 20726.993831980508,
+          "sql_queries": 6069.826791994274,
+          "total": 44152.20941597363
+        },
+        "typed_metadata_index": "built",
+        "typed_metadata_index_seconds": 0.37501379201421514
+      },
+      "status": "ready"
+    }
+  },
+  {
+    "port": 62910,
+    "path": "/api/metadata/status",
+    "status": 200,
+    "elapsed_ms": 7.1,
+    "body": {
+      "annotation_preparation": {
+        "phase": "complete",
+        "phases": {
+          "preparing_protocol_reads": {
+            "seconds": 0.66406
+          }
+        },
+        "project_uuid": "120af53a-0067-4269-b810-aa5c092e2f93",
+        "protocols_deferred": 4,
+        "protocols_prepared": 8,
+        "reused": true,
+        "seconds": 0.834968,
+        "status": "ready",
+        "storage": "native_sql"
+      },
+      "last_refresh": {
+        "cache_cleanup": {
+          "metadata": {
+            "leased_generations": [],
+            "removed_files": []
+          },
+          "projections": {
+            "leased_generations": [],
+            "removed_files": []
+          },
+          "typed_metadata": {
+            "leased_generations": [],
+            "removed_files": []
+          }
+        },
+        "completed_at": "2026-10-12T15:13:45.196660+00:00",
+        "discovery_indexes_preserved": false,
+        "elapsed_seconds": 11.133112040988635,
+        "epochs": 3538,
+        "metadata_index": "reopened",
+        "metadata_index_generation": "5794da63a8064cbf1f6aa1d0c797ba89212915fa139c3239c57f88f79cab4c28",
+        "metadata_index_seconds": 0.18503645795863122,
+        "protocols": 12,
+        "rebuilt_sources": 0,
+        "reused_sources": 2,
+        "source_cache_hits": 2,
+        "source_cache_rebuilt": 0,
+        "sources": 2,
+        "status": "complete",
+        "timing_ms": {
+          "metadata_check": 99.55708403140306,
+          "source_rebuild": 0.0,
+          "sql_queries": 8474.186624982394,
+          "total": 11133.112040988635
+        },
+        "typed_metadata_index": "reopened",
+        "typed_metadata_index_seconds": 0.011476083018351346
+      },
+      "latest_attempt": {
+        "cache_cleanup": {
+          "metadata": {
+            "leased_generations": [],
+            "removed_files": []
+          },
+          "projections": {
+            "leased_generations": [],
+            "removed_files": []
+          },
+          "typed_metadata": {
+            "leased_generations": [],
+            "removed_files": []
+          }
+        },
+        "completed_at": "2026-10-12T15:13:45.196660+00:00",
+        "discovery_indexes_preserved": false,
+        "elapsed_seconds": 11.133112040988635,
+        "epochs": 3538,
+        "metadata_index": "reopened",
+        "metadata_index_generation": "5794da63a8064cbf1f6aa1d0c797ba89212915fa139c3239c57f88f79cab4c28",
+        "metadata_index_seconds": 0.18503645795863122,
+        "protocols": 12,
+        "rebuilt_sources": 0,
+        "reused_sources": 2,
+        "source_cache_hits": 2,
+        "source_cache_rebuilt": 0,
+        "sources": 2,
+        "status": "complete",
+        "timing_ms": {
+          "metadata_check": 99.55708403140306,
+          "source_rebuild": 0.0,
+          "sql_queries": 8474.186624982394,
+          "total": 11133.112040988635
+        },
+        "typed_metadata_index": "reopened",
+        "typed_metadata_index_seconds": 0.011476083018351346
+      },
+      "status": "ready"
+    }
+  },
+  {
+    "port": 62907,
+    "path": "/api/projects",
+    "status": 200,
+    "elapsed_ms": 169.8,
+    "body": {
+      "current_project_uuid": null,
+      "last_project_path": "/Users/maxwellsdm/Documents/RecordingWorkspace/RetinaSRM-Desktop",
+      "last_project_uuid": "440adc1c-158f-41df-895e-6c942ed35f6a",
+      "launcher": true,
+      "launcher_url": "http://127.0.0.1:62907/",
+      "managed_root": "/Users/maxwellsdm/Documents/RecordingWorkspace",
+      "projects": [
+        {
+          "available": true,
+          "current": false,
+          "database_kind": "native-mysql",
+          "name": "hahah",
+          "path": "/Users/maxwellsdm/Downloads/hahah",
+          "uuid": "120af53a-0067-4269-b810-aa5c092e2f93"
+        },
+        {
+          "available": true,
+          "current": false,
+          "database_kind": "native-mysql",
+          "name": "Spike Response Model",
+          "path": "/Users/maxwellsdm/Documents/RecordingWorkspace/RetinaSRM-Desktop",
+          "uuid": "440adc1c-158f-41df-895e-6c942ed35f6a"
+        }
+      ],
+      "workspace_initialized": false
+    }
+  }
+]

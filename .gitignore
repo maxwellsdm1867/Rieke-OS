@@ -83,3 +83,6 @@ docs/dev/desktop-verification-provenance.json
 
 # Version-attached local benchmark receipts (publish reviewed run artifacts separately)
 /benchmarks/results/
+
+# Local UI cache investigation raw receipts and copied diagnostic harnesses.
+docs/dev/ui-cache-design-evidence-2026-10-13/
