@@ -5,9 +5,11 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {createRequire}=require('node:module'),{execFile}=require('node:child_process');
 const {promisify}=require('node:util'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
 const run=promisify(execFile);
-const {captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
+const {recordNativeRequests,measureRetainedSwitch,captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
 const config={};for(let i=2;i<process.argv.length;i+=2){if(!process.argv[i].startsWith('--')||!process.argv[i+1])throw Error('Expected --key value');config[process.argv[i].slice(2)]=process.argv[i+1];}
 for(const name of ['desktop-root','dependency-root','source-root','commit','output'])if(!config[name])throw Error(`Missing --${name}`);
+if(config['expect-warm-fastpath']!==undefined&&!['true','false'].includes(config['expect-warm-fastpath']))throw Error('Expected --expect-warm-fastpath true|false');
+const expectFastpath=config['expect-warm-fastpath']!=='false';
 
 (async()=>{
  const desktop=await fs.realpath(config['desktop-root']),dependencies=createRequire(path.join(await fs.realpath(config['dependency-root']),'package.json'));
@@ -38,8 +40,8 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'};
  for(const directory of [fixture,home,userData]){const info=await fs.lstat(directory);assert.equal(info.isSymbolicLink(),false);assert.equal(info.uid,process.getuid());assert.equal(await fs.realpath(directory),directory);}
  assert.ok(fixture.startsWith(await fs.realpath(os.tmpdir())+path.sep));
- const receipt={format:'disco-native-populated-ui-audit-v1',status:'running',source_commit:manifest.source_commit,desktop_source_sha256:desktopHashes,desktop,runtime,fixture,
-  limitations:['Synthetic63epoch/two-cell/two-response fixture; not real dataset or scale qualification.','Candidate-only actual UI audit; elapsed actions include Playwright.','Development Electron runtime; not packaged/installed qualification.'],actions:[],unsupported:[],requests:[],errors:[],cleanup:{}};
+ const receipt={format:'disco-native-populated-ui-audit-v1',status:'running',source_commit:manifest.source_commit,desktop_source_sha256:desktopHashes,desktop,runtime,fixture,expect_warm_fastpath:expectFastpath,
+  limitations:['Synthetic63epoch/two-cell/two-response fixture; not real dataset or scale qualification.','Candidate-only actual UI audit; elapsed actions include Playwright.','Development Electron runtime; not packaged/installed qualification.'],actions:[],unsupported:[],requests:[],errors:[],trace_http:[],trace_observer_errors:[],phase:'initial-setup',cleanup:{}};
  let application,activePage,exited=false;
  try{
   await run(path.join(runtime,'python/bin/python3.11'),['-B',path.join(__dirname,'seed-retention-projects.py'),path.join(runtime,'application'),home,runtime],{env:fixtureEnv});
@@ -49,7 +51,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'initial');
   const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged,pid:process.pid,electron:process.versions.electron}));
   assert.equal(actual.home,home);assert.equal(actual.userData,userData);assert.equal(actual.appPath,desktop);assert.equal(actual.packaged,false);receipt.runtime_identity=actual;
-  const record=page=>{page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))receipt.requests.push({at:performance.now(),page:page.url(),method:request.method(),url:request.url()});});};
+  const record=page=>recordNativeRequests(page,receipt);
   application.context().pages().forEach(record);application.context().on('page',record);
   await application.evaluate(({app})=>{
     globalThis.__retentionNavigations=[];
@@ -67,15 +69,24 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
   activePage.setDefaultTimeout(20000);
   const pending=[],responses=[];
-  function observe(page){page.on('pageerror',error=>receipt.errors.push(String(error)));page.on('response',response=>{
+  function observe(page){page.on('pageerror',error=>receipt.errors.push({phase:receipt.phase,at:performance.now(),message:String(error),stack:error.stack}));page.on('response',response=>{
     const url=new URL(response.url());if(!/^\/api\/epochs\/[^/]+\/trace$/.test(url.pathname))return;
-    pending.push(response.json().then(value=>responses.push({url:response.url(),status:response.status(),value})).catch(error=>receipt.errors.push(String(error))));
+    const row={url:response.url(),status:response.status(),method:response.request().method(),phase:receipt.phase,at:performance.now(),observed_at:new Date().toISOString(),content_type:response.headers()['content-type']||''};receipt.trace_http.push(row);
+    pending.push((async()=>{
+      try{
+        const body=await response.text();row.body_prefix=body.slice(0,300);
+        if(row.status>=200&&row.status<300&&row.content_type.toLowerCase().includes('json')){
+          const value=JSON.parse(body);responses.push({url:row.url,status:row.status,value});row.epoch_uuid=value.epoch_uuid;row.stream_uuid=value.stream_uuid;row.start=value.start;row.count=value.count;
+        }else if(row.status===503&&row.method==='GET'&&row.phase?.startsWith('quit-')&&body==='Desktop service is draining')row.classification='explicit-quit-draining';
+        else row.classification='unexpected-http-response';
+      }catch(error){row.body_error=String(error);receipt.trace_observer_errors.push({phase:row.phase,url:row.url,status:row.status,error:String(error)});}
+    })());
   });}observe(activePage);
   const hash=async file=>createHash('sha256').update(await fs.readFile(file)).digest('hex');
   async function api(endpoint){return activePage.evaluate(async endpoint=>{const response=await fetch(endpoint);if(!response.ok)throw Error(await response.text());return response.json();},endpoint);}
   async function poll(fn,timeout=120000){const until=Date.now()+timeout;while(Date.now()<until){const result=await fn();if(result)return result;await new Promise(resolve=>setTimeout(resolve,100));}throw Error('Owned UI audit poll deadline');}
   async function shot(name){await activePage.screenshot({path:path.join(output,name+'.png')});}
-  async function step(name,fn){const before=receipt.requests.length,began=performance.now();const row={name,status:'running',started_at:new Date().toISOString()};receipt.actions.push(row);await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');try{row.result=await fn();row.total_ms=performance.now()-began;row.requests=receipt.requests.slice(before);await shot(name);row.status='passed';}catch(error){row.status='failed';row.error=String(error);throw error;}finally{row.elapsed_ms=performance.now()-began;await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');}}
+  async function step(name,fn){receipt.phase=name;const before=receipt.requests.length,began=performance.now();const row={name,status:'running',started_at:new Date().toISOString()};receipt.actions.push(row);await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');try{row.result=await fn();row.total_ms=performance.now()-began;row.requests=receipt.requests.slice(before);await shot(name);row.status='passed';}catch(error){row.status='failed';row.error=String(error);throw error;}finally{row.elapsed_ms=performance.now()-began;await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');}}
   const synthetic=path.join(home,'synthetic');
   await run(path.join(runtime,'python/bin/python3.11'),['-B',path.join(__dirname,'seed-dual-response-fixture.py'),synthetic,path.join(runtime,'python/lib/python3.11/site-packages/retinanalysis/utils/parse_data.py')],{env:fixtureEnv,timeout:45000});
   const oracle=JSON.parse(await fs.readFile(path.join(synthetic,'dual-oracle.json'))),fixtureReceipt=JSON.parse(await fs.readFile(path.join(synthetic,'dual-fixture-receipt.json'))),input=path.join(synthetic,'synthetic-dual.h5');
@@ -136,17 +147,24 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   await step('07-workbench',async()=>{await activePage.getByRole('tab',{name:'Workbench',exact:true}).click();await activePage.locator('.incoming-workbench:visible').waitFor();return {visible:true};});
   await step('08-inspect-return',async()=>{await activePage.getByRole('tab',{name:'Inspect',exact:true}).click();return assertInspect();});
   await step('09-overview-return',async()=>{await activePage.getByRole('button',{name:'Project overview',exact:true}).click();await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();await shot('09-overview-away');await activePage.getByRole('button',{name:'Back to previous workspace',exact:true}).click();return assertInspect();});
-  const token=await activePage.evaluate(()=>window.__populatedAuditToken=crypto.randomUUID());
-  await step('10-project-away',async()=>{await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();activePage=(await currentPage(projects[1])).page;await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();await prepareInitialPresentation(activePage,receipt);return {project_uuid:projects[1].uuid};});
+  const token=await activePage.evaluate(()=>window.__populatedAuditToken=crypto.randomUUID());let initialB,tokenB;
+  await step('10-project-away',async()=>{await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();initialB=await currentPage(projects[1]);activePage=initialB.page;observe(activePage);await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();await prepareInitialPresentation(activePage,receipt);tokenB=await activePage.evaluate(()=>{window.__auditOverview=document.querySelector('.infographic-overview');return window.__populatedAuditToken=crypto.randomUUID();});return {project_uuid:projects[1].uuid};});
   await step('11-project-return',async()=>{await activePage.getByRole('button',{name:projects[0].name,exact:true}).click();const a=await currentPage(projects[0]);activePage=a.page;assert.equal(a.id,initialA.id);assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),token);return assertInspect();});
-  async function quit(){const exit=new Promise(resolve=>application.process().once('exit',resolve));await activePage.evaluate(()=>{void window.riekeDesktop.quit();});assert.equal(await Promise.race([exit,new Promise((_,reject)=>setTimeout(()=>reject(Error('Owned populated Quit timed out')),45000).unref())]),0);exited=true;}
+  for(let sample=0;sample<3;sample++)await step(`11b-warm-pair-${sample}`,async()=>{
+    const toB=await measureRetainedSwitch({application,fromPage:activePage,project:projects[1],view:initialB,receipt,sample,direction:'A-to-B',expectFastpath,check:async page=>{const value=await page.evaluate(expected=>({same_document:window.__populatedAuditToken===expected,same_node:document.querySelector('.infographic-overview')===window.__auditOverview}),tokenB);assert.deepEqual(value,{same_document:true,same_node:true});return value;}});activePage=initialB.page;
+    const toA=await measureRetainedSwitch({application,fromPage:activePage,project:projects[0],view:initialA,receipt,sample,direction:'B-to-A',expectFastpath,check:async page=>{activePage=page;assert.equal(await page.evaluate(()=>window.__populatedAuditToken),token);return assertInspect();}});activePage=initialA.page;
+    return {A_to_B_ms:toB.total_ms,B_to_A_ms:toA.total_ms};
+  });
+  receipt.navigation_events=await application.evaluate(()=>globalThis.__retentionNavigations);
+  for(const view of [initialA,initialB])assert.equal(receipt.navigation_events.filter(row=>row.id===view.id&&!row.inPlace).length,1,'Each preloaded native project must load once');
+  async function quit(){receipt.phase=receipt.cleanup.orderly_exit?'quit-restart':'quit-initial';(receipt.quit_boundaries??=[]).push({phase:receipt.phase,at:performance.now(),started_at:new Date().toISOString()});await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');const exit=new Promise(resolve=>application.process().once('exit',resolve));await activePage.evaluate(()=>{void window.riekeDesktop.quit();});assert.equal(await Promise.race([exit,new Promise((_,reject)=>setTimeout(()=>reject(Error('Owned populated Quit timed out')),45000).unref())]),0);exited=true;}
   await quit();receipt.cleanup.orderly_exit=true;
   const owner=JSON.parse(await fs.readFile(path.join(projects[0].path,'database/native-owner.json')));assert.equal(owner.clean_shutdown,true);
-  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'restart');exited=false;
+  receipt.phase='restart-launch';application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'restart');exited=false;
   activePage=(await currentPage(projects[0])).page;activePage.setDefaultTimeout(20000);observe(activePage);
   await step('12-fresh-process-restore',async()=>{await activePage.getByRole('button',{name:'Edit Tree',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),undefined);await poll(async()=>await activePage.getByRole('spinbutton',{name:'Start sample',exact:true}).inputValue()==='17');assert.equal(await activePage.getByRole('spinbutton',{name:'Sample count',exact:true}).inputValue(),'127');const data=await api('/api/overview');assert.equal(data.counts.epochs,63);assert.equal(data.counts.cells,2);assert.equal(await activePage.locator('.tv-streams:visible button').filter({hasText:'Amp2'}).getAttribute('aria-pressed'),'true');assert.equal(await hash(input),fixtureReceipt.h5_sha256);assert.equal(await hash(receipt.managed_source),fixtureReceipt.h5_sha256);return {new_process:true,start:17,count:127,epochs:63,cells:2,selected_device:'Amp2',source_bytes_unchanged:true};});
   await quit();receipt.cleanup.restart_orderly_exit=true;
-  assert.equal((await run('git',['-C',source,'rev-parse','HEAD'])).stdout.trim(),config.commit);assert.equal((await run('git',['-C',source,'status','--porcelain'])).stdout,initialSource);assert.deepEqual(receipt.errors,[]);receipt.status='passed';
+  assert.equal((await run('git',['-C',source,'rev-parse','HEAD'])).stdout.trim(),config.commit);assert.equal((await run('git',['-C',source,'status','--porcelain'])).stdout,initialSource);await Promise.all(pending);assert.deepEqual(receipt.errors,[],'Unexpected renderer pageerrors');assert.deepEqual(receipt.trace_observer_errors,[],'Trace observer body/JSON failures');assert.deepEqual(receipt.trace_http.filter(row=>row.classification==='unexpected-http-response'),[],'Unexpected trace HTTP responses');receipt.status='passed';
  }catch(error){await failureEvidence(application,activePage,output,receipt,error);throw error;}
  finally{
   if(application&&!exited){try{await closeOwned(application,userData,receipt);}catch(error){receipt.cleanup.close_error=String(error);}}

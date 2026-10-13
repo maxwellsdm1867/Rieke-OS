@@ -73,3 +73,17 @@ visible labels and text. Failure receipts are written before cleanup. Fallback
 Quit is bounded; a forced signal is permitted only to the exact launched Electron
 process after the owned backend registry shows no services or database operations.
 A forced exit is recorded as cleanup, never counted as successful ordinary Quit.
+
+Three preloaded A→B→A pairs are timed after both views are ready. Timing stops
+after the expected attached WCV is visible and two animation frames have passed;
+retention assertions and screenshots run afterward. Discovery inspects DOM labels
+immediately rather than waiting on a selector in the wrong project. Every request
+has response status and elapsed time. Candidate warm pairs must issue no folder
+inspection/open, overview or trace requests, and neither document may reload.
+
+For the matched prior retained-view baseline only, pass
+`--expect-warm-fastpath false`. It records the old inspect/open requests instead
+of requiring their absence; all DOM, state, no-overview/trace, reload and error
+assertions remain mandatory. The default is the strict candidate expectation.
+The historical 30-second return measurement used a waiting-selector helper and
+must not be presented as a valid application latency or speedup baseline.

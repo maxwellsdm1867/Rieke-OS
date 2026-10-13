@@ -1,7 +1,7 @@
 'use strict';
 // Test-only helpers: bind a Playwright page to the actual attached WCV identity,
 // and leave failure evidence on disk before bounded, owned-process cleanup.
-const fs=require('node:fs/promises'),syncFs=require('node:fs'),path=require('node:path');
+const fs=require('node:fs/promises'),syncFs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bounded(operation,ms,label){let timer;try{return await Promise.race([operation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(label+' timed out')),ms);})]);}finally{clearTimeout(timer);}}
 function captureNativeProcess(application,output,receipt,label){
@@ -32,12 +32,45 @@ async function currentProjectPage(application,project,receipt){
   for(const page of application.context().pages()){
    let binding=bindings.get(page);if(!binding){binding=await bounded(pageBinding(application,page),3000,'project page binding').catch(()=>null);if(binding)bindings.set(page,binding);}
    const item=binding&&attached.find(item=>item.id===binding.id);
-   if(item&&await page.getByRole('button',{name:`${project.name}, current project`,exact:true,includeHidden:true}).getAttribute('aria-current').then(value=>value==='page').catch(()=>false))return {page,...item};
+   if(item&&await page.evaluate(name=>[...document.querySelectorAll('button[aria-current="page"]')].some(el=>el.getAttribute('aria-label')===`${name}, current project`),project.name).catch(()=>false))return {page,...item};
   }
   await delay(100);
  }
  receipt.project_discovery={project,awaited_ms:45000,...await discoverySnapshot(application)};
  throw Error(`Attached project renderer did not become current: ${project.name}`);
+}
+function recordNativeRequests(page,receipt){
+ const rows=new WeakMap();
+ page.on('request',request=>{const url=new URL(request.url());if(!url.pathname.startsWith('/api/'))return;const row={at:performance.now(),phase:receipt.phase,page:page.url(),method:request.method(),url:request.url()};rows.set(request,row);receipt.requests.push(row);});
+ page.on('response',response=>{const row=rows.get(response.request());if(row){row.response_at=performance.now();row.status=response.status();}});
+ page.on('requestfinished',request=>{const row=rows.get(request);if(row){row.ended=performance.now();row.elapsed_ms=row.ended-row.at;}});
+ page.on('requestfailed',request=>{const row=rows.get(request);if(row){row.ended=performance.now();row.elapsed_ms=row.ended-row.at;row.failure=request.failure()?.errorText;}});
+}
+async function measureRetainedSwitch({application,fromPage,project,view,receipt,sample,direction,expectFastpath=true,check}){
+ const before=receipt.requests.length,began=performance.now();
+ receipt.phase=`warm-${sample}-${direction}`;
+ await fromPage.getByRole('button',{name:project.name,exact:true}).click({timeout:5000});
+ let attached;const limit=45000,deadline=performance.now()+limit;
+ while(performance.now()<deadline){
+  attached=(await attachedViews(application)).find(item=>item.id===view.id&&item.bounds.width>0&&item.bounds.height>0);
+  if(attached&&await view.page.evaluate(name=>document.visibilityState==='visible'&&[...document.querySelectorAll('button[aria-current="page"]')].some(el=>el.getAttribute('aria-label')===`${name}, current project`),project.name))break;
+  attached=null;await delay(20);
+ }
+ assert.ok(attached,`Known retained WCV must become attached and visible within ${limit}ms`);
+ await view.page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ const visibleMs=performance.now()-began;
+ const result={sample,direction,total_ms:visibleMs,web_contents_id:view.id,bounds:attached.bounds,requests:[],status:'observed'};
+ (receipt.warm_switches??=[]).push(result);
+ result.retention=await check(view.page);
+ result.requests=receipt.requests.slice(before);
+ const folder=result.requests.filter(row=>['/api/projects/inspect-folder','/api/projects/open-folder'].includes(new URL(row.url).pathname));
+ const summaries=result.requests.filter(row=>/^\/api\/(?:overview|protocols\/[^/]+\/overview)$/.test(new URL(row.url).pathname));
+ const traces=result.requests.filter(row=>/^\/api\/epochs\/[^/]+\/trace$/.test(new URL(row.url).pathname));
+ result.folder_open_requests=folder.length;result.summary_requests=summaries.length;result.trace_requests=traces.length;
+ assert.equal(summaries.length,0,'Warm project switch must not rebuild overview');
+ assert.equal(traces.length,0,'Warm project switch must not reread raw traces');
+ if(expectFastpath)assert.equal(folder.length,0,'Warm project switch must not inspect/reopen folder');
+ result.status='passed';return result;
 }
 async function prepareInitialPresentation(page,receipt){
  const result={url:page.url(),closed_tag_author:false,opened_sidebar:false};
@@ -73,4 +106,4 @@ async function closeOwned(application,userData,receipt){
  process.kill('SIGTERM');
  if(!await Promise.race([exit.then(()=>true),delay(1500).then(()=>false)])){process.kill('SIGKILL');await bounded(exit,5000,'owned Electron exit');receipt.cleanup.forced_signal='SIGKILL';}else receipt.cleanup.forced_signal='SIGTERM';
 }
-module.exports={captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned,discoverySnapshot};
+module.exports={recordNativeRequests,measureRetainedSwitch,captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned,discoverySnapshot};

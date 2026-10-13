@@ -5,9 +5,11 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {createRequire}=require('node:module'),{execFile}=require('node:child_process');
 const {promisify}=require('node:util'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
 const run=promisify(execFile);
-const {captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
+const {recordNativeRequests,measureRetainedSwitch,captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
 const config={};for(let i=2;i<process.argv.length;i+=2){if(!process.argv[i].startsWith('--')||!process.argv[i+1])throw Error('Expected --key value');config[process.argv[i].slice(2)]=process.argv[i+1];}
 for(const name of ['desktop-root','dependency-root','source-root','commit','output'])if(!config[name])throw Error(`Missing --${name}`);
+if(config['expect-warm-fastpath']!==undefined&&!['true','false'].includes(config['expect-warm-fastpath']))throw Error('Expected --expect-warm-fastpath true|false');
+const expectFastpath=config['expect-warm-fastpath']!=='false';
 
 (async()=>{
  const desktop=await fs.realpath(config['desktop-root']),dependencies=createRequire(path.join(await fs.realpath(config['dependency-root']),'package.json'));
@@ -37,7 +39,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   PYTHONDONTWRITEBYTECODE:'1',PYTHONNOUSERSITE:'1'};
  for(const directory of [fixture,home,userData]){const info=await fs.lstat(directory);assert.equal(info.isSymbolicLink(),false);assert.equal(info.uid,process.getuid());assert.equal(await fs.realpath(directory),directory);}
  assert.ok(fixture.startsWith(await fs.realpath(os.tmpdir())+path.sep));
- const receipt={format:'disco-native-project-retention-v1',status:'running',source_commit:manifest.source_commit,desktop_source_sha256:desktopHashes,desktop,runtime,fixture,
+ const receipt={format:'disco-native-project-retention-v1',status:'running',source_commit:manifest.source_commit,desktop_source_sha256:desktopHashes,desktop,runtime,fixture,expect_warm_fastpath:expectFastpath,
   limitations:['Two empty native projects; no populated database or waveform latency qualification.','Elapsed times include Playwright orchestration and frame observations.','Development Electron runtime; not an installed or packaged-app qualification.'],samples:[],requests:[],cleanup:{}};
  let application,activePage,exited=false;
  try{
@@ -48,7 +50,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'initial');
   const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged,pid:process.pid,electron:process.versions.electron}));
   assert.equal(actual.home,home);assert.equal(actual.userData,userData);assert.equal(actual.appPath,desktop);assert.equal(actual.packaged,false);receipt.runtime_identity=actual;
-  const record=page=>{page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))receipt.requests.push({at:performance.now(),page:page.url(),method:request.method(),url:request.url()});});};
+  const record=page=>recordNativeRequests(page,receipt);
   application.context().pages().forEach(record);application.context().on('page',record);
   await application.evaluate(({app})=>{
     globalThis.__retentionNavigations=[];
@@ -66,24 +68,24 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
   await activePage.getByRole('button',{name:'Data stores',exact:true}).click();await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:30000});
   const token=await activePage.evaluate(()=>window.__nativeRetentionToken=crypto.randomUUID());
+  await activePage.evaluate(()=>{window.__nativeRetentionNode=document.querySelector('.data-stores');});
+  // Preload B separately. Only later switches between two ready views are timed.
+  receipt.phase='cold-project-B';
+  await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();
+  const initialB=await currentPage(projects[1]);activePage=initialB.page;
+  await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
+  const tokenB=await activePage.evaluate(()=>{window.__nativeRetentionNode=document.querySelector('.infographic-overview');return window.__nativeRetentionToken=crypto.randomUUID();});
+  await activePage.getByRole('button',{name:projects[0].name,exact:true}).click();activePage=(await currentPage(projects[0])).page;
+  await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor();
+  async function retainedCheck(page,expectedToken,selector){const value=await page.evaluate(({expectedToken,selector})=>({same_document:window.__nativeRetentionToken===expectedToken,same_node:document.querySelector(selector)===window.__nativeRetentionNode}),{expectedToken,selector});assert.deepEqual(value,{same_document:true,same_node:true});return value;}
   for(let sample=0;sample<3;sample++){
-    await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();
-    const b=await currentPage(projects[1]);activePage=b.page;
-    await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
-    const before=receipt.requests.length,began=performance.now();
-    await activePage.getByRole('button',{name:projects[0].name,exact:true}).click();
-    const a=await currentPage(projects[0]);activePage=a.page;
-    await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:30000});
-    await activePage.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    assert.equal(a.id,initialA.id);assert.equal(await activePage.evaluate(()=>window.__nativeRetentionToken),token);
-    assert.ok(a.bounds.width>0&&a.bounds.height>0);
-    const requests=receipt.requests.slice(before);
-    assert.equal(requests.some(row=>new URL(row.url).pathname==='/api/overview'),false,'Warm project switch must not rebuild overview');
-    receipt.samples.push({sample,total_ms:performance.now()-began,web_contents_id:a.id,same_document:true,bounds:a.bounds,requests});
+    await measureRetainedSwitch({application,fromPage:activePage,project:projects[1],view:initialB,receipt,sample,direction:'A-to-B',expectFastpath,check:page=>retainedCheck(page,tokenB,'.infographic-overview')});activePage=initialB.page;
+    const result=await measureRetainedSwitch({application,fromPage:activePage,project:projects[0],view:initialA,receipt,sample,direction:'B-to-A',expectFastpath,check:page=>retainedCheck(page,token,'.data-stores')});activePage=initialA.page;
+    receipt.samples.push(result);await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
   }
   await activePage.screenshot({path:path.join(output,'retained-project-A.png')});
   receipt.navigation_events=await application.evaluate(()=>globalThis.__retentionNavigations);
-  assert.equal(receipt.navigation_events.filter(row=>row.id===initialA.id&&!row.inPlace).length,1,'A must load its document only once');
+  for(const view of [initialA,initialB])assert.equal(receipt.navigation_events.filter(row=>row.id===view.id&&!row.inPlace).length,1,'Each preloaded project must load its document only once');
   // Actual bounded Quit asks every retained renderer to checkpoint its draft.
   const exit=new Promise(resolve=>application.process().once('exit',code=>resolve(code)));
   await activePage.evaluate(()=>{void window.riekeDesktop.quit();});
