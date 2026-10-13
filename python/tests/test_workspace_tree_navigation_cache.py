@@ -200,6 +200,54 @@ class StructuralNavigationTests(unittest.TestCase):
             self.pager.page({**body, 'anchor_uuid':self.service.ids[0]})
         self.assertEqual(len(self.service._tree_page_scope_cache[1]), 1)
 
+    def test_protocol_cache_never_enumerates_or_charges_unrelated_project_metadata(self):
+        self.index()
+        class LookupOnly(dict):
+            def __iter__(self): raise AssertionError('Project-wide iteration')
+            def keys(self): raise AssertionError('Project-wide keys')
+            def items(self): raise AssertionError('Project-wide items')
+            def values(self): raise AssertionError('Project-wide values')
+            def __eq__(self, other): raise AssertionError('Project-wide comparison')
+            def __ne__(self, other): raise AssertionError('Project-wide comparison')
+            def __sizeof__(self): raise AssertionError('Project-wide cache charge')
+        self.service.rows = LookupOnly(self.service.rows)
+        self.service._fingerprints = LookupOnly(self.service._fingerprints)
+        body = {'protocol_uuid':self.service.protocol_id, 'splits':'cell', 'counts_only':True}
+        root = self.pager.page(body)
+        # An unrelated metadata edit cannot discard a still-current tree.
+        self.service._fingerprints['unrelated'] = 'f'*64
+        with patch.object(self.pager, '_build_scope', side_effect=AssertionError('Unnecessary rebuild')):
+            self.assertEqual(self.pager.page(body), root)
+        self.service._fingerprints[self.service.ids[0]] = 'c'*64
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision':root['revision']})
+
+    def test_filtered_protocol_cache_watches_hidden_members_that_can_enter_the_filter(self):
+        self.index()
+        visible, hidden = self.service.ids
+        self.service.rows[visible]['cell_type'] = 'ON'
+        self.service.rows[hidden]['cell_type'] = 'OFF'
+        body = {'protocol_uuid':self.service.protocol_id, 'splits':'cell',
+                'filters':{'cell_type':'ON'}, 'counts_only':True}
+        root = self.pager.page(body)
+        self.assertEqual(root['count'], 1)
+        self.service.rows[hidden]['cell_type'] = 'ON'
+        self.service._fingerprints[hidden] = 'c'*64
+        with self.assertRaises(StaleTreePage):
+            self.pager.page({**body, 'revision':root['revision']})
+        self.assertEqual(self.pager.page(body)['count'], 2)
+
+    def test_protocol_group_reservation_depends_on_scope_size(self):
+        self.index()
+        body = {'protocol_uuid':self.service.protocol_id, 'splits':'cell'}
+        # Stored rows remain shared, but unrelated rows do not inflate this
+        # protocol's reserved grouping memory or evict its useful projection.
+        for number in range(10000):
+            self.service.rows[str(number)] = self.service.rows[self.service.ids[0]]
+        self.pager.page(body)
+        scope = next(iter(self.service._tree_page_scope_cache[1].values()))[0]
+        self.assertEqual(scope[2].grouping_budget, 16*1024)
+
     def test_replaced_rows_release_previous_cached_values_on_next_navigation(self):
         self.index()
         body = {'splits':'date,cell,block'}

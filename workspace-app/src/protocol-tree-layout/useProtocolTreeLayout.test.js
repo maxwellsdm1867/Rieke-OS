@@ -15,10 +15,10 @@ function fixture(){
    reply(data,ok=true){assert.equal(request.settled,false);request.settled=true;resolve({ok,status:ok?200:503,json:async()=>data});}};
   requests.push(request);
  });
- function Probe({id,initial}){visible=useProtocolTreeLayout(id,initial);return React.createElement('output',null,JSON.stringify(visible.order));}
+ function Probe({id,initial,enabled}){visible=useProtocolTreeLayout(id,initial,{enabled});return React.createElement('output',null,JSON.stringify(visible.order));}
  return {
   requests,get state(){return visible;},
-  async render(id='a',initial){await act(async()=>{const element=React.createElement(Probe,{id,initial});if(root)root.update(element);else root=create(element);});},
+  async render(id='a',initial,enabled=true){await act(async()=>{const element=React.createElement(Probe,{id,initial,enabled});if(root)root.update(element);else root=create(element);});},
   async reply(index,data,ok=true){await act(async()=>{requests[index].reply(data,ok);await turn();});},
   async call(action){let result;await act(async()=>{result=action(visible);await turn();});return result;},
   async unmount(){if(root){await act(async()=>root.unmount());root=null;}},
@@ -127,5 +127,19 @@ test('layout hook retains old saver while replacement load is pending but fences
   await h.call(state=>state.remember(['date']));assert.equal(h.requests[3].url,'/api/protocols/b/tree-layout');
   assert.deepEqual(h.requests[3].body,{split_order:['date'],expected_version:8});
   await h.reply(3,{version:9,split_order:['date']});
+ }finally{await h.close();}
+});
+
+
+test('overview defers layout until first demand and keeps the loaded layout through tab returns',async()=>{
+ const h=fixture();try{
+  await h.render('a',undefined,false);assert.equal(h.requests.length,0);assert.equal(h.state.ready,false);
+  await h.render('a',undefined,true);assert.equal(h.requests.length,1);
+  await h.reply(0,{version:2,split_order:['cell']});assert.equal(h.state.ready,true);
+  await h.render('a',undefined,false);await h.render('a',undefined,true);
+  assert.equal(h.requests.length,1);assert.deepEqual(h.state.order,['cell']);
+  await h.render('b',undefined,false);assert.equal(h.requests.length,1);
+  await h.render('b',undefined,true);assert.equal(h.requests.length,2);
+  await h.reply(1,{version:3,split_order:['block']});assert.deepEqual(h.state.order,['block']);
  }finally{await h.close();}
 });

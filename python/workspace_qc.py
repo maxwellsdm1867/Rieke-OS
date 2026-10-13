@@ -63,7 +63,7 @@ class CellQC:
         identity = str(uuid.UUID(cell_uuid))
         if identity not in self.service.cells:
             raise KeyError('Cell is not in the main project catalog')
-        return sorted((row for row in self.service.rows.values() if row['cell_uuid'] == identity),
+        return sorted(self.service.cell_rows(identity),
                       key=lambda row: (row['date'], row['start_time'][11:], row['epoch_uuid']))
 
     def _params(self, row):

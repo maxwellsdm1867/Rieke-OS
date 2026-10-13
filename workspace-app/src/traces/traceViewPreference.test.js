@@ -8,8 +8,11 @@ import {fileURLToPath} from 'node:url';
 test('viewing preferences validate restored input, strip authority and isolate protocol providers',async()=>{
  const server=await createServer({root:fileURLToPath(new URL('../..',import.meta.url)),configFile:false,server:{middlewareMode:true,hmr:false,ws:false},appType:'custom',logLevel:'error'});
  const {normalizeTraceViewPreference:normalize,TraceViewPreferenceProvider:Provider,useTraceViewPreference:usePreference}=await server.ssrLoadModule('/src/traces/traceViewPreference.jsx');
- const whole={kind:'whole',start:0,count:20000};
- for(const invalid of [null,{},'sample',{kind:'sample',start:-1,count:2},{kind:'sample',start:0,count:20001},{kind:'sample',start:0,count:0},{kind:'sample',start:Infinity,count:5},{kind:'sample',start:0,count:'20'}])assert.deepEqual(normalize(invalid),whole);
+ const whole={kind:'whole',start:0,count:200};
+ for(const invalid of [null,{},'sample',{kind:'sample',start:-1,count:2},{kind:'sample',start:0,count:0},{kind:'sample',start:Infinity,count:5},{kind:'sample',start:0,count:'20'}])assert.deepEqual(normalize(invalid),whole);
+ assert.deepEqual(normalize({kind:'sample',start:100,count:50000}),{kind:'sample',start:100,count:50000});
+ assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{min:-10,max:5}}),{kind:'sample',start:0,count:100,amplitude:{min:-10,max:5}});
+ assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{min:5,max:-10}}),{kind:'sample',start:0,count:100});
  const sample={kind:'sample',start:30000,count:1000};
  assert.deepEqual(normalize({...sample,epoch_uuid:'not-a-preference',read_context:{root:'untrusted'}}),sample);
  let renderer;

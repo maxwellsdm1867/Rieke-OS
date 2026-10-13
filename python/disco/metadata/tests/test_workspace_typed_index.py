@@ -44,6 +44,82 @@ class TypedIndexTests(unittest.TestCase):
         self.order = sorted(self.rows, key=lambda r: (r.get('date') or '', r.get('start_time') or '', r['epoch_uuid']))
         self.definitions = self.native.catalog()
 
+    def test_reusable_membership_matches_queries_across_connections_without_readmitting(self):
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        ids = [row['epoch_uuid'] for row in self.rows[:20]]
+        factory = unittest.mock.Mock(return_value=iter(ids + ids[:2] + ['unknown']))
+        handle = cache.get({'revision': 'one'}, ['source'], factory)
+        self.assertIs(cache.get({'revision': 'one'}, ['source'], factory), handle)
+        factory.assert_called_once()
+        with TypedMetadataIndex.open_verified(self.index) as reader:
+            plan = reader.explain(scope={'epoch_ids': handle, 'sources': ['source']})
+            self.assertTrue(any('IN-OPERATOR' in row[3] for row in plan), plan)
+            self.assertFalse(any('LIST SUBQUERY' in row[3] for row in plan), plan)
+        for predicate in ({'all': []}, {'field': 'parameters/wide', 'operator': 'gt', 'value': 3},
+                          {'field': 'parameters/a~1b~0', 'operator': 'contains', 'value': 1}):
+            expected = self.index.preview(predicate, {'epoch_ids': ids, 'sources': ['source']},
+                                          facet_fields=['parameters/wide'])
+            with TypedMetadataIndex.open_verified(self.index) as reader:
+                with patch.object(reader, '_supply_identities', side_effect=AssertionError('readmission')):
+                    actual = reader.preview(predicate, {'epoch_ids': handle, 'sources': ['source']},
+                                            facet_fields=['parameters/wide'])
+                self.assertEqual(actual, expected)
+                # Same connection can safely return to a caller-supplied scope.
+                self.assertEqual(reader.membership(scope={'epoch_ids': []}), [])
+
+    def test_reusable_membership_rebind_sources_and_live_reader_lifetime(self):
+        import gc
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        first_id, second_id = [row['epoch_uuid'] for row in self.rows[:2]]
+        first = cache.get({'revision': 'one'}, ['other', 'source'], lambda: [first_id])
+        with TypedMetadataIndex.open_verified(self.index) as old:
+            self.assertEqual(old.membership(scope={'epoch_ids': first, 'sources': ['other', 'source']}), [first_id])
+            first_path = first.path
+            del first
+            for i in range(18):
+                latest = cache.get({'revision': str(i)}, ['other', 'source'], lambda: [second_id])
+            gc.collect()
+            self.assertTrue(first_path.exists())
+            self.assertEqual(old.membership(scope={'epoch_ids': old._membership, 'sources': ['source', 'other']}), [first_id])
+            self.assertEqual(self.index.membership(scope={'epoch_ids': latest, 'sources': ['other', 'source']}), [second_id])
+            with self.assertRaisesRegex(ValueError, 'source scope mismatch'):
+                self.index.membership(scope={'epoch_ids': latest, 'sources': []})
+        gc.collect()
+        self.assertFalse(first_path.exists())
+
+    def test_reusable_membership_failed_build_is_discarded_and_mutation_refuses(self):
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        def interrupted():
+            yield self.rows[0]['epoch_uuid']
+            raise InterruptedError('interrupted')
+        with self.assertRaises(InterruptedError):
+            cache.get({'revision': 'one'}, ['other'], interrupted)
+        self.assertEqual(cache.entries, {})
+        self.assertEqual(list(Path(cache.directory.name).iterdir()), [])
+        handle = cache.get({'revision': 'one'}, ['other'], lambda: [self.rows[0]['epoch_uuid']])
+        with handle.path.open('ab') as stream:
+            stream.write(b'changed')
+        with self.assertRaisesRegex(ValueError, 'membership generation changed'):
+            self.index.membership(scope={'epoch_ids': handle, 'sources': ['other']})
+
+    def test_reusable_membership_concurrent_first_queries_build_once(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from disco.metadata.typed_lifecycle import MembershipCache
+        cache = MembershipCache(self.index, self.native)
+        ids = [row['epoch_uuid'] for row in self.rows]
+        factory = unittest.mock.Mock(return_value=ids)
+        def query(_):
+            handle = cache.get({'revision': 'one'}, ['source', 'other'], factory)
+            with TypedMetadataIndex.open_verified(self.index) as reader:
+                return reader.membership(scope={'epoch_ids': handle, 'sources': ['source', 'other']})
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(query, range(2)))
+        self.assertEqual(results, [[row['epoch_uuid'] for row in self.order]] * 2)
+        factory.assert_called_once()
+
     def truth(self, predicate=None, scope=None):
         result = []
         for row in self.order:
@@ -105,7 +181,11 @@ class TypedIndexTests(unittest.TestCase):
             self.assertEqual(outcomes[0], outcomes[1], case)
             if outcomes[0][0] != 'ok':
                 continue
-            for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'}, {'protocol':'VariableHistoryNoiseCurInject'}):
+            for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'},
+                    {'protocol':'VariableHistoryNoiseCurInject'},
+                    {'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-8','epoch-9','epoch-17']},
+                    {'sources':['source'], 'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-8','epoch-9','epoch-17']},
+                    {'epoch_ids':[]}):
                 with self.subTest(case=case, scope=scope):
                     expected = self.truth(case, scope)
                     self.assertEqual(list(self.index.iter_membership(case, scope)), [r['epoch_uuid'] for r in expected])
@@ -137,7 +217,10 @@ class TypedIndexTests(unittest.TestCase):
 
     def test_requested_facets_equal_independent_full_results_without_row_decoding(self):
         fields = list(self.index.fields)
-        for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'}):
+        for scope in (None, {'cell':'cell-0'}, {'block':'block-0'}, {'group':'group'},
+                      {'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-9']},
+                      {'sources':['source'], 'epoch_ids':['epoch-0','epoch-1','epoch-2','epoch-9']},
+                      {'epoch_ids':[]}):
             rows = self.truth(scope=scope)
             full = self.index.summaries(scope=scope, facet_fields=fields)
             for field in fields:
@@ -156,6 +239,42 @@ class TypedIndexTests(unittest.TestCase):
         self.assertEqual(result['rows'], expected[:3])
         self.assertEqual(result['facets']['parameters/sometimes'], self.expected_facet('parameters/sometimes', expected))
         self.assertEqual(self.index.count(scope={'sources':[]}), 0)
+
+    def test_explicit_membership_and_sources_do_not_need_a_structural_parent(self):
+        ids = ['epoch-1','epoch-2','epoch-2','foreign','epoch-3','epoch-10']
+        for sources in (['source'], ['other'], [], ['missing']):
+            expected = self.truth(scope={'sources':sources, 'epoch_ids':ids})
+            # Both key orders and one-shot iterators must keep conjunction,
+            # duplicate/unknown handling and chronological pagination exact.
+            for reverse in (False, True):
+                pairs = [('sources', iter(sources)), ('epoch_ids', iter(ids))]
+                scoped = dict(reversed(pairs) if reverse else pairs)
+                result = self.index.preview(scope=scoped, facet_fields=['parameters/sometimes'], limit=3)
+                self.assertEqual(result['rows'], expected[:3])
+                self.assertEqual(result['count'], len(expected))
+                self.assertEqual(result['facets']['parameters/sometimes'],
+                                 self.expected_facet('parameters/sometimes', expected))
+        self.assertEqual(self.index.membership(scope=iter(ids)),
+                         [row['epoch_uuid'] for row in self.order if row['epoch_uuid'] in ids])
+
+    def test_dictionary_fallback_evaluates_only_values_reachable_from_explicit_members(self):
+        ids = ['epoch-1','epoch-2','epoch-9']
+        for predicate in ({'field':'parameters/wide','operator':'gt','value':3},
+                          {'field':'parameters/a~1b~0','operator':'contains','value':1}):
+            expected = self.truth(predicate, {'epoch_ids':ids})
+            original = predicates.matches
+            visited = []
+            def observe(node, values):
+                visited.append(values)
+                return original(node, values)
+            with patch.object(predicates, 'matches', side_effect=observe):
+                actual = self.index.membership(predicate, scope=iter(ids))
+            self.assertEqual(actual, [row['epoch_uuid'] for row in expected])
+            self.assertLessEqual(len(visited), len(ids))
+            visited.clear()
+            with patch.object(predicates, 'matches', side_effect=observe):
+                self.assertEqual(self.index.membership(predicate, scope=[]), [])
+            self.assertEqual(visited, [])
 
     def test_native_detail_decoder_and_source_bytes_preserved(self):
         for row in self.order:

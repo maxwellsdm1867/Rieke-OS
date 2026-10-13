@@ -67,6 +67,19 @@ opens retain full inventory. Neither route bypasses child authorization.
 PID, creation time, session, executable, UUID and canonical path serve different
 proof obligations. A ready HTTP port alone proves none of them.
 
+Desktop runtime construction also owns the pinned RetinAnalysis package-entry
+patch in [desktop_build_runtime.py](../tools/desktop_build_runtime.py). With
+`RIEKE_DESKTOP_MODE=1`, importing `retinanalysis.config.schema` loads the same
+schema source without eagerly importing the package's optional plotting/analysis
+API. Its reviewed original initializer is retained byte-for-byte as
+`_disco_public_api.py`; requesting convenience exports, wildcard imports or
+directory introspection loads that initializer through normal Python import
+machinery. Non-desktop imports retain eager initialization. The patch refuses
+an unreviewed initializer hash and records both original and patched bytes.
+It changes neither schema declarations nor parsing/analysis algorithms, project
+admission, protocol membership/hash validation or recovery ordering. Source
+packaging tests and native scientific validation are separate obligations.
+
 `drain()` is strict replacement: acknowledged drain still requires process exit,
 and failure may resume admission. Explicit `quit()` retains pause on failure and
 records uncertain cleanup. Do not convert a timeout, missing receipt, crash or

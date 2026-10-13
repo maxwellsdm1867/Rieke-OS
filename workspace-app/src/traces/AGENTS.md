@@ -6,13 +6,13 @@ request/cache scope identity. All existing exports and viewer props remain publi
 
 ## Contract
 
-Sample windows and each transport read use safe integer bounds and at most
-20,000 full-rate recorded samples. The active viewer defaults to Whole epoch:
+Display windows use safe integer bounds up to the stream length; each transport
+read remains bounded to at most 20,000 full-rate recorded samples. The active viewer defaults to Whole epoch:
 `readWholeTrace.js` sequentially demand-reads exact chunks and publishes only the
 complete trace after count, identity, source hash, rate and unit checks. Complete
 arrays are never put in the shared cache. Cancellation and publication belong to
-the existing useResource lifetime and supplied request owner. Sample is explicit;
-its start/count preference survives epoch and layout changes, clamping to shorter
+the existing useResource lifetime and supplied request owner. Direct Sample chooses start 0/count 200;
+its subsequent start/count preference survives epoch and layout changes, clamping to shorter
 streams without replacing the preference. `traceViewPreference.jsx` validates the
 presentation-only record and supplies it independently of request authority.
 Protocol owns the shared Inspect/Workbench choice in its existing session; history
@@ -20,12 +20,27 @@ uses that protocol's latest choice. Search predicate stores its own choice in th
 Explorer session, separately from disposable matching navigation and result
 revisions. Standalone MatchingEpochs retains its session fallback. Missing/invalid preferences
 start Whole epoch; standalone trace viewers retain a local choice while mounted.
-The unified controls show response identity/rate/total, Whole/Sample, Start/Count,
-window navigation and Zoom/Pan in one wrapping control row. Displayed time/sample
+The unified controls show response identity/rate/total, Whole/Sample and Zoom/Pan
+in one wrapping control row. Start/Count, Apply and previous/next window arrows
+appear only in Sample mode. Displayed time/sample
 range and brief keyboard hints sit below the plot. Stream choices are inline
 buttons; no dropdown or disclosure hides the window controls.
-Full mode permits cursor inspection; zoom/pan/window controls require Sample.
-Reset/Home returns to Whole epoch. Both modes show displayed and total counts.
+Whole mode permits cursor inspection and zoom-in. The magnifying-glass Zoom-in button in Whole mode only arms drag selection.
+Keyboard zoom or releasing a box selection enters Sample mode, shows its window controls and retains the
+exact selected range, including ranges larger than 20,000 samples. Pan is unavailable at full extent;
+Sample windows support pan with unchanged width and zoom-out up to stream length.
+Box zoom selects both time and response bounds; the optional validated amplitude
+range is presentation-only and follows the existing view preference. Pan moves
+both axes continuously while dragging, with fixed time and response spans.
+Pan uses the original grab point throughout the gesture and shows no zoom box. Whole resets both axes. Explicit
+start/stop sample bounds are inclusive and remain visible below the plot.
+Zoom only arms drag selection; releasing a drag chooses the displayed window.
+The current resource retains its loaded interval while viewport bounds remain
+inside it, so zoom/pan/Whole perform no additional reads after a full load.
+Leaving the loaded interval demand-reads the requested range in bounded chunks.
+Epoch, stream, source, revision and request-owner changes retire this reuse. Whole epoch and Reset/Home
+return to the complete trace and hide manual window controls. Both modes show
+displayed and total counts. No separate hidden zoom state exists in Whole mode.
 Pan and zoom clamp to recording bounds. Time is seconds using the positive finite
 sample rate; the span is `(count - 1) / sampleRate`, including both actual endpoint
 samples. Only finite numeric samples determine extents. Null/nonfinite samples
@@ -89,3 +104,15 @@ comparison helper. TraceViewer obtains explicit supplied request/context owners
 from `../workspaceRequest.js`; supplied contexts cannot borrow global cache or
 trace prefetch. Default legacy rendering remains supported. The viewport resize
 paint runs before display, retaining exact samples and existing geometry.
+
+Canonical short trace reads use `requestTraceWindow` from the existing `api.js`
+resource adapter. Source/descriptor checks, shared cache lookup, generation tokens
+and fresh-response admission stay with that resource owner; the viewer supplies
+its epoch, stream, exact window and cache revision. Scoped/imported reads still
+use their supplied owner and never enter the global cache. This preserves the
+existing prefetch keys and rejects stale warm or in-flight responses without
+making presentation depend directly on `resourceCache.js`.
+
+For a worked regression and dependency example, see the
+[predicate trace and cache boundary note](../../../docs/dev/predicate-trace-boundary.md).
+Run the architecture guard when adding cross-module imports, before packaging.

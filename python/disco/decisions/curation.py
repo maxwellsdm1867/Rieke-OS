@@ -400,7 +400,7 @@ class CurationStore:
                 publication_callback(result)  # Same native transaction as dataset+audit.
         return result
 
-    def _export_index(self):
+    def _export_index(self, protocol_uuid=None):
         """Cache frozen memberships; poll only small identity/version columns.
 
         No current query snapshot is treated as exported membership. Completed
@@ -408,10 +408,16 @@ class CurationStore:
         identify the recipe version. A changed signature rebuilds the index.
         """
         relation = self.DatasetRevision & {"project_uuid": self.project_uuid}
+        if protocol_uuid is not None:
+            protocol_uuid = _uuid(protocol_uuid)
+            relation = relation & {"protocol_uuid": protocol_uuid}
+        scoped = getattr(self, '_protocol_export_indexes', {})
+        cached = scoped.get(protocol_uuid) if protocol_uuid is not None else None
         headers = relation.proj("artifact_sha256", "created_at").to_dicts()
         signature = tuple(sorted((row["dataset_uuid"], row["artifact_sha256"],
                                   str(row["created_at"])) for row in headers))
-        if getattr(self, "_export_signature", None) != signature:
+        previous = cached['signature'] if cached is not None else (getattr(self, "_export_signature", None) if protocol_uuid is None else None)
+        if previous != signature:
             rows = relation.to_dicts() if headers else []
             index, summaries = {}, []
             for row in rows:
@@ -443,11 +449,29 @@ class CurationStore:
                            if recipe.get("options",{}).get("export_scope") else {})})
             for links in index.values():
                 links.sort(key=lambda link: (link["created_at"], link["dataset_uuid"]), reverse=True)
-            self._export_memberships = index
-            self._export_summaries = sorted(summaries,
+            summaries = sorted(summaries,
                 key=lambda row: (str(row["created_at"]), row["dataset_uuid"]), reverse=True)
-            self._export_signature = signature
-        return self._export_memberships
+            if protocol_uuid is None:
+                self._export_memberships, self._export_summaries, self._export_signature = index, summaries, signature
+            else:
+                cached = {'signature': signature, 'memberships': index}
+                scoped.pop(protocol_uuid, None)
+                scoped[protocol_uuid] = cached
+                while len(scoped) > 8:
+                    scoped.pop(next(iter(scoped)))
+                self._protocol_export_indexes = scoped
+        return self._export_memberships if protocol_uuid is None else cached['memberships']
+
+    def protocol_export_status(self, protocol_uuid, epoch_ids):
+        """Exact export membership and change token for one protocol's summary.
+
+        Poll and validate only this protocol's immutable export records. The
+        returned set intersects the requested cohort; no recipe/link is exposed.
+        """
+        protocol_uuid = _uuid(protocol_uuid)
+        index = self._export_index(protocol_uuid)
+        return ({key for key in epoch_ids if key in index},
+                self._protocol_export_indexes[protocol_uuid]['signature'])
 
     def export_memberships(self):
         """Project-scoped membership across all protocol export revisions."""

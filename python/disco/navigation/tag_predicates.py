@@ -94,6 +94,8 @@ class TagPredicates:
         return result
 
     def snapshot(self,fields):
+        if isinstance(fields, (set, frozenset)) and not fields:
+            return {}, {'version': 1, 'revision': checksum([]), 'protocols': []}
         definitions={field['id']:field for field in self.definitions()}
         if fields-definitions.keys(): raise ValueError('Choose tags from a protocol workspace in this project')
         protocols=[];states={}

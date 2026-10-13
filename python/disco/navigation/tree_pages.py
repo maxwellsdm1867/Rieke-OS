@@ -16,7 +16,7 @@ from disco.workbench.recipes import SPLIT_FIELDS, checksum, parse_splits
 from disco.navigation.tree import (field_value_order, joint_definition, joint_value,
                             value_key, protocol_family)
 from disco.navigation.predicates import validate as validate_predicate, matches
-from workspace_service import validate_filters, WorkspaceService
+from workspace_service import validate_filters, WorkspaceService, _frozen_navigation_owner
 from disco.decisions.explorer import ExplorerHistory
 from disco.operation_timing import elapsed
 
@@ -30,7 +30,7 @@ _STRUCTURAL_HISTORY_METHODS = {name: getattr(ExplorerHistory, name)
                                for name in ('protocol_binding', 'protocol_binding_header', 'get')}
 
 
-def _structural_contract(service):
+def _structural_contract(service, *, frozen_protocol=None):
     """Only borrow raw membership when its public policies are unchanged.
 
     Custom query/filter adapters may narrow or transform rows. Their public
@@ -43,6 +43,8 @@ def _structural_contract(service):
             return False
     provider = getattr(service, 'binding_provider', None)
     header = getattr(service, 'binding_header_provider', None)
+    if frozen_protocol is not None and _frozen_navigation_owner(service, frozen_protocol) is not None:
+        return True
     if provider is None:
         return header is None
     owner = getattr(provider, '__self__', None)
@@ -65,9 +67,10 @@ class _NavigationValues(Mapping):
     # before lazy grouping fills it. Group buckets retain only borrowed rows.
     grouping_budget = 4 * 1024 * 1024
 
-    def __init__(self, rows, fields):
+    def __init__(self, rows, fields, *, scope_size=None):
         self.rows, self.fields = rows, tuple(fields)
-        self.grouping_budget = min(self.grouping_budget, max(16 * 1024, len(rows) * 64))
+        self.grouping_budget = min(self.grouping_budget, max(16 * 1024,
+            (len(rows) if scope_size is None else scope_size) * 64))
         self.group_cache, self.group_bytes, self.summary = {}, 0, None
 
     def __sizeof__(self):
@@ -303,7 +306,7 @@ class TreePages:
             return self._build_scope(body)
         index._check()  # A cache hit must still refuse changed/corrupt index bytes.
         structural = _structural_scope(body)
-        if not _structural_contract(service):
+        if not _structural_contract(service, frozen_protocol=body.get('protocol_uuid')):
             # An unproven policy cannot reuse a native membership/cache key.
             return self._build_scope(body)
         protocol = body.get('protocol_uuid')
@@ -312,28 +315,35 @@ class TreePages:
             if 'predicate' in body:
                 raise ValueError('Protocol tree membership cannot be replaced by a source predicate')
         header_provider = getattr(service, 'binding_header_provider', None)
-        binding = (header_provider(protocol) if structural and header_provider else service.binding(protocol)) if protocol else None
+        cache_owner = _frozen_navigation_owner(service, protocol) or service
+        binding = (header_provider(protocol) if header_provider else service.binding(protocol)) if protocol else None
         # Provider-only/unbound protocol fixtures may mutate their membership in
         # place without replacing service.protocols. Frozen binding headers are
         # immutable; other scopes compare their exact UUID sequence on each hit.
         membership = (tuple(member['uuid'] for member in service.protocols[protocol]['result']['epochs'])
                       if protocol and binding is None else None)
         generation = (id(index), index.generation, id(service.rows),
-                      id(service._fingerprints), id(service.protocols))
-        base_bytes = sys.getsizeof(service._fingerprints) + TREE_SCOPE_CACHE_OVERHEAD
+                      id(service._fingerprints), id(service.protocols), protocol is not None)
+        base_bytes = TREE_SCOPE_CACHE_OVERHEAD + (0 if protocol else sys.getsizeof(service._fingerprints))
         if base_bytes >= TREE_SCOPE_BYTE_BUDGET:
-            service._tree_page_scope_cache = None
+            cache_owner._tree_page_scope_cache = None
             return self._build_scope(body)
-        cached = getattr(service, '_tree_page_scope_cache', None)
-        if cached is None or cached[0] != generation or cached[2] != service._fingerprints:
+        cached = getattr(cache_owner, '_tree_page_scope_cache', None)
+        if (cached is None or cached[0] != generation
+                or (protocol is None and cached[2] != service._fingerprints)):
             # The published fingerprint dictionary is also used by reconciliation
             # and test adapters. Detect in-place edits, not only refresh swaps.
             # Equality is a linear lightweight check; it avoids sorting/encoding
             # the full membership for every navigation request.
-            cached = service._tree_page_scope_cache = (generation, {}, dict(service._fingerprints))
+            # Protocol entries carry only their own dependency fingerprints.
+            # Source discovery retains the project-wide witness. Changing modes
+            # releases that witness instead of charging it to a small protocol.
+            cached = cache_owner._tree_page_scope_cache = (generation, {},
+                None if protocol else dict(service._fingerprints))
         cache = cached[1]
         key = (checksum({'protocol': protocol, 'binding': binding and {
-            'version': binding['version'], 'revision_uuid': binding.get('revision_uuid')},
+            'version': binding['version'], 'revision_uuid': binding.get('revision_uuid'),
+            'read_scope_revision': binding.get('read_scope_revision')},
             'source_scope': service.source_scope()['revision'] if protocol is None else None,
             'predicate': body.get('predicate'), 'filters': filters,
             'splits': body.get('splits', 'date,cell,block'),
@@ -341,8 +351,21 @@ class TreePages:
             'anchor': False if structural else bool(body.get('anchor_uuid'))}), membership)
         if key in cache:
             entry = cache.pop(key)
-            cache[key] = entry
-            return entry[0]
+            if protocol is None or all(service._fingerprints.get(identity) == fingerprint
+                    for identity, fingerprint in entry[3].items()):
+                cache[key] = entry
+                return entry[0]
+        fingerprints = None
+        if protocol is not None:
+            # Watch the complete cohort, including members hidden by filters:
+            # their metadata can change whether they belong in this projection.
+            # A native frozen header identifies an immutable recipe; only a cold
+            # entry needs its membership. Warm pages read the header once above.
+            full_binding = (service.binding(protocol) if binding is not None
+                            and 'recipe' not in binding else binding)
+            members = (full_binding['recipe']['epochs'] if full_binding else
+                       service.protocols[protocol]['result']['epochs'])
+            fingerprints = {member['uuid']: service._fingerprints[member['uuid']] for member in members}
         result = self._build_scope(body)
         rows, _, values, _, _, _ = result
         # Bound retained row references plus projected values across all scopes.
@@ -351,13 +374,18 @@ class TreePages:
         if weight <= 2_000_000:
             byte_limit = TREE_SCOPE_BYTE_BUDGET - base_bytes
             retained_bytes = _retained_scope_bytes(result, service.rows, byte_limit)
+            if fingerprints is not None:
+                # Keys/hashes are immutable objects borrowed from this service
+                # generation, like basic rows. Charge the owned lookup table.
+                retained_bytes += sys.getsizeof(fingerprints)
             # UUID strings are borrowed from service.protocols, but the exact
             # unbound membership tuple in this cache key is a new container.
             if membership is not None:
                 retained_bytes += sys.getsizeof(membership)
             if retained_bytes > byte_limit:
                 return result
-            cache[key] = (result, weight, retained_bytes)
+            cache[key] = ((result, weight, retained_bytes, fingerprints) if protocol else
+                          (result, weight, retained_bytes))
             while (len(cache) > 8 or sum(entry[1] for entry in cache.values()) > 2_000_000
                     or sum(entry[2] for entry in cache.values()) > byte_limit):
                 cache.pop(next(iter(cache)))
@@ -379,11 +407,11 @@ class TreePages:
             scoped_generation = generation(service, scoped_context)
         index = getattr(service, 'disk_index', None)
         from disco.metadata.disk_index import DiskMetadataIndex
-        canonical_index = isinstance(index, DiskMetadataIndex) and _structural_contract(service)
+        canonical_index = isinstance(index, DiskMetadataIndex) and _structural_contract(service, frozen_protocol=protocol)
         structural = canonical_index and _structural_scope(body)
         # Recorded/joint splits still project their exact typed values below.
-        # Only membership can borrow basic rows: custom and frozen adapters keep
-        # their public reader, as do live annotation/metadata-filter policies.
+        # Only proven native or owned frozen membership can borrow basic rows.
+        # Custom readers and live annotation/metadata filters keep their policy.
         raw_membership = canonical_index and not any(field in filters for field in (
             'tag', 'tagged', 'tag_predicate', 'metadata_predicate'))
         if raw_membership and protocol:
@@ -419,7 +447,7 @@ class TreePages:
             if field not in definitions:
                 definitions[field] = joint_definition(field, definitions)
         if structural:
-            values = _NavigationValues(service.rows, order)
+            values = _NavigationValues(service.rows, order, scope_size=len(rows))
         elif index is not None:
             requested = order if all_fields or body.get('anchor_uuid') else order[:len(body.get('path', []))+1]
             columns = set()

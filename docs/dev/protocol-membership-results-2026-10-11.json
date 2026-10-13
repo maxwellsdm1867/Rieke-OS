@@ -1,0 +1,2082 @@
+{
+  "status": "backend_verified_browser_unqualified",
+  "candidate_source": "f852bbf550b8518d23d91572d5d7f3d3dfc01917",
+  "baseline_source": "bb25b0837c52390f147e35c1619c06d776f96ced",
+  "github_main_verified": "035e295ba01e648005dde24fc4cdbbc4dab412e4",
+  "unit_checks": {
+    "passed": 141,
+    "log": "focused-direct.log"
+  },
+  "architecture": "passed",
+  "fixed_core": {
+    "cases": [
+      {
+        "id": "db.typed.detail",
+        "status": "passed"
+      },
+      {
+        "id": "db.typed.page.scope",
+        "status": "passed"
+      },
+      {
+        "id": "db.typed.filter.matrix",
+        "status": "passed"
+      },
+      {
+        "id": "db.typed.membership.exact",
+        "status": "passed"
+      },
+      {
+        "id": "db.typed.facets.two",
+        "status": "passed"
+      },
+      {
+        "id": "db.typed.facets.all_eligible",
+        "status": "passed"
+      },
+      {
+        "id": "ui.mounted.inspector.first",
+        "status": "passed"
+      },
+      {
+        "id": "ui.mounted.inspector.return",
+        "status": "passed"
+      },
+      {
+        "id": "correctness.navigation",
+        "status": "passed"
+      },
+      {
+        "id": "correctness.frozen_export_tags_ingest",
+        "status": "passed"
+      }
+    ],
+    "validation_errors": [],
+    "wall_seconds": 17.81903237500228
+  },
+  "cache_real_sealed_20k": {
+    "status": "passed",
+    "epochs": 20000,
+    "cold_build_ms": {
+      "2000": 6.435457995394245,
+      "20000": 43.370792001951486
+    },
+    "operations": {
+      "rebuild_page_2000": {
+        "median_ms": 6.078042002627626,
+        "milliseconds": [
+          6.575750012416393,
+          6.029041978763416,
+          6.062333995942026,
+          6.078042002627626,
+          6.451708992244676,
+          6.552624981850386,
+          5.908834020374343
+        ],
+        "correct": true
+      },
+      "reuse_page_2000": {
+        "median_ms": 1.8787090084515512,
+        "milliseconds": [
+          2.201833005528897,
+          2.0509170135483146,
+          1.8355420033913106,
+          2.0797089964617044,
+          1.8787090084515512,
+          1.7480409878771752,
+          1.7246250063180923
+        ],
+        "correct": true
+      },
+      "rebuild_summary_2000": {
+        "median_ms": 9.556500008329749,
+        "milliseconds": [
+          9.274082985939458,
+          9.341750002931803,
+          9.390624996740371,
+          9.619416989153251,
+          9.927459002938122,
+          9.556500008329749,
+          10.086459020385519
+        ],
+        "correct": true
+      },
+      "reuse_summary_2000": {
+        "median_ms": 5.360333016142249,
+        "milliseconds": [
+          5.379625014029443,
+          5.252000002656132,
+          5.199415987590328,
+          5.501707986695692,
+          5.360333016142249,
+          5.635749985231087,
+          5.332792003173381
+        ],
+        "correct": true
+      },
+      "rebuild_page_20000": {
+        "median_ms": 46.886583004379645,
+        "milliseconds": [
+          46.26354097854346,
+          47.1180829918012,
+          47.35995800001547,
+          47.62987498543225,
+          46.886583004379645,
+          46.76845800713636,
+          46.3692499906756
+        ],
+        "correct": true
+      },
+      "reuse_page_20000": {
+        "median_ms": 6.331499986117706,
+        "milliseconds": [
+          6.207375001395121,
+          6.331499986117706,
+          6.503582990262657,
+          6.163708982057869,
+          6.455124996136874,
+          5.920124996919185,
+          6.770000007236376
+        ],
+        "correct": true
+      },
+      "rebuild_summary_20000": {
+        "median_ms": 83.52533300057985,
+        "milliseconds": [
+          84.15341700310819,
+          84.11870800773613,
+          83.56045800610445,
+          83.33195900195278,
+          83.45983299659565,
+          83.26225000200793,
+          83.52533300057985
+        ],
+        "correct": true
+      },
+      "reuse_summary_20000": {
+        "median_ms": 42.81520898803137,
+        "milliseconds": [
+          42.49516600975767,
+          42.644667002605274,
+          43.5055420093704,
+          42.81520898803137,
+          43.52491602185182,
+          42.86662500817329,
+          42.41629200987518
+        ],
+        "correct": true
+      }
+    },
+    "warm_recipe_reads": 0,
+    "h5_open_attempts": 0,
+    "limitations": [
+      "20k synthetic epochs in real sealed SQLite files; not million/native/UI qualification.",
+      "One owner generation; session restart and index building are excluded from query timing."
+    ]
+  },
+  "cache_million_sql_diagnostic": {
+    "status": "passed",
+    "epochs": 1000000,
+    "cold_build_ms": {
+      "2000": 13.187292002839968,
+      "1000000": 3072.1596670045983
+    },
+    "operations": {
+      "rebuild_deep_page_2000": {
+        "milliseconds": [
+          9.513957978924736,
+          7.069709012284875,
+          8.139209006913006
+        ],
+        "median_ms": 8.139209006913006,
+        "correct": true
+      },
+      "reuse_deep_page_2000": {
+        "milliseconds": [
+          1.9701670098584145,
+          1.694707985734567,
+          1.6145830159075558
+        ],
+        "median_ms": 1.694707985734567,
+        "correct": true
+      },
+      "rebuild_deep_page_1000000": {
+        "milliseconds": [
+          3976.0867499862798,
+          3888.5088750103023,
+          3277.616708975984
+        ],
+        "median_ms": 3888.5088750103023,
+        "correct": true
+      },
+      "reuse_deep_page_1000000": {
+        "milliseconds": [
+          249.10829198779538,
+          250.9142079798039,
+          245.46879198169336
+        ],
+        "median_ms": 249.10829198779538,
+        "correct": true
+      }
+    },
+    "warm_recipe_reads": 0,
+    "h5_open_attempts": 0,
+    "limitations": [
+      "Actual million-row SQLite fixture; native/typed seal admission replaced by fixture proof.",
+      "Cold fixture creation and file backups excluded. Fresh file-backed connections included in each query. No H5/native/UI qualification."
+    ]
+  },
+  "matrix": {
+    "20000": {
+      "tree": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                7.438542001182213,
+                5.7084579893853515,
+                5.2201249927747995,
+                5.59524999698624,
+                5.327834020135924,
+                5.764000001363456,
+                5.608084000414237
+              ],
+              "median_ms": 5.608084000414237,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                0.9836250101216137,
+                0.6842080038040876,
+                0.64825001754798,
+                0.6699170044157654,
+                0.654041999951005,
+                0.6496249989140779,
+                0.629459012998268
+              ],
+              "median_ms": 0.654041999951005,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                0.6135000148788095,
+                0.6296249921433628,
+                0.5988749908283353,
+                0.9059169969987124,
+                0.6280420057009906,
+                0.7118339999578893,
+                0.8852499886415899
+              ],
+              "median_ms": 0.6296249921433628,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                0.6130410183686763,
+                0.5394170002546161,
+                0.5729999975301325,
+                0.5337090115062892,
+                0.5236249999143183,
+                0.53645801381208,
+                0.5149589851498604
+              ],
+              "median_ms": 0.53645801381208,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                0.6925000052433461,
+                0.718166003935039,
+                0.7911669963505119,
+                0.7671250205021352,
+                0.6892090023029596,
+                0.7179999956861138,
+                0.8581669826526195
+              ],
+              "median_ms": 0.718166003935039,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                2.791500010062009,
+                2.368707995628938,
+                2.2383749892469496,
+                2.2944580123294145,
+                2.519624977139756,
+                2.5561670190654695,
+                2.360332990065217
+              ],
+              "median_ms": 2.368707995628938,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 20000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 1301696,
+            "project_fingerprint_snapshot_bytes": 415152
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                8.592083002440631,
+                6.090666982345283,
+                6.260584021219984,
+                6.173874979140237,
+                6.011457997374237,
+                5.778208025731146,
+                6.251666985917836
+              ],
+              "median_ms": 6.173874979140237,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                0.37520797923207283,
+                0.3172079741489142,
+                0.31900001340545714,
+                0.3262080135755241,
+                0.32029199064709246,
+                0.3092080005444586,
+                0.30945800244808197
+              ],
+              "median_ms": 0.31900001340545714,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                0.28395801200531423,
+                0.29870797879993916,
+                0.20574999507516623,
+                0.20024998229928315,
+                0.19899997278116643,
+                0.19587500719353557,
+                0.19654197967611253
+              ],
+              "median_ms": 0.20024998229928315,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                0.19274998339824378,
+                0.19474999862723053,
+                0.1872910070233047,
+                0.1892500149551779,
+                0.18679199274629354,
+                0.18595799338072538,
+                0.19350001821294427
+              ],
+              "median_ms": 0.1892500149551779,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                0.3566250088624656,
+                0.44070801232010126,
+                0.3630410064943135,
+                0.31329100602306426,
+                0.29633400845341384,
+                0.35908399149775505,
+                0.34995799069292843
+              ],
+              "median_ms": 0.3566250088624656,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                1.1435830092523247,
+                1.3255829981062561,
+                1.2124580098316073,
+                1.102584006730467,
+                1.0744160099420696,
+                1.0410419781692326,
+                1.0582079994492233
+              ],
+              "median_ms": 1.102584006730467,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 2000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 201664,
+            "project_fingerprint_snapshot_bytes": 0
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        }
+      },
+      "sql": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                17.28279099916108,
+                16.610165999736637,
+                16.119750012876466,
+                16.34645799640566,
+                17.049332993337885
+              ],
+              "median_ms": 16.610165999736637,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                16.810791013995185,
+                17.42816698970273,
+                17.57274998817593,
+                17.698791984003037,
+                17.390416003763676
+              ],
+              "median_ms": 17.42816698970273,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                13.727832993026823,
+                13.388374994974583,
+                14.065499999560416,
+                13.644207996549085,
+                13.682500022696331
+              ],
+              "median_ms": 13.682500022696331,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                39.446249982574955,
+                40.08433397393674,
+                40.558042004704475,
+                41.349833976710215,
+                39.60829199058935
+              ],
+              "median_ms": 40.08433397393674,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                69.65737501741387,
+                68.79370799288154,
+                69.18354201479815,
+                70.88070799363777,
+                68.91149998409674
+              ],
+              "median_ms": 69.18354201479815,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 408000,
+            "dictionary_values_evaluated": 20000,
+            "statements": 3117
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                16.692042001523077,
+                4.795292014023289,
+                5.1459169771987945,
+                4.904417000943795,
+                5.00345800537616
+              ],
+              "median_ms": 5.00345800537616,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                4.710417008027434,
+                4.958000004990026,
+                4.775292007252574,
+                4.591333010466769,
+                4.460875003132969
+              ],
+              "median_ms": 4.710417008027434,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                6.943209009477869,
+                6.394791998900473,
+                6.604624999454245,
+                7.051417022012174,
+                6.4884169842116535
+              ],
+              "median_ms": 6.604624999454245,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                13.290041009895504,
+                13.135541987139732,
+                12.262459000339732,
+                12.308208999456838,
+                12.760749988956377
+              ],
+              "median_ms": 12.760749988956377,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                7.569790992420167,
+                7.300041004782543,
+                7.361249998211861,
+                7.946208992507309,
+                7.238332997076213
+              ],
+              "median_ms": 7.361249998211861,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 208000,
+            "dictionary_values_evaluated": 2000,
+            "statements": 3118
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        }
+      }
+    },
+    "200000": {
+      "tree": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                11.050375003833324,
+                12.3550420103129,
+                8.979000005638227,
+                8.407834015088156,
+                8.225290977861732,
+                8.2719580095727,
+                8.077667007455602
+              ],
+              "median_ms": 8.407834015088156,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                13.060458994004875,
+                11.542416992597282,
+                11.14754201262258,
+                11.49108400568366,
+                12.171832990134135,
+                11.43870799569413,
+                10.987291985657066
+              ],
+              "median_ms": 11.49108400568366,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                10.900207998929545,
+                11.13987501594238,
+                11.230166011955589,
+                11.042541998904198,
+                11.687958001857623,
+                11.578957986785099,
+                11.396917019737884
+              ],
+              "median_ms": 11.230166011955589,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                11.120917013613507,
+                11.241666012210771,
+                11.279750004177913,
+                11.035875009838492,
+                11.086834012530744,
+                10.95479101059027,
+                11.104665987659246
+              ],
+              "median_ms": 11.104665987659246,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                11.698041984345764,
+                11.291708011412993,
+                11.270749993855134,
+                11.150707985507324,
+                11.603124992689118,
+                12.204459024360403,
+                12.3227090225555
+              ],
+              "median_ms": 11.603124992689118,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                13.003917003516108,
+                12.724708009045571,
+                12.752667011227459,
+                13.060917000984773,
+                14.208833017619327,
+                12.935166974784806,
+                12.939416978042573
+              ],
+              "median_ms": 12.939416978042573,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 200000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 4216000,
+            "project_fingerprint_snapshot_bytes": 7689648
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                8.779333002166823,
+                5.926499987253919,
+                6.220042007043958,
+                5.834208976011723,
+                5.825250002089888,
+                5.766917020082474,
+                6.529249978484586
+              ],
+              "median_ms": 5.926499987253919,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                0.4005839873570949,
+                0.31891700928099453,
+                0.30949999927543104,
+                0.30949999927543104,
+                0.30537499696947634,
+                0.30174999847076833,
+                0.3028749779332429
+              ],
+              "median_ms": 0.30949999927543104,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                0.27991700335405767,
+                0.2937499957624823,
+                0.20283300545997918,
+                0.20170898642390966,
+                0.19870899268426,
+                0.20337500609457493,
+                0.2045410219579935
+              ],
+              "median_ms": 0.20337500609457493,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                0.19824999617412686,
+                0.19329198403283954,
+                0.1952500024344772,
+                0.19887500093318522,
+                0.19195899949409068,
+                0.1908330013975501,
+                0.19183300901204348
+              ],
+              "median_ms": 0.19329198403283954,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                0.3182500076945871,
+                0.30862499261274934,
+                0.30162499751895666,
+                0.29291698592714965,
+                0.29329099925234914,
+                0.5102920113131404,
+                0.531750003574416
+              ],
+              "median_ms": 0.30862499261274934,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                1.031208987114951,
+                0.9894579998217523,
+                1.0218750103376806,
+                1.0295410174876451,
+                1.0372499818913639,
+                1.0141250095330179,
+                0.9839579870458692
+              ],
+              "median_ms": 1.0218750103376806,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 2000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 201664,
+            "project_fingerprint_snapshot_bytes": 0
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        }
+      },
+      "sql": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                146.33904199581593,
+                145.54820797638968,
+                146.55704199685715,
+                146.88604199909605,
+                147.0042500004638
+              ],
+              "median_ms": 146.55704199685715,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                146.7017079994548,
+                147.46762500726618,
+                151.6597500012722,
+                146.6225839976687,
+                146.0774170118384
+              ],
+              "median_ms": 146.7017079994548,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                113.25666698394343,
+                115.90612499276176,
+                113.50916701485403,
+                114.14883402176201,
+                112.78779097483493
+              ],
+              "median_ms": 113.50916701485403,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                331.25804099836387,
+                331.2512499978766,
+                333.031124988338,
+                335.45845799380913,
+                334.9637920036912
+              ],
+              "median_ms": 333.031124988338,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                759.4185000052676,
+                758.7048340064939,
+                758.134167001117,
+                763.3672500087414,
+                754.3945409997832
+              ],
+              "median_ms": 758.7048340064939,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 2928000,
+            "dictionary_values_evaluated": 200000,
+            "statements": 3117
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                17.0310000248719,
+                5.221083993092179,
+                4.850458994042128,
+                5.0243329897057265,
+                4.836165986489505
+              ],
+              "median_ms": 5.0243329897057265,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                4.731624998385087,
+                5.204832996241748,
+                4.678792000049725,
+                4.81729197781533,
+                4.659166996134445
+              ],
+              "median_ms": 4.731624998385087,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                7.911542023066431,
+                7.246833003591746,
+                6.914999976288527,
+                7.570624991785735,
+                7.803749991580844
+              ],
+              "median_ms": 7.570624991785735,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                13.804040994727984,
+                13.340250006876886,
+                13.254292018245906,
+                13.255166995804757,
+                13.866583001799881
+              ],
+              "median_ms": 13.340250006876886,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                8.389541006181389,
+                7.9142500180751085,
+                7.935582980280742,
+                7.949541992275044,
+                7.834749994799495
+              ],
+              "median_ms": 7.935582980280742,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 208000,
+            "dictionary_values_evaluated": 2000,
+            "statements": 3118
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        }
+      }
+    },
+    "1000000": {
+      "tree": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                19.633165997220203,
+                22.435666003730148,
+                21.08833400416188,
+                20.603082986781374,
+                20.915667002554983,
+                21.17574997828342,
+                22.717749990988523
+              ],
+              "median_ms": 21.08833400416188,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                90.8192089991644,
+                86.22091700090095,
+                86.62787498906255,
+                83.7220000103116,
+                83.8747080124449,
+                85.22954201907851,
+                90.91862497734837
+              ],
+              "median_ms": 86.22091700090095,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                84.3691669870168,
+                92.68862500903197,
+                84.4822499784641,
+                84.2232090071775,
+                85.91441600583494,
+                81.9388749951031,
+                88.10866699786857
+              ],
+              "median_ms": 84.4822499784641,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                82.39929098635912,
+                94.58124998491257,
+                82.53104198956862,
+                85.94795898534358,
+                83.02820799872279,
+                83.68866701493971,
+                83.27987501979806
+              ],
+              "median_ms": 83.27987501979806,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                88.6459999892395,
+                88.84066698374227,
+                84.09091699286364,
+                84.41587499692105,
+                85.59033300844021,
+                85.57066699722782,
+                87.32754201628268
+              ],
+              "median_ms": 85.59033300844021,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                88.901832990814,
+                88.59329199185595,
+                83.80258298711851,
+                84.6559579949826,
+                86.93633298389614,
+                87.53116600564681,
+                88.5293330065906
+              ],
+              "median_ms": 87.53116600564681,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 1000000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 4216000,
+            "project_fingerprint_snapshot_bytes": 30758320
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "tree.cold_root": {
+              "milliseconds": [
+                8.65925001562573,
+                5.893166002351791,
+                5.819791025714949,
+                5.7276670122519135,
+                6.733791000442579,
+                6.249291996937245,
+                6.099709018599242
+              ],
+              "median_ms": 6.099709018599242,
+              "correct": true
+            },
+            "tree.warm_root": {
+              "milliseconds": [
+                0.3496660210657865,
+                0.31254198984242976,
+                0.3078749869018793,
+                0.31224999111145735,
+                0.3114169812761247,
+                0.3106249787379056,
+                0.30774998595006764
+              ],
+              "median_ms": 0.3114169812761247,
+              "correct": true
+            },
+            "tree.expand_cell": {
+              "milliseconds": [
+                0.28012500843033195,
+                0.2814579929690808,
+                0.21045899484306574,
+                0.21620900952257216,
+                0.20099998801015317,
+                0.20450001466087997,
+                0.20149999181739986
+              ],
+              "median_ms": 0.21045899484306574,
+              "correct": true
+            },
+            "tree.next_leaf": {
+              "milliseconds": [
+                0.19183297990821302,
+                0.19529199926182628,
+                0.1967080170288682,
+                0.19058299949392676,
+                0.18775000353343785,
+                0.1937909983098507,
+                0.24245798704214394
+              ],
+              "median_ms": 0.1937909983098507,
+              "correct": true
+            },
+            "tree.anchor": {
+              "milliseconds": [
+                0.3183330118190497,
+                0.30045901075936854,
+                0.29679201543331146,
+                0.29633298981934786,
+                0.29641599394381046,
+                0.34600001526996493,
+                0.2983339945785701
+              ],
+              "median_ms": 0.2983339945785701,
+              "correct": true
+            },
+            "tree.warm_metadata_root": {
+              "milliseconds": [
+                1.2126659858040512,
+                1.317833986831829,
+                1.1538749968167394,
+                1.1207910138182342,
+                1.0774580005090684,
+                1.0949999850708991,
+                1.08299998100847
+              ],
+              "median_ms": 1.1207910138182342,
+              "correct": true
+            }
+          },
+          "warm_work": {
+            "fingerprint_visits": 2000,
+            "binding_reads": 1,
+            "scope_builds": 0,
+            "http_requests": 0,
+            "retained_scope_bytes": 201664,
+            "project_fingerprint_snapshot_bytes": 0
+          },
+          "limitations": [
+            "Synthetic metadata/index admission and SQL tables; real service/pager and binding owner.",
+            "Direct calls; HTTP requests, browser rendering, native SQL and package behavior unmeasured.",
+            "Fixture setup excluded. Full project startup/import intentionally remain project-wide."
+          ]
+        }
+      },
+      "sql": {
+        "baseline": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                835.7807090214919,
+                796.0706250160001,
+                814.9998340231832,
+                827.4479170213453,
+                755.4207499779295
+              ],
+              "median_ms": 814.9998340231832,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                722.7413329819683,
+                737.8924580116291,
+                725.8485839993227,
+                729.2818329879083,
+                943.018291000044
+              ],
+              "median_ms": 729.2818329879083,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                607.7602909936104,
+                613.8694160035811,
+                574.5944160153158,
+                571.2668749911245,
+                562.647457991261
+              ],
+              "median_ms": 574.5944160153158,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                1716.5278749889694,
+                1672.4078750121407,
+                1662.2388749965467,
+                1666.4270419860259,
+                1664.3129590083845
+              ],
+              "median_ms": 1666.4270419860259,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                3915.0203749886714,
+                4084.896790998755,
+                4195.003332977649,
+                3929.9029579851776,
+                3915.445540973451
+              ],
+              "median_ms": 3929.9029579851776,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 14128000,
+            "dictionary_values_evaluated": 1000000,
+            "statements": 3117
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        },
+        "candidate": {
+          "status": "passed",
+          "operations": {
+            "sql.member_source_page": {
+              "milliseconds": [
+                37.4565829988569,
+                5.852540984051302,
+                5.484875000547618,
+                5.570749985054135,
+                5.300791002810001
+              ],
+              "median_ms": 5.570749985054135,
+              "correct": true
+            },
+            "sql.member_source_deep": {
+              "milliseconds": [
+                5.302625009790063,
+                5.1094160007778555,
+                5.305874976329505,
+                4.906584013951942,
+                5.5281249806284904
+              ],
+              "median_ms": 5.302625009790063,
+              "correct": true
+            },
+            "sql.member_equality": {
+              "milliseconds": [
+                8.447583997622132,
+                7.571958005428314,
+                7.645041012438014,
+                7.084415992721915,
+                7.654958986677229
+              ],
+              "median_ms": 7.645041012438014,
+              "correct": true
+            },
+            "sql.member_contains": {
+              "milliseconds": [
+                13.800499989883974,
+                13.927166990470141,
+                13.637416996061802,
+                13.684292003745213,
+                14.066584000829607
+              ],
+              "median_ms": 13.800499989883974,
+              "correct": true
+            },
+            "sql.member_facets": {
+              "milliseconds": [
+                8.942041982663795,
+                8.423791994573548,
+                8.30374998622574,
+                8.295541978441179,
+                8.962666994193569
+              ],
+              "median_ms": 8.423791994573548,
+              "correct": true
+            }
+          },
+          "contains_work": {
+            "sqlite_vm_steps_approx": 208000,
+            "dictionary_values_evaluated": 2000,
+            "statements": 3118
+          },
+          "limitations": [
+            "Actual in-memory SQLite relations with production query methods; native admission is replaced.",
+            "Fixture/index construction excluded from query timings. No HTTP/UI/native qualification."
+          ]
+        }
+      }
+    }
+  },
+  "everyday_pinned": {
+    "status": "passed",
+    "review_required": [],
+    "metrics": [
+      {
+        "case": "tree.first_root",
+        "baseline": 3070.8617079944815,
+        "candidate": 3131.7669580166694,
+        "threshold": 3838.577134993102,
+        "review_required": false
+      },
+      {
+        "case": "tree.repeated_root",
+        "baseline": 1007.2742089978419,
+        "candidate": 1060.6842499983031,
+        "threshold": 1259.0927612473024,
+        "review_required": false
+      },
+      {
+        "case": "tree.next_cells",
+        "baseline": 1869.611291011097,
+        "candidate": 1397.7243330155034,
+        "threshold": 2337.014113763871,
+        "review_required": false
+      },
+      {
+        "case": "tree.deep_cells",
+        "baseline": 1591.1472919979133,
+        "candidate": 988.0517499987036,
+        "threshold": 1988.9341149973916,
+        "review_required": false
+      },
+      {
+        "case": "tree.open_cell",
+        "baseline": 1012.5532500096597,
+        "candidate": 1003.0294580210466,
+        "threshold": 1265.6915625120746,
+        "review_required": false
+      },
+      {
+        "case": "tree.scroll_cell",
+        "baseline": 1003.4613329917192,
+        "candidate": 983.7077499832958,
+        "threshold": 1254.326666239649,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor",
+        "baseline": 1139.380540989805,
+        "candidate": 1112.7099580189679,
+        "threshold": 1424.2256762372563,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor_columns",
+        "baseline": 1993.821084004594,
+        "candidate": 2011.0650419956073,
+        "threshold": 2492.2763550057425,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_root",
+        "baseline": 996.5039170056116,
+        "candidate": 1001.358874986181,
+        "threshold": 1245.6298962570145,
+        "review_required": false
+      },
+      {
+        "case": "tree.change_splits",
+        "baseline": 1009.0937079803552,
+        "candidate": 1016.0700000124052,
+        "threshold": 1261.367134975444,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_splits",
+        "baseline": 997.7063749975059,
+        "candidate": 995.3431670146529,
+        "threshold": 1247.1329687468824,
+        "review_required": false
+      },
+      {
+        "case": "tree.select_cell",
+        "baseline": 2300.6938339967746,
+        "candidate": 2378.277625015471,
+        "threshold": 2875.8672924959683,
+        "review_required": false
+      },
+      {
+        "case": "tree.peak_rss_bytes",
+        "baseline": 1815314432,
+        "candidate": 1843642368,
+        "threshold": 2178377318.4,
+        "review_required": false
+      },
+      {
+        "case": "tree.setup_ms",
+        "baseline": 2245.0018750096206,
+        "candidate": 2137.1856670011766,
+        "threshold": 2806.2523437620257,
+        "review_required": false
+      },
+      {
+        "case": "typed.first",
+        "baseline": 0.28808298520743847,
+        "candidate": 0.2653330157045275,
+        "threshold": 5.2880829852074385,
+        "review_required": false
+      },
+      {
+        "case": "typed.deep",
+        "baseline": 0.34279198735021055,
+        "candidate": 0.29316599830053747,
+        "threshold": 5.3427919873502105,
+        "review_required": false
+      },
+      {
+        "case": "typed.source",
+        "baseline": 689.7827920038253,
+        "candidate": 698.4162909793667,
+        "threshold": 862.2284900047816,
+        "review_required": false
+      },
+      {
+        "case": "typed.membership",
+        "baseline": 2333.85324999108,
+        "candidate": 2334.773666021647,
+        "threshold": 2917.3165624888497,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_first",
+        "baseline": 2773.381209000945,
+        "candidate": 3408.3280409977306,
+        "threshold": 3466.7265112511814,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_deep",
+        "baseline": 2711.53787500225,
+        "candidate": 3316.3347499794327,
+        "threshold": 3389.4223437528126,
+        "review_required": false
+      },
+      {
+        "case": "typed.cell",
+        "baseline": 0.33716700272634625,
+        "candidate": 1.017041999148205,
+        "threshold": 5.337167002726346,
+        "review_required": false
+      },
+      {
+        "case": "typed.cell_scroll",
+        "baseline": 0.2663749910425395,
+        "candidate": 0.21533298422582448,
+        "threshold": 5.2663749910425395,
+        "review_required": false
+      },
+      {
+        "case": "typed.block",
+        "baseline": 0.14270900283008814,
+        "candidate": 0.14354198356159031,
+        "threshold": 5.142709002830088,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_first",
+        "baseline": 5003.735292004421,
+        "candidate": 5101.721457991516,
+        "threshold": 6254.669115005527,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_deep",
+        "baseline": 4971.48425001069,
+        "candidate": 5054.517499986105,
+        "threshold": 6214.355312513362,
+        "review_required": false
+      },
+      {
+        "case": "typed.category",
+        "baseline": 125.8144169987645,
+        "candidate": 125.62000000616536,
+        "threshold": 157.26802124845563,
+        "review_required": false
+      },
+      {
+        "case": "typed.empty",
+        "baseline": 0.1264589955098927,
+        "candidate": 0.13133397442288697,
+        "threshold": 5.126458995509893,
+        "review_required": false
+      },
+      {
+        "case": "typed.one",
+        "baseline": 0.2170839870814234,
+        "candidate": 0.11266599176451564,
+        "threshold": 5.217083987081423,
+        "review_required": false
+      },
+      {
+        "case": "typed.detail",
+        "baseline": 0.05183301982469857,
+        "candidate": 0.053041992941871285,
+        "threshold": 5.051833019824699,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_all",
+        "baseline": 17.57887500571087,
+        "candidate": 17.050166992703453,
+        "threshold": 22.57887500571087,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_source",
+        "baseline": 598.316125018755,
+        "candidate": 594.6262079814915,
+        "threshold": 747.8951562734437,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_cell",
+        "baseline": 0.037416990380734205,
+        "candidate": 0.20208401838317513,
+        "threshold": 5.037416990380734,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_first",
+        "baseline": 0.5881249962840229,
+        "candidate": 0.650834001135081,
+        "threshold": 5.588124996284023,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_next",
+        "baseline": 0.5942090065218508,
+        "candidate": 0.5998330016154796,
+        "threshold": 5.594209006521851,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_deep",
+        "baseline": 0.5992079968564212,
+        "candidate": 0.5992079968564212,
+        "threshold": 5.599207996856421,
+        "review_required": false
+      },
+      {
+        "case": "typed.filter_preview",
+        "baseline": 657.0906250271946,
+        "candidate": 713.9192920003552,
+        "threshold": 821.3632812839933,
+        "review_required": false
+      },
+      {
+        "case": "typed.peak_rss_bytes",
+        "baseline": 2535276544,
+        "candidate": 2726887424,
+        "threshold": 3042331852.7999997,
+        "review_required": false
+      },
+      {
+        "case": "typed.setup_ms",
+        "baseline": 39414.61533299298,
+        "candidate": 38979.19345801347,
+        "threshold": 49268.269166241225,
+        "review_required": false
+      }
+    ]
+  },
+  "everyday_previous_first": {
+    "status": "review_required",
+    "review_required": [
+      "typed.protocol_deep"
+    ],
+    "metrics": [
+      {
+        "case": "tree.first_root",
+        "baseline": 3083.037458010949,
+        "candidate": 3218.542916001752,
+        "threshold": 3853.7968225136865,
+        "review_required": false
+      },
+      {
+        "case": "tree.repeated_root",
+        "baseline": 988.8717079884373,
+        "candidate": 1001.7700410098769,
+        "threshold": 1236.0896349855466,
+        "review_required": false
+      },
+      {
+        "case": "tree.next_cells",
+        "baseline": 981.4969579747412,
+        "candidate": 1005.7662909966893,
+        "threshold": 1226.8711974684265,
+        "review_required": false
+      },
+      {
+        "case": "tree.deep_cells",
+        "baseline": 977.7337920095306,
+        "candidate": 1027.5351250020321,
+        "threshold": 1222.1672400119132,
+        "review_required": false
+      },
+      {
+        "case": "tree.open_cell",
+        "baseline": 987.0202090241946,
+        "candidate": 1019.90416701301,
+        "threshold": 1233.7752612802433,
+        "review_required": false
+      },
+      {
+        "case": "tree.scroll_cell",
+        "baseline": 1000.8302500064019,
+        "candidate": 1010.6075000076089,
+        "threshold": 1251.0378125080024,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor",
+        "baseline": 1086.575207998976,
+        "candidate": 1151.1057500028983,
+        "threshold": 1358.2190099987201,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor_columns",
+        "baseline": 1995.388333016308,
+        "candidate": 2264.810166991083,
+        "threshold": 2494.235416270385,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_root",
+        "baseline": 975.8975830045529,
+        "candidate": 1012.7007909759413,
+        "threshold": 1219.871978755691,
+        "review_required": false
+      },
+      {
+        "case": "tree.change_splits",
+        "baseline": 1046.7836249736138,
+        "candidate": 1008.2324999966659,
+        "threshold": 1308.4795312170172,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_splits",
+        "baseline": 1013.2384999888018,
+        "candidate": 1000.7209999894258,
+        "threshold": 1266.5481249860022,
+        "review_required": false
+      },
+      {
+        "case": "tree.select_cell",
+        "baseline": 2399.3599170062225,
+        "candidate": 2485.555541992653,
+        "threshold": 2999.199896257778,
+        "review_required": false
+      },
+      {
+        "case": "tree.peak_rss_bytes",
+        "baseline": 1798684672,
+        "candidate": 1693007872,
+        "threshold": 2158421606.4,
+        "review_required": false
+      },
+      {
+        "case": "tree.setup_ms",
+        "baseline": 2110.837958025513,
+        "candidate": 2195.589665992884,
+        "threshold": 2638.5474475318915,
+        "review_required": false
+      },
+      {
+        "case": "typed.first",
+        "baseline": 0.24304201360791922,
+        "candidate": 0.3671660088002682,
+        "threshold": 5.243042013607919,
+        "review_required": false
+      },
+      {
+        "case": "typed.deep",
+        "baseline": 0.23774997680447996,
+        "candidate": 0.25549999554641545,
+        "threshold": 5.23774997680448,
+        "review_required": false
+      },
+      {
+        "case": "typed.source",
+        "baseline": 676.4630829857197,
+        "candidate": 785.4415409965441,
+        "threshold": 845.5788537321496,
+        "review_required": false
+      },
+      {
+        "case": "typed.membership",
+        "baseline": 2346.4347499830183,
+        "candidate": 2537.175249977736,
+        "threshold": 2933.043437478773,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_first",
+        "baseline": 3346.6569999873172,
+        "candidate": 3715.162209002301,
+        "threshold": 4183.321249984147,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_deep",
+        "baseline": 3319.468792004045,
+        "candidate": 4759.490916010691,
+        "threshold": 4149.335990005056,
+        "review_required": true
+      },
+      {
+        "case": "typed.cell",
+        "baseline": 0.7546660199295729,
+        "candidate": 2.2715830127708614,
+        "threshold": 5.754666019929573,
+        "review_required": false
+      },
+      {
+        "case": "typed.cell_scroll",
+        "baseline": 0.23537498782388866,
+        "candidate": 0.6682920211460441,
+        "threshold": 5.235374987823889,
+        "review_required": false
+      },
+      {
+        "case": "typed.block",
+        "baseline": 0.25954199372790754,
+        "candidate": 0.4685420135501772,
+        "threshold": 5.2595419937279075,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_first",
+        "baseline": 5156.916666979669,
+        "candidate": 5063.879416993586,
+        "threshold": 6446.145833724586,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_deep",
+        "baseline": 5125.9504170157015,
+        "candidate": 4908.672041987302,
+        "threshold": 6407.438021269627,
+        "review_required": false
+      },
+      {
+        "case": "typed.category",
+        "baseline": 125.16162497922778,
+        "candidate": 121.06020798091777,
+        "threshold": 156.45203122403473,
+        "review_required": false
+      },
+      {
+        "case": "typed.empty",
+        "baseline": 0.12345801224000752,
+        "candidate": 0.1161250111181289,
+        "threshold": 5.1234580122400075,
+        "review_required": false
+      },
+      {
+        "case": "typed.one",
+        "baseline": 0.10649999603629112,
+        "candidate": 0.10304202442057431,
+        "threshold": 5.106499996036291,
+        "review_required": false
+      },
+      {
+        "case": "typed.detail",
+        "baseline": 0.055832992075011134,
+        "candidate": 0.044334010453894734,
+        "threshold": 5.055832992075011,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_all",
+        "baseline": 18.076000007567927,
+        "candidate": 17.182957992190495,
+        "threshold": 23.076000007567927,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_source",
+        "baseline": 633.2741250225808,
+        "candidate": 666.7825829936191,
+        "threshold": 791.5926562782261,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_cell",
+        "baseline": 0.22241700207814574,
+        "candidate": 0.1833749993238598,
+        "threshold": 5.222417002078146,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_first",
+        "baseline": 0.6465420010499656,
+        "candidate": 0.702958001056686,
+        "threshold": 5.646542001049966,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_next",
+        "baseline": 0.7643330027349293,
+        "candidate": 0.6082080071792006,
+        "threshold": 5.764333002734929,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_deep",
+        "baseline": 0.6861670117359608,
+        "candidate": 0.618207996012643,
+        "threshold": 5.686167011735961,
+        "review_required": false
+      },
+      {
+        "case": "typed.filter_preview",
+        "baseline": 837.3836659884546,
+        "candidate": 663.2555419928394,
+        "threshold": 1046.7295824855682,
+        "review_required": false
+      },
+      {
+        "case": "typed.peak_rss_bytes",
+        "baseline": 2187771904,
+        "candidate": 2424553472,
+        "threshold": 2625326284.7999997,
+        "review_required": false
+      },
+      {
+        "case": "typed.setup_ms",
+        "baseline": 38821.00970798638,
+        "candidate": 39988.43058300554,
+        "threshold": 48526.26213498297,
+        "review_required": false
+      }
+    ]
+  },
+  "everyday_previous_repeat": {
+    "status": "passed",
+    "review_required": [],
+    "metrics": [
+      {
+        "case": "tree.first_root",
+        "baseline": 3094.452084013028,
+        "candidate": 3174.2121670104098,
+        "threshold": 3868.065105016285,
+        "review_required": false
+      },
+      {
+        "case": "tree.repeated_root",
+        "baseline": 1002.7324999973644,
+        "candidate": 1009.020999976201,
+        "threshold": 1253.4156249967054,
+        "review_required": false
+      },
+      {
+        "case": "tree.next_cells",
+        "baseline": 1001.9981670193374,
+        "candidate": 1001.5772920160089,
+        "threshold": 1252.4977087741718,
+        "review_required": false
+      },
+      {
+        "case": "tree.deep_cells",
+        "baseline": 1005.8686249831226,
+        "candidate": 988.5023329989053,
+        "threshold": 1257.3357812289032,
+        "review_required": false
+      },
+      {
+        "case": "tree.open_cell",
+        "baseline": 993.4289589873515,
+        "candidate": 1004.8961669963319,
+        "threshold": 1241.7861987341894,
+        "review_required": false
+      },
+      {
+        "case": "tree.scroll_cell",
+        "baseline": 995.3467499872204,
+        "candidate": 993.9489169919398,
+        "threshold": 1244.1834374840255,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor",
+        "baseline": 1091.2704579823185,
+        "candidate": 1079.091249994235,
+        "threshold": 1364.088072477898,
+        "review_required": false
+      },
+      {
+        "case": "tree.anchor_columns",
+        "baseline": 2012.5784580013715,
+        "candidate": 1980.0074999802746,
+        "threshold": 2515.7230725017143,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_root",
+        "baseline": 996.8573340156581,
+        "candidate": 982.936582993716,
+        "threshold": 1246.0716675195727,
+        "review_required": false
+      },
+      {
+        "case": "tree.change_splits",
+        "baseline": 1019.3382500146981,
+        "candidate": 1006.0997910040896,
+        "threshold": 1274.1728125183727,
+        "review_required": false
+      },
+      {
+        "case": "tree.return_splits",
+        "baseline": 995.7544580101967,
+        "candidate": 980.659958004253,
+        "threshold": 1244.6930725127459,
+        "review_required": false
+      },
+      {
+        "case": "tree.select_cell",
+        "baseline": 2363.7311669881456,
+        "candidate": 2401.865291001741,
+        "threshold": 2954.663958735182,
+        "review_required": false
+      },
+      {
+        "case": "tree.peak_rss_bytes",
+        "baseline": 1732476928,
+        "candidate": 1645658112,
+        "threshold": 2078972313.6,
+        "review_required": false
+      },
+      {
+        "case": "tree.setup_ms",
+        "baseline": 2124.1386659967247,
+        "candidate": 2120.981332991505,
+        "threshold": 2655.173332495906,
+        "review_required": false
+      },
+      {
+        "case": "typed.first",
+        "baseline": 0.37770799826830626,
+        "candidate": 0.32045799889601767,
+        "threshold": 5.377707998268306,
+        "review_required": false
+      },
+      {
+        "case": "typed.deep",
+        "baseline": 0.24154098355211318,
+        "candidate": 0.2763330121524632,
+        "threshold": 5.241540983552113,
+        "review_required": false
+      },
+      {
+        "case": "typed.source",
+        "baseline": 809.7865419986192,
+        "candidate": 709.3407500069588,
+        "threshold": 1012.233177498274,
+        "review_required": false
+      },
+      {
+        "case": "typed.membership",
+        "baseline": 2385.592250007903,
+        "candidate": 2385.523667006055,
+        "threshold": 2981.990312509879,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_first",
+        "baseline": 3395.4764579830226,
+        "candidate": 3340.86229201057,
+        "threshold": 4244.345572478778,
+        "review_required": false
+      },
+      {
+        "case": "typed.protocol_deep",
+        "baseline": 3337.3157500172965,
+        "candidate": 3286.17525001755,
+        "threshold": 4171.644687521621,
+        "review_required": false
+      },
+      {
+        "case": "typed.cell",
+        "baseline": 1.590791973285377,
+        "candidate": 0.8378750062547624,
+        "threshold": 6.590791973285377,
+        "review_required": false
+      },
+      {
+        "case": "typed.cell_scroll",
+        "baseline": 0.20900001982226968,
+        "candidate": 0.20612499793060124,
+        "threshold": 5.20900001982227,
+        "review_required": false
+      },
+      {
+        "case": "typed.block",
+        "baseline": 0.15954099944792688,
+        "candidate": 0.1435000158380717,
+        "threshold": 5.159540999447927,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_first",
+        "baseline": 5169.232916989131,
+        "candidate": 5264.716915989993,
+        "threshold": 6461.541146236414,
+        "review_required": false
+      },
+      {
+        "case": "typed.contains_deep",
+        "baseline": 5131.76495800144,
+        "candidate": 5027.726540982258,
+        "threshold": 6414.7061975018005,
+        "review_required": false
+      },
+      {
+        "case": "typed.category",
+        "baseline": 121.89679199946113,
+        "candidate": 120.42933399789035,
+        "threshold": 152.3709899993264,
+        "review_required": false
+      },
+      {
+        "case": "typed.empty",
+        "baseline": 0.11941700358875096,
+        "candidate": 0.11579197598621249,
+        "threshold": 5.119417003588751,
+        "review_required": false
+      },
+      {
+        "case": "typed.one",
+        "baseline": 0.10999999358318746,
+        "candidate": 0.219000008655712,
+        "threshold": 5.1099999935831875,
+        "review_required": false
+      },
+      {
+        "case": "typed.detail",
+        "baseline": 0.04512499435804784,
+        "candidate": 0.04545800038613379,
+        "threshold": 5.045124994358048,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_all",
+        "baseline": 17.109625012381002,
+        "candidate": 16.925583011470735,
+        "threshold": 22.109625012381002,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_source",
+        "baseline": 614.5915420202073,
+        "candidate": 598.9265409880318,
+        "threshold": 768.2394275252591,
+        "review_required": false
+      },
+      {
+        "case": "typed.count_cell",
+        "baseline": 0.38883398519828916,
+        "candidate": 0.20166701870039105,
+        "threshold": 5.388833985198289,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_first",
+        "baseline": 0.7188750023487955,
+        "candidate": 0.7177919906098396,
+        "threshold": 5.7188750023487955,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_next",
+        "baseline": 0.6485419871751219,
+        "candidate": 0.648958986857906,
+        "threshold": 5.648541987175122,
+        "review_required": false
+      },
+      {
+        "case": "typed.cells_deep",
+        "baseline": 0.6372079951688647,
+        "candidate": 0.6672919844277203,
+        "threshold": 5.637207995168865,
+        "review_required": false
+      },
+      {
+        "case": "typed.filter_preview",
+        "baseline": 692.7842079894617,
+        "candidate": 660.0173330225516,
+        "threshold": 865.9802599868271,
+        "review_required": false
+      },
+      {
+        "case": "typed.peak_rss_bytes",
+        "baseline": 2329296896,
+        "candidate": 2379825152,
+        "threshold": 2795156275.2,
+        "review_required": false
+      },
+      {
+        "case": "typed.setup_ms",
+        "baseline": 39688.2782910252,
+        "candidate": 39619.53399999766,
+        "threshold": 49610.3478637815,
+        "review_required": false
+      }
+    ]
+  },
+  "adversarial_review": {
+    "standards_hard_findings": 0,
+    "standards_nonblocking_findings": 1,
+    "spec_findings": 0,
+    "note": "Duplicated UUID/source admission logic; no correctness blocker found."
+  },
+  "browser": {
+    "status": "unqualified",
+    "reason": "Existing trace oracle expects a select value; current graphics UI exposes a div with a single-stream label or buttons. Full 13-action comparison not completed.",
+    "partial_baseline_actions": [
+      "view.open",
+      "view.return",
+      "tree.open",
+      "tree.split_change",
+      "tree.expand",
+      "tree.next_page"
+    ]
+  },
+  "raw_evidence_root": "/private/tmp/disco-membership-evidence",
+  "limits": [
+    "Session-private membership cache rebuilds after restart/eviction.",
+    "No installed-app, native SQL, real-data H5, startup/import or release qualification.",
+    "Synthetic work counts and SQL timings are not user-visible action times.",
+    "Uncached arbitrary UUID scopes retain repeated admission; no stable binding authority is invented for them."
+  ]
+}

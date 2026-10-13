@@ -10,6 +10,13 @@ async function fixture(t){
 }
 function controlled(){const calls=[],frames=[];let child;return{calls,frames,get child(){return child;},spawnReporter(executable,args,options){calls.push({executable,args,options});child=new EventEmitter();child.pid=987654;child.unref=()=>{};child.kill=()=>{throw new Error('Reporter must not signal any process');};child.stderr=new PassThrough();child.stdin=new Writable({write(data,_encoding,done){for(const line of data.toString().trim().split('\n'))frames.push(JSON.parse(line));done();}});child.stdin.on('finish',()=>queueMicrotask(()=>child.emit('exit',0)));return child;}};}
 async function until(predicate){const deadline=Date.now()+2000;while(!predicate()){if(Date.now()>deadline)throw new Error('Controlled observer timed out');await new Promise(r=>setTimeout(r,5));}}
+// The fake child has no OS pipe handle to keep Node alive. Production polling is
+// intentionally unreferenced; this bounded test deadline owns the wait instead.
+async function observerClosed(handle){
+ let deadline;
+ try{return await Promise.race([handle.closed,new Promise((_resolve,reject)=>{deadline=setTimeout(()=>reject(new Error('Controlled observer did not close')),2000);})]);}
+ finally{clearTimeout(deadline);}
+}
 test('owned bounded record becomes fixed human phase text without exposing message or capability',async t=>{
  const f=await fixture(t),before=await fs.readFile(f.options.progressPath),r=await readProgressRecord(f.options),frame=displayFrame(r);assert.equal(r.progress,37);assert.equal(frame.label,'Verifying the copied app…');assert.equal(frame.state,'Running');assert.equal(JSON.stringify(frame).includes('PRIVATE'),false);assert.equal(JSON.stringify(frame).includes(f.options.capability),false);assert.deepEqual(await fs.readFile(f.options.progressPath),before);
 });
@@ -33,10 +40,10 @@ test('nonblocking view lifecycle sends only sanitized frames and flushes termina
 });
 test('changed helper identity fails the observer only and closes its view',async t=>{
  const f=await fixture(t),fake=controlled(),errors=[];const handle=launchProgressReporter({...f.options,...fake,onError:e=>errors.push(e),pollMs:10});await until(()=>fake.frames.length>0);
- await f.write({helper_pid:process.pid+1,updated_at:new Date().toISOString()});await handle.closed;assert.equal(errors.length,1);assert.equal(fake.frames.at(-1).label,'Update progress is unavailable');assert.equal(fake.frames.at(-1).state,'Deferred');
+ await f.write({helper_pid:process.pid+1,updated_at:new Date().toISOString()});await observerClosed(handle);assert.equal(errors.length,1);assert.equal(fake.frames.at(-1).label,'Update progress is unavailable');assert.equal(fake.frames.at(-1).state,'Deferred');
 });
 test('stale helper and maximum observer lifetime are bounded without process signals',async t=>{
- const f=await fixture(t),fake=controlled();let clock=Date.now();const handle=launchProgressReporter({...f.options,...fake,now:()=>clock,pollMs:10,staleMs:100,maxLifetimeMs:200});await until(()=>fake.frames.length>0);clock+=300;await handle.closed;assert.equal(handle.error.code,'PROGRESS_UNAVAILABLE');
+ const f=await fixture(t),fake=controlled();let clock=Date.now();const handle=launchProgressReporter({...f.options,...fake,now:()=>clock,pollMs:10,staleMs:100,maxLifetimeMs:200});await until(()=>fake.frames.length>0);clock+=300;await observerClosed(handle);assert.equal(handle.error.code,'PROGRESS_UNAVAILABLE');
 });
 test('unavailable platform and failed spawn never throw into the installer',async t=>{
  const f=await fixture(t);let calls=0;const unsupported=launchProgressReporter({...f.options,platform:'other',spawnReporter(){calls++;throw new Error('must not spawn');}});assert.equal((await unsupported.closed).reason,'unavailable');assert.equal(calls,0);

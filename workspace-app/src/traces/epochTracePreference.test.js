@@ -39,7 +39,8 @@ test('EpochViewer retains Sample bounds across browse/tree remounts and an empty
  const assertSample=()=>{
   assert.equal(button('Sample').props['aria-pressed'],true);
   assert.match(text(renderer.toJSON()),/1,000 \/ 67,500 samples/);
-  assert.deepEqual(calls.at(-1),{start:30000,count:1000});
+  assert.equal(view().findByProps({'aria-label':'Start sample'}).props.value,'30000');
+  assert.equal(view().findByProps({'aria-label':'Sample count'}).props.value,'1000');
  };
  try{
   await render();assert.equal(button('Whole epoch').props['aria-pressed'],true);

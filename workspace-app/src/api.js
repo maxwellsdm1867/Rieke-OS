@@ -18,11 +18,36 @@ export function createApiRequest(transport=requestApi){
  };
 }
 export const api=createApiRequest();
+
+// Canonical global trace reads reuse the prefetch key while checking the selected
+// source/descriptor. Scoped/imported viewers retain their supplied request owner.
+// Cache generations, stale warm/in-flight responses and fresh admission stay here,
+// outside presentation. Cancellation and mismatch errors are never hidden.
+export async function requestTraceWindow(path,{revision=0,signal,epoch,stream,window:{start,count}}){
+  const matches=value=>value?.epoch_uuid===epoch.epoch_uuid&&value.stream_uuid===stream.uuid&&value.start===start&&value.count===count&&value.values?.length===count&&
+    (!epoch.source_sha256||value.source_sha256===epoch.source_sha256)&&(!Number.isFinite(stream.sample_rate)||value.sample_rate===stream.sample_rate)&&
+    (stream.units===undefined||value.units===stream.units);
+  const warm=epochResourceCache.peek(path,revision);
+  if(!warm||matches(warm)){
+    const result=await cachedResourceRequest(path,{request:api,revision,signal});
+    if(matches(result))return result;
+  }
+  const token=epochResourceCache.token(),fresh=await api(path,{signal});
+  signal?.throwIfAborted();
+  if(!matches(fresh))throw Error('Trace source or descriptor does not match the selected recording. Refresh and retry.');
+  epochResourceCache.put(path,revision,fresh,token);
+  return fresh;
+}
+
 export async function requestApi(path, options = {}) {
   const response = await fetch(`/api${path}`, {
-    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background'&&key!=='onResponse')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
+    ...Object.fromEntries(Object.entries(options).filter(([key])=>key!=='undoOperation'&&key!=='background'&&key!=='onResponse'&&key!=='notModified')), headers: { 'Content-Type': 'application/json', 'X-Workspace-Request': '1', ...(options.background===true?{'X-Disco-Trace-Priority':'background'}:{}), ...options.headers },
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
   });
+  if(response.status===304&&options.notModified&&options.headers?.['If-None-Match']){
+    options.onResponse?.({status:304,headers:response.headers});
+    return options.notModified;
+  }
   let decoded=true;
   const data = await response.json().catch(() => {decoded=false;return {};});
   if (!response.ok) {const message=typeof data.error==='string'?data.error:typeof data.error?.message==='string'?data.error.message:typeof data.message==='string'?data.message:`Request failed (${response.status})`;const error=new Error(message);error.status=response.status;error.data=data;if(data.saved===true)error.saved=true;if(data.persistence)error.persistence=data.persistence;throw error;}

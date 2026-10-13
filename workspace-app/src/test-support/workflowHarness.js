@@ -52,7 +52,7 @@ export async function createWorkflowHarness({total=500,baseline=false,delay=0,li
     if(pathname==='/metadata/status')return {status:'ready'};
     if(pathname==='/metadata/fields')return {fields:[]};
     if(pathname==='/annotation-tags'||pathname==='/tags')return {tags:[]};
-    if(pathname==='/protocols/protocol-A'){
+    if(pathname==='/protocols/protocol-A'||pathname==='/protocols/protocol-A/overview'){
       const selected=scope(url.searchParams);
       return {definition:{protocol_uuid:'protocol-A',name:'Test'},query_revision:`query-${fixture.generation}`,expected_binding_version:2,cells:selected.cells,counts:{epochs:selected.ids.length,cells:selected.cells.length,included:selected.ids.length},filters:{},source_eligibility:{}};
     }

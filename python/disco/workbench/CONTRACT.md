@@ -21,6 +21,45 @@ language privacy, shrink capabilities or wrap broad service objects in a new fac
 
 ## Frozen membership and review
 
+Canonical Workbench context summaries use the explicit cohort-only
+`WorkspaceService.protocol(..., cross_protocols=False)` projection. Cells and
+counts describe pending membership after the requested filters. The unused
+`protocol_uuids` cross-protocol coverage field is omitted, not replaced with an
+incomplete list. Project summaries keep their existing coverage; custom protocol
+or cell-summary readers retain their original interface and behavior.
+
+`ProtocolWorkbench.frozen_service(context)` returns a fresh adapter on every
+call. Its internal `_FrozenReadProjections` retains at most one owned frozen
+binding and its navigation work across requests. Its projection revision includes
+project/protocol identity, immutable candidate/base/main revision IDs and checksums,
+binding version, exact selected-view UUID set, and metadata generation. An unbound
+main additionally retains its live query revision. Index and published mapping
+identities fence the retained entry. Candidate minus base minus main determines
+pending membership. Draft-only or shared-tag-only updates of a bound main can reuse
+pure grouping while fresh adapters and closing checks read current decisions/tags.
+Empty selected views are distinct from unrestricted pending membership. A scope
+or generation change replaces the retained binding; custom readers execute
+uncached. Index integrity and relevant fingerprints remain checked on reuse.
+
+Only the binding and its epoch/tree projection caches are retained. Fresh adapters
+keep fresh decision and annotation-coverage closures; neither context snapshots
+nor authority receipts are cached. The existing epoch-page and tree-scope caches
+each keep their 64 MiB estimated retention budget. One frozen recipe is retained
+in addition, so its storage still scales with that candidate's recipe; this is
+not a process RSS limit. Old adapters can retain their input until released, and
+project/manager teardown releases the store. No cache eviction truncates a scope.
+Opening/closing context, generation, transaction and acceptance checks are
+unchanged. This optimization does not claim page-size-only authority work:
+candidate/main validation and persisted global annotation evidence still run.
+Single-epoch detail reads retain their membership check but hydrate curation only
+for that epoch, just as epoch pages already do; custom curation readers retain
+their original full-reader behavior.
+
+The cross-owner [scoped-read tests](../../tests/test_workspace_scoped_reads.py)
+exercise real SQLite metadata indexes, exact/empty selected views, acceptance,
+index/fingerprint changes, custom fallback, bounded annotation hydration and
+closing-read rejection. SQL doubles do not qualify native transaction behavior.
+
 Project/protocol/candidate/baseline/main UUIDs, recipe hashes, metadata fingerprints,
 actor draft version, source/query/binding/shared-annotation witnesses are separate
 identities. Pending membership is candidate minus baseline minus current main.

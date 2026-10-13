@@ -35,6 +35,18 @@ commands, process IDs or a worker mode. Only this owner's exact `Popen` children
 may be killed on timeout or pause. A child that cannot exit is retained in the
 owner and prevents further spawning; no database process is cancelled.
 
+The parent drains stdout and diagnostic stderr concurrently with bounded retained
+buffers. A failed read carries a reason, elapsed milliseconds, last observed
+operation/scope, an optional 16-hex SHA-256 prefix of the exact observed path,
+and whether its owned worker was reaped or is still stopping. The API and local
+warning log expose these fields, never raw paths, child stderr or credentials.
+The path digest is correlation evidence, not project identity or an access grant.
+Discovery-only audit events identify root validation, directory listing,
+candidate inspection and registry/saved-project reads. They grant no write or
+database authority. A timeout says discovery did not finish; it does not diagnose
+macOS permissions or prove that an update caused the stall. The three-second
+deadline and suppression of retries behind an unexited worker remain in force.
+
 Explicit Quit pauses these readers before waiting for request completion. It
 continues to wait for scientific writers, jobs, database operations and child
 service receipts. Read cancellation grants none of those acknowledgements.
@@ -169,3 +181,13 @@ Selected-cell QC preparation remains explicit; export storage is prepared during
 validated export. The shell tests use temporary files and injected scientific
 construction. Actual restoration, unmount and database shutdown require the
 separate packaged Electron tests and timings.
+
+## Protocol linked recording sizes
+
+`DataStores.recording_sizes(source_sha256s)` projects filesystem availability
+and size for admitted registered source identities, without enumerating epochs,
+protocol memberships or exports. Missing, unreadable and changed-size files keep
+the inventory's existing status meaning. The HTTP protocol owner derives source
+identities from current effective membership and holds registration locks; no
+caller-supplied path is accepted. Metadata/H5 contents are not read, copied or
+modified. The full data-store inventory contract remains unchanged.

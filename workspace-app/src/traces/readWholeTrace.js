@@ -3,14 +3,15 @@ import {traceRequestPath,traceResponseMatches} from './traceReadContext.js';
 
 // Demand-read only the focused stream. Each transport read retains its existing
 // bounded contract; the complete array belongs to one mounted resource lifetime.
-export async function readWholeTrace({request,epochUuid,stream,readContext,sourceSha256,signal}){
+export async function readWholeTrace({request,epochUuid,stream,readContext,sourceSha256,signal,window={start:0,count:stream.sample_count}}){
   const total=stream.sample_count;
   if(!Number.isSafeInteger(total)||total<1)throw Error('Invalid recorded sample count.');
+  if(!Number.isSafeInteger(window.start)||!Number.isSafeInteger(window.count)||window.start<0||window.count<1||window.start+window.count>total)throw Error('Invalid recorded sample window.');
   let first;
   const values=[];
-  for(let start=0;start<total;start+=MAX_TRACE_SAMPLES){
+  for(let start=window.start;start<window.start+window.count;start+=MAX_TRACE_SAMPLES){
     signal?.throwIfAborted();
-    const count=Math.min(MAX_TRACE_SAMPLES,total-start);
+    const count=Math.min(MAX_TRACE_SAMPLES,window.start+window.count-start);
     const chunk=await request(traceRequestPath(epochUuid,stream,{start,count},readContext),{signal});
     signal?.throwIfAborted();
     const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
@@ -26,5 +27,5 @@ export async function readWholeTrace({request,epochUuid,stream,readContext,sourc
     if(!first)first={...chunk,values:undefined};
     for(const value of chunk.values)values.push(value);
   }
-  return {...first,start:0,count:total,values};
+  return {...first,start:window.start,count:window.count,values};
 }

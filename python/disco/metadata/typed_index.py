@@ -329,6 +329,7 @@ class TypedMetadataIndex(_TypedQueries):
             'format': FORMAT}).encode()).hexdigest()
         attach_native(self.connection,bound_source)
         self.connection.execute('CREATE TEMP TABLE supplied_scope(epoch_id INTEGER PRIMARY KEY)')
+        self._membership = None
         self.connection.execute('CREATE TEMP TABLE supplied_sources(source_sha TEXT PRIMARY KEY)')
         self.connection.execute('CREATE TEMP TABLE dictionary_matches(match_no INTEGER,value_id INTEGER,PRIMARY KEY(match_no,value_id)) WITHOUT ROWID')
         self._dictionary_match_no = 0
@@ -349,6 +350,8 @@ class TypedMetadataIndex(_TypedQueries):
         if (self._signature != _signature(self.path) or self._source_signature != _signature(self.source_path)
                 or self._seal_signature != _signature(self._seal_path)):
             raise ValueError('Typed metadata generation changed; reopen verified indexes')
+        if self._membership is not None:
+            self._membership.check(self)
 
     def _cancel_requested(self):
         return self._cancel_event.is_set() or bool(self._cancel_callback and self._cancel_callback())
@@ -370,6 +373,7 @@ class TypedMetadataIndex(_TypedQueries):
         if not self._closed:
             self.decoder.clear()
             self.connection.close()
+            self._membership = None
             self._closed = True
 
     def __enter__(self):
@@ -493,14 +497,14 @@ class TypedMetadataIndex(_TypedQueries):
         """Exact count and requested facets without decoding row/detail DTOs."""
         self._validate_facets(facet_fields)
         where, arguments = self._where(predicate, scope)
-        selective = isinstance(scope, dict) and bool(set(scope)&{'cell','block','group'})
+        selective = scope is not None and (not isinstance(scope, dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         return self._summaries(where, arguments, facet_fields, selective)
 
     @_guard
     def preview(self, predicate=None, scope=None, facet_fields=(), limit=60, cursor=None):
         self._validate_facets(facet_fields)
         where, arguments = self._where(predicate, scope)
-        selective = isinstance(scope, dict) and bool(set(scope)&{'cell','block','group'})
+        selective = scope is not None and (not isinstance(scope, dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         result = self._summaries(where, arguments, facet_fields, selective)
         return {**result, **self._page(where, arguments, cursor, limit)}
 
@@ -528,7 +532,7 @@ class TypedMetadataIndex(_TypedQueries):
     def _where(self,predicate=None,scope=None):
         self._check()
         previous=getattr(self,'_structurally_scoped',False)
-        self._structurally_scoped=isinstance(scope,dict) and bool(set(scope)&{'cell','block','group'})
+        self._structurally_scoped=scope is not None and (not isinstance(scope,dict) or bool(set(scope)&{'cell','block','group','epoch_ids'}))
         try:
             return super()._where(predicate,scope)
         finally:

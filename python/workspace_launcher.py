@@ -17,7 +17,8 @@ def register_project_routes(app, *, retinanalysis_dir, project_dir=None, root=No
 
     @app.errorhandler(ProjectInventoryUnavailable)
     def unavailable_project_inventory(error):
-        return jsonify(error=str(error), code='project_inventory_unavailable'), 503
+        return jsonify(error=str(error), code='project_inventory_unavailable',
+                       diagnostics=error.diagnostics), 503
 
     from workspace_app_routes import register_app_routes
     register_app_routes(app)

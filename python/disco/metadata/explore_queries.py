@@ -9,7 +9,7 @@ import json
 import threading
 import uuid
 from collections import OrderedDict
-from contextlib import contextmanager, nullcontext
+from contextlib import contextmanager, nullcontext, ExitStack
 from dataclasses import asdict, is_dataclass
 
 from disco.navigation.predicates import OPERATORS, equality_key, kind
@@ -282,9 +282,26 @@ def typed_scope(service, context):
     predicates.extend({'field': field_map[key], 'operator': 'eq', 'value': value}
                       for key, value in filters.items() if key in field_map)
     if context['protocol_uuid'] is not None:
-        binding = service.binding(context['protocol_uuid'])
-        members = binding['recipe']['epochs'] if binding else service.protocols[context['protocol_uuid']]['result']['epochs']
-        scope['epoch_ids'] = (member['uuid'] for member in members)
+        protocol = context['protocol_uuid']
+        owner = getattr(service, 'typed_index', None)
+        headers = getattr(service, 'binding_header_provider', None)
+        header = headers(protocol) if headers and typed_policy(service) else None
+        cache = getattr(owner, 'memberships', None)
+        if cache is not None and header is not None:
+            authority = {key: header.get(key) for key in
+                         ('project_uuid', 'protocol_uuid', 'revision_uuid', 'version')}
+            def identities():
+                binding = service.binding(protocol)
+                if binding is None or any(binding.get(key) != value for key, value in authority.items()):
+                    raise StaleQuery('Protocol binding changed while preparing membership')
+                return (member['uuid'] for member in binding['recipe']['epochs'])
+            scope['epoch_ids'] = cache.get(authority, scope['sources'], identities)
+            # The existing response/job closing generation fence rechecks this
+            # binding; avoid a redundant database request on every cache hit.
+        else:
+            binding = service.binding(protocol)
+            members = binding['recipe']['epochs'] if binding else service.protocols[protocol]['result']['epochs']
+            scope['epoch_ids'] = (member['uuid'] for member in members)
     return {'all': predicates}, scope
 
 
@@ -371,16 +388,13 @@ class SummaryJobs:
                 native = (typed_combination_over_budget(context) or not typed_policy(self.service) or context_annotation_fields(context) or
                     any(field.startswith(('annotations/', 'curation/')) for field in context['summary_fields']) or
                     any(key in context['filters'] for key in ('tag', 'tagged', 'tag_predicate')))
-                with self.db_lock, self.registration_locks():
-                    if job['generation'] != generation(self.service, context):
-                        raise StaleQuery('Metadata or annotation generation changed')
-                    reader_context = typed_reader(self.service)
-                    reader = reader_context.__enter__()
-                    predicate, scope = typed_scope(self.service, context) if reader else (None, None)
-                try:
+                with ExitStack() as readers:
+                    with self.db_lock, self.registration_locks():
+                        if job['generation'] != generation(self.service, context):
+                            raise StaleQuery('Metadata or annotation generation changed')
+                        reader = readers.enter_context(typed_reader(self.service))
+                        predicate, scope = typed_scope(self.service, context) if reader and not native else (None, None)
                     result = self._calculate(job, reader, predicate, scope, native)
-                finally:
-                    reader_context.__exit__(None, None, None)
                 self._fence(job)
                 if len(json.dumps(result, ensure_ascii=False).encode('utf-8')) > MAX_RESULT_BYTES:
                     raise ValueError('Requested summaries exceed the response budget; request fewer fields')

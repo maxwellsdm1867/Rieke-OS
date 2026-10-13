@@ -13,7 +13,7 @@ package import, cached row or successful disposable build.
 | [metadata_objects](metadata_objects.py): Encoder, Decoder, canonical and existing constants/helpers | Lossless, source/UUID-owned ancestor storage; independent returned DTOs and bounded decoded-object retention. |
 | [cache_lifecycle](cache_lifecycle.py): CacheNamespace, CacheLease, CacheLeaseGroup | Writer locks, reader leases, current-generation publication and conservative disposable reclamation. Caller closes leases; failed or stale work cannot authorize publication. |
 | [projection_cache](projection_cache.py): ProjectionCache, VERSION | Source projection storage with lazy lossless ancestor reconstruction and leased publication. |
-| [typed_lifecycle](typed_lifecycle.py): TypedGeneration, prepare | Prepare a typed sidecar only from a verified native reader; retain native lease through worker completion/publication/failure. Preparation is not publication. |
+| [typed_lifecycle](typed_lifecycle.py): TypedGeneration, MembershipCache, VerifiedMembership, prepare | Prepare a typed sidecar only from a verified native reader; retain native lease through worker completion/publication/failure. Preparation is not publication. |
 | [explore_queries](explore_queries.py): existing query_context, typed_reader, field_registry, SummaryJobs, explore_page, route registration and companion functions | Query and requested-summary orchestration; caller retains source eligibility, protocol binding, annotation authority, cursor and HTTP composition. |
 | [search](search.py): search_workspace, register_search_routes | Bounded metadata lookup; no waveform reads, SQL text interface or mutation. |
 
@@ -54,6 +54,65 @@ called across threads; interruption raises QueryCancelled, never empty success.
 close is idempotent. Native index reading has no generic cancellation token.
 Query orchestration preserves generation, source eligibility, binding, publication
 and annotation fences; disposable metadata cannot stand in for those proofs.
+
+## Explicit membership query work
+
+`DiskMetadataIndex.cell_epoch_ids` and `cell_epoch_count` read the complete
+registered cell through `epochs_cell`, without decoding unrelated row/detail JSON.
+IDs retain registration order; the count does not hydrate rows. The existing
+connection lifetime checks index integrity before and after each query. The
+`WorkspaceService.cell_rows` and `cell_epoch_count` interface supplies canonical
+UUID handling and a row-mapping fallback for legacy/custom index adapters.
+Cell QC and annotation display counts share this interface. These operations
+include excluded sources, as the earlier registered-cell scans did; they do not
+represent a protocol's narrower membership or grant scientific action authority.
+
+For the native path, the published index and basic-row mapping must describe the
+same immutable metadata generation. Callers do not edit cell membership in place;
+refresh publishes replacement mappings and an index together. Index-less/custom
+index adapters retain live mapping behavior. This is not permission to pair an
+old sealed index with independently edited row maps. `cell_rows` also rejects a
+returned row whose recorded cell disagrees with the requested indexed cell.
+
+The added SQL index is built with a new disposable generation because refresh
+hashes `disk_index.py` into its generation identity. Existing artifacts are never
+modified or resealed in place. The additive index does not change format 3's
+recorded data layout; a standalone caller explicitly reopening an old format-3
+file with its old generation can still read correctly but will not acquire this
+new acceleration until rebuilt. One-time generation rebuilding is distinct from
+rebuilding a cohort on every browse operation.
+
+Explicit UUID scopes are admitted through the native UUID index before predicate
+compilation. When sources are supplied, source eligibility is applied in one batch over
+admitted members; no project-wide source-member relation is materialized first.
+One-shot UUID/source iterables are consumed once, duplicate/unknown UUID handling
+is unchanged, and empty sources or membership still mean an empty intersection.
+
+Explicit scopes use the existing correlated epoch/field predicate and facet
+paths. Contains and wide-number comparisons enumerate distinct dictionary values
+reachable from admitted members, retaining the exact native predicate evaluator.
+Global discovery retains its existing dictionary/source strategy. Arbitrary UUID
+iterables retain connection-owned scratch admission. Canonical frozen protocol
+bindings instead reuse an immutable, session-private SQLite membership file via
+`TypedGeneration.memberships`. Its key contains the typed/native generation,
+project/protocol/revision/version and exact source eligibility. Only the canonical
+header/recipe provider receives this shortcut; unbound/custom policies fall back.
+Warm readers attach the verified file read-only without recipe hydration, UUID
+iteration or membership insertion. SQL references the indexed table directly; a
+view alias would force SQLite to reconstruct an IN-list. Existing opening/closing response fences
+retain authority. Filters and annotations do not change base membership.
+
+Construction is serialized and publishes only a fully committed file; exceptions
+remove the unfinished artifact. Files are never overwritten, and signature changes
+fail closed. An attached reader retains the file, its private directory and native
+owner through connection close. Retention is an LRU of at most 16 entries/256 MiB,
+except that a single larger membership is allowed; eviction never truncates scope.
+Restart loses this acceleration cache and first use rebuilds it. These files are
+not durable scientific state and grant no standalone authority. Session-private
+files avoid cross-process publication and immutable-file repair races.
+
+The typed-index truth-table/facet tests now include explicit scopes, source
+intersections and empty cohorts; dictionary tests count evaluated values.
 
 ## Lifetime and source witnesses
 

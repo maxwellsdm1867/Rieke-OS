@@ -29,16 +29,39 @@ EPOCH_PAGE_CACHE_BYTES = 64 * 1024 * 1024
 
 class _FrozenProtocolBinding:
     """Owned frozen read input; unrelated protocols retain the caller's policy."""
-    def __init__(self, protocol, binding, fallback):
+    def __init__(self, protocol, binding, fallback, *, read_scope_revision=None):
         self.protocol = protocol
         self._binding = copy.deepcopy(binding)
         self.fallback = fallback
+        self.read_scope_revision = read_scope_revision
+        self._epoch_page_cache = None
+        self._tree_page_scope_cache = None
 
     def __call__(self, protocol):
         return copy.deepcopy(self._binding) if protocol == self.protocol else self.fallback(protocol)
 
+    def header(self, protocol):
+        if protocol != self.protocol:
+            raise ValueError('Frozen read header requested for another protocol')
+        return {key: self._binding.get(key) for key in ('version', 'revision_uuid')} | {
+            'read_scope_revision': self.read_scope_revision}
+
 
 _FROZEN_BINDING_READ = _FrozenProtocolBinding.__call__
+_FROZEN_BINDING_HEADER = _FrozenProtocolBinding.header
+
+
+def _frozen_navigation_owner(service, protocol):
+    """Owned projection storage only; never a native binding authority shortcut."""
+    provider = getattr(service, 'binding_provider', None)
+    header = getattr(service, 'binding_header_provider', None)
+    if (type(provider) is _FrozenProtocolBinding and provider.protocol == protocol
+            and provider.read_scope_revision is not None
+            and type(provider).__call__ is _FROZEN_BINDING_READ
+            and getattr(header, '__self__', None) is provider
+            and getattr(header, '__func__', None) is _FROZEN_BINDING_HEADER):
+        return provider
+    return None
 
 
 def _readonly_binding_reader(service, protocol):
@@ -64,7 +87,7 @@ def _protocol_summary_can_share(service, filters):
              or all(_readonly_binding_reader(service, key) for key in service.protocols)))
 
 
-def _summarize_cells(service, rows, *, current_protocol=None, current_query=None):
+def _summarize_cells(service, rows, *, current_protocol=None, current_query=None, cross_protocols=True):
     # Bin before invoking membership readers, preserving the public reader order.
     bins = {}
     for row in rows:
@@ -72,14 +95,15 @@ def _summarize_cells(service, rows, *, current_protocol=None, current_query=None
     result = []
     memberships = {key: {member['uuid'] for member in (
         current_query if current_query is not None and key == current_protocol else service.query_result(key))['epochs']}
-        for key in service.protocols}
+        for key in service.protocols} if cross_protocols else {}
     for identity, items in bins.items():
         epoch_ids = {row['epoch_uuid'] for row in items}
         result.append({**service.cells[identity], 'epochs': len(items),
             'duration_seconds': sum(r['duration_seconds'] for r in items),
             'reviewed': sum(bool(r['curation']['reviewed']) for r in items),
             'included': sum(bool(r['curation']['included']) for r in items),
-            'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids],
+            **({'protocol_uuids': [key for key, membership in memberships.items() if membership & epoch_ids]}
+               if cross_protocols else {}),
             'group_labels': sorted({r['group_label'] for r in items}, key=str)})
     return sorted(result, key=lambda c: (c['cell_type'] or '', c['date'], c['label']))
 
@@ -710,6 +734,33 @@ class WorkspaceService:
         if not self._loaded:
             raise RuntimeError('Workspace validation did not complete; refresh required')
 
+    def cell_rows(self, cell_uuid):
+        """Registered cell rows, independent of protocol or source exclusions.
+
+        The immutable published index owns membership. Legacy/custom index
+        adapters retain the current row-mapping policy without a second cache.
+        """
+        self._ready()
+        identity = _uuid(cell_uuid)
+        from disco.metadata.disk_index import DiskMetadataIndex
+        index = getattr(self, 'disk_index', None)
+        if type(index) is DiskMetadataIndex:
+            identities = index.cell_epoch_ids(identity)
+            rows = [self.rows[key] for key in identities]
+            if any(row['cell_uuid'] != identity for row in rows):
+                raise ValueError('Cell membership changed; refresh the metadata generation')
+            return rows
+        return [row for row in self.rows.values() if row['cell_uuid'] == identity]
+
+    def cell_epoch_count(self, cell_uuid):
+        self._ready()
+        identity = _uuid(cell_uuid)
+        from disco.metadata.disk_index import DiskMetadataIndex
+        index = getattr(self, 'disk_index', None)
+        if type(index) is DiskMetadataIndex:
+            return index.cell_epoch_count(identity)
+        return sum(row['cell_uuid'] == identity for row in self.rows.values())
+
     def _curation(self, protocol_uuid=None):
         if self.curation_provider and protocol_uuid:
             return self.curation_provider(protocol_uuid, self.fingerprints(protocol_uuid))
@@ -762,7 +813,7 @@ class WorkspaceService:
                 return original
             recipe = binding['recipe']
             identities = [member['uuid'] for member in recipe['epochs']]
-            if set(identities) - self.rows.keys():
+            if any(key not in self.rows for key in identities):
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             cells = {self.rows[key]['cell_uuid'] for key in identities}
             original.update(
@@ -882,7 +933,9 @@ class WorkspaceService:
                 'protocols': protocols, 'cells': self._cell_summary(rows), 'sources': self.sources,
                 'events': self.events(25)}
 
-    def protocol(self, protocol_uuid, filters=None):
+    def protocol(self, protocol_uuid, filters=None, *, cross_protocols=True):
+        if type(cross_protocols) is not bool:
+            raise ValueError('Protocol coverage option must be boolean')
         shared = _protocol_summary_can_share(self, filters)
         if shared:
             filters = validate_filters(filters)
@@ -901,8 +954,9 @@ class WorkspaceService:
                 'binding': query.get('dataset_binding'),
                 'counts': self._counts(rows), 'total_counts': self._counts(all_rows),
                 'selection_options': {'cell_types': sorted({r['cell_type'] for r in all_rows if r.get('cell_type')})},
-                'cells': (_summarize_cells(self, rows, current_protocol=_uuid(protocol_uuid), current_query=query)
-                          if shared else self._cell_summary(rows)),
+                'cells': (_summarize_cells(self, rows, current_protocol=_uuid(protocol_uuid), current_query=query,
+                                          cross_protocols=cross_protocols)
+                          if shared or not cross_protocols else self._cell_summary(rows)),
                 'groups': sorted({r['group_label'] for r in all_rows}, key=str),
                 'filters': validate_filters(filters)}
 
@@ -986,20 +1040,22 @@ class WorkspaceService:
         key = (protocol_uuid, header and header['version'], header and header.get('revision_uuid'), tuple(sorted(ordinary.items())))
         from disco.metadata.disk_index import DiskMetadataIndex
         index = getattr(self, 'disk_index', None)
+        cache_owner = _frozen_navigation_owner(self, protocol_uuid) or self
         cache = None
-        overhead = sys.getsizeof(self._fingerprints) + 16 * 1024
+        overhead = 16 * 1024
         if isinstance(index, DiskMetadataIndex):
             index._check()
             generation = (id(index),index.generation,id(self.rows),id(self.protocols),id(self._fingerprints))
-            previous = getattr(self, '_epoch_page_cache', None)
+            previous = getattr(cache_owner, '_epoch_page_cache', None)
             if overhead < EPOCH_PAGE_CACHE_BYTES:
-                if previous is None or previous[0] != generation or previous[2] != self._fingerprints:
-                    previous = self._epoch_page_cache = (generation,{},dict(self._fingerprints))
+                if previous is None or previous[0] != generation:
+                    previous = cache_owner._epoch_page_cache = (generation,{})
                 cache = previous[1]
             else:
-                self._epoch_page_cache = None
+                cache_owner._epoch_page_cache = None
         entry = cache.get(key) if cache is not None else None
-        if entry is not None and (signature is None or signature == entry[0]):
+        if (entry is not None and (signature is None or signature == entry[0])
+                and all(self._fingerprints.get(identity)==fingerprint for identity,fingerprint in entry[3].items())):
             cache.pop(key)
             cache[key] = entry
             identities = entry[1]
@@ -1015,7 +1071,7 @@ class WorkspaceService:
                 members = binding['recipe']['epochs'] if binding else protocol['result']['epochs']
                 key = (protocol_uuid, binding and binding['version'], binding and binding.get('revision_uuid'), tuple(sorted(ordinary.items())))
             signature = tuple(member['uuid'] for member in members)
-            if binding is not None and set(signature) - self.rows.keys():
+            if binding is not None and any(identity not in self.rows for identity in signature):
                 raise ValueError('Bound dataset contains unavailable epochs; explicit reconciliation is required')
             rows = self._filter_rows([self.rows[identity] for identity in signature], ordinary)
             identities = tuple(row['epoch_uuid'] for row in rows)
@@ -1024,9 +1080,12 @@ class WorkspaceService:
                 # strings twice even if borrowed/shared, keeping admission cheap.
                 size = sum(sys.getsizeof(values) + sum(sys.getsizeof(value) for value in values)
                            for values in (signature,identities))
+                fingerprints={identity:self._fingerprints[identity] for identity in signature}
+                size+=sys.getsizeof(fingerprints)+sum(sys.getsizeof(key)+sys.getsizeof(value)
+                                                    for key,value in fingerprints.items())
                 if size + overhead <= EPOCH_PAGE_CACHE_BYTES:
                     cache.pop(key,None)
-                    cache[key] = (signature,identities,size)
+                    cache[key] = (signature,identities,size,fingerprints)
                     while len(cache) > 8 or overhead + sum(item[2] for item in cache.values()) > EPOCH_PAGE_CACHE_BYTES:
                         cache.pop(next(iter(cache)))
         if tag_filters:
@@ -1325,7 +1384,13 @@ class WorkspaceService:
                 raise ValueError('Epoch is outside this protocol query')
             row = self.rows[identity]
             manifest = self.manifests[row['source_sha256']]
-            return {**self._decorate(row, self._curation(protocol_uuid)), **self.details[identity],
+            if getattr(self._curation, '__func__', None) is _CANONICAL_CURATION_READ:
+                provider = self.curation_provider
+                curation = (provider(protocol_uuid, {identity: self._fingerprints[identity]})
+                            if protocol_uuid and provider else {})
+            else:
+                curation = self._curation(protocol_uuid)
+            return {**self._decorate(row, curation), **self.details[identity],
                     'source_filename': Path(manifest['source_path']).name,
                     'source_reference': {'sha256': row['source_sha256'], 'path': manifest['source_path']}}
 
@@ -1425,6 +1490,7 @@ class WorkspaceService:
 
 # Capture source identities once; class-level overrides retain custom-read ordering.
 _CANONICAL_BINDING_READ = WorkspaceService.binding
+_CANONICAL_CURATION_READ = WorkspaceService._curation
 _PROTOCOL_BROWSE_READS = {name: getattr(WorkspaceService, name) for name in
     ('protocol', 'query_result', 'filtered_rows', '_filter_rows', '_decorate', '_curation',
      'validate_metadata_filters', '_epoch_page_identities', 'source_scope', 'binding')}

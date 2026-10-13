@@ -86,11 +86,17 @@ class _TypedQueries:
             # building a Python list or exceeding SQLite's parameter limit.
             match_no = self._dictionary_match_no
             self._dictionary_match_no += 1
-            rows = ((match_no, value_id) for value_id, raw in self.connection.execute(
-                'SELECT value_id,value_json FROM typed_values WHERE field_no=?', [number])
+            dictionary = (f'SELECT DISTINCT v.value_id,v.value_json FROM {self._scope_relation()} s '
+                'CROSS JOIN epoch_values ev ON ev.epoch_id=s.epoch_id '
+                'JOIN typed_values v ON v.value_id=ev.value_id '
+                'WHERE ev.field_no=?' if getattr(self, '_identity_scoped', False) else
+                'SELECT value_id,value_json FROM typed_values WHERE field_no=?')
+            rows = ((match_no, value_id) for value_id, raw in self.connection.execute(dictionary, [number])
                 if predicates.matches(node, {field: json.loads(raw)}))
             self.connection.executemany('INSERT INTO dictionary_matches VALUES (?,?)', rows)
-            selector = 'v.value_id IN (SELECT value_id FROM dictionary_matches WHERE match_no=?)'
+            selector = ('EXISTS (SELECT 1 FROM dictionary_matches dm WHERE dm.match_no=? '
+                        'AND dm.value_id=v.value_id)' if getattr(self, '_identity_scoped', False) else
+                        'v.value_id IN (SELECT value_id FROM dictionary_matches WHERE match_no=?)')
             arguments.append(match_no)
         return ('c.epoch_id IN (SELECT ev.epoch_id FROM typed_values v JOIN epoch_values ev '
                 'ON ev.field_no=v.field_no AND ev.value_id=v.value_id WHERE v.field_no=? AND (' + selector + '))'), arguments
@@ -112,30 +118,48 @@ class _TypedQueries:
 
 
     def _where(self, predicate=None, scope=None):
+        from disco.metadata.typed_lifecycle import VerifiedMembership
+        identities = scope.get('epoch_ids') if isinstance(scope, dict) else scope
+        reusable = isinstance(identities, VerifiedMembership)
+        if reusable:
+            sources = tuple(sorted(set(scope.get('sources', ())))) if isinstance(scope, dict) else ()
+            if sources != identities.sources:
+                raise ValueError('Protocol membership source scope mismatch')
+        self._use_membership(identities if reusable else None)
         self.connection.execute('DELETE FROM dictionary_matches')
         self._dictionary_match_no = 0
-        sql, arguments = self.predicate_sql(predicate)
+        explicit = scope is not None and (not isinstance(scope, dict) or 'epoch_ids' in scope)
+        sources = isinstance(scope, dict) and 'sources' in scope
+        if sources and not reusable:
+            self.connection.execute('DELETE FROM supplied_sources')
+            self.connection.executemany('INSERT OR IGNORE INTO supplied_sources VALUES (?)',
+                                        self._scope_values(scope['sources']))
+        if explicit and not reusable:
+            self._supply_identities(scope['epoch_ids'] if isinstance(scope, dict) else scope,
+                                    restrict_sources=sources)
+        previous = getattr(self, '_identity_scoped', False)
+        self._identity_scoped = explicit
+        try:
+            sql, arguments = self.predicate_sql(predicate)
+        finally:
+            self._identity_scoped = previous
         if isinstance(scope, dict):
             allowed = {'protocol','cell','block','group','sources','epoch_ids'}
             if set(scope) - allowed:
                 raise ValueError('Unknown direct scope field')
             for field, value in scope.items():
                 if field == 'sources':
-                    self.connection.execute('DELETE FROM supplied_sources')
-                    self.connection.executemany('INSERT OR IGNORE INTO supplied_sources VALUES (?)',
-                                                self._scope_values(value))
-                    sql += ' AND c.epoch_id IN (SELECT e.epoch_id FROM native.epochs e JOIN supplied_sources s ON s.source_sha=e.source_sha)'
+                    if not explicit:
+                        sql += ' AND c.epoch_id IN (SELECT e.epoch_id FROM native.epochs e JOIN supplied_sources s ON s.source_sha=e.source_sha)'
                     continue
                 if field == 'epoch_ids':
-                    self._supply_identities(value)
-                    sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
+                    sql += f' AND c.epoch_id IN (SELECT epoch_id FROM {self._scope_relation()})'
                     continue
                 part, params = self.predicate_sql({'field':field,'operator':'eq','value':value})
                 sql += ' AND (' + part + ')'
                 arguments.extend(params)
         elif scope is not None:
-            self._supply_identities(scope)
-            sql += ' AND c.epoch_id IN (SELECT epoch_id FROM supplied_scope)'
+            sql += f' AND c.epoch_id IN (SELECT epoch_id FROM {self._scope_relation()})'
         return sql, arguments
 
     def _scope_values(self, values):
@@ -152,11 +176,40 @@ class _TypedQueries:
                 raise ValueError('Scope identities must be strings')
             yield (value,)
 
-    def _supply_identities(self, identities):
+    def _supply_identities(self, identities, *, restrict_sources=False):
         self.connection.execute('DELETE FROM supplied_scope')
+        # Resolve UUIDs through the covering native unique index, then check
+        # source eligibility in one batch over those admitted members. Keeping
+        # the source check out of each insertion avoids interleaving wide native
+        # table reads with UUID admission for a large cohort.
         self.connection.executemany(
             'INSERT OR IGNORE INTO supplied_scope SELECT epoch_id FROM epochs WHERE epoch_uuid=?',
             self._scope_values(identities))
+        if restrict_sources:
+            self.connection.execute('DELETE FROM supplied_scope WHERE NOT EXISTS ('
+                'SELECT 1 FROM native.epochs e WHERE e.epoch_id=supplied_scope.epoch_id '
+                'AND e.source_sha IN (SELECT source_sha FROM supplied_sources))')
+
+    def _use_membership(self, membership):
+        if membership is not None:
+            membership.check(self)
+        if getattr(self, '_membership', None) is membership:
+            return
+        # Only connection-private scratch tables are writable. End their old
+        # transaction before detaching a previous immutable membership image.
+        self.connection.commit()
+        if self._membership is not None:
+            self.connection.execute('DETACH DATABASE membership')
+            self._membership = None
+        if membership is not None:
+            self.connection.execute('ATTACH DATABASE ? AS membership',
+                                    [membership.path.as_uri() + '?mode=ro&immutable=1'])
+            self._membership = membership
+
+    def _scope_relation(self):
+        # These are trusted constant names, never caller SQL. Refer directly to
+        # the primary-key table: a VIEW alias makes SQLite build a fresh IN-list.
+        return 'membership.members' if getattr(self, '_membership', None) is not None else 'supplied_scope'
 
 
     def membership(self, predicate=None, scope=None):

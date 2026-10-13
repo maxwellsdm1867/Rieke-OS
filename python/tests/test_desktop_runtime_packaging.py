@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -15,12 +16,75 @@ import workspace_bootstrap as boot
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools'))
-from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, refresh_native_license_inventory, copy_application
+from desktop_build_runtime import patch_parser, exclude_optional_features, OPTIONAL_PID_ATTACH, refresh_native_license_inventory, copy_application, PARSER_DESKTOP_INIT
 from desktop_runtime_manifest import inventory
 from desktop_application_profile import audit_application, load_profile, validate_source_closure, validate_release_source, copy_python_application, validate_profile
 
 
 class DesktopPackagingTests(unittest.TestCase):
+    def test_desktop_schema_import_defers_public_analysis_but_preserves_exports(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / 'retinanalysis'
+            (package / 'config').mkdir(parents=True)
+            (package / 'config/__init__.py').write_text('')
+            (package / 'config/schema.py').write_text('identity = object()\n')
+            (package / 'config/settings.py').write_text('VALUE = 42\n')
+            (package / '_database.py').write_text('schema = object()\n')
+            (package / 'optional.py').write_text('class Analysis: pass\ndef analyze(): return 7\n')
+            (package / 'reentrant.py').write_text(
+                'from retinanalysis import VALUE\nassert VALUE == 42\n')
+            original = ('from ._database import schema\nfrom . import config\n'
+                        'from .config import settings\nfrom .config.settings import VALUE\n'
+                        'from . import optional\nfrom .optional import *\n'
+                        'from . import reentrant\n')
+            (package / '_disco_public_api.py').write_text(original)
+            script = '''import json,os,sys
+sys.path.insert(0,sys.argv[1])
+import retinanalysis as ra
+if sys.argv[2] == 'deferred':
+    from retinanalysis.config import schema as catalog
+    assert 'retinanalysis.optional' not in sys.modules
+    assert 'retinanalysis._disco_public_api' not in sys.modules
+    assert catalog.identity is not None
+    # Restore the same pre-schema namespace for the public-export comparison.
+    del ra.config.schema
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(4) as pool:
+        assert list(pool.map(lambda _: ra.analyze(), range(8))) == [7] * 8
+else:
+    assert 'retinanalysis.optional' in sys.modules
+assert ra.VALUE == 42
+assert ra.Analysis is ra.optional.Analysis
+assert ra.schema is sys.modules['retinanalysis._database'].schema
+assert not hasattr(ra, 'does_not_exist')
+namespace={}
+exec('from retinanalysis import *', namespace)
+assert namespace['Analysis'] is ra.Analysis
+print(json.dumps(sorted(name for name in namespace if not name.startswith('_'))))
+'''
+            def run(mode):
+                return subprocess.check_output([sys.executable, '-I', '-B', '-c', script, str(root), mode],
+                    env={**os.environ, 'RIEKE_DESKTOP_MODE': '1' if mode == 'deferred' else '0'},
+                    text=True, timeout=10).strip()
+            (package / '__init__.py').write_text(original)
+            before = run('eager')
+            (package / '__init__.py').write_text(PARSER_DESKTOP_INIT)
+            self.assertEqual(run('deferred'), before)
+            self.assertEqual(run('eager'), before)
+
+    def test_unreviewed_parser_initializer_is_rejected_before_any_patch(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            package = root / 'src/retinanalysis'
+            package.mkdir(parents=True)
+            initializer = package / '__init__.py'
+            initializer.write_text('# a changed upstream API\n')
+            with self.assertRaisesRegex(ValueError, 'initializer patch'):
+                patch_parser(root)
+            self.assertEqual(initializer.read_text(), '# a changed upstream API\n')
+            self.assertFalse((package / '_disco_public_api.py').exists())
+
     def test_current_application_closure_includes_typed_requested_summary_backend(self):
         profile = load_profile()
         required = {'disco/metadata/typed_index.py', 'disco/metadata/typed_lifecycle.py',
@@ -48,7 +112,9 @@ class DesktopPackagingTests(unittest.TestCase):
             staged = root / 'parser/src/retinanalysis/config'
             staged.mkdir(parents=True)
             (staged / 'settings.py').write_bytes(source.read_bytes())
-            # The mutation must touch only settings.py and remove generated config.
+            (staged.parent / '__init__.py').write_bytes((source.parents[1] / '__init__.py').read_bytes())
+            # Retain the public initializer verbatim; scientific algorithms are
+            # unchanged by both config ownership and deferred desktop imports.
             algorithms = root / 'parser/src/retinanalysis/utils/parse_data.py'
             algorithms.parent.mkdir()
             original = (source.parents[1] / 'utils/parse_data.py').read_bytes()
@@ -56,6 +122,10 @@ class DesktopPackagingTests(unittest.TestCase):
             receipt = patch_parser(root / 'parser')
             self.assertNotEqual(receipt['original_sha256'], receipt['patched_sha256'])
             self.assertEqual(algorithms.read_bytes(), original)
+            self.assertEqual((staged.parent / '_disco_public_api.py').read_bytes(),
+                             (source.parents[1] / '__init__.py').read_bytes())
+            self.assertEqual(receipt['public_api']['original_sha256'],
+                             receipt['public_api']['retained_sha256'])
             def load(path, name):
                 spec = importlib.util.spec_from_file_location(name, path)
                 module = importlib.util.module_from_spec(spec)

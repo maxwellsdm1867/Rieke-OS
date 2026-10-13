@@ -4,6 +4,7 @@ import json
 import uuid
 import fcntl
 import os
+import sys
 import tempfile
 
 
@@ -116,6 +117,7 @@ def _validate_project_index(value):
 
 def read_project_index():
     path = project_index_path()
+    sys.audit('disco.project_inventory', 'read_project_index', 'registry', str(path))
     if path.is_symlink():
         raise ValueError('Local project index cannot be a symbolic link')
     if not path.exists():
