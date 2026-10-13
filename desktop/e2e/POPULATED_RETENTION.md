@@ -55,3 +55,11 @@ This is a small synthetic candidate audit, not a baseline speed comparison,
 large recording benchmark, scientific analysis qualification, or packaged release
 qualification. Browser audit comparisons, fixed gates and the mandatory empty
 native lifecycle run retain their separate attribution.
+
+The shared test helper `retention-native-support.cjs` pairs Playwright pages with
+attached WebContentsViews by CDP target ID and Electron webContents ID, rather
+than matching URLs. Timeout evidence records attached views, page identities,
+visible labels and text. Failure receipts are written before cleanup. Fallback
+Quit is bounded; a forced signal is permitted only to the exact launched Electron
+process after the owned backend registry shows no services or database operations.
+A forced exit is recorded as cleanup, never counted as successful ordinary Quit.

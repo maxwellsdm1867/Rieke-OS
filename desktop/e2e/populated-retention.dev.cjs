@@ -5,6 +5,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {createRequire}=require('node:module'),{execFile}=require('node:child_process');
 const {promisify}=require('node:util'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
 const run=promisify(execFile);
+const {currentProjectPage,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
 const config={};for(let i=2;i<process.argv.length;i+=2){if(!process.argv[i].startsWith('--')||!process.argv[i+1])throw Error('Expected --key value');config[process.argv[i].slice(2)]=process.argv[i+1];}
 for(const name of ['desktop-root','dependency-root','source-root','commit','output'])if(!config[name])throw Error(`Missing --${name}`);
 
@@ -54,26 +55,14 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
     globalThis.__retentionNavigations=[];
     app.on('web-contents-created',(_event,wc)=>wc.on('did-start-navigation',(_event,url,inPlace,isMainFrame)=>{if(isMainFrame)globalThis.__retentionNavigations.push({id:wc.id,url,inPlace,at:Date.now()});}));
   });
-  async function currentPage(project){
-    const until=Date.now()+45000;
-    while(Date.now()<until){
-      const attached=await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().flatMap(window=>window.contentView.children.map(view=>view.webContents?{id:view.webContents.id,url:view.webContents.getURL(),bounds:view.getBounds()}:null).filter(Boolean)));
-      for(const item of attached){
-        const page=application.context().pages().find(page=>page.url()===item.url);
-        if(page&&await page.getByRole('button',{name:`${project.name}, current project`,exact:true}).isVisible().catch(()=>false))return {page,...item};
-      }
-      await new Promise(resolve=>setTimeout(resolve,50));
-    }
-    throw Error(`Attached project renderer did not become current: ${project.name}`);
-  }
+  const currentPage=project=>currentProjectPage(application,project,receipt);
   let launcher;const chooserDeadline=Date.now()+45000;
   while(!launcher&&Date.now()<chooserDeadline){
     for(const page of application.context().pages())if(await page.locator('.project-launcher').isVisible().catch(()=>false)){launcher=page;break;}
     if(!launcher)await new Promise(resolve=>setTimeout(resolve,50));
   }
   assert.ok(launcher,'Owned launcher renderer must become visible');activePage=launcher;
-  const opened=await launcher.evaluate(async directory=>{const response=await fetch('/api/projects/open-folder',{method:'POST',headers:{'Content-Type':'application/json','X-Workspace-Request':'1'},body:JSON.stringify({directory})});return {status:response.status,result:await response.json()};},projects[0].path);
-  assert.equal(opened.status,200);await launcher.evaluate(url=>window.riekeDesktop.activateProject(url),opened.result.url);
+  await launcher.getByRole('button',{name:`Open ${projects[0].name}, ${projects[0].path}`,exact:true}).click();
   const initialA=await currentPage(projects[0]);activePage=initialA.page;
   await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});
   activePage.setDefaultTimeout(20000);
@@ -158,6 +147,9 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   await step('12-fresh-process-restore',async()=>{await activePage.getByRole('button',{name:'Edit Tree',exact:true}).waitFor({timeout:120000});assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),undefined);await poll(async()=>await activePage.getByRole('spinbutton',{name:'Start sample',exact:true}).inputValue()==='17');assert.equal(await activePage.getByRole('spinbutton',{name:'Sample count',exact:true}).inputValue(),'127');const data=await api('/api/overview');assert.equal(data.counts.epochs,63);assert.equal(data.counts.cells,2);assert.equal(await activePage.locator('.tv-streams:visible button').filter({hasText:'Amp2'}).getAttribute('aria-pressed'),'true');assert.equal(await hash(input),fixtureReceipt.h5_sha256);assert.equal(await hash(receipt.managed_source),fixtureReceipt.h5_sha256);return {new_process:true,start:17,count:127,epochs:63,cells:2,selected_device:'Amp2',source_bytes_unchanged:true};});
   await quit();receipt.cleanup.restart_orderly_exit=true;
   assert.equal((await run('git',['-C',source,'rev-parse','HEAD'])).stdout.trim(),config.commit);assert.equal((await run('git',['-C',source,'status','--porcelain'])).stdout,initialSource);assert.deepEqual(receipt.errors,[]);receipt.status='passed';
- }catch(error){receipt.status='failed';receipt.error=String(error);if(activePage)await activePage.screenshot({path:path.join(output,'failure.png')}).catch(()=>{});throw error;}
- finally{if(application&&!exited){try{await application.evaluate(({app})=>app.quit());await application.close();receipt.cleanup.fallback_close_requested=true;}catch(error){receipt.cleanup.close_error=String(error);}}await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');}
+ }catch(error){await failureEvidence(application,activePage,output,receipt,error);throw error;}
+ finally{
+  if(application&&!exited){try{await closeOwned(application,userData,receipt);}catch(error){receipt.cleanup.close_error=String(error);}}
+  await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');
+ }
 })().catch(error=>{console.error(error);process.exitCode=1;});

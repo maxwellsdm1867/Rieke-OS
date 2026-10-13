@@ -132,7 +132,11 @@ geometry and control hit targets.
 The same visual review found flex auto margins vertically centering short direct
 page children such as Data stores. The retained wrapper now preserves their
 original top alignment, full available width, max-width centering and natural
-height. Protocol pane layout is unaffected.
+height. Protocol pane layout is unaffected. At tree widths up to 260px, Edit Tree uses
+its existing labeled icon/tooltip so the adjacent Epochs and Split tree controls
+remain unobscured. Actual CSS measurements at 180/220/223/260/270px verify all four
+control centers and nonoverlapping label bounds; the labeled action remains at
+270px.
 
 ## Validation status
 
