@@ -1,3 +1,5 @@
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Search,Users,Activity,Clock3,X} from 'lucide-react';
 import PredicateBuilder from './PredicateBuilder.jsx';
@@ -19,7 +21,10 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   const dialog=useRef(null),request=useRef(null),serial=useRef(0);
   const [preview,setPreview]=useState(previousRun?{run:previousRun,predicate:previousPredicate}:null);
   const [previewBusy,setPreviewBusy]=useState(false);
-  const [draft,setDraft]=useState(initialDraft),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  const [draftText,setDraftText,draftState]=useAuthoredDraft(['predicate-editor',protocolId||'',readContext?.root||readContext?.cohort_key||'global'],JSON.stringify(initialDraft));
+  const draft=useMemo(()=>{try{return JSON.parse(draftText);}catch{return initialDraft;}},[draftText]);
+  const setDraft=value=>setDraftText(JSON.stringify(value));
+  const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const shortcuts=useProjectPreference(projectId,'protocol_shortcuts');
   const pinnedProtocols=useMemo(()=>protocols.filter(protocol=>shortcuts.value[protocol.protocol_uuid]?.section==='pinned').sort((a,b)=>(shortcuts.value[a.protocol_uuid].rank||0)-(shortcuts.value[b.protocol_uuid].rank||0)),[protocols,shortcuts.value]);
   const compiled=useMemo(()=>{try{return {predicate:compilePredicate(draft,catalog.data?.fields||null)};}catch(error){return {error:error.message};}},[draft,catalog.data]);
@@ -35,7 +40,8 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   const summaries=useRequestedSummaries({...readContext,predicate:compiled.predicate,summary_fields:requested.fields,generation:catalog.data?.generation},
     {enabled:!!catalog.supportsSummaries&&!!catalog.data?.generation&&!!compiled.predicate&&requested.fields.length>0});
   const fields=fieldsWithSummaries(catalog.data?.fields||[],summaries);
-  useEffect(()=>{const el=dialog.current;el.showModal();return()=>{request.current?.abort();el.close();};},[]);
+  useRetainedModal(dialog);
+  useEffect(()=>()=>request.current?.abort(),[]);
   async function previewMatches(){
     if(busy||previewBusy||compiled.error||!catalog.data)return;
     if(readContext&&!readContext.root){setPreviewPredicate(compiled.predicate);return;}
@@ -59,7 +65,7 @@ export default function PredicateDialog({draft:initialDraft,catalog,onSearch,onC
   async function search(){
     if(busy||compiled.error||!catalog.data)return;
     request.current=new AbortController();setBusy(true);setError('');
-    try{await onSearch(draft,compiled.predicate,request.current.signal);}
+    try{await onSearch(draft,compiled.predicate,request.current.signal);draftState.clear();}
     catch(error){if(!request.current.signal.aborted)setError(error.message);}
     finally{if(!request.current.signal.aborted)setBusy(false);}
   }

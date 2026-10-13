@@ -8,6 +8,13 @@ function subscribe(channel, callback) {
 }
 contextBridge.exposeInMainWorld('riekeDesktop', Object.freeze({
   protocolVersion: 1,
+  activateProject:url=>ipcRenderer.invoke('desktop:activate-project',url),
+  prepareProjectClose:identity=>ipcRenderer.invoke('desktop:prepare-project-close',identity),
+  confirmProjectClosed:identity=>ipcRenderer.invoke('desktop:confirm-project-closed',identity),
+  cancelProjectClose:identity=>ipcRenderer.invoke('desktop:cancel-project-close',identity),
+  projectVisibility:()=>ipcRenderer.invoke('desktop:project-visibility'),
+  onProjectVisibility:callback=>subscribe('desktop:project-visibility',callback),
+  onProjectResume:callback=>subscribe('desktop:project-resume',callback),
   cancelStartup:()=>ipcRenderer.invoke('desktop:cancel-startup'),
   openStartup:()=>ipcRenderer.invoke('desktop:open-startup'),
   startupSession:()=>ipcRenderer.invoke('desktop:startup-session'),

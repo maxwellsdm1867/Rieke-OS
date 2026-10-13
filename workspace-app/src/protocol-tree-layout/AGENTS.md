@@ -114,3 +114,5 @@ ID needs its own demand. App no longer gates Overview on tree-layout readiness;
 Inspect/Export retain that gate. The public hook test checks deferred first demand,
 no repeated tab read, and a new protocol's independent first read. Saver, default
 order, accepted writes, cancellation and retry semantics remain unchanged.
+
+Within a retained workspace, a completed layout load is reused across visibility changes for the same project/actor/protocol/reload identity. The compare-and-set saver remains separate from visibility; old-scope save completions cannot publish into a replacement saver. Explicit reload and nonretained hook behavior remain unchanged. App retains Inspector DOM during layout revalidation and pauses its scientific actions instead of replacing the entire view.

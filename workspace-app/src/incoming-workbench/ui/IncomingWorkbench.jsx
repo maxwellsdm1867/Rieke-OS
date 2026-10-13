@@ -1,3 +1,4 @@
+import {useRetainedViewProtection} from '../../retainedWorkspaceViews.js';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Activity,GitBranch,Info,Layers3,RefreshCw} from 'lucide-react';
 import {humanize,number,time} from '../../api.js';
@@ -23,6 +24,7 @@ export default function IncomingWorkbench({projectId,protocolId,protocols=[],sug
   const drafts=useRef(saved.drafts||{}),snapshot=useRef(null),cumulativeSession=useRef(saved.cumulative||{});
   const [history,setHistory]=useState(!!initialCandidateId||saved.history||false);
   const mergeRequest=useIncomingMergeIntent({intent:initialMergeIntent,claim:onClaimMergeIntent,projectId,protocolId,queue,onOpen:intent=>{setActive(intent.kind==='merge_source'?intent.candidate_revision_uuid:null);setHistory(intent.kind==='merge_source');}});
+  useRetainedViewProtection({dirty:!!dialog||!!active||selected.length>0||Object.keys(drafts.current).length>0,busy:mergeRequest.pending});
   const items=cumulative?queue.data.candidates.filter(item=>!['accepted','covered'].includes(item.status)||item.pending_epoch_count>0):activeProtocolSuggestions({suggestions}).filter(item=>item.protocol_uuid===protocolId);
   const worklist=cumulative?items.filter(item=>selected.includes(reviewKey(item))):reviewWorklist({suggestions:items},selected);
   const current=items.find(item=>item.candidate_revision_uuid===active)||(cumulative&&active?{candidate_revision_uuid:active,protocol_uuid:protocolId}:null);

@@ -17,30 +17,52 @@ export function useOverviewCache(scope,revision,structureRevision=revision){
   if(structural){const timer=setTimeout(()=>{void cache.prefetch(revision);},200);return()=>clearTimeout(timer);}
  },[cache,revision,structureRevision]);
  useEffect(()=>{
-  const refresh=()=>{void cache.refresh(current.current);};
-  const visible=()=>{if(document.visibilityState==='visible')refresh();};
-  window.addEventListener('focus',refresh);window.addEventListener('online',refresh);
+  let pendingFocus,internalUntil=0,projectVisible=true;
+  const bridge=window.riekeDesktop;
+  const stopVisibility=bridge?.onProjectVisibility?.(event=>{
+   projectVisible=event.visible!==false;
+   // Native view selection is not an external data change. Batch DOM focus
+   // with its native visibility message; scientific witness owners still
+   // revoke independently, and known revision changes still invalidate above.
+   if(projectVisible){internalUntil=Date.now()+250;clearTimeout(pendingFocus);}
+  });
+  const refresh=()=>{if(projectVisible)void cache.refresh(current.current);};
+  const focus=()=>{
+   if(!stopVisibility){refresh();return;}
+   clearTimeout(pendingFocus);
+   pendingFocus=setTimeout(()=>{if(Date.now()>internalUntil)refresh();},50);
+  };
+  const visible=()=>{if(document.visibilityState==='visible')focus();};
+  window.addEventListener('focus',focus);window.addEventListener('online',refresh);
   document.addEventListener('visibilitychange',visible);
-  return()=>{window.removeEventListener('focus',refresh);window.removeEventListener('online',refresh);document.removeEventListener('visibilitychange',visible);cache.clear();};
+  return()=>{clearTimeout(pendingFocus);stopVisibility?.();window.removeEventListener('focus',focus);window.removeEventListener('online',refresh);document.removeEventListener('visibilitychange',visible);cache.clear();};
  },[cache]);
  return cache;
 }
 
 const subscribeNothing=()=>()=>{},zero=()=>0;
-export function useOverviewResource(path,revision,{cache,scope}={}){
+export function useOverviewResource(path,revision,{cache,scope,active=true}={}){
  const owner=useWorkspaceRequestScope(),enabled=!!cache&&!owner;
- const fallback=useResource(enabled?null:path,revision);
+ const fallback=useResource(enabled||!active?null:path,revision);
  useSyncExternalStore(enabled?cache.subscribe:subscribeNothing,enabled?cache.snapshot:zero,zero);
  const descriptor=useMemo(()=>path?{path,scope,revision}:null,[path,scope,revision]);
+ const entry=enabled?cache.peek(descriptor):null;
+ // A root summary may still be required by the shell after navigation hides
+ // its page. Invalidating an unfinished read must not strand that demand just
+ // because its deferred display revision did not change.
+ const missingInvalidated=!!entry?.invalidated&&!entry.data;
+ const display=useRef(null);
+ if(entry?.data&&!entry.error)display.current={cache,path,scope,data:entry.data};
+ if(!enabled&&active&&fallback.data&&!fallback.error)display.current={cache,path,scope,data:fallback.data};
  useEffect(()=>{
-  if(!enabled||!descriptor)return;
+  if(!enabled||!active||!descriptor)return;
   cache.acquire(descriptor);
   void cache.read(descriptor,{request:api}).catch(()=>{});
   return()=>cache.release(descriptor);
- },[enabled,cache,descriptor]);
- if(!enabled)return fallback;
- const entry=cache.peek(descriptor);
- return {data:entry?.data||null,error:entry?.error||null,
+ },[enabled,active,cache,descriptor,missingInvalidated]);
+ const displayData=display.current&&display.current.cache===cache&&display.current.path===path&&display.current.scope===scope?display.current.data:null;
+ if(!enabled)return {...fallback,displayData};
+ return {data:entry?.data||null,displayData,error:entry?.error||null,
   loading:!!path&&(!entry||entry.loading||entry.invalidated||entry.revision!==revision),
   reload:()=>{if(descriptor)void cache.read(descriptor,{request:api,force:true}).catch(()=>{});}};
 }

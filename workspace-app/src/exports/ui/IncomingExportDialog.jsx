@@ -1,3 +1,5 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {downloadExport} from '../downloadExport.js';
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from "../../api.js";
@@ -10,9 +12,10 @@ import './ExportSelectionDialog.css';
 export default function IncomingExportDialog({item,accept=false,state={},onState,onClose,onChanged}){
   const dialog=useRef(null),inFlight=useRef(false);
   const [candidate,setCandidate]=useState(null),[loadError,setLoadError]=useState(''),[busy,setBusy]=useState(false);
-  const [format,setFormat]=useState('wheeler-sqlite'),[name,setName]=useState(''),[confirmRemoval,setConfirmRemoval]=useState(false);
+  const [format,setFormat,formatDraft]=useAuthoredDraft(['incoming-export',item.protocol_uuid||'',item.candidate_revision_uuid,'format'],'wheeler-sqlite'),[name,setName,nameDraft]=useAuthoredDraft(['incoming-export',item.protocol_uuid||'',item.candidate_revision_uuid,'name'],'');
+  const [confirmRemoval,setConfirmRemoval]=useState(false);
   const shown=state.comparison||item;
-  useEffect(()=>{const el=dialog.current;el.showModal();return()=>el.close();},[]);
+  useRetainedModal(dialog);
   useEffect(()=>{
     const controller=new AbortController();
     api(`/explore/revisions/${item.candidate_revision_uuid}?summary=1`,{signal:controller.signal}).then(value=>{if(!controller.signal.aborted)setCandidate(value);}).catch(error=>{if(!controller.signal.aborted)setLoadError(error.message);});
@@ -31,7 +34,7 @@ export default function IncomingExportDialog({item,accept=false,state={},onState
       }
       onState({receipt,phase:'exporting'});
       const exported=await exportIncoming(candidate,{format,name},api);
-      onState({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
+      nameDraft.clear();formatDraft.clear();onState({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
     }catch(error){onState({receipt,comparison:state.comparison,phase:error.acceptanceUnconfirmed?'unconfirmed':receipt?'export-failed':'failed',error:error.message});}
     finally{inFlight.current=false;setBusy(false);}
   }

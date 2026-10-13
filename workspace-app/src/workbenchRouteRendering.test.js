@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
+const visible=node=>{for(let current=node;current;current=current.parent)if(current.props?.hidden||current.props?.inert||current.props?.style?.display==='none')return false;return true;};
 
 for(const entry of ['tab','restored session','reused Workbench route'])test(`Protocol ${entry} mounts the real incoming workspace through the App route`,async()=>{
  const h=await createWorkflowHarness();
@@ -41,7 +42,7 @@ for(const mainState of ['pending','failed'])test(`Workbench queue loads while th
   assert.equal(h.fixture.requests.some(r=>r.method!=='GET'),false,'opening the empty queue never changes scientific state');
   assert.equal(h.fixture.requests.some(r=>r.path==='/protocols/protocol-A'),false,'Workbench never starts the hidden main summary');
   await h.act(()=>h.root.findByProps({'aria-label':'Inspect'}).props.onClick());
-  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
-  assert.equal(h.root.findAllByType('workflow-viewer').length,0,'main Inspector requires its compact entry readiness gate');
+  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
+  assert.equal(h.root.findAllByType('workflow-viewer').filter(visible).length,0,'main Inspector requires its compact entry readiness gate');
  }finally{release();await h.settle(10);await h.close();}
 });

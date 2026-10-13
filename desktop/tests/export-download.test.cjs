@@ -4,7 +4,7 @@ const source=fs.readFileSync(path.join(__dirname,'../main.cjs'),'utf8');
 function fixture(){
   const handlers={},contents={},window={webContents:contents},origin='http://127.0.0.1:1234';
   const ownedSession={setPermissionRequestHandler(){},setPermissionCheckHandler(){},webRequest:{onBeforeRequest(){},onBeforeSendHeaders(){},onHeadersReceived(){}},on(name,callback){handlers[name]=callback;}};
-  const context={session:{fromPartition:()=>ownedSession},windows:new Set([window]),supervisor:{origins:new Set([origin])},isOwnedURL:url=>new URL(url).origin===origin,path,app:{getPath:name=>{assert.equal(name,'downloads');return '/Users/Example User/Downloads';}}};
+  const context={session:{fromPartition:()=>ownedSession},windows:new Set([window]),rendererOwners:()=>new Set([window]),supervisor:{origins:new Set([origin])},isOwnedURL:url=>new URL(url).origin===origin,path,app:{getPath:name=>{assert.equal(name,'downloads');return '/Users/Example User/Downloads';}}};
   vm.runInNewContext(source.slice(source.indexOf('function configureSession()'),source.indexOf('function restoreStartupWindow('))+'\nconfigureSession();',context);
   return {download:handlers['will-download'],contents};
 }

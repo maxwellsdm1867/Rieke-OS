@@ -1,11 +1,11 @@
-import {createPortal} from 'react-dom';
+import {RetainedPortal} from '../../retainedWorkspaceViews.js';
 import {ChevronsDownUp,Activity,GitBranch,MessageCircle,PanelRightClose,PanelRightOpen,ArrowLeft,ArrowRight,X,Download} from 'lucide-react';
 import {number} from '../../api.js';
 import InspectorActions from './InspectorActions.jsx';
 
 export function EpochBrowserToolbar({designMode=false,designDisabled=false,onBrowse,onDesign,onTags,metadataOpen,onToggleMetadata,onExport,exportDisabled=false,actions=[],children,treeControlsInPane=false,filterControl=null,portalTarget=null}){
   const toolbar=<div className="inspector-toolbar compact-inspector-toolbar">{!treeControlsInPane&&<nav className="inspection-view-switch" aria-label="Tree editing">{designMode?<button onClick={onBrowse}><ArrowLeft size={15}/> Back to epochs</button>:<button disabled={designDisabled} onClick={onDesign}><GitBranch size={15}/> Edit Tree</button>}</nav>}<span className="spacer"/>{filterControl}{!designMode&&<><button onClick={onTags}><MessageCircle size={15}/> Tags</button><button aria-pressed={metadataOpen} aria-controls="epoch-metadata-sidebar" title="Show or hide epoch metadata" onClick={onToggleMetadata}>{metadataOpen?<PanelRightClose size={15}/>:<PanelRightOpen size={15}/>} Details</button></>}{children}{onExport&&<button className="primary" disabled={exportDisabled} onClick={onExport}><Download size={15}/> Export</button>}<InspectorActions actions={actions}/></div>;
-  return portalTarget?createPortal(toolbar,portalTarget):toolbar;
+  return portalTarget?<RetainedPortal target={portalTarget}>{toolbar}</RetainedPortal>:toolbar;
 }
 export function EpochSelectionBar({targets,onTags,onClear,disabled=false}){
   return targets.length>0&&<div className="inspection-scope bulk-active compact-selection" role="status" aria-live="polite"><strong>{number(targets.length)} epochs selected</strong><button disabled={disabled||targets.length>1000} onClick={onTags}><MessageCircle size={13}/> Tag selected epochs</button><button disabled={disabled} onClick={onClear}><X size={13}/> Clear</button></div>;

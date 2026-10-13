@@ -1,3 +1,4 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useState} from 'react';
 import {ArrowRight,Check,ChevronDown,ChevronUp,Database,RefreshCw} from 'lucide-react';
 import {api,humanize} from "../../api.js";
@@ -12,8 +13,10 @@ export default function ProtocolApplyPanel({candidate,protocols,disabled=false,o
   const comparisonKey=JSON.stringify([revisionId,target]);
   const comparison=rawComparison.key===comparisonKey?rawComparison:{data:null,loading:!!revisionId&&!!target,error:null};
   useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
-  useEffect(()=>{setExpanded(true);setAcceptRemoval(false);},[revisionId,target,generation]);
-  useEffect(()=>{if(initialProtocolId)setTarget(initialProtocolId);},[initialProtocolId]);
+  useSemanticReset(JSON.stringify([revisionId,target,generation]),()=>setExpanded(true));
+  // Removal consent belongs to fresh comparison authority, not presentation.
+  useEffect(()=>setAcceptRemoval(false),[revisionId,target,generation]);
+  useSemanticReset(initialProtocolId,()=>{if(initialProtocolId)setTarget(initialProtocolId);});
   useEffect(()=>{
     setSuccess(null);setError('');
     if(!revisionId||!target){setComparison({data:null,loading:false,error:null});return;}

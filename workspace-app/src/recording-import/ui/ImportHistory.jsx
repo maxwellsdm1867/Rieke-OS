@@ -1,3 +1,4 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useState} from 'react';
 import {Check,CopyCheck,FileWarning,LoaderCircle,ChevronRight} from 'lucide-react';
 import {time} from '../../api.js';
@@ -24,7 +25,7 @@ function ImportHistoryRow({raw,latest,now,observedAt,onStores}){
     const managedMessage=managedRecordingMessage(job);
     const attention=view.pending||view.failed||view.interrupted||view.warning||view.requiresReconciliation||warnings.length>0||!!job.audit_write_error||!!job.warnings?.length;
     const [open,setOpen]=useState(attention||(latest&&!!managedMessage));
-    useEffect(()=>{if(attention||(latest&&managedMessage))setOpen(true);},[attention,latest,managedMessage]);
+    useSemanticReset(JSON.stringify([attention,latest,managedMessage]),()=>{if(attention||(latest&&managedMessage))setOpen(true);});
     return <details open={open} onToggle={event=>{if(event.target===event.currentTarget)setOpen(event.currentTarget.open);}} className={`import-history-row ${view.failed||view.interrupted?'is-failed':duplicate?'is-duplicate':''}`}>
       <summary className="import-history-summary"><ChevronRight className="import-history-chevron" size={14}/><Icon size={16} className={view.pending?'spin':''} aria-hidden="true"/><strong className="import-history-filename" title={sourceName(job)}>{sourceName(job)}</strong><span className="import-history-result">{duplicate?'Already imported · skipped':view.label}</span><time>{time(job.finished_at || job.started_at || job.created_at)}</time></summary>
       <div className="import-history-expanded">

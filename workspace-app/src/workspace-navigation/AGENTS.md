@@ -94,3 +94,5 @@ verifiable for their own revisions but noncomparable with this suite and invalid
 for its current gate. `correctness.navigation` is indirect interaction coverage,
 not a new latency/memory measurement. Native navigation/release qualification
 remain separate unsupported gates; these source tests do not satisfy them.
+
+`go(page, details, {reuseDestination:true})` optionally marks a plain return with `retainedViewKey` pointing to the preceding visit of that destination. Every history entry still gets a fresh route key and advances navigation intent. Explicit search/inspection/recipe/merge visits keep separate identities. Popstate restores the historical visit instead of importing a later reuse hint; the retained owner can keep distinct historical instances. The bounded last-destination map stores at most 32 route descriptors, not scientific data or consent.

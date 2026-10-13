@@ -19,3 +19,13 @@ Raw diagnostic artifacts remain local, explicitly ignored under
 identities preserve attribution. Initial integration tests and later exact-source
 gates are recorded separately; this note does not establish installed-build or
 release qualification.
+
+
+The implementation packaging-closure test exposed another stale whole-file witness
+in `tools/desktop_application_profile.py`: the combined recording workspace differs
+from the release baseline because it includes the managed library and local UI
+work. Its complete `load_parser` AST still matches `86e395a`; only that reviewed
+file-byte witness was refreshed. Dynamic-loader names, call count, destinations,
+and refusal tests remain unchanged. The initial failed packaging log is retained
+at `/tmp/disco-ui-cache-backend-tests.log`; repaired verification is recorded with
+the implementation checks rather than attributed to the frozen integration commit.

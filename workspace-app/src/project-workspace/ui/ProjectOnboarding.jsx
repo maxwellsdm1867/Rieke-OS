@@ -1,3 +1,4 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import ProjectStartupError from './ProjectStartupError.jsx';
 import {useEffect,useState} from 'react';
 import {Activity,ArrowRight,Check,ChevronDown,Database,Download,FolderOpen,GitBranch,History,LoaderCircle,Plus,Folder,MapPin,Tags,X,LogOut} from 'lucide-react';
@@ -18,8 +19,10 @@ function ProjectContents({creating=false}){
 }
 
 export default function ProjectOnboarding({registry,onSelect,onUnmount,onCreated,onCancel,onWorkspaceChanged,onRetryProjects,retryingProjects=false,onOpenProject,onNewProject,onBusyChange,createOnly=false,modal=false,titleId,loading=false,error=null,appIconSource='/disco-icon.png'}){
-  const [creating,setCreating]=useState(createOnly),[name,setName]=useState(''),[directory,setDirectory]=useState(''),[working,setBusy]=useState(false),[browsing,setBrowsing]=useState(false),[failure,setFailure]=useState(''),[created,setCreated]=useState(null);
-  const [selectedRegistry,setSelectedRegistry]=useState(null),[rootEditing,setRootEditing]=useState(false),[rootPath,setRootPath]=useState(registry?.managed_root||''),[rootMessage,setRootMessage]=useState('');
+  const [creating,setCreating]=useState(createOnly),[working,setBusy]=useState(false),[browsing,setBrowsing]=useState(false),[failure,setFailure]=useState(''),[created,setCreated]=useState(null);
+  const [selectedRegistry,setSelectedRegistry]=useState(null),[rootEditing,setRootEditing]=useState(false),[rootMessage,setRootMessage]=useState('');
+  const [name,setName]=useAuthoredDraft(['project-creation','name'],''),[directory,setDirectory]=useAuthoredDraft(['project-creation','directory'],'');
+  const [rootPath,setRootPath]=useAuthoredDraft(['project-registry','root-path'],registry?.managed_root||'');
   const busy=working||browsing;
   const currentRegistry=selectedRegistry||registry;
   const projects=currentRegistry?.projects||[];
@@ -40,7 +43,7 @@ export default function ProjectOnboarding({registry,onSelect,onUnmount,onCreated
   async function create(event){
     event.preventDefault();if(busy||!name.trim()||!directory.trim())return;
     setBusy(true);setFailure('');
-    try{const result=await api('/projects',{method:'POST',body:{name:name.trim(),...(directory.trim()?{project_directory:directory.trim()}:{})}});if(!result.project?.uuid)throw new Error('The server did not return a project identity. Refresh the project list before retrying.');setCreated({...result.project,registry_warning:result.registry_warning});await onCreated?.(result.project);}
+    try{const result=await api('/projects',{method:'POST',body:{name:name.trim(),...(directory.trim()?{project_directory:directory.trim()}:{})}});if(!result.project?.uuid)throw new Error('The server did not return a project identity. Refresh the project list before retrying.');setCreated({...result.project,registry_warning:result.registry_warning});setName('');setDirectory('');await onCreated?.(result.project);}
     catch(error){setFailure(error.message);}finally{setBusy(false);}
   }
   return <section className={`project-onboarding ${createOnly?'creation-only':''} ${modal?'project-onboarding-modal':''}`} aria-label="Project setup">

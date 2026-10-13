@@ -1,5 +1,6 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {revealEpochRow} from '../epochListScroll.js';
-import {useLayoutEffect,useMemo,useRef,useState} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import {ChevronDown,ChevronRight,Check,X,Tag} from 'lucide-react';
 import {humanize} from '../../api.js';
 import {epochSkimGroups} from '../epochSkimGroups.js';
@@ -9,8 +10,9 @@ export default function EpochSkimList({epochs,offset,focused,onFocus,targets=[],
   const list=useRef(null);
   const groups=useMemo(()=>epochSkimGroups(epochs,offset),[epochs,offset]);
   const [collapsed,setCollapsed]=useState(new Set());
-  useLayoutEffect(()=>{const group=groups.find(g=>g.epochs.some(item=>item.epoch.epoch_uuid===focused));if(group)setCollapsed(old=>{if(!old.has(group.key))return old;const next=new Set(old);next.delete(group.key);return next;});},[focused,groups]);
-  useLayoutEffect(()=>{revealEpochRow(list.current?.closest('.tree-scroll'));},[focused,collapsed,epochs]);
+  const focusedGroup=groups.find(group=>group.epochs.some(item=>item.epoch.epoch_uuid===focused));
+  useSemanticReset(JSON.stringify([focused,focusedGroup?.key]),()=>{if(focusedGroup)setCollapsed(old=>{if(!old.has(focusedGroup.key))return old;const next=new Set(old);next.delete(focusedGroup.key);return next;});});
+  useSemanticReset(JSON.stringify([focused,[...collapsed],epochs.map(epoch=>epoch.epoch_uuid)]),()=>revealEpochRow(list.current?.closest('.tree-scroll')));
   return <div ref={list} className="epoch-skim-list">{groups.map(group=><section key={group.key} className="epoch-skim-cell">
     <button className="epoch-skim-heading" aria-expanded={!collapsed.has(group.key)} onClick={()=>setCollapsed(old=>{const next=new Set(old);if(next.has(group.key))next.delete(group.key);else next.add(group.key);return next;})}>
       {collapsed.has(group.key)?<ChevronRight size={13}/>:<ChevronDown size={13}/>}<span>{group.date}</span><strong>{group.label}</strong>

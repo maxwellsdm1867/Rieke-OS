@@ -1,3 +1,5 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {downloadExport} from '../downloadExport.js';
 import {useEffect,useRef,useState} from 'react';
 import {api,number} from "../../api.js";
@@ -12,10 +14,11 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
   saved.current=state;
   const accepting=state.workflow?state.workflow==='accept-export':accept;
   const [context,setContext]=useState(null),[loadError,setLoadError]=useState(''),[busy,setBusy]=useState(false);
-  const [format,setFormat]=useState(state.format||'wheeler-sqlite'),[name,setName]=useState(state.name||''),[mode,setMode]=useState(state.mode||'selected');
+  const [format,setFormat,formatDraft]=useAuthoredDraft(['workbench-export',protocolId,item.candidate_revision_uuid,'format'],state.format||'wheeler-sqlite'),[name,setName,nameDraft]=useAuthoredDraft(['workbench-export',protocolId,item.candidate_revision_uuid,'name'],state.name||'');
+  const [mode,setMode]=useState(state.mode||'selected');
   const committed=state.receipt||acceptReceipt,locked=busy||externalBusy||!!state.prepared||!!state.acceptOperation&&!committed;
   function publish(patch){saved.current={...saved.current,...patch};onState(saved.current);}
-  useEffect(()=>{const el=dialog.current;el?.showModal?.();return()=>el?.close?.();},[]);
+  useRetainedModal(dialog);
   useEffect(()=>{
     if(committed||state.prepared||state.preview)return;
     const controller=new AbortController();
@@ -42,7 +45,7 @@ export default function WorkbenchExportDialog({selectedOnly=false,protocolId,ite
         prepared=receipt?await acceptedExportRequest(protocolId,receipt,{format,name,operationUuid},api):candidateExportRequest(root,preview,{format,name,operationUuid});
         publish({prepared,phase});
       }
-      const exported=await submitWorkbenchExport(prepared,api);publish({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
+      const exported=await submitWorkbenchExport(prepared,api);nameDraft.clear();formatDraft.clear();publish({receipt,exported,phase:'exported'});downloadExport(exported);onChanged?.();
     }catch(error){
       if(phase==='accepting'&&acceptanceFailureKind(error)==='rejected'){
         publish({phase:'rejected',acceptOperation:null,preview:null,error:`Acceptance rejected. Reopen to refresh the proposal. ${error.message}`});setContext(null);

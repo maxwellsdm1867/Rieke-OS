@@ -131,3 +131,5 @@ trace and later-page reads retain their own requests. The incoming owner validat
 and owns the offer; `api.useResource` claims it in an effect and retires it on
 pause/reload/owner/path/revision changes with first-render stale-data masking.
 See [incoming bootstrap contract](../incoming-workbench/AGENTS.md#initial-contextpage-offer).
+
+Retained Activity reveal preserves highlights only while their semantic scope is unchanged; changed scope still clears them and retires actions. InspectionCellTree reuses its last user scroll position after fresh membership and bounded pages settle, through the existing cancelable two-frame restoration. Shared toolbar and selection portals use RetainedPortal so hidden busy panels cannot expose controls in the current header.

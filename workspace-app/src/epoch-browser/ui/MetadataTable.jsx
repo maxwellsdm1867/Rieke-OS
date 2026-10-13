@@ -1,20 +1,20 @@
-import {useEffect,useRef,useState} from 'react';
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {useEffect,useState} from 'react';
 import {Check} from 'lucide-react';
 import {metadataClipboard,metadataHasEncodedInteger,metadataValueSafe,metadataValueText,registeredMetadataField} from '../../components/metadataValues.js';
 import './MetadataPanel.css';
 
 export default function MetadataTable({data,title='Metadata',badgeLabel,rows:providedRows,fields=[],copyable=false,compact=false}){
-  const [feedback,setFeedback]=useState(null),[limit,setLimit]=useState(80),timer=useRef(null);
+  const [feedback,setFeedback]=useState(null),[limit,setLimit]=useState(80);
   const rows=providedRows || Object.entries(data || {}).map(([key,value])=>({key,label:key,path:[key],value}));
-  useEffect(()=>()=>clearTimeout(timer.current),[]);
-  useEffect(()=>{setFeedback(null);setLimit(80);},[data,providedRows]);
+  useEffect(()=>{if(!feedback)return;const timer=setTimeout(()=>setFeedback(null),6000);return()=>clearTimeout(timer);},[feedback]);
+  useSemanticReset(providedRows||data,()=>{setFeedback(null);setLimit(80);});
   async function copy(row,kind,field){
     try{
       if(!globalThis.navigator?.clipboard?.writeText)throw new Error('Clipboard access is unavailable. Select the visible text and copy it manually.');
       const text=metadataClipboard(row,kind,field);await navigator.clipboard.writeText(text);
       setFeedback({message:`Copied ${kind==='setting'?'setting + value':kind==='pair'?'key + value':kind==='predicate'?'predicate JSON':kind==='field'?'field ID':['value','text'].includes(kind)?'value':'key'}: ${row.key}`,error:false});
     }catch(error){setFeedback({message:error.message || 'Clipboard access was denied. Select and copy the visible text manually.',error:true});}
-    clearTimeout(timer.current);timer.current=setTimeout(()=>setFeedback(null),6000);
   }
   return <section className={`section metadata metadata-copyable ${compact?'metadata-compact':''}`}>{title&&<div className="section-heading"><h3>{title}</h3>{badgeLabel&&<span className="badge">{badgeLabel}</span>}</div>}
     {feedback&&<div className={`metadata-copy-feedback ${feedback.error?'copy-error':''}`} role={feedback.error?'alert':'status'}>{!feedback.error&&<Check size={13}/>}<span>{feedback.message}</span></div>}

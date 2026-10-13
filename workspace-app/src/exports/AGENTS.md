@@ -69,3 +69,5 @@ export storage and scientific receipt authority are unchanged.
 ## Linked internal export extension
 
 The opt-in `linked-sqlite` format follows the [linked export contract](../../../docs/architecture/linked-sqlite-managed-recordings.md). Only this format omits duplicate full reference JSON staging. It delivers a compact SQLite database plus a standalone Python loader in a ZIP. Existing formats retain their staging and publication behavior. Selection, acceptance, and export receipts retain their existing authority.
+
+CandidateExportPanel resets name/format/completion only when candidate revision or defaults change. Activity reconnect keeps those controls intact; export requests retain the same explicit submission and receipt handling.

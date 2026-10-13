@@ -232,3 +232,18 @@ test('explicit list ranges include intervening pages and cells in display order'
   assert.deepEqual(h.errors,[]);assert.deepEqual(targets,['cell-A-63','cell-A-64','cell-B-0','cell-B-1']);
  }finally{await h.close();}
 });
+
+test('Activity reconnect restores user scroll after transient page shrink and fresh membership',async()=>{
+ const prior={requestAnimationFrame:globalThis.requestAnimationFrame,cancelAnimationFrame:globalThis.cancelAnimationFrame,MutationObserver:globalThis.MutationObserver};
+ const frames=new Map(),observers=new Set(),listeners=new Map();let serial=0,childPending=false;
+ globalThis.requestAnimationFrame=callback=>{frames.set(++serial,callback);return serial;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
+ globalThis.MutationObserver=class{constructor(callback){this.callback=callback;}observe(){observers.add(this);}disconnect(){observers.delete(this);}};
+ const pane={scrollTop:0,scrollHeight:660,clientHeight:100,addEventListener:(name,fn)=>listeners.set(name,fn),removeEventListener:name=>listeners.delete(name)};
+ const h=await createInspectionHarness({treeElement:{closest:()=>pane,querySelector:()=>childPending?{}:null}});
+ const props={...base,navigationScope:'scope-A',setTargets(){},membershipReady:true};
+ const frame=()=>h.act(()=>{const work=[...frames.values()];frames.clear();work.forEach(fn=>fn());});
+ try{await h.render(props);await h.act(()=>{pane.scrollTop=120;listeners.get('scroll')();});await h.render(props,{activity:'hidden'});pane.scrollTop=0;pane.scrollHeight=100;childPending=true;
+  await h.render({...props,membershipReady:false});await frame();assert.equal(pane.scrollTop,0);assert.equal(frames.size,0,'unready pages sleep');
+  pane.scrollHeight=660;childPending=false;await h.render(props);for(const observer of [...observers])observer.callback();await frame();await frame();assert.equal(pane.scrollTop,120);assert.equal(observers.size,0);
+ }finally{await h.close();Object.assign(globalThis,prior);}
+});

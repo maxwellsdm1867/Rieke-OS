@@ -79,3 +79,7 @@ failure/retry through `ui/ProjectWelcome.jsx`. Passive scientific resources wait
 for activation. Project management and the existing unmount owner remain usable.
 App suppresses the chooser while the existing one-shot startup restoration is
 pending; missing or changed projects retain the chooser's recovery path.
+
+`useProjectPresentation.js` reads the optional `/project/presentation` shell snapshot before scientific activation. `validProjectPresentation` requires exact UUID/path and the versioned display-only envelope. Missing, invalid, failed or superseded reads never block opening. App shows the snapshot only in an inert Overview with no scientific callbacks or recording-size read; canonical data replaces it in the same component. It never hydrates protocol witnesses or mutation authority. `useProjectPresentation.test.js` covers identity and late responses.
+
+Native project selection uses `activateProject` without waiting for draft flushing because the document stays alive. Browser navigation still flushes before replacing the document. Target unmount uses prepare/confirm/cancel bridge calls for the exact UUID/path; checkpoint guards remain active until confirmed closure or cancellation.

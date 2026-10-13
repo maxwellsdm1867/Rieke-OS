@@ -1,0 +1,26 @@
+{
+  "format": "disco-ui-retention-click-matrix-v1",
+  "fixture": "owned retention/server.py, 1000 epochs, actual App",
+  "profiles": [
+    {"id":"wide-light","viewport":{"width":1500,"height":1100},"theme":"light","scope":"full"},
+    {"id":"wide-dark","viewport":{"width":1500,"height":1100},"theme":"dark","scope":"visual-roundtrip"},
+    {"id":"wide-fred","viewport":{"width":1500,"height":1100},"theme":"fred","scope":"visual-roundtrip"},
+    {"id":"compact-light","viewport":{"width":1100,"height":760},"theme":"light","scope":"visual-roundtrip"}
+  ],
+  "groups": [
+    {"id":"overview","checks":["source/protocol counts","date/type and cell disclosure","manual collapse return","sidebar hide/show"]},
+    {"id":"protocol","checks":["Overview→Inspect→Workbench→Inspect","actual epoch expansion/click","nonzero scroll return","same DOM/canvas identity candidate","late/duplicate toolbar absence"]},
+    {"id":"traces","checks":["actual synthetic H5 samples and units","sample window controls","cursor control","response-channel capability inventory"]},
+    {"id":"trees","checks":["Edit Tree columns and branch navigation","public Split tree hierarchy and sibling expansion","route/tab return","bounds and horizontal overflow inventory"]},
+    {"id":"drafts","checks":["unsaved annotation text only","protocol export name/format without exporting","predicate draft/preview/result","query preset name/description without saving","selection export name/format without exporting"]},
+    {"id":"records","checks":["Data stores and selected source details","activity and exports tabs","Project files","import entry and review without importing/merging"]},
+    {"id":"visual","checks":["Light/Dark/Fred through appearance controls","compact viewport","sidebar/header/toolbar geometry","screenshots and side-by-side sheets","console/network failure evidence"]}
+  ],
+  "unsupported_by_design": [
+    "Only one response channel per traced epoch; cannot qualify channel switching.",
+    "Owned SQL/index/source-admission doubles do not qualify real database latency or scientific data integrity.",
+    "Native project switching, filesystem pickers, installed-app behavior and real H5 import belong to the separate native audit.",
+    "No export, merge, protocol replacement, durable annotation or source-lifecycle mutation is submitted.",
+    "Fresh-context startup is intentional; this audit does not retest the known historical cold draft/overview startup race."
+  ]
+}

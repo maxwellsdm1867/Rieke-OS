@@ -1,5 +1,5 @@
 'use strict';
-const {app, BrowserWindow, ipcMain, dialog, session, shell, Menu, powerMonitor} = require('electron');
+const {app, BrowserWindow, WebContentsView, ipcMain, dialog, session, shell, Menu, powerMonitor} = require('electron');
 let preview;
 try { preview = require('./local-preview.cjs').localPreview({app}); }
 catch (error) { dialog.showErrorBox('Open DISCO Preview', error.message); app.exit(1); throw error; }
@@ -46,6 +46,9 @@ app.enableSandbox();
 require('./branding.cjs').configureBranding(app);
 const windows = new Set();
 const scientificWindows = new Set();
+const projectViews = new Map();
+const rendererOwners = () => new Set([...windows,...scientificWindows]);
+const {ProjectViews}=require('./project-views.cjs');
 const recoveryPage = path.join(__dirname, 'recovery.html');
 const sourceApp = enclosingApp(process.execPath);
 const destination = path.join(os.homedir(), 'Applications', 'Disco.app');
@@ -59,7 +62,7 @@ if (bootstrap) {
   app.setPath('userData', installerState);
 }
 let supervisor, backendStartup, coordinator, quitAuthorized = false, startupInProgress = false, quitting;
-let draftStore, viewUnavailable = false;
+let draftStore, viewUnavailable = false, navigationGeneration = 0;
 let lifecycleStatus = {state: 'Starting', title: 'Starting Disco', message: 'Opening your workspace.'};
 let applicationVerification, verificationController, verificationRecovery, verificationRecoveryResult;
 let integrityFailed=false;
@@ -110,17 +113,20 @@ function previewStatus(value) {
 }
 function broadcast(value) {
   value = previewStatus(value);
-  for (const window of windows) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
+  for (const window of rendererOwners()) if (!window.isDestroyed()) window.webContents.send('desktop:status-changed', value);
 }
 function status() { return previewStatus(lifecycleStatus.state === 'Running' ? (coordinator?.getStatus() || {state: 'Current', installed_version: app.getVersion()}) : lifecycleStatus); }
 function publishUpdateStatus(value){if(lifecycleStatus.state==='Running')broadcast(value);}
 function recovery(message, detail = '') {
   lifecycleStatus = {state: 'Recovery', channel:distribution.channel, title: 'Disco recovery', message, detail}; broadcast(lifecycleStatus);
-  if (scientificWindows.size) viewUnavailable = true;
+  // Recovery hides documents but cannot discard a healthy unsaved draft.
+  // IPC still permits persistence; all new scientific/user actions are fenced.
+  navigationGeneration++;
+  for(const views of projectViews.values())views.cancelActivations();
   // The recovery page has no scientific draft listener. Keep the last good
   // persisted draft; never request a snapshot from the page that replaced it.
   for (const window of windows) {
-    scientificWindows.delete(window);
+    if(scientificWindows.has(window)){window.draftUnavailable=true;viewUnavailable=true;}
     if (!window.isDestroyed()) window.loadFile(recoveryPage).catch(() => {});
   }
 
@@ -141,9 +147,10 @@ function orderlyQuit() {
     coordinator?.stop();
     if(startupSession)startupSession.cancelled=true;
     quitting = new QuitCoordinator({
-      prepareDrafts: timeout => verificationRecovery ? verificationRecovery.then(result=>result.drafts) : viewUnavailable
-        ? Promise.resolve({ready:false,reason:'The scientific page is unavailable. The last saved view is retained; its latest changes could not be confirmed.'})
-        : draftBarrier.prepare(scientificWindows, {timeout}),
+      prepareDrafts: async timeout => {
+        const result=await draftBarrier.prepare(scientificWindows,{timeout});
+        return viewUnavailable?{ready:false,reason:[result.reason,'The scientific page is unavailable. The last saved view of the stopped page remains unconfirmed.'].filter(Boolean).join(' ')}:result;
+      },
       cleanup: async options => {
         await cancelApplicationVerification();
         return require('./integrity/verification-recovery.cjs').cleanupAfterVerificationRecovery(verificationRecoveryResult,
@@ -156,24 +163,20 @@ function orderlyQuit() {
   return quitting.quit();
 }
 
-function createWindow() {
-  const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
-    icon:iconPath(appIcon), title: preview?.label || 'Disco', backgroundColor: '#f4f5f3', show: false,
-    webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
-      sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
-      webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
-      partition: 'rieke-desktop'}});
-  windows.add(window);
-  if (preview) window.webContents.on('page-title-updated', event => { event.preventDefault(); window.setTitle(preview.label); });
-  window.once('ready-to-show', () => window.show());
+function ownerCurrent(owner){
+  if(!owner.binding)return true;
+  if(owner.binding.project_uuid==='launcher')return owner.binding.origin===supervisor?.origin;
+  return supervisor?.registry?.services?.some(record=>record.bound&&['project_uuid','project_path','session_id','pid','created_at'].every(key=>record[key]===owner.binding[key])&&`http://127.0.0.1:${record.port}`===owner.binding.origin)===true;
+}
+function secureContents(window) {
+  if (preview) window.webContents.on('page-title-updated', event => { event.preventDefault(); (window.parentWindow||window).setTitle(preview.label); });
+  else if(window.parentWindow)window.webContents.on('page-title-updated',(_event,title)=>{if(window.active)window.parentWindow.setTitle(title);});
   window.webContents.setWindowOpenHandler(() => ({action: 'deny'}));
   window.webContents.on('will-attach-webview', event => event.preventDefault());
   window.webContents.on('will-navigate', (event, url) => {
     if (isOwnedURL(url, null, [recoveryPage])) return;
     event.preventDefault();
-    if (supervisor?.ready) supervisor.authorizeProjectURL(url).then(allowed => {
-      if (allowed && !window.isDestroyed()) window.loadURL(url);
-    }).catch(() => recovery('A project service failed ownership verification.'));
+    if (supervisor?.ready) activateProject(window.parentWindow||window,url).catch(error => broadcast({...status(),message:`The project could not open: ${error.message}`}));
   });
   window.webContents.on('will-redirect', (event, url) => {
     if (!isOwnedURL(url, supervisor?.origins, [recoveryPage])) event.preventDefault();
@@ -197,9 +200,63 @@ function createWindow() {
       if(value)process.stdout.write('DISCO_SHELL_PAINTED='+JSON.stringify({pid:process.pid,...value})+'\n');
     }).catch(()=>{});
   });
-  window.webContents.on('render-process-gone', () => { window.draftUnavailable = scientificWindows.has(window); recovery('The scientific window stopped. The last saved view is retained. Quit remains available; retry startup to recover the project.'); });
+  window.webContents.on('render-process-gone', () => {
+    if(window.parentWindow){
+      if(!scientificWindows.has(window))return;
+      window.draftUnavailable=true;viewUnavailable=true;
+      const views=projectViews.get(window.parentWindow),wasActive=views?.active===window;
+      views?.suspend(window);
+      const notice=()=>broadcast({...status(),message:'A project renderer stopped. Other projects are retained. Quit and reopen Disco to recover its last saved view.'});
+      if(wasActive)activateProject(window.parentWindow,supervisor.origin).then(notice,error=>recovery('The project renderer stopped. Healthy views are retained.',error.message));
+      else notice();
+      return;
+    }
+    recovery('The window stopped. Healthy project views are retained. Quit remains available.');
+  });
+}
+function viewsFor(window){
+  if(!projectViews.has(window))projectViews.set(window,new ProjectViews({window,
+    createView:()=>new WebContentsView({webPreferences:{preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,sandbox:true,nodeIntegration:false,nodeIntegrationInWorker:false,webSecurity:true,allowRunningInsecureContent:false,webviewTag:false,spellcheck:false,partition:'rieke-desktop'}}),
+    prepare:owners=>draftBarrier.prepare(owners,{purpose:'project-checkpoint'}),
+    onRegister:owner=>{scientificWindows.add(owner);secureContents(owner);},
+    onDispose:owner=>scientificWindows.delete(owner),
+    onActivate:async owner=>{
+      if(owner.binding.project_uuid!=='launcher')try{await startupSession.remember(owner.binding.project_uuid,owner.binding.project_path,'workspace');}catch{broadcast({...status(),message:'The project opened, but its startup preference could not be saved.'});}
+      if(!preview){const title=owner.webContents.getTitle();if(title)window.setTitle(title);}
+    },
+    admit:()=>supervisor?.ready&&!quitting&&!integrityFailed&&lifecycleStatus.state!=='Recovery'&&!window.isDestroyed(),limit:3,
+  }));
+  return projectViews.get(window);
+}
+async function activateProject(window,url){
+  const generation=navigationGeneration;
+  if(quitting||integrityFailed||lifecycleStatus.state==='Recovery')throw Error('Disco is closing; new work is paused.');
+  if(typeof url!=='string'||!await supervisor.authorizeProjectURL(url))throw Error('Project service failed ownership verification.');
+  if(generation!==navigationGeneration||quitting||integrityFailed||lifecycleStatus.state==='Recovery')throw Error('Project activation was cancelled.');
+  // Legacy host adapters retain their existing navigation contract.
+  if(!WebContentsView){await window.loadURL(url);return {activated:true};}
+  const origin=new URL(url).origin;
+  const record=origin===supervisor.origin?{project_uuid:'launcher',project_path:'',session_id:supervisor.sessionId,pid:supervisor.child?.pid,created_at:null}:supervisor.registry.services.find(item=>`http://127.0.0.1:${item.port}`===origin);
+  if(!record)throw Error('Project binding is unavailable.');
+  return viewsFor(window).activate({...record,origin},url);
+}
+function projectIdentity(value){
+  if(!value||Object.keys(value).sort().join(',')!=='path,projectUuid'||typeof value.path!=='string'||!path.isAbsolute(value.path)||path.normalize(value.path)!==value.path||typeof value.projectUuid!=='string')throw TypeError('Invalid project identity');
+  require('./security.cjs').validateProjectId(value.projectUuid);return value;
+}
+function createWindow() {
+  const window = new BrowserWindow({width: 1440, height: 960, minWidth: 960, minHeight: 650,
+    icon:iconPath(appIcon), title: preview?.label || 'Disco', backgroundColor: '#f4f5f3', show: false,
+    webPreferences: {preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true,
+      sandbox: true, nodeIntegration: false, nodeIntegrationInWorker: false,
+      webSecurity: true, allowRunningInsecureContent: false, webviewTag: false, spellcheck: false,
+      partition: 'rieke-desktop'}});
+  windows.add(window);
+  secureContents(window);
+  window.once('ready-to-show', () => window.show());
+  window.on('resize',()=>projectViews.get(window)?.resize());
   window.on('close', event => { if (!quitAuthorized) { event.preventDefault(); void orderlyQuit(); } });
-  window.on('closed', () => { windows.delete(window); scientificWindows.delete(window); });
+  window.on('closed', () => { projectViews.get(window)?.clear();projectViews.delete(window);windows.delete(window);scientificWindows.delete(window); });
   window.loadFile(recoveryPage); return window;
 }
 function configureSession() {
@@ -209,16 +266,16 @@ function configureSession() {
   ownedSession.setPermissionCheckHandler((contents, permission, requestingOrigin, details) =>
     !integrityFailed && allowClipboardWrite(contents, permission, details, scientificWindows, supervisor?.origins, requestingOrigin));
   ownedSession.webRequest.onBeforeRequest((details, callback) => {
-    const owned = [...windows].some(win => !win.isDestroyed() && win.webContents.id === details.webContentsId);
+    const owned = [...rendererOwners()].some(win => !win.isDestroyed() && ownerCurrent(win) && win.webContents.id === details.webContentsId && (!win.binding || new URL(details.url).origin===win.binding.origin));
     const localAsset = details.url.startsWith('file:') && (() => {
       try { return require('node:url').fileURLToPath(details.url).startsWith(__dirname + path.sep); } catch { return false; }
     })();
-    callback({cancel: (integrityFailed && !localAsset) || !owned || (!localAsset && !isOwnedURL(details.url, supervisor?.origins))});
+    callback({cancel: (integrityFailed && !localAsset) || (lifecycleStatus.state==='Recovery'&&!['GET','HEAD','OPTIONS'].includes(details.method||'GET')&&!localAsset) || !owned || (!localAsset && !isOwnedURL(details.url, supervisor?.origins))});
   });
   ownedSession.webRequest.onBeforeSendHeaders((details, callback) => {
     const headers = {...details.requestHeaders};
     for (const key of Object.keys(headers)) if (['x-rieke-desktop-capability', 'x-rieke-desktop-session'].includes(key.toLowerCase())) delete headers[key];
-    if (supervisor && isOwnedURL(details.url, supervisor.origins) && [...windows].some(win => !win.isDestroyed() && win.webContents.id === details.webContentsId))
+    if (supervisor && isOwnedURL(details.url, supervisor.origins) && [...rendererOwners()].some(win => !win.isDestroyed() && ownerCurrent(win) && win.webContents.id === details.webContentsId && (!win.binding || new URL(details.url).origin===win.binding.origin)))
       headers['X-Rieke-Desktop-Session'] = supervisor.rendererCapability;
     callback({requestHeaders: headers});
   });
@@ -231,7 +288,7 @@ function configureSession() {
     callback({responseHeaders: headers});
   });
   ownedSession.on('will-download', (event, item, contents) => {
-    if (![...windows].some(win => win.webContents === contents) || !isOwnedURL(item.getURL(), supervisor?.origins)) { event.preventDefault(); return; }
+    if (![...rendererOwners()].some(win => win.webContents === contents && (!win.binding || new URL(item.getURL()).origin===win.binding.origin)) || !isOwnedURL(item.getURL(), supervisor?.origins)) { event.preventDefault(); return; }
     const filename = path.basename(item.getFilename()).replace(/[\x00-\x1f]/g, '_');
     item.setSaveDialogOptions({title: 'Save export', defaultPath: path.join(app.getPath('downloads'), filename)});
   });
@@ -257,7 +314,7 @@ function restoreStartupWindow(window){
       if(mismatch)throw Error('The saved project identity changed. Choose its current folder.');
       return {restored:false,closed:true};
     }
-    await window.loadURL(origin);return {restored:true};
+    await activateProject(window,origin);return {restored:true};
     })().finally(()=>{startupOpening=null;});
     return startupOpening;
 }
@@ -283,13 +340,14 @@ async function startScientificUI() {
         : require('./updates/updater.cjs').createUpdateCoordinator;
       coordinator = createUpdateCoordinator({app, publishStatus: publishUpdateStatus, prepareQuit,
         authorizeQuit: () => { quitAuthorized = true; }, revokeQuit: () => { quitAuthorized = false; },
-        onInstallationFailure: () => { scientificWindows.clear(); recovery('Native update installation failed. Restart the installed backend or restore the verified previous app.'); },
+        onInstallationFailure: () => { recovery('Native update installation failed. Restart the installed backend or restore the verified previous app.'); },
         manifest: supervisor.manifest, distribution});
       coordinator.start().catch(() => publishUpdateStatus({state:'Deferred',channel:distribution.channel,message:'Update check unavailable. The installed app remains usable.'}));
     }
     // Resolve the remembered project before the first application document.
     // The existing authenticated open/authorization/cleanup path retains ownership.
     // No intermediate chooser renderer, draft read, React mount or IPC round trip.
+    lifecycleStatus={state:'Starting',title:'Opening Disco',message:'Restoring your workspace.'};
     const target=startupSession.claim();
     for (const window of windows) {
       let restored=false;
@@ -304,11 +362,11 @@ async function startScientificUI() {
         }
       }
       if(quitting||integrityFailed)return;
-      if(!restored)await window.loadURL(origin);
-      window.draftUnavailable = false; scientificWindows.add(window);
+      if(!restored)await activateProject(window,origin);
+      window.draftUnavailable = false;if(!WebContentsView)scientificWindows.add(window);
     }
     lifecycleStatus = {state: 'Running'};
-    viewUnavailable = false;
+    viewUnavailable = [...scientificWindows].some(owner=>owner.draftUnavailable||owner.isDestroyed());
     broadcast(supervisor.recoveredQuit?.drafts_saved === false
       ? {...status(),message:'The previous quit could not confirm the latest view. The last saved view is retained; accepted operations were reconciled before reopening.'}
       : status());
@@ -317,8 +375,11 @@ async function startScientificUI() {
 }
 function registerIPC() {
   const handle = (channel, action) => ipcMain.handle(channel, async (event, payload) => {
-    const window = validateSender(event, windows, supervisor?.origins, [recoveryPage]);
-    if ((quitting || integrityFailed) && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft'].includes(channel))
+    const window = validateSender(event, rendererOwners(), supervisor?.origins, [recoveryPage]);
+    if(!ownerCurrent(window))throw Error('The project backend binding has changed.');
+    if(window.active===false&&['desktop:choose-project-folder','desktop:prepare-project-close','desktop:confirm-project-closed','desktop:cancel-project-close'].includes(channel))throw Error('The project is not visible.');
+    const recoveryHost=!window.parentWindow&&isOwnedURL(window.webContents?.getURL(),null,[recoveryPage]);
+    if ((quitting || integrityFailed || lifecycleStatus.state==='Recovery') && !['desktop:quit', 'desktop:status', 'desktop:drafts-ack', 'desktop:save-draft', ...(!quitting&&!integrityFailed&&recoveryHost?['desktop:retry-startup','desktop:restore-previous']:[])].includes(channel))
       throw new Error('Disco is closing; new work is paused.');
     return action(payload, window);
   });
@@ -327,7 +388,25 @@ function registerIPC() {
     return action(window);
   });
   handle('desktop:app-icon', variant=>{const result=applyAppIcon(app,windows,variant);appIcon=variant;return result;});
-  noPayload('desktop:undo-text', window=>window.webContents.undo());
+  noPayload('desktop:undo-text', window=>{if(window.active===false)throw Error('The project is not visible.');return window.webContents.undo();});
+  handle('desktop:activate-project',(url,owner)=>{if(owner.active===false)throw Error('The project is not visible.');return activateProject(owner.parentWindow||owner,url);});
+  noPayload('desktop:project-visibility',owner=>({visible:owner.active!==false}));
+  handle('desktop:prepare-project-close',async(value)=>{
+    const identity=projectIdentity(value);
+    for(const views of projectViews.values())await views.prepareClose(identity);
+    return {ready:true};
+  });
+  handle('desktop:cancel-project-close',value=>{const identity=projectIdentity(value);for(const views of projectViews.values())views.cancelClose(identity);return {cancelled:true};});
+  handle('desktop:confirm-project-closed',async value=>{
+    const identity=projectIdentity(value),health=await supervisor.api('/api/desktop/health');
+    if(!matchesHealth(health,supervisor.expectedHealth())||!Array.isArray(health.services)||health.services.some(record=>record.project_uuid===identity.projectUuid&&record.project_path===identity.path))throw Error('Project closure is not confirmed.');
+    for(const views of projectViews.values())for(const owner of views.find(identity)){
+      if(!owner.closing)throw Error('Project view closure was not prepared.');
+      if(owner.active)await activateProject(owner.parentWindow,supervisor.origin);
+      views.dispose(owner);
+    }
+    return {closed:true};
+  });
 
   noPayload('desktop:status', () => status());
   noPayload('desktop:startup-session', window => {
@@ -369,7 +448,7 @@ function registerIPC() {
   handle('desktop:save-draft', async (payload,window) => {
     const {store,record}=await scopedDraftStore(window,payload?.projectId);
     const result=await store.save(payload);
-    if(record)await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);
+    if(record&&window.active!==false)await startupSession.remember(record.project_uuid,record.project_path,payload.value?.value?.route?.page);
     return result;
   });
   handle('desktop:load-draft', async (projectId,window) => {
@@ -377,7 +456,7 @@ function registerIPC() {
   });
   handle('desktop:reset-draft', async (projectId,window) => (await scopedDraftStore(window,projectId)).store.reset(projectId));
   noPayload('desktop:choose-project-folder', async window => {
-    const result = await dialog.showOpenDialog(window, {properties: ['openDirectory', 'createDirectory'], title: 'Choose project folder'});
+    const result = await dialog.showOpenDialog(window.parentWindow||window, {properties: ['openDirectory', 'createDirectory'], title: 'Choose project folder'});
     return result.canceled ? null : result.filePaths[0];
   });
   handle('desktop:open-release-notes', async url => {
@@ -418,7 +497,7 @@ else {
       {id:'verify-application',label:'Verify Application Files…', enabled:app.isPackaged&&!bootstrap, click:()=>void verifyApplicationFiles()},
       {label:'Cancel Application Verification',click:()=>void cancelApplicationVerification()},
       {type: 'separator'}, {label: 'Quit Disco', accelerator: 'CommandOrControl+Q', click: () => orderlyQuit()}]},
-    {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => window?.webContents.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
+    {label: 'Edit', submenu: [{label: 'Undo', accelerator: 'CommandOrControl+Z', click: (_item, window) => (projectViews.get(window)?.active?.webContents||window?.webContents)?.send('desktop:undo')}, {role: 'redo'}, {type: 'separator'}, {role: 'cut'}, {role: 'copy'}, {role: 'paste'}, {role: 'selectAll'}]},
 
     {label: 'Window', submenu: [{label:'Resume Last Workspace at Startup',type:'checkbox',checked:startupSession.value?.mode!=='chooser',click:item=>{(item.checked?startupSession.resume():startupSession.choose()).catch(()=>broadcast({...status(),message:'Startup preference could not be saved.'}));}},{role: 'minimize'}, {role: 'zoom'}]}]));
     if (bootstrap) { lifecycleStatus = {state: 'Bootstrap', channel:distribution.channel, title: 'Install Disco', message: 'Install this complete app in your Applications folder and open it.', detail: distribution.channel === 'unsigned-testing' ? 'Unsigned testing release. Install a copy downloaded from the official Disco GitHub release. macOS may require a one-time Open Anyway approval in Privacy & Security. Existing projects stay in their selected folders.' : 'The downloaded app and installed copy must pass Developer ID signature verification. Existing projects stay in their selected folders.'}; broadcast(lifecycleStatus); }

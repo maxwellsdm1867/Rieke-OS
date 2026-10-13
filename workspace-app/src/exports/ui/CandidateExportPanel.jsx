@@ -1,3 +1,5 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useSemanticReset} from '../../useSemanticReset.js';
 import ExportSaveLocation from './ExportSaveLocation.jsx';
 import {downloadExport} from '../downloadExport.js';
 import {useUnmountGuard} from "../../useUnmountGuard.js";
@@ -10,7 +12,8 @@ const candidateFormat=value=>{const format=normalizeExportFormat(value);return O
 
 // A saved candidate is an immutable search result, not a pinned protocol.
 export default function CandidateExportPanel({candidate,onExported,disabled=false,onChange,defaultName='',defaultFormat='wheeler-sqlite',onBusyChange}) {
-  const [name,setName]=useState(defaultName),[format,setFormat]=useState(candidateFormat(defaultFormat));
+  const candidateId=candidate?.revision_uuid;
+  const [name,setName,nameDraft]=useAuthoredDraft(candidateId?['candidate-export',candidateId,'name']:null,defaultName),[format,setFormat,formatDraft]=useAuthoredDraft(candidateId?['candidate-export',candidateId,'format']:null,candidateFormat(defaultFormat));
   const [busy,setBusy]=useState(false),[error,setError]=useState(''),[completed,setCompleted]=useState(null);
   useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
   useUnmountGuard(!completed&&(name!==defaultName||format!==candidateFormat(defaultFormat)),'Finish or reset the export options before unmounting.');
@@ -19,7 +22,8 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
   currentRevision.current=revision;
   const expected=recipe?.full_recipe_sha256||recipe?.content_sha256;
   const count=recipe?.epoch_count??candidate?.summary?.matched_count??recipe?.epochs?.length??0;
-  useEffect(()=>{setError('');setCompleted(null);setName(defaultName);setFormat(candidateFormat(defaultFormat));},[revision,defaultName,defaultFormat]);
+  const optionsIdentity=JSON.stringify([revision,defaultName,defaultFormat]);
+  useSemanticReset(optionsIdentity,()=>{setError('');setCompleted(null);});
   function changeName(value){setName(value);onChange?.({name:value,format});}
   function changeFormat(value){setFormat(value);onChange?.({name,format:value});}
   async function exportResult(event){
@@ -29,7 +33,7 @@ export default function CandidateExportPanel({candidate,onExported,disabled=fals
     const submittedRevision=revision;
     try {
       const result=await api(`/explore/revisions/${revision}/exports`,{method:'POST',body:{format,expected_recipe_sha256:expected,...(name.trim()?{name:name.trim()}:{})}});
-      if(currentRevision.current===submittedRevision){setCompleted(result);downloadExport(result);}
+      if(currentRevision.current===submittedRevision){nameDraft.clear();formatDraft.clear();setCompleted(result);downloadExport(result);}
       onExported?.(result);
     } catch(failure) {
       if(currentRevision.current===submittedRevision)setError(failure.message);

@@ -1,3 +1,4 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import ProjectStartupError from './ProjectStartupError.jsx';
 import {useEffect,useRef,useState} from 'react';
 import {createPortal} from 'react-dom';
@@ -14,9 +15,9 @@ const contents=[{label:'Recordings',icon:Activity},{label:'Database',icon:Databa
 export default function ProjectFolder({project,onClose,onFiles,initialMode='open',initialDirectory,initialInspection,onTransferComplete,preferredRoot}){
   const dialog=useRef(null),requestController=useRef(null);
   const [mode,setMode]=useState(initialMode);
-  const [openPath,setOpenPath]=useState(initialMode==='open'?initialDirectory||'':''),[copied,setCopied]=useState(false),[relocate,setRelocate]=useState(false),[movePath,setMovePath]=useState('');
-  const [directory,setDirectory]=useState(initialDirectory||(initialMode==='restore'?'':project?.path||''));
-  const [destination,setDestination]=useState(''),[inspection,setInspection]=useState(initialInspection||null);
+  const [openPath,setOpenPath]=useAuthoredDraft(['project-folder',project?.uuid||'',initialMode,'open-path'],initialMode==='open'?initialDirectory||'':''),[copied,setCopied]=useState(false),[relocate,setRelocate]=useState(false),[movePath,setMovePath]=useAuthoredDraft(['project-folder',project?.uuid||'',initialMode,'move-path'],'');
+  const [directory,setDirectory]=useAuthoredDraft(['project-folder',project?.uuid||'',initialMode,'directory'],initialDirectory||(initialMode==='restore'?'':project?.path||''));
+  const [destination,setDestination]=useAuthoredDraft(['project-folder',project?.uuid||'',initialMode,'destination'],''),[inspection,setInspection]=useState(initialInspection||null);
   const [rootSuggestions,setRootSuggestions]=useState(null);
   const [working,setBusy]=useState(false),[browsing,setBrowsing]=useState(false),[opening,setOpening]=useState(false),[closing,setClosing]=useState(false),[checking,setChecking]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null);
   const busy=working||browsing;

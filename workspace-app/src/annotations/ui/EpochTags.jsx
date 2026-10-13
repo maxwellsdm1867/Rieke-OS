@@ -1,3 +1,4 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useId,useRef,useState} from 'react';
 import {MessageCircle,Plus,X} from 'lucide-react';
 import {useResource} from "../../api.js";
@@ -6,11 +7,11 @@ import './EpochTags.css';
 export default function EpochTags({value,onValue,onAdd,onRemove,selectedTags=[],busy,scope='focused epoch',revision,focusRequest=0}){
   const [query,setQuery]=useState(value),[open,setOpen]=useState(false),[active,setActive]=useState(-1),input=useRef(null),listId=useId();
   useEffect(()=>{const timer=setTimeout(()=>setQuery(value.trim()),160);return()=>clearTimeout(timer);},[value]);
-  useEffect(()=>{if(focusRequest){input.current?.focus();setOpen(true);}},[focusRequest]);
+  useSemanticReset(focusRequest,()=>{if(focusRequest){input.current?.focus();setOpen(true);}});
   const suggestions=useResource(open?`/tags?q=${encodeURIComponent(query)}&limit=12`:null,revision);
   const items=(suggestions.data?.tags||[]).filter(item=>!selectedTags.includes(item.tag));
   const choose=tag=>{onValue(tag);input.current?.focus();setOpen(false);setActive(-1);};
-  useEffect(()=>setActive(-1),[query]);
+  useSemanticReset(query,()=>setActive(-1));
   return <section className="epoch-tags" aria-label="Epoch tagging" onBlur={event=>{if(!event.currentTarget.contains(event.relatedTarget))setOpen(false);}}><header><MessageCircle size={14}/><strong>Tags</strong><small>{scope}</small></header>
     <form onSubmit={event=>{event.preventDefault();if(value.trim()){setOpen(false);onAdd(value.trim());}}}>
       <input ref={input} role="combobox" aria-expanded={open} aria-controls={open?listId:undefined} aria-autocomplete="list" aria-activedescendant={open&&items[active]?`${listId}-${active}`:undefined} aria-label={`Tag to add to ${scope}`} placeholder="Type a tag…" value={value} maxLength={255} disabled={busy} onFocus={()=>setOpen(true)} onChange={event=>{onValue(event.target.value);setActive(-1);setOpen(true);}} onKeyDown={event=>{if(event.key==='Escape')setOpen(false);if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();setOpen(true);setActive(index=>Math.max(0,Math.min(items.length-1,index+(event.key==='ArrowDown'?1:-1))));}if(event.key==='Enter'&&open&&items[active]){event.preventDefault();choose(items[active].tag);}}}/>

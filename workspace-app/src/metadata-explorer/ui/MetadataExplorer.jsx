@@ -1,3 +1,5 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {useRetainedView,useRetainedViewProtection} from '../../retainedWorkspaceViews.js';
 import {normalizeTraceViewPreference} from '../../traces/traceViewPreference.jsx';
 import {mutationUndo,undoEnabled,localUndoScope} from '../../undo/mutationUndo.js';
 import {treePreviewScope} from '../../pagedTreeRequest.js';
@@ -61,15 +63,17 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const [fullCatalogKey,setFullCatalogKey]=useState(null);
   const [tree,setTree]=useState({data:null,loading:false,error:null});
   const [busy,setBusy]=useState(false),[busyAction,setBusyAction]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(saved?.wasBusy?'A request was in progress when you left. Check Candidate history before saving again.':saved?'Workspace draft restored. No save or protocol update was replayed.':'');
+  useRetainedViewProtection({dirty:name!=='Metadata selection'||JSON.stringify(draft)!==JSON.stringify(initialSearch())||!!presetDialog||!!destination||!!applied||!!restored,busy});
   const draftController=useRef(null),treeController=useRef(null);
   const [pagedInfo,setPagedInfo]=useState(null),[pagedStatus,setPagedStatus]=useState({loading:false,error:null});
   const layoutRef=useRef(null),[layoutWidth,setLayoutWidth]=useState(1100);
   const [groupingWidth,setGroupingWidth]=useState(()=>{try{const value=Number(localStorage.getItem('workspace.explorer.groupingWidth'));return value>=240?value:320;}catch{return 320;}});
   const pane=inspectorPaneSizes(layoutWidth,{tree:groupingWidth},true,false);
-  useEffect(()=>setPagedInfo(null),[splits,applied?.revision_uuid,generation]);
+  useSemanticReset(JSON.stringify([splits,applied?.revision_uuid,generation]),()=>setPagedInfo(null));
   // Tag vocabulary should refresh even while the currently browsed membership is held.
   const catalog=useFieldRegistry(`${revision}:${generation}`);
-  useEffect(()=>{if(editorOpen)catalog.reload();},[editorOpen,openRequest]);
+  const catalogOpen=useRef({editorOpen,openRequest});
+  useEffect(()=>{const changed=catalogOpen.current.editorOpen!==editorOpen||catalogOpen.current.openRequest!==openRequest;catalogOpen.current={editorOpen,openRequest};if(editorOpen&&changed)catalog.reload();},[editorOpen,openRequest]);
   const history=useResource(`/explore/revisions?offset=${historyOffset}&limit=20`,historyVersion);
   const epoch=useResource(focused?`/epochs/${focused}`:null,`${revision}:${generation}`);
   const compiled=useMemo(()=>{
@@ -96,13 +100,17 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
   const matches=epoch.data?protocols.filter(protocol=>!protocol.binding&&(protocol.acquisition_protocol===epoch.data.protocol_name ||
     protocol.query?.all?.some(condition=>condition.field==='EpochBlock.protocol_name'&&condition.operator==='eq'&&condition.value===epoch.data.protocol_name))):[];
   useEffect(()=>{onSession?.(snapshotExplorerState({tracePreference,viewFilters,excludedEpochs,draft,name,filterSplits,splits,step,resultsFromDraft,matchingNavigation,path,treeNavigation,focused,applied,restored,historyOffset,activePreset,wasBusy:busy}));},[tracePreference,viewFilters,excludedEpochs,draft,name,filterSplits,splits,step,resultsFromDraft,matchingNavigation,path,treeNavigation,focused,applied,restored,historyOffset,activePreset,busy,onSession]);
+  const hydratedInitialCandidate=useRef(null);
   useEffect(()=>{
+    const hydrationIdentity=JSON.stringify([initialRevisionId,initialCandidateRetry]);
+    if(hydratedInitialCandidate.current===hydrationIdentity){setInitialCandidateLoading(false);return;}
     if(saved?.applied&&initialCandidateRetry===0){setInitialCandidateLoading(false);return;}
     if(!initialRevisionId){setInitialCandidateLoading(false);return;}
     const controller=new AbortController();setInitialCandidateLoading(true);setApplied(null);setTree({data:null,loading:false,error:null});setError('');
     api(`/explore/revisions/${initialRevisionId}?summary=1`,{signal:controller.signal}).then(result=>{
       if(controller.signal.aborted)return;
       if(!result.recipe||!result.revision_uuid)throw new Error('This candidate does not contain a saved recipe.');
+      hydratedInitialCandidate.current=hydrationIdentity;
       setApplied(result);if(initialExportIntent)setExportCandidate(result);setDraft(draftOf(result.recipe.predicate));setName(initialExportIntent?.name || result.recipe.name || 'Protocol candidate');
       setSplits(result.recipe.splits);setFilterSplits(result.recipe.splits);setRestored(null);setFocused(null);setPath([]);setTreeNavigation(null);setStep('results');setResultsFromDraft(false);
       setNotice(`Reviewing saved candidate ${result.revision_uuid.slice(0,8)}. The protocol working dataset stays unchanged until you apply it.`);
@@ -252,14 +260,20 @@ export default function MetadataExplorer({incomingReview=null,onDefer,onNext,und
     setResultsFromDraft(!applied);setStep('results');
   }
   const undoViewer=useRef(undoScopeId||crypto.randomUUID()),localState=useRef(null);
+  const retainedView=useRetainedView(),undoActive=retainedView?.active!==false,undoActivity=retainedView?.activity;
   const undoGeneration=useMemo(()=>localUndoScope(predicateIdentity(resultPredicate)),[resultPredicate]);
   localState.current={excludedEpochs,generation:undoGeneration,busy};
-  useEffect(()=>mutationUndo.local(undoViewer.current,action=>{
-    const current=localState.current;
-    if(current.busy||current.generation!==action.generation||!current.excludedEpochs.includes(action.epoch_uuid)!==action.after)throw Error('The temporary search selection changed since that action.');
-    setExcludedEpochs(ids=>toggleSearchInclusion(ids,action.epoch_uuid,action.prior));setDestination(null);setExportCandidate(null);
-    return {revisions:{}};
-  }),[]);
+  useEffect(()=>{
+    if(!undoActive)return;
+    const owners=[];for(let activity=undoActivity;activity;activity=activity.parent)owners.push({activity,token:activity.token});
+    return mutationUndo.local(undoViewer.current,action=>{
+      if(owners.some(({activity,token})=>!activity.active||activity.token!==token))throw Error('That search is no longer active. Return to its original viewer before undoing.');
+      const current=localState.current;
+      if(current.busy||current.generation!==action.generation||!current.excludedEpochs.includes(action.epoch_uuid)!==action.after)throw Error('The temporary search selection changed since that action.');
+      setExcludedEpochs(ids=>toggleSearchInclusion(ids,action.epoch_uuid,action.prior));setDestination(null);setExportCandidate(null);
+      return {revisions:{}};
+    });
+  },[undoActive,undoActivity,undoActivity?.token,undoActivity?.parent?.token]);
   function toggleInclusion(epoch,included){
     if(busy||mutationUndo.view().busy)return;
     const prior=!excludedEpochs.includes(epoch.epoch_uuid);if(prior===included)return;

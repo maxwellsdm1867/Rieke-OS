@@ -289,3 +289,5 @@ Unconfirmed Workbench recovery reads the existing receipt with GET. A missing
 receipt never submits acceptance. Retry this merge is a separate explicit action
 using the original preview and operation UUID, including after a pre-submit save
 was retired by navigation. Restored acceptPending state cannot recreate consent.
+
+Portaled filter, toolbar and draft-selection chrome inherits retained panel visibility via RetainedPortal. Accepted operations may finish while hidden, but their completion cannot switch a different current Protocol tab; current-data invalidation still runs.

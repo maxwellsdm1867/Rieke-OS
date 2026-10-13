@@ -116,3 +116,16 @@ making presentation depend directly on `resourceCache.js`.
 For a worked regression and dependency example, see the
 [predicate trace and cache boundary note](../../../docs/dev/predicate-trace-boundary.md).
 Run the architecture guard when adding cross-module imports, before packaging.
+
+An unchanged Activity reveal preserves unfinished sample-window entry text. Epoch, stream or applied window changes synchronize the inputs to the new bounded window. Trace read/cancellation authority remains independent of those text fields.
+
+The existing trace preference checkpoint also retains one last explicit
+`responseSelection: {epoch_uuid, stream_uuid}` pair. Both strings are bounded;
+normalization strips all other fields. Restore uses it only when the current
+epoch and an indexed response descriptor match exactly, including when descriptors
+arrive after the component. Missing/different identities fall back to the first
+current response; device labels never establish identity. A mounted viewer keeps
+its own current selection. Window, Whole and zoom changes preserve the pair.
+This is one presentation preference, not a per-epoch history or read capability.
+`responsePreferenceRetention.test.js` covers remount, hide/reveal, delayed
+descriptors and mismatched identities; native dual-channel/H5 checks are separate.

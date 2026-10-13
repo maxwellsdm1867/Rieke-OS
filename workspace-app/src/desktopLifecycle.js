@@ -14,6 +14,7 @@ export function trackWrite(operation){
   operation.then(()=>writes.delete(operation),()=>writes.delete(operation));
   return operation;
 }
+export const hasPendingDesktopWrites=()=>writes.size>0;
 export async function flushDesktopDrafts(){
   const accepted=await Promise.allSettled([...writes]);
   const views=await Promise.allSettled([...savers].map(save=>Promise.resolve().then(save)));
@@ -26,12 +27,19 @@ export async function flushDesktopDrafts(){
 }
 export function installDesktopLifecycle(bridge=desktopBridge()){
   if(!bridge)return()=>{};
-  const status=bridge.onStatus?.(value=>{closing=value.state==='Closing';});
-  const prepare=bridge.onPrepareClose(async ({requestId})=>{
-    closing=true;let ok=false,reason;
-    try{await flushDesktopDrafts();ok=true;}catch(error){reason=error.message;}
+  let releaseCheckpoint=null;
+  const resume=bridge.onProjectResume?.(()=>{releaseCheckpoint?.();releaseCheckpoint=null;});
+  const status=bridge.onStatus?.(value=>{closing=['Closing','Recovery','IntegrityRecovery'].includes(value.state);});
+  const prepare=bridge.onPrepareClose(async ({requestId,purpose})=>{
+    const checkpoint=purpose==='project-checkpoint';
+    if(!checkpoint)closing=true;
+    let ok=false,reason;
+    try{
+      if(checkpoint)releaseCheckpoint=beginProjectUnmount(unmounting);
+      await flushDesktopDrafts();ok=true;
+    }catch(error){reason=error.message;if(checkpoint){releaseCheckpoint?.();releaseCheckpoint=null;}}
     // Explicit quit may have reached its deadline before a delayed write ends.
     try{await bridge.acknowledgeDrafts(requestId,{ok,...(reason?{reason}:{})});}catch{}
   });
-  return()=>{prepare?.();status?.();closing=false;};
+  return()=>{prepare?.();status?.();resume?.();releaseCheckpoint?.();closing=false;};
 }

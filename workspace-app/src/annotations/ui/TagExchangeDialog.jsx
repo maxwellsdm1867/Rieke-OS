@@ -1,3 +1,4 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import {useEffect,useRef,useState} from 'react';
 import {Check,Download,FileJson,Upload,X} from 'lucide-react';
 import {api,number} from "../../api.js";
@@ -8,7 +9,8 @@ export default function TagExchangeDialog({mode,epoch,onClose,onChanged}){
  const dialog=useRef(null),fileInput=useRef(null),request=useRef(null),generation=useRef(0);
  const profile=useAnnotationProfile();
  const [document,setDocument]=useState(null),[filename,setFilename]=useState(''),[preview,setPreview]=useState(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[result,setResult]=useState(null);
- const [scope,setScope]=useState('project'),[format,setFormat]=useState('rieke');
+ const draftKey=['tag-exchange',mode];
+ const [scope,setScope]=useAuthoredDraft([...draftKey,'scope'],'project'),[format,setFormat]=useAuthoredDraft([...draftKey,'format'],'rieke');
  useEffect(()=>{const node=dialog.current;node.showModal();return()=>{node.close();generation.current++;request.current?.abort();};},[]);
  async function choose(file){
    if(!file)return;const current=++generation.current;request.current?.abort();const controller=new AbortController();request.current=controller;

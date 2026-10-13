@@ -56,3 +56,5 @@ navigation. Filter/search/preset changes may clear navigation without resetting
 Whole/Sample or the user’s sample bounds. Both result and tree layouts pass the
 same controlled preference into MatchingEpochs. Restored preferences are validated
 by the trace presentation owner and never restore read or mutation authority.
+
+Successful initial candidate hydration is keyed by initial revision and explicit retry. Activity reveal cannot reapply the immutable recipe over later draft/name edits. Current preview reads still refresh through their existing authority owner; aborted or failed initial hydration remains retryable.

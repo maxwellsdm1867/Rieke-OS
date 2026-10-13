@@ -70,7 +70,7 @@ function mainHarness(f, reject = false) {
       return actualRequire(name);
     }};
   const source = fs.readFileSync(path.join(__dirname, '../main.cjs'), 'utf8');
-  const run = () => vm.runInNewContext(source + '\n globalThis.harness={registerIPC,startScientificUI,status,setSupervisor:value=>supervisor=value};', context);
+  const run = () => vm.runInNewContext(source + '\n globalThis.harness={registerIPC,startScientificUI,status,setSupervisor:value=>{supervisor=value;startupSession={claim:()=>null};}};', context);
   return {calls, handlers, context, run};
 }
 test('main rejects unsafe marked launch before branding, lock, bootstrap or further module initialization', t => {

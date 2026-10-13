@@ -39,7 +39,7 @@ export async function createInspectorHarness({liveMetadata=true}={}){
   const {default:Inspector}=await server.ssrLoadModule('/src/epoch-browser/ui/Inspector.jsx');
   const {WorkspaceRequestProvider}=await server.ssrLoadModule('/src/workspaceRequest.js');let root;
   return {fixture,
-    async render(props,{port}={}){fixture.protocol=props.protocol;await act(async()=>{const inspector=React.createElement(Inspector,props);const element=port===undefined?inspector:React.createElement(WorkspaceRequestProvider,{port},inspector);if(root)root.update(element);else root=TestRenderer.create(element);});},
+    async render(props,{port,activity='visible'}={}){fixture.protocol=props.protocol;await act(async()=>{const inspector=React.createElement(React.Activity,{mode:activity},React.createElement(Inspector,props));const element=port===undefined?inspector:React.createElement(WorkspaceRequestProvider,{port},inspector);if(root)root.update(element);else root=TestRenderer.create(element);});},
     get viewer(){return root.root.findByType('inspector-viewer').props;},
     get tags(){return this.viewer.tags.props.children.props;},
     async act(callback){await act(callback);},

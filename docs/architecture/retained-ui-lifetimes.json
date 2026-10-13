@@ -1,0 +1,3693 @@
+{
+  "format": "disco-retained-lifecycle-review",
+  "version": 1,
+  "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
+  "modules": {
+    "src/annotations/annotationProfile.js": {
+      "fingerprint": "b909f09ca48e86689ab59f4a6bf53577ca76c196dda3c1ca1f83fa9b804dfc67",
+      "sites": [
+        {
+          "owner": "AnnotationProfileProvider",
+          "kind": "useEffect",
+          "fingerprint": "146f67f21b2d245d4f515b327406bc1e754257a2adaca53b47b95a7cdf5b0a5e"
+        },
+        {
+          "owner": "AnnotationProfileProvider",
+          "kind": "useEffect",
+          "fingerprint": "13548e90f0fa19b044dcbd8e0908e348b48026dbf802a9620e89b348edfd0443"
+        }
+      ],
+      "lifetime": "project-owner/outside-Activity",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation.",
+      "tests": [
+        "src/annotationReceiptWorkflow.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/annotations/annotationReceipts.js": {
+      "fingerprint": "ca0087f8ee8ea2dc32d7bd9fc7a4b6e932eb1b05f8a4f014b2102d7efa4addd3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/annotationTags.js": {
+      "fingerprint": "fa804159a48ccfbc2efd2baf7f77c7ccb9133614a6a5210ae2d4b3884763674d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/externalTagMonitor.js": {
+      "fingerprint": "5e205f8d2daf61bf582740993636755db6f7119df0156ac84ae8f69207bad595",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/tagExchange.js": {
+      "fingerprint": "029c2e57fb2fe5332d014313ed27dae5f24c10fb298977b31ec6368dd68b0778",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/treeGroupQueryTags.js": {
+      "fingerprint": "456a13e0b34b8d45a7cc00e29150d155b610a617dd3163d92d49f52c94757ddc",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/treeGroupTargets.js": {
+      "fingerprint": "1d74941e0fd89091f5c4638236f27cc9267e5313c928361d493b53f0f9314ebe",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/ui/AnnotationIndicator.jsx": {
+      "fingerprint": "21565b1459c9e3ade7e4e2385b272901d0b43e0e841c0f853a7a887544bf02d3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/ui/AnnotationProfile.jsx": {
+      "fingerprint": "0f61994f10017c7cce1975308882a7a0b7dbd975acdd0dcfb9f907621b218b70",
+      "sites": [
+        {
+          "owner": "AnnotationProfile",
+          "kind": "useEffect",
+          "fingerprint": "6999498c429fcb5aecd5477252135476d2b4007d1df16799ceef307b2e5ec9b1"
+        },
+        {
+          "owner": "ProfileDialog",
+          "kind": "useEffect",
+          "fingerprint": "9160cffb97eeac83826adb5089ba458e392b4501ed38b602430182dd58b7da37"
+        }
+      ],
+      "lifetime": "project-owner/outside-Activity",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation.",
+      "tests": [
+        "src/annotationReceiptWorkflow.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/annotations/ui/AnnotationTags.jsx": {
+      "fingerprint": "b49a4439e25ad9ee727f3c0e5b1d55ce40ec384823ab2a336240f3fcd1f5063e",
+      "sites": [
+        {
+          "owner": "AnnotationTags",
+          "kind": "useLayoutEffect",
+          "fingerprint": "a224568daf764ce1978bec73a91b773b7d6ca83563dfd769ec2ff19a633b6be4"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useLayoutEffect",
+          "fingerprint": "6a2b88370010cd119fd2b15b5ce132ef842aab0aa0502dd9c2681523131a3f34"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useSemanticReset",
+          "fingerprint": "fa1c2b47e33287668ee04e5f43023f674afbd28e3f2efdbb7c667a6461b485f8"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useEffect",
+          "fingerprint": "d9f97a97809f2f54e15a34ca32ae02d4dcca232723a0b91cfab1d8e8b191138d"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useEffect",
+          "fingerprint": "0f94bad6b8c2ed4dc750b80632cb12dcad685274c17555b003398c9938783551"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useSemanticReset",
+          "fingerprint": "183ad6901a208bb7d7bcd5a0f0df868e644b26f73d3b32ddbfd19daacadd36d6"
+        },
+        {
+          "owner": "AnnotationTags",
+          "kind": "useEffect",
+          "fingerprint": "3dab339138564c9f91b44e8ab5148a77771e3f414d31f8bb04268faf553a585a"
+        }
+      ],
+      "lifetime": "semantic-presentation + reconnecting-annotation-authority",
+      "reason": "Epoch identity resets composer-local presentation; query identity resets suggestion keyboard choice. Existing request generation/scope effects still retire and reconnect mutation authority. Deferred focus requests retain their existing handled-intent refs; authored-value bindings now owned by persistence agent.",
+      "tests": [
+        "src/retainedControls.test.js",
+        "src/annotationReceiptWorkflow.test.js"
+      ]
+    },
+    "src/annotations/ui/EpochTags.jsx": {
+      "fingerprint": "b59ae43e95a1f46730d6913cf71280f9c8d2752548d84c2879b6c91b4ef2741a",
+      "sites": [
+        {
+          "owner": "EpochTags",
+          "kind": "useEffect",
+          "fingerprint": "635918bbf79c284bc0b40643e86a7cf11628024e19e77ed7adb6dda71fe6b586"
+        },
+        {
+          "owner": "EpochTags",
+          "kind": "useSemanticReset",
+          "fingerprint": "d923d02b886b12debe2725233ea3995ccc5e4d0ef53b416ec8679e20c6166842"
+        },
+        {
+          "owner": "EpochTags",
+          "kind": "useSemanticReset",
+          "fingerprint": "183ad6901a208bb7d7bcd5a0f0df868e644b26f73d3b32ddbfd19daacadd36d6"
+        }
+      ],
+      "lifetime": "semantic-focus-and-query-intent + reconnecting-debounce",
+      "reason": "focusRequest is consumed once as synchronous focus/open; query changes reset selected suggestion. Text debounce and suggestion reads keep ordinary reconnecting lifetime.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/annotations/ui/ExternalTagSync.jsx": {
+      "fingerprint": "521e35b41f883479843db57f1f094d2ee90d9dd6099d589b5600b98370c5a1d4",
+      "sites": [
+        {
+          "owner": "ExternalTagSync",
+          "kind": "useEffect",
+          "fingerprint": "e7f06510291b130255a10812ec1cda92f58991ab81b8002f855c2a0fb260c6c1"
+        }
+      ],
+      "lifetime": "project-owner/outside-Activity",
+      "reason": "App-shell profile preference and external annotation monitor outlive route visibility; cancellation/subscription cleanup and actor changes remain scientific boundaries. External scans still invalidate broad epoch resources; no claim of sample-level invalidation.",
+      "tests": [
+        "src/annotationReceiptWorkflow.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/annotations/ui/GroupAnnotationRecovery.jsx": {
+      "fingerprint": "f7077c01f0bf60c0c29ddb58b726b5423f189f4d1255d0a8bd01c1ac3cf0d7e9",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/ui/ProtocolTagSummary.jsx": {
+      "fingerprint": "7d403c58a2a02f6aaf02393c3328e94760c394f200af5f0bf7c3d38768c41a18",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/ui/TagExchangeControls.jsx": {
+      "fingerprint": "9042bd15e209464b1f640a221cb8ee5603c7ba9d339199599c6985c013c62ae6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/annotations/ui/TagExchangeDialog.jsx": {
+      "fingerprint": "c222fdd160031a0543d53f71be9eb5f7e4498a9b95231bd7c76abf4b50d515db",
+      "sites": [
+        {
+          "owner": "TagExchangeDialog",
+          "kind": "useEffect",
+          "fingerprint": "60398d1b18c1563b89404f6eadfa4a387815bf2cbf2ecd0cfdf7b1c2ae8831bc"
+        }
+      ],
+      "lifetime": "scoped-authority-and-dialog",
+      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries.",
+      "tests": [
+        "src/treeGroupLifecycleWorkflow.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/annotations/ui/TreeGroupTags.jsx": {
+      "fingerprint": "5334fb4482cbbf686446efef9920deaa3cb82512a126dd26536c557aaab0e6c7",
+      "sites": [
+        {
+          "owner": "GroupDialog",
+          "kind": "useLayoutEffect",
+          "fingerprint": "4cc4f471f99cf51d91c3d01f67a50f3534ee8fa536eff7e7db25a226c125fb46"
+        },
+        {
+          "owner": "useTreeGroupTags",
+          "kind": "useLayoutEffect",
+          "fingerprint": "a50dd6f23c811af900f3a148a5d44bb184455eb63c0e2b8f9856b0b374f1fb68"
+        }
+      ],
+      "lifetime": "scoped-authority-and-dialog",
+      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries.",
+      "tests": [
+        "src/treeGroupLifecycleWorkflow.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/annotations/useAnnotationReceipts.js": {
+      "fingerprint": "d918550e1fcf5d8d6d5dc6d0fa52edd041face0f9363ceb20ae624395c515e12",
+      "sites": [
+        {
+          "owner": "useAnnotationReceipts",
+          "kind": "useLayoutEffect",
+          "fingerprint": "d0a1b5aaa33a926026db238e0dfcdce4872aa7662f60ceae385e9cc5da0e5ce3"
+        },
+        {
+          "owner": "useAnnotationReceipts",
+          "kind": "useEffect",
+          "fingerprint": "68b504800a629411b52a8281bb3fde3e6aa2f32f1ebc98adf9d75dad79d2394a"
+        }
+      ],
+      "lifetime": "scoped-authority-and-dialog",
+      "reason": "Preview leases, committed scope and request generations retire on disconnect; annotation watermark flush is an ordinary timer. Group composer text is separately owned; never restore a released preview or prior consent as authority. Modal command lifetime and same-target resumption must preserve those boundaries.",
+      "tests": [
+        "src/treeGroupLifecycleWorkflow.test.js",
+        "src/treeGroupAnnotationWorkflow.test.js",
+        "src/annotationReceiptWorkflow.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/annotations/useTreeCellSelection.js": {
+      "fingerprint": "8cfd2901c84ab90b250e99e4aa0ec8e60e3ab01c8baed43492f6ef4184897403",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/api.js": {
+      "fingerprint": "5875fa97a6cb5f3d34c8276991e94b665c5ce992e5bce6d3c0039a9bb17a12dc",
+      "sites": [
+        {
+          "owner": "useResource",
+          "kind": "useEffect",
+          "fingerprint": "83f3cb83bf2df6011f1f350062e865da4d2fe102fe9a9896e7e1deb5d32737c1"
+        },
+        {
+          "owner": "useEpochPrefetch",
+          "kind": "useEffect",
+          "fingerprint": "7780271c0e482b649be5b1bce23031b2a2d3fe5257f88875cc87b99d748f5565"
+        }
+      ],
+      "lifetime": "reconnecting-read-owner",
+      "reason": "Abortable scoped reads reconnect under exact path/revision/owner; only the positive display-read allowlist reuses completion. Replacement scope cannot publish old results. Reused epoch/trace resources retain their existing receipt validation.",
+      "tests": [
+        "src/epochResourceLifecycle.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/retainedWorkspaceViews.test.js"
+      ]
+    },
+    "src/app-updates/appUpdates.js": {
+      "fingerprint": "9da0d5ad17f9256e9a0b015e33ca01aaa6b26afeba07c99be793859b9227eb90",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/app-updates/ui/AppUpdates.jsx": {
+      "fingerprint": "74ee28ee212524f50c3d6abab27ac6e1af927ab00229bbf93ee3e254f2f7735f",
+      "sites": [
+        {
+          "owner": "UpdateDialog",
+          "kind": "useEffect",
+          "fingerprint": "672e8092b81533b947fd667a11772e29db46b1c715d4447468391b2dfac55052"
+        },
+        {
+          "owner": "AppUpdates",
+          "kind": "useEffect",
+          "fingerprint": "9d83071ea7d6a8096bd885fdfd9c49bce811ab423017bc171fb66c294afa11fc"
+        },
+        {
+          "owner": "AppUpdates",
+          "kind": "useEffect",
+          "fingerprint": "762d0edc5e54a32feba38b139813b4e0e0938be831874bbe058d6506ff3def4e"
+        },
+        {
+          "owner": "AppUpdates",
+          "kind": "useEffect",
+          "fingerprint": "f3ca203284c34ece4343ccc76781f6fde34d6bbb8f9ef3ff80c0d9340e875d56"
+        }
+      ],
+      "lifetime": "project-shell-subscriptions/outside-Activity",
+      "reason": "App update/appearance controls are composed outside retained route Activity. Polls and native subscriptions clean up normally; preferences and canonical update state retain their existing explicit persistence owner.",
+      "tests": [
+        "src/app-updates/appUpdates.test.js",
+        "src/appearance/appAppearancePersistence.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/App.jsx": {
+      "fingerprint": "7629ff34d89c6728cb2791b0f6ba3a198b1255236754769b17200c8113e5a1cb",
+      "sites": [
+        {
+          "owner": "useStableSummary",
+          "kind": "useEffect",
+          "fingerprint": "4f58c0fd696083d284d8eba64b319b1b0b6e19f8aa0e313006148f15e37ac705"
+        },
+        {
+          "owner": "useProtocolBrowse",
+          "kind": "useEffect",
+          "fingerprint": "d744265e6e61c4ad5b7649911290d1c9a74563612a055d53348917909a89804a"
+        },
+        {
+          "owner": "Protocol",
+          "kind": "useEffect",
+          "fingerprint": "7139b477fe29d1616ce9c3360492cf8084a1517d7c2fd2d568c94ff7c6428128"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "8547f5bb6c962cdea8440aa23c6beb8d0de0539194e6f5a870b989fc935fa98b"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "819c2d458340d50d03739882d2ae5c5b66472f338829ef7d524deec07ac8dfa3"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "d3435af849777876b67c8b73454bc9277952122285d0694ceff6ea5169ebb07a"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "d42a102c90bf56190f4632b7753c816fac42e6bf1bd63fa93e57512e99dceac1"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "f7c559c68c6493015cd04283e6c9340f7a3e7034e04114fbd0fe5c2b79efbc82"
+        }
+      ],
+      "lifetime": "mixed-project-and-retained-composition",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js",
+        "src/retainedWorkspaceViews.test.js",
+        "src/protocol-overview/overviewDemand.test.js",
+        "src/importMergeAppRoute.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/appearance/appAppearance.js": {
+      "fingerprint": "544398d780ae54b8a6162d1259d308198794b8e791376473cd13929fe4f1ec59",
+      "sites": [
+        {
+          "owner": "useAppAppearance",
+          "kind": "useEffect",
+          "fingerprint": "ec94f6461ac8a61620209c129b82a97c772f1d8e4191df54588c9a897bc52341"
+        },
+        {
+          "owner": "useAppAppearance",
+          "kind": "useEffect",
+          "fingerprint": "8948e5d9c09110b1c54dabff0990a1f595942ad703bd951328e43a1655683d15"
+        }
+      ],
+      "lifetime": "project-shell-subscriptions/outside-Activity",
+      "reason": "App update/appearance controls are composed outside retained route Activity. Polls and native subscriptions clean up normally; preferences and canonical update state retain their existing explicit persistence owner.",
+      "tests": [
+        "src/app-updates/appUpdates.test.js",
+        "src/appearance/appAppearancePersistence.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/appearance/appearanceThemes.js": {
+      "fingerprint": "54942500ed05762d7a7bb1786c5f9ecc70ef97244cdf71ffb36247b479308599",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/appearance/ui/AppAppearance.jsx": {
+      "fingerprint": "6899e1b15c08ceedd6050e5f80c6c55c4b3f3bfa310e3c615e74486ca48e4c1b",
+      "sites": [
+        {
+          "owner": "AppAppearance",
+          "kind": "useEffect",
+          "fingerprint": "069935f8bce825b4c19fe3b970140f9c6128f036f596e223100570a47fe6963a"
+        }
+      ],
+      "lifetime": "project-shell-subscriptions/outside-Activity",
+      "reason": "App update/appearance controls are composed outside retained route Activity. Polls and native subscriptions clean up normally; preferences and canonical update state retain their existing explicit persistence owner.",
+      "tests": [
+        "src/app-updates/appUpdates.test.js",
+        "src/appearance/appAppearancePersistence.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/cell-qc/cellTypes.js": {
+      "fingerprint": "d38acacefc61a294d46af5e2491b836044a6733d9e148229ff2e56eb437a9991",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/cell-qc/ui/CellListSection.jsx": {
+      "fingerprint": "9c003ddb3ee4614a3d31d9af503020aee074af3493f623f21d2ba2b5c5748edd",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/cell-qc/ui/CellQC.jsx": {
+      "fingerprint": "ea1eefe43603395514d181d68deaaa299a0ef48c45b4ae4907729f4a6b1bc9af",
+      "sites": [
+        {
+          "owner": "CellQC",
+          "kind": "useEffect",
+          "fingerprint": "209eba54ac773bcc47bd957baaf998a8091938288cd496f6a6b8490192743dfd"
+        },
+        {
+          "owner": "CellQC",
+          "kind": "useEffect",
+          "fingerprint": "c41485db85f1c748d40e674f30d922734237d598639d7e26847359b0458705be"
+        }
+      ],
+      "lifetime": "session-publication-and-current-data",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/authoredDrafts.test.js",
+        "src/retainedControls.test.js"
+      ]
+    },
+    "src/cell-qc/ui/CellTypeAccordions.jsx": {
+      "fingerprint": "f133e3f0d564395f46c00214f605a90f36c2a82fb9818b3bc24a20a72e556143",
+      "sites": [
+        {
+          "owner": "CellTypeGroup",
+          "kind": "useSemanticReset",
+          "fingerprint": "fb94a8d9cbdf2be6d4b69b37b41e51d8a2b4edab99f66114c237a459477c3641"
+        }
+      ],
+      "lifetime": "semantic-reveal-intent",
+      "reason": "Only changed revealKey reopens groups; manual collapse survives same-key visibility changes.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/cell-qc/ui/CellTypeSummary.jsx": {
+      "fingerprint": "fd493583ae4626b0683e696d83fded4389cfc14cb1361cc98a25564a45749839",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/CellTypeIcon.jsx": {
+      "fingerprint": "2d6ec33a7677c3cb7d5120734898600028ee5528ca838b7914ab358c067930be",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/Common.jsx": {
+      "fingerprint": "97cf1ef4c35d4c27e8a6f7005ec34ddd0e608da7f6797674c10c89f690cf30e9",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/DesktopDraftRecovery.jsx": {
+      "fingerprint": "e786ffe6d83f308c016196f1beb2a4cbf0948bcf349ffa118611d4d6c5cfe2f6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/MasterLog.jsx": {
+      "fingerprint": "29a84e0dde6f9de4f00e072a82061c5e4046226985afdd0862ff1e60f9510317",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/metadataValues.js": {
+      "fingerprint": "fa95fa418bb8c271cd1bd608c1510d52d31039fa46d522c791355d06961f701b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/NavigationLoading.jsx": {
+      "fingerprint": "dcc4e13a013536d7d6420103f3ae4af482cc56c6e6093e4f9a3b45c969325c14",
+      "sites": [
+        {
+          "owner": "useNavigationLoading",
+          "kind": "useEffect",
+          "fingerprint": "ce3159aab7c8bb9fe339fae75abddf7096b953b78368f22ea25ce510f4223211"
+        },
+        {
+          "owner": "useDelayedLoading",
+          "kind": "useEffect",
+          "fingerprint": "36e9c2725d8063485a9a09b6add96a5fa5934b83b9866cce6e9505cab2b83996"
+        }
+      ],
+      "lifetime": "reconnecting-visual-subscription",
+      "reason": "Loading timers, pointer/RAF cancellation and committed inert content reconnect on visibility; they do not initialize authored input or grant action authority. StableContent retains only the matching presentation scope.",
+      "tests": [
+        "src/loadingNotice.test.js",
+        "src/pointerDrag.test.js",
+        "src/stableContentInert.test.js"
+      ]
+    },
+    "src/components/NeuronIcon.jsx": {
+      "fingerprint": "d00cdcfd6aef2adc028a512b299990b5661dc9cc6bc6d5ad0d7981c6529a3ee7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/PaneDivider.jsx": {
+      "fingerprint": "227e703bfe119b5fec172da574694dcf6a4fe3298e009ed0c4b4dfd66c74b9a5",
+      "sites": [
+        {
+          "owner": "PaneDivider",
+          "kind": "useEffect",
+          "fingerprint": "b52ef38c2fd4585038e45bb2a3df8511d38e9ff26deaf9f5117001af8bfb6684"
+        }
+      ],
+      "lifetime": "reconnecting-visual-subscription",
+      "reason": "Loading timers, pointer/RAF cancellation and committed inert content reconnect on visibility; they do not initialize authored input or grant action authority. StableContent retains only the matching presentation scope.",
+      "tests": [
+        "src/loadingNotice.test.js",
+        "src/pointerDrag.test.js",
+        "src/stableContentInert.test.js"
+      ]
+    },
+    "src/components/RecordingSize.jsx": {
+      "fingerprint": "cf667161496380577c641830cac43be0398bb5243ef28c0ce2fb0003e0223871",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/ScientificContext.jsx": {
+      "fingerprint": "1ec4d9d2132a99b2da9d4b197101815308857a6f7a37ca03ba53afeb51dfac44",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/StableContent.jsx": {
+      "fingerprint": "632da07c127a6765361d872e3039662d15f258ec77b4e92a1fe481e8c98a653f",
+      "sites": [
+        {
+          "owner": "StableContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "addf3d9eeca8c7157329bce5432471db4a1a4a62ae464add1f2c528e8f0f5e45"
+        }
+      ],
+      "lifetime": "reconnecting-visual-subscription",
+      "reason": "Loading timers, pointer/RAF cancellation and committed inert content reconnect on visibility; they do not initialize authored input or grant action authority. StableContent retains only the matching presentation scope.",
+      "tests": [
+        "src/loadingNotice.test.js",
+        "src/pointerDrag.test.js",
+        "src/stableContentInert.test.js"
+      ]
+    },
+    "src/components/UnknownCellDrawing.jsx": {
+      "fingerprint": "fbddea8c081623a473d418eaa386cf38cf248c65c2d892bc19b448e3e2cfddc1",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/desktopLifecycle.js": {
+      "fingerprint": "4342183f338a2d1a77d782ef6ba5ca1610c25831afbaf40fbc3c2f5787421427",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/curationSelection.js": {
+      "fingerprint": "ce077f0b81acd9593ef2dc2f9a75be2bffa71a4607ed5afd0ffa3cb8ed5702f8",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/epochBrowserSource.js": {
+      "fingerprint": "6c6ee282218b314a80e4ed592d7e45bc8050b85d345345bb523a4f02c9f271be",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/epochListScroll.js": {
+      "fingerprint": "d63150e66c5b2962cd3fccf75ece7ad196c90222b1aa97ec96437b527f385b64",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/epochNavigationIntent.js": {
+      "fingerprint": "1bce7b83836d39105cf21372dd9ff3c6c7de7d9cc952683d5447bade9ee163db",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/epochPageReads.js": {
+      "fingerprint": "dcb93a3d6498dd3799e205b4b0bc2140253336469cdefb0d45b8106cccbc317e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/frozenReadContext.js": {
+      "fingerprint": "6ba355cf351bd135b5f7390a19eecc12439e7d051d3e1d9fbc679047f33423f7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/inspectionCellTree.js": {
+      "fingerprint": "8bb951ffe8c8103fc1aec0ace7ac820658844a2fe9deaad2dbd93a887fda4c49",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/inspectionNavigation.js": {
+      "fingerprint": "644b517712269da5e092d51c4aa9344791994b072751cf8a30b7743c92986542",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/inspectionScope.js": {
+      "fingerprint": "bfac64111b381497e67c5be4f4d54c620bc7cbbfb2d4361ab65d8d011aad1fbf",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/inspectorInteraction.js": {
+      "fingerprint": "3cc6c6354183e22fc37608888fde3ab9c3f260d2b970c3f8330d03f97c96a6d7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochAnalysisInclusion.jsx": {
+      "fingerprint": "26a2955d3fe0eb2131f8a466b05ad76f73b254db865d5b710b6444c6f7bfdacc",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochBrowserChrome.jsx": {
+      "fingerprint": "c23ee9fabc3844ca1a2e35af4afd2d4cf7bf8cf8657242bce6741885023bc6e2",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochBrowserLayout.jsx": {
+      "fingerprint": "45be6372a1dddef03707817681d726a132645d3f95cb2923c90ace619ee5e1d3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochConnections.jsx": {
+      "fingerprint": "211ab4987ec5dcfaa21f7e696cfe67bf3b1b2aab25dd4e2bf059a5fd48aee9b6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochDetailHeading.jsx": {
+      "fingerprint": "6e5d35b5be936a8265d43e22d7ca55ec87fac27d0f22a73c945a7566a38b2d28",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochInclusionToggle.jsx": {
+      "fingerprint": "c944cfe3485f85e9497c3483877af1526540a14f785f0545096c160e14a566cc",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochTreePane.jsx": {
+      "fingerprint": "8e8224f2ede0294a1fdfcf807db865b402fd385a3f0c4af49ae4ffcd0af00460",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/EpochViewer.jsx": {
+      "fingerprint": "7bde7746a18e98bb590f6ddc9dab95fdab1b757213fe001d2adfd0d5c4b18cd5",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/InspectionCellTree.jsx": {
+      "fingerprint": "6d9dbbe7048b356619a9f5002adb7d47ea33eaa4993f8873fa5e08445c00978d",
+      "sites": [
+        {
+          "owner": "CellEpochPage",
+          "kind": "useLayoutEffect",
+          "fingerprint": "04bfd467645d070c8fc431dbf0186b96dd4cf9e0ef1fcd9b32bf372501e3aa9e"
+        },
+        {
+          "owner": "CellEpochPage",
+          "kind": "useEffect",
+          "fingerprint": "95ed498e1da8be1e854ce78d0be51f349f68255cc63817035f2447e6729a8d0c"
+        },
+        {
+          "owner": "CellEpochPage",
+          "kind": "useEffect",
+          "fingerprint": "85fcefc0a6dc18270e0480338fc8385fea04f58048ac88956106c63bef9de0c7"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "9b001b55bec4c90dc05d27a6cf095526883ee29330b18e3228cb695ba6c3ceee"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "14104cb20c3c8c5cd05114f3f25310a4668bed5a90b3a5c49a3af5cb6ae7c8b2"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "9c0ed26542d3522ec29965721f8d146f3ef6e0e384acc2b262ee2aa76d86b803"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useEffect",
+          "fingerprint": "4fb0e22910489fcb0f004dd6abe8986b8da9c75e832c9577157afdf5c51c6b1d"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useEffect",
+          "fingerprint": "a64604581b07e38de555c4671893218dbc0e0093cc6e716979581b2f096ed72e"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "2ea2277d0be9181ff1f2b5eb18975224776763bf57fb7885fe31e25c7137617c"
+        },
+        {
+          "owner": "InspectionCellTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "4108e93b615897d01c73257e6668b9309c319cf70ba1e83d953766700f9faaca"
+        }
+      ],
+      "lifetime": "fresh-pages-with-navigation-intent",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "tests": [
+        "src/inspectionTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js",
+        "src/treeCombinedPresentation.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/Inspector.jsx": {
+      "fingerprint": "cb157a9db02db9d90e14f19fe2884ed47f76cdc80664fcf39be87eb04fad3d46",
+      "sites": [
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "deebdaeefe50f3709d666e10549087a60e5de807ce1c5e2f96dfa7d35f27f461"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "8be0119e5c6a0cfb540410519f1b5287c4819547de720674971a229869c4c73b"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "72703d53c36f30c800acb9fe97af28cc19de33ef0c7d80f63096b5d5d98521ac"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useSemanticReset",
+          "fingerprint": "aa9f7b1ebcbe92430464b65a95fe0a48c3d94ee264c5bbe7408302ae90945e03"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "d34e71e6ca1c51dfa2750b8e2e32df97ac72483245e0d48bea570a4366aa2cfd"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "8986c0bd8ea1e3ba0853ca7cae9428ba0f6b9d379d3c1d97818d4b60abc913ed"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "6d2840ccfd477fd97316d641d73bb69a7edfe02e56a865b75a572e7d0e4be3aa"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "9e1c6d6bcbfc1f9e03d054fc3ab87503a4ac50738d33939ec1923d019e4967e7"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "319aabaca0951a6f77b1324bc0414642f939b7294070bbb4e79f8cd22bcb9a61"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "6619624d4afe06995604f1d939f8695a17f45f5b3f7304418998389671a810e8"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "70811a6554f927afb88d68840b845ba8604e4bfbbcbac84a7ab31a908ed6a2c6"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "19e18c0dbc3d26299dd27b9d6946ef45b5ce78bdeb11bc98c3c3f193c849a7e1"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "1458169a739a53266a315c04177f4b345323a92de69cc706a0c728ae6c86bf79"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "03560946936820db149dd0202e380c7981ce96094207dce40ae7c84008b47d7b"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "3b28edf91a134362c5567c266df67ebf8a7b07c52615815f1f44d4ee3026d777"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "b0e4e3ab00bdbab42d7bc75fd62922abb7fc995a429c74d1bb856684854f272a"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "822cd78ee00c7c6763efe1349808c02f25b6926943c6aec20ac49b4ffee6cc1e"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "c433dd3bb8c5cfba02e0f13859104b35d7a4229f62578b5180e59ebe310e8075"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "882eec6cf09d944d6318c64e842c403cbf172de3fca5347505953110c5bec986"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "52688528ad21f7d9457ebfa4b9e1d811e442e7ddc0995cb6e3ea14332cd151a8"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "ded0ac3499e3902b2dc90ef37b352874ff0ac5fd22d66ba9e1192428fa3ca4b8"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useEffect",
+          "fingerprint": "0ca6477573d67a76995c7a52b7a3636c8be3d83b794063f4cf5e2c282637efd8"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "6e316c9e332738dc4e1a49bfe11070e8cb493a0d45aa99cf6fb6a8e6fed010ea"
+        },
+        {
+          "owner": "InspectorContent",
+          "kind": "useLayoutEffect",
+          "fingerprint": "42985cf8c98aac75702ba3370bde5fdd35f5125eb6f730aa3802baa6d063d75d"
+        }
+      ],
+      "lifetime": "semantic-highlights + reconnecting-read-authority",
+      "reason": "Project/tree-intent/design/tree-mode identity resets highlights via shared helper. Separate committed highlight owner still retires and reconnects. Existing request leases, receipt clearing, resize listeners and current page/navigation fences remain ordinary effects.",
+      "tests": [
+        "src/inspectorNavigationLifecycle.test.js",
+        "src/protocolBrowseEntry.test.js",
+        "src/annotationReceiptWorkflow.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/InspectorActions.jsx": {
+      "fingerprint": "222885f3d506713adc25b0482fbd9b9bc1765d31a22e1bbc423833b3861f68e8",
+      "sites": [
+        {
+          "owner": "InspectorActions",
+          "kind": "useEffect",
+          "fingerprint": "d25be0d2ec8283efee6c5c17f9aba9042aca541fdc8e7ea3ced03318b81cd5c9"
+        }
+      ],
+      "lifetime": "active-input-subscription",
+      "reason": "Global Escape/outside/position handlers belong only to the active retained owner, including when a pending operation keeps hidden effects mounted. Hidden controls may preserve open state but cannot consume active-view keyboard input or focus.",
+      "tests": [
+        "src/retainedHiddenControls.test.js",
+        "src/incomingCellTypesRendering.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/MatchingEpochs.jsx": {
+      "fingerprint": "249a8d4a20135f8dfead69b459efd26bb4349bd4944bb6d2015cb078ec6bfa6d",
+      "sites": [
+        {
+          "owner": "MatchingEpochsContent",
+          "kind": "useEffect",
+          "fingerprint": "5c9405f6d179cf97c9430d0d37b1561c8c09ae399758f69841926baaef319d5d"
+        },
+        {
+          "owner": "MatchingEpochsContent",
+          "kind": "useEffect",
+          "fingerprint": "29a7d98acaf6f9561d3551cf29c3b05ace2c0a30f687bec73a4863b0c3d09b80"
+        },
+        {
+          "owner": "MatchingEpochsContent",
+          "kind": "useEffect",
+          "fingerprint": "8d53c2ee44d61b1af8bcf5c6497e8be8f507c0154a25e89275b898f456c406a9"
+        }
+      ],
+      "lifetime": "session-publication-and-current-data",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/authoredDrafts.test.js",
+        "src/retainedControls.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/MetadataPanel.jsx": {
+      "fingerprint": "ca112d20f0d3f4eb86e693a927cdff5587261c1589b36b18597a8a439531d966",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/epoch-browser/ui/MetadataTable.jsx": {
+      "fingerprint": "928066493e409afef77aa1d7c0db755e5cc0009c9ee77454ca464fb50241f1f7",
+      "sites": [
+        {
+          "owner": "MetadataTable",
+          "kind": "useEffect",
+          "fingerprint": "5df0d65d1fc174bd605167e0168b876808c693afc903c90dadd074a474b59d16"
+        },
+        {
+          "owner": "MetadataTable",
+          "kind": "useSemanticReset",
+          "fingerprint": "fa38de23fa1a0bfc65d5a72d64e4743aecf885f172b1854d5d747b1e360fa85d"
+        }
+      ],
+      "lifetime": "semantic-source-pagination + reconnecting-transient-feedback",
+      "reason": "Rows/data source identity resets displayed limit and feedback; no whole-metadata serialization. Feedback timer is keyed to feedback and reconnects/cleans up ordinarily so hiding cannot leave permanent copy status.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/epoch-browser/useEpochBrowserPage.js": {
+      "fingerprint": "e648a11240107007cf2fc9b5bee66ecf86b3a83f6b27a9fbe3a232809c438183",
+      "sites": [
+        {
+          "owner": "useEpochBrowserPage",
+          "kind": "useEffect",
+          "fingerprint": "e539b0599e0e879fa9388ee5f82cffabafd47e55be60c78eef93905e3c5b4575"
+        }
+      ],
+      "lifetime": "reconnecting-read-owner",
+      "reason": "Abortable scoped reads reconnect under exact path/revision/owner; only the positive display-read allowlist reuses completion. Replacement scope cannot publish old results. Reused epoch/trace resources retain their existing receipt validation.",
+      "tests": [
+        "src/epochResourceLifecycle.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/retainedWorkspaceViews.test.js"
+      ]
+    },
+    "src/epoch-browser/useEpochInspection.js": {
+      "fingerprint": "f90a0b37c3598915e3f11c5ff6c64fa2ee4ce4d111ec53cdca13ed1d696f46dd",
+      "sites": [
+        {
+          "owner": "useEpochInspection",
+          "kind": "useEffect",
+          "fingerprint": "aecda8d2eb4524cdfe53eeee2279048486ec2af8ea72b13bc5c83d68a171f08f"
+        }
+      ],
+      "lifetime": "reconnecting-read-owner",
+      "reason": "Abortable scoped reads reconnect under exact path/revision/owner; only the positive display-read allowlist reuses completion. Replacement scope cannot publish old results. Reused epoch/trace resources retain their existing receipt validation.",
+      "tests": [
+        "src/epochResourceLifecycle.test.js",
+        "src/pagedTreeLifecycle.test.js",
+        "src/retainedWorkspaceViews.test.js"
+      ]
+    },
+    "src/epochSelection.js": {
+      "fingerprint": "6d8cf704e665837a6bc545a4748d233b02b848815f3b0781b5b04bc4444e407c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/downloadExport.js": {
+      "fingerprint": "2d0eda1a4d88ccbced4414d59e4f5b66c68f0231fe2efbc2ea4f63efffd6ea2c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/exportFormats.js": {
+      "fingerprint": "5156a823f1ffc2b177518933dea6ca3a245adcedd418e38a6bb0dcf726501483",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/exportProtocolTargets.js": {
+      "fingerprint": "75026de4236ff4328d490a51f069f7e55c457a337fc28d510dfcd7bbf7471757",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/exportReuse.js": {
+      "fingerprint": "78beb74e51b46f517088616ab11c3c9245728b0fefbf42772796b815b38f32cf",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/CandidateExportPanel.jsx": {
+      "fingerprint": "1ae359b0d9085e08e24fa8a760814e7fe6c229cde7fd6226ede5ed70de4e9a51",
+      "sites": [
+        {
+          "owner": "CandidateExportPanel",
+          "kind": "useEffect",
+          "fingerprint": "4bd01c53843e661db6c59a876b21e4ec666e7e5a07bbbc8e444f1062c4e0e8db"
+        },
+        {
+          "owner": "CandidateExportPanel",
+          "kind": "useSemanticReset",
+          "fingerprint": "ea231bbcd9fdb1c5389f56c00fe1a7676a62488912b907fcefbc6a415cbffb90"
+        }
+      ],
+      "lifetime": "semantic-export-options + explicit-command",
+      "reason": "Candidate revision/defaultName/defaultFormat reset option/result presentation; busy reporting remains effect-driven and explicit export submission uses existing revision receipt fence. Authored-value bindings now owned by persistence agent.",
+      "tests": [
+        "src/retainedControls.test.js"
+      ]
+    },
+    "src/exports/ui/ExportSaveLocation.jsx": {
+      "fingerprint": "681a97b92d39676203b81784cfd7a10efaee8bd124f96313a34921ed9969b2bd",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/ExportSelectionDialog.jsx": {
+      "fingerprint": "408401f2d3bb6c224eb25412507ce537406879a03ae422ed940543d56918309d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/IncomingExportDialog.jsx": {
+      "fingerprint": "2585841837b5b80da8a7b992cea8780255a7d01765414073bc0a34ce356826ea",
+      "sites": [
+        {
+          "owner": "IncomingExportDialog",
+          "kind": "useEffect",
+          "fingerprint": "0b4f84221081a1bfe2c4beaedb870bbc2161ba8343403d9deef9006ba81caa6f"
+        }
+      ],
+      "lifetime": "explicit-export-and-fresh-context",
+      "reason": "Dialog fields have authored owners; immutable candidate and fresh Workbench context reads retain cancellation and exact proposal validation. Exports remain explicit commands, never replayed by field restoration.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/workbenchExport.test.js",
+        "src/workbenchSessionLifecycle.test.js"
+      ]
+    },
+    "src/exports/ui/LocalExportFolder.jsx": {
+      "fingerprint": "a9ef622dacb34b5b5824eb6300ea5a4aa4036cf1f5e42871c64f1f9e24a27d1f",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/ProtocolExportDialog.jsx": {
+      "fingerprint": "cd3dbc4ff401d37d3bd665d191b7b91a3589594033594d6b0a067e75c21a5bbf",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/ProtocolExports.jsx": {
+      "fingerprint": "7cb07ffd48f883dbd468f05731623db3bb802e9be55ba42bc4b9f57997934880",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/SelectionMaskDialog.jsx": {
+      "fingerprint": "ff0820872168be1fb96efb2453a3832cbf65aa8b4b7fe8bbf34bf4f192188049",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/exports/ui/WorkbenchExportDialog.jsx": {
+      "fingerprint": "a39d67d0b694e8d5f9a1d2f52e5f2814c0367caea465154aa567da3592710941",
+      "sites": [
+        {
+          "owner": "WorkbenchExportDialog",
+          "kind": "useEffect",
+          "fingerprint": "cb7f40c6ecad551f45964e6d8451429750c8d37b517d59674d67856d530a54e3"
+        }
+      ],
+      "lifetime": "explicit-export-and-fresh-context",
+      "reason": "Dialog fields have authored owners; immutable candidate and fresh Workbench context reads retain cancellation and exact proposal validation. Exports remain explicit commands, never replayed by field restoration.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/workbenchExport.test.js",
+        "src/workbenchSessionLifecycle.test.js"
+      ]
+    },
+    "src/exports/workbenchExport.js": {
+      "fingerprint": "20a4c57477892db12c6d0c1fbe343659dadbcca6c786e8a5639324a3b80f46b8",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/file-picker/folderBrowser.js": {
+      "fingerprint": "b24db6924013b1696b7327116642d675cbdc7b637de40be06ce92a03f639385d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/file-picker/ui/BrowseFilesButton.jsx": {
+      "fingerprint": "8f4cd7d318f8554ff425651ba988a615b5c1eccae0acfd191e7e0d0379f07e00",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/file-picker/ui/FolderBrowserDialog.jsx": {
+      "fingerprint": "0d077efbff36d67189d94501ce51033fa9292ec4a760f7632247f82e591d307d",
+      "sites": [
+        {
+          "owner": "FolderBrowserDialog",
+          "kind": "useEffect",
+          "fingerprint": "3015d0f2897fec6ee98e294d09691242e7eb0fec233ccd77daa20ed89be7f13d"
+        },
+        {
+          "owner": "FolderBrowserDialog",
+          "kind": "useEffect",
+          "fingerprint": "c1bde4e17d2bcf0aa358a64dce9b8fb446e1b5f408363afe19cb40e237e936e7"
+        },
+        {
+          "owner": "FolderBrowserDialog",
+          "kind": "useEffect",
+          "fingerprint": "7f4ace52a164f787d27d188376a291974ab4f42f0b4026d33c64ae31d7890101"
+        }
+      ],
+      "lifetime": "transient-chooser-and-active-modal",
+      "reason": "Folder listing is abortable read-only navigation; retained JSX modal leaves top layer while hidden. Detached/native picker temporary text and handles are intentionally not checkpointed or reopened. Accepted path returns to the caller-owned authored field.",
+      "tests": [
+        "src/retainedHiddenControls.test.js",
+        "src/file-picker/folderBrowser.test.js"
+      ]
+    },
+    "src/file-picker/ui/FolderPathInput.jsx": {
+      "fingerprint": "82df984dbcd929a4abd2db450441767d6edeb8506052f2a12d93a0ff8e2035e0",
+      "sites": [
+        {
+          "owner": "FolderPathInput",
+          "kind": "useEffect",
+          "fingerprint": "23094286688c129a33f60b494f780ca1d7438bf5818b6bf2b9a23947e0c8e050"
+        },
+        {
+          "owner": "FolderPathInput",
+          "kind": "useEffect",
+          "fingerprint": "e3db8b3cd72e1df4edb92a9cc12da669e19c7c8788e2dbaecf5569379f029059"
+        }
+      ],
+      "lifetime": "transient-chooser-and-active-modal",
+      "reason": "Folder listing is abortable read-only navigation; retained JSX modal leaves top layer while hidden. Detached/native picker temporary text and handles are intentionally not checkpointed or reopened. Accepted path returns to the caller-owned authored field.",
+      "tests": [
+        "src/retainedHiddenControls.test.js",
+        "src/file-picker/folderBrowser.test.js"
+      ]
+    },
+    "src/group-save/groupAnnotationRecovery.js": {
+      "fingerprint": "24164aff75b5345878c05f06027f5ecc0887d31eb591af85ae68abdd52ec9f3a",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/importedSelection.js": {
+      "fingerprint": "64e42ea210832153c03a709361eddaa4f1f6e4cefe5e51d911dbee943158952d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingBootstrap.js": {
+      "fingerprint": "eea9d888dff8e6fb04200ba17f237aa5fe78213493e1cf4049318ba482a26d9d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingCellTypes.js": {
+      "fingerprint": "e49762cdeb0d906d5b82323ea4328af04564cc852924205207daf27e0cb093d7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingMergeIntent.js": {
+      "fingerprint": "65272b75d353fefb25ae196a3140104586e10099479dc7a34511a04bc7d757e1",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingReview.js": {
+      "fingerprint": "b08754f85c0dadb76e76cdd20817876bb567551d1d45b2e090453d3b553965ca",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingReviewDecision.js": {
+      "fingerprint": "0a5344d20973023559ef56111b44fca30e0908d8101b329100c29ce819216f5d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingSelection.js": {
+      "fingerprint": "900c78f425d8c881403f4486cbbde21f5c13893a182fe88f9e13f70b89fbc030",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingSelectionSummary.js": {
+      "fingerprint": "db76514dbe441c0033cd428229fa97f85049eb1c298e0859fa328b80f4f4c216",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingTagSummary.js": {
+      "fingerprint": "1438d62ec11f50abe4d44653fc2dc27e5b558257befe0bb904b6168b6d753904",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/incomingTreeSelection.js": {
+      "fingerprint": "9962ed4053c824fe9f7eb4f5b5c92c122bc5389ac8623dc4919031f2d3cdee31",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/selectedIncomingWorkflow.js": {
+      "fingerprint": "6706a28021071a475cc968c7bdf75d0d3348d2cc1cc0f898668574bbddfd4dd9",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/sourceMerge.js": {
+      "fingerprint": "01c391a5ea3e6b1d7e374ff065a57a74cd9e33d73218040e0edc9d0cc93c9fd0",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/CumulativeIncomingReview.jsx": {
+      "fingerprint": "275247169180ff7c2062e588b631304d195cdbae774cd8c24c52a7cc287a4ad2",
+      "sites": [
+        {
+          "owner": "CumulativeIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "cb0b36831071558a880f6caa6ea4d3b34e18b43e014fa8e605dc126705405a90"
+        },
+        {
+          "owner": "CumulativeIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "472ff1b7efd5eff5b17b49ffd131d538e1fe728564e6805cad07e6c16e366f01"
+        },
+        {
+          "owner": "CumulativeIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "23844a6ff251c95e8c3d703b8b26bd0e877a6c243e2ca724a4e1a89ff1a1df2b"
+        }
+      ],
+      "lifetime": "reconnecting-workbench-authority",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "tests": [
+        "src/workbenchSessionLifecycle.test.js",
+        "src/incomingWorkbenchStrictMode.test.js",
+        "src/workbenchSummaryReads.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/FrozenIncomingReview.jsx": {
+      "fingerprint": "c3c393e91aa50de9f734a2775e9522aaafdd078b0e291088419657516e2173fa",
+      "sites": [
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useLayoutEffect",
+          "fingerprint": "47dccf04a5f422a3876d6cfd14693bf4db0658b08e5de876c61c98e5d872ea7b"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useLayoutEffect",
+          "fingerprint": "9c90b917cab900389703acd58ed836cc8459ea1c4d5ba73d7e98ac5eedc7f759"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "58e691dc7de23a2fd8951994569ca63124ea60f0227cd2420393cf7451d5ec57"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "0dba2198a610757bfadf05fa6b8dc0d7f42f285a69fa1f251bcbfd7cafd54f6d"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "0bf2e201bb50da8131a3fb9fa1a9967782a7eeecc3f9b6cf6c89edcb9002d89c"
+        },
+        {
+          "owner": "FrozenIncomingReview",
+          "kind": "useEffect",
+          "fingerprint": "39ae01d266c577d058ddd5bb1655adc2ea73b03296d8accbf9e16fc2d09b1d55"
+        }
+      ],
+      "lifetime": "reconnecting-workbench-authority",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "tests": [
+        "src/workbenchSessionLifecycle.test.js",
+        "src/incomingWorkbenchStrictMode.test.js",
+        "src/workbenchSummaryReads.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingCellTypes.jsx": {
+      "fingerprint": "941db3e89d56b7a262e2995b7d0db9e8640e420d74c1127654be681c1ac1e323",
+      "sites": [
+        {
+          "owner": "IncomingCellTypes",
+          "kind": "useLayoutEffect",
+          "fingerprint": "3ffaf3404de595439bbb257b481414b830db2d460f04683b8ad80048ea5c4d81"
+        },
+        {
+          "owner": "IncomingCellTypes",
+          "kind": "useEffect",
+          "fingerprint": "d79dad343cefe99c4908cdca3c356fbd22fc86052a6ae5698b6972918d5c95c9"
+        }
+      ],
+      "lifetime": "active-input-subscription",
+      "reason": "Global Escape/outside/position handlers belong only to the active retained owner, including when a pending operation keeps hidden effects mounted. Hidden controls may preserve open state but cannot consume active-view keyboard input or focus.",
+      "tests": [
+        "src/retainedHiddenControls.test.js",
+        "src/incomingCellTypesRendering.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingEpochReview.jsx": {
+      "fingerprint": "e2d2f827f4f02dbf354ef087f49fd626cc54751ae509ee0ec80e493f2867fde7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingMergePreview.jsx": {
+      "fingerprint": "2f0517655fceeafa6a53919465bbe82dbd24c97be5b9f7e0fb251bb9b3ad70ba",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingSelectionSummary.jsx": {
+      "fingerprint": "c8a02e9c52935a8273b85b7ae1db822a0dc0b4db11a1bda99b0ebfafafa3544a",
+      "sites": [
+        {
+          "owner": "IncomingSelectionSummary",
+          "kind": "useLayoutEffect",
+          "fingerprint": "328b415872596770cdffc5e03e28db0d1d4007f2fc62cdfde2a29fee5feb87fa"
+        },
+        {
+          "owner": "IncomingSelectionSummary",
+          "kind": "useEffect",
+          "fingerprint": "6641d1468c6bb04843f309b125b9b522df56fc9cb0772b2fb77aee46eae3d342"
+        }
+      ],
+      "lifetime": "scoped-selection-authority",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "tests": [
+        "src/incomingSelectionSummaryRendering.test.js",
+        "src/incomingTreeSelectionQueue.test.js",
+        "src/pagedTreeLifecycle.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingSelectionTools.jsx": {
+      "fingerprint": "9d12b65776cd84c8b04ca7caabb3c883708690c404670448faa462895de469b1",
+      "sites": [
+        {
+          "owner": "IncomingSelectionTools",
+          "kind": "useLayoutEffect",
+          "fingerprint": "d163c60b1135aebffaaa456c7d1c36461f3aba06cb8e802e2da91e8cc407a5ac"
+        }
+      ],
+      "lifetime": "scoped-selection-authority",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "tests": [
+        "src/incomingSelectionSummaryRendering.test.js",
+        "src/incomingTreeSelectionQueue.test.js",
+        "src/pagedTreeLifecycle.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingTagSummary.jsx": {
+      "fingerprint": "942b9ea1180930d5b781a9be950b1cb48509a519698e9bc72f4cabd5c5b935a5",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingTreeSelection.jsx": {
+      "fingerprint": "522b64752202b81c2a82741be3639035c55a47c51ce2bf83564e84d3356d9719",
+      "sites": [
+        {
+          "owner": "useIncomingTreeSelection",
+          "kind": "useLayoutEffect",
+          "fingerprint": "bc7b3df8c621aaafcc4ce7b8ff1273dc4baa46f77fad660353d689412b2bee6f"
+        },
+        {
+          "owner": "useIncomingTreeSelection",
+          "kind": "useLayoutEffect",
+          "fingerprint": "4c1ce82d7ab7825d4c4d51969fc7ad71be12f06d28155ba98bd8be350d98a513"
+        },
+        {
+          "owner": "useIncomingTreeSelection",
+          "kind": "useLayoutEffect",
+          "fingerprint": "b1cf05d398d6605d5e86c5cf201f3ad852f041b5cf1bcfed1bf97aba063ec486"
+        }
+      ],
+      "lifetime": "scoped-selection-authority",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "tests": [
+        "src/incomingSelectionSummaryRendering.test.js",
+        "src/incomingTreeSelectionQueue.test.js",
+        "src/pagedTreeLifecycle.test.js"
+      ]
+    },
+    "src/incoming-workbench/ui/IncomingWorkbench.jsx": {
+      "fingerprint": "6f1801792da78c892e3c1d144f6337e9cf3fccef21f1fc4fb698b432525e78f7",
+      "sites": [
+        {
+          "owner": "IncomingWorkbench",
+          "kind": "useEffect",
+          "fingerprint": "5f0f55c368eecfa4e47cae6c1adf9ddb7b9799552b2c7d5535d5f693a7f5349a"
+        }
+      ],
+      "lifetime": "reconnecting-workbench-authority",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "tests": [
+        "src/workbenchSessionLifecycle.test.js",
+        "src/incomingWorkbenchStrictMode.test.js",
+        "src/workbenchSummaryReads.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/useIncomingMergeIntent.js": {
+      "fingerprint": "edf0e4ab5e67b05cb6a7fe53aca3156ffa04784f79942ff847d77cf9cbc79244",
+      "sites": [
+        {
+          "owner": "useIncomingMergeIntent",
+          "kind": "useEffect",
+          "fingerprint": "1aa8f30bf16b3e5130cfe3feec654b37ef21fd845f1cab74e82a63495ea7b701"
+        },
+        {
+          "owner": "useIncomingMergeIntent",
+          "kind": "useEffect",
+          "fingerprint": "fe639ec196b421c9028e5075f398291ae99d07b7f3fce90d9544fce6ba0186b7"
+        }
+      ],
+      "lifetime": "project-command-owner",
+      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery.",
+      "tests": [
+        "src/importMergeAppRoute.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/useSourceMerge.js": {
+      "fingerprint": "9990ba9f024abc4a4b8ae1cddbc25190b9a4029e11692477e1578f963e667260",
+      "sites": [
+        {
+          "owner": "useSourceMerge",
+          "kind": "useLayoutEffect",
+          "fingerprint": "10e8a38a41453dc64f5e184420c11700fb32be684b1f1f97775d553e02652ecf"
+        }
+      ],
+      "lifetime": "project-command-owner",
+      "reason": "App retains import/source merge orchestration outside Activity. Each request carries project/protocol/route intent and refuses stale completion navigation; pending or uncertain writes remain protected through flush/recovery.",
+      "tests": [
+        "src/importMergeAppRoute.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/useWorkbenchQueue.js": {
+      "fingerprint": "8a9bf32764598bf9d0ac462bf9e57f8ad3cdc8aefd48152268de4d358e1367ab",
+      "sites": [
+        {
+          "owner": "useWorkbenchQueue",
+          "kind": "useEffect",
+          "fingerprint": "5ef5a6a20b4d0b450f2802bf24add4a2adfe3b57bf1d368fe5899b7ea88e84e0"
+        },
+        {
+          "owner": "useWorkbenchQueue",
+          "kind": "useEffect",
+          "fingerprint": "83b95e52a799a881616f80702cb659accda1ed25f32f1b8119a2653c81ae49d1"
+        }
+      ],
+      "lifetime": "reconnecting-workbench-authority",
+      "reason": "Queue/context freshness and generations reconnect; preparation rejoins its exact idempotent operation rather than treating effects as once-only. Hidden accepted operations stay owned, update canonical data, and cannot navigate a replaced destination.",
+      "tests": [
+        "src/workbenchSessionLifecycle.test.js",
+        "src/incomingWorkbenchStrictMode.test.js",
+        "src/workbenchSummaryReads.test.js",
+        "src/importMergeWorkflow.test.js"
+      ]
+    },
+    "src/incoming-workbench/workbenchAuthority.js": {
+      "fingerprint": "fac90ade4e716c807d1ff1023e4c0d3266fb5d9d5f37a37686e200df467a91f5",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/loadingNotice.js": {
+      "fingerprint": "e367bda0578980f70c5d6f2157b160277e4bf0bf9003cbf092833a2e2feb9891",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/metadata-explorer/explorerScope.js": {
+      "fingerprint": "5097d951334caade0330c2177a26575e07e3450e3ac8ca6cfc33661ecfaad192",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/metadata-explorer/searchInclusion.js": {
+      "fingerprint": "ecf9cf9e68eafe304beb1fc470bdaa5fa24e1a08b674d9ac701dd28b23e9a077",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/metadata-explorer/ui/MetadataExplorer.jsx": {
+      "fingerprint": "a44e45ca94a423e3dd232ebef66ebf5c983ceea106cda8c0b078e36efffd1459",
+      "sites": [
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useSemanticReset",
+          "fingerprint": "f29a8d3ea2479d7b3b9446a97596d8500c662b82fa631d811078bfae0f468fd4"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "e6906362d9537651bb0ce12f4e7c13827f9affb476b4e953ec2b6b68216e73b6"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "125cb4bb2f9017cc35726215bc592122b379b0b4331b8bac4c0d6cd6f4a6a8b2"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "1b99aa395dd3388f835691bd5805fd14d6f7474ef60987a1a29ee2bd18db02b6"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "c0424c91254591565ce9f753f59494bb7550a60924dbf71ddc3dfdf475d42bc9"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "741888dc87b2d4e0c138d794cd3ba02841e532455ff959f5eb170eda405945bc"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "e0bcc6051c5b3d729a9634749ec49f8ac2b59f2d5d64758623eb8dcc3a066134"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "ee2061d2235d6f826c15d0e27cead8b34e450b21588ce0c19b85c5e463964dc9"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "fdea0b8bdc93c1fe481feb2f3277c3d04fa5a4dcbeaf2a196ee310ebfc4a7ae8"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "30f52ace7f9e7471538d2bc818172e2fce4d79acab6bd8e344458c4eabcf00f4"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "1e54c7112b68815959738ff6da1dacfebd0ad524302ccdc49b038343a3694697"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "7e0e9b0effdce9e7c26e1566be9b5608b7017459a9f663fa184cbfce514f26e1"
+        },
+        {
+          "owner": "MetadataExplorer",
+          "kind": "useEffect",
+          "fingerprint": "53a6d9204ab32fabe3bbf9d22a39c98f9fc9571c59661d236d97e340fbe95c2c"
+        }
+      ],
+      "lifetime": "semantic-presentation + hydration-witness + active-local-undo",
+      "reason": "Split/applied-revision/generation resets presentation page info. Successful initial candidate hydration is a separate success witness, never a suppressed I/O effect; current preview refresh reconnects. Local search undo registers only active route/panel and verifies captured active tokens on execution, including busy hidden owners.",
+      "tests": [
+        "src/retainedControls.test.js",
+        "src/requested-summaries/requestedSummariesLifecycle.test.js"
+      ]
+    },
+    "src/metadata-explorer/ui/QueryPresetDialog.jsx": {
+      "fingerprint": "f23b9837b13ac004088733bb6bb0306977bfa519b9ded2da179a1dc95c039556",
+      "sites": [
+        {
+          "owner": "QueryPresetDialog",
+          "kind": "useEffect",
+          "fingerprint": "8946fe35bcbdfbe249b141f942512b1193d5c76362e5788ce642217bb96c65d4"
+        }
+      ],
+      "lifetime": "authored-fields-with-canonical-hydration",
+      "reason": "Predicate-matched canonical defaults are distinct from edited fields; hydration must not overwrite restored or newly typed values. Successful submission retires draft ownership; failed submission retains it.",
+      "tests": [
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/metadata-explorer/ui/QueryPresetHistory.jsx": {
+      "fingerprint": "d26bbbd8765e825b3110f4792b6b9ef719235a790354fc56d048515605ba3c7b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/metadata-refresh/metadataRefresh.js": {
+      "fingerprint": "884ec43f176b6f489b999dfc908c646b7258c296eef43aa595a319652f328d3c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/metadata-refresh/ui/MetadataRefresh.jsx": {
+      "fingerprint": "c47b053622233bb9afd194429e4963d5544891190b7d1ba0cedd18cefba9cae1",
+      "sites": [
+        {
+          "owner": "MetadataRefresh",
+          "kind": "useEffect",
+          "fingerprint": "83edf524b388ca548f29c30b2ff662945e3b76d147460b6e27fcaf596c91d671"
+        },
+        {
+          "owner": "MetadataRefresh",
+          "kind": "useEffect",
+          "fingerprint": "f084658528868669c26902179819973cd168e223f7310efd11c2d34c59e0c5df"
+        }
+      ],
+      "lifetime": "project-shell-transient-status",
+      "reason": "Refresh controls are in the project shell. Pending seconds timer and outside-click close remain ordinary subscriptions; operations remain explicit and drive revision invalidation.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/workflowResponsiveness.test.js"
+      ]
+    },
+    "src/ordering.js": {
+      "fingerprint": "b59d4d076f964dbf11d6a27c3c4fba2f5b063445d7c170df5079cdae652c4d5f",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/pagedTreeRequest.js": {
+      "fingerprint": "b74872bf9f718bef36d3aefb67b137b713bef3c9b6712012d78ef894ded901a3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/pointerDrag.js": {
+      "fingerprint": "e726b59d8964fc61ef80d37ab9f2051405ec619c2a0c00bd9316233c1f2d0ec3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/presentation/internal/deletedSourceSelections.js": {
+      "fingerprint": "fcbde616bd00d8128e2c56fcee6ad71a92c97d76d45cdd692d1eeda71c903e56",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/presentation/useAuthoredDraft.js": {
+      "fingerprint": "4063586e67c9c293a60dc025c1923ad03be73ffde1eab5366d30a53b3ddfefc2",
+      "sites": [],
+      "lifetime": "authored-presentation-checkpoint",
+      "reason": "Bounded exact-entity scalar drafts share the existing project checkpoint. Canonical adopt creates no draft; confirmed success clears captured entity only. Stale callbacks cannot edit another identity. Rejected writes refuse checkpoint until corrected or explicitly cleared; newer authored intent fences delayed startup restoration independently from scientific recovery.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/presentation/workspacePresentationSessions.test.js",
+        "src/renderer-drafts/desktopDraftSession.test.js"
+      ]
+    },
+    "src/presentation/workspacePresentationSessions.js": {
+      "fingerprint": "d0874fe06c5a65e4d9a230c3752302e920e5fe85fb2b5a49b0be2e49e79cf524",
+      "sites": [],
+      "lifetime": "authored-presentation-checkpoint",
+      "reason": "Bounded exact-entity scalar drafts share the existing project checkpoint. Canonical adopt creates no draft; confirmed success clears captured entity only. Stale callbacks cannot edit another identity. Rejected writes refuse checkpoint until corrected or explicitly cleared; newer authored intent fences delayed startup restoration independently from scientific recovery.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/presentation/workspacePresentationSessions.test.js",
+        "src/renderer-drafts/desktopDraftSession.test.js"
+      ]
+    },
+    "src/project-preferences/projectPreferences.js": {
+      "fingerprint": "944a3e9c961cb950563d3e8cc85ee84f91acfc089deae7c7dd35172216949508",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-preferences/projectSearchPresets.js": {
+      "fingerprint": "956d3583834564982d34df1371443e5ad5e42c96c73c7886a735516b6b0ca8b6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-preferences/searchPresets.js": {
+      "fingerprint": "2b6c17d76c473c231ce2e36ba42459622f9bd8da275763940e41b2721fd0ded0",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-preferences/ui/SearchPresets.jsx": {
+      "fingerprint": "bcbe408518ab323e26eb1ec30b024bb7eaaa592c2cea72286692b1ae7c832a85",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-preferences/useProjectPreference.js": {
+      "fingerprint": "ca6e0bf0995054338934c9dbed92db6b791b25ca417f2d09bc6b7eef45621059",
+      "sites": [
+        {
+          "owner": "useProjectPreference",
+          "kind": "useEffect",
+          "fingerprint": "51b01e522889783dd4fcb5fcd79b61c918972bb9dcdc51e7bd1c8787abb36c0d"
+        }
+      ],
+      "lifetime": "existing-preference-owner",
+      "reason": "Preferences already write through their named owner (server/localStorage/draft saver). Reconnect reads canonical preferences; completed retained tree-layout hydration avoids replacing an edited order. Flush failures remain visible and protected.",
+      "tests": [
+        "src/project-preferences/projectPreferences.test.js",
+        "src/protocol-tree-layout/useProtocolTreeLayout.test.js",
+        "src/protocol-tree-layout/treeLayoutPersistence.test.js"
+      ]
+    },
+    "src/project-workspace/projectNavigation.js": {
+      "fingerprint": "1c4732295699295b43559d6604ccfaac04f77400f5f978d7fe8323050eb61d87",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/projectTransfer.js": {
+      "fingerprint": "53213002b39e47b9dbd4d9368610355ed674e55ab24d76a23ab8b58873ceec88",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/startupRestore.js": {
+      "fingerprint": "55e94cb7618442a514a338b8321d3c93c405dcfa029aae418ac76632ee83740c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/ui/DataStores.jsx": {
+      "fingerprint": "7a19328a014fdb56670aec5ed27869c13771e456fc1e9bcfccd8aa8f4525154c",
+      "sites": [
+        {
+          "owner": "StoreTimeline",
+          "kind": "useSemanticReset",
+          "fingerprint": "a477dfd2398d94d36e92b15e6d4e076d8121c0dd5f42d05d840648cef74922ce"
+        },
+        {
+          "owner": "DataStores",
+          "kind": "useEffect",
+          "fingerprint": "457ac6b482efbe31813cbc62f29774477be2177381adf432ada3ec8a13d187b0"
+        },
+        {
+          "owner": "DataStores",
+          "kind": "useEffect",
+          "fingerprint": "7d1a4c1792a3c8c064b240d7305340de8edcf580469981c2cb61a8ea4484089a"
+        },
+        {
+          "owner": "DataStores",
+          "kind": "useEffect",
+          "fingerprint": "7a29828e98d1831b5df4754099504878cc528c5175cda409d047a7d33e7e2edb"
+        }
+      ],
+      "lifetime": "semantic-source-pagination + fresh-source-reads",
+      "reason": "StoreTimeline source SHA resets event offset; same-source Activity return retains offset and performs normal resource revalidation. Main saved tab/query paging already has a committed-filter guard; source actions remain explicit. Authored-reason binding now owned by persistence agent.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectClosedNotice.jsx": {
+      "fingerprint": "bb52eea722a66f3c670ec49069a9a359ad51a8d9f500d6a811eaa2c034fedd4b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectFiles.jsx": {
+      "fingerprint": "e4a33354277b694041d445a09f614d93f99ba7efd1791aa197b8c63b77c3d3cc",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectFolder.jsx": {
+      "fingerprint": "c2c6ec873c195289e9cc3d116086201da41fdff482676a88711b06169dc4e2f2",
+      "sites": [
+        {
+          "owner": "ProjectFolder",
+          "kind": "useEffect",
+          "fingerprint": "8205d9f496a45a4bc72a78a5e757129b8d61d3b17850f4c5117a49fdac2e7eec"
+        }
+      ],
+      "lifetime": "project-shell-dialog-and-authored-fields",
+      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/project-workspace/projectTransfer.test.js",
+        "src/projectInventoryRecovery.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectNavigator.jsx": {
+      "fingerprint": "26328a0b089c5ae600f086ce065fb3b5bbf5ab6fb8c32dd1ddfad616c47b82c8",
+      "sites": [
+        {
+          "owner": "ProjectRail",
+          "kind": "useEffect",
+          "fingerprint": "a33e75f23a281c9f2ceaad9d14638b21a57edb3cbe4935106b083e7d156ee811"
+        }
+      ],
+      "lifetime": "project-shell-presentation",
+      "reason": "Sidebar/rail are outside retained routes; project identity resets sections/rename and drag state. Transient drag/copy feedback has bounded cleanup, while sidebar preferences remain in the existing project preference owner.",
+      "tests": [
+        "src/protocolSidebarWorkflow.test.js",
+        "src/projectStartupError.test.js",
+        "src/pointerDrag.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectOnboarding.jsx": {
+      "fingerprint": "b788090c4e97b883b6f9c35d4b9709d1cf9ff3c44ba7fd4c25619c8672938cbd",
+      "sites": [
+        {
+          "owner": "ProjectOnboarding",
+          "kind": "useEffect",
+          "fingerprint": "40aeb7fdd199fff9dd1b45da58d3db336f042ba2cf85544daf5a38b3bbb7cb7d"
+        },
+        {
+          "owner": "ProjectOnboarding",
+          "kind": "useEffect",
+          "fingerprint": "f99b8eb0ef96424d1302e781190be7cbbf5005db086249c95234a7f7e2a51948"
+        },
+        {
+          "owner": "ProjectOnboarding",
+          "kind": "useEffect",
+          "fingerprint": "d8fc12f05d0d06ec3155018bbe88a8c4a201024cf1c6c2f829eeb9749f0fd422"
+        }
+      ],
+      "lifetime": "project-shell-dialog-and-authored-fields",
+      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/project-workspace/projectTransfer.test.js",
+        "src/projectInventoryRecovery.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectSetupDialog.jsx": {
+      "fingerprint": "59c65e028ad188e1a572f17713cb580b7e86433918a015eb3182fa4b0623bfd8",
+      "sites": [
+        {
+          "owner": "ProjectSetupDialog",
+          "kind": "useEffect",
+          "fingerprint": "0fbaeed824f1aa181bfa8d9f87d58d7214283de5745d20a0db4afea3647d08c3"
+        }
+      ],
+      "lifetime": "project-shell-dialog-and-authored-fields",
+      "reason": "Project setup/folder dialogs are outside Activity; modal and cancellation effects clean up normally. Chosen path/name is authored presentation; no filesystem operation, confirmation or inspection token is restored as authority.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/project-workspace/projectTransfer.test.js",
+        "src/projectInventoryRecovery.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectStartupError.jsx": {
+      "fingerprint": "f439d86696befd7a5f5209204aead5aebad7c98bb019df25d80a7e183c54f640",
+      "sites": [
+        {
+          "owner": "ProjectStartupError",
+          "kind": "useEffect",
+          "fingerprint": "cf440bf632a4ddb7405ea0d4abd34a0f24a5c360a7678544a282668d03d8c79c"
+        }
+      ],
+      "lifetime": "project-shell-presentation",
+      "reason": "Sidebar/rail are outside retained routes; project identity resets sections/rename and drag state. Transient drag/copy feedback has bounded cleanup, while sidebar preferences remain in the existing project preference owner.",
+      "tests": [
+        "src/protocolSidebarWorkflow.test.js",
+        "src/projectStartupError.test.js",
+        "src/pointerDrag.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectUnmountDialog.jsx": {
+      "fingerprint": "2a8eab727e2c1ba668f2393afdae0bba86bf25383749f5535b67011212c3852b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/ui/ProjectWelcome.jsx": {
+      "fingerprint": "542c70d356870f009a299490282c5f2088cd0685b8449a0873446bf8daf5eeed",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/project-workspace/useProjectData.js": {
+      "fingerprint": "bae1cccaf01ddb1b1ee7444452c694133c0362c06bdc5c51db1f356dbca948b4",
+      "sites": [
+        {
+          "owner": "useProjectData",
+          "kind": "useEffect",
+          "fingerprint": "5e2d4f1515000704d479944e5f0b24bd1c0b1c41592330e73a57fe64110c45bf"
+        }
+      ],
+      "lifetime": "project-startup-demand",
+      "reason": "Read-only historical overview may load before science activation; identity and abort checks gate display only. Scientific startup remains explicit/current and scheduled activation is cancelled on replacement.",
+      "tests": [
+        "src/project-workspace/useProjectPresentation.test.js",
+        "src/projectInventoryRecovery.test.js"
+      ]
+    },
+    "src/project-workspace/useProjectPresentation.js": {
+      "fingerprint": "eb41cca9aa8ca0faafe9173d0a65a43d072aa4716cd9dc088a99064b94662d05",
+      "sites": [
+        {
+          "owner": "useProjectPresentation",
+          "kind": "useEffect",
+          "fingerprint": "7f81b498f41a6c010be5d5bc558f26c370d5b45043fcaf39483fe5433b7379e4"
+        }
+      ],
+      "lifetime": "project-startup-demand",
+      "reason": "Read-only historical overview may load before science activation; identity and abort checks gate display only. Scientific startup remains explicit/current and scheduled activation is cancelled on replacement.",
+      "tests": [
+        "src/project-workspace/useProjectPresentation.test.js",
+        "src/projectInventoryRecovery.test.js"
+      ]
+    },
+    "src/projectUnmount.js": {
+      "fingerprint": "eec25d65291059c11cb8f608c20bd634928706caad3bce5fc6330854e753c5a4",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/overviewCache.js": {
+      "fingerprint": "1af91f2e193b599a2ccf49d6fc13082213ea7d893c8466fd634adc936fed2f59",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/protocolOverviewModel.js": {
+      "fingerprint": "6886bcbdb6e2833519cbcc51b12f397481372e7fc4bc168e746c32dda2aa8873",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/protocolSuggestions.js": {
+      "fingerprint": "d105a64575166afc12acaa1641e7c3958b0bee840444e7e8b710ce0476fe9c1d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/NewPinnedProtocol.jsx": {
+      "fingerprint": "061e6fb7863c1bd598ab9b16884e89f101047dc153565d7ce120b8546ed7ae62",
+      "sites": [
+        {
+          "owner": "NewPinnedProtocol",
+          "kind": "useEffect",
+          "fingerprint": "5ca33bbaba8e003f2a008229cb6a810ac19281e6b1bc36384003956e9cf3da2d"
+        },
+        {
+          "owner": "NewPinnedProtocol",
+          "kind": "useEffect",
+          "fingerprint": "4bd01c53843e661db6c59a876b21e4ec666e7e5a07bbbc8e444f1062c4e0e8db"
+        }
+      ],
+      "lifetime": "authored-presentation-versus-consent",
+      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/semanticPresentationControls.test.js",
+        "src/protocolPredicateWorkflow.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/Overview.jsx": {
+      "fingerprint": "933d521771e3ef1e66fda6a5f946258d1cc90f63f01302daed3a77018843a562",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/overviewModel.js": {
+      "fingerprint": "865424b5141ec2df8e429fb9b88dd343649ff42b9cc8fd607ab6da7cad85387e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolApplyPanel.jsx": {
+      "fingerprint": "f9953b44dd064396ae6d0f3ab41637323a986f7e3180caa49cb58878cd425242",
+      "sites": [
+        {
+          "owner": "ProtocolApplyPanel",
+          "kind": "useEffect",
+          "fingerprint": "4bd01c53843e661db6c59a876b21e4ec666e7e5a07bbbc8e444f1062c4e0e8db"
+        },
+        {
+          "owner": "ProtocolApplyPanel",
+          "kind": "useSemanticReset",
+          "fingerprint": "a709738fdaa847f338a7a9b3c43d86635a9af72d3ccfb68499b45ac47f9fc164"
+        },
+        {
+          "owner": "ProtocolApplyPanel",
+          "kind": "useEffect",
+          "fingerprint": "0ec04db8de2199c2eb86453c10fc438b1e7a62e5d616291716c3f825fd47b302"
+        },
+        {
+          "owner": "ProtocolApplyPanel",
+          "kind": "useSemanticReset",
+          "fingerprint": "29756eeab4be254303fdae3f58d3a61eb7fb5e367be28d805cd1c5efbe25028a"
+        },
+        {
+          "owner": "ProtocolApplyPanel",
+          "kind": "useEffect",
+          "fingerprint": "52cb3abe7f09a7313ae36217fa87cd4ed2a408c378f8392b8997f446c327aad0"
+        }
+      ],
+      "lifetime": "semantic-destination-and-disclosure + reconnecting-consent",
+      "reason": "Candidate/target/generation reset disclosure; initialProtocolId change initializes target without overwriting later choice on reveal. Removal consent resets and comparison GET still revalidates each reconnect.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolDiff.jsx": {
+      "fingerprint": "3dd42fbeaac717d4f57b1e50b7732146ff08e5eef5851383abcbe42e4841b1f0",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolInfographic.jsx": {
+      "fingerprint": "5834464eaf68df1717c69dbbb67e1217814633fec8e7365e081520183a392581",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolSelectionSummary.jsx": {
+      "fingerprint": "66da3501c9756c5ae5e906ee14cfacac1a19c53d6f0f6258fbabc7fc4039843f",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolSidebar.jsx": {
+      "fingerprint": "3ff2e5aa20efea54d4c546e495688915410726e17ccc8ee2c0bf776db691618d",
+      "sites": [
+        {
+          "owner": "ProtocolSidebar",
+          "kind": "useEffect",
+          "fingerprint": "a33e75f23a281c9f2ceaad9d14638b21a57edb3cbe4935106b083e7d156ee811"
+        },
+        {
+          "owner": "ProtocolSidebar",
+          "kind": "useEffect",
+          "fingerprint": "fa28945b6e88fe666db23d61571ef00cdabca5982cb05ff597d0c19738e49a72"
+        },
+        {
+          "owner": "ProtocolSidebar",
+          "kind": "useEffect",
+          "fingerprint": "46ac183d43d02ae5847df61edca24494b3ec5589dbe10d5c6305b23f1549c323"
+        }
+      ],
+      "lifetime": "project-shell-presentation",
+      "reason": "Sidebar/rail are outside retained routes; project identity resets sections/rename and drag state. Transient drag/copy feedback has bounded cleanup, while sidebar preferences remain in the existing project preference owner.",
+      "tests": [
+        "src/protocolSidebarWorkflow.test.js",
+        "src/projectStartupError.test.js",
+        "src/pointerDrag.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/ProtocolSuggestion.jsx": {
+      "fingerprint": "8c63441fd0dc73a4caa6da42d2b9df22bf2c119943dea986fa1203d13ee8e709",
+      "sites": [
+        {
+          "owner": "ImportSuggestions",
+          "kind": "useEffect",
+          "fingerprint": "fe72958c11112dc6dc0f0581d27552b02b4892f7e656f83f08587fcfee04a0c5"
+        },
+        {
+          "owner": "ImportSuggestions",
+          "kind": "useSemanticReset",
+          "fingerprint": "4fc075c7f37cfa6287cf7de5c46a1f036f70c4e4fa585c5bd9c84d5286b8041a"
+        },
+        {
+          "owner": "ImportSuggestions",
+          "kind": "useEffect",
+          "fingerprint": "327a2a731ce2e4cfb89c465f01a9819a43c39d270eceea31c1c424b4b4e0d027"
+        }
+      ],
+      "lifetime": "semantic-auto-open-intent + project-review-state",
+      "reason": "autoOpenJobUuid is an explicit open intent, consumed once per semantic transition; user dismissal survives reconnect. Review pending state/managed message and modal presentation retain existing behavior.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/SelectionOverview.jsx": {
+      "fingerprint": "374ebcdc9d821279fff6301a723fcd19a69946b596106928f62c86aee003a43e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/SourcePropagation.jsx": {
+      "fingerprint": "bd3aff8c78082b516474ccda80eb683550b8baf0e6e227a47dd1d3c191b80fca",
+      "sites": [
+        {
+          "owner": "SourcePropagation",
+          "kind": "useEffect",
+          "fingerprint": "09966c79819648f3b878ee5da3d589096f930baf64f19dabf2fa7fba984a0f52"
+        }
+      ],
+      "lifetime": "authored-presentation-versus-consent",
+      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/semanticPresentationControls.test.js",
+        "src/protocolPredicateWorkflow.test.js"
+      ]
+    },
+    "src/protocol-overview/useOverviewResource.js": {
+      "fingerprint": "f0a696e834a8c4c85aafbf519e57d0dc94f4340b063b0d6d156c020a68284f61",
+      "sites": [
+        {
+          "owner": "useOverviewCache",
+          "kind": "useLayoutEffect",
+          "fingerprint": "148828fc625f9f41b7f5b509ea945e31271e661bbd3d06795730bba5c8834dc8"
+        },
+        {
+          "owner": "useOverviewCache",
+          "kind": "useEffect",
+          "fingerprint": "2eeaafb177b913390d75ae96e9e87f228a24d92cf69ec80c4383c9bfd7b9b91c"
+        },
+        {
+          "owner": "useOverviewResource",
+          "kind": "useEffect",
+          "fingerprint": "5074485940b8a1f546c4137e59acc34047e17a1ff80e41a3421cba9e47bda38d"
+        }
+      ],
+      "lifetime": "project-cache-and-active-demand",
+      "reason": "Project cache invalidation/focus subscriptions are outside Activity; mounted active consumers acquire/release demand. An invalidated missing first result reissues even if display revision is unchanged. Native view activation is not an external revision event.",
+      "tests": [
+        "src/protocol-overview/overviewDemand.test.js",
+        "src/protocol-overview/overviewCache.test.js",
+        "src/protocolBrowseEntry.test.js"
+      ]
+    },
+    "src/protocol-tree-layout/treeLayoutPersistence.js": {
+      "fingerprint": "3194d401c6be2327d0636ce633d8c1a8d97dfb3656311752f59e8d6e0a40a22b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/protocol-tree-layout/useProtocolTreeLayout.js": {
+      "fingerprint": "9f84f5e1452d7bd94183e7d4c46267aecb889cee28e47cb484218824d2d0d983",
+      "sites": [
+        {
+          "owner": "useProtocolTreeLayout",
+          "kind": "useEffect",
+          "fingerprint": "f37dec1884ec7f2229efa50c95eb7ad615f2b25cf5b906f87c14e21bbb83eb89"
+        },
+        {
+          "owner": "useProtocolTreeLayout",
+          "kind": "useEffect",
+          "fingerprint": "dcaa1b1c41f14155f142074073599c916622a333a90b967d9774ecdc398c723d"
+        }
+      ],
+      "lifetime": "existing-preference-owner",
+      "reason": "Preferences already write through their named owner (server/localStorage/draft saver). Reconnect reads canonical preferences; completed retained tree-layout hydration avoids replacing an edited order. Flush failures remain visible and protected.",
+      "tests": [
+        "src/project-preferences/projectPreferences.test.js",
+        "src/protocol-tree-layout/useProtocolTreeLayout.test.js",
+        "src/protocol-tree-layout/treeLayoutPersistence.test.js"
+      ]
+    },
+    "src/recording-import/importProgress.js": {
+      "fingerprint": "2a01381f6ea78a47128c943e39732cc0772cf1b9477a67838914f0dee585fc23",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/recording-import/importReadiness.js": {
+      "fingerprint": "cf2cec575e1e9d16415864f2bb64c050ea08bc84912304650f7b33ba4cd1f548",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/recording-import/recordingIdentity.js": {
+      "fingerprint": "e9a1b180c9851737adef10fc9a0037cebde77e96bba7078a2a999374fb0bec9b",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/recording-import/ui/H5Inbox.jsx": {
+      "fingerprint": "b87692ea9eda4ad6054871d596118b644f905c35338a6124b34b88b8abb93cf8",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/recording-import/ui/ImportHistory.jsx": {
+      "fingerprint": "b2885ba3388bdd2e3673139d6eeda4a53185beec75861263b0cfbe8ffa9d0f56",
+      "sites": [
+        {
+          "owner": "ImportHistory",
+          "kind": "useEffect",
+          "fingerprint": "b57f4bb677a08e8afe432ec10b8dbd0df9f29757897e4b4c23b6274dedb9de41"
+        },
+        {
+          "owner": "ImportHistoryRow",
+          "kind": "useSemanticReset",
+          "fingerprint": "ba0fe6c48910b8451420a6e174d41830585605113d8a0426edc14b7c76c01683"
+        }
+      ],
+      "lifetime": "semantic-attention-disclosure + reconnecting-progress-clock",
+      "reason": "Attention/latest/managed-message key reopens import details only on a real transition. Pending job progress timer reconnects and cleans up normally.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/recording-import/ui/ImportStatusBar.jsx": {
+      "fingerprint": "915dc2ab26f48934de4dcb74cb6099ef907a939a7025c6a8a541cd89e93cc6d7",
+      "sites": [
+        {
+          "owner": "ImportStatusBar",
+          "kind": "useEffect",
+          "fingerprint": "7df856c4d90950ff23ac24e3df36da38642adb3992b89fd34d260f572d3f7e55"
+        },
+        {
+          "owner": "ImportStatusBar",
+          "kind": "useEffect",
+          "fingerprint": "adea6d64eec93172355e7c8d70681f021adc5540f430fe4ee871751153ed5eed"
+        }
+      ],
+      "lifetime": "project-import-owner/outside-Activity",
+      "reason": "App-owned import queue/monitor outlive pages. Pending uploads and accepted jobs cannot restart from visibility changes; bounded polling cleans up, completion notifications deduplicate, and display timers do not create scientific work.",
+      "tests": [
+        "src/recording-import/importProgress.test.js",
+        "src/importMergeAppRoute.test.js",
+        "src/workflowResponsiveness.test.js"
+      ]
+    },
+    "src/recording-import/ui/InspectImportButton.jsx": {
+      "fingerprint": "a6601142ff852033810041656566d05c9d7786b91d331cbc1ac2b03ff8ec2dd6",
+      "sites": [
+        {
+          "owner": "InspectImportButton",
+          "kind": "useLayoutEffect",
+          "fingerprint": "4d598c0f66b9cddbf84077dc6976eff5157438f193071a51b1ae8726540d791b"
+        },
+        {
+          "owner": "InspectImportButton",
+          "kind": "useLayoutEffect",
+          "fingerprint": "ea8daec2b13bd157cd4adcf082d9f8f816af62d13e63a74473b4f783bfedce40"
+        }
+      ],
+      "lifetime": "explicit-hold-intent",
+      "reason": "Hold timers and committed callbacks retire on identity/disabled changes; only an explicit uninterrupted gesture creates a merge intent. No timer/gesture is restored as consent.",
+      "tests": [
+        "src/recording-import/inspectImportButton.test.js",
+        "src/incoming-workbench/importedHoldNavigation.test.js"
+      ]
+    },
+    "src/recording-import/uploadRecording.js": {
+      "fingerprint": "deb249338a15e9c22464a6bd6d0ff3aff6902ba0aa980d3890c35f7d1a4ac2d6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/recording-import/useImportMonitor.js": {
+      "fingerprint": "746636a07ef5f09e6d8a7d26ce382e6143ba7a2198c3b0b6a95c162c076c771d",
+      "sites": [
+        {
+          "owner": "useImportMonitor",
+          "kind": "useEffect",
+          "fingerprint": "217d5a298d75080e1ca1952223fb867facd76647b630ecb9158629cc32b841c2"
+        },
+        {
+          "owner": "useImportMonitor",
+          "kind": "useEffect",
+          "fingerprint": "e9e4418b77d96f9f7cd9a110e8c68ccb8b97cc309bbab57728891a2a11baa60c"
+        },
+        {
+          "owner": "useImportMonitor",
+          "kind": "useEffect",
+          "fingerprint": "cba9ac1692e00cd8370df3281ac3c0a952ef2b917511708e0a07eba322edd7a1"
+        }
+      ],
+      "lifetime": "project-import-owner/outside-Activity",
+      "reason": "App-owned import queue/monitor outlive pages. Pending uploads and accepted jobs cannot restart from visibility changes; bounded polling cleans up, completion notifications deduplicate, and display timers do not create scientific work.",
+      "tests": [
+        "src/recording-import/importProgress.test.js",
+        "src/importMergeAppRoute.test.js",
+        "src/workflowResponsiveness.test.js"
+      ]
+    },
+    "src/recording-import/useImportQueue.js": {
+      "fingerprint": "2d538dabc0bb3de8e56c3535aa7b0cf33903fadc9daff409513a46a641740630",
+      "sites": [
+        {
+          "owner": "useImportQueue",
+          "kind": "useEffect",
+          "fingerprint": "59b07ce90d51f0fdd00255d38e92f80eff957d8a6e7c3f61761db54d09b16f0c"
+        },
+        {
+          "owner": "useImportQueue",
+          "kind": "useEffect",
+          "fingerprint": "68c4e69695eea5120cce0448883c77764b9d9e191e9656fcde121e3129db1f87"
+        }
+      ],
+      "lifetime": "project-import-owner/outside-Activity",
+      "reason": "App-owned import queue/monitor outlive pages. Pending uploads and accepted jobs cannot restart from visibility changes; bounded polling cleans up, completion notifications deduplicate, and display timers do not create scientific work.",
+      "tests": [
+        "src/recording-import/importProgress.test.js",
+        "src/importMergeAppRoute.test.js",
+        "src/workflowResponsiveness.test.js"
+      ]
+    },
+    "src/recording-import/useImportReviewStatus.js": {
+      "fingerprint": "70325ce32c660e0e12b7bedfbd008d84661d94d5c12c494c817ffa9551928e36",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/renderer-drafts/desktopDraftSession.js": {
+      "fingerprint": "65c5bd538e7d8e30b9b15a4715eb316f3cf4b3573fe4055ada37fc43f08df7c7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/renderer-drafts/useDesktopDraft.js": {
+      "fingerprint": "4e9fe48f1089b4a0e16fec1687dbd59753c0a916293ac8ae3d8dddee20589b57",
+      "sites": [
+        {
+          "owner": "useDesktopDraft",
+          "kind": "useEffect",
+          "fingerprint": "7ebf0f385b6ef848bf588182bf09c5b2979fa6ec45b4f1268977d619d95f697d"
+        }
+      ],
+      "lifetime": "project-checkpoint-owner/outside-Activity",
+      "reason": "Draft session owns load, periodic save and strict flush outside retained routes. All route fields publish to the same checkpoint; failed persistence or unavailable owner never acknowledges successful closure.",
+      "tests": [
+        "src/renderer-drafts/useDesktopDraft.test.js",
+        "src/renderer-drafts/desktopDraftSession.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
+    "src/requested-summaries/requestedSummaries.js": {
+      "fingerprint": "da2d82dec2c622d2070d08935dbe99b987646f4e2f02b2aabb169bedf7f3b9f8",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/requested-summaries/summaryApi.js": {
+      "fingerprint": "39d70ee49c039435068e6183375ee847ececcbb6d042a4341c2e95ebc1863777",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/requested-summaries/useRequestedSummaries.js": {
+      "fingerprint": "2d530dcf0d595a562d5659bcb987ac283c48f97855ce5ae57c2651f3df2febba",
+      "sites": [
+        {
+          "owner": "useRequestedSummaries",
+          "kind": "useEffect",
+          "fingerprint": "ddc6348750e4de5673d30e8a8f750c96932466346c9849cfcc2ea2be1e35a8d4"
+        }
+      ],
+      "lifetime": "bounded-resource-lifetime",
+      "reason": "Summary controller remains keyed to canonical request/enabled state and disposes normally. Only successfully completed matching field-registry hydration can survive retained reconnect; abort/error never proves completion.",
+      "tests": [
+        "src/requested-summaries/requestedSummariesLifecycle.test.js",
+        "src/treeBuilderOverviewLifecycle.test.js"
+      ]
+    },
+    "src/resourceCache.js": {
+      "fingerprint": "525850011ef8dc4ff3b43bfad5c7b422a83632f3558abb286e1e97604740f1bb",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/resourceRequest.js": {
+      "fingerprint": "e2183d86da13ee4166f8762bf31d0a7f3d2a6208b7b372bdd0a931800ec5892c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/retainedWorkspaceViews.js": {
+      "fingerprint": "2e6c7f55462da2a1221558cbc7175b7e8c04503a62a746b2e30284073eacfb05",
+      "sites": [
+        {
+          "owner": "RetainedDestination",
+          "kind": "useLayoutEffect",
+          "fingerprint": "b3bdd04fdf00c32deb157f2d85e15fcf3b0c3d8541817c9bbd579c309addc702"
+        },
+        {
+          "owner": "useRetainedModal",
+          "kind": "useLayoutEffect",
+          "fingerprint": "c49c2cf2a299de437965d71b3871cee337713a675ab34623e4741333b7f1dd8c"
+        },
+        {
+          "owner": "useRetainedViewProtection",
+          "kind": "useLayoutEffect",
+          "fingerprint": "3a3a2d596fccb31c6d07b44db6c3b38bd077a108280c934d4d2131e8353a4336"
+        }
+      ],
+      "lifetime": "retained-owner-and-visibility-boundary",
+      "reason": "Route/subpanel identity, soft eviction cap, busy/dirty/guard protection and active callback tokens belong to retained owner. Modal and portal visibility follows active owner even while write protection keeps effects mounted. Guard cleanup on hide cannot discard protection.",
+      "tests": [
+        "src/retainedWorkspaceViews.test.js",
+        "src/retainedHiddenControls.test.js",
+        "src/retainedControls.test.js"
+      ]
+    },
+    "src/search-activation/GlobalSearch.jsx": {
+      "fingerprint": "ae75bab68f30b2516a742eec6017b7fac51df5f6f6fcaed5e105baf6cc6cfdff",
+      "sites": [
+        {
+          "owner": "GlobalSearch",
+          "kind": "useEffect",
+          "fingerprint": "5d75176b61e2d85bbf5ebbe6e203f4ffb966c8055db2bda5c9576a842b2dbc53"
+        },
+        {
+          "owner": "GlobalSearch",
+          "kind": "useEffect",
+          "fingerprint": "5463599c5bc414aa3590a32eb042ebbcc9f7e9c6e1ff6dff37b058e162c02570"
+        }
+      ],
+      "lifetime": "project-search-and-revocable-read-cache",
+      "reason": "Global search is App-shell owned. Cached lookup/ancestor witnesses retire on focus, backend state, actor or scope changes; subscriber requests/timers reconnect with generation checks. Current scientific witness refresh remains independent of display reuse.",
+      "tests": [
+        "src/search-activation/navigationReadStrictMode.test.js",
+        "src/tree-ancestors/treeBranchReads.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/search-activation/metadataSearch.js": {
+      "fingerprint": "22adc1e8861ebe38361caddb6f71a16eb5fd8c6827c4f270e9ef49d1283ac131",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/search-activation/navigationReadCache.jsx": {
+      "fingerprint": "4865078b0bd714c395553ba2f619b3dbee678f7eaa4ee2190349f09473513efe",
+      "sites": [
+        {
+          "owner": "NavigationReadProvider",
+          "kind": "useLayoutEffect",
+          "fingerprint": "73103a7f3353324f4b359655c693bcba063b923e98c1f30443f30ac26725502a"
+        },
+        {
+          "owner": "NavigationReadProvider",
+          "kind": "useEffect",
+          "fingerprint": "da5d480e24e196d74887414b4af3b53f3089898b1d166cca72b385ed7ae7ec1b"
+        },
+        {
+          "owner": "useSearchSnapshot",
+          "kind": "useLayoutEffect",
+          "fingerprint": "021f14c0a80e1b95cdc94e806affa6f736fe7a2deb1aacea29729bf09c14d033"
+        },
+        {
+          "owner": "useSearchSnapshot",
+          "kind": "useEffect",
+          "fingerprint": "9abe1cc30322cd4526a7eeb4f3f68711044ee51c6a99705d7a9929f39b57568b"
+        },
+        {
+          "owner": "useSearchSnapshot",
+          "kind": "useEffect",
+          "fingerprint": "af85d413a4147d80d4cceb3e2e8aa0db9e5795c4880f1e99dc9317a054ad7df9"
+        }
+      ],
+      "lifetime": "project-search-and-revocable-read-cache",
+      "reason": "Global search is App-shell owned. Cached lookup/ancestor witnesses retire on focus, backend state, actor or scope changes; subscriber requests/timers reconnect with generation checks. Current scientific witness refresh remains independent of display reuse.",
+      "tests": [
+        "src/search-activation/navigationReadStrictMode.test.js",
+        "src/tree-ancestors/treeBranchReads.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/search-activation/pageReadCache.js": {
+      "fingerprint": "a7851b3bb537199786327cceb87cbd695f18f220a83b233ff0fe52b7a5555ce7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/summary-jobs/ui/SummaryPreferences.jsx": {
+      "fingerprint": "e11c5087e26a36a9b06794f02ec2eb13232928e431c7840a6b0299798ac5620f",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/summary-jobs/ui/SummaryStatus.jsx": {
+      "fingerprint": "f20498f8a358ce0af0bc63010303bfb80bc6b921dce576d3bfedeb9e848a482a",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/summary-jobs/useFieldRegistry.js": {
+      "fingerprint": "9228ffe19d64fe578a5cd18ec566d3295d268f52e9dafd4c93a6c844f2acfe2a",
+      "sites": [
+        {
+          "owner": "useFieldRegistry",
+          "kind": "useEffect",
+          "fingerprint": "620ab675a3b6c27bf71f6805ab998af79533488537cf0d899c1182725f400d54"
+        }
+      ],
+      "lifetime": "bounded-resource-lifetime",
+      "reason": "Summary controller remains keyed to canonical request/enabled state and disposes normally. Only successfully completed matching field-registry hydration can survive retained reconnect; abort/error never proves completion.",
+      "tests": [
+        "src/requested-summaries/requestedSummariesLifecycle.test.js",
+        "src/treeBuilderOverviewLifecycle.test.js"
+      ]
+    },
+    "src/summary-jobs/useProtocolSummaryPreferences.js": {
+      "fingerprint": "378f02fcd439c9630e798908cc76cc130c6a0f32feb2f2c57ccf9e08bb1833e1",
+      "sites": [
+        {
+          "owner": "useProtocolSummaryPreferences",
+          "kind": "useEffect",
+          "fingerprint": "b89a6297ad8f92f79b55ab301ccb7052626161f7d2197c52b62404a3359c0f98"
+        }
+      ],
+      "lifetime": "existing-preference-owner",
+      "reason": "Preferences already write through their named owner (server/localStorage/draft saver). Reconnect reads canonical preferences; completed retained tree-layout hydration avoids replacing an edited order. Flush failures remain visible and protected.",
+      "tests": [
+        "src/project-preferences/projectPreferences.test.js",
+        "src/protocol-tree-layout/useProtocolTreeLayout.test.js",
+        "src/protocol-tree-layout/treeLayoutPersistence.test.js"
+      ]
+    },
+    "src/traces/readWholeTrace.js": {
+      "fingerprint": "eab86238622b1ca6068931811c26f9ead80942deca25490cfff64dd02b9a0c67",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/traces/traceReadContext.js": {
+      "fingerprint": "8081d65740d774938e83321da6dc5234b81a76e9ba0f8a233c7d7d10664cc048",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/traces/traceViewPreference.jsx": {
+      "fingerprint": "391f92a56861a8d41ec4a168ba4f2097a0e2f40901ee0d44382e07b722bd0a20",
+      "sites": [],
+      "lifetime": "exact-response-presentation + reconnecting-trace-authority",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Last explicit bounded epoch/stream pair persists as inert presentation. Restoration requires matching current epoch and response descriptor, including late descriptors; never match labels or issue a request for a saved UUID alone. Window/Whole/zoom changes preserve the pair; mounted local selection wins.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js",
+        "src/traces/responsePreferenceRetention.test.js"
+      ]
+    },
+    "src/traces/ui/traceGeometry.js": {
+      "fingerprint": "32f3da0fae80a407b36b3371535c2bc85cc5549a48e9a694d4d8e8637eb13c0d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/traces/ui/TraceViewer.jsx": {
+      "fingerprint": "e5956da73210aee94c57bcda90fcb94ca785f04fbc832e1fcbf183a5788d0673",
+      "sites": [
+        {
+          "owner": "TraceViewer",
+          "kind": "useEffect",
+          "fingerprint": "53be9d05d114d733f5db18223af82b2154392b87a646f324b3ab0ea9e70e0b75"
+        },
+        {
+          "owner": "TraceViewer",
+          "kind": "useSemanticReset",
+          "fingerprint": "19f43ebec05e11933710e33bdcaff853e590337a4912de7a2724d19e549a4584"
+        },
+        {
+          "owner": "TraceViewer",
+          "kind": "useLayoutEffect",
+          "fingerprint": "aed4274dc11d5c778e022f42a211ad33f2f959aebf23e57345e9a195b297abcb"
+        },
+        {
+          "owner": "TraceViewer",
+          "kind": "useEffect",
+          "fingerprint": "fecb9728cc7764d025d2553ffd8c33bf3a00a16c0975126dd23556e8eca083e4"
+        }
+      ],
+      "lifetime": "exact-response-presentation + reconnecting-trace-authority",
+      "reason": "Epoch/stream/applied bounded window resets editable window strings. Read authority, canvas paint/ResizeObserver, cursor and active drag retirement remain ordinary lifetimes; cursor is transient pointer readout, not retained authored window text. Last explicit bounded epoch/stream pair persists as inert presentation. Restoration requires matching current epoch and response descriptor, including late descriptors; never match labels or issue a request for a saved UUID alone. Window/Whole/zoom changes preserve the pair; mounted local selection wins.",
+      "tests": [
+        "src/retainedControls.test.js",
+        "src/traces/traceExtentLifecycle.test.js",
+        "src/traces/tracePaintLifecycle.test.js",
+        "src/traces/responsePreferenceRetention.test.js"
+      ]
+    },
+    "src/tree-ancestors/columnTreeReads.js": {
+      "fingerprint": "ecbf801be08719b786385fdf4150e398cbb664d87e66c39a5c5ed897ebf09749",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-ancestors/treeBranchReadCache.js": {
+      "fingerprint": "70077003f3c7202627038d2543ee7e6d87353acefab2684697f8973cbd1b40e7",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-ancestors/treeBranchReads.jsx": {
+      "fingerprint": "902dfd80e79663fb848b9a44c672b243f7413efd44eeeb5dd02a6c2e7c6c358b",
+      "sites": [
+        {
+          "owner": "TreeBranchReadOwner",
+          "kind": "useLayoutEffect",
+          "fingerprint": "73103a7f3353324f4b359655c693bcba063b923e98c1f30443f30ac26725502a"
+        },
+        {
+          "owner": "TreeBranchReadOwner",
+          "kind": "useEffect",
+          "fingerprint": "cce2ddb8cd1e65ce3dcf3fef8812fb52b8e310a64b6865b942e28906e84e01c7"
+        }
+      ],
+      "lifetime": "project-search-and-revocable-read-cache",
+      "reason": "Global search is App-shell owned. Cached lookup/ancestor witnesses retire on focus, backend state, actor or scope changes; subscriber requests/timers reconnect with generation checks. Current scientific witness refresh remains independent of display reuse.",
+      "tests": [
+        "src/search-activation/navigationReadStrictMode.test.js",
+        "src/tree-ancestors/treeBranchReads.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/tree-browser/boundedTree.js": {
+      "fingerprint": "b2e2f988f5f22ec89094feb893e281d2c7c64632496d929dcc8c0aebec3f2c6e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/columnTreeNavigation.js": {
+      "fingerprint": "8b9c20c8db0def623b52cd6019946e3b5a954a94e76ead6583850c5dfcdb188a",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/hierarchyTreeState.js": {
+      "fingerprint": "939d42069600e002be37a71b4a5ce45e4667e65400c6e96d5895d5ed379e878c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/treeBranchPresentation.js": {
+      "fingerprint": "46acdfbe3b3c6b2163fb0b94a4f368eb401b3b3d430527cc5e12e8e081bbde72",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/treeFieldPresentation.js": {
+      "fingerprint": "1e9bf1bb93593b8f576d2880b37dc156896f08e64899dd8f7453576b55cddb40",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/ui/ColumnTree.jsx": {
+      "fingerprint": "9f81a75d7615375b033412ea020933aaefb4b9158d86843478e2351d281312a7",
+      "sites": [
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "ae0a0a13821aa206ed5a05f48e333d5a1bedd86dc8d9b74a39c55ef33145e2a1"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "ebd01a9abe9ad910f57d87c612514ff3f58520d61a742555dcb7c48f98e96628"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "a889c69071cdaaeb3ab73bfa7141e3e17761620c5e1b85c2200ce6a97eda39a8"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "4e71acac25f9a57f081b8c0dfcfae7c469a676e8fa3b61193d83f8a3b6eb0eca"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "a88dabe072df1c3c0b4f5cb37f55ca37ce7630de75ae433513fc1ce413345571"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "f1d3661d8cfbca9fb5efaa71c1b3f343fe91ee96ec593f3cda1443381bfcf576"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "8dee29f15246955ab7bc2394a9bb96eda7371ed8e297585bc480285eba31c8f3"
+        },
+        {
+          "owner": "ColumnTree",
+          "kind": "useEffect",
+          "fingerprint": "60fd7b11b35cbc335b1ff14ad1a75ff1fcb845bdb54cf3393c74098f1eab2ea4"
+        }
+      ],
+      "lifetime": "fresh-pages-with-navigation-intent",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "tests": [
+        "src/inspectionTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js",
+        "src/treeCombinedPresentation.test.js"
+      ]
+    },
+    "src/tree-browser/ui/HierarchyTree.jsx": {
+      "fingerprint": "2d787fe05abaaf51ca5e1c760065816153d74c0c5c9333e995d2047f3d1d8083",
+      "sites": [
+        {
+          "owner": "HierarchyTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "01b7ecd72a26b60eac97b1112b9e2b0fd52d5932c50d4aae6a156ce4314f284d"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "e4868116eeb425de64f10f35ea7eb9cf9ed7cbe443b3324875a3db3a134e3d71"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "d6f74c4b096c4a6ef96edda6793bf63715cb9b2bb26747dbc7f7b5aa08e1ea03"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "827e1029edf014950ce7d4efd82d5fb1d928a2ca842a1d95108eb2b4181a0b83"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "cca67c48b85b580b90ab4d3d7a53199100a3e0c5fc3b3ad31f119f1689396630"
+        },
+        {
+          "owner": "HierarchyTree",
+          "kind": "useEffect",
+          "fingerprint": "9abb39b72fa9622ca8e0010471d5ae698f0911cee9f569fa41abfe81e9c8cf17"
+        }
+      ],
+      "lifetime": "fresh-pages-with-navigation-intent",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "tests": [
+        "src/inspectionTreeLifecycle.test.js",
+        "src/hierarchyRetention.test.js",
+        "src/treeTagCoverageWorkflow.test.js",
+        "src/treeCombinedPresentation.test.js"
+      ]
+    },
+    "src/tree-browser/ui/PagedTree.jsx": {
+      "fingerprint": "b7c85748bca9480e5f76fdf861fe84ec93ff706a767b3d2d5dfd465ad51c9b87",
+      "sites": [
+        {
+          "owner": "PagedTree",
+          "kind": "useLayoutEffect",
+          "fingerprint": "f56839c4db4dd0aa95ecd2ecfb6fffd0a60aabc4c853016ed6f38785be316904"
+        }
+      ],
+      "lifetime": "scoped-selection-authority",
+      "reason": "Selection summaries, manifests and ordered selection queue use committed scope/generation with abort and stale-publication refusal. Visibility may retire a read witness; retained selection presentation never substitutes for fresh command authority.",
+      "tests": [
+        "src/incomingSelectionSummaryRendering.test.js",
+        "src/incomingTreeSelectionQueue.test.js",
+        "src/pagedTreeLifecycle.test.js"
+      ]
+    },
+    "src/tree-browser/ui/RetainedTreePresentation.jsx": {
+      "fingerprint": "d8b35a9e1c5391cbb5fc204a10df08e1cb6e9794e6acf79f58e1cf9fbbf5b9e3",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-selection/treeSelectionReader.js": {
+      "fingerprint": "99e7afd9d9c1c1d0b2387933144bb0af501202c628ef8f0b63347b98283837e0",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/jointGrouping.js": {
+      "fingerprint": "965fc2ad6f82f9996d853dd9588fc5cc5ef38c10c4aad67ac79700e7f6edd83d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/predicateFieldPresentation.js": {
+      "fingerprint": "18ac0e47b07faf64507d7a60939e67a9c4a7bab2338d8ebf2992d29cf5ca8c15",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/predicateIdentity.js": {
+      "fingerprint": "1baff249bd11daaae3bf86bbaa6adfe851f1bbed0ebce779895efa123fa56b6e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/predicateValueSuggestions.js": {
+      "fingerprint": "4886b079c7d8da205771b5dafbd997bc8365b7eeb7bbf40f987c505f8c422d14",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/protocolViewFilter.js": {
+      "fingerprint": "4b402f314d3cc4c4394c3fe87805528a508eb1c2c633a6c4de9a9847aa5e3b1c",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/JointGroupingEditor.jsx": {
+      "fingerprint": "0bd538caf82a95a0fc6534707c3089df3a6de1967802a2e8e16f17a9693f4d1a",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/PredicateBuilder.jsx": {
+      "fingerprint": "8abf33de1100e00c30bc71bb06beb5aecb3b67ebf41144ced90a36da7429799a",
+      "sites": [
+        {
+          "owner": "FieldPicker",
+          "kind": "useSemanticReset",
+          "fingerprint": "4cdd0514b9740e4a535d389236286dae3002a8800b7d9a5e16b768de659951da"
+        },
+        {
+          "owner": "FieldPicker",
+          "kind": "useEffect",
+          "fingerprint": "627d480afe762785f0c8b1ad294d98b135011081652e22f7565f287852aac193"
+        },
+        {
+          "owner": "FieldPicker",
+          "kind": "useEffect",
+          "fingerprint": "7ab12badb0af29a23b7bef34bee12aca2a91559d12080ca433a7b00827b7a566"
+        },
+        {
+          "owner": "FieldPicker",
+          "kind": "useSemanticReset",
+          "fingerprint": "2adb6a4d34b9f9ceade08eacd9c2f26e559625ef5c722489ab17d3d4f3b1c802"
+        },
+        {
+          "owner": "FieldPicker",
+          "kind": "useSemanticReset",
+          "fingerprint": "1c463c5a0f5af926126792d2cff238c259265bf762bb32e79cdca7902cb16888"
+        }
+      ],
+      "lifetime": "semantic-chooser-state + active-global-handlers",
+      "reason": "Search/category resets chooser limit/active choice; explicit open/position and keyboard-choice keys control focus/scroll. Global outside/position listeners and popover render only while retained owner is active; cleanup still runs independently.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/typed-query/ui/PredicateDialog.jsx": {
+      "fingerprint": "47d9823f25b07f147848860432fe80de21d80a5e9a1e921ea8de3b6fd7b782b6",
+      "sites": [
+        {
+          "owner": "PredicateDialog",
+          "kind": "useEffect",
+          "fingerprint": "9084b27c1979971462d558d082f67b06d7670359efd7888826a778c6cd0fb28f"
+        },
+        {
+          "owner": "PredicateDialog",
+          "kind": "useEffect",
+          "fingerprint": "07edbe24b8737cd6b6ce8348a1381245dad2cca3ec1778b3bfcd9835da2a194b"
+        }
+      ],
+      "lifetime": "authored-presentation-versus-consent",
+      "reason": "Names and authored predicates are checkpointed separately. Mixed-protocol review, propagation preview and candidate count/summary consent always refresh under current scope. Reconnect or restart must never revive confirmation, leases or destructive intent. Predicate modal is active-view owned.",
+      "tests": [
+        "src/authoredDrafts.test.js",
+        "src/semanticPresentationControls.test.js",
+        "src/protocolPredicateWorkflow.test.js"
+      ]
+    },
+    "src/typed-query/ui/predicateEditor.js": {
+      "fingerprint": "54f106aa59a36f6413fad5d6ff7724e5a520ad0d5ea6d08de86b1fe3675c25b6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/predicateState.js": {
+      "fingerprint": "017a65638415e583a865e375becac48909cad077a02d45831939fe4dd7750b29",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/PredicateValueInput.jsx": {
+      "fingerprint": "b4ebd05d1821f7710a3b1ad6f5b0295ba52a8c08786cb46d6b134a920c70cf19",
+      "sites": [
+        {
+          "owner": "PredicateValueInput",
+          "kind": "useEffect",
+          "fingerprint": "627d480afe762785f0c8b1ad294d98b135011081652e22f7565f287852aac193"
+        },
+        {
+          "owner": "PredicateValueInput",
+          "kind": "useEffect",
+          "fingerprint": "b452c6e8152e916b613e2412c5d3051d8ed7c4cea15c38b5efb6a7a2e6733d70"
+        },
+        {
+          "owner": "PredicateValueInput",
+          "kind": "useSemanticReset",
+          "fingerprint": "ccd1bca85eabee564f4a59c0b6a96109a9ced25ee77516066bd61fe00437874a"
+        }
+      ],
+      "lifetime": "semantic-option-scroll + active-global-handlers",
+      "reason": "Selected option identity controls list scroll. Active retained owner gates global outside/position listeners and popover. Disabled-state close and live tag vocabulary keep their existing ordinary effects.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js"
+      ]
+    },
+    "src/typed-query/ui/ProtocolViewFilter.jsx": {
+      "fingerprint": "9b72d2ca7af3c5caa371d9a639b4fc28afc3337d643edb647963a05a2c140ae9",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/ScopedPredicateFilter.jsx": {
+      "fingerprint": "6333ad6702db2c406c635daaeeffd8a2e1b9b5db9db0bd5721ca2c0796ffb83d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/TreeBuilder.jsx": {
+      "fingerprint": "bf8cde8aa38c205a84f94d60650dfd128b6429846f1a9d22922f103f8f1d0694",
+      "sites": [
+        {
+          "owner": "TreeBuilder",
+          "kind": "useEffect",
+          "fingerprint": "a33e75f23a281c9f2ceaad9d14638b21a57edb3cbe4935106b083e7d156ee811"
+        },
+        {
+          "owner": "TreeBuilder",
+          "kind": "useSemanticReset",
+          "fingerprint": "a63d22f75e1cd7763e50a8a8966f056cae53fd13d7c0d537b280d035960ef7b3"
+        },
+        {
+          "owner": "TreeBuilder",
+          "kind": "useSemanticReset",
+          "fingerprint": "dfcf7f10938a3f575782a3da3b91717f232b39998f63f73e65b39909e4ede4ce"
+        },
+        {
+          "owner": "TreeBuilder",
+          "kind": "useEffect",
+          "fingerprint": "22fb79276532593971d85c750d77d8a828507acd9c2b78db803be25fdb5bb708"
+        },
+        {
+          "owner": "TreeBuilder",
+          "kind": "useSemanticReset",
+          "fingerprint": "978df9182f2d2e3d42db3fedb4ae9971fc156929deecccadd1d7f208f036fd8a"
+        }
+      ],
+      "lifetime": "semantic-order-and-chooser + active-global-handlers",
+      "reason": "External value key resets local order; search/category/order keys reset chooser limit/active option; keyboard identity controls scrolling. Active retained owner gates global listeners and popover. Drag cleanup and catalog/summary authority keep ordinary lifetimes.",
+      "tests": [
+        "src/useSemanticReset.test.js",
+        "src/semanticPresentationControls.test.js",
+        "src/treeBuilderOverviewLifecycle.test.js",
+        "src/requested-summaries/requestedSummariesLifecycle.test.js"
+      ]
+    },
+    "src/undo/mutationUndo.js": {
+      "fingerprint": "892929c201befc9bc8ef3e212ed705a2ea239518153ed9f381092512f24ff763",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/undo/ui/UndoControls.jsx": {
+      "fingerprint": "f5436ad050cb848a839fed70326c61bad174abd6bc40c989d7b46bcd50e6052d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/undo/useMutationUndo.js": {
+      "fingerprint": "8a567d727ec9470ab2e0050b5b3d8310b0e87e663aa1bd7329793fb923ceeedb",
+      "sites": [
+        {
+          "owner": "useMutationUndo",
+          "kind": "useEffect",
+          "fingerprint": "ba4680674f041b0ffe6af06124e3cb7ccde506f780a08b92f2d0446e2f475626"
+        },
+        {
+          "owner": "useMutationUndo",
+          "kind": "useEffect",
+          "fingerprint": "515b163157fc8836c692626ce5f4555da5937923754fae748625a77a7c4a463a"
+        }
+      ],
+      "lifetime": "project-navigation-and-undo-owner",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent.",
+      "tests": [
+        "src/workspace-navigation/workspaceNavigation.test.js",
+        "src/retainedControls.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/useSemanticReset.js": {
+      "fingerprint": "fb2699d4b42cc20612bc28db75a8fe570183abce383682485e633dde6450bcbe",
+      "sites": [
+        {
+          "owner": "useSemanticReset",
+          "kind": "useLayoutEffect",
+          "fingerprint": "9beb38e8d843df1fff873476429c3d712836d59d95d08badd7047afb83aa1dc8"
+        }
+      ],
+      "lifetime": "semantic-presentation-transition",
+      "reason": "Commit-time Object.is identity sentinel survives Activity/StrictMode; presentation-only synchronous callback. No I/O, cleanup, async work or authority.",
+      "tests": [
+        "src/useSemanticReset.test.js"
+      ]
+    },
+    "src/useUnmountGuard.js": {
+      "fingerprint": "17ef676dcb49dbb86f64298944930f3a12bb9536b238f572f1bdaa994531350b",
+      "sites": [
+        {
+          "owner": "useUnmountGuard",
+          "kind": "useLayoutEffect",
+          "fingerprint": "1a7be9f89f5c28fba4869f8fe3735f0d7ade37e51938efc4bea50ae3da2896dd"
+        }
+      ],
+      "lifetime": "retained-owner-and-visibility-boundary",
+      "reason": "Route/subpanel identity, soft eviction cap, busy/dirty/guard protection and active callback tokens belong to retained owner. Modal and portal visibility follows active owner even while write protection keeps effects mounted. Guard cleanup on hide cannot discard protection.",
+      "tests": [
+        "src/retainedWorkspaceViews.test.js",
+        "src/retainedHiddenControls.test.js",
+        "src/retainedControls.test.js"
+      ]
+    },
+    "src/useWorkspaceChanges.js": {
+      "fingerprint": "110be9637ebc85dbef4a11d1e43c9b4ccbb9aa9228b0f8e2bf770502aa60de31",
+      "sites": [
+        {
+          "owner": "useSummaryRevision",
+          "kind": "useLayoutEffect",
+          "fingerprint": "60ef685eef0c4b5d78588bf1dfe6a0fed25c191425095a9119e0f5c3ac89ccae"
+        }
+      ],
+      "lifetime": "project-navigation-and-undo-owner",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent.",
+      "tests": [
+        "src/workspace-navigation/workspaceNavigation.test.js",
+        "src/retainedControls.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/workspace-navigation/useWorkspaceNavigation.js": {
+      "fingerprint": "9fbcb16bf7d05946124a3896a9e3471f8e08519613948b81969790d0730423fc",
+      "sites": [
+        {
+          "owner": "useWorkspaceNavigation",
+          "kind": "useEffect",
+          "fingerprint": "70fc52efba72bea6e6afdd290e767a7e0971ed6486b91267e3d402b16413a46a"
+        }
+      ],
+      "lifetime": "project-navigation-and-undo-owner",
+      "reason": "Project global undo, canonical revision publication and history listener live outside Activity. Route return keeps history identity; local Explorer undo separately checks active view tokens. Restored history does not restore scientific consent.",
+      "tests": [
+        "src/workspace-navigation/workspaceNavigation.test.js",
+        "src/retainedControls.test.js",
+        "src/presentationSessionsApp.test.js"
+      ]
+    },
+    "src/workspace-navigation/workspaceNavigation.js": {
+      "fingerprint": "8556467bd59e73fe2ec0d8cd92deaee49d64eea7eb0d15253273d25ac33a7346",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/workspaceRequest.js": {
+      "fingerprint": "f4b313dce8fe400ba49b56ce547693f51f785fc307c4722a4c77aadf5b484219",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    }
+  }
+}

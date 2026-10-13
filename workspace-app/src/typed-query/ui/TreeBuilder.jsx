@@ -1,3 +1,5 @@
+import {useRetainedView} from '../../retainedWorkspaceViews.js';
+import {useSemanticReset} from '../../useSemanticReset.js';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, CircleMinus, GitBranch, GripVertical, Keyboard, LoaderCircle, Plus, Search, X } from 'lucide-react';
@@ -27,6 +29,7 @@ function Highlight({text, term}) {
 
 export default function TreeBuilder({protocolId, projectId, catalogPath, catalogData, summaryContext=null, summaryEnabled=true, readContext=null, treeSelectionIntent,onTreeSelectionIntentChange,onTreeSelectionFeedback, selectedEpochs=[],setSelectedEpochs,onAnnotationsChanged, actionsDisabled=false, onFullCatalog, queryString='', revision=0, value, onChange, preview, loading, error}) {
   const [order,setOrder] = useState(value);
+  const retainedActive=useRetainedView()?.active!==false;
   const [open,setOpen] = useState(false),[combineOpen,setCombineOpen]=useState(false);
   const catalogQuery=new URLSearchParams(queryString);
   if(readContext){catalogQuery.set('candidate_scope_revision',readContext.candidate_scope_revision);catalogQuery.set('splits',value.join(','));}
@@ -75,7 +78,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const [announcement,setAnnouncement] = useState('');
   const [layoutError,setLayoutError]=useState('');
   const orderKey = JSON.stringify(order), valueKey = JSON.stringify(value);
-  useEffect(()=>setOrder(JSON.parse(valueKey)),[valueKey]);
+  useSemanticReset(valueKey,()=>setOrder(JSON.parse(valueKey)));
   function changeOrder(next){
     const updated=typeof next==='function'?next(currentOrder.current):next;
     currentOrder.current=updated;setOrder(updated);onChange(updated);
@@ -87,9 +90,9 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
   const suggestedLayout=catalog.data?.suggested_layout;
   const offerLayout=suggestedLayout&&!sameOrder(order,suggestedLayout.fields);
   const shown=matches.slice(0,visible);
-  useEffect(()=>{setActive(0);setVisible(40);},[search,category,orderKey]);
+  useSemanticReset(JSON.stringify([search,category,orderKey]),()=>{setActive(0);setVisible(40);});
   useEffect(()=>{
-    if(!open)return;
+    if(!open||!retainedActive)return;
     const reposition=()=>{
       const box=trigger.current?.getBoundingClientRect();
       if(!box)return;
@@ -105,10 +108,10 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
     reposition();window.addEventListener('resize',reposition);window.addEventListener('scroll',reposition,true);
     document.addEventListener('pointerdown',outside);
     return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',outside);};
-  },[open]);
-  useEffect(()=>{
-    if(open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});
-  },[active,open,listId]);
+  },[open,retainedActive]);
+  useSemanticReset(JSON.stringify([active,open,listId]),()=>{
+    if(retainedActive&&open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});
+  });
   function add(field) {
     if(order.length>=8||order.includes(field.id))return;
     changeOrder(previous=>[...previous,field.id]);setSearch('');setOpen(false);trigger.current?.focus();
@@ -234,7 +237,7 @@ export default function TreeBuilder({protocolId, projectId, catalogPath, catalog
       <span>{showPending?'Updating tree…':error?'Tree could not be updated. Your data is unchanged.':(preview?.count ?? catalog.data?.total)==null?'Matching epoch count unavailable':`${number(preview?.count ?? catalog.data?.total)} matching epochs · tree preview`}</span>
     </div>
     {requested.unavailable.length>0&&<p className="tb-note">Saved fields unavailable in this registry: {requested.unavailable.join(', ')}. The layout is retained.</p>}
-    {open&&position&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
+    {open&&position&&retainedActive&&createPortal(<div ref={popup} className="tb-popup" role="dialog" aria-label="Add a split" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}
       onKeyDown={event=>{if(event.key==='Escape'){setOpen(false);trigger.current?.focus();}}}>
       <div className="tb-popup-title"><strong>Split on a recorded field</strong><button aria-label="Close split chooser" onClick={()=>{setOpen(false);trigger.current?.focus();}}><X size={14}/></button></div>
       <div className="tb-search-wrap tb-popup-search"><Search size={15}/><input ref={input} autoFocus role="combobox" aria-label="Find a split field" aria-expanded={open} aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} placeholder="Find a field to split on…" value={search} onChange={event=>{setSearch(event.target.value);setCategory(event.target.value.trim()?'All':suggestions.length?'Suggested':'Common');}} onKeyDown={keys}/></div>

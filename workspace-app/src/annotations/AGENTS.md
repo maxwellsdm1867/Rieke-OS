@@ -59,3 +59,5 @@ Mounted `treeCellTagWorkflow.test.js`, `treeGroupLifecycleWorkflow.test.js` and
 integration owner has reconciled all moved callers. Tests preserve real entry points
 and existing assertions. No import/export workload, scientific fixture, native
 annotation transaction or performance qualification follows from this organization.
+
+AnnotationTags resets local draft text when its epoch identity changes, not merely when Activity reconnects effects. Mutation scope/generation fences still reestablish on every reconnect. The existing nonempty unmount guard also prevents retained-view eviction of standalone CellQC tag text.

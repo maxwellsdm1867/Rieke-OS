@@ -1,3 +1,4 @@
+import {useRetainedView} from '../../retainedWorkspaceViews.js';
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
 import {incomingCellTypes} from '../incomingCellTypes.js';
 import {cellTypeColor} from "../../cell-qc/cellTypes.js";
@@ -5,11 +6,12 @@ import {number} from '../../api.js';
 import CellTypeIcon from '../../components/CellTypeIcon.jsx';
 
 export default function IncomingCellTypes({cells,count,scope='Frozen proposal',compact=false,trigger}){
+  const active=useRetainedView()?.active!==false;
   const [open,setOpen]=useState(false),[position,setPosition]=useState({left:0,width:240,maxHeight:240,above:false});
   const root=useRef(null),button=useRef(null),pinned=useRef(false),suppressFocus=useRef(false),id=useId();
   function close(){pinned.current=false;setOpen(false);}
   useLayoutEffect(()=>{
-    if(!open||!root.current)return;
+    if(!active||!open||!root.current)return;
     function place(){
       const rect=root.current.getBoundingClientRect(),width=Math.min(240,window.innerWidth-24);
       const below=window.innerHeight-rect.bottom,above=below<180&&rect.top>below;
@@ -18,15 +20,15 @@ export default function IncomingCellTypes({cells,count,scope='Frozen proposal',c
     }
     place();window.addEventListener('resize',place);window.addEventListener('scroll',place,true);
     return()=>{window.removeEventListener('resize',place);window.removeEventListener('scroll',place,true);};
-  },[open]);
+  },[open,active]);
   useEffect(()=>{
-    if(!open)return;
+    if(!open||!active)return;
     function outside(event){if(!root.current?.contains(event.target))close();}
     function escape(event){if(event.key!=='Escape')return;event.preventDefault();close();
       if(root.current?.contains(document.activeElement)){suppressFocus.current=true;button.current?.focus();suppressFocus.current=false;}}
     document.addEventListener('pointerdown',outside,true);document.addEventListener('keydown',escape,true);
     return()=>{document.removeEventListener('pointerdown',outside,true);document.removeEventListener('keydown',escape,true);};
-  },[open]);
+  },[open,active]);
   const groups=incomingCellTypes(cells,count);
   const chips=groups?.map(({type,count})=><span className="incoming-type-chip" key={type} role="listitem" tabIndex={0} style={{'--type-color':cellTypeColor(type)}}><CellTypeIcon type={type} size={13}/><strong>{number(count)}</strong> {type.replace(/^RGC\\/i,'')}</span>);
   const content=<div className={`incoming-cell-types ${compact?'compact':''}`} role="group" aria-label={`${scope} cell types`}>

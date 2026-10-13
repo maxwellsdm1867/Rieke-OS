@@ -1,3 +1,4 @@
+export function visiblePresentationNode(node){for(let current=node;current;current=current.parent)if((current.props?.['data-workspace-active']==='false'||current.props?.['data-retained-panel-active']==='false'))return false;return true;}
 // App composition characterization: real navigation, Protocol and draft owners.
 // Probes replace visual children, never App's stores or the navigation hook.
 import React from 'react';
@@ -77,14 +78,15 @@ export async function createPresentationSessionHarness({route={page:'overview',k
  if(!delayDraft)load.resolve(saved);
  const h={requests,saves,unexpected,browser,act,
   get root(){return rendered.root;},
-  get protocol(){return rendered.root.findByType(Protocol).props;},
+  get protocol(){return rendered.root.findAllByType(Protocol).find(visiblePresentationNode).props;},
   get route(){return browser.window.history.state.riekeWorkspace.route;},
-  probe(name){return rendered.root.findByType(`presentation-${name}`).props;},
+  visible:visiblePresentationNode,
+  probe(name){return rendered.root.findAllByType(`presentation-${name}`).find(visiblePresentationNode).props;},
   async mount(){await act(async()=>{rendered=TestRenderer.create(React.createElement(App));});await bounded(loaded.promise,'draft load registration');await h.waitFor(()=>h.root.findAllByType('presentation-sidebar').length>0||h.root.findAllByType('presentation-draft-recovery').length>0);},
   async waitFor(predicate){const deadline=Date.now()+2000;while(!predicate()){if(Date.now()>deadline)throw Error('Presentation fixture did not settle');await act(()=>new Promise(resolve=>setTimeout(resolve,5)));}},
   async resolveDraft(value){await act(async()=>{load.resolve(value);await load.promise;});},
   async checkpoint(){await act(async()=>{await bounded(flushDesktopDrafts(),'draft checkpoint');});return saves.at(-1).value.value;},
-  async click(label){const button=h.root.findAllByType('button').find(node=>node.props['aria-label']===label||node.children.filter(child=>typeof child==='string').join('').trim()===label);if(!button)throw Error(`Missing button: ${label}`);await act(()=>button.props.onClick());},
+  async click(label){const button=h.root.findAllByType('button').find(node=>visiblePresentationNode(node)&&(node.props['aria-label']===label||node.children.filter(child=>typeof child==='string').join('').trim()===label));if(!button)throw Error(`Missing button: ${label}`);await act(()=>button.props.onClick());},
   async history(direction){
    let receive;const event=new Promise(resolve=>{receive=resolve;browser.window.addEventListener('popstate',receive,{once:true});});
    try{await act(async()=>{const label=direction==='back'?'Back to previous workspace':'Forward to next workspace';const button=h.root.findAllByProps({'aria-label':label})[0];if(button.props.disabled)throw Error(`History ${direction} is disabled`);button.props.onClick();await bounded(event,`history ${direction} popstate`);});}

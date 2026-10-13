@@ -186,6 +186,14 @@ def create_project_shell(project_dir, retinanalysis_dir, *, user_state, identity
         return jsonify(status='ready', project_uuid=identity['project_uuid'],
                        project_path=str(project_dir), project_data=data.status())
 
+    @app.get('/api/project/presentation')
+    def presentation():
+        from disco.projects.presentation_cache import load_overview
+        if request.args:
+            raise ValueError('Project presentation accepts no parameters')
+        return jsonify(load_overview(project_dir, user_state=user_state,
+                                     expected_uuid=identity['project_uuid']))
+
     @app.get('/api/project/data-status')
     def data_status():
         return jsonify(data.status())

@@ -72,7 +72,7 @@ class ProjectShellTests(unittest.TestCase):
         with patch('disco.projects.project_database.ensure_project_database', side_effect=AssertionError('SQL startup')), \
                 patch('recording_workspace.digest', side_effect=AssertionError('recording hashing')), \
                 patch.object(Path, 'rglob', side_effect=AssertionError('recursive scan')):
-            for path in ('/', '/api/projects', '/api/health', '/api/project/data-status'):
+            for path in ('/', '/api/projects', '/api/health', '/api/project/data-status', '/api/project/presentation'):
                 with self.subTest(path=path):
                     response = self.client.get(path)
                     self.assertEqual(response.status_code, 200, response.get_data(as_text=True))
@@ -83,6 +83,18 @@ class ProjectShellTests(unittest.TestCase):
         self.cleanup.assert_not_called()
         self.assertFalse((self.project / 'database').exists())
         self.assertFalse((self.project / 'exports').exists())
+
+    def test_saved_presentation_does_not_activate_data(self):
+        from disco.projects.presentation_cache import save_overview
+        self.assertTrue(save_overview(self.project, {'project': {'project_uuid': self.project_uuid},
+            'counts': {'epochs': 17}}, user_state=self.root / 'state'))
+        response = self.client.get('/api/project/presentation')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json['presentation_only'])
+        self.assertEqual(response.json['overview']['counts']['epochs'], 17)
+        self.assertEqual(self.client.get('/api/project/presentation?scope=anything').status_code, 400)
+        self.build.assert_not_called()
+        self.assertEqual(self.data.status()['status'], 'not_loaded')
 
     def test_storage_problems_are_deferred_by_folder_discovery(self):
         result = validate_project_folder(self.project, verify_storage=False)

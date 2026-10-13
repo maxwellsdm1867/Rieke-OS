@@ -37,7 +37,7 @@ export async function createInspectionHarness({treeElement=null,realPages=false}
   let root;
   const branches=()=>root.root.findAll(node=>node.type?.name==='CellBranch');
   return {network,
-    async render(props){await act(async()=>{const element=React.createElement(InspectionCellTree,props);if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:node=>node.props.className==='inspection-cell-tree'?treeElement:null});});},
+    async render(props,{activity='visible'}={}){await act(async()=>{const element=React.createElement(React.Activity,{mode:activity},React.createElement(InspectionCellTree,props));if(root)root.update(element);else root=TestRenderer.create(element,{createNodeMock:node=>node.props.className==='inspection-cell-tree'?treeElement:null});});},
     get branch(){return branches()[0].props;},
     get details(){return root.root.findAllByType('details').map(node=>node.props);},
     async toggle(index,open){await act(()=>root.root.findAllByType('details')[index].props.onToggle({currentTarget:{open}}));},

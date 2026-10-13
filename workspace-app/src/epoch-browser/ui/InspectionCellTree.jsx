@@ -118,6 +118,9 @@ export default function InspectionCellTree({cells,targets,setTargets,disabled,na
   },[viewScope,collapseRequest]);
   useEffect(()=>{
     const pane=treeElement.current?.closest('.tree-scroll');if(!pane)return;
+    // Activity reconnects the same DOM, but fresh page reads can temporarily
+    // shrink its scroll range. Restore the last user position after ready pages.
+    if(pendingScroll.current===null&&navigationRef.current.scope===viewScope&&navigationRef.current.scrollTop>0)pendingScroll.current=navigationRef.current.scrollTop;
     const saveScroll=()=>{if(pendingScroll.current===null&&freshMembership.current){const value={...navigationRef.current,scrollTop:pane.scrollTop};rememberNavigation(value);}};
     const userIntent=()=>{cancelRestore();};
     pane.addEventListener('scroll',saveScroll);

@@ -59,6 +59,7 @@
     "disco/projects/project_inventory.py",
     "disco/projects/project_preferences.py",
     "disco/projects/project_shell.py",
+    "disco/projects/presentation_cache.py",
     "disco/projects/project_validation.py",
     "disco/projects/recording_files.py",
     "disco/projects/recording_registry.py",

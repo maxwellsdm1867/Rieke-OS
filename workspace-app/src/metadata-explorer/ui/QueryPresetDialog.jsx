@@ -1,3 +1,5 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {useEffect,useRef,useState} from 'react';
 import {Pin,Search,X} from 'lucide-react';
 import {api} from '../../api.js';
@@ -7,17 +9,18 @@ import '../../project-preferences/ui/SearchPresets.css';
 
 export default function QueryPresetDialog({predicate,splits,preset=null,defaults={},onClose,onSaved,onRefresh}){
   const dialog=useRef(null),[mode,setMode]=useState(preset?'update':'new');
-  const [name,setName]=useState(preset?.name||defaults.name||predicateSummary(predicate).slice(0,160));
-  const [description,setDescription]=useState(preset?.description||defaults.description||'');
-  const [pinned,setPinned]=useState(preset?.pinned??defaults.pinned??false);
+  const draftIdentity=preset?.preset_uuid||JSON.stringify(predicate);
+  const [name,setName,nameDraft]=useAuthoredDraft(['query-preset',draftIdentity,'name'],preset?.name||defaults.name||predicateSummary(predicate).slice(0,160));
+  const [description,setDescription,descriptionDraft]=useAuthoredDraft(['query-preset',draftIdentity,'description'],preset?.description||defaults.description||'');
+  const [pinned,setPinned,pinnedDraft]=useAuthoredDraft(['query-preset',draftIdentity,'pinned'],preset?.pinned??defaults.pinned??false);
   const [replaceLayout,setReplaceLayout]=useState(false);
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const [resolution,setResolution]=useState({loading:true,ready:false,match:null}),[check,setCheck]=useState(0);
-  useEffect(()=>{const node=dialog.current;node.showModal();return()=>node.close();},[]);
+  useRetainedModal(dialog);
   useEffect(()=>{const controller=new AbortController();setResolution({loading:true,ready:false,match:null});setError('');
     api('/search-presets/resolve',{method:'POST',body:{predicate},signal:controller.signal}).then(result=>{
       if(controller.signal.aborted)return;const match=resolvedPresetMatch(result);setResolution({loading:false,ready:true,match});
-      if(match){setName(match.name);setDescription(match.description||'');setPinned(!!match.pinned);}
+      if(match){nameDraft.adopt(match.name);descriptionDraft.adopt(match.description||'');pinnedDraft.adopt(!!match.pinned);}
     }).catch(error=>{if(!controller.signal.aborted){setResolution({loading:false,ready:false,match:null});setError(error.message);}});
     return()=>controller.abort();
   },[predicate,check]);
@@ -28,7 +31,7 @@ export default function QueryPresetDialog({predicate,splits,preset=null,defaults
       const existing=presetSaveTarget(match,preset,mode),displayed=presetSaveTarget(resolution.match,preset,mode);
       if(!samePresetTarget(existing,displayed)){setResolution({loading:false,ready:true,match});setError('The saved search changed while this dialog was open. Review the destination shown below, then save again.');return;}
       const body=searchPresetPayload({name,description,pinned,predicate,splits:existing&&!replaceLayout?existing.splits:splits},existing);
-      const result=validatePresetReceipt(await api(existing?`/search-presets/${existing.preset_uuid}`:'/search-presets',{method:existing?'PUT':'POST',body}));onSaved(result);
+      const result=validatePresetReceipt(await api(existing?`/search-presets/${existing.preset_uuid}`:'/search-presets',{method:existing?'PUT':'POST',body}));nameDraft.clear();descriptionDraft.clear();pinnedDraft.clear();onSaved(result);
     }catch(error){setError(error.message);}finally{setBusy(false);}
   }
   return <dialog ref={dialog} className="query-preset-dialog" aria-labelledby="query-preset-title" onCancel={event=>{event.preventDefault();if(!busy)onClose();}}><form onSubmit={save}>

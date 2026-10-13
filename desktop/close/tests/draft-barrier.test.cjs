@@ -27,3 +27,9 @@ test('specific accepted-write and backup uncertainty reaches the main process wi
  const result=await pending;assert.equal(result.ready,false);assert.match(result.reason,/Database committed/);
  assert.throws(()=>barrier.acknowledge({requestId:'id',ok:false,reason:'x'.repeat(1025)},win),/Invalid/);
 });
+
+test('an unavailable renderer cannot prevent healthy renderers from saving',async()=>{
+ const healthy=window(),failed={isDestroyed:()=>false,draftUnavailable:true};let saved=false;
+ const barrier=new DraftBarrier({send:(owner,request)=>{assert.equal(owner,healthy);saved=true;queueMicrotask(()=>barrier.acknowledge({...request,ok:true},owner));}});
+ assert.equal((await barrier.prepare([failed,healthy])).ready,false);assert.equal(saved,true);
+});

@@ -48,3 +48,5 @@ identity, error, cancellation and lifetime contracts. Authority or runtime body
 changes require independent review before implementation. The integration owner
 maintains the shared catalog, ledger, path companion and root navigation; source
 proof and coordinated integration checks bind this mechanical relocation.
+
+`useFieldRegistry` may reuse its completed display registry when React reconnects a retained view with unchanged project/actor/revision/retry identity. Explicit reload, changed identity and errors still fetch. This preserves field-editor presentation; it does not cache summary jobs or scientific request witnesses.

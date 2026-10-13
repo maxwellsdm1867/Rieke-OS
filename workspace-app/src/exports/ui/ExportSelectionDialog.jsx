@@ -1,3 +1,4 @@
+import {useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {useEffect,useRef,useState} from 'react';
 import {Download,Pin,FolderPlus,X} from 'lucide-react';
 import CandidateExportPanel from './CandidateExportPanel.jsx';
@@ -11,7 +12,7 @@ export default function ExportSelectionDialog({candidate,protocols,projectId,dir
   const dialog=useRef(null),[mode,setMode]=useState(directOnly?'direct':null),[busy,setBusy]=useState(false),[pinError,setPinError]=useState(''),[appliedId,setAppliedId]=useState(null);
   const shortcuts=useProjectPreference(projectId,'protocol_shortcuts');
   const groups=exportProtocolGroups(protocols,shortcuts.value,initialProtocolId);
-  useEffect(()=>{const el=dialog.current;el.showModal();return()=>el.close();},[]);
+  useRetainedModal(dialog);
   async function finishPin(id){
     setAppliedId(id);setBusy(true);
     try{

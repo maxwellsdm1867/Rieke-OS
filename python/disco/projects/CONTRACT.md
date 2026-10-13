@@ -199,3 +199,23 @@ the inventory's existing status meaning. The HTTP protocol owner derives source
 identities from current effective membership and holds registration locks; no
 caller-supplied path is accepted. Metadata/H5 contents are not read, copied or
 modified. The full data-store inventory contract remains unchanged.
+
+## Last-good overview presentation
+
+`presentation_cache.save_overview` writes an optional latest overview after a
+successful canonical read. `load_overview` serves only explicitly allowed display
+fields through `/api/project/presentation`, including before scientific activation.
+The envelope always says `presentation_only`; it supplies no query revision, lease,
+mutation capability or readiness proof. A same-path database restore may leave old
+display bytes, so canonical initialization and overview validation remain mandatory
+on every restart before enabling any data-dependent action.
+
+The disposable SQLite cache lives in desktop user state, outside project scientific
+files, keyed by canonical project path plus validated manifest UUID. Reads create
+nothing. Each project retains one snapshot capped at 4 MiB, with a 12 MiB file cap,
+25 ms lock timeout, version and checksum checks. Corruption, lock contention, write
+failure and unsupported project manifests are misses and never block normal work.
+No source hashing, H5 reads or scientific-database opens are permitted here. The
+cache is not copied into project exports, and deleting it loses no scientific state.
+The focused cache/shell/API tests exercise process restart and failure fallback;
+those tests do not qualify installed-app startup latency.

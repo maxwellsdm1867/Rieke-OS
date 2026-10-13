@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createPresentationSessionHarness,draft} from './test-support/presentationSessionHarness.js';
 const checkpoint=(route,extra={})=>({route,sessions:[],protocolSessions:[],lastExplorerSession:null,lastStoresSession:null,...extra});
 const savedProtocol=marker=>({tab:'inspect',filters:{},inspector:{focused:marker,marker,treeMode:true}});
-const inspector=h=>h.waitFor(()=>h.root.findAllByType('presentation-inspector').length>0);
+const inspector=h=>h.waitFor(()=>h.root.findAllByType('presentation-inspector').some(h.visible));
 const goProtocol=(h,id)=>h.act(()=>h.probe('sidebar').onNavigate(id));
 
 test('App restores the exact earlier protocol route before the latest protocol fallback',async()=>{
@@ -14,7 +14,7 @@ test('App restores the exact earlier protocol route before the latest protocol f
   await goProtocol(h,'protocol-B');await goProtocol(h,'protocol-A');await inspector(h);
   const secondKey=h.route.key;assert.notEqual(secondKey,firstKey);
   assert.equal(h.probe('inspector').initialNavigation.marker,'first');
-  assert.equal(h.probe('inspector').initialNavigation.treeMode,false,'fresh visit normalizes ordinary saved navigation');
+  assert.equal(h.probe('inspector').initialNavigation.treeMode,true,'warm destination return preserves the live tree mode');
   await h.act(()=>h.probe('inspector').onSessionChange({focused:'second',marker:'second',treeMode:false}));
   await h.history('back');await h.history('back');await inspector(h);
   assert.equal(h.route.key,firstKey);assert.equal(h.probe('inspector').initialNavigation.marker,'first');
@@ -200,7 +200,7 @@ test('selecting the current project retains its exact saved route and view',asyn
 
 test('Protocol retains one viewing preference across Inspect, Workbench, history and restored projects',async()=>{
  const h=await createPresentationSessionHarness();let checkpoint;
- const preference=()=>h.root.find(node=>typeof node.type==='function'&&node.type.name==='TraceViewPreferenceProvider');
+ const preference=()=>h.root.find(node=>h.visible(node)&&typeof node.type==='function'&&node.type.name==='TraceViewPreferenceProvider');
  const sample={kind:'sample',start:30000,count:1000};
  try{
   await h.mount();await goProtocol(h,'protocol-A');await h.click('Inspect');await inspector(h);
@@ -221,4 +221,32 @@ test('Protocol retains one viewing preference across Inspect, Workbench, history
   const provider=restored.root.find(node=>typeof node.type==='function'&&node.type.name==='TraceViewPreferenceProvider');
   assert.deepEqual(provider.props.value,{kind:'sample',start:100,count:500});
  }finally{await restored.close();}
+});
+
+test('a pending apply from a hidden retained search refreshes data without stealing navigation',async()=>{
+ const h=await createPresentationSessionHarness();
+ try{
+  await h.mount();await h.click('Search predicate');
+  await h.waitFor(()=>h.root.findAllByType('presentation-explorer').some(h.visible));
+  const origin=h.route.key,applied=h.probe('explorer').onProtocolApplied;
+  let finish;const pending=new Promise(resolve=>{finish=resolve;}).then(()=>applied('protocol-A'));
+  await h.click('Data stores');const current=h.route.key,revision=h.probe('stores').revision;
+  await h.act(async()=>{finish();await pending;});
+  assert.equal(h.route.key,current);assert.equal(h.route.page,'stores');
+  assert.ok(h.probe('stores').revision>revision,'accepted operation still invalidates canonical data');
+  await h.history('back');assert.equal(h.route.key,origin);
+  await h.act(()=>applied('protocol-B'));
+  assert.equal(h.route.key,origin,'returning to the same history entry cannot revive an old completion');
+  await h.act(()=>h.probe('explorer').onProtocolApplied('protocol-A'));
+  assert.equal(h.route.page,'protocol');assert.equal(h.route.protocol,'protocol-A');
+ }finally{await h.close();}
+});
+
+test('a late Workbench apply cannot replace the current Protocol tab',async()=>{
+ const h=await createPresentationSessionHarness();
+ try{await h.mount();await goProtocol(h,'protocol-A');await h.click('Workbench');const workbench=()=>h.root.findAll(node=>node.type?.name==='IncomingWorkbench').find(h.visible);
+  const old=workbench().props.onApplied;await h.click('Inspect');await inspector(h);await h.act(()=>old());assert.equal(h.root.findAllByProps({'aria-label':'Inspect'}).find(h.visible).props['aria-selected'],true);
+  await h.click('Workbench');await h.act(()=>old());assert.equal(h.root.findAllByProps({'aria-label':'Workbench'}).find(h.visible).props['aria-selected'],true,'return does not revive old completion');
+  await h.act(()=>workbench().props.onApplied());assert.equal(h.root.findAllByProps({'aria-label':'Overview'}).find(h.visible).props['aria-selected'],true);
+ }finally{await h.close();}
 });

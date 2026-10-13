@@ -6,6 +6,10 @@ Start with [architecture](../ARCHITECTURE.md) and the adopted
 Its [contracts, errors, dependencies and executable examples](close/README.md)
 are beside the public entries and tests.
 
+[Retained project documents](PROJECT_VIEWS.md) separates native windows from
+authenticated scientific renderer owners; hidden documents participate in drafts,
+quit, IPC and recovery.
+
 `main.cjs` retains Electron window/IPC, restoration and lifecycle composition;
 `preload.cjs` and `security.cjs` retain the renderer capability and admission rules.
 [Draft storage](drafts/AGENTS.md) and [startup preferences](startup/AGENTS.md)

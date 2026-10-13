@@ -39,3 +39,26 @@ test('shutdown pauses new mutation requests before network admission and a late 
   assert.equal(requests,0);
  }finally{uninstall();globalThis.fetch=old;}
 });
+
+test('project checkpoint runs hidden dirty guards, permits close request, and resumes on cancellation',async()=>{
+ const {assertDesktopWritable,registerUnmountGuard}=await import('./desktopLifecycle.js');
+ let prepare,resume,ack;
+ const uninstall=installDesktopLifecycle({onPrepareClose:fn=>{prepare=fn;},onProjectResume:fn=>{resume=fn;},acknowledgeDrafts:async(_id,value)=>{ack=value;}});
+ const stop=registerUnmountGuard(()=> 'Unfinished hidden draft');
+ try{
+  await prepare({requestId:'blocked',purpose:'project-checkpoint'});assert.equal(ack.ok,false);assert.match(ack.reason,/hidden draft/);assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
+  stop();await prepare({requestId:'saved',purpose:'project-checkpoint'});assert.equal(ack.ok,true);
+  assert.throws(()=>assertDesktopWritable('/edit'),/unmounting/);assert.doesNotThrow(()=>assertDesktopWritable('/projects/unmount'));
+  resume();assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
+ }finally{stop();uninstall();}
+});
+
+test('renderer recovery pauses new mutations without destroying registered draft savers',async()=>{
+ const {assertDesktopWritable}=await import('./desktopLifecycle.js');let status,saves=0;
+ const stop=registerDraftSaver(async()=>saves++),uninstall=installDesktopLifecycle({onStatus:fn=>{status=fn;},onPrepareClose:()=>{}});
+ try{
+  status({state:'Recovery'});assert.throws(()=>assertDesktopWritable('/edit'),/closing/);await flushDesktopDrafts();assert.equal(saves,1);
+  status({state:'IntegrityRecovery'});assert.throws(()=>assertDesktopWritable('/edit'),/closing/);
+  status({state:'Running'});assert.doesNotThrow(()=>assertDesktopWritable('/edit'));
+ }finally{stop();uninstall();}
+});

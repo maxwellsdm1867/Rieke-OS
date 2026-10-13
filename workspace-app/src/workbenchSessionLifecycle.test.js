@@ -74,7 +74,7 @@ test('one draft control instance stays in the top action bar through normal and 
  const h=await harness();try{
   await h.render();await h.settle();
   const controls=h.container.querySelector('.incoming-draft-tools'),host=h.container.querySelector('.incoming-draft-host');
-  assert.ok(controls);assert.equal(controls.parentElement,host);assert.ok(host.closest('.incoming-action-bar'));
+  assert.ok(controls);assert.equal(controls.closest('.incoming-draft-host')===host,true,'the visibility-owned portal remains in the top action host');assert.ok(host.closest('.incoming-action-bar'));
   assert.equal(h.container.querySelector('.incoming-browser .incoming-draft-tools'),null);
   const highlight=()=>controls.querySelector('.epoch-highlight-action');
   assert.equal(highlight().textContent.trim(),'Select Highlighted (0)');assert.equal(highlight().disabled,true);

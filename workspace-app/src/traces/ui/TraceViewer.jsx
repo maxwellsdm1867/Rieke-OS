@@ -1,4 +1,5 @@
-import {useTraceViewPreference} from '../traceViewPreference.jsx';
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {normalizeTraceViewPreference,useTraceViewPreference} from '../traceViewPreference.jsx';
 import {useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useEffect,useId,useLayoutEffect,useMemo,useRef,useState} from 'react';
 import {Activity,ArrowLeft,ArrowRight,Hand,LoaderCircle,MousePointer2,ZoomIn,ZoomOut} from 'lucide-react';
@@ -57,15 +58,22 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const whole=preference.kind==='whole';
   const imported=['imported_snapshot','imported_cell_snapshot'].includes(readContext?.kind);
   const streams=(epoch?.streams || []).filter(stream=>stream.kind==='responses'&&stream.sample_count>0);
-  const [selection,setSelection]=useState({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});
+  const savedSelection=preference.responseSelection;
+  const preferredStream=savedSelection?.epoch_uuid===epoch?.epoch_uuid&&streams.some(item=>item.uuid===savedSelection.stream_uuid)?savedSelection.stream_uuid:streams[0]?.uuid||'';
+  const [selection,setSelection]=useState({epoch:epoch?.epoch_uuid,stream:preferredStream});
   const sameEpoch=selection.epoch===epoch?.epoch_uuid;
-  const selectedStream=sameEpoch?selection.stream:streams[0]?.uuid;
-  const setSelectedStream=stream=>setSelection({epoch:epoch?.epoch_uuid,stream});
+  const selectedStream=sameEpoch&&streams.some(item=>item.uuid===selection.stream)?selection.stream:preferredStream;
+  const setSelectedStream=stream=>{
+    if(!streams.some(item=>item.uuid===stream))return;
+    setSelection({epoch:epoch?.epoch_uuid,stream});
+    setPreference(normalizeTraceViewPreference({...preference,responseSelection:{epoch_uuid:epoch?.epoch_uuid,stream_uuid:stream}}));
+  };
+  const setWindowPreference=next=>setPreference(normalizeTraceViewPreference({...next,responseSelection:preference.responseSelection}));
   const stream=streams.find(item=>item.uuid===selectedStream) || streams[0];
   const bounded=whole?{start:0,count:stream?.sample_count||0}:clampWindow(preference.start,preference.count,stream?.sample_count,stream?.sample_count);
   const [mode,setMode]=useState('zoom'),[entryStart,setEntryStart]=useState('0'),[entryCount,setEntryCount]=useState(String(bounded.count));
   const [entryError,setEntryError]=useState('');
-  useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:streams[0]?.uuid || ''});setEntryError('');}},[epoch?.epoch_uuid,sameEpoch]);
+  useEffect(()=>{if(!sameEpoch){setSelection({epoch:epoch?.epoch_uuid,stream:preferredStream});setEntryError('');}},[epoch?.epoch_uuid,sameEpoch,preferredStream]);
   const contextKey=traceCacheRevision(revision,readContext);
   // Keep one loaded interval for this mounted viewer. Presentation changes inside
   // it reuse exact samples; identity/authority changes replace the read lifetime.
@@ -103,11 +111,12 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
   const amplitude=whole?null:preference.amplitude;
   const canPan=bounded.count<total||!!amplitude;
   function moveWindow(next,nextAmplitude=amplitude){
-    const window=clampWindow(next.start,next.count,total,total);drag.current=null;cursor.current=null;setEntryError('');setPreference({kind:'sample',...window,...(nextAmplitude?{amplitude:nextAmplitude}:{})});
+    const window=clampWindow(next.start,next.count,total,total);drag.current=null;cursor.current=null;setEntryError('');setWindowPreference({kind:'sample',...window,...(nextAmplitude?{amplitude:nextAmplitude}:{})});
   }
-  function resetWhole(){setMode('zoom');setEntryError('');drag.current=null;cursor.current=null;setPreference({kind:'whole',start:preference.start,count:preference.count});}
+  function resetWhole(){setMode('zoom');setEntryError('');drag.current=null;cursor.current=null;setWindowPreference({kind:'whole',start:preference.start,count:preference.count});}
 
-  useEffect(()=>{setEntryStart(String(bounded.start));setEntryCount(String(bounded.count));},[bounded.start,bounded.count]);
+  const entryWindow=JSON.stringify([epoch?.epoch_uuid,stream?.uuid,bounded.start,bounded.count]);
+  useSemanticReset(entryWindow,()=>{setEntryStart(String(bounded.start));setEntryCount(String(bounded.count));});
   function scheduleOverlay(){
     if(frame.current!=null)return;
     frame.current=requestAnimationFrame(()=>{frame.current=null;drawOverlay();});
@@ -174,7 +183,7 @@ function TraceViewer({epoch,revision,readContext,viewPreference,onViewPreference
     const shiftY=(at.rawY-gesture.origin.rawY)/gesture.height*(gesture.amplitude.max-gesture.amplitude.min);
     const nextAmplitude={min:gesture.amplitude.min+shiftY,max:gesture.amplitude.max+shiftY};
     cursor.current=null;setEntryError('');
-    setPreference({kind:'sample',...next,amplitude:nextAmplitude});
+    setWindowPreference({kind:'sample',...next,amplitude:nextAmplitude});
   }
   useEffect(()=>{cursor.current=null;drag.current=null;if(overlay.current)scheduleOverlay();},[mode]);
   function pointerMove(event){

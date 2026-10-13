@@ -1,3 +1,5 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useUnmountGuard} from "../../useUnmountGuard.js";
 import {useEffect,useId,useLayoutEffect,useRef,useState} from 'react';
@@ -9,14 +11,14 @@ import './AnnotationTags.css';
 import {confirmAnnotationReceipt,fastAnnotationReceipt} from '../annotationReceipts.js';
 import {epochResourceCache} from "../../resourceCache.js";
 
-export default function AnnotationTags({composer=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,readSeparately=false,reconcileReceipt=false,verifyTarget,groupMutation}){
+export default function AnnotationTags({composer=null,draftIdentity=null,epoch,revision,disabled=false,onChange,onFilter,focusRequest=0,epochFocusRequest=0,onNavigateEpoch,tools,children,selectedEpochs=[],selectedCells=[],targetScope=null,refreshWithEpoch=false,readSeparately=false,reconcileReceipt=false,verifyTarget,groupMutation}){
   const api=useWorkspaceRequest(defaultApi),requestScope=useWorkspaceRequestScope();
   const {profileUuid,profileName,openProfile,loading:profileLoading,error:profileError}=useAnnotationProfile();
   const [refreshAfter,setRefreshAfter]=useState(null);
   const [tabLocked,setTabLocked]=useState(()=>{try{return localStorage.getItem('workspace.tags.tabNavigation')!=='false';}catch{return true;}});
   const handledEpochFocus=useRef(0),restoreInput=useRef(false);
   function toggleTabLock(checked){setTabLocked(checked);try{localStorage.setItem('workspace.tags.tabNavigation',String(checked));}catch{}input.current?.focus();}
-  const [manualScope,setScope]=useState('epoch'),[localValue,setLocalValue]=useState(''),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
+  const [manualScope,setScope]=useState('epoch'),[query,setQuery]=useState(''),[open,setOpen]=useState(false),[active,setActive]=useState(-1),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState('');
   const scope=targetScope||manualScope;
   const bulkCells=scope==='selected-cells';
   const selectedCount=bulkCells?selectedCells.length:groupMutation?.count??selectedEpochs.length;
@@ -25,6 +27,7 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
   // Changing temporary highlights must retain unfinished text. The mutation
   // scope below still fences the exact target IDs before any durable write.
   const draftKey=JSON.stringify([identity,epoch?.cell_uuid,scope]);
+  const [localValue,setLocalValue]=useAuthoredDraft(!composer&&identity?['annotation-tag',...(draftIdentity||[identity,epoch?.cell_uuid||'']),scope] : null,'');
   const value=composer?(composer.values[draftKey]||''):localValue;
   function setValue(next){if(composer)composer.onChange(draftKey,next);else setLocalValue(next);}
   useUnmountGuard(!!value.trim(),'Save or clear the unfinished tag before unmounting.');
@@ -49,7 +52,7 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
   const groups=annotationGroups(annotationData),items=suggestions.data?.tags||[];
   const editingLocked=disabled||busy||awaitingEpoch||(remoteNeeded&&annotations.loading)||!!annotations.error||(!bulkCells&&!annotationData)||(bulkCells&&(!selectedCount||selectedCount>1000));
   const locked=editingLocked||profileLoading||!profileUuid;
-  useEffect(()=>{composerDirty.current=false;if(!composer)setValue('');setQuery(composer?value.trim():'');setActive(-1);setMessage('');setError('');setOpen(false);setScope('epoch');setRefreshAfter(null);},[identity]);
+  useSemanticReset(identity,()=>{composerDirty.current=false;setQuery(value.trim());setActive(-1);setMessage('');setError('');setOpen(false);setScope('epoch');setRefreshAfter(null);});
   // One request debounce; clear the active choice immediately when the text changes.
   useEffect(()=>{if(focusRequest&&focusRequest!==handledFocus.current&&!editingLocked&&!profileLoading){setScope(selectedEpochs.length?'selected':'epoch');if(!profileUuid){openProfile?.();return;}handledFocus.current=focusRequest;input.current?.focus();setOpen(true);}},[focusRequest,editingLocked,profileLoading,profileUuid,selectedEpochs.length]);
   useEffect(()=>{
@@ -57,7 +60,7 @@ export default function AnnotationTags({composer=null,epoch,revision,disabled=fa
     if(epochFocusRequest&&epochFocusRequest!==handledEpochFocus.current){handledEpochFocus.current=epochFocusRequest;setScope('epoch');input.current?.focus();setOpen(true);}
     else if(restoreInput.current){restoreInput.current=false;input.current?.focus();}
   },[epochFocusRequest,editingLocked,profileLoading]);
-  useEffect(()=>setActive(-1),[query]);
+  useSemanticReset(query,()=>setActive(-1));
   useEffect(()=>{if(scope==='selected'&&!selectedCount)setScope('epoch');},[scope,selectedCount]);
   async function mutate(tag,targetKind=scope,remove=false){
     if(locked||mutation.current||committedScope.current!==scopeIdentity)return false;

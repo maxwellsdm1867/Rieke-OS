@@ -15,6 +15,9 @@ test('viewing preferences validate restored input, strip authority and isolate p
  assert.deepEqual(normalize({kind:'sample',start:0,count:100,amplitude:{min:5,max:-10}}),{kind:'sample',start:0,count:100});
  const sample={kind:'sample',start:30000,count:1000};
  assert.deepEqual(normalize({...sample,epoch_uuid:'not-a-preference',read_context:{root:'untrusted'}}),sample);
+ const selected={epoch_uuid:'epoch-a',stream_uuid:'stream-b'};
+ assert.deepEqual(normalize({...sample,responseSelection:{...selected,lease:'never restore'}}),{...sample,responseSelection:selected});
+ for(const invalid of [null,{},'stream-b',{epoch_uuid:'epoch-a',stream_uuid:''},{epoch_uuid:'epoch-a',stream_uuid:' s'},{epoch_uuid:'x'.repeat(129),stream_uuid:'s'}])assert.deepEqual(normalize({...sample,responseSelection:invalid}),sample);
  let renderer;
  function Viewer({name}){const [value,onChange]=usePreference();return React.createElement('view-probe',{name,value,onChange});}
  function Protocol({initial,children}){const [value,onChange]=React.useState(()=>normalize(initial));return React.createElement(Provider,{value,onChange},children);}

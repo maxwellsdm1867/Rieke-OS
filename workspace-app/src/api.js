@@ -1,3 +1,4 @@
+import {useRetainedView,retainablePresentationRead} from './retainedWorkspaceViews.js';
 import {useWorkspaceRequestScope} from './workspaceRequest.js';
 import {mutationUndo,isUndoableRequest} from "./undo/mutationUndo.js";
 import {startResourceRequest,visibleResourceState} from './resourceRequest.js';
@@ -58,6 +59,9 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
   const inherited=useWorkspaceRequestScope(),owner=options.requestPort===undefined?inherited:options.requestPort;
   const transport=owner?(typeof owner.request==='function'?owner.request:()=>Promise.reject(Error('Workspace request authority is unavailable.'))):api;
   const cached=!owner&&options.cache===true,warmEpoch=!owner&&options.warmEpoch===true,paused=options.paused===true;
+  const retainedView=useRetainedView(),retentionIdentity=retainedView?.identity;
+  const retained=!!retainedView&&!owner&&!options.initialRead&&!cached&&retainablePresentationRead(path);
+  const completedRead=useRef(null);
   const [state, setState] = useState({data: null, loading: true, error: null});
   const [nonce, setNonce] = useState(0);
   const initialConsumer=useRef({}),initialLifetime=useRef(null),retiredOffers=useRef(new WeakSet()),initialRead=options.initialRead;
@@ -75,7 +79,9 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     // A draft write invalidates its read token before the replacement receipt
     // arrives. Cancel delayed/in-flight reads while retaining inert content.
     if(paused)return;
-    if (!path) {setState({data: null, loading: false, error: null}); return;}
+    if (!path) {completedRead.current=null;setState({data: null, loading: false, error: null}); return;}
+    const completed=completedRead.current;
+    if(retained&&completed?.path===path&&completed.revision===revision&&completed.nonce===nonce&&completed.retentionIdentity===retentionIdentity)return;
     if(!initialLifetime.current.retired&&typeof initialRead?.claim==='function'){
       try{
         const data=initialRead.claim({consumer:initialConsumer.current,path,revision});
@@ -87,14 +93,14 @@ export function useResource(path, revision = 0, delayMs = 0, options = {}) {
     setState(previous => previous.path === path && previous.owner===owner ? {...previous, loading:true, error:null} : {data:null,loading:true,error:null,path});
     const request=cached?(url,{signal})=>(warmEpoch?requestEpochWithTrace:cachedResourceRequest)(url,{request:api,signal,revision}):transport;
     return startResourceRequest({path,delayMs,request,
-      onData:data=>setState({data,loading:false,error:null,path,revision,nonce,owner,initialRead}),
-      onError:error=>setState({data:null,loading:false,error:error.message,path,revision,nonce,owner,initialRead})});
-  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,owner,transport,initialRead]);
+      onData:data=>{const next={data,loading:false,error:null,path,revision,nonce,owner,initialRead,retentionIdentity};completedRead.current=next;setState(next);},
+      onError:error=>{completedRead.current=null;setState({data:null,loading:false,error:error.message,path,revision,nonce,owner,initialRead,retentionIdentity});}});
+  }, [path, revision, nonce, delayMs,cached,warmEpoch,paused,owner,transport,initialRead,retained,retentionIdentity]);
   // Complete metadata/trace pairs publish in the same render; partial snapshots
   // start I/O immediately unless the caller explicitly requests a delay.
   // Both paths retain exact path/revision/reload publication fences.
   const hit=cached&&path?(warmEpoch?peekEpochWithTrace(path,revision):epochResourceCache.peek(path,revision)):undefined;
-  const visible=visibleResourceState({state:state.owner===owner&&state.initialRead===initialRead&&(!state.fromInitialRead||!initialLifetime.current.retired)?state:{},path,revision,nonce,hit});
+  const visible=visibleResourceState({state:(!retained||state.retentionIdentity===retentionIdentity)&&state.owner===owner&&state.initialRead===initialRead&&(!state.fromInitialRead||!initialLifetime.current.retired)?state:{},path,revision,nonce,hit});
   return {...visible,loading:paused&&!!path||visible.loading,reload};
 }
 export function useEpochResource(path,revision=0,delayMs=0){return useResource(path,revision,delayMs,{cache:true,warmEpoch:true});}

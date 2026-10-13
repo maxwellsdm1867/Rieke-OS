@@ -736,11 +736,23 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 binding_version=saved['version'], event_uuid=saved['event_uuid'], diff_counts=item['diff_counts'],
                 previous_count=item['previous_count'], next_count=item['next_count'])
 
+    @app.get('/api/project/presentation')
+    def project_presentation():
+        from disco.projects.presentation_cache import load_overview
+        if request.args:
+            raise ValueError('Project presentation accepts no parameters')
+        return jsonify(load_overview(project_dir, expected_uuid=service.project['project_uuid']))
+
+    def overview_response(payload):
+        from disco.projects.presentation_cache import save_overview
+        save_overview(project_dir, payload)
+        return jsonify(payload)
+
     @app.get("/api/overview")
     def overview():
         with db_lock:
             native=native_overview()
-            if native is not None:return jsonify(native)
+            if native is not None:return overview_response(native)
             payload = copy.deepcopy(service.overview())
             memberships = {}
             export_memberships = store.export_memberships()
@@ -764,7 +776,7 @@ def create_app(project_dir, retinanalysis_dir, *, service=None, store=None, expl
                 payload['counts'].update({key:summary[key] for key in ('shared_tagged_cells','shared_tagged_epochs')})
                 payload['annotation_summary']={key:summary[key] for key in ('tags','total_tags','truncated')}
             payload["exports"] = store.list_dataset_revisions()
-            return jsonify(payload)
+            return overview_response(payload)
 
     @app.get('/api/tags')
     def tags():

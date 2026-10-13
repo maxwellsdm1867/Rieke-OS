@@ -1,0 +1,62 @@
+# Retained scientific project documents
+
+`project-views.cjs` owns a bounded set of live scientific documents for one native
+window. Main supplies verified backend bindings, Electron view construction,
+draft preparation and lifecycle admission. It does not open/close project
+processes, derive scientific authority or persist scientific data.
+
+`ProjectViews.activate(binding,url)` serializes activation. Identity includes
+project UUID, canonical project path, desktop session, PID, process creation time
+and origin. A warm hit reuses its exact WebContentsView and document. A cold view
+loads before replacing the visible view. Recovery/quit admission is checked both
+before and after load. Visibility notifications identify the sending document;
+only its native host owns bounds and native window controls.
+
+The default cap is three documents, including a retained launcher. Clean inactive
+LRU documents are disposed only after a positive draft receipt. Draft failures,
+busy workflows or unconfirmed writes are soft-cap exceptions. Eviction runs after
+activation without blocking the visible return. It never shuts down the backend.
+A document reactivated while a checkpoint is pending wins over eviction.
+
+`prepareClose({projectUuid,path})` checkpoints the exact matching retained target,
+including hidden documents. It blocks reactivation until cancellation or confirmed
+closure. Main's `desktop:confirm-project-closed` requires authenticated root health
+that no longer reports that UUID/path. A renderer declaration alone cannot
+release a view. Closing the active target first activates the launcher, because
+the old renderer cannot navigate after its WebContents is destroyed.
+
+The preload adds `activateProject`, `projectVisibility`, `onProjectVisibility`,
+`prepareProjectClose`, `cancelProjectClose`, `confirmProjectClosed`, and
+`onProjectResume`. These keep the existing origin/main-frame admission. Native
+host windows and scientific renderer owners are distinct collections. IPC,
+request headers, downloads and clipboard permission use exact registered owners;
+scientific owners are additionally checked against the current backend binding.
+Clipboard writes and user-facing project actions require the active document.
+
+Each retained owner participates in strict replacement and bounded explicit Quit.
+`DraftBarrier.prepare` now accepts optional `purpose:'project-checkpoint'` for a
+view checkpoint; ordinary quit retains its previous payload and closing behavior.
+The renderer uses a scoped unmount guard for checkpoints, preserving pending-write
+and workflow refusal. Main sends `desktop:project-resume` after declined eviction,
+failed preparation or explicit cancellation. Accepted work remains owned by its
+existing operation lifecycle. Checkpoint persistence never grants mutation consent.
+
+Hidden saves do not choose the startup project. Activation remembers the visible
+project; visible draft saves can refine its last page. Global recovery detaches retained documents and fences new actions while preserving
+healthy unsaved drafts for checkpointing. A crashed renderer stays unavailable in
+lifecycle accounting; other projects remain live. If the active renderer crashes,
+the launcher is shown. Reopening the failed document requires quitting and reopening
+Disco. Draft barriers still checkpoint healthy owners while reporting the failed
+owner as unconfirmed; strict replacement cannot claim a clean draft receipt.
+
+Public behavior checks:
+
+```
+node --test desktop/tests/project-views.test.cjs desktop/tests/main-retained-views.test.cjs desktop/tests/security.test.cjs desktop/close/tests/*.test.cjs
+```
+
+These tests use Electron/transport doubles and disposable directories. They do
+not qualify native attachment, packaged transport, memory limits, restart hydration
+or scientific cleanup. Native evidence and required repository gates belong to
+the exact combined candidate. The cap is a policy bound, not a measured memory
+budget; large document memory remains a separately measured limit.

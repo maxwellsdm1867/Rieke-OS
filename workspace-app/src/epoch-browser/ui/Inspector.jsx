@@ -1,10 +1,11 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {RetainedPortal,useRetainedViewProtection} from '../../retainedWorkspaceViews.js';
 import {createWorkbenchSelection} from '../../incoming-workbench/workbenchAuthority.js';
 import {EpochHighlightTools} from './EpochBrowserChrome.jsx';
 import {mergeEpochSelection} from '../../epochSelection.js';
 import {incomingTreeSelectionScope} from '../../incoming-workbench/incomingSelection.js';
 import {useWorkspaceRequest,useWorkspaceRequestScope} from '../../workspaceRequest.js';
 import {useTreeBranchReads} from '../../tree-ancestors/treeBranchReads.jsx';
-import {createPortal} from 'react-dom';
 import {useUnmountGuard} from '../../useUnmountGuard.js';
 import EpochViewer from './EpochViewer.jsx';
 import SelectionMaskDialog from '../../exports/ui/SelectionMaskDialog.jsx';
@@ -68,6 +69,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const rememberAnnotationDraft=useCallback((key,value)=>setAnnotationDrafts(previous=>{if(previous[key]===value)return previous;const next={...previous};if(value)next[key]=value;else delete next[key];return next;}),[]);
   const [tagFocus,setTagFocus]=useState(0),[epochTagFocus,setEpochTagFocus]=useState(0);
   const [tag,setTag]=useState(typeof initialNavigation?.curationTagDraft==='string'?initialNavigation.curationTagDraft:''),[busy,setBusy]=useState(false),[error,setError]=useState('');
+  useRetainedViewProtection({dirty:!!tag.trim()||Object.keys(annotationDrafts).length>0,busy});
   useUnmountGuard(!!tag.trim(),'Save or clear the unfinished epoch tag before unmounting.');
   const [operationMessage,setOperationMessage]=useState(''),[maskMessage,setMaskMessage]=useState('');
   const maskInput=useRef(null);
@@ -109,7 +111,8 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
   const highlightedEpochs=highlightState.scope===highlightScope?highlightState.ids:[];
   const highlightOwner=useMemo(()=>({scope:highlightScope}),[highlightScope]);
   const committedHighlightScope=useRef(null);
-  useLayoutEffect(()=>{committedHighlightScope.current=highlightOwner;setHighlightState({scope:highlightScope,ids:[]});return()=>{committedHighlightScope.current=null;};},[highlightOwner]);
+  useSemanticReset(highlightScope,()=>setHighlightState({scope:highlightScope,ids:[]}));
+  useLayoutEffect(()=>{committedHighlightScope.current=highlightOwner;return()=>{committedHighlightScope.current=null;};},[highlightOwner]);
   function setHighlightedEpochs(update){
     if(committedHighlightScope.current!==highlightOwner)return;
     setHighlightState(old=>{const ids=old.scope===highlightScope?old.ids:[];return {scope:highlightScope,ids:typeof update==='function'?update(ids):[...update]};});
@@ -416,7 +419,7 @@ function InspectorContent({protocol,projectId,initialEpochUuid=null,cellScope,fi
       {focusCell&&<button className="inspection-focus-chip" disabled={designBlocked||busy} onClick={clearCellFocus} title="Clear cell focus and navigate all matching cells">{datedCellLabel(viewCells?.find(cell=>cell.cell_uuid===focusCell)||focusedEpoch||{},true)} <X size={12}/></button>}
     </>} before={<>
     {readContext&&treeSelectionFeedback&&<p className="incoming-tree-feedback" role="alert">{treeSelectionFeedback}</p>}
-    {readContext&&draftSelection&&draftSelectionTarget&&createPortal(<IncomingSelectionTools {...draftSelection} source={{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision}} cells={viewCells} freshCells={freshCells} filtered={Object.keys(filters||{}).length>0} targets={targets} cell={cellTagRequest} epoch={focusedEpoch} focusUuid={focused} onSelect={selectOverviewTargets} viewSelected={!!selectedView} onViewSelected={toggleSelectedView} disabled={draftSelection.disabled||busy||viewWorking||!cellsReady}>{highlightTools}</IncomingSelectionTools>,draftSelectionTarget)}
+    {readContext&&draftSelection&&draftSelectionTarget&&<RetainedPortal target={draftSelectionTarget}><IncomingSelectionTools {...draftSelection} source={{kind:'protocol',protocolId:id,readContext,query:protocolSearch,queryRevision:listQueryRevision}} cells={viewCells} freshCells={freshCells} filtered={Object.keys(filters||{}).length>0} targets={targets} cell={cellTagRequest} epoch={focusedEpoch} focusUuid={focused} onSelect={selectOverviewTargets} viewSelected={!!selectedView} onViewSelected={toggleSelectedView} disabled={draftSelection.disabled||busy||viewWorking||!cellsReady}>{highlightTools}</IncomingSelectionTools></RetainedPortal>}
     <SourceEligibilityNotice eligibility={protocol.source_eligibility} onStores={onStores}/>
     {!designMode&&<>
 

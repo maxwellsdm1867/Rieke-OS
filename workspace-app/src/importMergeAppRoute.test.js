@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorkflowHarness} from './test-support/workflowHarness.js';
+const visible=node=>{for(let current=node;current;current=current.parent)if(current.props?.hidden||current.props?.inert||current.props?.style?.display==='none')return false;return true;};
 const suggestion={protocol_uuid:'protocol-A',protocol_name:'Test',candidate_revision_uuid:'original',status:'pending',diff_counts:{added:2,removed:0,changed:0}};
 for(const entry of ['Main match card','import page'])test(`actual App ${entry} wires a user request to the cumulative preview handoff`,async()=>{
  const h=await createWorkflowHarness();
@@ -10,8 +11,8 @@ for(const entry of ['Main match card','import page'])test(`actual App ${entry} w
   await h.mount();await h.waitFor(()=>h.root.findAll(node=>['workflow-child','import-suggestions'].includes(node.type)&&typeof node.props.onMerge==='function').length>0);
   const card=h.root.findAll(node=>['workflow-child','import-suggestions'].includes(node.type)&&typeof node.props.onMerge==='function')[0];
   await h.act(()=>assert.equal(card.props.onMerge('protocol-A'),true));
-  await h.waitFor(()=>h.root.findAllByProps({className:'incoming-workbench'}).length>0);await h.settle(30);
-  assert.equal(h.root.findAllByProps({'aria-label':'Workbench'})[0].props['aria-selected'],true);
+  await h.waitFor(()=>h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length>0);await h.settle(30);
+  assert.equal(h.root.findAllByProps({'aria-label':'Workbench'}).find(visible).props['aria-selected'],true);
   assert.ok(h.root.findAllByProps({role:'status'}).some(node=>node.children.join('').includes('No pending incoming recordings to merge')),'intent reached the real IncomingWorkbench hook');
   assert.ok(h.fixture.requests.every(r=>!r.path.includes('apply-to-protocol')&&!r.path.endsWith('/accept')));
  }finally{await h.close();}
@@ -30,10 +31,10 @@ test('held import source merges without entering Workbench and opens Overview on
  try{
   await h.mount();await h.waitFor(()=>h.root.findAllByType('import-suggestions').length>0);
   let pending;await h.act(()=>{pending=h.root.findByType('import-suggestions').props.onMerge('protocol-A',{kind:'merge_source',candidate_revision_uuid:'original',source_sha256:'source'});});
-  await accepted;assert.equal(h.fixture.route.page,'import');assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
+  await accepted;assert.equal(h.fixture.route.page,'import');assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
   await h.act(async()=>{release();await pending;});await h.settle(15);
-  assert.equal(h.root.findAllByType('import-suggestions').length,0);assert.equal(h.root.findAllByProps({'aria-label':'Overview'})[0].props['aria-selected'],true);
-  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).length,0);
+  assert.equal(h.root.findAllByType('import-suggestions').filter(visible).length,0);assert.equal(h.root.findAllByProps({'aria-label':'Overview'}).find(visible).props['aria-selected'],true);
+  assert.equal(h.root.findAllByProps({className:'incoming-workbench'}).filter(visible).length,0);
   assert.ok(h.fixture.requests.every(r=>!r.path.endsWith('/draft')),'direct merge does not mutate a review draft');
  }finally{release?.();await h.close();}
 });

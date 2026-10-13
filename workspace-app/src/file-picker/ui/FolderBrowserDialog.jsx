@@ -1,3 +1,4 @@
+import {useRetainedModal,useRetainedView} from '../../retainedWorkspaceViews.js';
 import {useEffect,useId,useRef,useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {ArrowLeft,ArrowRight,ChevronRight,Folder,FolderOpen,FolderPlus,Home,LoaderCircle,MapPin,Pencil,X} from 'lucide-react';
@@ -16,15 +17,17 @@ export function openFolderBrowserDialog(options){
 }
 
 export default function FolderBrowserDialog({purpose='existing',title='Choose a folder',initialDirectory='',initialName='New project',request=api,onChoose}){
+  const active=useRetainedView()?.active!==false;
   const dialog=useRef(null),nameInput=useRef(null),chooseButton=useRef(null),titleId=useId(),nameId=useId();
   const [directory,setDirectory]=useState(initialDirectory),[offset,setOffset]=useState(0),[data,setData]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState('');
   const [name,setName]=useState(initialName),[editingPath,setEditingPath]=useState(false),[pathDraft,setPathDraft]=useState(initialDirectory),[retry,setRetry]=useState(0);
   const [createNew,setCreateNew]=useState(true);
   const usesNew=purpose==='new'||purpose==='create'&&createNew;
-  useEffect(()=>{const element=dialog.current;element.showModal();if(purpose!=='existing')nameInput.current?.focus();return()=>element.close();},[purpose]);
+  useRetainedModal(dialog);
+  useEffect(()=>{if(active&&purpose!=='existing')nameInput.current?.focus();},[purpose,active]);
   useEffect(()=>{
-    if(purpose==='create'&&!usesNew&&!loading&&!dialog.current.contains(document.activeElement))chooseButton.current?.focus();
-  },[purpose,usesNew,loading]);
+    if(active&&purpose==='create'&&!usesNew&&!loading&&!dialog.current.contains(document.activeElement))chooseButton.current?.focus();
+  },[purpose,usesNew,loading,active]);
   useEffect(()=>{
     const controller=new AbortController();setLoading(true);setError('');
     readFolderListing({directory,offset,request:(path)=>request(path,{signal:controller.signal})}).then(listing=>{

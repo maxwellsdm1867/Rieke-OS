@@ -1,3 +1,6 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {useRetainedViewProtection,useRetainedModal} from '../../retainedWorkspaceViews.js';
 import {useUnmountGuard} from '../../useUnmountGuard.js';
 import H5Inbox from '../../recording-import/ui/H5Inbox.jsx';
 import {useDeferredValue,useEffect,useMemo,useRef,useState} from 'react';
@@ -51,7 +54,7 @@ function LifecycleForm({pending,reason,setReason,busy,error,onCancel,onSubmit}){
 function DeleteStoreDialog({source,busy,error,onCancel,onConfirm}){
   const dialog=useRef(null);
   const info=useResource(`/data-stores/${source.source_sha256}/deletion`);
-  useEffect(()=>{dialog.current?.showModal();return()=>dialog.current?.close();},[]);
+  useRetainedModal(dialog);
   return <dialog ref={dialog} className="ds-delete-dialog" aria-labelledby="ds-delete-title" onCancel={event=>{event.preventDefault();if(!busy)onCancel();}}>
     <h2 id="ds-delete-title">Delete data store?</h2><strong>{source.filename}</strong><p className="ds-mono">SHA-256: {source.source_sha256}</p>
     <p>This will delete this project's imported H5 copy and remove its data from the database. The change will automatically propagate to downstream pinned protocols. Your existing exports will remain unchanged. Continue?</p>
@@ -67,7 +70,7 @@ function EventDetails({event}){
 function StoreTimeline({sha,revision,onLogs}){
   const [offset,setOffset]=useState(0);
   const events=useResource(`/data-stores/${sha}/events?limit=50&offset=${offset}`,revision);
-  useEffect(()=>setOffset(0),[sha]);
+  useSemanticReset(sha,()=>setOffset(0));
   return <section className="ds-timeline"><div className="ds-section-heading"><h2><History size={16}/> Source activity</h2><button onClick={events.reload} disabled={events.loading} aria-label="Refresh source activity"><RefreshCw size={14}/></button>{onLogs&&<button onClick={onLogs}>Master log <ArrowRight size={13}/></button>}</div>{events.data?.attribution?.unresolved_project_history_references>0&&<p className="ds-evidence-note">Some historical query or export references in this project could not be resolved. Source activity may be incomplete.</p>}<Status {...events} retry={events.reload}>{events.data?.events?.length?<ol>{events.data.events.map(event=><li key={event.event_uuid}><div className="ds-event-mark"><FileClock size={14}/></div><div><div className="ds-event-title"><strong>{humanize(event.action).replace(/_/g,' ')}</strong><time>{timestamp(event.occurred_at)}</time></div><p>{event.actor || 'Actor not recorded'}{event.payload?.reason?` · ${event.payload.reason}`:''}</p>{event.source_link&&<div className="ds-event-evidence"><span>Linked by {(Array.isArray(event.source_link.basis)?event.source_link.basis:[]).map(value=>humanize(value).replace(/_/g,' ')).join(', ') || 'source evidence'}</span>{Number.isInteger(event.source_link.affected_epoch_count)&&<span>{number(event.source_link.affected_epoch_count)} linked source epochs</span>}</div>}<EventDetails event={event}/></div></li>)}</ol>:<p className="ds-no-events">No source-linked activity is recorded. Validation time alone does not establish when a file was imported.</p>}</Status><div className="ds-event-pages"><button disabled={!offset||events.loading} onClick={()=>setOffset(Math.max(0,offset-50))} aria-label="Previous source events"><ArrowLeft size={14}/></button><span>{events.data?.events?.length?offset+1:0}–{offset+(events.data?.events?.length || 0)}</span><button disabled={!events.data?.has_more||events.loading} onClick={()=>setOffset(offset+50)} aria-label="Next source events"><ArrowRight size={14}/></button></div></section>;
 }
 function SourceContents({source}){
@@ -102,9 +105,11 @@ export default function DataStores({importing=false,revision=0,onChange,onImport
   const saved=useRef(session).current;
   const [tab,setTab]=useState(saved?.tab||'active'),[search,setSearch]=useState(saved?.search||''),[offset,setOffset]=useState(saved?.offset||0),[selected,setSelected]=useState(saved?.selected||null),[version,setVersion]=useState(0);
   const [propagationSource,setPropagationSource]=useState(null),[changedSource,setChangedSource]=useState(null);
-  const [pending,setPending]=useState(null),[busy,setBusy]=useState(false),[reason,setReason]=useState(''),[error,setError]=useState(''),[message,setMessage]=useState(saved?.wasBusy?'A source action was in progress when you left. Check its activity before retrying.':'');
+  const [pending,setPending]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(saved?.wasBusy?'A source action was in progress when you left. Check its activity before retrying.':'');
+  const [reason,setReason]=useAuthoredDraft(pending?['source-lifecycle',pending.source.source_sha256,pending.action,'reason']:null,'');
   useUnmountGuard(!!pending,'Finish or cancel the data store change before unmounting.');
   const query=useDeferredValue(search.trim().toLowerCase());
+  useRetainedViewProtection({dirty:!!pending||!!reason||!!propagationSource||!!changedSource,busy:!!busy});
   const inventory=useResource('/data-stores',`${revision}:${version}`);
   const sources=inventory.data?.data_stores || [];
   const filtered=useMemo(()=>sources.filter(source=>(tab==='all'||(tab==='archived'?source.state?.archived:!source.state?.archived))&&`${source.filename} ${source.source_path} ${source.source_sha256}`.toLowerCase().includes(query)),[sources,tab,query]);
@@ -122,10 +127,10 @@ export default function DataStores({importing=false,revision=0,onChange,onImport
   const previousFilter=useRef({tab,query});
   useEffect(()=>{if(previousFilter.current.tab!==tab||previousFilter.current.query!==query)setOffset(0);previousFilter.current={tab,query};},[tab,query]);
   useEffect(()=>{if(inventory.data&&!inventory.loading)setOffset(current=>Math.min(current,Math.max(0,Math.floor((filtered.length-1)/PAGE_SIZE)*PAGE_SIZE)));},[filtered.length,inventory.data,inventory.loading]);
-  function stage(source,action){setPending({source,action});setReason('');setError('');setMessage('');}
+  function stage(source,action){setPending({source,action});setError('');setMessage('');}
   async function changeState(event){
     event.preventDefault();if(busy||!pending)return;setBusy(true);setError('');
-    try{if(!Number.isInteger(pending.source.state?.version))throw new Error('Registration version is missing. Refresh this store.');const result=await api(`/data-stores/${pending.source.source_sha256}/state`,{method:'POST',body:{action:pending.action,expected_version:pending.source.state.version,reason:reason.trim()}});if(!result.state||!result.event_uuid)throw new Error('No recorded state change was returned. Refresh the store before retrying.');setMessage(`${actions[pending.action].verb} recorded for ${pending.source.filename}.`);setChangedSource(['exclude','include'].includes(pending.action)?pending.source:null);setPending(null);setVersion(value=>value+1);onChange?.();}
+    try{if(!Number.isInteger(pending.source.state?.version))throw new Error('Registration version is missing. Refresh this store.');const result=await api(`/data-stores/${pending.source.source_sha256}/state`,{method:'POST',body:{action:pending.action,expected_version:pending.source.state.version,reason:reason.trim()}});if(!result.state||!result.event_uuid)throw new Error('No recorded state change was returned. Refresh the store before retrying.');setMessage(`${actions[pending.action].verb} recorded for ${pending.source.filename}.`);setChangedSource(['exclude','include'].includes(pending.action)?pending.source:null);setReason('');setPending(null);setVersion(value=>value+1);onChange?.();}
     catch(error){setError(`${error.message} Refresh the inventory before retrying a conflicting change.`);}finally{setBusy(false);}
   }
   function refresh(){if(busy)return;setPending(null);setError('');inventory.reload();}

@@ -25,7 +25,7 @@ Baseline is `18975ad8240044273ca1f52783b20b8adbfd9a3f`; published stable remains
 | Typed query/generation/leases | Existing typed reader, generation/cache lease and native authority owners. | Keep conservative exact method/binding proof; broad authority proposals not implemented. |
 | Renderer resources | Context-specific request, activation, bounded cache and summary-job ownership. | Existing modules retained; unifying distinct freshness/profile policies is not justified. |
 | Group save | Opaque session owns exact requests, retry and deferred release; tree preview owns query/validation. | Reviewed opaque-session slice `f7fc7b6`; keep-current alternative remains documented. |
-| Presentation sessions | Five-operation owner hides route/fallback storage, checkpoints and pruning; App retains navigation/persistence composition. | Reviewed runtime slice `5e04525`; immutable baseline `48c2c47`, no speed claim. |
+| Presentation sessions | Route/fallback owner hides checkpoints and pruning plus bounded authored-field reads/writes; the named hook binds retained destinations and shell fields. App retains navigation/persistence composition. | Reviewed runtime slice `5e04525`; immutable baseline `48c2c47`, no speed claim. |
 | Desktop lifecycle | Existing draft, startup, process and quit owners have separate obligations. | P07 enforcement adopted in `5d12cf0`; no runtime facade or protocol change. |
 | Contract enforcement | Single adopted catalog and guard discover owners and affected tests. | Scoped desktop CJS runner added; direct imports do not prove transitive authority. |
 
@@ -146,6 +146,18 @@ All seven whole-app cost shifts remain unmeasured; benchmark criteria are not
 measured results or calibrated latency targets.
 
 ## Presentation folder pilot
+
+The 2026-10-13 retained-UI candidate extends the existing presentation checkpoint
+with bounded authored text/options through `readDraft`/`rememberDraft` and
+`useAuthoredDraft`/`AuthoredDraftScope`. It uses the existing desktop DraftStore,
+not a separate cache. Canonical hydration and confirmed-save retirement are
+explicit; failures preserve unfinished input. `authoredDrafts.test.js` round-trips
+real screen inputs through the actual DraftStore and a new presentation/renderer
+lifetime, including same-label/different-identity isolation and capacity refusal.
+These new candidate checks are separate from the historical pilot evidence below;
+they do not establish native restart or power-loss durability. Exact current
+field ownership and exclusions are in
+[the authored-state audit](../dev/authored-state-retention-audit-2026-10-13.md).
 
 The [presentation module](../../workspace-app/src/presentation/AGENTS.md) now
 colocates the named public factory, contract documentation, owner tests and private

@@ -11,7 +11,7 @@ and [explicit Quit contract](../../docs/dev/DESKTOP_QUIT_COORDINATION.md).
 
 | Public entry | Caller contract | Errors and ordering |
 | --- | --- | --- |
-| `draft-barrier.cjs`: `DraftBarrier` | Construct with optional timeout/send adapter; `prepare(windows,{timeout})`; `acknowledge(payload,window)`; default 10,000 ms. | Exact request/window and payload checks. Malformed acknowledgments throw TypeError; unmatched acknowledgments throw Error. Destroyed/unavailable renderer, failed send, negative/missing acknowledgment return ready:false with retained-view warning. No backend authority inferred. |
+| `draft-barrier.cjs`: `DraftBarrier` | Construct with optional timeout/send adapter; `prepare(windows,{timeout,purpose})`; `acknowledge(payload,window)`; default 10,000 ms. | Exact request/window and payload checks. Malformed acknowledgments throw TypeError; unmatched acknowledgments throw Error. Destroyed/unavailable renderer, failed send, negative/missing acknowledgment return ready:false with retained-view warning. No backend authority inferred. |
 | `quit-coordinator.cjs`: `QuitCoordinator` | Inject prepareDrafts, cleanup, exit, optional publish/deadlines; `quit()` coalesces calls. Default total 35,000 ms, drafts 5,000 ms. | Drafts precede cleanup using remaining budget. Failures/timeouts become recovery warnings; explicit exit ready:true is distinct from clean, services_closed and drafts_saved. |
 | `quit-coordinator.cjs`: `bounded` | `bounded(action,milliseconds,reason)` races the action against a timeout. | Timeout returns ready:false, reason, timedOut:true; action rejection remains rejection; timers clear on settlement. |
 

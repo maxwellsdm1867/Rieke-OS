@@ -239,6 +239,21 @@ class WorkspaceAPITests(unittest.TestCase):
                 'expected_revisions': {key: 0 for key in ids},
                 'query_revision': self.revision()}
 
+    def test_successful_overview_publishes_only_inert_display(self):
+        root = Path(self.temp.name)
+        (root / 'project.json').write_text(json.dumps({'format': 'recording-project', 'version': 1,
+            **self.service.project}))
+        with patch.dict(os.environ, {'RIEKE_DESKTOP_USER_STATE': str(root / 'user-state')}):
+            canonical = self.client.get('/api/overview')
+            self.assertEqual(canonical.status_code, 200)
+            restored = self.client.get('/api/project/presentation')
+            self.assertEqual(restored.status_code, 200)
+            self.assertTrue(restored.json['available'])
+            self.assertTrue(restored.json['presentation_only'])
+            self.assertEqual(restored.json['overview']['counts']['epochs'], canonical.json['counts']['epochs'])
+            self.assertNotIn('query_revision', restored.json['overview']['protocols'][0])
+            self.assertEqual(self.client.get('/api/project/presentation?reload=1').status_code, 400)
+
     def test_mutation_requires_request_header_and_allowed_origin(self):
         body = self.curation_body({'tags_add': ['checked']})
         missing = self.client.post(self.base + '/curation', json=body)

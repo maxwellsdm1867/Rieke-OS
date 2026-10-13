@@ -1,4 +1,5 @@
-import {useEffect,useId,useMemo,useState} from 'react';
+import {useSemanticReset} from '../../useSemanticReset.js';
+import {useId,useMemo,useState} from 'react';
 import {ChevronDown} from 'lucide-react';
 import {duration,number} from "../../api.js";
 import {aggregateCellTypes} from "../../protocol-overview/protocolOverviewModel.js";
@@ -12,7 +13,7 @@ function CellTypeGroup({group,total,onInspect,onQC,showInclusion,revealKey}){
   const id=useId(),[open,setOpen]=useState(false);
   // A project date/type filter reveals its matching groups. Keep their CellList
   // mounted when collapsed so native details and pagination retain their state.
-  useEffect(()=>{if(revealKey)setOpen(true);},[revealKey]);
+  useSemanticReset(revealKey,()=>{if(revealKey)setOpen(true);});
   return <section className="cell-type-group" aria-label={`${group.type} cells`}>
     <div className="cell-type-group-heading">
       <h3><button className="cell-type-toggle" aria-expanded={open} aria-controls={id} onClick={()=>setOpen(value=>!value)}>

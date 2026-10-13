@@ -81,3 +81,5 @@ Protocol infographics use `/protocols/<uuid>/overview` and a separate
 absent from that overview DTO; missing fields must not be treated as complete
 empty membership. Project overview keeps the full project DTO. Linked file-size
 reads inspect only relevant registered paths and never request epoch inventory.
+
+Retained Protocol panels keep Overview, Inspect and Workbench state separately. Summary failure exposes `displayData` independently of canonical `data`; App renders that display inert while keeping current authority unavailable. An invalidated unfinished root summary restarts even if its deferred summary revision did not change, preventing startup from remaining empty after simultaneous draft restoration and an annotation scan. `overviewDemand.test.js` covers this race and failed-refresh separation. Native project visibility messages suppress the coalesced internal focus refresh; genuine app focus/reconnect still revalidates. Disk presentation uses a fixed-height quiet status slot and disables Overview callbacks/recording-size requests until canonical data is current.

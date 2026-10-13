@@ -1,3 +1,5 @@
+import {useRetainedView} from '../../retainedWorkspaceViews.js';
+import {useSemanticReset} from '../../useSemanticReset.js';
 import PredicateValueInput from './PredicateValueInput.jsx';
 import {predicateFieldLabel as fieldLabel,predicateFieldGroup,predicateFieldRank,predicateFieldSearch} from '../predicateFieldPresentation.js';
 import {useEffect,useId,useRef,useState} from 'react';
@@ -13,6 +15,7 @@ const displayValue=value=>typeof value==='string'?`“${value}”`:JSON.stringif
 const categoryOrder=['Common fields','Recording','Experiment','Cell','Epoch group','Epoch block','Epoch','Protocol settings','Conditions'];
 const categoryRank=value=>categoryOrder.includes(value)?categoryOrder.indexOf(value):99;
 function FieldPicker({fields,value,onChange,disabled}){
+  const retainedActive=useRetainedView()?.active!==false;
   const [open,setOpen]=useState(false),[search,setSearch]=useState(''),[category,setCategory]=useState('All fields'),[limit,setLimit]=useState(50),[active,setActive]=useState(0),[position,setPosition]=useState(null);
   const wrap=useRef(null),popup=useRef(null),trigger=useRef(null),input=useRef(null),listId=useId();
   const selected=fields.find(field=>field.id===value);
@@ -24,10 +27,10 @@ function FieldPicker({fields,value,onChange,disabled}){
     return tokens.every(token=>text.includes(token));
   }).sort((a,b)=>categoryRank(predicateFieldGroup(a))-categoryRank(predicateFieldGroup(b))||predicateFieldRank(a)-predicateFieldRank(b)||predicateFieldGroup(a).localeCompare(predicateFieldGroup(b))||fieldLabel(a).localeCompare(fieldLabel(b)));
   const shown=available.slice(0,limit);
-  useEffect(()=>{setActive(0);setLimit(50);},[search,category]);
+  useSemanticReset(JSON.stringify([search,category]),()=>{setActive(0);setLimit(50);});
   useEffect(()=>{if(disabled)setOpen(false);},[disabled]);
   useEffect(()=>{
-    if(!open)return;
+    if(!open||!retainedActive)return;
     const reposition=()=>{
       const box=trigger.current?.getBoundingClientRect();if(!box)return;
       const width=Math.min(450,window.innerWidth-24),below=window.innerHeight-box.bottom-14,above=box.top-14;
@@ -37,13 +40,13 @@ function FieldPicker({fields,value,onChange,disabled}){
     const outside=event=>{if(!wrap.current?.contains(event.target)&&!popup.current?.contains(event.target))setOpen(false);};
     reposition();window.addEventListener('resize',reposition);window.addEventListener('scroll',reposition,true);document.addEventListener('pointerdown',outside);
     return()=>{window.removeEventListener('resize',reposition);window.removeEventListener('scroll',reposition,true);document.removeEventListener('pointerdown',outside);};
-  },[open]);
-  useEffect(()=>{if(open&&position)input.current?.focus();},[open,!!position]);
-  useEffect(()=>{if(open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});},[open,active,listId]);
+  },[open,retainedActive]);
+  useSemanticReset(JSON.stringify([open,!!position]),()=>{if(retainedActive&&open&&position)input.current?.focus();});
+  useSemanticReset(JSON.stringify([open,active,listId]),()=>{if(retainedActive&&open)document.getElementById(`${listId}-${active}`)?.scrollIntoView({block:'nearest'});});
   function close(){setOpen(false);trigger.current?.focus();}
   function select(field){if(disabled)return;onChange(field);close();setSearch('');}
   return <div className="pb-field-picker" ref={wrap}><button type="button" ref={trigger} className="pb-field-button" disabled={disabled} onClick={()=>setOpen(value=>!value)} onKeyDown={event=>{if(event.key==='ArrowDown'){event.preventDefault();setOpen(true);}}} aria-expanded={open} aria-haspopup="listbox" title={selected?`${selected.label}\n${selected.path}`:value}><span>{fieldLabel(selected) || value || 'Choose field'}</span><ChevronDown size={12}/></button>
-    {open&&position&&createPortal(<div ref={popup} className="pb-field-popup pb-field-portal" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}><label className="pb-field-search"><Search size={14}/><input ref={input} value={search} placeholder="Search fields or recorded values" role="combobox" aria-label="Find predicate field" aria-expanded="true" aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} onChange={event=>setSearch(event.target.value)} onKeyDown={event=>{
+    {open&&position&&retainedActive&&createPortal(<div ref={popup} className="pb-field-popup pb-field-portal" style={{left:position.left,top:position.top,width:position.width,maxHeight:position.height}}><label className="pb-field-search"><Search size={14}/><input ref={input} value={search} placeholder="Search fields or recorded values" role="combobox" aria-label="Find predicate field" aria-expanded="true" aria-controls={listId} aria-autocomplete="list" aria-activedescendant={shown[active]?`${listId}-${active}`:undefined} onChange={event=>setSearch(event.target.value)} onKeyDown={event=>{
       if(event.key==='Escape'){close();event.preventDefault();}
       if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();setActive(index=>Math.max(0,Math.min(shown.length-1,index+(event.key==='ArrowDown'?1:-1))));}
       if(event.key==='Enter'){event.preventDefault();if(shown[active])select(shown[active]);}

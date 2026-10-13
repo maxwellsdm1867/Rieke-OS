@@ -287,3 +287,11 @@ test('cross-page anchors reuse cell summaries only with the current query and bi
   }
  }finally{await h.close();}
 });
+
+test('same-scope Activity return retains actual Inspector highlights while changed authority clears them',async()=>{
+ const h=await createInspectorHarness();const incoming={...props,readContext:{root:'/protocols/protocol-A/workbench/candidates/candidate-A',candidate_scope_revision:'query-A'},draftSelection:{selected:[],disabled:false}};
+ try{h.fixture.page=page;await h.render(incoming);await h.act(()=>h.viewer.treePane.listProps.setHighlightedEpochs(['epoch-A','epoch-B']));
+  await h.render(incoming,{activity:'hidden'});await h.render(incoming);assert.deepEqual(h.viewer.treePane.listProps.highlightedEpochs,['epoch-A','epoch-B']);assert.equal(h.viewer.toolbarChildren.props.children[0].props.count,2);
+  await h.render({...incoming,revision:1});assert.deepEqual(h.viewer.treePane.listProps.highlightedEpochs,[]);
+ }finally{await h.close();}
+});

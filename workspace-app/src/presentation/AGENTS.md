@@ -3,7 +3,9 @@
 This module owns in-memory route snapshots, Protocol/Explorer/Stores fallbacks,
 checkpoint replacement and deletion pruning for one App mount. Start with the
 [public factory and behavioral contract](workspacePresentationSessions.js).
-Its five methods are `remember`, `read`, `checkpoint`, `restore`, `pruneDeleted`.
+Its methods are `remember`, `read`, `checkpoint`, `restore`, `pruneDeleted`,
+`readDraft`, `rememberDraft` and `authoredIntent`; `AUTHORED_DRAFT_LIMITS` declares the bounded
+authored-field contract. The original snapshot methods retain their behavior.
 The returned values preserve existing shallow references and permissive inputs,
 except a protocol route snapshot is shallow-copied when its tracePreference differs
 from that protocol’s latest saved choice. Only that presentation field is replaced;
@@ -12,9 +14,30 @@ route-specific focus and scientific authority remain unchanged.
 App owns navigation validation, stable callbacks, persistence, project/unmount
 composition and scientific authority. Restore replaces stores before App validates
 the returned route. Retained presentation does not establish scientific consent.
-No adapter, I/O, project reset, eviction or new singleton belongs in this module.
+The pure factory has no I/O or singleton. Draft fields are scoped by stable
+project-contained destination and entity identity, never labels or row offsets.
+`rememberDraft(route,key,value)` accepts strings/booleans; undefined retires an
+entry. Limits are 256 entries, 8 KiB identity, 16 KiB field text, 512 KiB aggregate.
+Rejected writes remain visible in the editor and block checkpoint acknowledgment
+until corrected; old unfinished entries are never silently evicted. Restore
+validates the authored collection before replacement; older checkpoints omit it.
+Deletion pruning removes drafts whose exact identity includes a deleted UUID.
+`authoredIntent()` counts local authored write/clear attempts, including rejected
+ones. App combines it with navigation intent so a delayed draft load cannot
+replace new input; recovery identities still hydrate independently. Reads and
+restoration do not advance this counter.
 
-Outside consumers import only `workspacePresentationSessions.js`. The pure pruning
+`useAuthoredDraft` returns `[value,setValue,{edited,error,adopt,clear}]`. Canonical
+async hydration calls `adopt` and cannot replace edited/restored text or create
+an authored entry. Confirmed successful saves call `clear`; failures preserve
+text. Reopening an editor restores its fields, not its confirmation, preview,
+operation authority or submission. Existing Inspector/Protocol snapshots and
+operation recovery identities retain their current owners.
+
+Outside consumers use `workspacePresentationSessions.js` for the pure owner or
+`useAuthoredDraft.js` for the named `useAuthoredDraft` hook and `AuthoredDraftScope`
+provider. The hook binds text/options to the retained destination or project-shell
+scope, using the same checkpoint and desktop DraftStore; it adds no disk store. The pure pruning
 helper in `internal/` is private. New production files need a catalog ownership
 allow rule; there is no automatic internal import exemption. The helper's own
 colocated test is the sole private test-import exception. Public contract tests
@@ -23,7 +46,7 @@ belong beside the factory; retain their behavior and real App composition tests.
 From `workspace-app`, run:
 
 ```sh
-node --import ./src/test-support/reactTestEnvironment.js --test src/presentation/workspacePresentationSessions.test.js src/presentation/internal/deletedSourceSelections.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/workspace-navigation/workspaceNavigation.test.js src/renderer-drafts/desktopDraftSession.test.js src/projectUnmount.test.js
+node --import ./src/test-support/reactTestEnvironment.js --test src/presentation/workspacePresentationSessions.test.js src/authoredDrafts.test.js src/presentation/internal/deletedSourceSelections.test.js src/presentationSessionsApp.test.js src/presentationSessionsIntegration.test.js src/workspace-navigation/workspaceNavigation.test.js src/renderer-drafts/desktopDraftSession.test.js src/projectUnmount.test.js
 ```
 
 The [App characterization](../presentationSessionsApp.test.js) and

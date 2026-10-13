@@ -1,3 +1,4 @@
+import {useSemanticReset} from '../../useSemanticReset.js';
 import {useEffect,useRef,useState} from 'react';
 import {ArrowRight,Check,GitMerge,LoaderCircle,Sparkles,Pin,Database,FileCheck2,X,CheckCircle2} from 'lucide-react';
 import {humanize,time,number} from "../../api.js";
@@ -46,7 +47,7 @@ export function ImportSuggestions({suggestions=[],approvedHistory=[],protocols=[
   const managedMessage=managedRecordingMessage(latest);
   const catalogDelta=latest?.catalog_delta||latest?.progress?.catalog_delta;
   const source=sources.find(item=>item.source_sha256===latest?.source_sha256)||(latest?{filename:latest.source?.split?.('/').pop()||latest.filename||'Imported recording',counts:latest.progress?.counts}:null);
-  useEffect(()=>{if(autoOpenJobUuid)setOpen(true);},[autoOpenJobUuid]);
+  useSemanticReset(autoOpenJobUuid,()=>{if(autoOpenJobUuid)setOpen(true);});
   useEffect(()=>{if(open&&!dialogRef.current?.open)dialogRef.current?.showModal();else if(!open&&dialogRef.current?.open)dialogRef.current.close();},[open,latest?.job_uuid,suggestions.length]);
   const pendingReview=Number.isSafeInteger(reviewStatus?.pendingProtocols)&&reviewStatus.pendingProtocols>0;
   const reviewLabel=importReviewStatusLabel(reviewStatus);

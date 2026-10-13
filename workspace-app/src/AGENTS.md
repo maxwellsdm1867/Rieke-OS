@@ -83,3 +83,15 @@ Selected items must retain a visible background highlight in every palette. Chec
 Light, Dark and Fred, including selected-plus-highlighted and hover states. Use
 semantic text colors with sufficient contrast on the actual fill; stronger fills
 may need `--ink-secondary` instead of muted text. System resolves to Light/Dark.
+
+## Retained workspace presentation
+
+`retainedWorkspaceViews.js` owns the live route/subpanel lifetime, per-route session callbacks, visibility context, protected dirty/busy entries, and scoped modal visibility. Eight destinations is a soft cap: dirty entries and accepted writes prevent silent eviction. Hidden view effects suspend, except while an operation is pending; hidden wrappers remain inert. `useUnmountGuard` preserves hidden draft guards through the outer owner. Historical visits remain distinct, while explicit plain destination reuse preserves the live instance. Scientific witness reads and custom request owners never enter the display-read reuse path. `retainedWorkspaceViews.test.js` covers callbacks, cap behavior, hidden writes/guards/modals and read policy.
+
+Retained destination callbacks that navigate must use the owner’s `whenCurrent` gate. Its activity/route token is invalidated on departure, including departure followed by history return. Accepted operation completion still calls data invalidation; only navigation is suppressed for a stale origin. Source merge has its own equivalent owner-token contract.
+
+Retained eviction protects both explicit dirty/busy state and nonempty unmount guards. `RetainedPortal` carries owner visibility into shared header targets using hidden/inert presentation while keeping accepted operation owners mounted. Activity reconnect must reestablish resource authority/listeners without resetting unchanged semantic presentation state. Regression controls live in `retainedControls.test.js`; Protocol tab completions use a tab token in addition to route fencing.
+
+Use `useSemanticReset(identity, resetPresentation)` only for synchronous presentation transitions under explicit domain identity or user intent. Never suppress a request, subscription, cleanup, storage write, or scientific consent renewal with this helper. Global input handlers, focus, modal top-layer state and portals must check active retained visibility because pending writes can keep hidden effects mounted.
+
+`retainedLifecyclePolicy.test.js` checks the complete App dependency closure against [reviewed lifetime receipts](../../docs/architecture/retained-ui-lifetimes.json). A changed fingerprint requires review of ownership and behavioral evidence, not mechanical regeneration. Run `node retainedLifecyclePolicy.mjs --census` from `workspace-app` to inspect current supported effect sites. Keep callbacks and dependency helpers in scope; a hook-call-only review misses indirect behavior changes. See the [independent audit](../../docs/dev/retained-lifecycle-independent-audit-2026-10-13.md) and [implementation contract](../../docs/dev/ui-cache-implementation-2026-10-13.md).

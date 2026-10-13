@@ -735,6 +735,11 @@
             "desktop/testing-install.cjs",
             "desktop/install-name.cjs"
           ]
+        },
+        {
+          "language": "javascript",
+          "file": "desktop/project-views.cjs",
+          "allow": []
         }
       ],
       "tests": {
@@ -773,7 +778,9 @@
           "desktop/integrity/tests/public-examples.test.cjs",
           "desktop/updates/tests/public-examples.test.cjs",
           "desktop/tests/installation-keep-public.test.cjs",
-          "desktop/tests/retained-owners-public-examples.test.cjs"
+          "desktop/tests/retained-owners-public-examples.test.cjs",
+          "desktop/tests/project-views.test.cjs",
+          "desktop/tests/main-retained-views.test.cjs"
         ]
       }
     },
@@ -858,7 +865,8 @@
         "heading": "Presentation-session ownership"
       },
       "affected_paths": [
-        "workspace-app/**"
+        "workspace-app/**",
+        "workspace-app/src/presentation/useAuthoredDraft.js"
       ],
       "rules": [
         {
@@ -885,6 +893,14 @@
           "language": "javascript",
           "file": "workspace-app/src/presentation/internal/deletedSourceSelections.js",
           "allow": []
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/presentation/useAuthoredDraft.js",
+          "allow": [
+            "react",
+            "workspace-app/src/retainedWorkspaceViews.js"
+          ]
         }
       ],
       "tests": {
@@ -898,7 +914,8 @@
           "workspace-app/src/projectUnmount.test.js",
           "workspace-app/src/architectureModulePolicy.test.js",
           "workspace-app/src/testDiscovery.test.js",
-          "workspace-app/src/architectureImports.test.js"
+          "workspace-app/src/architectureImports.test.js",
+          "workspace-app/src/authoredDrafts.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -983,7 +1000,8 @@
           "allow": [
             "react",
             "workspace-app/src/api.js",
-            "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js"
+            "workspace-app/src/protocol-tree-layout/treeLayoutPersistence.js",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ],
           "require": [
             "workspace-app/src/api.js",
@@ -1326,7 +1344,9 @@
             "workspace-app/src/api.js",
             "workspace-app/src/typed-query/ui/predicateState.js",
             "workspace-app/src/typed-query/ui/predicateEditor.js",
-            "workspace-app/src/typed-query/ui/PredicateBuilder.css"
+            "workspace-app/src/typed-query/ui/PredicateBuilder.css",
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/useSemanticReset.js"
           ]
         },
         {
@@ -1348,7 +1368,9 @@
             "workspace-app/src/typed-query/predicateIdentity.js",
             "workspace-app/src/project-preferences/searchPresets.js",
             "workspace-app/src/components/StableContent.jsx",
-            "workspace-app/src/typed-query/ui/PredicateDialog.css"
+            "workspace-app/src/typed-query/ui/PredicateDialog.css",
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/presentation/useAuthoredDraft.js"
           ]
         },
         {
@@ -1359,7 +1381,9 @@
             "react-dom",
             "lucide-react",
             "workspace-app/src/api.js",
-            "workspace-app/src/typed-query/predicateValueSuggestions.js"
+            "workspace-app/src/typed-query/predicateValueSuggestions.js",
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/useSemanticReset.js"
           ]
         },
         {
@@ -1406,7 +1430,9 @@
             "workspace-app/src/typed-query/ui/JointGroupingEditor.jsx",
             "workspace-app/src/components/NavigationLoading.jsx",
             "workspace-app/src/incoming-workbench/ui/IncomingTreeSelection.jsx",
-            "workspace-app/src/annotations/ui/TreeGroupTags.jsx"
+            "workspace-app/src/annotations/ui/TreeGroupTags.jsx",
+            "workspace-app/src/retainedWorkspaceViews.js",
+            "workspace-app/src/useSemanticReset.js"
           ]
         },
         {
@@ -1545,7 +1571,8 @@
             "workspace-app/src/annotations/annotationProfile.js",
             "workspace-app/src/incoming-workbench/incomingBootstrap.js",
             "workspace-app/src/incoming-workbench/importedSelection.js",
-            "workspace-app/src/desktopLifecycle.js"
+            "workspace-app/src/desktopLifecycle.js",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -1556,7 +1583,8 @@
             "workspace-app/src/incoming-workbench/incomingCellTypes.js",
             "workspace-app/src/cell-qc/cellTypes.js",
             "workspace-app/src/api.js",
-            "workspace-app/src/components/CellTypeIcon.jsx"
+            "workspace-app/src/components/CellTypeIcon.jsx",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -1626,7 +1654,8 @@
             "workspace-app/src/incoming-workbench/ui/CumulativeIncomingReview.jsx",
             "workspace-app/src/incoming-workbench/useWorkbenchQueue.js",
             "workspace-app/src/incoming-workbench/useIncomingMergeIntent.js",
-            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css"
+            "workspace-app/src/incoming-workbench/ui/IncomingWorkbench.css",
+            "workspace-app/src/retainedWorkspaceViews.js"
           ]
         },
         {
@@ -1787,7 +1816,8 @@
             "workspace-app/src/components/NavigationLoading.jsx",
             "workspace-app/src/workspaceRequest.js",
             "workspace-app/src/traces/readWholeTrace.js",
-            "workspace-app/src/traces/traceViewPreference.jsx"
+            "workspace-app/src/traces/traceViewPreference.jsx",
+            "workspace-app/src/useSemanticReset.js"
           ]
         },
         {
@@ -1832,7 +1862,8 @@
           "workspace-app/src/traces/traceExtentLifecycle.test.js",
           "workspace-app/src/traces/epochTracePreference.test.js",
           "workspace-app/src/traces/traceViewPreference.test.js",
-          "workspace-app/src/traces/traceSurfaceIntegration.test.js"
+          "workspace-app/src/traces/traceSurfaceIntegration.test.js",
+          "workspace-app/src/traces/responsePreferenceRetention.test.js"
         ],
         "python": [
           "python/tests/test_architecture_guard.py"
@@ -2515,7 +2546,9 @@
         "python/workspace_startup_registry.py",
         "python/tests/test_workspace_project_inventory.py",
         "workspace-app/src/projectInventoryRecovery.test.js",
-        "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx"
+        "workspace-app/src/project-workspace/ui/ProjectOnboarding.jsx",
+        "python/tests/test_workspace_presentation_cache.py",
+        "python/tests/test_workspace_project_shell.py"
       ],
       "rules": [
         {
@@ -2688,6 +2721,7 @@
           "allow": [
             "__future__",
             "contextlib",
+            "disco.projects.presentation_cache",
             "disco.projects.project_inventory",
             "flask",
             "json",
@@ -2732,13 +2766,30 @@
             "time",
             "workspace_projects"
           ]
+        },
+        {
+          "language": "python",
+          "file": "python/disco/projects/presentation_cache.py",
+          "allow": [
+            "__future__",
+            "contextlib",
+            "datetime",
+            "hashlib",
+            "json",
+            "math",
+            "os",
+            "pathlib",
+            "sqlite3",
+            "uuid"
+          ]
         }
       ],
       "tests": {
         "python": [
           "python/disco/projects/tests/test_public_examples.py",
           "python/tests/test_workspace_project_shell.py",
-          "python/tests/test_workspace_project_inventory.py"
+          "python/tests/test_workspace_project_inventory.py",
+          "python/tests/test_workspace_presentation_cache.py"
         ],
         "javascript": [
           "workspace-app/src/projectInventoryRecovery.test.js"
@@ -3022,6 +3073,86 @@
           "workspace-app/src/dataExportUi.test.js"
         ]
       }
+    },
+    {
+      "id": "retained-ui-presentation",
+      "contract": {
+        "path": "docs/dev/ui-cache-implementation-2026-10-13.md",
+        "heading": "Retained presentation ownership"
+      },
+      "affected_paths": [
+        "workspace-app/src/retainedWorkspaceViews.js",
+        "workspace-app/src/retainedWorkspaceViews.test.js",
+        "workspace-app/src/project-workspace/useProjectPresentation.js",
+        "workspace-app/src/project-workspace/useProjectPresentation.test.js",
+        "workspace-app/src/protocol-overview/**",
+        "workspace-app/src/protocol-tree-layout/**",
+        "workspace-app/src/App.jsx",
+        "workspace-app/src/api.js",
+        "workspace-app/src/desktopLifecycle.js",
+        "workspace-app/src/useUnmountGuard.js",
+        "desktop/project-views.cjs",
+        "python/disco/projects/presentation_cache.py",
+        "python/tests/test_workspace_presentation_cache.py",
+        "workspace-app/src/useSemanticReset.js",
+        "workspace-app/src/useSemanticReset.test.js",
+        "workspace-app/retainedLifecyclePolicy.mjs",
+        "docs/architecture/retained-ui-lifetimes.json"
+      ],
+      "rules": [
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/retainedWorkspaceViews.js",
+          "allow": [
+            "react",
+            "workspace-app/src/annotations/annotationProfile.js",
+            "workspace-app/src/desktopLifecycle.js",
+            "react-dom"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/project-workspace/useProjectPresentation.js",
+          "allow": [
+            "react",
+            "workspace-app/src/api.js"
+          ]
+        },
+        {
+          "language": "javascript",
+          "file": "workspace-app/src/useSemanticReset.js",
+          "allow": [
+            "react"
+          ]
+        }
+      ],
+      "tests": {
+        "javascript": [
+          "workspace-app/src/retainedWorkspaceViews.test.js",
+          "workspace-app/src/project-workspace/useProjectPresentation.test.js",
+          "workspace-app/src/protocol-overview/overviewDemand.test.js",
+          "workspace-app/src/presentationSessionsApp.test.js",
+          "workspace-app/src/desktopLifecycle.test.js",
+          "workspace-app/src/projectUnmount.test.js",
+          "workspace-app/src/retainedControls.test.js",
+          "workspace-app/src/retainedLifecyclePolicy.test.js",
+          "workspace-app/src/useSemanticReset.test.js",
+          "workspace-app/src/retainedHiddenControls.test.js",
+          "workspace-app/src/hierarchyRetention.test.js",
+          "workspace-app/src/semanticPresentationControls.test.js",
+          "workspace-app/src/authoredDrafts.test.js"
+        ],
+        "python": [
+          "python/tests/test_workspace_presentation_cache.py",
+          "python/tests/test_workspace_project_shell.py",
+          "python/tests/test_workspace_api.py"
+        ],
+        "desktop": [
+          "desktop/tests/project-views.test.cjs",
+          "desktop/tests/main-retained-views.test.cjs",
+          "desktop/close/tests/draft-barrier.test.cjs"
+        ]
+      }
     }
   ],
   "javascript_module_policy": {
@@ -3033,7 +3164,8 @@
       "workspace-app/src/benchmarkNavigation.mjs",
       "workspace-app/architectureImports.mjs",
       "workspace-app/runTests.mjs",
-      "workspace-app/isolatedViteCache.js"
+      "workspace-app/isolatedViteCache.js",
+      "workspace-app/retainedLifecyclePolicy.mjs"
     ],
     "package_manifest": "workspace-app/package.json",
     "package_lock": "workspace-app/package-lock.json",
@@ -3061,7 +3193,15 @@
           {
             "path": "workspace-app/src/presentation/workspacePresentationSessions.js",
             "exports": [
-              "createWorkspacePresentationSessions"
+              "createWorkspacePresentationSessions",
+              "AUTHORED_DRAFT_LIMITS"
+            ]
+          },
+          {
+            "path": "workspace-app/src/presentation/useAuthoredDraft.js",
+            "exports": [
+              "AuthoredDraftScope",
+              "useAuthoredDraft"
             ]
           }
         ]
@@ -3626,11 +3766,17 @@
     "additional_sources": [
       "workspace-app/architectureImports.mjs",
       "workspace-app/runTests.mjs",
-      "workspace-app/isolatedViteCache.js"
+      "workspace-app/isolatedViteCache.js",
+      "workspace-app/retainedLifecyclePolicy.mjs"
     ],
     "tool_external_imports": [
       {
         "from": "workspace-app/architectureImports.mjs",
+        "specifier": "rolldown/utils",
+        "lock_package": "node_modules/rolldown"
+      },
+      {
+        "from": "workspace-app/retainedLifecyclePolicy.mjs",
         "specifier": "rolldown/utils",
         "lock_package": "node_modules/rolldown"
       }
@@ -4625,6 +4771,18 @@
               "project_inventory",
               "main"
             ]
+          },
+          {
+            "path": "python/disco/projects/presentation_cache.py",
+            "module": "disco.projects.presentation_cache",
+            "exports": [
+              "MAX_BYTES",
+              "MAX_FILE_BYTES",
+              "COUNTS",
+              "display_overview",
+              "save_overview",
+              "load_overview"
+            ]
           }
         ],
         "private_test_edges": []
@@ -4827,7 +4985,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
+                "file_sha256": "5ce9551a0820028828f379057e4a92f2ad263efc9e8eec40f7fe1eca4d0c17c4",
                 "contract_id": null
               }
             ]
@@ -5001,8 +5159,8 @@
       },
       {
         "file": "python/tests/test_workspace_api.py",
-        "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
-        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes.",
+        "file_sha256": "4775b416e7b47f86bcef200388a5abe4d960b8b7917301469aae06d3a8f53f72",
+        "reason": "Inject owned in-memory workspace/curation table fixtures during CurationStore construction. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Added display-cache HTTP coverage; existing CurationStore fixture injection AST and targets are unchanged.",
         "sites": [
           {
             "selector": "Call:111",
@@ -5262,7 +5420,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
+                "file_sha256": "5ce9551a0820028828f379057e4a92f2ad263efc9e8eec40f7fe1eca4d0c17c4",
                 "contract_id": null
               }
             ]
@@ -5295,7 +5453,7 @@
               {
                 "module": "workspace_api",
                 "file": "python/workspace_api.py",
-                "file_sha256": "bf01f8eb43fac061683b31c04d7dbf02620d434290ab12da1f973acbc4c30a71",
+                "file_sha256": "5ce9551a0820028828f379057e4a92f2ad263efc9e8eec40f7fe1eca4d0c17c4",
                 "contract_id": null
               }
             ]
@@ -5884,7 +6042,7 @@
               {
                 "module": "tests.test_workspace_api",
                 "file": "python/tests/test_workspace_api.py",
-                "file_sha256": "170c91edd6a14da2b7ae6b7716802f16cfa6706b39bfb7743a3588225510b8cf",
+                "file_sha256": "4775b416e7b47f86bcef200388a5abe4d960b8b7917301469aae06d3a8f53f72",
                 "contract_id": null
               }
             ]

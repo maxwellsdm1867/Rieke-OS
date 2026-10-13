@@ -13,7 +13,8 @@ function isOwnedURL(url, origin, localPages = []) {
 function validateSender(event, windows, origin, localPages) {
   const window = [...windows].find(win => !win.isDestroyed() && win.webContents === event.sender);
   if (!window || !event.senderFrame || event.senderFrame !== event.sender.mainFrame ||
-      !isOwnedURL(event.senderFrame.url, origin, localPages)) throw new Error('Unauthorized desktop frame');
+      !isOwnedURL(event.senderFrame.url, origin, localPages) ||
+      (window.binding && new URL(event.senderFrame.url).origin !== window.binding.origin)) throw new Error('Unauthorized desktop frame');
   return window;
 }
 // Chromium keeps clipboard reads separate. Only our focused scientific main
@@ -23,6 +24,7 @@ function allowClipboardWrite(contents, permission, details, windows, origins, re
       !contents.isFocused() || details?.isMainFrame !== true) return false;
   try {
     validateSender({sender: contents, senderFrame: contents.mainFrame}, windows, origins);
+    if ([...windows].some(owner=>owner.webContents===contents&&owner.active===false)) return false;
     const current = new URL(contents.mainFrame.url).origin;
     return isOwnedURL(contents.getURL(), origins) && new URL(contents.getURL()).origin === current &&
       isOwnedURL(details.requestingUrl, origins) && new URL(details.requestingUrl).origin === current &&

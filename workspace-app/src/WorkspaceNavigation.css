@@ -9,7 +9,7 @@
 .protocol-view-tabs>button:hover:not(.active){background:var(--surface-subtle);color:var(--ink)}
 .protocol-view-scope{margin-left:auto;font-size:12px;color:var(--ink-secondary);white-space:nowrap;flex-shrink:0}
 .protocol-workspace-content{min-height:0;flex:1;overflow:auto}
-.protocol-workspace-content>.inspector{height:100%;min-height:0}
+.protocol-workspace-content>.inspector,.protocol-workspace-content>.retained-workspace-panel>.inspector{height:100%;min-height:0}
 .protocol-workspace .inspector-toolbar>.protocol-overview-link{display:none}
 @media(max-width:1100px){.workspace-context-toolbar{gap:8px;padding:7px 12px}.protocol-view-context>strong{max-width:240px}.protocol-view-scope{font-size:11px}.app-header .local-indicator{display:none}}
 @media(max-width:900px){.protocol-view-scope{display:none}.protocol-view-tabs>button{padding:7px 8px}.protocol-view-context>button{max-width:130px}}
@@ -27,10 +27,18 @@
 .workspace-context-toolbar{flex-wrap:wrap;column-gap:10px;row-gap:6px}
 .protocol-inspector-controls,.epoch-browser-header-controls{margin-left:auto;min-width:0}
 .protocol-inspector-controls:empty,.epoch-browser-header-controls:empty{display:none}
-.protocol-inspector-controls>.compact-inspector-toolbar,.epoch-browser-header-controls>.compact-inspector-toolbar{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px;padding:0;border:0;min-height:0;position:relative;z-index:40}
+.protocol-inspector-controls>.compact-inspector-toolbar,.epoch-browser-header-controls>.compact-inspector-toolbar,.protocol-inspector-controls>[data-retained-portal-active]>.compact-inspector-toolbar,.epoch-browser-header-controls>[data-retained-portal-active]>.compact-inspector-toolbar{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:7px;padding:0;border:0;min-height:0;position:relative;z-index:40}
 .protocol-inspector-controls .spacer,.epoch-browser-header-controls .spacer{display:none}
 .protocol-inspector-controls .inspection-filter-summary{font-size:11px}
 
 .protocol-selection-summary{padding:18px 22px;margin-bottom:20px;background:var(--surface-subtle);border:1px solid var(--border);border-radius:10px}.protocol-selection-summary p{font-size:13px;line-height:1.6;margin:8px 0}.protocol-selection-summary button{margin:12px 0}.protocol-selection-summary details{font-size:12px;margin-top:12px}.protocol-selection-summary pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}
 
 .app-shell.sidebar-hidden{min-width:0}
+
+/* Retained routes share the content box; inactive DOM never participates in layout. */
+.retained-workspace-view{min-width:0;min-height:0;height:100%;display:flex;flex-direction:column}
+.retained-workspace-view[hidden]{display:none!important}
+.project-overview-retained{min-width:0;min-height:0;overflow:auto}
+.project-presentation-status{height:20px;line-height:20px;padding:0 24px;color:var(--ink-muted);font-size:11px;flex:none}
+
+.retained-workspace-panel{min-width:0;min-height:0;height:100%}.retained-workspace-panel[hidden]{display:none!important}

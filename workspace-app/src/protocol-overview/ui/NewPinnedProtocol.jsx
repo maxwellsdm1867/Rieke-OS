@@ -1,10 +1,12 @@
+import {useAuthoredDraft} from '../../presentation/useAuthoredDraft.js';
 import {useEffect,useState} from 'react';
 import {Pin} from 'lucide-react';
 import {api,useResource,number} from "../../api.js";
 
 export default function NewPinnedProtocol({candidate,defaultName,disabled,onBusyChange,onCreated}){
   const options=useResource(candidate?.revision_uuid?`/explore/revisions/${candidate.revision_uuid}/protocol-options`:null);
-  const [name,setName]=useState(defaultName||''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false);
+  const [name,setName,nameDraft]=useAuthoredDraft(candidate?.revision_uuid?['new-pinned-protocol',candidate.revision_uuid,'name']:null,defaultName||'');
+  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[reviewed,setReviewed]=useState(false);
   useEffect(()=>setReviewed(false),[candidate?.revision_uuid]);
   useEffect(()=>{onBusyChange?.(busy);},[busy,onBusyChange]);
   const protocols=options.data?.protocols||[],single=protocols.length===1,canCreate=protocols.length>0&&(single||reviewed);
@@ -13,7 +15,7 @@ export default function NewPinnedProtocol({candidate,defaultName,disabled,onBusy
     setBusy(true);setError('');
     try{const result=await api(`/explore/revisions/${candidate.revision_uuid}/create-protocol`,{method:'POST',body:{name:name.trim(),protocol_ids:protocols.map(row=>row.protocol_id),expected_recipe_sha256:options.data.expected_recipe_sha256}});
       if(!result.protocol_uuid)throw new Error('Protocol creation did not return an identity. Reload before retrying.');
-      onCreated?.(result.protocol_uuid);
+      nameDraft.clear();onCreated?.(result.protocol_uuid);
     }catch(error){setError(error.message);}finally{setBusy(false);}
   }
   return <form className="new-pinned-protocol" onSubmit={create}>
