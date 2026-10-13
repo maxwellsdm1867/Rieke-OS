@@ -1,9 +1,19 @@
 'use strict';
 // Test-only helpers: bind a Playwright page to the actual attached WCV identity,
 // and leave failure evidence on disk before bounded, owned-process cleanup.
-const fs=require('node:fs/promises'),path=require('node:path');
+const fs=require('node:fs/promises'),syncFs=require('node:fs'),path=require('node:path');
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function bounded(operation,ms,label){let timer;try{return await Promise.race([operation,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(label+' timed out')),ms);})]);}finally{clearTimeout(timer);}}
+function captureNativeProcess(application,output,receipt,label){
+ const process=application.process(),record={label,pid:process.pid,stdout:'native-process.stdout.log',stderr:'native-process.stderr.log'};
+ (receipt.native_processes??=[]).push(record);
+ for(const name of ['stdout','stderr']){
+  const target=path.join(output,record[name]);
+  syncFs.appendFileSync(target,`\n--- ${label} pid=${process.pid} ---\n`);
+  process[name]?.on('data',chunk=>syncFs.appendFileSync(target,chunk));
+ }
+ process.once('exit',(code,signal)=>{record.exit_code=code;record.exit_signal=signal;});
+}
 async function attachedViews(application){return application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().flatMap(window=>window.contentView.children.map(view=>({view_class:view.constructor.name,id:view.webContents?.id??null,url:view.webContents?.getURL()??null,bounds:view.getBounds()}))));}
 async function pageBinding(application,page){const session=await application.context().newCDPSession(page);try{const {targetInfo}=await session.send('Target.getTargetInfo');const id=await application.evaluate(({webContents},targetId)=>webContents.fromDevToolsTargetId(targetId)?.id??null,targetInfo.targetId);return {id,target_id:targetInfo.targetId};}finally{await session.detach();}}
 async function discoverySnapshot(application){
@@ -22,12 +32,22 @@ async function currentProjectPage(application,project,receipt){
   for(const page of application.context().pages()){
    let binding=bindings.get(page);if(!binding){binding=await bounded(pageBinding(application,page),3000,'project page binding').catch(()=>null);if(binding)bindings.set(page,binding);}
    const item=binding&&attached.find(item=>item.id===binding.id);
-   if(item&&await page.getByRole('button',{name:`${project.name}, current project`,exact:true}).isVisible().catch(()=>false))return {page,...item};
+   if(item&&await page.getByRole('button',{name:`${project.name}, current project`,exact:true,includeHidden:true}).getAttribute('aria-current').then(value=>value==='page').catch(()=>false))return {page,...item};
   }
   await delay(100);
  }
  receipt.project_discovery={project,awaited_ms:45000,...await discoverySnapshot(application)};
  throw Error(`Attached project renderer did not become current: ${project.name}`);
+}
+async function prepareInitialPresentation(page,receipt){
+ const result={url:page.url(),closed_tag_author:false,opened_sidebar:false};
+ const close=page.getByRole('button',{name:'Close tag author',exact:true});
+ if(await close.isVisible()){await close.click();await close.waitFor({state:'hidden'});result.closed_tag_author=true;}
+ const show=page.getByRole('button',{name:'Show sidebar',exact:true});
+ if(await show.isVisible()){await show.click();await page.getByRole('button',{name:'Hide sidebar',exact:true}).waitFor();result.opened_sidebar=true;}
+ const dialogs=await page.getByRole('dialog').all();
+ for(const dialog of dialogs)if(await dialog.isVisible())throw Error('Unexpected modal still blocks native UI journey: '+await dialog.innerText());
+ (receipt.presentation_setup??=[]).push(result);
 }
 async function failureEvidence(application,page,output,receipt,error){
  receipt.status='failed';receipt.error=String(error);
@@ -53,4 +73,4 @@ async function closeOwned(application,userData,receipt){
  process.kill('SIGTERM');
  if(!await Promise.race([exit.then(()=>true),delay(1500).then(()=>false)])){process.kill('SIGKILL');await bounded(exit,5000,'owned Electron exit');receipt.cleanup.forced_signal='SIGKILL';}else receipt.cleanup.forced_signal='SIGTERM';
 }
-module.exports={currentProjectPage,failureEvidence,closeOwned,discoverySnapshot};
+module.exports={captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned,discoverySnapshot};

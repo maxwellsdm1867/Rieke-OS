@@ -5,12 +5,13 @@ const deferred=()=>{let resolve;return {promise:new Promise(done=>{resolve=done;
 const binding=id=>({project_uuid:id,project_path:`/owned/${id}`,origin:`http://127.0.0.1:${4000+id}`,pid:id,created_at:1,session_id:'s'});
 function fixture({prepare=async()=>({ready:true}),load=async()=>{},limit=3,admit=()=>true}={}){
  const created=[],registered=new Set(),attached=new Set();
- const window={contentView:{addChildView:view=>attached.add(view),removeChildView:view=>attached.delete(view)},getContentSize:()=>[900,700]};
+ let windowDestroyed=false;const contentView={addChildView:view=>attached.add(view),removeChildView:view=>attached.delete(view)};
+ const window={get contentView(){if(windowDestroyed)throw TypeError('Object has been destroyed');return contentView;},isDestroyed:()=>windowDestroyed,getContentSize:()=>[900,700]};
  const views=new ProjectViews({window,prepare,admit,limit,onRegister:owner=>registered.add(owner),onDispose:owner=>registered.delete(owner),createView:()=>{
   const messages=[];let destroyed=false;const contents={loads:[],messages,isDestroyed:()=>destroyed,loadURL:async url=>{contents.loads.push(url);await load(url);},send:(channel,value)=>messages.push({channel,value}),focus(){},close(){destroyed=true;}};
   const view={webContents:contents,setBounds:value=>{view.bounds=value;}};created.push(view);return view;
  }});
- return {views,created,registered,attached};
+ return {views,created,registered,attached,destroyHost:()=>{windowDestroyed=true;attached.clear();}};
 }
 test('A B A reuses the exact document and emits visibility without reloading',async()=>{
  const h=fixture();await h.views.activate(binding(1),'a');const first=h.views.active;first.webContents.localState={scroll:400,draft:'keep'};
@@ -58,4 +59,18 @@ test('recovery fences queued and loading activation without discarding preserved
  await assert.rejects(pending,/cancelled/);await assert.rejects(queued,/cancelled/);
  assert.equal(h.views.active,null);assert.equal(first.isDestroyed(),false);assert.equal(h.views.owners.size,2);
  blocked=false;await h.views.activate(binding(1),'a');assert.equal(h.views.active,first);
+});
+
+test('closed native host disposes active and detached documents without touching destroyed window',async()=>{
+ const h=fixture();await h.views.activate(binding(1),'a');const first=h.views.active;
+ await h.views.activate(binding(2),'b');const second=h.views.active;
+ h.destroyHost();assert.doesNotThrow(()=>h.views.clear());
+ assert.equal(h.views.active,null);assert.equal(h.views.owners.size,0);assert.equal(h.registered.size,0);
+ assert.equal(first.isDestroyed(),true);assert.equal(second.isDestroyed(),true);assert.equal(second.active,false);
+});
+test('suspending after host destruction preserves documents for their explicit lifecycle',async()=>{
+ const h=fixture();await h.views.activate(binding(1),'a');const owner=h.views.active;
+ h.destroyHost();assert.doesNotThrow(()=>h.views.suspend());
+ assert.equal(h.views.active,null);assert.equal(owner.active,false);assert.equal(owner.isDestroyed(),false);
+ assert.equal(h.registered.has(owner),true);h.views.clear();assert.equal(owner.isDestroyed(),true);
 });

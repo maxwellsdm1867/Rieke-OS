@@ -5,7 +5,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {createRequire}=require('node:module'),{execFile}=require('node:child_process');
 const {promisify}=require('node:util'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
 const run=promisify(execFile);
-const {currentProjectPage,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
+const {captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
 const config={};for(let i=2;i<process.argv.length;i+=2){if(!process.argv[i].startsWith('--')||!process.argv[i+1])throw Error('Expected --key value');config[process.argv[i].slice(2)]=process.argv[i+1];}
 for(const name of ['desktop-root','dependency-root','source-root','commit','output'])if(!config[name])throw Error(`Missing --${name}`);
 
@@ -46,7 +46,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   const projects=JSON.parse(await fs.readFile(path.join(home,'projects.json')));receipt.projects=projects;
   for(const project of projects)assert.ok((await fs.realpath(project.path)).startsWith(home+path.sep));
   receipt.isolation={home,userData,project_index:fixtureEnv.RIEKE_PROJECT_INDEX,preferences:fixtureEnv.RIEKE_PREFERENCES_DIR,inherited_environment:false};
-  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});
+  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'initial');
   const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged,pid:process.pid,electron:process.versions.electron}));
   assert.equal(actual.home,home);assert.equal(actual.userData,userData);assert.equal(actual.appPath,desktop);assert.equal(actual.packaged,false);receipt.runtime_identity=actual;
   const record=page=>{page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))receipt.requests.push({at:performance.now(),page:page.url(),method:request.method(),url:request.url()});});};
@@ -64,7 +64,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   assert.ok(launcher,'Owned launcher renderer must become visible');activePage=launcher;
   await launcher.getByRole('button',{name:`Open ${projects[0].name}, ${projects[0].path}`,exact:true}).click();
   const initialA=await currentPage(projects[0]);activePage=initialA.page;
-  await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});
+  await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
   activePage.setDefaultTimeout(20000);
   const pending=[],responses=[];
   function observe(page){page.on('pageerror',error=>receipt.errors.push(String(error)));page.on('response',response=>{
@@ -137,14 +137,14 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   await step('08-inspect-return',async()=>{await activePage.getByRole('tab',{name:'Inspect',exact:true}).click();return assertInspect();});
   await step('09-overview-return',async()=>{await activePage.getByRole('button',{name:'Project overview',exact:true}).click();await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();await shot('09-overview-away');await activePage.getByRole('button',{name:'Back to previous workspace',exact:true}).click();return assertInspect();});
   const token=await activePage.evaluate(()=>window.__populatedAuditToken=crypto.randomUUID());
-  await step('10-project-away',async()=>{await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();activePage=(await currentPage(projects[1])).page;await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();return {project_uuid:projects[1].uuid};});
+  await step('10-project-away',async()=>{await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();activePage=(await currentPage(projects[1])).page;await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();await prepareInitialPresentation(activePage,receipt);return {project_uuid:projects[1].uuid};});
   await step('11-project-return',async()=>{await activePage.getByRole('button',{name:projects[0].name,exact:true}).click();const a=await currentPage(projects[0]);activePage=a.page;assert.equal(a.id,initialA.id);assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),token);return assertInspect();});
   async function quit(){const exit=new Promise(resolve=>application.process().once('exit',resolve));await activePage.evaluate(()=>{void window.riekeDesktop.quit();});assert.equal(await Promise.race([exit,new Promise((_,reject)=>setTimeout(()=>reject(Error('Owned populated Quit timed out')),45000).unref())]),0);exited=true;}
   await quit();receipt.cleanup.orderly_exit=true;
   const owner=JSON.parse(await fs.readFile(path.join(projects[0].path,'database/native-owner.json')));assert.equal(owner.clean_shutdown,true);
-  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});exited=false;
+  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'restart');exited=false;
   activePage=(await currentPage(projects[0])).page;activePage.setDefaultTimeout(20000);observe(activePage);
-  await step('12-fresh-process-restore',async()=>{await activePage.getByRole('button',{name:'Edit Tree',exact:true}).waitFor({timeout:120000});assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),undefined);await poll(async()=>await activePage.getByRole('spinbutton',{name:'Start sample',exact:true}).inputValue()==='17');assert.equal(await activePage.getByRole('spinbutton',{name:'Sample count',exact:true}).inputValue(),'127');const data=await api('/api/overview');assert.equal(data.counts.epochs,63);assert.equal(data.counts.cells,2);assert.equal(await activePage.locator('.tv-streams:visible button').filter({hasText:'Amp2'}).getAttribute('aria-pressed'),'true');assert.equal(await hash(input),fixtureReceipt.h5_sha256);assert.equal(await hash(receipt.managed_source),fixtureReceipt.h5_sha256);return {new_process:true,start:17,count:127,epochs:63,cells:2,selected_device:'Amp2',source_bytes_unchanged:true};});
+  await step('12-fresh-process-restore',async()=>{await activePage.getByRole('button',{name:'Edit Tree',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);assert.equal(await activePage.evaluate(()=>window.__populatedAuditToken),undefined);await poll(async()=>await activePage.getByRole('spinbutton',{name:'Start sample',exact:true}).inputValue()==='17');assert.equal(await activePage.getByRole('spinbutton',{name:'Sample count',exact:true}).inputValue(),'127');const data=await api('/api/overview');assert.equal(data.counts.epochs,63);assert.equal(data.counts.cells,2);assert.equal(await activePage.locator('.tv-streams:visible button').filter({hasText:'Amp2'}).getAttribute('aria-pressed'),'true');assert.equal(await hash(input),fixtureReceipt.h5_sha256);assert.equal(await hash(receipt.managed_source),fixtureReceipt.h5_sha256);return {new_process:true,start:17,count:127,epochs:63,cells:2,selected_device:'Amp2',source_bytes_unchanged:true};});
   await quit();receipt.cleanup.restart_orderly_exit=true;
   assert.equal((await run('git',['-C',source,'rev-parse','HEAD'])).stdout.trim(),config.commit);assert.equal((await run('git',['-C',source,'status','--porcelain'])).stdout,initialSource);assert.deepEqual(receipt.errors,[]);receipt.status='passed';
  }catch(error){await failureEvidence(application,activePage,output,receipt,error);throw error;}

@@ -49,6 +49,12 @@ the launcher is shown. Reopening the failed document requires quitting and reope
 Disco. Draft barriers still checkpoint healthy owners while reporting the failed
 owner as unconfirmed; strict replacement cannot claim a clean draft receipt.
 
+Host teardown can call `clear` from the native window’s `closed` event. Detaching
+an active view first checks whether the host is already destroyed; both active
+and detached WebContents still receive normal closure and are removed from
+lifecycle accounting. Suspension likewise avoids accessing a destroyed host while
+preserving the documents for their explicit close/checkpoint lifecycle.
+
 Public behavior checks:
 
 ```

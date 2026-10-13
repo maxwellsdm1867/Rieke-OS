@@ -5,7 +5,7 @@ const fs=require('node:fs/promises'),path=require('node:path'),os=require('node:
 const {createRequire}=require('node:module'),{execFile}=require('node:child_process');
 const {promisify}=require('node:util'),assert=require('node:assert/strict'),{createHash}=require('node:crypto');
 const run=promisify(execFile);
-const {currentProjectPage,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
+const {captureNativeProcess,currentProjectPage,prepareInitialPresentation,failureEvidence,closeOwned}=require('./retention-native-support.cjs');
 const config={};for(let i=2;i<process.argv.length;i+=2){if(!process.argv[i].startsWith('--')||!process.argv[i+1])throw Error('Expected --key value');config[process.argv[i].slice(2)]=process.argv[i+1];}
 for(const name of ['desktop-root','dependency-root','source-root','commit','output'])if(!config[name])throw Error(`Missing --${name}`);
 
@@ -45,7 +45,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   const projects=JSON.parse(await fs.readFile(path.join(home,'projects.json')));receipt.projects=projects;
   for(const project of projects)assert.ok((await fs.realpath(project.path)).startsWith(home+path.sep));
   receipt.isolation={home,userData,project_index:fixtureEnv.RIEKE_PROJECT_INDEX,preferences:fixtureEnv.RIEKE_PREFERENCES_DIR,inherited_environment:false};
-  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});
+  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'initial');
   const actual=await application.evaluate(({app})=>({home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged,pid:process.pid,electron:process.versions.electron}));
   assert.equal(actual.home,home);assert.equal(actual.userData,userData);assert.equal(actual.appPath,desktop);assert.equal(actual.packaged,false);receipt.runtime_identity=actual;
   const record=page=>{page.on('request',request=>{const url=new URL(request.url());if(url.pathname.startsWith('/api/'))receipt.requests.push({at:performance.now(),page:page.url(),method:request.method(),url:request.url()});});};
@@ -63,13 +63,13 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   assert.ok(launcher,'Owned launcher renderer must become visible');activePage=launcher;
   await launcher.getByRole('button',{name:`Open ${projects[0].name}, ${projects[0].path}`,exact:true}).click();
   const initialA=await currentPage(projects[0]);activePage=initialA.page;
-  await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});
+  await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
   await activePage.getByRole('button',{name:'Data stores',exact:true}).click();await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:30000});
   const token=await activePage.evaluate(()=>window.__nativeRetentionToken=crypto.randomUUID());
   for(let sample=0;sample<3;sample++){
     await activePage.getByRole('button',{name:projects[1].name,exact:true}).click();
     const b=await currentPage(projects[1]);activePage=b.page;
-    await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});
+    await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
     const before=receipt.requests.length,began=performance.now();
     await activePage.getByRole('button',{name:projects[0].name,exact:true}).click();
     const a=await currentPage(projects[0]);activePage=a.page;
@@ -95,10 +95,10 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   receipt.saved_drafts=snapshots;
   for(const project of projects){const owner=JSON.parse(await fs.readFile(path.join(project.path,'database/native-owner.json')));assert.equal(owner.clean_shutdown,true,'Native project must close cleanly');}
   // Fresh main/renderer process: only saved scoped drafts may restore the view.
-  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});
+  application=await _electron.launch({executablePath,args:[desktop,`--user-data-dir=${userData}`],env:fixtureEnv,chromiumSandbox:true,bypassCSP:false,timeout:45000});captureNativeProcess(application,output,receipt,'restart');
   exited=false;
   const reopened=await currentPage(projects[0]);activePage=reopened.page;
-  await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:120000});
+  await activePage.getByRole('heading',{name:'Data stores',exact:true}).waitFor({timeout:120000});await prepareInitialPresentation(activePage,receipt);
   assert.equal(await activePage.evaluate(()=>window.__nativeRetentionToken),undefined);
   const restored=await activePage.evaluate(()=>({route:history.state?.riekeWorkspace?.route,registry:null}));
   assert.equal(restored.route?.page,'stores');

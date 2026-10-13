@@ -48,14 +48,14 @@ class ProjectViews {
   resume(owner){if(!owner.isDestroyed())owner.webContents.send('desktop:project-resume',{});}
   cancelClose(identity){this.find(identity).forEach(owner=>{owner.closing=false;this.resume(owner);});}
   dispose(owner){
-    if(this.active===owner){this.window.contentView.removeChildView(owner.view);this.active=null;}
+    if(this.active===owner){this.active=null;owner.active=false;if(!this.window.isDestroyed())this.window.contentView.removeChildView(owner.view);}
     this.owners.delete(bindingKey(owner.binding));this.onDispose(owner);
     if(!owner.isDestroyed())owner.webContents.close();
   }
   cancelActivations(){this.generation++;this.suspend();}
   suspend(owner=this.active){
     if(!owner)return;
-    if(this.active===owner){this.window.contentView.removeChildView(owner.view);this.active=null;}
+    if(this.active===owner){this.active=null;owner.active=false;if(!this.window.isDestroyed())this.window.contentView.removeChildView(owner.view);}
     owner.active=false;
     if(!owner.isDestroyed()&&!owner.draftUnavailable)owner.webContents.send('desktop:project-visibility',{visible:false});
   }

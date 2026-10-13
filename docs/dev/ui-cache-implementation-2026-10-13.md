@@ -138,6 +138,16 @@ remain unobscured. Actual CSS measurements at 180/220/223/260/270px verify all f
 control centers and nonoverlapping label bounds; the labeled action remains at
 270px.
 
+## Native host teardown repair
+
+The native audit’s cleanup exposed access to a destroyed BrowserWindow from its
+`closed` handler. An isolated Electron reproduction confirmed that the exception
+left the active WebContents alive after detached documents had closed. Retained
+view teardown now checks host destruction before detaching, then normally closes
+and unregisters every owned document. Draft and scientific shutdown coordination
+still precede application exit. This fixes a native lifecycle defect that the
+original window doubles did not model.
+
 ## Validation status
 
 Authored text and display options use the existing project DraftStore checkpoint,
