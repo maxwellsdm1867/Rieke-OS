@@ -25,14 +25,24 @@ is constructed explicitly, without inheriting app overrides or user project
 paths. All import inputs and managed recordings must stay inside that HOME.
 No external recording path is accepted.
 
-The existing `tools/organization_e2e_fixture.py` first generates and verifies a
-63-epoch, two-cell, single-response synthetic recording using its pinned parser
-SHA. `seed-dual-response-fixture.py` copies that owned recording, preserves the
+The helper reuses the existing `tools/organization_e2e_fixture.py` generator
+functions to construct a 63-epoch, two-cell, single-response recording. Before
+freezing that base, it supplies deterministic `dataFileName` block metadata that
+the pinned PATCH parser records without reading external binaries. The unchanged
+common raw and strict parser preflight oracles then validate the completed base.
+Both the metadata additions and common generator hash are recorded.
+`seed-dual-response-fixture.py` copies that frozen owned recording, preserves the
 original hash and adds Amp2 with unique deterministic UUIDs and values
 `1000 + epoch ordinal + sample index / 128`. Amp1 remains
 `epoch ordinal + sample index / 256`. Both are 256 samples at 10 kHz in pA.
 Every value, stream UUID, label, unit, count and parser response mapping is
-checked before the derived file is imported. The common generator and its
+checked before the derived file is imported. Both parser logs are captured, and
+any warning, error or traceback fails preflight. The canonical raw oracle remains
+unchanged. A separate parser-path projection is declared from the generator’s
+known animal/experiment hard link before parsing. Every canonical and alias
+stream group and data dataset must have identical H5 object IDs. Both oracle
+projections and hashes are saved; expectations are never copied from parser
+output. The common generator and its
 oracle are unchanged; derived hashes and an expanded oracle are recorded.
 
 The audit uses actual UI clicks to import through the H5 file chooser, review
