@@ -23,12 +23,14 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
 /** Deliberately non-anatomical Easter egg for an unidentified cell. */
 function UnknownGlyph() {
   return <>
-    <path d="M7.8 10.2C8 6.9 12.7 4.3 17.1 3.9c3.2-.3 3.4 1.6 1.2 3.7-2.1 1.8-5.1 2.9-7.3 3.8M7.8 10.2C6.6 14 6 18.3 5.6 22M17.4 8.4 18.8 22"/>
-    <path d="M7.8 10.2 2.8 12.7 7.4 17M18.2 15.9l3.5 2.3-1.4 3.3-1.5-.1"/>
-    <g fill="currentColor" stroke="none"><circle cx="7.8" cy="10.2" r="1.1"/><circle cx="10.9" cy="8" r=".6"/><circle cx="17" cy="5.8" r=".6"/></g>
+    <path d="M7.3 7.5c2.3-.6 5.7-1.6 8-.2 2.9 1.4 4.8 6.7 3.4 10.3-.6 1.6-2.2 2.1-3.3 3-1.7 1.3-5.9.5-8-1.1-1.9-1.4-2.7-3.5-2.8-5.8-.1-2.8.2-5.2 2.7-6.2ZM11.1 21v2"/>
+    <path d="m7 14.8 9.8-1.8m-5.7 3.2 2-.3m1.8-4.7.8.2"/>
+    <circle cx="7.9" cy="12.2" r=".65" fill="currentColor" stroke="none"/>
     <g strokeWidth="1.15">
-      <path d="M2.2 4c0-1.7 2.8-1.8 2.8-.1 0 1.1-1.4 1.1-1.4 2.1M20.3 2.1c0-1.6 2.6-1.6 2.6 0 0 1-1.3 1-1.3 2"/>
-      <g fill="currentColor" stroke="none"><circle cx="3.6" cy="7.5" r=".6"/><circle cx="21.6" cy="5.6" r=".6"/></g>
+      {[5,12,19].map(x=><g key={x} transform={`translate(${x} 0)`}>
+        <path d="M-1.2 2.1c0-1.5 2.4-1.5 2.4 0 0 .9-1.2.9-1.2 1.8"/>
+        <circle cx="0" cy="5.2" r=".55" fill="currentColor" stroke="none"/>
+      </g>)}
     </g>
   </>;
 }

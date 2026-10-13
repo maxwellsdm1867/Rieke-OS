@@ -35,7 +35,7 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | horizontal | outer-retina blue | lateral arbor |
 | photoreceptor / S cone, M cone, L cone | blue / green / coral | identical rounded cone shape |
 | photoreceptor / rod | outer-retina blue | cylindrical outer segment |
-| unknown | neutral | confused-character Easter egg with two question marks around its head |
+| unknown | neutral | confused-character Easter egg with three question marks above its head |
 
 Rod bipolar is a recognized ON type, not a rod photoreceptor. Small bistratified uses blue and identified amacrine
 subtypes use yellow/gold, distinguishing them from unspecified neutral-gray types.
@@ -47,7 +47,7 @@ remain available when polarity is recorded but the subtype is not.
 Unrecognized subtypes under a recorded family use a neutral family silhouette:
 ganglion, bipolar, amacrine, horizontal, or photoreceptor. An unknown family or
 unqualified candidate label uses a neutral confused-character Easter egg, based on
-the scientist-supplied doodle, with two question marks around its head. Original
+the scientist-supplied round face drawing, with three question marks above its head. Original
 SVG paths replace the neuron silhouette; this is deliberately non-anatomical.
 Known-family fallback icons retain their family silhouettes. A known family never
 promotes a tentative subtype to a confirmed subtype. Bare family labels and
@@ -132,8 +132,8 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `748e49b`. Retain exact-source
-receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
+reference is `34ce2e0`, and the previous source is `ce310e5`. Retain exact-source
+receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*` / `unknown-face-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
 installed, packaged, or release qualification.
