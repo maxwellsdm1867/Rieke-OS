@@ -1,6 +1,6 @@
 # Recorded retinal cell icons
 
-Updated October 12, 2026. The complete recorded taxonomy extends local
+Updated October 13, 2026. The complete recorded taxonomy extends local
 next-version source `89e2c28be8ead29d94e9ae1d4303e71b1cd785d5` on
 `codex/next-version-integration`. GitHub main was checked at
 `8cd61822aa78bf6e9d221c90fbae6a5c8a90f66a`; the local combined work remains the
@@ -35,7 +35,7 @@ parent or an explicit label such as `ON midget bipolar` to specify a bipolar.
 | horizontal | outer-retina blue | lateral arbor |
 | photoreceptor / S cone, M cone, L cone | blue / green / coral | identical rounded cone shape |
 | photoreceptor / rod | outer-retina blue | cylindrical outer segment |
-| unknown | neutral | original generic neuron with two small question marks beside its soma |
+| unknown | neutral | confused-character Easter egg with two question marks around its head |
 
 Rod bipolar is a recognized ON type, not a rod photoreceptor. Small bistratified uses blue and identified amacrine
 subtypes use yellow/gold, distinguishing them from unspecified neutral-gray types.
@@ -46,10 +46,10 @@ remain available when polarity is recorded but the subtype is not.
 
 Unrecognized subtypes under a recorded family use a neutral family silhouette:
 ganglion, bipolar, amacrine, horizontal, or photoreceptor. An unknown family or
-unqualified candidate label uses the neutral neuron with two small question marks
-beside its soma. The underlying neuron shape stays unchanged; the markers are
-SVG paths and follow the neutral theme color. Known-family fallback icons do not
-receive these markers. A known family never
+unqualified candidate label uses a neutral confused-character Easter egg, based on
+the scientist-supplied doodle, with two question marks around its head. Original
+SVG paths replace the neuron silhouette; this is deliberately non-anatomical.
+Known-family fallback icons retain their family silhouettes. A known family never
 promotes a tentative subtype to a confirmed subtype. Bare family labels and
 common unspecified-family aliases are also supported.
 
@@ -118,7 +118,7 @@ to short terminal branches after the connected outline still read as a cloud.
 The review also covered the generic
 photoreceptor's disc lines requested by the scientist. No blocking issue remained
 in these three schematics. Generic bipolar and horizontal were readable family
-symbols; the shared unknown-neuron silhouette remains an abstract convention.
+symbols; the later unknown-character Easter egg is deliberately non-anatomical.
 Fine subtype features, including A17 varicosities, cannot replace adjacent
 recorded labels at 16 px.
 
@@ -132,7 +132,7 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `6c0cf9a`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `748e49b`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
