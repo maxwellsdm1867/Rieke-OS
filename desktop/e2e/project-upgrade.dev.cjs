@@ -280,20 +280,50 @@ async function snapshotCache(project) {
       const bound = await projectPage(application, project); activePage = bound.page; phase.scientific_host = bound.host;
       activePage.setDefaultTimeout(20000); phase.project_shell_at = performance.now();
       receipt.action = 'first-overview';
-      const usable = activePage.waitForFunction(() => {
-        const node = document.querySelector('.infographic-overview');
-        return !!node?.getClientRects().length && !node.closest('[inert]') && node.getAttribute('aria-busy') !== 'true';
-      }, null, {timeout: 120000}).then(() => { phase.overview_usable_at = performance.now(); });
-      const visible = activePage.getByRole('region', {name: 'Project infographic', exact: true}).waitFor({timeout: 120000})
-        .then(() => { phase.overview_first_visible_at = performance.now(); });
+      const visibleAndUsable = activePage.getByRole('region', {name: 'Project infographic', exact: true}).waitFor({timeout: 120000})
+        .then(async () => {
+          phase.overview_first_visible_at = performance.now();
+          // A saved presentation can appear before the activation-triggered author
+          // dialog. Wait for this node's own canonical state first; do not require
+          // modal ancestors to be non-inert until the known dialog is dismissed.
+          await activePage.waitForFunction(() => {
+            const node = document.querySelector('.infographic-overview');
+            return !!node?.getClientRects().length && !node.hasAttribute('inert') && node.getAttribute('aria-busy') !== 'true';
+          }, null, {timeout: 120000});
+          phase.overview_canonical_at = performance.now();
+          phase.presentation_setup_started_at = performance.now();
+          phase.presentation_setup_actions = [];
+          const closeAuthor = activePage.getByRole('button', {name: 'Close tag author', exact: true});
+          if (await closeAuthor.isVisible()) {
+            const action = {name: 'close-tag-author', started_at: performance.now()};
+            phase.presentation_setup_actions.push(action);
+            await closeAuthor.click(); await closeAuthor.waitFor({state: 'hidden'});
+            action.finished_at = performance.now(); action.elapsed_ms = action.finished_at - action.started_at;
+          }
+          const showSidebar = activePage.getByRole('button', {name: 'Show sidebar', exact: true});
+          if (await showSidebar.isVisible()) {
+            const action = {name: 'show-sidebar', started_at: performance.now()};
+            phase.presentation_setup_actions.push(action);
+            await showSidebar.click(); await activePage.getByRole('button', {name: 'Hide sidebar', exact: true}).waitFor();
+            action.finished_at = performance.now(); action.elapsed_ms = action.finished_at - action.started_at;
+          }
+          const before = receipt.presentation_setup?.length || 0;
+          await prepareInitialPresentation(activePage, receipt);
+          phase.presentation_setup = receipt.presentation_setup.slice(before);
+          phase.presentation_setup_finished_at = performance.now();
+          await activePage.waitForFunction(() => {
+            const node = document.querySelector('.infographic-overview');
+            return !!node?.getClientRects().length && !node.closest('[inert]') && node.getAttribute('aria-busy') !== 'true';
+          }, null, {timeout: 120000});
+          phase.overview_usable_at = performance.now();
+        });
       const dataReady = poll(async () => {
         const status = await api('/api/project/data-status');
         if (status.status === 'failed') throw Error(JSON.stringify(status));
         return status.status === 'ready';
       }, 'Project data did not become ready').then(() => { phase.project_data_ready_at = performance.now(); });
-      await Promise.all([visible, usable, dataReady]); phase.metadata_ready = await api('/api/metadata/status');
+      await Promise.all([visibleAndUsable, dataReady]); phase.metadata_ready = await api('/api/metadata/status');
       assert.equal(phase.metadata_ready.status, 'ready');
-      await prepareInitialPresentation(activePage, receipt);
       if (populate) {
         receipt.action = 'import';
         await activePage.getByRole('button', {name: 'Data stores', exact: true}).click();
@@ -321,6 +351,8 @@ async function snapshotCache(project) {
       phase.launch_to_shell_ms = phase.project_shell_at - phase.launch_at;
       phase.launch_to_overview_ms = phase.overview_first_visible_at - phase.launch_at;
       phase.launch_to_overview_usable_ms = phase.overview_usable_at - phase.launch_at;
+      phase.launch_to_overview_canonical_ms = phase.overview_canonical_at - phase.launch_at;
+      phase.presentation_setup_ms = phase.presentation_setup_finished_at - phase.presentation_setup_started_at;
       phase.launch_to_data_ready_ms = phase.project_data_ready_at - phase.launch_at;
       phase.cache_after_ready = await snapshotCache(project.path);
       await activePage.screenshot({path: path.join(output, `${name}.png`)});
