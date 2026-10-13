@@ -16,7 +16,7 @@ export function distinctCells(cells=[]) {
   });
 }
 // Exact presentation aliases only; never infer a type from a cell name or candidate label.
-const neutral=shape=>({shape,color:'var(--ink-muted)'});
+const neutral=shape=>({shape,color:shape==='generic'?'var(--cell-unknown)':'var(--ink-muted)'});
 const normalizeTypePart=value=>value.trim().toLowerCase().replace(/[ _-]+/g,'-').replace(/-cells?$/,'');
 const families={rgc:'ganglion',ganglion:'ganglion','retinal-ganglion':'ganglion',bipolar:'bipolar',bc:'bipolar',amacrine:'amacrine',ac:'amacrine',horizontal:'horizontal',hc:'horizontal',photoreceptor:'photoreceptor',photoreceptors:'photoreceptor'};
 const polarized=(shape,polarity,variant)=>({shape,polarity,color:`var(--cell-${polarity})`,...(variant?{variant}:{})});

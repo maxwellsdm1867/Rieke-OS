@@ -1,3 +1,4 @@
+import UnknownCellDrawing from './UnknownCellDrawing.jsx';
 import NeuronIcon from './NeuronIcon.jsx';
 import {cellTypePresentation} from '../cell-qc/cellTypes.js';
 
@@ -5,7 +6,7 @@ import {cellTypePresentation} from '../cell-qc/cellTypes.js';
 export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...props}) {
   const {shape,color,polarity,variant}=cellTypePresentation(type);
   const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
-  if(shape==='generic')return <svg {...shared}><UnknownGlyph/></svg>;
+  if(shape==='generic')return <svg {...shared}><UnknownCellDrawing/></svg>;
   if(shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} parasol={shape==='ganglion' && Boolean(polarity)} somaOffset={-.75} polarity={polarity} {...shared}/>;
   return <svg {...shared}>
     {shape==='bistratified'?<>
@@ -18,21 +19,6 @@ export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...prop
       <path d="M9.6 12.8C8 11.4 6.7 10 4.3 10S2.6 8.9 1.5 8.4M5.8 10.2 5 7.5M5.1 8.1 3.5 7M9.6 12.8C7 13.1 4.8 13.3 2 12.2M3.5 12.7l-1 1.6M14.4 12.8c1.6-1.4 3-3 5.2-3.1S21.3 8.5 22 8M18.1 10.1l.2-2.8M18.2 8.1l-1.5-1M14.4 12.8c2.6.4 4.8.2 7.6-1M20 12.5l1.4 1.6"/>
     </>:shape==='bipolar'?<BipolarGlyph polarity={polarity} variant={variant}/>:<PhotoreceptorGlyph shape={shape}/>}
   </svg>;
-}
-
-/** Deliberately non-anatomical Easter egg for an unidentified cell. */
-function UnknownGlyph() {
-  return <>
-    <path d="M7.3 7.5c2.3-.6 5.7-1.6 8-.2 2.9 1.4 4.8 6.7 3.4 10.3-.6 1.6-2.2 2.1-3.3 3-1.7 1.3-5.9.5-8-1.1-1.9-1.4-2.7-3.5-2.8-5.8-.1-2.8.2-5.2 2.7-6.2ZM11.1 21v2"/>
-    <path d="m7 14.8 9.8-1.8m-5.7 3.2 2-.3m1.8-4.7.8.2"/>
-    <circle cx="7.9" cy="12.2" r=".65" fill="currentColor" stroke="none"/>
-    <g strokeWidth="1.15">
-      {[5,12,19].map(x=><g key={x} transform={`translate(${x} 0)`}>
-        <path d="M-1.2 2.1c0-1.5 2.4-1.5 2.4 0 0 .9-1.2.9-1.2 1.8"/>
-        <circle cx="0" cy="5.2" r=".55" fill="currentColor" stroke="none"/>
-      </g>)}
-    </g>
-  </>;
 }
 
 function BipolarGlyph({polarity,variant}) {

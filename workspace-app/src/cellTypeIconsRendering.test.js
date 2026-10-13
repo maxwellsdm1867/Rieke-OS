@@ -20,7 +20,7 @@ test('recorded types select consistent icons across overview, cell list, selecti
       ['RGC/ON-parasol','cell-on'],['RGC/OFF-parasol','cell-off'],['RGC/ON-midget','cell-on'],['RGC/OFF-midget','cell-off'],['RGC/small bistratified','cell-bistratified'],
       ['amacrine/AII','cell-amacrine'],['amacrine/A17','cell-amacrine'],['amacrine/starburst','cell-amacrine'],
       ['bipolar/OFF-diffuse','cell-off'],['bipolar/OFF-midget','cell-off'],['bipolar/ON-diffuse','cell-on'],['bipolar/ON-midget','cell-on'],['bipolar/rod','cell-on'],
-      ['horizontal','cell-outer'],['photoreceptor/S cone','cell-cone-s'],['photoreceptor/M cone','cell-cone-m'],['photoreceptor/L cone','cell-cone-l'],['photoreceptor/rod','cell-outer'],['unknown','ink-muted'],
+      ['horizontal','cell-outer'],['photoreceptor/S cone','cell-cone-s'],['photoreceptor/M cone','cell-cone-m'],['photoreceptor/L cone','cell-cone-l'],['photoreceptor/rod','cell-outer'],['unknown','cell-unknown'],
       ['ON bipolar','cell-on'],['OFF bipolar','cell-off'],['Cones','ink-muted'],['Unspecified-type bipolar','ink-muted'],['Generic amacrine','ink-muted'],
       ['RGC/unlisted subtype','ink-muted'],['bipolar/unlisted subtype','ink-muted'],['amacrine/unlisted subtype','ink-muted'],['photoreceptor/unlisted subtype','ink-muted'],
     ];
@@ -48,6 +48,6 @@ test('recorded types select consistent icons across overview, cell list, selecti
     assert.equal(glyph('photoreceptor/M cone'),glyph('photoreceptor/L cone'));
     assert.equal(new Set(['AII','A17','starburst','unknown'].map(type=>glyph(`amacrine/${type}`))).size,4);
     const unknown=draw(Selection,{cell:{cell_uuid:'unknown',label:'ON parasol',epochs:1}}).querySelector('svg');
-    assert.equal(unknown.style.color,'var(--ink-muted)','a display name must not classify the cell');
+    assert.equal(unknown.style.color,'var(--cell-unknown)','a display name must not classify the cell');
   }finally{dom.window.close();await server.close();}
 });

@@ -22,12 +22,14 @@
  --chart-1:#445fc6;--chart-2:#367d80;--chart-3:#a37129;--chart-4:#60799e;--chart-5:#a25570;--chart-6:#657b39;
  /* Cell shape encodes class. Shared polarity colors and outer-retina blue
     stay consistent across classes; unknown types use neutral ink. */
+ --cell-unknown:#707070;
  --cell-on:#247d70;--cell-off:#805eaa;--cell-outer:#4468ac;
  --cell-amacrine:#967018;--cell-bistratified:#326dab;
  --cell-cone-s:#4468ac;--cell-cone-m:#437d45;--cell-cone-l:#b0524c;
  color-scheme:light;color:var(--ink);background:var(--background);
 }
 :root[data-theme="dark"],[data-palette="dark"]{
+ --cell-unknown:#b8b8b8;
  --cell-on:#70c9b6;--cell-off:#bea0e4;--cell-outer:#91b7f0;
  --cell-amacrine:#e5c568;--cell-bistratified:#80bafa;
  --cell-cone-s:#91b7f0;--cell-cone-m:#98ce8e;--cell-cone-l:#f3a39b;
