@@ -6,7 +6,7 @@ import {cellTypePresentation} from '../cell-qc/cellTypes.js';
 export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...props}) {
   const {shape,color,polarity,variant}=cellTypePresentation(type);
   const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
-  if(shape==='generic')return <svg {...shared}><UnknownCellDrawing/></svg>;
+  if(shape==='generic')return <svg {...shared} viewBox="1.25 0 21.5 21.5"><UnknownCellDrawing/></svg>;
   if(shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} parasol={shape==='ganglion' && Boolean(polarity)} somaOffset={-.75} polarity={polarity} {...shared}/>;
   return <svg {...shared}>
     {shape==='bistratified'?<>

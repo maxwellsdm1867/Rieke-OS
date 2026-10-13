@@ -132,14 +132,18 @@ Dark, and Fred, enlarged and at 24 and 16 px.
 
 Run the production frontend build, architecture guard, fixed core, and both
 required everyday-million comparisons. For the scientific visual review follow-up the pinned
-reference is `34ce2e0`, and the previous source is `a3058a3`. Retain exact-source
+reference is `34ce2e0`, and the previous source is `043d3f4`. Retain exact-source
 receipts under `benchmarks/results/retinal-taxonomy-*` and `retinal-review-*` / `parasol-midget-*` / `unknown-face-*`; inspect actual results
 before claiming a pass. Earlier icon iterations retain their own evidence.
 These source, browser, and synthetic-query checks do not establish native,
 installed, packaged, or release qualification.
 
 The unknown glyph preserves the approved drawing as traced scalable outlines.
-Its dedicated neutral gray is `#707070` in Light/Fred and `#b8b8b8` in Dark,
+Its dedicated neutral gray is `#555555` in Light/Fred and `#d2d2d2` in Dark,
 so the icon does not imply a biological class or polarity. The traced ink gains
 a small uniform stroke for legibility at 16 and 24 px; recorded labels remain
 the accessible identity.
+
+Final approved proportions crop the lower neck with viewBox `1.25 0 21.5 21.5`,
+enlarging the drawing by approximately 12% within the existing icon dimensions.
+The head, question marks, and separate mouth strokes retain the approved geometry.
