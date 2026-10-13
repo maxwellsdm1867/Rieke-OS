@@ -75,7 +75,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
   async function api(endpoint){return activePage.evaluate(async endpoint=>{const response=await fetch(endpoint);if(!response.ok)throw Error(await response.text());return response.json();},endpoint);}
   async function poll(fn,timeout=120000){const until=Date.now()+timeout;while(Date.now()<until){const result=await fn();if(result)return result;await new Promise(resolve=>setTimeout(resolve,100));}throw Error('Owned UI audit poll deadline');}
   async function shot(name){await activePage.screenshot({path:path.join(output,name+'.png')});}
-  async function step(name,fn){const before=receipt.requests.length,began=performance.now();const row={name,status:'running'};receipt.actions.push(row);try{row.result=await fn();row.total_ms=performance.now()-began;row.requests=receipt.requests.slice(before);await shot(name);row.status='passed';}catch(error){row.status='failed';row.error=String(error);throw error;}}
+  async function step(name,fn){const before=receipt.requests.length,began=performance.now();const row={name,status:'running',started_at:new Date().toISOString()};receipt.actions.push(row);await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');try{row.result=await fn();row.total_ms=performance.now()-began;row.requests=receipt.requests.slice(before);await shot(name);row.status='passed';}catch(error){row.status='failed';row.error=String(error);throw error;}finally{row.elapsed_ms=performance.now()-began;await fs.writeFile(path.join(output,'receipt.json'),JSON.stringify(receipt,null,2)+'\n');}}
   const synthetic=path.join(home,'synthetic');
   await run(path.join(runtime,'python/bin/python3.11'),['-B',path.join(__dirname,'seed-dual-response-fixture.py'),synthetic,path.join(runtime,'python/lib/python3.11/site-packages/retinanalysis/utils/parse_data.py')],{env:fixtureEnv,timeout:45000});
   const oracle=JSON.parse(await fs.readFile(path.join(synthetic,'dual-oracle.json'))),fixtureReceipt=JSON.parse(await fs.readFile(path.join(synthetic,'dual-fixture-receipt.json'))),input=path.join(synthetic,'synthetic-dual.h5');
@@ -89,7 +89,7 @@ for(const name of ['desktop-root','dependency-root','source-root','commit','outp
     const managed=await fs.realpath(job.recording_storage.path);assert.ok(managed.startsWith(home+path.sep),'Managed recording must stay in owned HOME');assert.equal(await hash(managed),fixtureReceipt.h5_sha256);receipt.managed_source=managed;
     const overview=await api('/api/overview');assert.equal(overview.counts.epochs,63);assert.equal(overview.counts.cells,2);assert.equal(overview.protocols.length,1);receipt.protocol=overview.protocols[0].protocol_uuid;
     const review=activePage.getByRole('dialog',{name:'Review imported data',exact:true});
-    if(!await review.isVisible())await activePage.getByRole('button',{name:/^Review import —/}).click();await review.waitFor();await shot('01-import-review');await review.getByRole('button',{name:'Done reviewing',exact:true}).click();
+    await review.waitFor({timeout:30000});await shot('01-import-review');await review.getByRole('button',{name:'Done reviewing',exact:true}).click();
     return {epochs:63,cells:2,source_sha256:job.source_sha256};
   });
   await step('02-overview',async()=>{await activePage.getByRole('button',{name:'Project overview',exact:true}).click();await activePage.getByRole('region',{name:'Project infographic',exact:true}).waitFor();return {protocol_count:await activePage.locator('.ov-protocol-row:visible').count()};});
