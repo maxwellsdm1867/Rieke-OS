@@ -27,7 +27,7 @@ async function setup(){
 test('QC keeps its list and committed frame through a delayed family change, then publishes a matching epoch/summary',async()=>{
  const {h,frame,family}=await setup();let release;
  try{
-  const identity=h.root.findByProps({className:'qc-identity'});
+  const identity=h.root.findByProps({className:'qc-cell-type'});
   assert.ok(identity.findAllByType('svg').some(node=>node.props.style?.color==='var(--cell-on)'&&node.props['aria-hidden']===true));
   const list=h.root.findByProps({className:'qc-trial-list'}),recording=h.root.findByProps({className:'qc-recording'});
   h.fixture.holdSummary=(url,options,value)=>value.epoch_uuid==='epoch-1'?new Promise(resolve=>release=()=>resolve(value)):value;

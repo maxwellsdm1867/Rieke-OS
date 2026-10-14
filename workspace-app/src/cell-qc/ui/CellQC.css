@@ -6,5 +6,10 @@
 
 .qc-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.qc-temperature-metric{display:block;width:100%;text-align:left;padding:0!important;border:0;background:transparent}.qc-temperature-metric>span{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-muted)}.qc-temperature-metric>strong{display:block;font-size:20px;margin:7px 0 4px}.qc-temperature>header,.qc-observation-pages{display:flex;align-items:center;justify-content:space-between;gap:12px}.qc-temperature h2{font-size:15px}.qc-observation-pages{margin-top:12px}.qc-temperature td code{display:block;font-size:10px;margin-top:5px;user-select:all}.qc-temperature-source{margin-top:16px}.qc-temperature-source>.inspection-metadata{max-height:450px;overflow:auto}.qc-temperature-source h3 code{font-size:11px;user-select:all}
 
-.qc-identity .badge{display:inline-flex;align-items:center;gap:8px}
-.qc-identity .badge svg{flex-shrink:0}
+/* Approved compact identity tile: heading above the retinal drawing. */
+.qc-metrics{grid-template-columns:190px repeat(2,minmax(0,1fr));min-height:112px}
+.qc-metrics article.qc-cell-type{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 16px;min-width:0}
+.qc-metrics .qc-cell-type>strong{font-size:17px;line-height:22px;font-weight:650;letter-spacing:-.25px;margin:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qc-cell-type-icon{height:58px;display:flex;align-items:center;justify-content:center}
+.qc-cell-type-icon svg{flex-shrink:0}
+@media(max-width:620px){.qc-metrics{grid-template-columns:1fr}.qc-metrics article{border-right:0;border-bottom:1px solid var(--border-subtle)}}

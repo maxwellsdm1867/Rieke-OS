@@ -476,10 +476,10 @@
       ]
     },
     "src/cell-qc/cellTypes.js": {
-      "fingerprint": "d38acacefc61a294d46af5e2491b836044a6733d9e148229ff2e56eb437a9991",
+      "fingerprint": "25a5ab79480de0513a9b71749c3f99e852b1bd37f2cc54ef84fed298e8740cd6",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
@@ -496,7 +496,7 @@
       ]
     },
     "src/cell-qc/ui/CellQC.jsx": {
-      "fingerprint": "7091a5574bcc13c8ea22c3ae10ca25a1f076af3afb91e637fde1cd3ef750e9f7",
+      "fingerprint": "6bfea69936f42ae43bab6f3ea034913e2b0891e7831a542cf08c52f2fa068fac",
       "sites": [
         {
           "owner": "CellQC",
@@ -510,7 +510,7 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md. Reviewed 0.1.13 QC tile: presentation-only title/icon placement and exact display aliases; request, session, annotation and retained effect ownership unchanged.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",
@@ -545,10 +545,10 @@
       ]
     },
     "src/components/CellTypeIcon.jsx": {
-      "fingerprint": "2d6ec33a7677c3cb7d5120734898600028ee5528ca838b7914ab358c067930be",
+      "fingerprint": "60ab3c0e990a6daad046f980b1423b297394d1c0de74ff7c5b70a8ddc2eb5ff4",
       "sites": [],
       "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof. Reviewed approved optical offsets: fixed presentation constants, no reads, effects or identity changes.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"

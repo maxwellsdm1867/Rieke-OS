@@ -2,10 +2,25 @@ import UnknownCellDrawing from './UnknownCellDrawing.jsx';
 import NeuronIcon from './NeuronIcon.jsx';
 import {cellTypePresentation} from '../cell-qc/cellTypes.js';
 
+// Fixed optical offsets from the approved whole-taxonomy preview, in 24-unit space.
+// Scale with the glyph; no DOM measurements or lifecycle work is needed in rows.
+const opticalOffsets={
+  'ganglion:on':[-.675,.016],'ganglion:off':[-.660,1.064],
+  'midget:on':[-1.056,-2],'midget:off':[-.978,-1.887],
+  bistratified:[-.692,-.096],'amacrine:aii':[-.036,.146],
+  'amacrine:a17':[-.021,-.966],'amacrine:starburst':[.127,-.579],
+  'bipolar:diffuse:on':[.004,.063],'bipolar:diffuse:off':[0,1.712],
+  'bipolar:midget:on':[.084,-1.659],'bipolar:midget:off':[.086,.244],
+  'bipolar:rod:on':[.171,1.174],horizontal:[.117,.235],
+  cone:[.003,-.727],rod:[-.007,.988]
+};
+
 /** Decorative schematic; adjacent recorded text remains the accessible identity. */
 export default function CellTypeIcon({type,size=19,strokeWidth=1.7,style,...props}) {
   const {shape,color,polarity,variant}=cellTypePresentation(type);
-  const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...style},...props};
+  const offset=opticalOffsets[[shape,variant,polarity].filter(Boolean).join(':')];
+  const alignment=offset?{transform:`translate(${offset[0]/24*100}%, ${offset[1]/24*100}%)`}:{};
+  const shared={width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{color,...alignment,...style},...props};
   if(shape==='generic')return <svg {...shared} viewBox="1.25 0 21.5 21.5"><UnknownCellDrawing/></svg>;
   if(shape==='ganglion' || shape==='midget')return <NeuronIcon size={size} compact={shape==='midget'} parasol={shape==='ganglion' && Boolean(polarity)} somaOffset={-.75} polarity={polarity} {...shared}/>;
   return <svg {...shared}>

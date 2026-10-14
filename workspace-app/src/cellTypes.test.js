@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cellTypeColor,cellTypePresentation,recordedCellType,distinctCells} from "./cell-qc/cellTypes.js";
+import {cellTypeQCLabel,cellTypeColor,cellTypePresentation,recordedCellType,distinctCells} from "./cell-qc/cellTypes.js";
 import {protocolCellSummary} from "./protocol-overview/protocolOverviewModel.js";
 import {overviewModel} from "./protocol-overview/ui/overviewModel.js";
 
@@ -83,4 +83,20 @@ test('complete recorded taxonomy retains family context, exact subtype and neutr
   assert.equal(cellTypePresentation('ON midget bipolar').variant,'midget');
   assert.equal(cellTypePresentation('Rod bipolar').variant,'rod');
   for(const label of ['possible AII','S cone candidate','other/A17','possible starburst'])assert.deepEqual(cellTypePresentation(label),{shape:'generic',color:'var(--cell-unknown)'});
+});
+
+test('QC headings distinguish bipolar and ganglion names without rewriting source metadata',()=>{
+  for(const [source,label] of [
+    ['RGC/ON-parasol','ON parasol'],['RGC/OFF-parasol','OFF parasol'],
+    ['RGC/ON-midget','ON midget'],['RGC/OFF-midget','OFF midget'],
+    ['RGC/small bistratified','Small bistratified'],['amacrine/AII','AII amacrine'],
+    ['amacrine/A17','A17 amacrine'],['amacrine/starburst','Starburst amacrine'],
+    ['bipolar/ON-diffuse','ON diffuse bipolar'],['bipolar/OFF-diffuse','OFF diffuse bipolar'],
+    ['bipolar/ON-midget','ON midget bipolar'],['bipolar/OFF-midget','OFF midget bipolar'],
+    ['bipolar/rod','Rod bipolar'],['horizontal','Horizontal'],
+    ['photoreceptor/S cone','S cone'],['photoreceptor/M cone','M cone'],
+    ['photoreceptor/L cone','L cone'],['photoreceptor/rod','Rod'],['unknown','Unclassified']
+  ]){assert.equal(cellTypeQCLabel(source),label);assert.equal(recordedCellType({cell_type:source}),source);}
+  for(const source of ['RGC/ON-parasol candidate','bipolar/Novel','custom/ON-parasol','horizontal/Novel'])assert.equal(cellTypeQCLabel(source),source);
+  assert.equal(cellTypeQCLabel(null),'Unclassified');
 });

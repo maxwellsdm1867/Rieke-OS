@@ -73,3 +73,24 @@ export function cellTypePresentation(type) {
 export function cellTypeColor(type) {
   return cellTypePresentation(type).color;
 }
+
+// Short QC headings are display aliases; tags and recorded metadata keep their source text.
+export function cellTypeQCLabel(type) {
+  const raw=type==null?'':String(type);
+  if(!raw.trim())return 'Unclassified';
+  const parts=raw.split(/[\\/]+/).map(normalizeTypePart);
+  const key=parts.pop(),prefix=parts.join('/'),family=families[prefix];
+  if(prefix&&!family)return raw;
+  const ganglion={'on-parasol':'ON parasol','off-parasol':'OFF parasol','on-midget':'ON midget','off-midget':'OFF midget','small-bistratified':'Small bistratified'};
+  const bipolar={'on-diffuse':'ON diffuse bipolar','off-diffuse':'OFF diffuse bipolar','on-midget':'ON midget bipolar','off-midget':'OFF midget bipolar','rod':'Rod bipolar','on':'ON bipolar','off':'OFF bipolar'};
+  const amacrine={aii:'AII amacrine',a17:'A17 amacrine',starburst:'Starburst amacrine'};
+  const receptor={'s-cone':'S cone','m-cone':'M cone','l-cone':'L cone',rod:'Rod',cone:'Cone'};
+  if(family==='ganglion')return ganglion[key]||raw;
+  if(family==='bipolar')return bipolar[key.replace(/-bipolar$/,'')]||raw;
+  if(family==='amacrine')return amacrine[key.replace(/-amacrine$/,'')]||raw;
+  if(family==='photoreceptor')return receptor[key]||raw;
+  if(family==='horizontal')return key==='horizontal'?'Horizontal':raw;
+  return ganglion[key]||amacrine[key.replace(/-amacrine$/,'')]||receptor[key]||
+    (/-bipolar$/.test(key)?bipolar[key.replace(/-bipolar$/,'')]:null)||
+    ({horizontal:'Horizontal',unclassified:'Unclassified',unknown:'Unclassified'}[key])||raw;
+}
