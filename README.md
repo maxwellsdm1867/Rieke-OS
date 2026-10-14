@@ -1,4 +1,4 @@
-> **Disco 0.1.10 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.10/Disco-0.1.10-arm64.zip) · [Prerelease details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.10). Extract the ZIP, quit Disco, replace your existing **Disco.app** with the extracted app, and reopen it. Existing project folders remain separate and can be reopened. Python and native MySQL are bundled; no Docker or Terminal setup is needed. Use manual replacement for this prerelease; the in-app updater is under investigation. This build is unsigned and unnotarized, so macOS may require **Privacy & Security → Open Anyway**. It targets macOS 14+, but runtime checks were on macOS 27.0.1; macOS 14 runtime support is unqualified and Intel is unsupported. This is a manual testing download, not a stable release.
+> **Disco 0.1.12 · Mac desktop testing build:** [Download the Apple silicon ZIP](https://github.com/maxwellsdm1867/Rieke-OS/releases/download/desktop-test-v0.1.12/Disco-0.1.12-arm64.zip) · [Release details and checksums](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.12). Python and native MySQL are bundled; no Docker or Terminal setup is needed. Existing users can use **App Updates → Download update → Restart to update**. The original public 0.1.10 helper may require opening Disco normally once after replacement; no re-download or reimport is needed. For manual installation, extract the ZIP, quit Disco, replace **Disco.app**, and reopen it. Project folders remain separate. This unsigned, unnotarized Apple silicon testing build targets macOS 14+; macOS 14 runtime support remains unqualified and Intel is unsupported. macOS may require **Privacy & Security → Open Anyway**. This is not a stable release.
 
 # Disco
 
@@ -57,23 +57,51 @@ responsibility.
 Read the [product and data-model overview](docs/RIEKE_OS_OVERVIEW.md) for how
 projects, searches, working datasets, annotations and exports fit together.
 
-## What is in the 0.1.10 testing build
+## Reading and inspecting data
 
-This build combines complete Workbench selections and source-specific merge controls
-with the H5 precision fixes and exact saved-filter, recipe, snapshot and transfer
-JSON transport. Highlighted rows in the Workbench Epochs view now use the same blue
-fill as Split tree; selected-for-merge rows retain their separate green state.
+Disco catalogs recorded metadata so you can search and organize epochs without loading every
+waveform. Response samples stay in the source H5 recordings and are read when you inspect a trace.
+Search-predicate results carry the lightweight stream information needed to open a response:
+**Live metadata can remain off while you inspect traces and move between matching epochs**.
+Turning it on loads the full metadata panel; turning it off again does not disable trace navigation.
 
-The current ZIP is built from clean source
-[`31182a4`](https://github.com/maxwellsdm1867/Rieke-OS/commit/31182a40c22da05f904dda6979ac6bcf0d4996b0).
-The [release notes and exact-byte metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.10)
-identify the current build, checksums, validation and remaining updater limits.
-If you downloaded 0.1.10 before the highlight correction, download the current ZIP
-again; its displayed version remains 0.1.10.
+The shared viewer supports whole-epoch and sample-window views, rectangular zoom, continuous pan,
+and a cursor for reading recorded sample values. Unchanged protocol membership and overview results
+can be reused when switching views, subject to project, protocol and revision checks. Workbench and
+cell-metadata reads stay scoped to the relevant cohort. These changes preserve source identities and
+saved scientific membership; they do not turn a search into a selection or merge.
+
+## What is in the 0.1.12 testing build
+
+This build includes the data-reading behavior above, protocol sidebar and selection updates, and
+the repaired updater helper. It retains complete Workbench selections, source-specific merge
+controls, H5 precision fixes, and exact saved-filter, recipe, snapshot and transfer JSON transport.
+
+The downloadable app is built from clean source
+[`add33d1`](https://github.com/maxwellsdm1867/Rieke-OS/commit/add33d153ae8f533d5c4a68c50690764323c4336).
+The [release assets](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.12)
+include `SHA256SUMS`, `desktop-release.json`, `qualification-summary.json`, and
+`github-live-update-verification.json`. These identify the exact package and its verification limits.
+App archives and the release tag are immutable; later fixes receive a new version.
+
+To reopen your last project automatically, enable **Window → Resume Last Workspace at Startup**.
+That behavior was verified on a normal relaunch after enabling the preference. The initial installed
+update opened the Projects chooser, so automatic project restoration on that first update is not
+claimed. Original recording hashes and the retained previous app bundle were verified unchanged.
+
+Known testing limits:
+
+- The Projects chooser's folder scan timed out on the tested host. Existing-project restoration
+  worked; the discovery problem is tracked in [#69](https://github.com/maxwellsdm1867/Rieke-OS/issues/69).
+- Million-epoch query comparisons passed. The browser workflow benchmark remains failed because
+  its trace-readiness assertion expects an obsolete control; repair and rerun are tracked in
+  [#67](https://github.com/maxwellsdm1867/Rieke-OS/issues/67). Separate packaged native checks passed
+  with Live metadata Off → On → Off, epoch navigation and recorded sample-value verification.
+- Broader native and platform qualification remains incomplete. This is an unsigned testing
+  prerelease, not a stable-production qualification.
 
 Earlier [0.1.8 package history](docs/dev/navigation-package.md) and its
-[package record](docs/dev/local-package-0.1.8.json) remain historical evidence,
-not the identity of the current download.
+[package record](docs/dev/local-package-0.1.8.json) remain historical evidence.
 
 ## Working on the code
 
@@ -97,14 +125,16 @@ The [module ledger](docs/architecture/core-module-ledger.md) and its
 and [backend](docs/architecture/core-module-ledger.md#backend-finite-current-path-composition)
 path records separate implemented organization, retained owners and proposals.
 Their earlier source and test receipts remain historical evidence; use the
-[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.10) for the downloadable build.
+[current release metadata](https://github.com/maxwellsdm1867/Rieke-OS/releases/tag/desktop-test-v0.1.12) for the downloadable build.
 The broader [stable-ports design](docs/architecture/stable-ports.md) remains a
 proposal beyond the explicitly adopted slices.
 
 ## Source download (developer workflow)
 
 **[Download main as a ZIP](https://github.com/maxwellsdm1867/Rieke-OS/archive/refs/heads/main.zip)**
-for the current application and documentation, or choose a version from
+for development source and documentation. To match the 0.1.12 app exactly, use
+[the release source tag](https://github.com/maxwellsdm1867/Rieke-OS/tree/desktop-test-v0.1.12).
+You can also choose a version from
 [Releases](https://github.com/maxwellsdm1867/Rieke-OS/releases) and download
 its **Source code (zip)**. Extract the entire archive before installing. GitHub's
 **Code → Download ZIP** also downloads the current `main` branch.
@@ -124,7 +154,7 @@ cd disco
 
 ## Install and launch
 
-For the complete Mac app, use the 0.1.10 ZIP and installation steps described above.
+For the complete Mac app, use the 0.1.12 ZIP and installation steps described above.
 The following commands apply only to a source checkout.
 
 1. Put the extracted application folder somewhere permanent, such as
