@@ -252,7 +252,9 @@ class LinkedSQLiteTests(unittest.TestCase):
             self.assertEqual(set(archive.namelist()), {'recordings.sqlite', 'linked_export_loader.py', 'README.md', 'requirements.txt'})
             folder = self.root / 'analysis'
             archive.extractall(folder)
-        result = subprocess.run([sys.executable, '-I', str(folder / 'linked_export_loader.py'),
+        # Isolated mode ignores PYTHONDONTWRITEBYTECODE; preserve the sealed
+        # interpreter's resources when CI runs this test with bundled Python.
+        result = subprocess.run([sys.executable, '-I', '-B', str(folder / 'linked_export_loader.py'),
                                  str(folder / 'recordings.sqlite'), '--epoch', self.service.ids[0]],
                                 capture_output=True, text=True, check=True)
         self.assertEqual(json.loads(result.stdout), self.package['epochs'][0])
