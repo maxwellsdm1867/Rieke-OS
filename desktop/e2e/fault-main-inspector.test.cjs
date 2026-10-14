@@ -25,3 +25,16 @@ test('main observer evaluates, propagates exceptions and deadlines, then disconn
     await assert.rejects(inspector.command('Runtime.enable',{}),/unavailable/);
   }finally{inspector?.close();child.kill('SIGTERM');await bounded(exited,5000,'Owned inert fixture shutdown');}
 });
+
+test('Electron readiness waits for owning bootstrap state and does not import or mask errors',async()=>{
+  const inspector=new MainInspector('ws://127.0.0.1:1234/abc');let calls=0;
+  inspector.command=async(method,params)=>{
+    assert.equal(method,'Runtime.evaluate');assert.ok(!params.expression.includes("require('electron')"));
+    return {result:{value:++calls===1?{type:'browser',ready:false}:{type:'browser',filename:'/fixture/app.asar/main.cjs',ready:true}}};
+  };
+  assert.equal((await inspector.waitForElectronMain(1000)).filename,'/fixture/app.asar/main.cjs');assert.equal(calls,2);
+  inspector.command=async()=>({result:{value:{ready:false}}});
+  await assert.rejects(inspector.waitForElectronMain(20),/did not become ready/);
+  inspector.command=async()=>{throw Error('real inspector failure');};
+  await assert.rejects(inspector.waitForElectronMain(1000),/real inspector failure/);
+});

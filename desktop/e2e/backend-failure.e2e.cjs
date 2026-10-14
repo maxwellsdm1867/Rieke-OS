@@ -56,6 +56,7 @@ async function launchNative(fixture){
   child.stdout.on('data',chunk=>{for(const line of chunk.toString().split('\n'))if(line.startsWith('FAULT_RENDERER_EVENT='))diagnostic.native_events.push(line);});
   application.inspector=new MainInspector(await bounded(endpoint,45000,'Owned main inspector announcement'));
   await application.inspector.connect();
+  diagnostic.main_bootstrap=await application.inspector.waitForElectronMain();
   const actual=await application.evaluate(async({app})=>{await app.whenReady();return {home:process.env.HOME,userData:app.getPath('userData'),appPath:app.getAppPath(),packaged:app.isPackaged,pid:process.pid,execPath:process.execPath};},undefined,45000);
   assert.equal(actual.home,fixture.home);assert.equal(actual.userData,fixture.userData);
   assert.equal(actual.appPath,path.join(fixture.bundle,'Contents/Resources/app.asar'));

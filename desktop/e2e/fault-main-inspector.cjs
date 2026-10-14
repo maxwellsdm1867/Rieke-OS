@@ -29,7 +29,13 @@ class MainInspector {
         if(!message.id)return;
         const item=this.pending.get(message.id);if(!item)return;
         this.pending.delete(message.id);
-        if(message.error||message.result?.exceptionDetails)item.reject(Error(JSON.stringify(message.error||message.result.exceptionDetails).slice(0,2000)));
+        if(message.error||message.result?.exceptionDetails){
+          const detail=message.error||message.result.exceptionDetails,exception=detail.exception;
+          item.reject(Error(JSON.stringify({className:exception?.className,
+            code:detail.code||exception?.code||exception?.preview?.properties?.find(property=>property.name==='code')?.value,
+            description:String(exception?.description||detail.message||detail.text).slice(0,1500),
+            stackTrace:detail.stackTrace}).slice(0,4000)));
+        }
         else item.resolve(message.result);
       }catch(error){fail(error.message);this.socket.close();}
     });
@@ -49,6 +55,22 @@ class MainInspector {
     const reply=new Promise((resolve,reject)=>this.pending.set(id,{resolve,reject}));
     try{this.socket.send(JSON.stringify({id,method,params}));return await bounded(reply,timeout,method);}
     finally{this.pending.delete(id);}
+  }
+  async waitForElectronMain(timeout=45000){
+    const deadline=Date.now()+timeout;
+    while(Date.now()<deadline){
+      // The inspector is published during node_init, before Electron registers
+      // its require binding. App main-module creation happens after that setup.
+      // Probe owning bootstrap state without importing or catching module errors.
+      const result=await this.command('Runtime.evaluate',{
+        expression:`({type:process.type,filename:process.mainModule?.filename,
+          ready:process.type==='browser'&&!!process.mainModule&&typeof process.mainModule.require==='function'})`,
+        contextId:this.context,returnByValue:true,
+      },Math.min(10000,Math.max(1,deadline-Date.now())));
+      if(result.result?.value?.ready===true)return result.result.value;
+      await new Promise(resolve=>setTimeout(resolve,Math.min(50,Math.max(1,deadline-Date.now()))));
+    }
+    throw Error('Electron application main module did not become ready before deadline');
   }
   async evaluate(fn,arg,timeout=10000){
     const result=await this.command('Runtime.evaluate',{
