@@ -106,7 +106,7 @@ async function projectDataReady(){
   const state=await response.json();if(state.status==='failed')throw Error('Project activation failed');
   return state.status==='ready';
  },undefined,{timeout:60000,polling:100}),'Scientific project activation',60000);
- await page.waitForFunction(()=>document.querySelector('.project-overview-retained')&&document.querySelector('.project-presentation-status')?.textContent==='',undefined,{timeout:Math.min(60000,remaining())});
+ await page.waitForFunction(()=>{const active=document.querySelector('[data-workspace-active="true"]');return active?.querySelector('.project-overview-retained')&&active.querySelector('.project-presentation-status')?.textContent==='';},undefined,{timeout:Math.min(60000,remaining())});
  (receipt.project_data_readiness??=[]).push({origin,started_at:startedAt,ready_at:Date.now(),status:'ready',canonical_overview_visible:true,
   activation_requests:(receipt.renderer_write_requests||[]).filter(event=>event.origin===origin&&event.path==='/api/project/activate').map(event=>({...event}))});
 }
@@ -130,14 +130,54 @@ async function authorProfile(requireExisting=false){
 async function actualPage(project=false){
  const until=Date.now()+60000;
  while(Date.now()<until){
+  const owner=await application.evaluate(({BrowserWindow})=>{
+   const window=BrowserWindow.getAllWindows().find(item=>!item.isDestroyed()&&item.isVisible()&&!item.isMinimized());
+   if(!window)return null;
+   const contents=window.contentView.children.map(view=>view.webContents).filter(Boolean).at(-1)||window.webContents;
+   return contents.isDestroyed()?null:{window_id:window.id,web_contents_id:contents.id,url:contents.getURL(),title:contents.getTitle(),loading:contents.isLoading(),crashed:contents.isCrashed()};
+  });
   for(const candidate of application.windows()){
-   if(!/^http:\/\/127\.0\.0\.1:\d+\//.test(candidate.url()))continue;
-   const target=project?candidate.locator('.main-content h1').first():candidate.getByRole('heading',{name:'Your projects',exact:true});
-   if(await target.isVisible().catch(()=>false) || (project && await candidate.getByRole('dialog',{name:'Tag author',exact:true}).isVisible().catch(()=>false)))return candidate;
+   if(candidate.url()!==owner?.url||!/^http:\/\/127\.0\.0\.1:\d+\//.test(candidate.url()))continue;
+   // Inactive retained destinations intentionally keep hidden headings in DOM.
+   // Select only the attached native owner and its active, visible destination.
+   const target=project?candidate.locator('.main-content [data-workspace-active="true"] h1:visible').first():candidate.getByRole('heading',{name:'Your projects',exact:true});
+   if(await target.isVisible().catch(()=>false) || (project && await candidate.getByRole('dialog',{name:'Tag author',exact:true}).isVisible().catch(()=>false))){
+    const headings=await candidate.locator('.main-content h1').evaluateAll(nodes=>nodes.map(node=>({text:node.textContent.trim(),visible:!!node.getClientRects().length,retained_active:node.closest('[data-workspace-active]')?.getAttribute('data-workspace-active')})));
+    (receipt.selected_documents??=[]).push({project,at:Date.now(),native_owner:owner,headings});
+    return candidate;
+   }
   }
   await delay(100);
  }
+ await selectionTimeoutDiagnostic(project);
  throw new Error('Expected retained application document did not become ready');
+}
+async function selectionTimeoutDiagnostic(project){
+ const observation={project,at:new Date().toISOString(),playwright:[]};
+ const expression=`(async()=>{const visible=node=>!!node&&node.getBoundingClientRect().width>0&&node.getBoundingClientRect().height>0&&getComputedStyle(node).visibility!=='hidden';
+  return {title:document.title,href:location.href,readyState:document.readyState,
+   headings:[...document.querySelectorAll('h1,h2,[role="heading"]')].map(node=>({text:node.textContent.trim(),visible:visible(node),main:!!node.closest('.main-content'),retained_active:node.closest('[data-workspace-active]')?.getAttribute('data-workspace-active')})),
+   first_main_heading:document.querySelector('.main-content h1')?.textContent,first_main_visible:visible(document.querySelector('.main-content h1')),
+   status:await window.riekeDesktop?.status()};})()`;
+ const limit=async(promise,ms)=>{let timer;try{return await Promise.race([promise,new Promise((_resolve,reject)=>{timer=setTimeout(()=>reject(Error('Selection diagnostic timed out')),ms);})]);}finally{clearTimeout(timer);}};
+ for(const candidate of application.windows()){
+  const item={url:candidate.url(),closed:candidate.isClosed()};
+  try{item.dom=await limit(candidate.evaluate(expression),1500);}catch(error){item.error=error.message;}
+  observation.playwright.push(item);
+ }
+ try{observation.native=await limit(application.evaluate(async({BrowserWindow,webContents},expression)=>{
+  const windows=BrowserWindow.getAllWindows().map(window=>({id:window.id,visible:window.isVisible(),minimized:window.isMinimized(),host_id:window.webContents.id,
+   child_ids:window.contentView.children.map(view=>view.webContents?.id).filter(Boolean)}));
+  const documents=await Promise.all(webContents.getAllWebContents().map(async web=>{
+   const item={id:web.id,url:web.getURL(),title:web.getTitle(),loading:web.isLoading(),crashed:web.isCrashed()};let timer;
+   try{item.dom=await Promise.race([web.executeJavaScript(expression),new Promise((_resolve,reject)=>{timer=setTimeout(()=>reject(Error('Native DOM observation timed out')),2000);})]);}catch(error){item.error=error.message;}finally{clearTimeout(timer);}
+   if(windows.some(window=>window.child_ids.at(-1)===web.id)){try{item.png=(await web.capturePage()).toPNG().toString('base64');}catch(error){item.screenshot_error=error.message;}}
+   return item;
+  }));return {windows,documents};
+ },expression),6000);}catch(error){observation.native_error=error.message;}
+ const directory=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e');await fs.mkdir(directory,{recursive:true});
+ for(const item of observation.native?.documents||[])if(item.png){item.screenshot=path.join(directory,`smoke-selection-${item.id}.png`);await fs.writeFile(item.screenshot,Buffer.from(item.png,'base64'));delete item.png;}
+ (receipt.selection_timeout_diagnostics??=[]).push(observation);await write();
 }
 async function start(restoredProjectName=null){
  ({application,page}=await bounded(launch(fixture),'Packaged launch'));
