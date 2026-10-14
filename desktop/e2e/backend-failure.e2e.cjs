@@ -5,6 +5,13 @@ const {createHash} = require('node:crypto');
 const {createFixture, launch, gracefulQuit, run} = require('./helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
+const diagnostic={stage:'starting',node:process.version,os_release:require('node:os').release(),stderr:'',native_events:[]};
+const diagnosticFile=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/backend-startup-failure-diagnostic.json');
+process.on('uncaughtExceptionMonitor',error=>{
+  const sync=require('node:fs');sync.mkdirSync(path.dirname(diagnosticFile),{recursive:true});
+  sync.writeFileSync(diagnosticFile,JSON.stringify({...diagnostic,error:error.stack||error.message},null,2)+'\n');
+});
+
 (async () => {
   const fixture = await createFixture({reuse: false});
   const runtime = path.join(fixture.bundle, 'Contents/Resources/runtime');
@@ -16,7 +23,14 @@ const {verifyResources} = require('../updater-validation.cjs');
   const literalFailure = "raise RuntimeError('Injected packaged backend failure before imports, binding, projects or databases')\n";
   await fs.writeFile(entry, literalFailure);
   const manifest = await resealRuntimeManifest(runtime); await verifyResources(runtime, manifest.resources);
+  diagnostic.stage='launching-faulted-clone';
   const {application, page} = await launch(fixture);
+  diagnostic.stage='waiting-for-recovery';
+  application.process().stderr.on('data',chunk=>{diagnostic.stderr=(diagnostic.stderr+chunk.toString()).slice(-16000);});
+  application.process().stdout.on('data',chunk=>{for(const line of chunk.toString().split('\n'))if(line.startsWith('FAULT_RENDERER_EVENT='))diagnostic.native_events.push(line);});
+  await application.evaluate(({BrowserWindow})=>{
+    for(const window of BrowserWindow.getAllWindows())window.webContents.on('render-process-gone',(_event,details)=>process.stdout.write('FAULT_RENDERER_EVENT='+JSON.stringify(details)+'\n'));
+  });
   await page.getByRole('heading', {name: 'Disco recovery', exact: true}).waitFor({timeout: 90000});
   const status = await page.evaluate(() => window.riekeDesktop.status());
   assert.equal(status.state, 'Recovery'); assert.match(status.detail, /exited before owning its listener/);
