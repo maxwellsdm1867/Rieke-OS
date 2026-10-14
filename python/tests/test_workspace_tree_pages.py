@@ -33,6 +33,31 @@ class TreePageTests(unittest.TestCase):
             {'uuid':key,'metadata_hash':'b'*64} for key in self.service.rows]
         self.pager = TreePages(self.service)
 
+    def test_recorded_cell_type_reaches_full_paged_and_ancestor_cell_nodes_only(self):
+        for row in self.service.rows.values():
+            row['cell_type'] = 'RGC/ON-parasol'
+            row['cell_label'] = 'OFF midget is only a display name'
+        full = self.service.tree(self.service.protocol_id, splits='cell,block')
+        self.assertEqual(full['children'][0]['cell_type'], 'RGC/ON-parasol')
+        self.assertTrue(all('cell_type' not in branch for branch in full['children'][0]['children']))
+        for counts_only in (False, True):
+            body = dict(protocol_uuid=self.service.protocol_id, splits='cell,block', counts_only=counts_only)
+            page = self.pager.page(body)
+            cell = page['branches'][0]
+            self.assertEqual(cell['cell_type'], 'RGC/ON-parasol')
+            child = self.pager.page({**body, 'path': cell['path'], 'revision': page['revision']})
+            self.assertEqual(child['ancestors'][0]['cell_type'], 'RGC/ON-parasol')
+            self.assertTrue(all('cell_type' not in branch for branch in child['branches']))
+            target, parents = self.pager.column_pages({**body, 'path': cell['path'], 'revision': page['revision']})
+            self.assertEqual(parents[0]['branches'][0]['cell_type'], 'RGC/ON-parasol')
+        for field in ('date', 'cell type', 'group', 'block'):
+            page = self.pager.page(dict(splits=field, counts_only=True))
+            self.assertTrue(all('cell_type' not in branch for branch in page['branches']))
+        for row in self.service.rows.values():
+            row['cell_type'] = None
+        page = self.pager.page(dict(splits='cell', counts_only=True))
+        self.assertIsNone(page['branches'][0]['cell_type'])
+
     def collect(self, request):
         root = self.pager.page(request)
         leaves, paths = [], []

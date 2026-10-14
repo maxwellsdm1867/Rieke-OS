@@ -1307,9 +1307,11 @@ class WorkspaceService:
                    'missing_epochs': 0, **({'components': definitions[field]['components']} if 'components' in definitions[field] else {})} for field in order]
         labels = {}
         block_times = {}
+        cell_types = {}
         for row in rows:
             cell_date = getattr(self, 'cells', {}).get(row['cell_uuid'], {}).get('date') or row['date']
             labels[row['cell_uuid']] = f"{cell_date} · {row['cell_label']}"
+            cell_types[row['cell_uuid']] = row.get('cell_type')
             labels[row['group_uuid']] = row['group_label'] or 'Unlabeled group'
             block_time = row.get('block_start_time')
             block_times[row['block_uuid']] = block_time
@@ -1350,6 +1352,8 @@ class WorkspaceService:
                     node['label'] = str(value) if value is not None else 'Not recorded'
                 else:
                     node['label'] = 'null (recorded)' if value is None else value_label(value)
+                if parent_field == 'cell' and not node.get('missing'):
+                    node['cell_type'] = cell_types.get(value)
                 if parent_field == 'block' and value in block_times:
                     node['start_time'] = block_times[node['value']]
             if 'field' in node:

@@ -4947,8 +4947,8 @@
       },
       {
         "file": "python/disco/navigation/tree_pages.py",
-        "file_sha256": "4fc479a373d99f2ca9cddc53106e4d5eb1ba409681c9939a17d9ebb7991da1a5",
-        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped.",
+        "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
+        "reason": "Capture exact ExplorerHistory methods for structural identity/fallback checks; do not weaken scientific response authority. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Protocol-local cache follow-up: captured method targets and fallback checks are unchanged; fingerprint dependencies and grouping reservations are cohort-scoped. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
         "sites": [
           {
             "selector": "Call:2",
@@ -4980,7 +4980,7 @@
       {
         "file": "python/lifecycle_diagnostic.py",
         "file_sha256": "88ab25a0b97bdd65dab7b3fba42b58ce30165a47be3c07d43efef186cd5c42a3",
-        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update.",
+        "reason": "Opt-in observer registration ASTs, fixed module/function targets and observer source are unchanged versus main5aaf0be. WorkspaceService now admits source fingerprints only after exact or bounded converter proof; its source owner witnesses are refreshed. See docs/dev/h5-json-precision-2026-10-09.md. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Bounded project-inventory review: the existing observer/patch targets and reviewed syntax remain unchanged; affected owner bytes now use an isolated read-only listing worker and cancel that worker on pause. See the P07 project-inventory update. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
         "sites": [
           {
             "selector": "Name:56",
@@ -5043,7 +5043,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5065,7 +5065,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5087,7 +5087,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5131,7 +5131,7 @@
       {
         "file": "python/tests/test_tree_canonical_sort.py",
         "file_sha256": "6a00fb326d3172e702262a01bada8a5b99a776e873e549cb2f7ee739fe0704c3",
-        "reason": "Patch historical field ordering oracle and compare current page responses against it.",
+        "reason": "Patch historical field ordering oracle and compare current page responses against it. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
         "sites": [
           {
             "selector": "Call:70",
@@ -5157,7 +5157,7 @@
               {
                 "module": "disco.navigation.tree_pages",
                 "file": "python/disco/navigation/tree_pages.py",
-                "file_sha256": "4fc479a373d99f2ca9cddc53106e4d5eb1ba409681c9939a17d9ebb7991da1a5",
+                "file_sha256": "8c7e2c2c399541f81c28baff869803e3429e0db5ebef2c5c92df72261dc068c3",
                 "contract_id": "backend-navigation"
               }
             ]
@@ -5689,7 +5689,7 @@
       {
         "file": "python/tests/test_workspace_refresh_cache.py",
         "file_sha256": "347a06862c242e0a704598a6c1bdd72e6c84444cc3b625da27a3c369f55a1fa6",
-        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged.",
+        "reason": "Inject service dependencies/discovery failures and bounded budgets; use original tree/predicate discovery as equality oracle for cache reuse/invalidation. Added numeric-policy regression cases shift selectors only: each existing reviewed call AST was matched unchanged within the same test method. Numeric persistence update: reviewed method/module targets are unchanged; owner source bytes reflect the bounded representation and exact-write changes. Projection compatibility tests are appended; original reviewed sites and AST selectors remain unchanged. Cell identity display metadata review: structural method captures, observer targets and mock targets remain unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
         "sites": [
           {
             "selector": "Name:40",
@@ -5708,7 +5708,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5730,7 +5730,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5752,7 +5752,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5785,7 +5785,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5818,7 +5818,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5840,7 +5840,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5862,7 +5862,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5884,7 +5884,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5906,7 +5906,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5928,7 +5928,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5950,7 +5950,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -5983,7 +5983,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -6005,7 +6005,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -6027,7 +6027,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]
@@ -6049,7 +6049,7 @@
               {
                 "module": "workspace_service",
                 "file": "python/workspace_service.py",
-                "file_sha256": "c7e3038863a63144ca2faaa3a2ed5733916759f58570df86c340ef554b1c96db",
+                "file_sha256": "28fea6b5d8fe45378159f7c6888346990c750e3a72f0b900c28af0474e211f4f",
                 "contract_id": null
               }
             ]

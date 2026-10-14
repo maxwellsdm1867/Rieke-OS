@@ -3,6 +3,61 @@
   "version": 1,
   "review": "docs/dev/retained-lifecycle-independent-audit-2026-10-13.md",
   "modules": {
+    "src/App.jsx": {
+      "fingerprint": "a485356b88c67a7dd4c8c30e0926c8e745a0fb72c5c7fd376bd29428765e557f",
+      "sites": [
+        {
+          "owner": "useStableSummary",
+          "kind": "useEffect",
+          "fingerprint": "4f58c0fd696083d284d8eba64b319b1b0b6e19f8aa0e313006148f15e37ac705"
+        },
+        {
+          "owner": "useProtocolBrowse",
+          "kind": "useEffect",
+          "fingerprint": "d744265e6e61c4ad5b7649911290d1c9a74563612a055d53348917909a89804a"
+        },
+        {
+          "owner": "Protocol",
+          "kind": "useEffect",
+          "fingerprint": "7139b477fe29d1616ce9c3360492cf8084a1517d7c2fd2d568c94ff7c6428128"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "8547f5bb6c962cdea8440aa23c6beb8d0de0539194e6f5a870b989fc935fa98b"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "819c2d458340d50d03739882d2ae5c5b66472f338829ef7d524deec07ac8dfa3"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "d3435af849777876b67c8b73454bc9277952122285d0694ceff6ea5169ebb07a"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "d42a102c90bf56190f4632b7753c816fac42e6bf1bd63fa93e57512e99dceac1"
+        },
+        {
+          "owner": "App",
+          "kind": "useEffect",
+          "fingerprint": "f7c559c68c6493015cd04283e6c9340f7a3e7034e04114fbd0fe5c2b79efbc82"
+        }
+      ],
+      "lifetime": "mixed-project-and-retained-composition",
+      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js",
+        "src/retainedWorkspaceViews.test.js",
+        "src/protocol-overview/overviewDemand.test.js",
+        "src/importMergeAppRoute.test.js",
+        "src/authoredDrafts.test.js"
+      ]
+    },
     "src/annotations/annotationProfile.js": {
       "fingerprint": "b909f09ca48e86689ab59f4a6bf53577ca76c196dda3c1ca1f83fa9b804dfc67",
       "sites": [
@@ -371,61 +426,6 @@
         "src/presentationSessionsApp.test.js"
       ]
     },
-    "src/App.jsx": {
-      "fingerprint": "a485356b88c67a7dd4c8c30e0926c8e745a0fb72c5c7fd376bd29428765e557f",
-      "sites": [
-        {
-          "owner": "useStableSummary",
-          "kind": "useEffect",
-          "fingerprint": "4f58c0fd696083d284d8eba64b319b1b0b6e19f8aa0e313006148f15e37ac705"
-        },
-        {
-          "owner": "useProtocolBrowse",
-          "kind": "useEffect",
-          "fingerprint": "d744265e6e61c4ad5b7649911290d1c9a74563612a055d53348917909a89804a"
-        },
-        {
-          "owner": "Protocol",
-          "kind": "useEffect",
-          "fingerprint": "7139b477fe29d1616ce9c3360492cf8084a1517d7c2fd2d568c94ff7c6428128"
-        },
-        {
-          "owner": "App",
-          "kind": "useEffect",
-          "fingerprint": "8547f5bb6c962cdea8440aa23c6beb8d0de0539194e6f5a870b989fc935fa98b"
-        },
-        {
-          "owner": "App",
-          "kind": "useEffect",
-          "fingerprint": "819c2d458340d50d03739882d2ae5c5b66472f338829ef7d524deec07ac8dfa3"
-        },
-        {
-          "owner": "App",
-          "kind": "useEffect",
-          "fingerprint": "d3435af849777876b67c8b73454bc9277952122285d0694ceff6ea5169ebb07a"
-        },
-        {
-          "owner": "App",
-          "kind": "useEffect",
-          "fingerprint": "d42a102c90bf56190f4632b7753c816fac42e6bf1bd63fa93e57512e99dceac1"
-        },
-        {
-          "owner": "App",
-          "kind": "useEffect",
-          "fingerprint": "f7c559c68c6493015cd04283e6c9340f7a3e7034e04114fbd0fe5c2b79efbc82"
-        }
-      ],
-      "lifetime": "mixed-project-and-retained-composition",
-      "reason": "App startup/draft/import/global command owners stay outside Activity. Inline Protocol publishes to its captured route; completed summaries survive reconnect while fresh browse authority remains separate. Inline ImportPage, Logs and HistoryPage are inside retained destinations. Route and tab tokens reject late navigation, including departure and return. Startup missing-data demand repairs abort/invalidation loss. Composite navigation/authored intent refuses late presentation restore after typing; scientific operation recovery stays independent. Native retained project selection bypasses folder reopening only on an explicit authenticated desktop hit; an explicit miss preserves cold inspection and refusals never fall back. No effect or restored authority changes.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js",
-        "src/retainedWorkspaceViews.test.js",
-        "src/protocol-overview/overviewDemand.test.js",
-        "src/importMergeAppRoute.test.js",
-        "src/authoredDrafts.test.js"
-      ]
-    },
     "src/appearance/appAppearance.js": {
       "fingerprint": "544398d780ae54b8a6162d1259d308198794b8e791376473cd13929fe4f1ec59",
       "sites": [
@@ -496,7 +496,7 @@
       ]
     },
     "src/cell-qc/ui/CellQC.jsx": {
-      "fingerprint": "ea1eefe43603395514d181d68deaaa299a0ef48c45b4ae4907729f4a6b1bc9af",
+      "fingerprint": "7091a5574bcc13c8ea22c3ae10ca25a1f076af3afb91e637fde1cd3ef750e9f7",
       "sites": [
         {
           "owner": "CellQC",
@@ -510,11 +510,12 @@
         }
       ],
       "lifetime": "session-publication-and-current-data",
-      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately.",
+      "reason": "Publish route-owned presentation snapshots; current pages/focus and ResizeObserver refresh independently. Initial CellQC family selection is guarded by absence of a user-selected family. Authored annotation text is checkpointed separately. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/authoredDrafts.test.js",
-        "src/retainedControls.test.js"
+        "src/retainedControls.test.js",
+        "src/cellQCNavigationLifecycle.test.js"
       ]
     },
     "src/cell-qc/ui/CellTypeAccordions.jsx": {
@@ -575,16 +576,6 @@
     },
     "src/components/MasterLog.jsx": {
       "fingerprint": "29a84e0dde6f9de4f00e072a82061c5e4046226985afdd0862ff1e60f9510317",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
-    "src/components/metadataValues.js": {
-      "fingerprint": "fa95fa418bb8c271cd1bd608c1510d52d31039fa46d522c791355d06961f701b",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
@@ -681,6 +672,16 @@
     },
     "src/components/UnknownCellDrawing.jsx": {
       "fingerprint": "fbddea8c081623a473d418eaa386cf38cf248c65c2d892bc19b448e3e2cfddc1",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/components/metadataValues.js": {
+      "fingerprint": "fa95fa418bb8c271cd1bd608c1510d52d31039fa46d522c791355d06961f701b",
       "sites": [],
       "lifetime": "transitive-dependency",
       "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
@@ -2410,16 +2411,6 @@
         "src/presentationSessionsIntegration.test.js"
       ]
     },
-    "src/protocol-overview/ui/overviewModel.js": {
-      "fingerprint": "865424b5141ec2df8e429fb9b88dd343649ff42b9cc8fd607ab6da7cad85387e",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
     "src/protocol-overview/ui/ProtocolApplyPanel.jsx": {
       "fingerprint": "f9953b44dd064396ae6d0f3ab41637323a986f7e3180caa49cb58878cd425242",
       "sites": [
@@ -2564,6 +2555,16 @@
         "src/authoredDrafts.test.js",
         "src/semanticPresentationControls.test.js",
         "src/protocolPredicateWorkflow.test.js"
+      ]
+    },
+    "src/protocol-overview/ui/overviewModel.js": {
+      "fingerprint": "865424b5141ec2df8e429fb9b88dd343649ff42b9cc8fd607ab6da7cad85387e",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
       ]
     },
     "src/protocol-overview/useOverviewResource.js": {
@@ -3071,16 +3072,6 @@
         "src/traces/responsePreferenceRetention.test.js"
       ]
     },
-    "src/traces/ui/traceGeometry.js": {
-      "fingerprint": "32f3da0fae80a407b36b3371535c2bc85cc5549a48e9a694d4d8e8637eb13c0d",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
     "src/traces/ui/TraceViewer.jsx": {
       "fingerprint": "e5956da73210aee94c57bcda90fcb94ca785f04fbc832e1fcbf183a5788d0673",
       "sites": [
@@ -3112,6 +3103,16 @@
         "src/traces/traceExtentLifecycle.test.js",
         "src/traces/tracePaintLifecycle.test.js",
         "src/traces/responsePreferenceRetention.test.js"
+      ]
+    },
+    "src/traces/ui/traceGeometry.js": {
+      "fingerprint": "32f3da0fae80a407b36b3371535c2bc85cc5549a48e9a694d4d8e8637eb13c0d",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
       ]
     },
     "src/tree-ancestors/columnTreeReads.js": {
@@ -3207,7 +3208,7 @@
       ]
     },
     "src/tree-browser/ui/ColumnTree.jsx": {
-      "fingerprint": "9f81a75d7615375b033412ea020933aaefb4b9158d86843478e2351d281312a7",
+      "fingerprint": "07ed14deda299c91f1e3bbac8b45dc16af9bca1801f10928da6ce8b1f4b4846d",
       "sites": [
         {
           "owner": "ColumnTree",
@@ -3251,16 +3252,17 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
-        "src/treeCombinedPresentation.test.js"
+        "src/treeCombinedPresentation.test.js",
+        "src/treeCellIdentityIcons.test.js"
       ]
     },
     "src/tree-browser/ui/HierarchyTree.jsx": {
-      "fingerprint": "2d787fe05abaaf51ca5e1c760065816153d74c0c5c9333e995d2047f3d1d8083",
+      "fingerprint": "6dcfa7546eefadab7127d1db46d3862d168bd8bbadcb7dd2e1e122c82788f375",
       "sites": [
         {
           "owner": "HierarchyTree",
@@ -3294,12 +3296,13 @@
         }
       ],
       "lifetime": "fresh-pages-with-navigation-intent",
-      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration.",
+      "reason": "Capture bounded expansion/scroll intent before cleanup; reconnect performs fresh scoped reads and restores same-scope geometry after pages arrive. Scope change/late reply cannot revive old authority; new user scroll supersedes pending restoration. Cell identity placement review: imports/JSX only; effect sites unchanged. See docs/dev/cell-identity-placement-2026-10-14.md.",
       "tests": [
         "src/inspectionTreeLifecycle.test.js",
         "src/hierarchyRetention.test.js",
         "src/treeTagCoverageWorkflow.test.js",
-        "src/treeCombinedPresentation.test.js"
+        "src/treeCombinedPresentation.test.js",
+        "src/treeCellIdentityIcons.test.js"
       ]
     },
     "src/tree-browser/ui/PagedTree.jsx": {
@@ -3327,6 +3330,15 @@
       "tests": [
         "src/presentationSessionsApp.test.js",
         "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/tree-browser/ui/TreeBranchIcon.jsx": {
+      "fingerprint": "fb73c67cb253e6b544aa7b0f2ddbaca38df1eaef840134f535265cd366ecf0e4",
+      "sites": [],
+      "lifetime": "pure-presentation",
+      "reason": "Independently reviewed stateless exact-level icon selection from recorded metadata; no effects, requests, state or scientific authority. See docs/dev/cell-identity-placement-2026-10-14.md.",
+      "tests": [
+        "src/treeCellIdentityIcons.test.js"
       ]
     },
     "src/tree-selection/treeSelectionReader.js": {
@@ -3457,26 +3469,6 @@
         "src/protocolPredicateWorkflow.test.js"
       ]
     },
-    "src/typed-query/ui/predicateEditor.js": {
-      "fingerprint": "54f106aa59a36f6413fad5d6ff7724e5a520ad0d5ea6d08de86b1fe3675c25b6",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
-    "src/typed-query/ui/predicateState.js": {
-      "fingerprint": "017a65638415e583a865e375becac48909cad077a02d45831939fe4dd7750b29",
-      "sites": [],
-      "lifetime": "transitive-dependency",
-      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
-      "tests": [
-        "src/presentationSessionsApp.test.js",
-        "src/presentationSessionsIntegration.test.js"
-      ]
-    },
     "src/typed-query/ui/PredicateValueInput.jsx": {
       "fingerprint": "b4ebd05d1821f7710a3b1ad6f5b0295ba52a8c08786cb46d6b134a920c70cf19",
       "sites": [
@@ -3559,6 +3551,26 @@
         "src/semanticPresentationControls.test.js",
         "src/treeBuilderOverviewLifecycle.test.js",
         "src/requested-summaries/requestedSummariesLifecycle.test.js"
+      ]
+    },
+    "src/typed-query/ui/predicateEditor.js": {
+      "fingerprint": "54f106aa59a36f6413fad5d6ff7724e5a520ad0d5ea6d08de86b1fe3675c25b6",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
+      ]
+    },
+    "src/typed-query/ui/predicateState.js": {
+      "fingerprint": "017a65638415e583a865e375becac48909cad077a02d45831939fe4dd7750b29",
+      "sites": [],
+      "lifetime": "transitive-dependency",
+      "reason": "No direct supported effect sites. Covered as a dependency of the App composition and named module behavior; helper changes invalidate this receipt even when callers and effect calls are unchanged. This is not an independent semantic proof.",
+      "tests": [
+        "src/presentationSessionsApp.test.js",
+        "src/presentationSessionsIntegration.test.js"
       ]
     },
     "src/undo/mutationUndo.js": {

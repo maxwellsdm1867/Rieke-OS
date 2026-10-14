@@ -542,7 +542,7 @@ class TreePages:
                     'has_children':depth + 1 < len(order), **summary,
                     **({'shared_tag_coverage': self.service.tree_annotation_coverage(bucket['rows'])}
                        if not counts_only and callable(getattr(self.service, 'tree_annotation_coverage', None)) else {}),
-                    **{name:child[name] for name in ('components','has_missing_components','start_time') if name in child}})
+                    **{name:child[name] for name in ('components','has_missing_components','start_time','cell_type') if name in child}})
             return result
 
         ancestors = []

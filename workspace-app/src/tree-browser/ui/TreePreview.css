@@ -6,3 +6,5 @@
 .tp-combination>div.joint-color-1{border-color:var(--success-border);background:var(--success-soft)}.tp-combination>div.joint-color-2{border-color:var(--error-border);background:var(--error-soft)}
 .tp-combination dt{font-size:10px;font-weight:550;color:var(--ink-muted)}.tp-combination dd{margin:0;font-size:11px;color:var(--info-ink);line-height:1.45;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 .tp-combination .joint-color-1 dd{color:var(--success-ink)}.tp-combination .joint-color-2 dd{color:var(--error-ink)}
+
+.tree-cell-identity-icon,.tree-group-folder{display:inline-flex;align-items:center;flex-shrink:0}

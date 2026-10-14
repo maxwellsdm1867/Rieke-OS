@@ -85,3 +85,6 @@
 
 /* Fill and label emphasis identify keyboard focus without framing the text. */
 .hierarchy-tree .ht-branch>button:first-child:focus-visible,.hierarchy-tree .ht-leaf>button:first-child:focus-visible{outline:0;background:color-mix(in srgb,var(--ink) 8%,transparent)}
+
+.hierarchy-tree .tree-group-folder{display:none}
+.hierarchy-tree .tree-cell-identity-icon{display:inline-flex;align-items:center;flex-shrink:0}

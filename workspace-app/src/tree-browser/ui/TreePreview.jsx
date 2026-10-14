@@ -1,5 +1,6 @@
+import TreeBranchIcon from './TreeBranchIcon.jsx';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ChevronRight, CornerDownRight, FolderOpen, GitBranch, Home, List, Search, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, CornerDownRight, GitBranch, Home, List, Search, X } from 'lucide-react';
 import { duration, number } from '../../api.js';
 import './TreePreview.css';
 import {datedCellLabel} from '../../recording-import/recordingIdentity.js';
@@ -51,7 +52,7 @@ export default function TreePreview({tree,path=[],onPathChange,onSelectEpoch,loa
             const share=node.count>0?Math.max(0,Math.min(100,child.count/node.count*100)):0;
             return <button className={`tp-branch ${selected?'selected':''}`} key={treeNodeKey(child)} onClick={()=>choose(child,depth)}
               aria-expanded={selected} title={branchTooltip(child,node.field)}>
-              <div className="tp-branch-title"><FolderOpen size={15}/><strong>{child.components?.length?'Matching combination':branchLabel(child,node.field)}</strong><ChevronRight size={14}/></div>
+              <div className="tp-branch-title"><TreeBranchIcon node={child} field={node.field}/><strong>{child.components?.length?'Matching combination':branchLabel(child,node.field)}</strong><ChevronRight size={14}/></div>
               {child.components?.length>0&&<dl className="tp-combination">{child.components.map((part,index)=><div key={part.field} className={`joint-color-${index%3}`}><dt title={part.field}>{componentLabel(part)}</dt><dd>{componentValue(part)}</dd></div>)}</dl>}
               <div className="tp-branch-counts"><span><b>{number(child.count)}</b> epochs</span><span>{cells(child)} cells</span></div>
               <div className="tp-distribution" aria-hidden="true"><span style={{width:`${share}%`}}/></div>

@@ -6,7 +6,7 @@ async function setup(){
  const h=await createWorkflowHarness();
  h.fixture.respond=(url,options,fallback)=>{
   const route=url.pathname.replace('/api','');
-  if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
+  if(route==='/cells/cell-0/qc')return {cell:{cell_uuid:'cell-0',label:'Cell 0',cell_type:'RGC/ON-parasol'},counts:{epochs:2},families:[{id:'a',label:'Family A',epoch_count:1},{id:'b',label:'Family B',epoch_count:1}]};
   if(route==='/cells/cell-0/qc/epochs'){
    const id=url.searchParams.get('family')==='a'?'epoch-0':'epoch-1';
    const result={epochs:[{epoch_uuid:id,epoch_number:id==='epoch-0'?1:2}],total:1};
@@ -27,6 +27,8 @@ async function setup(){
 test('QC keeps its list and committed frame through a delayed family change, then publishes a matching epoch/summary',async()=>{
  const {h,frame,family}=await setup();let release;
  try{
+  const identity=h.root.findByProps({className:'qc-identity'});
+  assert.ok(identity.findAllByType('svg').some(node=>node.props.style?.color==='var(--cell-on)'&&node.props['aria-hidden']===true));
   const list=h.root.findByProps({className:'qc-trial-list'}),recording=h.root.findByProps({className:'qc-recording'});
   h.fixture.holdSummary=(url,options,value)=>value.epoch_uuid==='epoch-1'?new Promise(resolve=>release=()=>resolve(value)):value;
   await h.act(()=>family('Family B').props.onClick());await h.waitFor(()=>!!release);
