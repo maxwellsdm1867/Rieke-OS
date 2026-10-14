@@ -26,8 +26,10 @@ process.on('uncaughtException', error => {
 });
 async function ownedPackagedProcesses() {
   const physical = await fs.realpath(fixture.root), prefixes = [physical + '/', physical.replace(/^\/private\/var\//, '/var/') + '/'];
-  const {stdout} = await run('/bin/ps', ['-ww', '-axo', 'pid=,comm='], {timeout: 5000, maxBuffer: 1024 * 1024});
-  return stdout.split('\n').flatMap(line => {const match = /^\s*(\d+)\s+(.+)$/.exec(line);return match && prefixes.some(prefix => match[2].startsWith(prefix)) ? [Number(match[1])] : [];});
+  const {stdout} = await run('/bin/ps', ['-ww', '-axo', 'pid=,ppid=,stat=,etime=,comm='], {timeout: 5000, maxBuffer: 1024 * 1024});
+  const rows=stdout.split('\n').flatMap(line => {const match = /^\s*(\d+)\s+(\d+)\s+(\S+)\s+(\S+)\s+(.+)$/.exec(line);return match && prefixes.some(prefix => match[5].startsWith(prefix)) ? [{pid:Number(match[1]),parent_pid:Number(match[2]),state:match[3],elapsed:match[4],executable:match[5]}] : [];});
+  receipt.last_owned_process_observation=rows;
+  return rows.map(row=>row.pid);
 }
 async function quitAndVerifyOwnedExit() {
   assert.ok((await ownedPackagedProcesses()).length, 'Owned app must be running before Quit');
