@@ -87,6 +87,38 @@ async function projectPage(application, project) {
     return false;
   }, 'Owned scientific project renderer did not become visible', 45000);
 }
+// Serialized into the renderer by Playwright. Every stage uses this exact
+// candidate selection; retained hidden history must never stand in for the UI.
+function overviewReadiness({mode}) {
+  const nodes = [...document.querySelectorAll('.infographic-overview')].filter(node => {
+    const owner = node.closest('.retained-workspace-view');
+    return node.getClientRects().length > 0 && !node.closest('[hidden]') && (!owner || owner.getAttribute('data-workspace-active') === 'true');
+  });
+  if (nodes.length > 1) throw Error('Multiple visible active Overview nodes');
+  if (!nodes.length) return mode === 'state' ? {visible: false, canonical: false, usable: false} : false;
+  const node = nodes[0];
+  window.__upgradeOverviewIds ??= new WeakMap();
+  window.__upgradeOverviewSequence ??= 0;
+  if (!window.__upgradeOverviewIds.has(node)) window.__upgradeOverviewIds.set(node, ++window.__upgradeOverviewSequence);
+  const owner = node.closest('.retained-workspace-view');
+  const canonical = !node.hasAttribute('inert') && node.getAttribute('aria-busy') !== 'true';
+  const state = {visible: true, node_id: window.__upgradeOverviewIds.get(node), owner_key: owner?.getAttribute('data-workspace-view') || null, canonical, usable: canonical && !node.closest('[hidden],[inert]') && !document.querySelector('dialog:modal')};
+  return mode === 'state' ? state : state[mode];
+}
+async function overviewDiagnostics(page) {
+  return page.evaluate(() => ({url: location.href, visibility: document.visibilityState,
+    nodes: [...document.querySelectorAll('.infographic-overview')].map((node, index) => ({index,
+      attributes: Object.fromEntries([...node.attributes].map(attribute => [attribute.name, attribute.value])),
+      rects: [...node.getClientRects()].map(rect => ({x: rect.x, y: rect.y, width: rect.width, height: rect.height})),
+      ancestors: [...function* (element) { while (element) { yield element; element = element.parentElement; } }(node)].slice(0, 8)
+        .map(element => ({tag: element.tagName, className: element.className, hidden: element.hidden,
+          inert: element.getAttribute('inert'), active: element.getAttribute('data-workspace-active'),
+          view: element.getAttribute('data-workspace-view'), display: getComputedStyle(element).display})),
+    })),
+    dialogs: [...document.querySelectorAll('dialog')].map(node => ({open: node.open, modal: node.matches(':modal'),
+      label: node.getAttribute('aria-labelledby'), text: node.innerText.slice(0, 300)})),
+  }));
+}
 async function snapshotCache(project) {
   const root = path.join(project, 'cache'), result = [];
   async function walk(folder) {
@@ -280,26 +312,35 @@ async function snapshotCache(project) {
       const bound = await projectPage(application, project); activePage = bound.page; phase.scientific_host = bound.host;
       activePage.setDefaultTimeout(20000); phase.project_shell_at = performance.now();
       receipt.action = 'first-overview';
-      const visibleAndUsable = activePage.getByRole('region', {name: 'Project infographic', exact: true}).waitFor({timeout: 120000})
+      const readinessDeadline = performance.now() + 120000;
+      const visibleAndUsable = activePage.waitForFunction(overviewReadiness, {mode: 'visible'}, {timeout: 120000})
         .then(async () => {
           phase.overview_first_visible_at = performance.now();
-          // A saved presentation can appear before the activation-triggered author
-          // dialog. Wait for this node's own canonical state first; do not require
-          // modal ancestors to be non-inert until the known dialog is dismissed.
-          await activePage.waitForFunction(() => {
-            const node = document.querySelector('.infographic-overview');
-            return !!node?.getClientRects().length && !node.hasAttribute('inert') && node.getAttribute('aria-busy') !== 'true';
-          }, null, {timeout: 120000});
-          phase.overview_canonical_at = performance.now();
-          phase.presentation_setup_started_at = performance.now();
+          phase.first_visible_identity = await activePage.evaluate(overviewReadiness, {mode: 'state'});
+          phase.overview_identity_observations = [{at: performance.now(), ...phase.first_visible_identity}];
+          phase.first_visible_dom = await overviewDiagnostics(activePage);
           phase.presentation_setup_actions = [];
-          const closeAuthor = activePage.getByRole('button', {name: 'Close tag author', exact: true});
-          if (await closeAuthor.isVisible()) {
-            const action = {name: 'close-tag-author', started_at: performance.now()};
-            phase.presentation_setup_actions.push(action);
-            await closeAuthor.click(); await closeAuthor.waitFor({state: 'hidden'});
-            action.finished_at = performance.now(); action.elapsed_ms = action.finished_at - action.started_at;
+          let ready = false;
+          while (performance.now() < readinessDeadline) {
+            // The known author dialog may arrive after an early saved picture.
+            // Dismiss it when observed, never wait for an inert predicate first.
+            const closeAuthor = activePage.getByRole('button', {name: 'Close tag author', exact: true});
+            if (await closeAuthor.isVisible()) {
+              const action = {name: 'close-tag-author', started_at: performance.now()};
+              phase.presentation_setup_actions.push(action);
+              await closeAuthor.click(); await closeAuthor.waitFor({state: 'hidden'});
+              action.finished_at = performance.now(); action.elapsed_ms = action.finished_at - action.started_at;
+            }
+            const state = await activePage.evaluate(overviewReadiness, {mode: 'state'});
+            if (state.node_id !== phase.overview_identity_observations.at(-1)?.node_id) phase.overview_identity_observations.push({at: performance.now(), ...state});
+            if (state.canonical && !phase.overview_canonical_at) {
+              phase.overview_canonical_at = performance.now(); phase.canonical_overview_identity = state;
+            }
+            if (state.usable) { ready = true; break; }
+            await delay(50);
           }
+          assert.ok(ready, 'Visible active canonical Overview did not become usable within 120 seconds');
+          phase.presentation_setup_started_at = performance.now();
           const showSidebar = activePage.getByRole('button', {name: 'Show sidebar', exact: true});
           if (await showSidebar.isVisible()) {
             const action = {name: 'show-sidebar', started_at: performance.now()};
@@ -311,10 +352,8 @@ async function snapshotCache(project) {
           await prepareInitialPresentation(activePage, receipt);
           phase.presentation_setup = receipt.presentation_setup.slice(before);
           phase.presentation_setup_finished_at = performance.now();
-          await activePage.waitForFunction(() => {
-            const node = document.querySelector('.infographic-overview');
-            return !!node?.getClientRects().length && !node.closest('[inert]') && node.getAttribute('aria-busy') !== 'true';
-          }, null, {timeout: 120000});
+          phase.final_overview_identity = await activePage.evaluate(overviewReadiness, {mode: 'state'});
+          assert.equal(phase.final_overview_identity.usable, true, 'Exactly one visible active Overview must be usable after setup');
           phase.overview_usable_at = performance.now();
         });
       const dataReady = poll(async () => {
@@ -368,6 +407,9 @@ async function snapshotCache(project) {
     receipt.status = 'passed'; await save();
   } catch (error) {
     receipt.status = 'failed'; receipt.error = String(error);
+    const phase = receipt.phases.at(-1);
+    if (phase) { phase.status = 'failed'; phase.error = String(error); }
+    if (activePage) receipt.failure_dom = await overviewDiagnostics(activePage).catch(error => ({error: String(error)}));
     if (activePage) await activePage.screenshot({path: path.join(output, 'failure.png')}).catch(() => {});
     await save(); throw error;
   } finally {
