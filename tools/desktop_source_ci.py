@@ -82,6 +82,9 @@ def require_source_ci(repository, source, candidate_run_id):
         ['Adopted architecture contract discovery', 'frontend', 'python',
          'Scoped desktop lifecycle contracts', 'Apple Silicon native project lifecycle and transfer'])
     run = receipts['everyday-million.yml']
+    require_jobs(repository, run,
+        ['Backend million query regression', 'Browser million workflow regression',
+         'Actual million metadata query regression'])
     name = f'everyday-million-{run["id"]}-{run["run_attempt"]}'
     candidate_digests = {}
     for filename in ('candidate/receipt.json', 'workflow-candidate/receipt.json'):

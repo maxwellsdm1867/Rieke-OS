@@ -23,6 +23,7 @@ an unavailable prerequisite, partial run, skipped case or timeout into success.
 | [benchmark.py](benchmark.py) | `run --output`, `gate RECEIPT --commit --app-version [--release]`, `compare BASELINE CANDIDATE --output`. Owns the fixed suite, receipt validation and comparable-source/environment gate; failed workers write incomplete evidence. |
 | [benchmark_everyday.py](benchmark_everyday.py) | `iteration --baseline-source --source-root --output`, `run --source-root --output`, `compare BASELINE CANDIDATE --output`; actual million-record synthetic query stress, serial matched sources and explicit admission seams. Required with core after every app update; follow the canonical guide. |
 | [benchmark_workflow.py](benchmark_workflow.py) | `run --source-root --output [--protocol-epochs N] [--profile]`, `compare BASELINE CANDIDATE --output`; thirteen fixed browser action variants, three ordinary samples and exact correctness checks. Action medians and trace endpoints gate comparison; optional profiles are diagnostic and do not block optimization. Default active protocol is one million; CI uses 20,000 within an actual million-row project. Exact protocol sizes must match. Follow the canonical guide and retain unmeasured scenario limits. |
+| [benchmark_ci.py](benchmark_ci.py) | `resolve`, `run --family backend|browser`, `aggregate`; resolves immutable source roles, schedules distinct SHAs serially within each family, preserves byte-identical role aliases and requires complete passing family evidence. It orchestrates existing benchmarks without changing their receipts, cases or thresholds. |
 | [benchmark_native.py](benchmark_native.py) | `--evidence-root` with attachment arguments or `--verify`; binds immutable native research evidence and preserves the measured commit. An attachment does not grant release qualification. |
 
 Mapped Python and frontend test workers have a 600-second limit; desktop workers
@@ -35,6 +36,11 @@ and million-row jobs in that case; mapping remains visible in the plan. Unknown,
 code, configuration and harness changes retain the conservative checks. Manual
 publication qualification uses `workspace-ci` with `full_checks=true` and the
 million workflow on the exact source SHA; a scoped PR plan cannot substitute.
+Backend and browser families run on separate hosts but keep their own baseline and
+candidate measurements together. The final aggregate and both family jobs must
+succeed. Superseded automatic PR runs may be cancelled; explicit qualification
+runs remain independent. Same-SHA reuse is confined to one family/run and preserves
+raw receipt bytes; cached timing verdicts never qualify another source.
 
 The guard uses Python, local Git history, the existing Node import parser and
 frontend dependencies for JavaScript checks. `RIEKE_TEST_DOM_MODULE` must be unset
