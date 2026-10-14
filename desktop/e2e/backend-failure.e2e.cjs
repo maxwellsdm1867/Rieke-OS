@@ -2,15 +2,44 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises'), path = require('node:path');
 const {createHash} = require('node:crypto');
+// Enable launch/process and protocol diagnostics before Playwright is loaded.
+// A launch failure can occur before application.process() becomes available.
+process.env.DEBUG=[process.env.DEBUG,'pw:browser','pw:api','pw:protocol'].filter(Boolean).join(',');
+const diagnostic={stage:'starting',node:process.version,os_release:require('node:os').release(),stderr:'',native_events:[],launch_log:''};
+const diagnosticFile=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/backend-startup-failure-diagnostic.json');
+const hostHome=require('node:os').homedir();
+const stderrWrite=process.stderr.write;
+process.stderr.write=function(chunk,...args){
+  diagnostic.launch_log=(diagnostic.launch_log+chunk.toString()).slice(-128000);
+  const pid=chunk.toString().match(/<launched> pid=(\d+)/)?.[1];
+  if(pid)diagnostic.launch_pid=Number(pid);
+  return stderrWrite.call(this,chunk,...args);
+};
+function failureDiagnostic(error){
+  const sync=require('node:fs');
+  diagnostic.os_crash_reports=[];
+  if(diagnostic.bundle)for(const directory of new Set([path.join(hostHome,'Library/Logs/DiagnosticReports'),
+      path.join(diagnostic.fixture_home,'Library/Logs/DiagnosticReports'),'/Library/Logs/DiagnosticReports'])){
+    try{for(const name of sync.readdirSync(directory)){
+      if(!/\.(ips|crash)$/.test(name))continue;
+      const file=path.join(directory,name),stat=sync.statSync(file);
+      if(stat.mtimeMs<diagnostic.launch_started_ms||stat.size>2*1024*1024)continue;
+      const report=sync.readFileSync(file,'utf8');
+      if(report.includes(diagnostic.bundle))diagnostic.os_crash_reports.push({file,report:report.slice(0,64000)});
+    }}catch(error){diagnostic.crash_report_read_error=error.message;}
+  }
+  if(diagnostic.launch_pid)try{
+    diagnostic.os_process_log=require('node:child_process').execFileSync('/usr/bin/log',
+      ['show','--last','2m','--style','json','--predicate',`processID == ${diagnostic.launch_pid}`],
+      {encoding:'utf8',timeout:5000,maxBuffer:1024*1024}).slice(-64000);
+  }catch(error){diagnostic.os_process_log_error=error.message;}
+  sync.mkdirSync(path.dirname(diagnosticFile),{recursive:true});
+  sync.writeFileSync(diagnosticFile,JSON.stringify({...diagnostic,error:error.stack||error.message,failed_at:new Date().toISOString()},null,2)+'\n');
+}
+process.on('uncaughtExceptionMonitor',failureDiagnostic);
 const {createFixture, launch, gracefulQuit, run} = require('./helpers.cjs');
 const {resealRuntimeManifest} = require('../sign-runtime.cjs');
 const {verifyResources} = require('../updater-validation.cjs');
-const diagnostic={stage:'starting',node:process.version,os_release:require('node:os').release(),stderr:'',native_events:[]};
-const diagnosticFile=path.resolve(__dirname,'../../docs/dev/desktop-ui-e2e/backend-startup-failure-diagnostic.json');
-process.on('uncaughtExceptionMonitor',error=>{
-  const sync=require('node:fs');sync.mkdirSync(path.dirname(diagnosticFile),{recursive:true});
-  sync.writeFileSync(diagnosticFile,JSON.stringify({...diagnostic,error:error.stack||error.message},null,2)+'\n');
-});
 
 (async () => {
   const fixture = await createFixture({reuse: false});
@@ -36,6 +65,7 @@ process.on('uncaughtExceptionMonitor',error=>{
   await verifyResources(runtime, manifest.resources);
   assert.equal(createHash('sha256').update(await fs.readFile(path.join(fixture.bundle, 'Contents/Resources/app.asar'))).digest('hex'), appAsarSha256);
   diagnostic.stage='launching-faulted-clone';
+  diagnostic.bundle=fixture.bundle;diagnostic.fixture_home=fixture.home;diagnostic.launch_started_ms=Date.now();
   const {application, page} = await launch(fixture);
   diagnostic.stage='waiting-for-recovery';
   application.process().stderr.on('data',chunk=>{diagnostic.stderr=(diagnostic.stderr+chunk.toString()).slice(-16000);});
@@ -70,7 +100,6 @@ process.on('uncaughtExceptionMonitor',error=>{
   await fs.writeFile(path.join(output, 'backend-startup-failure.json'), JSON.stringify(receipt, null, 2) + '\n');
   console.log(JSON.stringify(receipt));
 })().catch(async error => {
-  await fs.mkdir(path.dirname(diagnosticFile), {recursive:true});
-  await fs.writeFile(diagnosticFile, JSON.stringify({...diagnostic,error:error.stack||error.message,failed_at:new Date().toISOString()}, null, 2)+'\n');
+  failureDiagnostic(error);
   console.error(error.message); process.exitCode = 1;
 });

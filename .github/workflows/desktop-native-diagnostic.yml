@@ -1,0 +1,111 @@
+name: desktop-native-diagnostic
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: desktop-native-diagnostic-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    runs-on: macos-15
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [backend-failure, smoke]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 82d541e8300eb1b6930ff7f1bd35f974a6ca343e
+          path: desktop/build/candidate-source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.12.0'
+          cache: npm
+          cache-dependency-path: desktop/build/candidate-source/desktop/package-lock.json
+      - name: Verify saved run and use exact candidate dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/38624875712" > "$RUNNER_TEMP/candidate-run.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          run=json.loads((Path(os.environ['RUNNER_TEMP'])/'candidate-run.json').read_text())
+          assert run['id']==38624875712
+          assert run['repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert run['path']=='.github/workflows/desktop-candidate.yml'
+          PY
+          for source in desktop/build/candidate-source/desktop/*.cjs; do
+            cmp "$source" "desktop/$(basename "$source")"
+          done
+          cmp desktop/e2e/helpers.cjs desktop/build/candidate-source/desktop/e2e/helpers.cjs
+          cmp desktop/package-lock.json desktop/build/candidate-source/desktop/package-lock.json
+          npm ci --prefix desktop/build/candidate-source/desktop
+          ln -s "$GITHUB_WORKSPACE/desktop/build/candidate-source/desktop/node_modules" desktop/node_modules
+      - uses: actions/download-artifact@v4
+        with:
+          name: rieke-desktop-macos-arm64
+          path: desktop/dist
+          run-id: 38624875712
+          github-token: ${{ github.token }}
+      - name: Verify archive and exact app identity
+        env:
+          CHECK_SUITE: ${{ matrix.suite }}
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          dist=Path('desktop/dist')
+          baseline=json.loads((dist/'desktop-baseline.json').read_text())
+          assert baseline['source_commit']=='82d541e8300eb1b6930ff7f1bd35f974a6ca343e'
+          inventory=json.loads((dist/'artifacts.json').read_text())['artifacts']
+          for name,expected in inventory.items():
+              assert Path(name).name==name
+              file=dist/name
+              assert file.is_file() and not file.is_symlink()
+              assert file.stat().st_size==expected['size']
+              with file.open('rb') as stream:
+                  assert hashlib.file_digest(stream,'sha256').hexdigest()==expected['sha256']
+          archive=dist/f"Disco-{baseline['application_version']}-arm64.zip"
+          assert archive.name in inventory
+          destination=dist/'mac-arm64'
+          destination.mkdir()
+          subprocess.run(['ditto','-x','-k',str(archive),str(destination)],check=True)
+          app=destination/'Disco.app'
+          manifest=json.loads((app/'Contents/Resources/runtime/runtime-manifest.json').read_text())
+          assert manifest['source_commit']==baseline['source_commit'] and manifest['source_dirty'] is False
+          assert manifest['application_version']==baseline['application_version']
+          subprocess.run(['codesign','--verify','--deep','--strict',str(app)],check=True)
+          output=Path('docs/dev/desktop-ui-e2e')
+          output.mkdir(parents=True,exist_ok=True)
+          (output/'diagnostic-provenance.json').write_text(json.dumps({
+              'diagnostic_only':True,'candidate_run_id':38624875712,
+              'source_commit':baseline['source_commit'],
+              'harness_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              'suite':os.environ['CHECK_SUITE'],'artifacts':inventory},indent=2)+'\n')
+          PY
+      - name: Backend failure launch diagnostics
+        if: matrix.suite == 'backend-failure'
+        run: node desktop/e2e/backend-failure.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/backend-failure-console.log
+      - name: Smoke and ordinary quit diagnostics
+        if: matrix.suite == 'smoke'
+        env:
+          RIEKE_SMOKE_REQUIRE_UPDATE_CONNECTIVITY: '1'
+          GH_TOKEN: ${{ github.token }}
+        run: node desktop/e2e/smoke.e2e.cjs 2>&1 | tee docs/dev/desktop-ui-e2e/smoke-console.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-diagnostic-${{ matrix.suite }}
+          path: |
+            docs/dev/desktop-ui-e2e/
+            docs/dev/desktop-smoke-e2e.json
+          if-no-files-found: warn
+          retention-days: 14
